@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
 	"strconv"
@@ -442,47 +443,42 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	case OperationModeScheduler:
 		s.logger.Info("starting scheduler")
 		// --------- describe
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunDescribeJobScheduler()
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunDescribeResourceJobs(ctx)
 		})
 		// ---------
 
 		// --------- describe
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunStackScheduler()
 		})
 		// ---------
 
 		// --------- inventory summarizer
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunAnalyticsJobScheduler()
 		})
 
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
 		})
 		// ---------
 
 		// --------- compliance
-		EnsureRunGoroutin(func() {
-			s.complianceScheduler.Run()
-		})
-		EnsureRunGoroutin(func() {
-			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.complianceScheduler.RunComplianceReportJobResultsConsumer()))
-		})
-		EnsureRunGoroutin(func() {
+		s.complianceScheduler.Run()
+		utils.EnsureRunGoroutin(func() {
 			s.RunJobSequencer()
 		})
 		// ---------
 
 		// --------- insights
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunInsightJobScheduler()
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
 		})
 		// ---------
@@ -491,26 +487,26 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		//	s.RunScheduleJobCompletionUpdater()
 		//})
 
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunCheckupJobScheduler()
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunDeletedSourceCleanup()
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.RunScheduledJobCleanup()
 		})
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.UpdateDescribedResourceCountScheduler()
 		})
 	case OperationModeReceiver:
-		EnsureRunGoroutin(func() {
+		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 		})
 		s.logger.Info("starting receiver")

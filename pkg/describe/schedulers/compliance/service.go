@@ -6,6 +6,7 @@ import (
 	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"go.uber.org/zap"
 	"time"
 )
@@ -33,6 +34,18 @@ func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient clie
 }
 
 func (s *JobScheduler) Run() {
+	utils.EnsureRunGoroutin(func() {
+		s.RunScheduler()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.RunPublisher()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
+	})
+}
+
+func (s *JobScheduler) RunScheduler() {
 	s.logger.Info("Scheduling compliance jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
@@ -40,13 +53,22 @@ func (s *JobScheduler) Run() {
 
 	for ; ; <-t.C {
 		if err := s.runScheduler(); err != nil {
-			s.logger.Error("failed to run scheduleComplianceJob", zap.Error(err))
+			s.logger.Error("failed to run compliance scheduler", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
+	}
+}
 
+func (s *JobScheduler) RunPublisher() {
+	s.logger.Info("Scheduling publisher on a timer")
+
+	t := time.NewTicker(JobSchedulingInterval)
+	defer t.Stop()
+
+	for ; ; <-t.C {
 		if err := s.runPublisher(); err != nil {
-			s.logger.Error("failed to run scheduleComplianceJob", zap.Error(err))
+			s.logger.Error("failed to run compliance publisher", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
