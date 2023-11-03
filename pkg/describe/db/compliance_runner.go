@@ -21,7 +21,7 @@ func (db Database) CreateRunnerJobs(runners []*model.ComplianceRunner) error {
 func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 	var jobs []model.ComplianceRunner
 	tx := db.ORM.Model(&model.ComplianceRunner{}).
-		Where("status = ?", runner.ComplianceRunnerCreated).Order("created_at ASC").Limit(100).Find(&jobs)
+		Where("status = ?", runner.ComplianceRunnerCreated).Order("created_at ASC").Limit(1000).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
