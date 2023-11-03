@@ -10,7 +10,7 @@ import (
 func (db Database) CreateRunnerJobs(runners []*model.ComplianceRunner) error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
-		CreateInBatches(runners, 100)
+		CreateInBatches(runners, 500)
 	if tx.Error != nil {
 		return tx.Error
 	}

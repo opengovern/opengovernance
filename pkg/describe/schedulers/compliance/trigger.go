@@ -105,7 +105,8 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 	}
 
 	var allRunners []*model.ComplianceRunner
-	for _, connection := range assignments.Connections {
+	for _, it := range assignments.Connections {
+		connection := it
 		runners, err := s.buildRunners(&connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
 		if err != nil {
 			return 0, err
@@ -113,7 +114,8 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 		allRunners = append(allRunners, runners...)
 	}
 
-	for _, resourceCollection := range assignments.ResourceCollections {
+	for _, it := range assignments.ResourceCollections {
+		resourceCollection := it
 		runners, err := s.buildRunners(nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
 		if err != nil {
 			return 0, err

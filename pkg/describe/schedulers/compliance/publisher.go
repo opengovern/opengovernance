@@ -14,6 +14,7 @@ import (
 )
 
 func (s *JobScheduler) runPublisher() error {
+	s.logger.Info("runPublisher")
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 
 	runners, err := s.db.FetchCreatedRunners()
