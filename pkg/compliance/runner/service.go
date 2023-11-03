@@ -13,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -90,10 +91,24 @@ func (w *Worker) Run() error {
 	w.logger.Info("starting")
 
 	ctx := context.Background()
-	consumer, err := kafka.NewTopicConsumer(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup)
+
+	consumer, err := kafka.NewTopicConsumerWithRebalanceCB(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup, func(consumer *kafka2.Consumer, event kafka2.Event) error {
+		w.logger.Info(fmt.Sprintf("Consumer: %v, Event: %v, EventType: %s", consumer, event, reflect.TypeOf(event).String()))
+		if v, ok := event.(kafka2.AssignedPartitions); ok {
+			for _, partition := range v.Partitions {
+				w.logger.Info(fmt.Sprintf("Partition %d is assigned with offset %v", partition.Partition, partition.Offset))
+			}
+		} else if v, ok := event.(kafka2.RevokedPartitions); ok {
+			for _, partition := range v.Partitions {
+				w.logger.Info(fmt.Sprintf("Partition %d is revoked", partition.Partition))
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
+
 	msgs := consumer.Consume(ctx, w.logger)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
