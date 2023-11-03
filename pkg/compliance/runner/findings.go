@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 )
@@ -25,14 +24,14 @@ func (j *Job) ExtractFindings(caller Caller, res *steampipe.Result, jc JobConfig
 		var status types.ComplianceResult
 		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
-
-			lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
-			if err != nil {
-				return nil, err
-			}
-			if len(lookupResource.Hits.Hits) > 0 {
-				resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
-			}
+			//
+			//lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
+			//if err != nil {
+			//	return nil, err
+			//}
+			//if len(lookupResource.Hits.Hits) > 0 {
+			//	resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
+			//}
 		}
 		if v, ok := recordValue["name"].(string); ok {
 			resourceName = v
