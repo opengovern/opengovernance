@@ -133,11 +133,13 @@ func (w *Worker) Run() error {
 			}
 
 			if commit {
+				w.logger.Info("commiting")
 				err := consumer.Commit(msg)
 				if err != nil {
 					w.logger.Error("failed to commit message", zap.Error(err))
 				}
 			}
+			w.logger.Info("going for the next job")
 		case _ = <-t.C:
 			w.logger.Info("still waiting for a job")
 			continue
