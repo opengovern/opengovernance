@@ -101,6 +101,12 @@ func (j *Job) Run(jc JobConfig) error {
 		return err
 	}
 
+	jc.logger.Info("Extracting and pushing to kafka",
+		zap.Uint("job_id", j.ID),
+		zap.Int("res_count", len(res.Data)),
+		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
+	)
+
 	for _, caller := range j.ExecutionPlan.Callers {
 		findings, err := j.ExtractFindings(caller, res, jc)
 		if err != nil {
@@ -123,6 +129,12 @@ func (j *Job) Run(jc JobConfig) error {
 		//	return err
 		//}
 	}
+	jc.logger.Info("Finished job",
+		zap.Uint("job_id", j.ID),
+		zap.String("query_id", j.ExecutionPlan.QueryID),
+		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
+		zap.Stringp("rc_id", j.ExecutionPlan.ResourceCollectionID),
+	)
 	return nil
 }
 
