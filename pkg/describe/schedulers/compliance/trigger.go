@@ -9,6 +9,7 @@ import (
 )
 
 func (s *JobScheduler) buildRunners(
+	parentJobID uint,
 	connectionID *string,
 	resourceCollectionID *string,
 	rootBenchmarkID string,
@@ -24,7 +25,7 @@ func (s *JobScheduler) buildRunners(
 	}
 
 	for _, child := range benchmark.Children {
-		childRunners, err := s.buildRunners(connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child)
+		childRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child)
 		if err != nil {
 			return nil, err
 		}
@@ -54,6 +55,7 @@ func (s *JobScheduler) buildRunners(
 			QueryID:              *policy.QueryID,
 			ConnectionID:         connectionID,
 			ResourceCollectionID: resourceCollectionID,
+			ParentJobID:          parentJobID,
 			StartedAt:            time.Time{},
 			RetryCount:           0,
 			Status:               runner.ComplianceRunnerCreated,
@@ -104,10 +106,20 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 		return 0, err
 	}
 
+	job := model.ComplianceJob{
+		BenchmarkID: benchmarkID,
+		Status:      model.ComplianceJobCreated,
+		IsStack:     false,
+	}
+	err = s.db.CreateComplianceJob(&job)
+	if err != nil {
+		return 0, err
+	}
+
 	var allRunners []*model.ComplianceRunner
 	for _, it := range assignments.Connections {
 		connection := it
-		runners, err := s.buildRunners(&connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
+		runners, err := s.buildRunners(job.ID, &connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
 		if err != nil {
 			return 0, err
 		}
@@ -116,7 +128,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 
 	for _, it := range assignments.ResourceCollections {
 		resourceCollection := it
-		runners, err := s.buildRunners(nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
+		runners, err := s.buildRunners(job.ID, nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
 		if err != nil {
 			return 0, err
 		}
@@ -124,19 +136,6 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 	}
 
 	err = s.db.CreateRunnerJobs(allRunners)
-	if err != nil {
-		return 0, err
-	}
-
-	job := model.ComplianceJob{
-		BenchmarkID: benchmarkID,
-		Status:      model.ComplianceJobCreated,
-		IsStack:     false,
-	}
-	for _, j := range allRunners {
-		job.RunnerIDs = append(job.RunnerIDs, int64(j.ID))
-	}
-	err = s.db.CreateComplianceJob(&job)
 	if err != nil {
 		return 0, err
 	}

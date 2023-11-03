@@ -91,3 +91,29 @@ func (db Database) ListComplianceRunnersWithStatus(status model.ComplianceJobSta
 
 	return jobs, nil
 }
+
+func (db Database) SetJobToRunnersInProgress() error {
+	tx := db.ORM.Exec(`
+UPDATE compliance_jobs j SET status = 'RUNNERS_IN_PROGRESS' WHERE status = 'CREATED' AND
+	(select count(*) from compliance_runners where parent_job_id = j.id) > 0 AND
+	(select count(*) from compliance_runners where parent_job_id = j.id and status IN ('CREATED', 'IN_PROGRESS')) > 0
+`)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListJobsToSummarize() ([]model.ComplianceJob, error) {
+	var jobs []model.ComplianceJob
+	tx := db.ORM.Raw(`
+SELECT * FROM compliance_jobs WHERE status = 'RUNNERS_IN_PROGRESS' AND
+	(select count(*) from compliance_runners where parent_job_id = j.id AND (status = 'SUCCEEDED' OR (status = 'FAILED' and retry_count >= 3))) > 0
+`).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}

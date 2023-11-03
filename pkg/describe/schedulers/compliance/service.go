@@ -41,6 +41,9 @@ func (s *JobScheduler) Run() {
 		s.RunPublisher()
 	})
 	utils.EnsureRunGoroutin(func() {
+		s.RunSummarizer()
+	})
+	utils.EnsureRunGoroutin(func() {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 	})
 }
@@ -69,6 +72,21 @@ func (s *JobScheduler) RunPublisher() {
 	for ; ; <-t.C {
 		if err := s.runPublisher(); err != nil {
 			s.logger.Error("failed to run compliance publisher", zap.Error(err))
+			ComplianceJobsCount.WithLabelValues("failure").Inc()
+			continue
+		}
+	}
+}
+
+func (s *JobScheduler) RunSummarizer() {
+	s.logger.Info("Scheduling compliance summarizer on a timer")
+
+	t := time.NewTicker(SummarizerSchedulingInterval)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		if err := s.runSummarizer(); err != nil {
+			s.logger.Error("failed to run compliance summarizer", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}

@@ -3,7 +3,6 @@ package model
 import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"
 )
@@ -21,7 +20,6 @@ const (
 type ComplianceJob struct {
 	gorm.Model
 	BenchmarkID    string
-	RunnerIDs      pq.Int64Array `gorm:"type:bigint[]"`
 	Status         ComplianceJobStatus
 	FailureMessage string
 	IsStack        bool
@@ -35,6 +33,7 @@ type ComplianceRunner struct {
 	QueryID              string
 	ConnectionID         *string
 	ResourceCollectionID *string
+	ParentJobID          uint
 
 	StartedAt      time.Time
 	RetryCount     int
