@@ -41,10 +41,14 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	bs := types2.BenchmarkSummary{
-		BenchmarkID:         j.BenchmarkID,
-		JobID:               j.ID,
-		EvaluatedAtEpoch:    j.CreatedAt.Unix(),
-		BenchmarkResult:     types2.Result{},
+		BenchmarkID:      j.BenchmarkID,
+		JobID:            j.ID,
+		EvaluatedAtEpoch: j.CreatedAt.Unix(),
+		BenchmarkResult: types2.Result{
+			QueryResult:    map[types.ComplianceResult]int{},
+			SeverityResult: map[types.FindingSeverity]int{},
+			SecurityScore:  0,
+		},
 		Connections:         map[string]types2.Result{},
 		ResourceCollections: map[string]types2.Result{},
 		ResourceTypes:       map[string]types2.Result{},
