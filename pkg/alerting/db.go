@@ -27,10 +27,9 @@ func (db Database) Initialize() error {
 	return nil
 }
 
-func (db Database) CreateTrigger(Time time.Time, eventType []byte, scope []byte, value int64, responseStatus int) error {
+func (db Database) CreateTrigger(Time time.Time, ruleID uint, value int64, responseStatus int) error {
 	trigger := Triggers{
-		EventType:      eventType,
-		Scope:          scope,
+		RuleID:         ruleID,
 		TriggeredAt:    Time,
 		Value:          value,
 		ResponseStatus: responseStatus,
@@ -128,8 +127,9 @@ func (db Database) GetAction(id uint) (Action, error) {
 	return action, nil
 }
 
-func (db Database) CreateAction(method string, url string, headers []byte, body string) (uint, error) {
+func (db Database) CreateAction(name, method string, url string, headers []byte, body string) (uint, error) {
 	action := Action{
+		Name:    name,
 		Method:  method,
 		Url:     url,
 		Headers: headers,
@@ -143,11 +143,14 @@ func (db Database) DeleteAction(actionId uint) error {
 	return db.orm.Model(&Action{}).Where("id = ?", actionId).Delete(&Action{}).Error
 }
 
-func (db Database) UpdateAction(id uint, headers *[]byte, url *string, body *string, method *string) error {
+func (db Database) UpdateAction(id uint, name *string, headers *[]byte, url *string, body *string, method *string) error {
 	inputs := Action{}
 
 	if headers != nil {
 		inputs.Headers = *headers
+	}
+	if name != nil {
+		inputs.Name = *name
 	}
 	if body != nil {
 		inputs.Body = *body

@@ -1,6 +1,7 @@
 package api
 
 type CreateActionReq struct {
+	Name    string            `json:"name"`
 	Method  string            `json:"method"`
 	Url     string            `json:"url"`
 	Headers map[string]string `json:"headers"`
@@ -9,6 +10,7 @@ type CreateActionReq struct {
 
 type Action struct {
 	Id      uint              `json:"id"`
+	Name    string            `json:"name"`
 	Method  string            `json:"method"`
 	Url     string            `json:"url"`
 	Headers map[string]string `json:"headers"`
@@ -16,6 +18,7 @@ type Action struct {
 }
 
 type UpdateActionRequest struct {
+	Name    *string           `json:"name"`
 	Method  *string           `json:"method"`
 	Url     *string           `json:"url"`
 	Headers map[string]string `json:"headers"`
@@ -28,11 +31,13 @@ type SlackRequest struct {
 }
 
 type SlackInputs struct {
+	Name        string `json:"name"`
 	SlackUrl    string `json:"slack_url"`
 	ChannelName string `json:"channel_name"`
 }
 
 type JiraInputs struct {
+	Name              string `json:"name"`
 	AtlassianDomain   string `json:"atlassian_domain"`
 	AtlassianApiToken string `json:"atlassian_api_token"`
 	Email             string `json:"email"`
