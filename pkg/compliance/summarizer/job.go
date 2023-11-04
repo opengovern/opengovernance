@@ -3,14 +3,11 @@ package summarizer
 import (
 	"context"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
-	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 	"time"
 )
@@ -22,13 +19,10 @@ type Job struct {
 }
 
 type JobConfig struct {
-	config           Config
-	logger           *zap.Logger
-	complianceClient client.ComplianceServiceClient
-	onboardClient    client2.OnboardServiceClient
-	steampipeConn    *steampipe.Database
-	esClient         kaytu.Client
-	kafkaProducer    *confluent_kafka.Producer
+	config        Config
+	logger        *zap.Logger
+	esClient      kaytu.Client
+	kafkaProducer *confluent_kafka.Producer
 }
 
 func (j *Job) Run(jc JobConfig) error {

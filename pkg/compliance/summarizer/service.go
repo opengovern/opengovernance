@@ -5,13 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -28,16 +24,12 @@ const (
 type Config struct {
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
-	Compliance            config.KaytuService
-	Onboard               config.KaytuService
-	Steampipe             config.Postgres
 	PrometheusPushAddress string
 }
 
 type Worker struct {
 	config        Config
 	logger        *zap.Logger
-	steampipeConn *steampipe.Database
 	esClient      kaytu.Client
 	kafkaProducer *kafka2.Producer
 }
@@ -47,20 +39,6 @@ func InitializeNewWorker(
 	logger *zap.Logger,
 	prometheusPushAddress string,
 ) (*Worker, error) {
-	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
-	if err != nil {
-		return nil, err
-	}
-	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
-	if err != nil {
-		return nil, err
-	}
-
-	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
-	if err != nil {
-		return nil, err
-	}
-
 	esClient, err := kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{config.ElasticSearch.Address},
 		Username:  &config.ElasticSearch.Username,
@@ -78,7 +56,6 @@ func InitializeNewWorker(
 	w := &Worker{
 		config:        config,
 		logger:        logger,
-		steampipeConn: steampipeConn,
 		esClient:      esClient,
 		kafkaProducer: producer,
 	}
@@ -167,13 +144,10 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 
 	w.logger.Info("running job", zap.String("job", string(msg.Value)))
 	err = job.Run(JobConfig{
-		config:           w.config,
-		logger:           w.logger,
-		complianceClient: complianceClient.NewComplianceClient(w.config.Compliance.BaseURL),
-		onboardClient:    client.NewOnboardServiceClient(w.config.Onboard.BaseURL, nil),
-		steampipeConn:    w.steampipeConn,
-		esClient:         w.esClient,
-		kafkaProducer:    w.kafkaProducer,
+		config:        w.config,
+		logger:        w.logger,
+		esClient:      w.esClient,
+		kafkaProducer: w.kafkaProducer,
 	})
 	if err != nil {
 		return true, false, err
@@ -183,8 +157,6 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 }
 
 func (w *Worker) Stop() error {
-	w.steampipeConn.Conn().Close()
-	steampipe.StopSteampipeService(w.logger)
 	return nil
 }
 
