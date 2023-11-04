@@ -15,6 +15,8 @@ definitions:
         type: integer
       method:
         type: string
+      name:
+        type: string
       url:
         type: string
     type: object
@@ -48,6 +50,8 @@ definitions:
           type: string
         type: object
       method:
+        type: string
+      name:
         type: string
       url:
         type: string
@@ -86,6 +90,8 @@ definitions:
       email:
         type: string
       issue_type_id:
+        type: string
+      name:
         type: string
       project_id:
         type: string
@@ -156,17 +162,19 @@ definitions:
     properties:
       channel_name:
         type: string
+      name:
+        type: string
       slack_url:
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers:
     properties:
-      event_type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
+      action:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action'
       response_status:
         type: integer
-      scope:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
+      rule:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule'
       triggered_at:
         type: string
       value:
@@ -181,6 +189,8 @@ definitions:
           type: string
         type: object
       method:
+        type: string
+      name:
         type: string
       url:
         type: string
@@ -667,33 +677,23 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
-      ID:
-        description: Finding ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
-        type: string
       benchmarkID:
-        description: Benchmark ID
         example: azure_cis_v140
         type: string
       complianceJobID:
-        description: Compliance job ID
         example: 1
         type: integer
       connectionID:
-        description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
-        description: Cloud provider
         example: Azure
       evaluatedAt:
-        description: Timestamp of the policy evaluation
         example: 1589395200
         type: integer
       evaluator:
-        description: Evaluator name
         example: steampipe-v0.5
         type: string
       parentBenchmarks:
@@ -701,7 +701,6 @@ definitions:
           type: string
         type: array
       policyID:
-        description: Policy ID
         example: azure_cis_v140_7_5
         type: string
       policyTitle:
@@ -715,40 +714,32 @@ definitions:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       reason:
-        description: Reason for the policy evaluation result
         example: The VM is not using managed disks
         type: string
       resourceCollection:
         description: Resource collection
         type: string
       resourceID:
-        description: Resource ID
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
       resourceLocation:
-        description: Resource location
         example: eastus
         type: string
       resourceName:
-        description: Resource name
         example: vm-1
         type: string
       resourceType:
-        description: Resource type
         example: Microsoft.Compute/virtualMachines
         type: string
       result:
         allOf:
         - $ref: '#/definitions/types.ComplianceResult'
-        description: Compliance result
         example: alarm
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
-        description: Compliance severity
         example: low
       stateActive:
-        description: Whether the policy is active or not
         example: true
         type: boolean
     type: object
