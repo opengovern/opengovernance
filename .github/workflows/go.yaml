@@ -52,6 +52,7 @@ jobs:
         checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
         compliance-report-worker: ${{ steps.build_services.outputs.compliance-report-worker }}
         compliance-service: ${{ steps.build_services.outputs.compliance-service }}
+        compliance-summarizer: ${{ steps.build_services.outputs.compliance-summarizer }}
         describe-scheduler: ${{ steps.build_services.outputs.describe-scheduler }}
         hopper: ${{ steps.build_services.outputs.hopper }}
         reporter: ${{ steps.build_services.outputs.reporter }}
@@ -278,6 +279,44 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceReportWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+          context: .
+  deploy-compliance-summarizer:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - tag
+    permissions:
+      id-token: write
+      contents: read
+    environment: docker
+    if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
+          file: docker/ComplianceSummarizerDockerfile
           build-args: |
             PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
           context: .
