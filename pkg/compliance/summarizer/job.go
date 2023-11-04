@@ -40,7 +40,7 @@ func (j *Job) Run(jc JobConfig) error {
 	)
 
 	paginator, err := es.NewFindingPaginator(jc.esClient, types.FindingsIndex, []kaytu.BoolFilter{
-		kaytu.NewTermFilter("parentBenchmark", j.BenchmarkID),
+		kaytu.NewTermFilter("parentBenchmarks", j.BenchmarkID),
 	}, nil)
 	if err != nil {
 		return err
