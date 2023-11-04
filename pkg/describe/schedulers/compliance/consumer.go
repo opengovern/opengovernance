@@ -58,10 +58,10 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 				s.logger.Error("Failed committing message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateRunnerJobsTimedOut()
-			if err != nil {
-				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
-			}
+			//err := s.db.UpdateRunnerJobsTimedOut()
+			//if err != nil {
+			//	s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
+			//}
 		}
 	}
 }
