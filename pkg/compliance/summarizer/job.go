@@ -45,10 +45,10 @@ func (j *Job) Run(jc JobConfig) error {
 		JobID:               j.ID,
 		EvaluatedAtEpoch:    j.CreatedAt.Unix(),
 		BenchmarkResult:     types2.Result{},
-		Connections:         nil,
-		ResourceCollections: nil,
-		ResourceTypes:       nil,
-		Policies:            nil,
+		Connections:         map[string]types2.Result{},
+		ResourceCollections: map[string]types2.Result{},
+		ResourceTypes:       map[string]types2.Result{},
+		Policies:            map[string]types2.PolicyResult{},
 	}
 
 	for paginator.HasNext() {
