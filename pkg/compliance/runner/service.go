@@ -92,7 +92,7 @@ func (w *Worker) Run() error {
 
 	ctx := context.Background()
 
-	consumer, err := kafka.NewTopicConsumerWithRebalanceCB(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup, func(consumer *kafka2.Consumer, event kafka2.Event) error {
+	consumer, err := kafka.NewTopicConsumerWithRebalanceCB(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup, true, func(consumer *kafka2.Consumer, event kafka2.Event) error {
 		w.logger.Info(fmt.Sprintf("Consumer: %v, Event: %v, EventType: %s", consumer, event, reflect.TypeOf(event).String()))
 		if v, ok := event.(kafka2.AssignedPartitions); ok {
 			for _, partition := range v.Partitions {
@@ -109,7 +109,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	msgs := consumer.Consume(ctx, w.logger)
+	msgs := consumer.Consume(ctx, w.logger, 1)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 

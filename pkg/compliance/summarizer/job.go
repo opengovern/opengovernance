@@ -72,5 +72,10 @@ func (j *Job) Run(jc JobConfig) error {
 	if err != nil {
 		return err
 	}
+
+	jc.logger.Info("Finished summarizer",
+		zap.Uint("job_id", j.ID),
+		zap.String("benchmark_id", j.BenchmarkID),
+	)
 	return nil
 }

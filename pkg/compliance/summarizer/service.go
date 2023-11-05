@@ -67,11 +67,11 @@ func (w *Worker) Run() error {
 	w.logger.Info("starting")
 
 	ctx := context.Background()
-	consumer, err := kafka.NewTopicConsumer(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup)
+	consumer, err := kafka.NewTopicConsumer(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup, true)
 	if err != nil {
 		return err
 	}
-	msgs := consumer.Consume(ctx, w.logger)
+	msgs := consumer.Consume(ctx, w.logger, 1)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 
@@ -85,20 +85,9 @@ func (w *Worker) Run() error {
 			w.logger.Info("received a job")
 			t.Reset(JobTimeoutCheckInterval)
 
-			commit, requeue, err := w.ProcessMessage(msg)
+			err := w.ProcessMessage(msg)
 			if err != nil {
 				w.logger.Error("failed to process message", zap.Error(err))
-			}
-
-			if requeue {
-				//TODO
-			}
-
-			if commit {
-				err := consumer.Commit(msg)
-				if err != nil {
-					w.logger.Error("failed to commit message", zap.Error(err))
-				}
 			}
 		case _ = <-t.C:
 			w.logger.Info("still waiting for a job")
@@ -107,13 +96,13 @@ func (w *Worker) Run() error {
 	}
 }
 
-func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool, err error) {
+func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 	startTime := time.Now()
 
 	var job Job
-	err = json.Unmarshal(msg.Value, &job)
+	err := json.Unmarshal(msg.Value, &job)
 	if err != nil {
-		return true, false, err
+		return err
 	}
 
 	defer func() {
@@ -150,10 +139,10 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 		kafkaProducer: w.kafkaProducer,
 	})
 	if err != nil {
-		return true, false, err
+		return err
 	}
 
-	return true, false, nil
+	return nil
 }
 
 func (w *Worker) Stop() error {

@@ -74,12 +74,12 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
 	ctx := context.Background()
-	consumer, err := kafka.NewTopicConsumer(ctx, s.kafkaServers, "kaytu-describe-results-queue", "describe-receiver")
+	consumer, err := kafka.NewTopicConsumer(ctx, s.kafkaServers, "kaytu-describe-results-queue", "describe-receiver", false)
 	if err != nil {
 		return err
 	}
 
-	msgs := consumer.Consume(ctx, s.logger)
+	msgs := consumer.Consume(ctx, s.logger, 100)
 
 	//msgs, err := s.describeJobResultQueue.Consume()
 	//if err != nil {
