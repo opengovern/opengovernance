@@ -106,5 +106,5 @@ func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
 		return err
 	}
 
-	return s.db.UpdateSummarizerJob(job.ID, summarizer.ComplianceSummarizerInProgress, job.CreatedAt, err.Error())
+	return s.db.UpdateSummarizerJob(job.ID, summarizer.ComplianceSummarizerInProgress, job.CreatedAt, "")
 }
