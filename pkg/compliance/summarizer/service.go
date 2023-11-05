@@ -139,6 +139,7 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 		kafkaProducer: w.kafkaProducer,
 	})
 	if err != nil {
+		w.logger.Info("failure while running job", zap.Error(err))
 		return err
 	}
 
