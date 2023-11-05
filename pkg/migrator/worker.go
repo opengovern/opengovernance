@@ -1,12 +1,10 @@
 package migrator
 
 import (
-	"crypto/tls"
 	"fmt"
-	"net/http"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"os"
 
-	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
@@ -18,7 +16,7 @@ import (
 
 type Worker struct {
 	db             db.Database
-	elastic        elasticsearchv7.Config
+	elastic        kaytu.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
 	metadataClient client.MetadataServiceClient
@@ -58,16 +56,11 @@ func InitializeWorker(
 	logger.Info("Connected to the postgres database", zap.String("database", conf.PostgreSQL.DB))
 
 	w.pusher = push.New(prometheusPushAddress, "migrator")
-	w.elastic = elasticsearchv7.Config{
+	w.elastic, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{conf.ElasticSearch.Address},
-		Username:  conf.ElasticSearch.Username,
-		Password:  conf.ElasticSearch.Password,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+		Username:  &conf.ElasticSearch.Username,
+		Password:  &conf.ElasticSearch.Password,
+	})
 	if err != nil {
 		return nil, err
 	}

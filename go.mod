@@ -21,8 +21,6 @@ require (
 	github.com/brpaz/echozap v1.1.3
 	github.com/confluentinc/confluent-kafka-go/v2 v2.1.1
 	github.com/coreos/go-oidc/v3 v3.1.0
-	github.com/elastic/go-elasticsearch/v7 v7.17.10
-	github.com/elastic/go-elasticsearch/v8 v8.10.0
 	github.com/envoyproxy/go-control-plane v0.11.1
 	github.com/fluxcd/helm-controller/api v0.36.1
 	github.com/fluxcd/pkg/apis/meta v1.1.2
@@ -40,7 +38,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/kaytu-io/kaytu-aws-describer v0.15.1
 	github.com/kaytu-io/kaytu-azure-describer v0.11.1
-	github.com/kaytu-io/kaytu-util v0.0.0-20231105065502-1dab72a39017
+	github.com/kaytu-io/kaytu-util v0.0.0-20231105110331-bb2871e2d470
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -48,6 +46,7 @@ require (
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
 	github.com/microsoftgraph/msgraph-sdk-go v0.37.0
+	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/projectcontour/contour v1.22.0
 	github.com/prometheus/client_golang v1.16.0
@@ -362,7 +361,6 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/eko/gocache/v3 v3.1.2 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.0.0-20230329154755-1a3c63de0db6 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect

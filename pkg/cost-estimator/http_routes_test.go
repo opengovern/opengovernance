@@ -7,10 +7,9 @@ import (
 	"fmt"
 	_ "fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
-	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	azureCompute "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
+	"github.com/opensearch-project/opensearch-go/v2"
 	"io"
 	"net/http"
 	"strings"
@@ -135,12 +134,11 @@ func giveProperCostTime(Items []ItemsStr, t *testing.T, OSType string) ItemsStr 
 //	}
 
 func TestCreateAzureElastic(t *testing.T) {
-	esCnfig := elasticsearch.Config{Addresses: []string{
+	esCnfig := opensearch.Config{Addresses: []string{
 		"http://localhost:9200",
-	},
-	}
+	}}
 
-	es, err := elasticsearch.NewClient(esCnfig)
+	es, err := opensearch.NewClient(esCnfig)
 	if err != nil {
 		t.Errorf("error creating the client : %v ", err)
 	}
@@ -159,12 +157,12 @@ func TestCreateAzureElastic(t *testing.T) {
 }
 
 func TestSetAzureElastic(t *testing.T) {
-	esCnfig := elasticsearchv7.Config{Addresses: []string{
+	esCnfig := opensearch.Config{Addresses: []string{
 		"http://localhost:9200",
 	},
 	}
 
-	es, err := elasticsearchv7.NewClient(esCnfig)
+	es, err := opensearch.NewClient(esCnfig)
 	if err != nil {
 		t.Errorf("error creating the client : %v ", err)
 	}
@@ -196,12 +194,12 @@ func TestSetAzureElastic(t *testing.T) {
 }
 
 func TestGetAzureElastic(t *testing.T) {
-	esCnfig := elasticsearch.Config{Addresses: []string{
+	esCnfig := opensearch.Config{Addresses: []string{
 		"http://localhost:9200",
 	},
 	}
 
-	es, err := elasticsearch.NewClient(esCnfig)
+	es, err := opensearch.NewClient(esCnfig)
 	if err != nil {
 		t.Errorf("error creating the client : %v ", err)
 	}
