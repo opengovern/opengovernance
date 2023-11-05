@@ -40,6 +40,8 @@ func (j *Job) Run(jc JobConfig) error {
 		return err
 	}
 
+	jc.logger.Info("Paginator ready")
+
 	bs := types2.BenchmarkSummary{
 		BenchmarkID:      j.BenchmarkID,
 		JobID:            j.ID,
@@ -56,17 +58,26 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	for paginator.HasNext() {
+		jc.logger.Info("Next page")
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
 			return err
 		}
 
+		jc.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			bs.AddFinding(f)
 		}
 	}
 
+	jc.logger.Info("Starting to summarizer",
+		zap.Uint("job_id", j.ID),
+		zap.String("benchmark_id", j.BenchmarkID),
+	)
+
 	bs.Summarize()
+
+	jc.logger.Info("Summarize done")
 
 	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, []kafka.Doc{bs}, jc.logger, nil)
 	if err != nil {
