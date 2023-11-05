@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"gorm.io/gorm"
 	"time"
 )
@@ -54,4 +55,16 @@ func (cr *ComplianceRunner) SetCallers(callers []runner.Caller) error {
 	}
 	cr.Callers = string(b)
 	return nil
+}
+
+type ComplianceSummarizer struct {
+	gorm.Model
+
+	BenchmarkID string
+	ParentJobID uint
+
+	StartedAt      time.Time
+	RetryCount     int
+	Status         summarizer.ComplianceSummarizerStatus
+	FailureMessage string
 }

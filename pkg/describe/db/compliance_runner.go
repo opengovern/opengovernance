@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"gorm.io/gorm"
+	"time"
 )
 
 func (db Database) CreateRunnerJobs(runners []*model.ComplianceRunner) error {
@@ -41,12 +42,13 @@ func (db Database) RetryFailedRunners() error {
 }
 
 func (db Database) UpdateRunnerJob(
-	id uint, status runner.ComplianceRunnerStatus, failureMsg string) error {
+	id uint, status runner.ComplianceRunnerStatus, startedAt time.Time, failureMsg string) error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
 		Where("id = ?", id).
 		Updates(model.ComplianceRunner{
 			Status:         status,
+			StartedAt:      startedAt,
 			FailureMessage: failureMsg,
 		})
 	if tx.Error != nil {
@@ -76,5 +78,20 @@ func (db Database) ListRunnersWithID(ids []int64) ([]model.ComplianceRunner, err
 		return nil, tx.Error
 	}
 
+	return jobs, nil
+}
+
+func (db Database) ListFailedRunnersWithParentID(id uint) ([]model.ComplianceRunner, error) {
+	var jobs []model.ComplianceRunner
+	tx := db.ORM.Model(&model.ComplianceRunner{}).
+		Where("status = ?", runner.ComplianceRunnerFailed).
+		Where("parent_job_id = ?", id).
+		Find(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
 	return jobs, nil
 }

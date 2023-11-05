@@ -51,18 +51,18 @@ func (s *JobScheduler) runPublisher() error {
 
 			jobJson, err := json.Marshal(job)
 			if err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, err.Error())
+				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, err.Error())
 				return err
 			}
 
 			msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", runner.JobQueue, kafka.PartitionAny)
 			_, err = kafka2.SyncSend(s.logger, s.kafkaProducer, []*kafka.Message{msg}, nil)
 			if err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, err.Error())
+				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, err.Error())
 				return err
 			}
 
-			_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerInProgress, "")
+			_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerInProgress, job.CreatedAt, "")
 		}
 	}
 

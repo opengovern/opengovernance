@@ -117,3 +117,16 @@ SELECT * FROM compliance_jobs j WHERE status = 'RUNNERS_IN_PROGRESS' AND
 
 	return jobs, nil
 }
+
+func (db Database) ListJobsToFinish() ([]model.ComplianceJob, error) {
+	var jobs []model.ComplianceJob
+	tx := db.ORM.Raw(`
+SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
+	(select count(*) from compliance_summarizers where parent_job_id = j.id AND (status = 'SUCCEEDED' OR (status = 'FAILED' and retry_count >= 3))) > 0
+`).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
