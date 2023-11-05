@@ -46,6 +46,9 @@ func (s *JobScheduler) Run() {
 	utils.EnsureRunGoroutin(func() {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 	})
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("ComplianceSummarizerResult consumer exited", zap.Error(s.RunComplianceSummarizerResultsConsumer()))
+	})
 }
 
 func (s *JobScheduler) RunScheduler() {
