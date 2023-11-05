@@ -13,16 +13,11 @@ var (
 	KafkaService = os.Getenv("KAFKA_SERVICE")
 	KafkaTopic   = os.Getenv("KAFKA_TOPIC")
 
-	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
-	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
-	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
-	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
-	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
-	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
-
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
+
+	WorkspaceClientURL = os.Getenv("WORKSPACE_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -42,13 +37,7 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
-		PostgreSQLHost,
-		PostgreSQLPort,
-		PostgreSQLDb,
-		PostgreSQLUser,
-		PostgreSQLPassword,
-		PostgreSQLSSLMode,
-		ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
+		WorkspaceClientURL, ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
 		logger,
 	)
 	if err != nil {

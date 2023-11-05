@@ -4,27 +4,25 @@ import (
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"strings"
 )
 
 type HttpHandler struct {
-	db     db.Database
 	client kaytu.Client
 	//awsClient   kaytuAws.Client
-	azureClient   kaytuAzure.Client
-	kafkaProducer *confluent_kafka.Producer
-	kafkaTopic    string
+	azureClient     kaytuAzure.Client
+	kafkaProducer   *confluent_kafka.Producer
+	kafkaTopic      string
+	workspaceClient client.CostEstimatorPricesClient
 
 	logger *zap.Logger
 }
 
 func InitializeHttpHandler(
-	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
-	elasticSearchPassword, elasticSearchUsername, elasticSearchAddress string,
+	workspaceClientURL, elasticSearchPassword, elasticSearchUsername, elasticSearchAddress string,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
 	h = &HttpHandler{}
@@ -49,27 +47,8 @@ func InitializeHttpHandler(
 	}
 	h.logger.Info("Initialized elasticSearch", zap.String("client", fmt.Sprintf("%v", h.client)))
 
-	cfg := postgres.Config{
-		Host:    postgresHost,
-		Port:    postgresPort,
-		User:    postgresUsername,
-		Passwd:  postgresPassword,
-		DB:      postgresDb,
-		SSLMode: postgresSSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new postgres client: %w", err)
-	}
-	h.logger.Info("Connected to the postgres database")
-
-	db := db.NewDatabase(orm)
-	err = db.Initialize()
-	if err != nil {
-		return nil, err
-	}
-	h.db = db
-	h.logger.Info("Initialized postgres database")
+	h.workspaceClient = client.NewCostEstimatorClient(workspaceClientURL)
+	h.logger.Info("Workspace client initialized")
 
 	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
 	if err != nil {

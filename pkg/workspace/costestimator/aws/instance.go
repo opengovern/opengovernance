@@ -2,38 +2,38 @@ package aws
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"strings"
 )
 
 // EC2InstanceCostByResource time interval (Hrs)
-func EC2InstanceCostByResource(db db.Database, instance es.EC2InstanceResponse, timeInterval int64) (float64, error) {
+func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2InstanceResponse, timeInterval int64) (float64, error) {
 	var cost float64
 	description := instance.Hits.Hits[0].Source.Description
 	operatingSystem, err := getInstanceOperatingSystem(instance)
 	if err != nil {
 		return 0, err
 	}
-	instanceCost, err := db.FindEC2InstanceCost(instance.Hits.Hits[0].Source.Region, "Used", string(description.Instance.InstanceType),
+	instanceCost, err := db.FindEC2InstancePrice(instance.Hits.Hits[0].Source.Region, "Used", string(description.Instance.InstanceType),
 		getTenancy(string(description.Instance.Placement.Tenancy)), operatingSystem, "NA", "Hrs")
 	if err != nil {
 		return 0, err
 	}
-	cost += instanceCost.Cost * float64(timeInterval)
+	cost += instanceCost.Price * float64(timeInterval)
 
 	for _, volume := range description.LaunchTemplateData.BlockDeviceMappings {
-		volumeCost, err := db.FindEC2InstanceStorageCost(instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType))
+		volumeCost, err := db.FindEC2InstanceStoragePrice(instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType))
 		if err != nil {
 			return 0, err
 		}
-		cost += volumeCost.Cost * float64(*volume.Ebs.VolumeSize) // Monthly
+		cost += volumeCost.Price * float64(*volume.Ebs.VolumeSize) // Monthly
 		if volume.Ebs.VolumeType == "io1" || volume.Ebs.VolumeType == "io2" {
-			iopsCost, err := db.FindEC2InstanceSystemOperationCost(instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType), "EBS:VolumeP-IOPS")
+			iopsCost, err := db.FindEC2InstanceSystemOperationPrice(instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType), "EBS:VolumeP-IOPS")
 			if err != nil {
 				return 0, err
 			}
-			cost += iopsCost.Cost * float64(*volume.Ebs.Iops) // Monthly
+			cost += iopsCost.Price * float64(*volume.Ebs.Iops) // Monthly
 		}
 	}
 
@@ -42,21 +42,21 @@ func EC2InstanceCostByResource(db db.Database, instance es.EC2InstanceResponse, 
 			region := strings.ToUpper(strings.Split(instance.Hits.Hits[0].Source.Region, "-")[0])
 			instType := strings.Split(string(description.Instance.InstanceType), ".")[0]
 			usageType := fmt.Sprintf("%s-CPUCredits:%s", region, instType)
-			cpuCreditsCost, err := db.FindEC2CpuCreditsCost(instance.Hits.Hits[0].Source.Region, operatingSystem, usageType, "vCPU-Hours")
+			cpuCreditsCost, err := db.FindEC2CpuCreditsPrice(instance.Hits.Hits[0].Source.Region, operatingSystem, usageType, "vCPU-Hours")
 			if err != nil {
 				return 0, err
 			}
-			cost += cpuCreditsCost.Cost * float64(timeInterval)
+			cost += cpuCreditsCost.Price * float64(timeInterval)
 		}
 	}
 
 	if description.LaunchTemplateData.Monitoring.Enabled != nil {
 		if *description.LaunchTemplateData.Monitoring.Enabled {
-			cloudWatch, err := db.FindAmazonCloudWatchCost(instance.Hits.Hits[0].Source.Region, 0, "Metrics")
+			cloudWatch, err := db.FindAmazonCloudWatchPrice(instance.Hits.Hits[0].Source.Region, 0, "Metrics")
 			if err != nil {
 				return 0, err
 			}
-			cost += cloudWatch.Cost * 7 // Monthly, TODO: Change this default metrics number
+			cost += cloudWatch.Price * 7 // Monthly, TODO: Change this default metrics number
 		}
 	}
 
@@ -64,11 +64,11 @@ func EC2InstanceCostByResource(db db.Database, instance es.EC2InstanceResponse, 
 		if *description.LaunchTemplateData.EbsOptimized {
 			region := strings.ToUpper(strings.Split(instance.Hits.Hits[0].Source.Region, "-")[0])
 			usageType := fmt.Sprintf("%s-EBSOptimized:%s", region, string(description.Instance.InstanceType))
-			ebsCost, err := db.FindEbsOptimizedCost(instance.Hits.Hits[0].Source.Region, string(description.Instance.InstanceType), usageType, "Hrs")
+			ebsCost, err := db.FindEbsOptimizedPrice(instance.Hits.Hits[0].Source.Region, string(description.Instance.InstanceType), usageType, "Hrs")
 			if err != nil {
 				return 0, err
 			}
-			cost += ebsCost.Cost * float64(timeInterval)
+			cost += ebsCost.Price * float64(timeInterval)
 		}
 	}
 

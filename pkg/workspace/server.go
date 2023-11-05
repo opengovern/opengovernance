@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -58,15 +59,16 @@ var (
 )
 
 type Server struct {
-	logger     *zap.Logger
-	e          *echo.Echo
-	cfg        *Config
-	db         *Database
-	authClient authclient.AuthServiceClient
-	kubeClient k8sclient.Client // the kubernetes client
-	rdb        *redis.Client
-	cache      *cache.Cache
-	awsConfig  aws.Config
+	logger          *zap.Logger
+	e               *echo.Echo
+	cfg             *Config
+	db              *Database
+	costEstimatorDb *db2.CostEstimatorDatabase
+	authClient      authclient.AuthServiceClient
+	kubeClient      k8sclient.Client // the kubernetes client
+	rdb             *redis.Client
+	cache           *cache.Cache
+	awsConfig       aws.Config
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -85,6 +87,12 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("new database: %w", err)
 	}
 	s.db = db
+
+	costEstimatorDb, err := db2.NewCostEstimatorDatabase(cfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new cost estimator database: %w", err)
+	}
+	s.costEstimatorDb = costEstimatorDb
 
 	kubeClient, err := s.newKubeClient()
 	if err != nil {
@@ -149,6 +157,9 @@ func (s *Server) Register(e *echo.Echo) {
 	organizationGroup := v1Group.Group("/organization")
 	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
+
+	costEstimatorGroup := v1Group.Group("/cost_estimator")
+	costEstimatorGroup.GET("/ec2_instance/:interval", httpserver2.AuthorizeHandler(s.GetEC2InstancePrice, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
