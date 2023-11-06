@@ -2,12 +2,34 @@ package runner
 
 import (
 	"fmt"
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"go.uber.org/zap"
 )
 
-func (j *Job) ExtractFindings(caller Caller, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
+
+	queryResourceType := ""
+	if len(query.ListOfTables) == 1 {
+		switch query.Connector {
+		case source.CloudAWS.String():
+			queryResourceType = awsSteampipe.ExtractResourceType(query.ListOfTables[0])
+		case source.CloudAzure.String():
+			queryResourceType = azureSteampipe.ExtractResourceType(query.ListOfTables[0])
+		default:
+			if queryResourceType == "" {
+				queryResourceType = awsSteampipe.ExtractResourceType(query.ListOfTables[0])
+			}
+			if queryResourceType == "" {
+				queryResourceType = azureSteampipe.ExtractResourceType(query.ListOfTables[0])
+			}
+		}
+	}
 
 	for _, record := range res.Data {
 		if len(record) != len(res.Headers) {
@@ -18,7 +40,7 @@ func (j *Job) ExtractFindings(caller Caller, res *steampipe.Result, jc JobConfig
 			value := record[idx]
 			recordValue[header] = value
 		}
-		resourceType := ""
+		resourceType := queryResourceType
 
 		var resourceID, resourceName, resourceLocation, reason string
 		var status types.ComplianceResult
