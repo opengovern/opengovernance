@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -12,16 +11,8 @@ type CostEstimatorDatabase struct {
 	orm *gorm.DB
 }
 
-func NewCostEstimatorDatabase(settings *workspace.Config, logger *zap.Logger) (*CostEstimatorDatabase, error) {
-	cfg := postgres.Config{
-		Host:    settings.Host,
-		Port:    settings.Port,
-		User:    settings.User,
-		Passwd:  settings.Password,
-		DB:      settings.CostEstimatorDBName,
-		SSLMode: settings.SSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
+func NewCostEstimatorDatabase(settings *postgres.Config, logger *zap.Logger) (*CostEstimatorDatabase, error) {
+	orm, err := postgres.NewClient(settings, logger)
 	if err != nil {
 		return nil, fmt.Errorf("new cost estimator postgres client: %w", err)
 	}
