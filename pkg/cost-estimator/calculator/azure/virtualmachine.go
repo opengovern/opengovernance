@@ -1,9 +1,10 @@
-package calculator
+package azure
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"io"
 	"net/http"
 	"strings"
@@ -40,7 +41,7 @@ func VirtualMachineCostEstimator(OSType *armcompute.OperatingSystemTypes, armReg
 		return 0, fmt.Errorf("error in read the response : %v ", err)
 	}
 
-	var response AzureCostStr
+	var response es.AzureCostStr
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
 		return 0, fmt.Errorf("error in unmarshalling the response : %v ", err)
@@ -54,9 +55,9 @@ func VirtualMachineCostEstimator(OSType *armcompute.OperatingSystemTypes, armReg
 	return item.RetailPrice, nil
 }
 
-func giveProperCostTime(Items []ItemsStr, OSType string) (ItemsStr, error) {
+func giveProperCostTime(Items []es.ItemsStr, OSType string) (es.ItemsStr, error) {
 	newTime := 1
-	var newItem ItemsStr
+	var newItem es.ItemsStr
 	osTypeCheckWindows := true
 	if OSType == "Linux" {
 		osTypeCheckWindows = false
@@ -78,7 +79,7 @@ func giveProperCostTime(Items []ItemsStr, OSType string) (ItemsStr, error) {
 
 		timeP, err := time.Parse(time.RFC3339, item.EffectiveStartDate)
 		if err != nil {
-			return ItemsStr{}, fmt.Errorf("error in parsing time : %v ", err)
+			return es.ItemsStr{}, fmt.Errorf("error in parsing time : %v ", err)
 		}
 
 		if timeP.Year() > newTime {

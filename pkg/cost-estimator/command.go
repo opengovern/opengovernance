@@ -10,9 +10,14 @@ import (
 )
 
 var (
+	KafkaService = os.Getenv("KAFKA_SERVICE")
+	KafkaTopic   = os.Getenv("KAFKA_TOPIC")
+
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
+
+	WorkspaceClientURL = os.Getenv("WORKSPACE_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -32,7 +37,7 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
-		ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
+		WorkspaceClientURL, ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
 		logger,
 	)
 	if err != nil {

@@ -2,26 +2,33 @@ package cost_estimator
 
 import (
 	"fmt"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
+	"strings"
 )
 
 type HttpHandler struct {
 	client kaytu.Client
 	//awsClient   kaytuAws.Client
-	azureClient kaytuAzure.Client
+	azureClient     kaytuAzure.Client
+	kafkaProducer   *confluent_kafka.Producer
+	kafkaTopic      string
+	workspaceClient client.CostEstimatorPricesClient
 
 	logger *zap.Logger
 }
 
 func InitializeHttpHandler(
-	elasticSearchPassword, elasticSearchUsername, elasticSearchAddress string,
+	workspaceClientURL, elasticSearchPassword, elasticSearchUsername, elasticSearchAddress string,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
 	h = &HttpHandler{}
+	h.logger = logger
 
-	fmt.Println("Initializing http handler")
+	h.logger.Info("Initializing http handler")
 
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
@@ -38,9 +45,28 @@ func InitializeHttpHandler(
 	h.azureClient = kaytuAzure.Client{
 		Client: h.client,
 	}
-	fmt.Println("Initialized elasticSearch : ", h.client)
+	h.logger.Info("Initialized elasticSearch", zap.String("client", fmt.Sprintf("%v", h.client)))
 
-	h.logger = logger
+	h.workspaceClient = client.NewCostEstimatorClient(workspaceClientURL)
+	h.logger.Info("Workspace client initialized")
+
+	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+	h.kafkaProducer = kafkaProducer
+	h.kafkaTopic = KafkaTopic
 
 	return h, nil
+}
+
+func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
+	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
+		"bootstrap.servers":            strings.Join(brokers, ","),
+		"linger.ms":                    100,
+		"compression.type":             "lz4",
+		"message.timeout.ms":           10000,
+		"queue.buffering.max.messages": 100000,
+		"message.max.bytes":            104857600,
+	})
 }

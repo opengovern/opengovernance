@@ -1,4 +1,4 @@
-package calculator
+package es
 
 type ItemsStr struct {
 	CurrencyCode         string
@@ -22,11 +22,26 @@ type ItemsStr struct {
 	IsPrimaryMeterRegion bool
 	ArmSkuName           string
 }
+
 type AzureCostStr struct {
 	BillingCurrency    string
 	CustomerEntityId   string
 	CustomerEntityType string
 	Items              []ItemsStr
-	NextPageLink       string
+	NextPageLink       *string
 	Count              int
+}
+
+func (i ItemsStr) KeysAndIndex() ([]string, string) {
+	if i.ServiceName == "Virtual Machines" && i.Type == "Consumption" && i.ServiceFamily == "Compute" {
+		return []string{
+			i.ServiceName,
+			i.Type,
+			i.ServiceFamily,
+			i.ArmSkuName,
+			i.ArmRegionName,
+		}, "azure_cost_table"
+	} else {
+		return []string{}, "azure_cost_table"
+	}
 }
