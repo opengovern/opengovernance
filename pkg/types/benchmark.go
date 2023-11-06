@@ -3,7 +3,6 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -41,7 +40,6 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.ResourceID,
 		r.ConnectionID,
 		r.PolicyID,
-		strconv.FormatInt(r.EvaluatedAt, 10),
 	}
 	if r.ResourceCollection != nil {
 		keys = append(keys, *r.ResourceCollection)
