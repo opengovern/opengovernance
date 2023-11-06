@@ -1,20 +1,19 @@
 package cost_estimator
 
 import (
-	azureCompute "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/calculator/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 )
 
 func GetComputeVirtualMachineCost(h *HttpHandler, resourceId string, timeInterval int) (float64, error) {
-	var resource azureCompute.ComputeVirtualMachine
-	//err := h.GetResource("Microsoft.Compute/virtualMachines", resourceId, &resource)
-	//if err != nil {
-	//	return 0, err
-	//}
+	resource, err := es.GetMicrosoftVirtualMachine(h.client, resourceId)
+	if err != nil {
+		return 0, err
+	}
 
-	OSType := resource.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
-	location := resource.Description.VirtualMachine.Location
-	VMSize := resource.Description.VirtualMachine.Properties.HardwareProfile.VMSize
+	OSType := resource.Hits.Hits[0].Source.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
+	location := resource.Hits.Hits[0].Source.Description.VirtualMachine.Location
+	VMSize := resource.Hits.Hits[0].Source.Description.VirtualMachine.Properties.HardwareProfile.VMSize
 	cost, err := azure.VirtualMachineCostEstimator(OSType, location, VMSize)
 	if err != nil {
 		return 0, err
