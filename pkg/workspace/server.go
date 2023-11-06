@@ -164,6 +164,7 @@ func (s *Server) Register(e *echo.Echo) {
 	workspacesGroup.GET("/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
 
 	organizationGroup := v1Group.Group("/organization")
+	organizationGroup.GET("", httpserver2.AuthorizeHandler(s.ListOrganization, authapi.EditorRole))
 	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 
@@ -1229,6 +1230,28 @@ func (s *Server) CreateOrganization(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, dbOrg.ToAPI())
+}
+
+// ListOrganization godoc
+//
+//	@Summary	List all organizations
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Success	201	{object}	[]api.Organization
+//	@Router		/workspace/api/v1/organization [get]
+func (s *Server) ListOrganization(c echo.Context) error {
+	orgs, err := s.db.ListOrganizations()
+	if err != nil {
+		return err
+	}
+
+	var apiOrg []api.Organization
+	for _, org := range orgs {
+		apiOrg = append(apiOrg, org.ToAPI())
+	}
+	return c.JSON(http.StatusCreated, apiOrg)
 }
 
 // DeleteOrganization godoc
