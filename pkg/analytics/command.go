@@ -134,7 +134,7 @@ func InitializeWorker(
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
 	consumer, err := kafka.NewTopicConsumer(context.Background(),
-		strings.Split(conf.Kafka.Addresses, ","), JobQueueTopic, consumerGroup)
+		strings.Split(conf.Kafka.Addresses, ","), JobQueueTopic, consumerGroup, false)
 	if err != nil {
 		logger.Error("Failed to create kafka consumer", zap.Error(err))
 		return nil, err
@@ -167,7 +167,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Starting analytics worker")
 
-	msgs := w.jobQueue.Consume(context.TODO(), w.logger)
+	msgs := w.jobQueue.Consume(context.TODO(), w.logger, 100)
 
 	err := steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAWS)
 	if err != nil {

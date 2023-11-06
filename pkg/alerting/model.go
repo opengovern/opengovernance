@@ -17,6 +17,7 @@ type Rule struct {
 
 type Action struct {
 	Id      uint `json:"id" sql:"AUTO_INCREMENT" gorm:"primary_key"`
+	Name    string
 	Method  string
 	Url     string
 	Headers datatypes.JSON
@@ -24,9 +25,8 @@ type Action struct {
 }
 
 type Triggers struct {
-	EventType      datatypes.JSON
+	RuleID         uint
 	TriggeredAt    time.Time
-	Scope          datatypes.JSON
 	Value          int64
 	ResponseStatus int
 }

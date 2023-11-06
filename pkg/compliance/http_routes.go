@@ -166,33 +166,10 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	}
 
 	var response api.GetFindingsResponse
-	var benchmarkIDs []string
-	// tracer :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmarkTreeIDs(loop)")
-
-	for _, b := range req.Filters.BenchmarkID {
-		// tracer :
-		output2, span2 := tracer.Start(output1, "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("new_GetBenchmarkTreeIDs")
-		bs, err := h.GetBenchmarkTreeIDs(output2, b)
-		if err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span2.AddEvent("information", trace.WithAttributes(
-			attribute.String("benchmark id", b),
-		))
-		span2.End()
-
-		benchmarkIDs = append(benchmarkIDs, bs...)
-	}
-	span1.End()
 
 	res, err := es.FindingsQuery(h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
-		req.Filters.ResourceCollection, benchmarkIDs, req.Filters.PolicyID,
+		req.Filters.ResourceCollection, req.Filters.BenchmarkID, req.Filters.PolicyID,
 		req.Filters.Severity, req.Filters.ActiveOnly)
 	if err != nil {
 		return err

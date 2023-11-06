@@ -10,7 +10,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
@@ -151,9 +150,10 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 
 	consumer, err := kafka.NewTopicConsumer(
 		context.Background(),
-		strings.Split(KafkaService, ","),
+		s.kafkaServers,
 		analytics.JobResultQueueTopic,
 		schedulerConsumerGroup,
+		false,
 	)
 	if err != nil {
 		s.logger.Error("Failed to create kafka consumer", zap.Error(err))
@@ -161,7 +161,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	}
 	defer consumer.Close()
 
-	msgs := consumer.Consume(context.TODO(), s.logger)
+	msgs := consumer.Consume(context.TODO(), s.logger, 100)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 

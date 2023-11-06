@@ -31,28 +31,28 @@ type FindingsQueryHit struct {
 	Sort    []any         `json:"sort"`
 }
 
-type FinderPaginator struct {
+type FindingPaginator struct {
 	paginator *kaytu.BaseESPaginator
 }
 
-func NewFinderPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64) (FinderPaginator, error) {
+func NewFindingPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64) (FindingPaginator, error) {
 	paginator, err := kaytu.NewPaginator(client.ES(), idx, filters, limit)
 	if err != nil {
-		return FinderPaginator{}, err
+		return FindingPaginator{}, err
 	}
 
-	p := FinderPaginator{
+	p := FindingPaginator{
 		paginator: paginator,
 	}
 
 	return p, nil
 }
 
-func (p FinderPaginator) HasNext() bool {
+func (p FindingPaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
-func (p FinderPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
+func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
 	var response FindingsQueryResponse
 	err := p.paginator.Search(ctx, &response)
 	if err != nil {
@@ -74,8 +74,8 @@ func (p FinderPaginator) NextPage(ctx context.Context) ([]types.Finding, error) 
 	return values, nil
 }
 
-func ListActiveFindings(client kaytu.Client, policyID string) (FinderPaginator, error) {
-	return NewFinderPaginator(client, types.FindingsIndex, []kaytu.BoolFilter{
+func ListActiveFindings(client kaytu.Client, policyID string) (FindingPaginator, error) {
+	return NewFindingPaginator(client, types.FindingsIndex, []kaytu.BoolFilter{
 		kaytu.NewTermFilter("stateActive", "true"),
 		kaytu.NewTermFilter("policyID", policyID),
 	}, nil)
@@ -97,7 +97,7 @@ func FindingsQuery(client kaytu.Client,
 		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
 	}
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("benchmarkID", benchmarkID))
+		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
 	if len(policyID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("policyID", policyID))
@@ -133,7 +133,7 @@ func FindingsQuery(client kaytu.Client,
 		idx = types.StackFindingsIndex
 	}
 	var findings []types.Finding
-	paginator, err := NewFinderPaginator(client, idx, filters, nil)
+	paginator, err := NewFindingPaginator(client, idx, filters, nil)
 	if err != nil {
 		return nil, err
 	}

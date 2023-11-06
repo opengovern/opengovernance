@@ -247,17 +247,7 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 }
 
 func (h HttpHandler) addTriggerToDatabase(rule Rule, averageSecurityScorePercentage int64, responseStatusCode int) error {
-	eventTypeM, err := json.Marshal(rule.EventType)
-	if err != nil {
-		return fmt.Errorf("error in marshalling eventType : %v ", err)
-	}
-
-	scopeM, err := json.Marshal(rule.Scope)
-	if err != nil {
-		return fmt.Errorf("error in marshalling scope : %v ", err)
-	}
-
-	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, averageSecurityScorePercentage, responseStatusCode)
+	err := h.db.CreateTrigger(time.Now(), rule.Id, averageSecurityScorePercentage, responseStatusCode)
 	if err != nil {
 		return fmt.Errorf("error in add trigger to the database : %v ", err)
 	}
