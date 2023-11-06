@@ -69,9 +69,11 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses: []string{conf.ES.Address},
-		Username:  &conf.ES.Username,
-		Password:  &conf.ES.Password,
+		Addresses:    []string{conf.ES.Address},
+		Username:     &conf.ES.Username,
+		Password:     &conf.ES.Password,
+		IsOpenSearch: &conf.ES.IsOpenSearch,
+		AwsRegion:    &conf.ES.AwsRegion,
 	})
 	if err != nil {
 		return nil, err
