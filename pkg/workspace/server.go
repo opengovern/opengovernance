@@ -385,7 +385,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 	status := workspace.Status
 	switch status {
 	case api.StatusBootstrapping:
-		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", workspace.Name)
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", workspace.ID)
 		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 		c, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
 		if err != nil {
@@ -1148,12 +1148,12 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		}
 		response.CurrentUsers = int64(len(resp))
 
-		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.Name)
+		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID)
 		inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
 		resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
 		response.CurrentResources = resourceCount
 
-		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.Name)
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID)
 		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 		response.CurrentConnections = count
