@@ -703,7 +703,7 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return err
 	}
 
-	if count > 0 {
+	if count == 0 {
 		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
 			Status: api.BootstrapStatus_OnboardConnection,
 		})
