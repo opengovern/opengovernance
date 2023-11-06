@@ -4,18 +4,22 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"os"
+	"strconv"
 )
 
 var (
 	KafkaService = os.Getenv("KAFKA_SERVICE")
 	KafkaTopic   = os.Getenv("KAFKA_TOPIC")
 
-	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
-	ElasticSearchUsername = os.Getenv("ES_USERNAME")
-	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
+	ElasticSearchAddress         = os.Getenv("ES_ADDRESS")
+	ElasticSearchUsername        = os.Getenv("ES_USERNAME")
+	ElasticSearchPassword        = os.Getenv("ES_PASSWORD")
+	ElasticSearchIsOpenSearchStr = os.Getenv("ES_ISOPENSEARCH")
+	ElasticSearchAwsRegion       = os.Getenv("ES_AWS_REGION")
 
 	WorkspaceClientURL = os.Getenv("WORKSPACE_BASE_URL")
 
@@ -36,8 +40,16 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
+	elasticSearchIsOpenSearch, _ := strconv.ParseBool(ElasticSearchIsOpenSearchStr)
+	esConf := config.ElasticSearch{
+		Address:      ElasticSearchAddress,
+		Username:     ElasticSearchUsername,
+		Password:     ElasticSearchPassword,
+		IsOpenSearch: elasticSearchIsOpenSearch,
+		AwsRegion:    ElasticSearchAwsRegion,
+	}
 	handler, err := InitializeHttpHandler(
-		WorkspaceClientURL, ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
+		WorkspaceClientURL, esConf,
 		logger,
 	)
 	if err != nil {

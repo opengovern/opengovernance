@@ -5,6 +5,7 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 	"strings"
@@ -22,7 +23,8 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
-	workspaceClientURL, elasticSearchPassword, elasticSearchUsername, elasticSearchAddress string,
+	workspaceClientURL string,
+	esConf config.ElasticSearch,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
 	h = &HttpHandler{}
@@ -31,9 +33,11 @@ func InitializeHttpHandler(
 	h.logger.Info("Initializing http handler")
 
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
+		Addresses:    []string{esConf.Address},
+		Username:     &esConf.Username,
+		Password:     &esConf.Password,
+		IsOpenSearch: &esConf.IsOpenSearch,
+		AwsRegion:    &esConf.AwsRegion,
 	})
 	if err != nil {
 		return nil, err

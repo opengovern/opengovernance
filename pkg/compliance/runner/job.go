@@ -108,7 +108,7 @@ func (j *Job) Run(jc JobConfig) error {
 	)
 
 	for _, caller := range j.ExecutionPlan.Callers {
-		findings, err := j.ExtractFindings(caller, res, jc)
+		findings, err := j.ExtractFindings(jc.logger, caller, res, *query)
 		if err != nil {
 			return err
 		}

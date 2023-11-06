@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
 	"time"
 )
+
+const EsFetchPageSize = 10000
 
 type ConnectionDailySpendHistoryByMetric struct {
 	Connector     source.Type
@@ -410,12 +411,12 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Tab
 		"date_group": map[string]any{
 			"terms": map[string]any{
 				"field": granularityField,
-				"size":  es.EsFetchPageSize,
+				"size":  EsFetchPageSize,
 			},
 			"aggs": map[string]any{
 				"hit_select": map[string]any{
 					"top_hits": map[string]any{
-						"size": es.EsFetchPageSize,
+						"size": EsFetchPageSize,
 					},
 				},
 			},
@@ -518,12 +519,12 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Tabl
 		"date_group": map[string]any{
 			"terms": map[string]any{
 				"field": granularityField,
-				"size":  es.EsFetchPageSize,
+				"size":  EsFetchPageSize,
 			},
 			"aggs": map[string]any{
 				"hit_select": map[string]any{
 					"top_hits": map[string]any{
-						"size": es.EsFetchPageSize,
+						"size": EsFetchPageSize,
 					},
 				},
 			},
@@ -739,12 +740,12 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Dime
 		"date_group": map[string]any{
 			"terms": map[string]any{
 				"field": "date",
-				"size":  es.EsFetchPageSize,
+				"size":  EsFetchPageSize,
 			},
 			"aggs": map[string]any{
 				"hit_select": map[string]any{
 					"top_hits": map[string]any{
-						"size": es.EsFetchPageSize,
+						"size": EsFetchPageSize,
 					},
 				},
 			},

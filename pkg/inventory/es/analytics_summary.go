@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"math"
 	"strconv"
@@ -784,13 +783,13 @@ func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granula
 		"metric_id_group": map[string]any{
 			"terms": map[string]any{
 				"field": "metric_id",
-				"size":  es.EsFetchPageSize,
+				"size":  EsFetchPageSize,
 			},
 			"aggs": map[string]any{
 				"date_group": map[string]any{
 					"terms": map[string]any{
 						"field": dateGroupField,
-						"size":  es.EsFetchPageSize,
+						"size":  EsFetchPageSize,
 					},
 					"aggs": map[string]any{
 						"latest": map[string]any{
