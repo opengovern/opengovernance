@@ -382,8 +382,20 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	status := api.WorkspaceStatus(workspace.Status)
+	status := workspace.Status
 	switch status {
+	case api.StatusBootstrapping:
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", workspace.Name)
+		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+		c, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+		if err != nil {
+			return err
+		}
+		if c > 0 {
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioned); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
+		}
 	case api.StatusProvisioning:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
@@ -450,7 +462,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				return fmt.Errorf("set last access: %v", err)
 			}
 
-			newStatus = api.StatusProvisioned
+			newStatus = api.StatusBootstrapping
 		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			if !helmRelease.Spec.Suspend {
 				helmRelease.Spec.Suspend = true
@@ -1136,12 +1148,12 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		}
 		response.CurrentUsers = int64(len(resp))
 
-		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID)
+		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.Name)
 		inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
 		resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
 		response.CurrentResources = resourceCount
 
-		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID)
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.Name)
 		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 		response.CurrentConnections = count
