@@ -3,10 +3,8 @@ package cost_estimator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -14,28 +12,6 @@ import (
 
 func (h *HttpHandler) StoreCostTableJob() {
 
-}
-
-func (h *HttpHandler) HandleStoreAzureCostTable() error {
-	id, err := h.db.CreateStoreCostTableJob(source.CloudAzure)
-	if err != nil {
-		h.logger.Error("Unable to create job", zap.Error(err))
-		return err
-	}
-	count, err := h.StoreAzureCostTable()
-	if err != nil {
-		err = h.db.UpdateStoreCostTableJob(id, db.StoreCostTableJobStatusFailed, err.Error(), count)
-		if err != nil {
-			h.logger.Error("Unable to update job", zap.Error(err))
-			return err
-		}
-	}
-	err = h.db.UpdateStoreCostTableJob(id, db.StoreCostTableJobStatusSucceeded, "", count)
-	if err != nil {
-		h.logger.Error("Unable to update job", zap.Error(err))
-		return err
-	}
-	return nil
 }
 
 func (h *HttpHandler) StoreAzureCostTable() (int64, error) {
