@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -88,7 +89,15 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 	s.db = db
 
-	costEstimatorDb, err := db2.NewCostEstimatorDatabase(cfg, logger)
+	pgCfg := &postgres.Config{
+		Host:    cfg.Host,
+		Port:    cfg.Port,
+		User:    cfg.User,
+		Passwd:  cfg.Password,
+		DB:      cfg.CostEstimatorDBName,
+		SSLMode: cfg.SSLMode,
+	}
+	costEstimatorDb, err := db2.NewCostEstimatorDatabase(pgCfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("new cost estimator database: %w", err)
 	}

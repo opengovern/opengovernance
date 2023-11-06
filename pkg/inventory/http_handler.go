@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strings"
 	"time"
 
@@ -47,7 +48,7 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
-	elasticSearchAddress string, elasticSearchUsername string, elasticSearchPassword string,
+	esConf config.ElasticSearch,
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	KafkaService string,
@@ -98,9 +99,11 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized steampipe database: ", steampipeConn)
 
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
+		Addresses:    []string{esConf.Address},
+		Username:     &esConf.Username,
+		Password:     &esConf.Password,
+		IsOpenSearch: &esConf.IsOpenSearch,
+		AwsRegion:    &esConf.AwsRegion,
 	})
 	if err != nil {
 		return nil, err

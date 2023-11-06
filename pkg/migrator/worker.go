@@ -57,9 +57,11 @@ func InitializeWorker(
 
 	w.pusher = push.New(prometheusPushAddress, "migrator")
 	w.elastic, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses: []string{conf.ElasticSearch.Address},
-		Username:  &conf.ElasticSearch.Username,
-		Password:  &conf.ElasticSearch.Password,
+		Addresses:    []string{conf.ElasticSearch.Address},
+		Username:     &conf.ElasticSearch.Username,
+		Password:     &conf.ElasticSearch.Password,
+		IsOpenSearch: &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:    &conf.ElasticSearch.AwsRegion,
 	})
 	if err != nil {
 		return nil, err

@@ -1621,6 +1621,8 @@ github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFP
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/eko/gocache/v3 v3.1.2 h1:tBAn5kBScEmRXWHJl0iJgJU7TsMeOjySwHDZ/92riqg=
 github.com/eko/gocache/v3 v3.1.2/go.mod h1:92prWCVTLxRkRlZuxDkLkwwUfitZ60zKNi6kn3qiDNU=
+github.com/elastic/go-elasticsearch/v7 v7.17.10 h1:TCQ8i4PmIJuBunvBS6bwT2ybzVFxxUhhltAs3Gyu1yo=
+github.com/elastic/go-elasticsearch/v7 v7.17.10/go.mod h1:OJ4wdbtDNk5g503kvlHLyErCgQwwzmDtaFC4XyOxXA4=
 github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
@@ -2316,8 +2318,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.15.1 h1:IVHnPj8sROWHNoUytImAZRKTKhdZL
 github.com/kaytu-io/kaytu-aws-describer v0.15.1/go.mod h1:z1JWnF8nJ292XmtXhFJ+TB/HAH3tkk5h0+9EHOttHJM=
 github.com/kaytu-io/kaytu-azure-describer v0.11.1 h1:SEpCbntB6mJYtkUbJTixerEc4O+RPSHoTNLhmhDNjA8=
 github.com/kaytu-io/kaytu-azure-describer v0.11.1/go.mod h1:Tl9O3+XY3lYU6zw9oI238AHnZuiRyP+AESep/KkTQhA=
-github.com/kaytu-io/kaytu-util v0.0.0-20231105110331-bb2871e2d470 h1:X/18xaTvI+pIHCqGtP+Ud+QVJD9wFZ2Sg1apevZ3a0g=
-github.com/kaytu-io/kaytu-util v0.0.0-20231105110331-bb2871e2d470/go.mod h1:sXE1BUgJBWcHPInOJgUK1cbC6D8Tkw7elKMDKgeeuqE=
+github.com/kaytu-io/kaytu-util v0.0.0-20231106073421-1d79e0da58de h1:saiczyJCyN4PYLvMe1s/LKmYz/iwiUU2RCLVekB2xmM=
+github.com/kaytu-io/kaytu-util v0.0.0-20231106073421-1d79e0da58de/go.mod h1:DASdPC1NLGUE82wMYrzn2XPTebHy58R1hmwd1fWR+lE=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9/go.mod h1:EGCIxB3DvH/TAf9abPZH0JUFYdROVQguY8SQLMzsiS0=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
