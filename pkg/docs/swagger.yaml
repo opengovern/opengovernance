@@ -2230,6 +2230,21 @@ definitions:
       name:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus:
+    enum:
+    - OnboardConnection
+    - CreateWorkspace
+    - WaitingForJobs
+    type: string
+    x-enum-varnames:
+    - BootstrapStatus_OnboardConnection
+    - BootstrapStatus_CreateWorkspace
+    - BootstrapStatus_WaitingForJobs
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
+    properties:
+      status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
     properties:
       newName:
@@ -2423,6 +2438,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
     enum:
     - PROVISIONED
+    - BOOTSTRAPPING
     - PROVISIONING
     - PROVISIONING_FAILED
     - DELETING
@@ -2432,6 +2448,7 @@ definitions:
     type: string
     x-enum-varnames:
     - StatusProvisioned
+    - StatusBootstrapping
     - StatusProvisioning
     - StatusProvisioningFailed
     - StatusDeleting
@@ -5795,6 +5812,28 @@ paths:
       summary: List Resource Stacks
       tags:
       - stack
+  /workspace/api/v1/bootstrap/{workspace_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Get bootstrap status
+      tags:
+      - workspace
   /workspace/api/v1/organization:
     get:
       consumes:

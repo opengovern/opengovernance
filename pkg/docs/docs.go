@@ -4971,6 +4971,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/bootstrap/{workspace_name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get bootstrap status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/organization": {
             "get": {
                 "security": [
@@ -8755,6 +8791,27 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus": {
+            "type": "string",
+            "enum": [
+                "OnboardConnection",
+                "CreateWorkspace",
+                "WaitingForJobs"
+            ],
+            "x-enum-varnames": [
+                "BootstrapStatus_OnboardConnection",
+                "BootstrapStatus_CreateWorkspace",
+                "BootstrapStatus_WaitingForJobs"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
             "type": "object",
             "properties": {
@@ -9046,6 +9103,7 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "PROVISIONED",
+                "BOOTSTRAPPING",
                 "PROVISIONING",
                 "PROVISIONING_FAILED",
                 "DELETING",
@@ -9055,6 +9113,7 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "StatusProvisioned",
+                "StatusBootstrapping",
                 "StatusProvisioning",
                 "StatusProvisioningFailed",
                 "StatusDeleting",
