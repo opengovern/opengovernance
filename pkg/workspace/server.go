@@ -690,9 +690,9 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace not found")
 	}
 
-	if ws.Status != api.StatusProvisioning {
+	if ws.Status == api.StatusProvisioning {
 		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-			Status: api.BootstrapStatus_CreateWorkspace,
+			Status: api.BootstrapStatus_CreatingWorkspace,
 		})
 	}
 

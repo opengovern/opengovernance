@@ -8795,12 +8795,12 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "OnboardConnection",
-                "CreateWorkspace",
+                "CreatingWorkspace",
                 "WaitingForJobs"
             ],
             "x-enum-varnames": [
                 "BootstrapStatus_OnboardConnection",
-                "BootstrapStatus_CreateWorkspace",
+                "BootstrapStatus_CreatingWorkspace",
                 "BootstrapStatus_WaitingForJobs"
             ]
         },

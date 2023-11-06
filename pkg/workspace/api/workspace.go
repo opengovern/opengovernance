@@ -17,7 +17,7 @@ type BootstrapStatus string
 
 const (
 	BootstrapStatus_OnboardConnection BootstrapStatus = "OnboardConnection"
-	BootstrapStatus_CreateWorkspace   BootstrapStatus = "CreateWorkspace"
+	BootstrapStatus_CreatingWorkspace BootstrapStatus = "CreatingWorkspace"
 	BootstrapStatus_WaitingForJobs    BootstrapStatus = "WaitingForJobs"
 )
 

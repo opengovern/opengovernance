@@ -2233,12 +2233,12 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus:
     enum:
     - OnboardConnection
-    - CreateWorkspace
+    - CreatingWorkspace
     - WaitingForJobs
     type: string
     x-enum-varnames:
     - BootstrapStatus_OnboardConnection
-    - BootstrapStatus_CreateWorkspace
+    - BootstrapStatus_CreatingWorkspace
     - BootstrapStatus_WaitingForJobs
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
     properties:
