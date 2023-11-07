@@ -3,7 +3,6 @@ package onboard
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
@@ -14,7 +13,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"go.uber.org/zap"
-	"strings"
 )
 
 var PermissionError = errors.New("PermissionError")
@@ -62,7 +60,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
-	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
+	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,25 +74,14 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 		return nil, err
 	}
 
-	stsClient := sts.NewFromConfig(creds)
-
-	caller, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	iamClient := iam.NewFromConfig(creds)
+	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
-		logger.Warn("failed to get caller identity", zap.Error(err))
+		logger.Warn("failed to get user", zap.Error(err))
 		return nil, err
 	}
-	userName := strings.Split(*caller.Arn, "/")[1]
-	fmt.Println("userName", userName)
-
-	iamClient := iam.NewFromConfig(creds)
-	//user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
-	//if err != nil {
-	//	logger.Warn("failed to get user", zap.Error(err))
-	//	return nil, err
-	//}
-	//userName := user.User.UserName
 	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
-		UserName: aws.String(userName),
+		UserName: user.User.UserName,
 	})
 
 	policyARNs := make([]string, 0)
@@ -111,12 +98,12 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 
 	metadata := AWSCredentialMetadata{
 		AccountID:        accID,
-		IamUserName:      aws.String(userName),
+		IamUserName:      user.User.UserName,
 		AttachedPolicies: policyARNs,
 	}
 
 	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
-		UserName: aws.String(userName),
+		UserName: user.User.UserName,
 	})
 	for _, key := range accessKeys.AccessKeyMetadata {
 		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
@@ -125,6 +112,11 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 	}
 	if err != nil {
 		logger.Warn("failed to get access keys", zap.Error(err))
+		return nil, err
+	}
+
+	creds, err = kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
+	if err != nil {
 		return nil, err
 	}
 
