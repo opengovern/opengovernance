@@ -1,26 +1,26 @@
 package aws
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
-func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, dbInstance es.RDSDBInstanceResponse) (float64, error) {
-	description := dbInstance.Hits.Hits[0].Source.Description
-	dbType := dbTypeMap[*description.DBInstance.Engine]
-	licenseModel := licenseModelMap[*description.DBInstance.LicenseModel]
+func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetRDSInstanceRequest) (float64, error) {
+	dbType := dbTypeMap[*request.Instance.DBInstance.Engine]
+	licenseModel := licenseModelMap[*request.Instance.DBInstance.LicenseModel]
 
 	deploymentOption := "Single-AZ"
-	if description.DBInstance.MultiAZ {
+	if request.Instance.DBInstance.MultiAZ {
 		deploymentOption = "Multi-AZ"
 	}
 
-	dbInstanceCost, err := db.FindRDSInstancePrice(dbInstance.Hits.Hits[0].Source.Region, "dbinstance", dbType.engine,
-		dbType.edition, licenseModel, deploymentOption, *description.DBInstance.StorageType)
+	dbInstanceCost, err := db.FindRDSInstancePrice(request.RegionCode, "dbinstance", dbType.engine,
+		dbType.edition, licenseModel, deploymentOption, *request.Instance.DBInstance.StorageType)
 	if err != nil {
 		return 0, err
 	}
-	cost := dbInstanceCost.Price * TimeInterval
+	cost := dbInstanceCost.Price * costestimator.TimeInterval
 	return cost, nil
 }
 

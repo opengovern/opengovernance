@@ -1,16 +1,16 @@
 package workspace
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
-// GetEC2InstancePrice Calculates ec2 instance price for a day
-// route: /workspace/api/v1/cost_estimator/ec2instance [get]
-func (s *Server) GetEC2InstancePrice(ctx echo.Context) error {
-	var request es.EC2InstanceResponse
+// GetEC2InstanceCost Calculates ec2 instance price for a day
+// route: /workspace/api/v1/costestimator/ec2instance [get]
+func (s *Server) GetEC2InstanceCost(ctx echo.Context) error {
+	var request api.GetEC2InstanceCostRequest
 	if err := ctx.Bind(&request); err != nil {
 		return err
 	}
@@ -22,10 +22,10 @@ func (s *Server) GetEC2InstancePrice(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cost)
 }
 
-// GetEC2VolumePrice Calculates ec2 volume (ebs volume) price for a day
-// route: /workspace/api/v1/cost_estimator/ec2volume [get]
-func (s *Server) GetEC2VolumePrice(ctx echo.Context) error {
-	var request es.EC2VolumeResponse
+// GetEC2VolumeCost Calculates ec2 volume (ebs volume) price for a day
+// route: /workspace/api/v1/costestimator/ec2volume [get]
+func (s *Server) GetEC2VolumeCost(ctx echo.Context) error {
+	var request api.GetEC2VolumeCostRequest
 	if err := ctx.Bind(&request); err != nil {
 		return err
 	}
@@ -37,10 +37,25 @@ func (s *Server) GetEC2VolumePrice(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cost)
 }
 
-// GetRDSInstancePrice get rds instance price from database
-// route: /workspace/api/v1/cost_estimator/rds_instance [get]
-func (s *Server) GetRDSInstancePrice(ctx echo.Context) error {
-	var request es.RDSDBInstanceResponse
+// GetLBCost Calculates load balancers price for a day
+// route: /workspace/api/v1/costestimator/loadbalancer [get]
+func (s *Server) GetLBCost(ctx echo.Context) error {
+	var request api.GetLBCostRequest
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+
+	cost, err := aws.LBCostByResource(s.costEstimatorDb, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}
+
+// GetRDSInstanceCost get rds instance price from database
+// route: /workspace/api/v1/costestimator/rdsinstance [get]
+func (s *Server) GetRDSInstanceCost(ctx echo.Context) error {
+	var request api.GetRDSInstanceRequest
 	if err := ctx.Bind(&request); err != nil {
 		return err
 	}

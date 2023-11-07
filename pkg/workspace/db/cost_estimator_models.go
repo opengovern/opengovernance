@@ -47,8 +47,8 @@ type AmazonCloudWatchPrice struct {
 	Price         float64
 }
 
-// EC2CpuCreditsCost Service = AmazonEC2, ProductFamily = CPU Credits
-type EC2CpuCreditsCost struct {
+// EC2CpuCreditsPrice Service = AmazonEC2, ProductFamily = CPU Credits
+type EC2CpuCreditsPrice struct {
 	SKU             string `gorm:"primaryKey"`
 	EffectiveDate   int64
 	RegionCode      string
@@ -56,6 +56,16 @@ type EC2CpuCreditsCost struct {
 	UsageType       string
 	PriceUnit       string
 	Price           float64
+}
+
+// LBPrice service = Elastic Load Balancing,
+// ProductFamily = (Load Balancer-Gateway), (Load Balancer-Application), (Load Balancer-Network), (Load Balancer)
+type LBPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	ProductFamily string
+	UsageType     string
+	PriceUnit     string
+	Price         float64
 }
 
 // RDSDBInstancePrice Service = AmazonRDS, ProductFamily = Database Instance

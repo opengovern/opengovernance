@@ -2,71 +2,67 @@ package aws
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"strings"
 )
 
-const (
-	TimeInterval = 24 // Hours (One day)
-)
-
-// EC2InstanceCostByResource time interval (Hrs)
-func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2InstanceResponse) (float64, error) {
+func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetEC2InstanceCostRequest) (float64, error) {
 	var cost float64
-	description := instance.Hits.Hits[0].Source.Description
-	operatingSystem, err := getInstanceOperatingSystem(instance)
+	operatingSystem, err := getInstanceOperatingSystem(request)
 	if err != nil {
 		return 0, err
 	}
-	instanceCost, err := db.FindEC2InstancePrice(instance.Hits.Hits[0].Source.Region, "Used", string(description.Instance.InstanceType),
+	description := request.Instance
+	instanceCost, err := db.FindEC2InstancePrice(request.RegionCode, "Used", string(description.Instance.InstanceType),
 		getTenancy(string(description.Instance.Placement.Tenancy)), operatingSystem, "NA", "Hrs")
 	if err != nil {
 		return 0, err
 	}
-	cost += instanceCost.Price * TimeInterval
+	cost += instanceCost.Price * costestimator.TimeInterval
 
 	for _, volume := range description.LaunchTemplateData.BlockDeviceMappings {
-		volumeCost, err := calcEC2VolumeCost(db, instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType), *volume.Ebs.VolumeSize, *volume.Ebs.Iops)
+		volumeCost, err := calcEC2VolumeCost(db, request.RegionCode, string(volume.Ebs.VolumeType), *volume.Ebs.VolumeSize, *volume.Ebs.Iops)
 		if err != nil {
 			return 0, err
 		}
-		cost += volumeCost * TimeInterval
+		cost += volumeCost * costestimator.TimeInterval
 	}
 
 	if description.LaunchTemplateData.CreditSpecification.CpuCredits != nil {
 		if *description.LaunchTemplateData.CreditSpecification.CpuCredits == "unlimited" {
-			region := strings.ToUpper(strings.Split(instance.Hits.Hits[0].Source.Region, "-")[0])
+			region := strings.ToUpper(strings.Split(request.RegionCode, "-")[0])
 			instType := strings.Split(string(description.Instance.InstanceType), ".")[0]
 			usageType := fmt.Sprintf("%s-CPUCredits:%s", region, instType)
-			cpuCreditsCost, err := db.FindEC2CpuCreditsPrice(instance.Hits.Hits[0].Source.Region, operatingSystem, usageType, "vCPU-Hours")
+			cpuCreditsCost, err := db.FindEC2CpuCreditsPrice(request.RegionCode, operatingSystem, usageType, "vCPU-Hours")
 			if err != nil {
 				return 0, err
 			}
-			cost += cpuCreditsCost.Price * TimeInterval
+			cost += cpuCreditsCost.Price * costestimator.TimeInterval
 		}
 	}
 
 	if description.LaunchTemplateData.Monitoring.Enabled != nil {
 		if *description.LaunchTemplateData.Monitoring.Enabled {
-			cloudWatch, err := db.FindAmazonCloudWatchPrice(instance.Hits.Hits[0].Source.Region, 0, "Metrics")
+			cloudWatch, err := db.FindAmazonCloudWatchPrice(request.RegionCode, 0, "Metrics")
 			if err != nil {
 				return 0, err
 			}
 			days := getNumberOfDays()
-			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * TimeInterval //TODO: Change this default metrics number
+			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * costestimator.TimeInterval //TODO: Change this default metrics number
 		}
 	}
 
 	if description.LaunchTemplateData.EbsOptimized != nil {
 		if *description.LaunchTemplateData.EbsOptimized {
-			region := strings.ToUpper(strings.Split(instance.Hits.Hits[0].Source.Region, "-")[0])
+			region := strings.ToUpper(strings.Split(request.RegionCode, "-")[0])
 			usageType := fmt.Sprintf("%s-EBSOptimized:%s", region, string(description.Instance.InstanceType))
-			ebsCost, err := db.FindEbsOptimizedPrice(instance.Hits.Hits[0].Source.Region, string(description.Instance.InstanceType), usageType, "Hrs")
+			ebsCost, err := db.FindEbsOptimizedPrice(request.RegionCode, string(description.Instance.InstanceType), usageType, "Hrs")
 			if err != nil {
 				return 0, err
 			}
-			cost += ebsCost.Price * TimeInterval
+			cost += ebsCost.Price * costestimator.TimeInterval
 		}
 	}
 
@@ -87,9 +83,9 @@ func getTenancy(tenancy string) string {
 
 // getInstanceOperatingSystem get instance operating system
 // not sure about this function, should check operating systems in our resources and in cost tables
-func getInstanceOperatingSystem(instance es.EC2InstanceResponse) (string, error) {
-	instanceTags := instance.Hits.Hits[0].Source.Description.Instance.Tags
-	launchTableDataTags := instance.Hits.Hits[0].Source.Description.LaunchTemplateData.TagSpecifications[0].Tags
+func getInstanceOperatingSystem(request api.GetEC2InstanceCostRequest) (string, error) {
+	instanceTags := request.Instance.Instance.Tags
+	launchTableDataTags := request.Instance.LaunchTemplateData.TagSpecifications[0].Tags
 	var operatingSystem string
 	for _, tag := range instanceTags {
 		if *tag.Key == "wk_gbs_interpreted_os_type" {
