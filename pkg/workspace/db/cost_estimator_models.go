@@ -81,3 +81,22 @@ type RDSDBInstancePrice struct {
 	PriceUnit        string
 	Price            float64
 }
+
+// RDSDBStoragePrice Service = AmazonRDS, ProductFamily = Database Storage
+type RDSDBStoragePrice struct {
+	SKU              string `gorm:"primaryKey"`
+	EffectiveDate    int64
+	DeploymentOption string
+	VolumeType       string
+	PriceUnit        string
+	Price            float64
+}
+
+// RDSDBIopsPrice Service = AmazonRDS, ProductFamily = Provisioned IOPS
+type RDSDBIopsPrice struct {
+	SKU              string `gorm:"primaryKey"`
+	EffectiveDate    int64
+	DeploymentOption string
+	PriceUnit        string
+	Price            float64
+}
