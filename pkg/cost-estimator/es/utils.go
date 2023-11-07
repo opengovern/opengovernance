@@ -2,7 +2,23 @@ package es
 
 import (
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"golang.org/x/net/context"
 )
+
+func GetElasticsearch(client kaytu.Client, resourceId string, resourceType string, resp any) (any, error) {
+	index := es.ResourceTypeToESIndex(resourceType)
+	queryBytes, err := GetResourceQuery(resourceId)
+	if err != nil {
+		return nil, err
+	}
+	err = client.Search(context.Background(), index, string(queryBytes), &resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
 
 func GetResourceQuery(resourceId string) ([]byte, error) {
 	terms := make(map[string]any)

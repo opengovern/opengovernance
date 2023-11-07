@@ -28,7 +28,7 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
 
-	cost, err := azureResourceTypes[resourceType](h, resourceId, 1)
+	cost, err := azureResourceTypes[resourceType](h, resourceId)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
 
-	cost, err := awsResourceTypes[resourceType](h, resourceId, 1)
+	cost, err := awsResourceTypes[resourceType](h, resourceId)
 	if err != nil {
 		return err
 	}

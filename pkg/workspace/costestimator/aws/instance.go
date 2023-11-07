@@ -7,8 +7,12 @@ import (
 	"strings"
 )
 
+const (
+	TimeInterval = 24 // Hours (One day)
+)
+
 // EC2InstanceCostByResource time interval (Hrs)
-func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2InstanceResponse, timeInterval int64) (float64, error) {
+func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2InstanceResponse) (float64, error) {
 	var cost float64
 	description := instance.Hits.Hits[0].Source.Description
 	operatingSystem, err := getInstanceOperatingSystem(instance)
@@ -20,21 +24,14 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 	if err != nil {
 		return 0, err
 	}
-	cost += instanceCost.Price * float64(timeInterval)
+	cost += instanceCost.Price * TimeInterval
 
 	for _, volume := range description.LaunchTemplateData.BlockDeviceMappings {
-		volumeCost, err := db.FindEC2InstanceStoragePrice(instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType))
+		volumeCost, err := calcEC2VolumeCost(db, instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType), *volume.Ebs.VolumeSize, *volume.Ebs.Iops)
 		if err != nil {
 			return 0, err
 		}
-		cost += volumeCost.Price * float64(*volume.Ebs.VolumeSize) // Monthly
-		if volume.Ebs.VolumeType == "io1" || volume.Ebs.VolumeType == "io2" {
-			iopsCost, err := db.FindEC2InstanceSystemOperationPrice(instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType), "EBS:VolumeP-IOPS")
-			if err != nil {
-				return 0, err
-			}
-			cost += iopsCost.Price * float64(*volume.Ebs.Iops) // Monthly
-		}
+		cost += volumeCost * TimeInterval
 	}
 
 	if description.LaunchTemplateData.CreditSpecification.CpuCredits != nil {
@@ -46,7 +43,7 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 			if err != nil {
 				return 0, err
 			}
-			cost += cpuCreditsCost.Price * float64(timeInterval)
+			cost += cpuCreditsCost.Price * TimeInterval
 		}
 	}
 
@@ -56,7 +53,8 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 			if err != nil {
 				return 0, err
 			}
-			cost += cloudWatch.Price * 7 // Monthly, TODO: Change this default metrics number
+			days := getNumberOfDays()
+			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * TimeInterval //TODO: Change this default metrics number
 		}
 	}
 
@@ -68,7 +66,7 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 			if err != nil {
 				return 0, err
 			}
-			cost += ebsCost.Price * float64(timeInterval)
+			cost += ebsCost.Price * TimeInterval
 		}
 	}
 
