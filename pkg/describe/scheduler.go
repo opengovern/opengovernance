@@ -393,6 +393,7 @@ func InitializeScheduler(
 		s.onboardClient,
 		s.db,
 		s.kafkaProducer,
+		s.es,
 	)
 	return s, nil
 }

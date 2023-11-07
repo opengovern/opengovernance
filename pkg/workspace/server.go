@@ -156,6 +156,9 @@ func (s *Server) Register(e *echo.Echo) {
 	workspaceGroup.POST("/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KaytuAdminRole))
 	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
 
+	bootstrapGroup := v1Group.Group("/bootstrap")
+	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
+
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
 	workspacesGroup.GET("/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
@@ -168,10 +171,11 @@ func (s *Server) Register(e *echo.Echo) {
 	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 
-	costEstimatorGroup := v1Group.Group("/cost_estimator")
+	costEstimatorGroup := v1Group.Group("/costestimator")
 	costEstimatorGroup.GET("/ec2instance", httpserver2.AuthorizeHandler(s.GetEC2InstanceCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/ec2volume", httpserver2.AuthorizeHandler(s.GetEC2VolumeCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/loadbalancer", httpserver2.AuthorizeHandler(s.GetLBCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
@@ -264,7 +268,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 	var httpIncludes []contourv1.Include
 	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
-		if w.Status != api.StatusProvisioned {
+		if w.Status != api.StatusProvisioned && w.Status != api.StatusBootstrapping {
 			continue
 		}
 		httpIncludes = append(httpIncludes, contourv1.Include{
@@ -384,8 +388,20 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	status := api.WorkspaceStatus(workspace.Status)
+	status := workspace.Status
 	switch status {
+	case api.StatusBootstrapping:
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", workspace.ID)
+		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+		c, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+		if err != nil {
+			return err
+		}
+		if c > 0 {
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioned); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
+		}
 	case api.StatusProvisioning:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
@@ -452,7 +468,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				return fmt.Errorf("set last access: %v", err)
 			}
 
-			newStatus = api.StatusProvisioned
+			newStatus = api.StatusBootstrapping
 		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			if !helmRelease.Spec.Suspend {
 				helmRelease.Spec.Suspend = true
@@ -653,6 +669,51 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
+	})
+}
+
+// GetBootstrapStatus godoc
+//
+//	@Summary	Get bootstrap status
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Success	200				{object}	api.BootstrapStatusResponse
+//	@Router		/workspace/api/v1/bootstrap/{workspace_name} [get]
+func (s *Server) GetBootstrapStatus(c echo.Context) error {
+	workspaceName := c.Param("workspace_name")
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	if ws == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace not found")
+	}
+
+	if ws.Status == api.StatusProvisioning {
+		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
+			Status: api.BootstrapStatus_CreatingWorkspace,
+		})
+	}
+
+	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", ws.ID)
+	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+	count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
+			Status: api.BootstrapStatus_OnboardConnection,
+		})
+	}
+
+	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
+		Status: api.BootstrapStatus_WaitingForJobs,
 	})
 }
 

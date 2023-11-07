@@ -12,8 +12,9 @@ const (
 )
 
 type JobResult struct {
-	Job       Job
-	StartedAt time.Time
-	Status    ComplianceRunnerStatus
-	Error     string
+	Job               Job
+	StartedAt         time.Time
+	Status            ComplianceRunnerStatus
+	Error             string
+	TotalFindingCount *int
 }

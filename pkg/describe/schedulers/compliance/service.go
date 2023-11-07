@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 	"time"
 )
@@ -20,9 +21,16 @@ type JobScheduler struct {
 	onboardClient    onboardClient.OnboardServiceClient
 	db               db.Database
 	kafkaProducer    *confluent_kafka.Producer
+	esClient         kaytu.Client
 }
 
-func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient client.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, db db.Database, kafkaProducer *confluent_kafka.Producer) *JobScheduler {
+func New(conf config2.SchedulerConfig,
+	logger *zap.Logger,
+	complianceClient client.ComplianceServiceClient,
+	onboardClient onboardClient.OnboardServiceClient,
+	db db.Database,
+	kafkaProducer *confluent_kafka.Producer,
+	esClient kaytu.Client) *JobScheduler {
 	return &JobScheduler{
 		conf:             conf,
 		logger:           logger,
@@ -30,6 +38,7 @@ func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient clie
 		onboardClient:    onboardClient,
 		db:               db,
 		kafkaProducer:    kafkaProducer,
+		esClient:         esClient,
 	}
 }
 

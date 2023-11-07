@@ -41,6 +41,7 @@ type AWSAccountConfig struct {
 	AccessKey            string   `json:"accessKey"`
 	SessionToken         string   `json:"sessionToken"`
 	AssumeRoleName       string   `json:"assumeRoleName"`
+	AssumeAdminRoleName  string   `json:"assumeAdminRoleName"`
 	AssumeRolePolicyName string   `json:"assumeRolePolicyName"`
 	ExternalID           *string  `json:"externalID,omitempty"`
 }

@@ -1,15 +1,15 @@
 package aws
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
-func LBCostByResource(db *db.CostEstimatorDatabase, request es.LBRequest) (float64, error) {
+func LBCostByResource(db *db.CostEstimatorDatabase, request api.GetLBCostRequest) (float64, error) {
 	var cost float64
 	var family string
-	switch request.Type {
+	switch request.LBType {
 	case "network":
 		family = "Load Balancer-Network"
 	case "gateway":

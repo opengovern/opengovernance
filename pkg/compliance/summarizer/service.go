@@ -134,12 +134,7 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 	}()
 
 	w.logger.Info("running job", zap.String("job", string(msg.Value)))
-	err = job.Run(JobConfig{
-		config:        w.config,
-		logger:        w.logger,
-		esClient:      w.esClient,
-		kafkaProducer: w.kafkaProducer,
-	})
+	err = w.RunJob(job)
 	if err != nil {
 		w.logger.Info("failure while running job", zap.Error(err))
 		return err

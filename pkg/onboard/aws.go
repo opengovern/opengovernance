@@ -3,7 +3,6 @@ package onboard
 import (
 	"context"
 	"errors"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
@@ -14,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"go.uber.org/zap"
+	"strings"
 )
 
 var PermissionError = errors.New("PermissionError")
@@ -61,7 +61,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
-	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
+	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,14 +75,24 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 		return nil, err
 	}
 
-	iamClient := iam.NewFromConfig(creds)
-	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
+	stsClient := sts.NewFromConfig(creds)
+
+	caller, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		logger.Warn("failed to get user", zap.Error(err))
+		logger.Warn("failed to get caller identity", zap.Error(err))
 		return nil, err
 	}
+	userName := strings.Split(*caller.Arn, "/")[1]
+
+	iamClient := iam.NewFromConfig(creds)
+	//user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
+	//if err != nil {
+	//	logger.Warn("failed to get user", zap.Error(err))
+	//	return nil, err
+	//}
+	//userName := user.User.UserName
 	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
-		UserName: user.User.UserName,
+		UserName: aws.String(userName),
 	})
 
 	policyARNs := make([]string, 0)
@@ -99,12 +109,12 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 
 	metadata := AWSCredentialMetadata{
 		AccountID:        accID,
-		IamUserName:      user.User.UserName,
+		IamUserName:      aws.String(userName),
 		AttachedPolicies: policyARNs,
 	}
 
 	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
-		UserName: user.User.UserName,
+		UserName: aws.String(userName),
 	})
 	for _, key := range accessKeys.AccessKeyMetadata {
 		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {

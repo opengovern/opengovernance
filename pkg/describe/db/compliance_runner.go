@@ -42,14 +42,15 @@ func (db Database) RetryFailedRunners() error {
 }
 
 func (db Database) UpdateRunnerJob(
-	id uint, status runner.ComplianceRunnerStatus, startedAt time.Time, failureMsg string) error {
+	id uint, status runner.ComplianceRunnerStatus, startedAt time.Time, totalFindingCount *int, failureMsg string) error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
 		Where("id = ?", id).
 		Updates(model.ComplianceRunner{
-			Status:         status,
-			StartedAt:      startedAt,
-			FailureMessage: failureMsg,
+			Status:            status,
+			StartedAt:         startedAt,
+			FailureMessage:    failureMsg,
+			TotalFindingCount: totalFindingCount,
 		})
 	if tx.Error != nil {
 		return tx.Error

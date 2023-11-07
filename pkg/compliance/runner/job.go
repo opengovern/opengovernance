@@ -3,21 +3,21 @@ package runner
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"time"
+
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
-	"io"
-	"time"
 )
 
 type Caller struct {
@@ -45,109 +45,162 @@ type Job struct {
 }
 
 type JobConfig struct {
-	config           Config
-	logger           *zap.Logger
-	complianceClient client.ComplianceServiceClient
-	onboardClient    client2.OnboardServiceClient
-	steampipeConn    *steampipe.Database
-	esClient         kaytu.Client
-	kafkaProducer    *confluent_kafka.Producer
+	config        Config
+	logger        *zap.Logger
+	steampipeConn *steampipe.Database
+	esClient      kaytu.Client
+	kafkaProducer *confluent_kafka.Producer
 }
 
-func (j *Job) Initialize(ctx context.Context, jc JobConfig) error {
+func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	providerAccountID := "all"
-	if j.ExecutionPlan.ConnectionID != nil {
-		conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ConnectionID)
+	if j.ExecutionPlan.ConnectionID != nil &&
+		*j.ExecutionPlan.ConnectionID != "" &&
+		*j.ExecutionPlan.ConnectionID != "all" {
+		conn, err := w.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ConnectionID)
 		if err != nil {
+			w.logger.Error("failed to get source", zap.Error(err), zap.String("connection_id", *j.ExecutionPlan.ConnectionID))
 			return err
 		}
 		providerAccountID = conn.ConnectionID
 	}
 
-	err := jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, providerAccountID)
+	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, providerAccountID)
 	if err != nil {
+		w.logger.Error("failed to set account id", zap.Error(err))
 		return err
 	}
-	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
-	err = jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "compliance")
+	err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "compliance")
 	if err != nil {
+		w.logger.Error("failed to set client type", zap.Error(err))
 		return err
 	}
-	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+
+	if j.ExecutionPlan.ResourceCollectionID != nil {
+		rc, err := w.inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ResourceCollectionID)
+		if err != nil {
+			w.logger.Error("failed to get resource collection", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
+			return err
+		}
+		filtersJson, err := json.Marshal(rc.Filters)
+		if err != nil {
+			w.logger.Error("failed to marshal resource collection filters", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
+			return err
+		}
+		err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters, base64.StdEncoding.EncodeToString(filtersJson))
+		if err != nil {
+			w.logger.Error("failed to set resource collection filters", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (j *Job) Run(jc JobConfig) error {
+func (w *Worker) RunJob(j Job) (int, error) {
 	ctx := context.Background()
 
-	jc.logger.Info("Running query",
+	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.QueryID),
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
 		zap.Stringp("rc_id", j.ExecutionPlan.ResourceCollectionID),
 	)
 
-	if err := j.Initialize(ctx, jc); err != nil {
-		return err
+	if err := w.Initialize(ctx, j); err != nil {
+		return 0, err
 	}
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 
-	query, err := jc.complianceClient.GetQuery(&httpclient.Context{UserRole: api.InternalRole}, j.ExecutionPlan.QueryID)
+	query, err := w.complianceClient.GetQuery(&httpclient.Context{UserRole: api.InternalRole}, j.ExecutionPlan.QueryID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	res, err := jc.steampipeConn.QueryAll(ctx, query.QueryToExecute)
+	res, err := w.steampipeConn.QueryAll(ctx, query.QueryToExecute)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	jc.logger.Info("Extracting and pushing to kafka",
+	w.logger.Info("Extracting and pushing to kafka",
 		zap.Uint("job_id", j.ID),
 		zap.Int("res_count", len(res.Data)),
 		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
 	)
-
+	totalFindingCount := 0
 	for _, caller := range j.ExecutionPlan.Callers {
-		findings, err := j.ExtractFindings(jc.logger, caller, res, *query)
+		findings, err := j.ExtractFindings(w.logger, caller, res, *query)
 		if err != nil {
-			return err
+			return 0, err
 		}
+		totalFindingCount += len(findings)
 
 		var docs []kafka.Doc
 		for _, f := range findings {
 			docs = append(docs, f)
 		}
 
-		err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
+		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
 		if err != nil {
-			return err
+			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
+			return 0, err
 		}
 
-		//TODO-Saleh fix this
-		//err = j.RemoveOldFindings(jc)
-		//if err != nil {
-		//	return err
-		//}
+		err = w.RemoveOldFindings(j.ID, *j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.PolicyID)
+		if err != nil {
+			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
+			return 0, err
+		}
 	}
-	jc.logger.Info("Finished job",
+	w.logger.Info("Finished job",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.QueryID),
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
 		zap.Stringp("rc_id", j.ExecutionPlan.ResourceCollectionID),
 	)
-	return nil
+	return totalFindingCount, nil
 }
 
-func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
+func (w *Worker) RemoveOldFindings(jobID uint,
+	connectionId string,
+	resourceCollectionId *string,
+	benchmarkID,
+	policyID string) error {
 	ctx := context.Background()
-	es := jc.esClient.ES()
-
-	index := []string{types.FindingsIndex, types.ResourceCollectionsFindingsIndex}
-
+	idx := types.FindingsIndex
+	if resourceCollectionId != nil {
+		idx = types.ResourceCollectionsFindingsIndex
+	}
 	var filters []map[string]any
+	mustFilters := make([]map[string]any, 0, 4)
+	mustFilters = append(mustFilters, map[string]any{
+		"term": map[string]any{
+			"benchmarkID": benchmarkID,
+		},
+	})
+	mustFilters = append(mustFilters, map[string]any{
+		"term": map[string]any{
+			"policyID": policyID,
+		},
+	})
+	mustFilters = append(mustFilters, map[string]any{
+		"term": map[string]any{
+			"connectionID": connectionId,
+		},
+	})
+	if resourceCollectionId != nil {
+		mustFilters = append(mustFilters, map[string]any{
+			"term": map[string]any{
+				"resourceCollection": resourceCollectionId,
+			},
+		})
+	}
+
 	filters = append(filters, map[string]any{
 		"bool": map[string]any{
-			"should": []map[string]any{
+			"must": []map[string]any{
 				{
 					"bool": map[string]any{
 						"must_not": map[string]any{
@@ -159,11 +212,7 @@ func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
 				},
 				{
 					"bool": map[string]any{
-						"must": map[string]any{
-							"term": map[string]any{
-								"parentBenchmarks": benchmarkID,
-							},
-						},
+						"filter": mustFilters,
 					},
 				},
 			},
@@ -176,34 +225,32 @@ func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
 			"filter": filters,
 		},
 	}
-
 	query, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
 
-	jc.logger.Info("delete by query", zap.String("body", string(query)))
-
+	es := w.esClient.ES()
 	res, err := es.DeleteByQuery(
-		index,
+		[]string{idx},
 		bytes.NewReader(query),
 		es.DeleteByQuery.WithContext(ctx),
 	)
 	if err != nil {
+		w.logger.Error("failed to delete old findings", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("policy_id", policyID))
 		return err
 	}
-
 	defer kaytu.CloseSafe(res)
 	if err != nil {
 		b, _ := io.ReadAll(res.Body)
-		fmt.Printf("failure while deleting es: %v\n%s\n", err, string(b))
+		w.logger.Error("failure while deleting es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("policy_id", policyID), zap.String("response", string(b)))
 		return err
 	} else if err := kaytu.CheckError(res); err != nil {
 		if kaytu.IsIndexNotFoundErr(err) {
 			return nil
 		}
 		b, _ := io.ReadAll(res.Body)
-		fmt.Printf("failure while querying es: %v\n%s\n", err, string(b))
+		w.logger.Error("failure while querying es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("policy_id", policyID), zap.String("response", string(b)))
 		return err
 	}
 

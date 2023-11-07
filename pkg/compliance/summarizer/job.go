@@ -2,7 +2,6 @@ package summarizer
 
 import (
 	"context"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -18,29 +17,22 @@ type Job struct {
 	CreatedAt   time.Time
 }
 
-type JobConfig struct {
-	config        Config
-	logger        *zap.Logger
-	esClient      kaytu.Client
-	kafkaProducer *confluent_kafka.Producer
-}
-
-func (j *Job) Run(jc JobConfig) error {
+func (w *Worker) RunJob(j Job) error {
 	ctx := context.Background()
 
-	jc.logger.Info("Running summarizer",
+	w.logger.Info("Running summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	paginator, err := es.NewFindingPaginator(jc.esClient, types.FindingsIndex, []kaytu.BoolFilter{
+	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []kaytu.BoolFilter{
 		kaytu.NewTermFilter("parentBenchmarks", j.BenchmarkID),
 	}, nil)
 	if err != nil {
 		return err
 	}
 
-	jc.logger.Info("Paginator ready")
+	w.logger.Info("Paginator ready")
 
 	bs := types2.BenchmarkSummary{
 		BenchmarkID:      j.BenchmarkID,
@@ -58,33 +50,33 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	for paginator.HasNext() {
-		jc.logger.Info("Next page")
+		w.logger.Info("Next page")
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
 			return err
 		}
 
-		jc.logger.Info("page size", zap.Int("pageSize", len(page)))
+		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			bs.AddFinding(f)
 		}
 	}
 
-	jc.logger.Info("Starting to summarizer",
+	w.logger.Info("Starting to summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
 	bs.Summarize()
 
-	jc.logger.Info("Summarize done")
+	w.logger.Info("Summarize done")
 
-	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, []kafka.Doc{bs}, jc.logger, nil)
+	err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, []kafka.Doc{bs}, w.logger, nil)
 	if err != nil {
 		return err
 	}
 
-	jc.logger.Info("Finished summarizer",
+	w.logger.Info("Finished summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
 	)

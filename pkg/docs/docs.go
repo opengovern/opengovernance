@@ -2279,7 +2279,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/aws": {
+        "/cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType}": {
             "get": {
                 "security": [
                     {
@@ -2320,7 +2320,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/azure": {
+        "/cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType}": {
             "get": {
                 "security": [
                     {
@@ -4966,6 +4966,42 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/bootstrap/{workspace_name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get bootstrap status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse"
                         }
                     }
                 }
@@ -8159,6 +8195,9 @@ const docTemplate = `{
                 "accountId": {
                     "type": "string"
                 },
+                "assumeAdminRoleName": {
+                    "type": "string"
+                },
                 "assumeRoleName": {
                     "type": "string"
                 },
@@ -8755,6 +8794,27 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus": {
+            "type": "string",
+            "enum": [
+                "OnboardConnection",
+                "CreatingWorkspace",
+                "WaitingForJobs"
+            ],
+            "x-enum-varnames": [
+                "BootstrapStatus_OnboardConnection",
+                "BootstrapStatus_CreatingWorkspace",
+                "BootstrapStatus_WaitingForJobs"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
             "type": "object",
             "properties": {
@@ -9046,6 +9106,7 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "PROVISIONED",
+                "BOOTSTRAPPING",
                 "PROVISIONING",
                 "PROVISIONING_FAILED",
                 "DELETING",
@@ -9055,6 +9116,7 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "StatusProvisioned",
+                "StatusBootstrapping",
                 "StatusProvisioning",
                 "StatusProvisioningFailed",
                 "StatusDeleting",
