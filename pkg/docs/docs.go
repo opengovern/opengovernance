@@ -2279,7 +2279,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/aws": {
+        "/cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType}": {
             "get": {
                 "security": [
                     {
@@ -2320,7 +2320,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/azure": {
+        "/cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType}": {
             "get": {
                 "security": [
                     {
@@ -8193,6 +8193,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "accountId": {
+                    "type": "string"
+                },
+                "assumeAdminRoleName": {
                     "type": "string"
                 },
                 "assumeRoleName": {
