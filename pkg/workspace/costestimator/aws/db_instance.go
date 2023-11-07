@@ -16,7 +16,7 @@ func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetRD
 	}
 
 	dbInstanceCost, err := db.FindRDSInstancePrice(request.RegionCode, "dbinstance", dbType.engine,
-		dbType.edition, licenseModel, deploymentOption, *request.Instance.DBInstance.StorageType)
+		dbType.edition, licenseModel, deploymentOption, "Hrs")
 	if err != nil {
 		return 0, err
 	}
