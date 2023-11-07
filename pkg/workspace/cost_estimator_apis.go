@@ -36,3 +36,18 @@ func (s *Server) GetEC2VolumePrice(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, cost)
 }
+
+// GetRDSInstancePrice get rds instance price from database
+// route: /workspace/api/v1/cost_estimator/rds_instance [get]
+func (s *Server) GetRDSInstancePrice(ctx echo.Context) error {
+	var request es.RDSDBInstanceResponse
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+
+	cost, err := aws.RDSDBInstanceCostByResource(s.costEstimatorDb, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}

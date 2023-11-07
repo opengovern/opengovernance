@@ -19,6 +19,19 @@ func NewCostEstimatorDatabase(settings *postgres.Config, logger *zap.Logger) (*C
 	return &CostEstimatorDatabase{orm: orm}, nil
 }
 
+func (db CostEstimatorDatabase) FindRDSInstancePrice(regionCode string, instanceType string, databaseEngine string, databaseEdition string,
+	licenseModel string, deploymentOption string, storageType string) (*RDSDBInstancePrice, error) {
+	var dbInstance RDSDBInstancePrice
+	err := db.orm.Model(&RDSDBInstancePrice{}).Where("regionCode = ?", regionCode).Where("instanceType = ?", instanceType).
+		Where("databaseEngine = ?", databaseEngine).Where("databaseEdition = ?", databaseEdition).Where("licenseModel = ?", licenseModel).
+		Where("deploymentOption = ?", deploymentOption).Where("storageType = ?", storageType).Find(&dbInstance).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &dbInstance, nil
+}
+
 func (db CostEstimatorDatabase) FindEC2InstancePrice(regionCode string, capacityStatus string, instanceType string, tenancy string,
 	operatingSystem string, preInstalledSW string, costUnit string) (*EC2InstancePrice, error) {
 	var instance EC2InstancePrice
