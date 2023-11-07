@@ -67,13 +67,6 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 	if creds.Region == "" {
 		creds.Region = "us-east-1"
 	}
-
-	accID, err := describer.STSAccount(ctx, creds)
-	if err != nil {
-		logger.Warn("failed to get account id", zap.Error(err))
-		return nil, err
-	}
-
 	iamClient := iam.NewFromConfig(creds)
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
@@ -96,20 +89,9 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 		}
 	}
 
-	metadata := AWSCredentialMetadata{
-		AccountID:        accID,
-		IamUserName:      user.User.UserName,
-		AttachedPolicies: policyARNs,
-	}
-
 	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
 		UserName: user.User.UserName,
 	})
-	for _, key := range accessKeys.AccessKeyMetadata {
-		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
-			metadata.IamApiKeyCreationDate = *key.CreateDate
-		}
-	}
 	if err != nil {
 		logger.Warn("failed to get access keys", zap.Error(err))
 		return nil, err
@@ -118,6 +100,23 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 	creds, err = kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	accID, err := describer.STSAccount(ctx, creds)
+	if err != nil {
+		logger.Warn("failed to get account id", zap.Error(err))
+		return nil, err
+	}
+
+	metadata := AWSCredentialMetadata{
+		AccountID:        accID,
+		IamUserName:      user.User.UserName,
+		AttachedPolicies: policyARNs,
+	}
+	for _, key := range accessKeys.AccessKeyMetadata {
+		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
+			metadata.IamApiKeyCreationDate = *key.CreateDate
+		}
 	}
 
 	organization, err := describer.OrganizationOrganization(ctx, creds)
