@@ -2,7 +2,6 @@ package describe
 
 import (
 	"fmt"
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"go.uber.org/zap"
@@ -88,7 +87,7 @@ func (s *Scheduler) resolveBenchmarkDependency(job model.JobSequencer) error {
 			return fmt.Errorf("job not found: %v", id)
 		}
 
-		if complianceJob.Status == complianceApi.ComplianceReportJobCreated || complianceJob.Status == complianceApi.ComplianceReportJobInProgress {
+		if complianceJob.Status == model.ComplianceJobCreated || complianceJob.Status == model.ComplianceJobRunnersInProgress {
 			allDependencyResolved = false
 			break
 		}

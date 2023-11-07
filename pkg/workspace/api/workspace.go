@@ -13,6 +13,18 @@ type CreateWorkspaceResponse struct {
 	ID string `json:"id"`
 }
 
+type BootstrapStatus string
+
+const (
+	BootstrapStatus_OnboardConnection BootstrapStatus = "OnboardConnection"
+	BootstrapStatus_CreatingWorkspace BootstrapStatus = "CreatingWorkspace"
+	BootstrapStatus_WaitingForJobs    BootstrapStatus = "WaitingForJobs"
+)
+
+type BootstrapStatusResponse struct {
+	Status BootstrapStatus `json:"status"`
+}
+
 type ChangeWorkspaceOwnershipRequest struct {
 	NewOwnerUserID string `json:"newOwnerUserID"`
 }

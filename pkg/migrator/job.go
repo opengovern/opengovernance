@@ -1,11 +1,10 @@
 package migrator
 
 import (
-	"crypto/tls"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"net/http"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"os"
 	"path"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/insight"
 
-	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/compliance"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/elasticsearch"
@@ -37,7 +35,7 @@ type GitConfig struct {
 
 type Job struct {
 	db             db.Database
-	elastic        elasticsearchv7.Config
+	elastic        kaytu.Client
 	logger         *zap.Logger
 	pusher         *push.Pusher
 	metadataClient client.MetadataServiceClient
@@ -77,16 +75,13 @@ func InitializeJob(
 
 	w.pusher = push.New(prometheusPushAddress, "migrator")
 
-	w.elastic = elasticsearchv7.Config{
-		Addresses: []string{conf.ElasticSearch.Address},
-		Username:  conf.ElasticSearch.Username,
-		Password:  conf.ElasticSearch.Password,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	w.elastic, err = kaytu.NewClient(kaytu.ClientConfig{
+		Addresses:    []string{conf.ElasticSearch.Address},
+		Username:     &conf.ElasticSearch.Username,
+		Password:     &conf.ElasticSearch.Password,
+		IsOpenSearch: &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:    &conf.ElasticSearch.AwsRegion,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +94,7 @@ func InitializeJob(
 
 func NewJob(
 	database db.Database,
-	elastic elasticsearchv7.Config,
+	elastic kaytu.Client,
 	logger *zap.Logger,
 	pusher *push.Pusher,
 	metadataClient client.MetadataServiceClient,

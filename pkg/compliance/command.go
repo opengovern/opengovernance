@@ -2,9 +2,7 @@ package compliance
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"os"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
@@ -19,50 +17,6 @@ var (
 	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
 	S3Region       = os.Getenv("S3_REGION")
 )
-
-func WorkerCommand() *cobra.Command {
-	var (
-		id  string
-		cnf worker.Config
-	)
-	config.ReadFromEnv(&cnf, nil)
-
-	cmd := &cobra.Command{
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			switch {
-			case id == "":
-				return errors.New("missing required flag 'id'")
-			default:
-				return nil
-			}
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cmd.SilenceUsage = true
-			logger, err := zap.NewProduction()
-			if err != nil {
-				return err
-			}
-
-			w, err := worker.InitializeNewWorker(
-				cnf,
-				logger,
-				cnf.PrometheusPushAddress,
-			)
-
-			if err != nil {
-				return err
-			}
-
-			defer w.Stop()
-
-			return w.Run()
-		},
-	}
-
-	cmd.Flags().StringVar(&id, "id", "", "The worker id")
-
-	return cmd
-}
 
 type OpenAI struct {
 	Token string

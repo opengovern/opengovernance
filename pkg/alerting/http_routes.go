@@ -65,21 +65,67 @@ func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 	}
 	var resListTrigger []api.Triggers
 	for _, trigger := range listTriggers {
-		var eventType api.EventType
-		err = json.Unmarshal(trigger.EventType, &eventType)
+		rule, err := h.db.GetRule(trigger.RuleID)
 		if err != nil {
-			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error unmarshalling event type : %v ", err))
+			return err
+		}
+
+		action, err := h.db.GetAction(rule.ActionID)
+		if err != nil {
+			return err
+		}
+
+		var eventType api.EventType
+		err = json.Unmarshal(rule.EventType, &eventType)
+		if err != nil {
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling eventType : %v ", err))
 		}
 
 		var scope api.Scope
-		err = json.Unmarshal(trigger.Scope, &scope)
+		err = json.Unmarshal(rule.Scope, &scope)
 		if err != nil {
-			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error unmarshalling scope : %v ", err))
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling scope : %v ", err))
+		}
+
+		var operator api.OperatorStruct
+		err = json.Unmarshal(rule.Operator, &operator)
+		if err != nil {
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling operator : %v ", err))
+		}
+
+		var metadata api.Metadata
+		err = json.Unmarshal(rule.Metadata, &metadata)
+		if err != nil {
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling metadata : %v ", err))
+		}
+
+		apiRule := api.Rule{
+			Id:            rule.Id,
+			EventType:     eventType,
+			Scope:         scope,
+			Operator:      operator,
+			Metadata:      metadata,
+			TriggerStatus: api.TriggerStatus(rule.TriggerStatus),
+			ActionID:      rule.ActionID,
+		}
+
+		var headers map[string]string
+		err = json.Unmarshal(action.Headers, &headers)
+		if err != nil {
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling the action : %v ", err))
+		}
+
+		apiAction := api.Action{
+			Id:      action.Id,
+			Method:  action.Method,
+			Url:     action.Url,
+			Headers: headers,
+			Body:    action.Body,
 		}
 
 		complianceT := api.Triggers{
-			EventType:      eventType,
-			Scope:          scope,
+			Rule:           apiRule,
+			Action:         apiAction,
 			TriggeredAt:    trigger.TriggeredAt,
 			Value:          trigger.Value,
 			ResponseStatus: trigger.ResponseStatus,
@@ -347,6 +393,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 
 		response = append(response, api.Action{
 			Id:      action.Id,
+			Name:    action.Name,
 			Method:  action.Method,
 			Url:     action.Url,
 			Headers: headers,
@@ -374,7 +421,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	}
 
 	testEmptyFields := api.CreateActionReq{}
-	if req.Url == testEmptyFields.Url || req.Method == testEmptyFields.Method {
+	if req.Name == "" || req.Url == testEmptyFields.Url || req.Method == testEmptyFields.Method {
 		return errors.New("All the fields in struct must be set")
 	}
 
@@ -383,7 +430,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
 	}
 
-	id, err := h.db.CreateAction(req.Method, req.Url, headers, req.Body)
+	id, err := h.db.CreateAction(req.Name, req.Method, req.Url, headers, req.Body)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating the action : %v ", err))
 	}
@@ -453,7 +500,7 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 		MarshalHeader = nil
 	}
 
-	err = h.db.UpdateAction(uint(id), &MarshalHeader, req.Url, req.Body, req.Method)
+	err = h.db.UpdateAction(uint(id), req.Name, &MarshalHeader, req.Url, req.Body, req.Method)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the action : %v ", err))
 	}
@@ -485,7 +532,7 @@ func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("error in marshalling the request : %v", err)
 	}
-	id, err := h.db.CreateAction("POST", inputs.SlackUrl, nil, string(reqStrMarshalled))
+	id, err := h.db.CreateAction(inputs.Name, "POST", inputs.SlackUrl, nil, string(reqStrMarshalled))
 	if err != nil {
 		return fmt.Errorf("error creating action : %v ", err)
 	}
@@ -529,17 +576,17 @@ func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
 
 	requestMarshalled, err := json.Marshal(requestBody)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error marshalling the request body : %v ", err))
+		return err
 	}
 
 	headerMarshalled, err := json.Marshal(headers)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
+		return err
 	}
 
-	id, err := h.db.CreateAction("POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), headerMarshalled, string(requestMarshalled))
+	id, err := h.db.CreateAction(inputs.Name, "POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), headerMarshalled, string(requestMarshalled))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error creating action : %v ", err))
+		return err
 	}
 
 	res := api.JiraAndStackResponse{

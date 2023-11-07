@@ -10,24 +10,25 @@ import (
 )
 
 var (
-	PostgresHost              = os.Getenv("POSTGRES_HOST")
-	PostgresPort              = os.Getenv("POSTGRES_PORT")
-	PostgresDBName            = os.Getenv("POSTGRES_DB")
-	PostgresUser              = os.Getenv("POSTGRES_USERNAME")
-	PostgresPassword          = os.Getenv("POSTGRES_PASSWORD")
-	PostgresSSLMode           = os.Getenv("POSTGRES_SSLMODE")
-	ServerAddr                = os.Getenv("SERVER_ADDR")
-	DomainSuffix              = os.Getenv("DOMAIN_SUFFIX")
-	RedisAddress              = os.Getenv("REDIS_ADDRESS")
-	AuthBaseURL               = os.Getenv("AUTH_BASE_URL")
-	OnboardTemplate           = os.Getenv("ONBOARD_BASE_URL")
-	InventoryTemplate         = os.Getenv("INVENTORY_BASE_URL")
-	AutoSuspendDurationString = os.Getenv("AUTO_SUSPEND_DURATION_MINUTES")
-	KaytuHelmChartLocation    = os.Getenv("KAYTU_HELM_CHART_LOCATION")
-	KaytuOctopusNamespace     = os.Getenv("KAYTU_OCTOPUS_NAMESPACE")
-	FluxSystemNamespace       = os.Getenv("FLUX_SYSTEM_NAMESPACE")
-	S3AccessKey               = os.Getenv("S3_ACCESS_KEY")
-	S3SecretKey               = os.Getenv("S3_SECRET_KEY")
+	PostgresHost                = os.Getenv("POSTGRES_HOST")
+	PostgresPort                = os.Getenv("POSTGRES_PORT")
+	PostgresDBName              = os.Getenv("POSTGRES_DB")
+	PostgresCostEstimatorDBName = os.Getenv("POSTGRES_COST_ESTIMATOR_DB")
+	PostgresUser                = os.Getenv("POSTGRES_USERNAME")
+	PostgresPassword            = os.Getenv("POSTGRES_PASSWORD")
+	PostgresSSLMode             = os.Getenv("POSTGRES_SSLMODE")
+	ServerAddr                  = os.Getenv("SERVER_ADDR")
+	DomainSuffix                = os.Getenv("DOMAIN_SUFFIX")
+	RedisAddress                = os.Getenv("REDIS_ADDRESS")
+	AuthBaseURL                 = os.Getenv("AUTH_BASE_URL")
+	OnboardTemplate             = os.Getenv("ONBOARD_BASE_URL")
+	InventoryTemplate           = os.Getenv("INVENTORY_BASE_URL")
+	AutoSuspendDurationString   = os.Getenv("AUTO_SUSPEND_DURATION_MINUTES")
+	KaytuHelmChartLocation      = os.Getenv("KAYTU_HELM_CHART_LOCATION")
+	KaytuOctopusNamespace       = os.Getenv("KAYTU_OCTOPUS_NAMESPACE")
+	FluxSystemNamespace         = os.Getenv("FLUX_SYSTEM_NAMESPACE")
+	S3AccessKey                 = os.Getenv("S3_ACCESS_KEY")
+	S3SecretKey                 = os.Getenv("S3_SECRET_KEY")
 )
 
 type Config struct {
@@ -36,6 +37,7 @@ type Config struct {
 	User                   string
 	Password               string
 	DBName                 string
+	CostEstimatorDBName    string
 	SSLMode                string
 	ServerAddr             string
 	DomainSuffix           string
@@ -57,6 +59,7 @@ func NewConfig() *Config {
 		User:                   PostgresUser,
 		Password:               PostgresPassword,
 		DBName:                 PostgresDBName,
+		CostEstimatorDBName:    PostgresCostEstimatorDBName,
 		SSLMode:                PostgresSSLMode,
 		ServerAddr:             ServerAddr,
 		DomainSuffix:           DomainSuffix,

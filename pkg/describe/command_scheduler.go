@@ -3,6 +3,8 @@ package describe
 import (
 	"context"
 	"errors"
+	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -22,9 +24,6 @@ var (
 	RabbitMQUsername = os.Getenv("RABBITMQ_USERNAME")
 	RabbitMQPassword = os.Getenv("RABBITMQ_PASSWORD")
 
-	KafkaService        = os.Getenv("KAFKA_SERVICE")
-	KafkaResourcesTopic = os.Getenv("KAFKA_RESOURCE_TOPIC")
-
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
@@ -32,9 +31,11 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
-	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
-	ElasticSearchUsername = os.Getenv("ES_USERNAME")
-	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
+	ElasticSearchAddress         = os.Getenv("ES_ADDRESS")
+	ElasticSearchUsername        = os.Getenv("ES_USERNAME")
+	ElasticSearchPassword        = os.Getenv("ES_PASSWORD")
+	ElasticSearchIsOpenSearchStr = os.Getenv("ES_ISOPENSEARCH")
+	ElasticSearchAwsRegion       = os.Getenv("ES_AWS_REGION")
 
 	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
 	GRPCServerAddress = os.Getenv("GRPC_ADDRESS")
@@ -44,8 +45,6 @@ var (
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
 	FullDiscoveryIntervalHours = os.Getenv("FULL_DISCOVERY_INTERVAL_HOURS")
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
-	ComplianceIntervalHours    = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
-	ComplianceTimeoutHours     = os.Getenv("COMPLIANCE_TIMEOUT_HOURS")
 	InsightIntervalHours       = os.Getenv("INSIGHT_INTERVAL_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
@@ -58,7 +57,6 @@ var (
 	InventoryBaseURL           = os.Getenv("INVENTORY_BASE_URL")
 	AuthGRPCURI                = os.Getenv("AUTH_GRPC_URI")
 
-	LambdaFuncsBaseURL      = os.Getenv("LAMBDA_FUNCS_BASE_URL")
 	KeyARN                  = os.Getenv("KMS_KEY_ARN")
 	KeyRegion               = os.Getenv("KMS_ACCOUNT_REGION")
 	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
@@ -77,6 +75,8 @@ func SchedulerCommand() *cobra.Command {
 	var (
 		id string
 	)
+	var conf config2.SchedulerConfig
+	config.ReadFromEnv(&conf, nil)
 
 	ctx := context.Background()
 
@@ -92,6 +92,7 @@ func SchedulerCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := InitializeScheduler(
 				id,
+				conf,
 				InsightJobsQueueName,
 				InsightResultsQueueName,
 				CheckupJobsQueueName,
@@ -105,8 +106,6 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLSSLMode,
 				HttpServerAddress,
 				DescribeTimeoutHours,
-				ComplianceIntervalHours,
-				ComplianceTimeoutHours,
 				InsightIntervalHours,
 				CheckupIntervalHours,
 				MustSummarizeIntervalHours,

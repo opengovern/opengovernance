@@ -4965,7 +4965,71 @@
                 }
             }
         },
+        "/workspace/api/v1/bootstrap/{workspace_name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get bootstrap status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/organization": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "List all organizations",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -5576,6 +5640,9 @@
                 "method": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "url": {
                     "type": "string"
                 }
@@ -5623,6 +5690,9 @@
                     }
                 },
                 "method": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "url": {
@@ -5682,6 +5752,9 @@
                     "type": "string"
                 },
                 "issue_type_id": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "project_id": {
@@ -5785,6 +5858,9 @@
                 "channel_name": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "slack_url": {
                     "type": "string"
                 }
@@ -5793,14 +5869,14 @@
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers": {
             "type": "object",
             "properties": {
-                "event_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
+                "action": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action"
                 },
                 "response_status": {
                     "type": "integer"
                 },
-                "scope": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
+                "rule": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule"
                 },
                 "triggered_at": {
                     "type": "string"
@@ -5823,6 +5899,9 @@
                     }
                 },
                 "method": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "url": {
@@ -6521,28 +6600,19 @@
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding": {
             "type": "object",
             "properties": {
-                "ID": {
-                    "description": "Finding ID",
-                    "type": "string",
-                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5"
-                },
                 "benchmarkID": {
-                    "description": "Benchmark ID",
                     "type": "string",
                     "example": "azure_cis_v140"
                 },
                 "complianceJobID": {
-                    "description": "Compliance job ID",
                     "type": "integer",
                     "example": 1
                 },
                 "connectionID": {
-                    "description": "Connection ID",
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "connector": {
-                    "description": "Cloud provider",
                     "allOf": [
                         {
                             "$ref": "#/definitions/source.Type"
@@ -6551,12 +6621,10 @@
                     "example": "Azure"
                 },
                 "evaluatedAt": {
-                    "description": "Timestamp of the policy evaluation",
                     "type": "integer",
                     "example": 1589395200
                 },
                 "evaluator": {
-                    "description": "Evaluator name",
                     "type": "string",
                     "example": "steampipe-v0.5"
                 },
@@ -6567,7 +6635,6 @@
                     }
                 },
                 "policyID": {
-                    "description": "Policy ID",
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
                 },
@@ -6585,7 +6652,6 @@
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "reason": {
-                    "description": "Reason for the policy evaluation result",
                     "type": "string",
                     "example": "The VM is not using managed disks"
                 },
@@ -6594,27 +6660,22 @@
                     "type": "string"
                 },
                 "resourceID": {
-                    "description": "Resource ID",
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
                 "resourceLocation": {
-                    "description": "Resource location",
                     "type": "string",
                     "example": "eastus"
                 },
                 "resourceName": {
-                    "description": "Resource name",
                     "type": "string",
                     "example": "vm-1"
                 },
                 "resourceType": {
-                    "description": "Resource type",
                     "type": "string",
                     "example": "Microsoft.Compute/virtualMachines"
                 },
                 "result": {
-                    "description": "Compliance result",
                     "allOf": [
                         {
                             "$ref": "#/definitions/types.ComplianceResult"
@@ -6623,7 +6684,6 @@
                     "example": "alarm"
                 },
                 "severity": {
-                    "description": "Compliance severity",
                     "allOf": [
                         {
                             "$ref": "#/definitions/types.FindingSeverity"
@@ -6632,7 +6692,6 @@
                     "example": "low"
                 },
                 "stateActive": {
-                    "description": "Whether the policy is active or not",
                     "type": "boolean",
                     "example": true
                 }
@@ -8726,6 +8785,27 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus": {
+            "type": "string",
+            "enum": [
+                "OnboardConnection",
+                "CreatingWorkspace",
+                "WaitingForJobs"
+            ],
+            "x-enum-varnames": [
+                "BootstrapStatus_OnboardConnection",
+                "BootstrapStatus_CreatingWorkspace",
+                "BootstrapStatus_WaitingForJobs"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
             "type": "object",
             "properties": {
@@ -9017,6 +9097,7 @@
             "type": "string",
             "enum": [
                 "PROVISIONED",
+                "BOOTSTRAPPING",
                 "PROVISIONING",
                 "PROVISIONING_FAILED",
                 "DELETING",
@@ -9026,6 +9107,7 @@
             ],
             "x-enum-varnames": [
                 "StatusProvisioned",
+                "StatusBootstrapping",
                 "StatusProvisioning",
                 "StatusProvisioningFailed",
                 "StatusDeleting",

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -58,15 +60,16 @@ var (
 )
 
 type Server struct {
-	logger     *zap.Logger
-	e          *echo.Echo
-	cfg        *Config
-	db         *Database
-	authClient authclient.AuthServiceClient
-	kubeClient k8sclient.Client // the kubernetes client
-	rdb        *redis.Client
-	cache      *cache.Cache
-	awsConfig  aws.Config
+	logger          *zap.Logger
+	e               *echo.Echo
+	cfg             *Config
+	db              *Database
+	costEstimatorDb *db2.CostEstimatorDatabase
+	authClient      authclient.AuthServiceClient
+	kubeClient      k8sclient.Client // the kubernetes client
+	rdb             *redis.Client
+	cache           *cache.Cache
+	awsConfig       aws.Config
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -85,6 +88,20 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("new database: %w", err)
 	}
 	s.db = db
+
+	pgCfg := &postgres.Config{
+		Host:    cfg.Host,
+		Port:    cfg.Port,
+		User:    cfg.User,
+		Passwd:  cfg.Password,
+		DB:      cfg.CostEstimatorDBName,
+		SSLMode: cfg.SSLMode,
+	}
+	costEstimatorDb, err := db2.NewCostEstimatorDatabase(pgCfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new cost estimator database: %w", err)
+	}
+	s.costEstimatorDb = costEstimatorDb
 
 	kubeClient, err := s.newKubeClient()
 	if err != nil {
@@ -139,6 +156,9 @@ func (s *Server) Register(e *echo.Echo) {
 	workspaceGroup.POST("/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KaytuAdminRole))
 	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
 
+	bootstrapGroup := v1Group.Group("/bootstrap")
+	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
+
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
 	workspacesGroup.GET("/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
@@ -147,8 +167,12 @@ func (s *Server) Register(e *echo.Echo) {
 	workspacesGroup.GET("/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
 
 	organizationGroup := v1Group.Group("/organization")
+	organizationGroup.GET("", httpserver2.AuthorizeHandler(s.ListOrganization, authapi.EditorRole))
 	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
+
+	costEstimatorGroup := v1Group.Group("/cost_estimator")
+	costEstimatorGroup.GET("/ec2_instance/:interval", httpserver2.AuthorizeHandler(s.GetEC2InstancePrice, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
@@ -241,7 +265,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 	var httpIncludes []contourv1.Include
 	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
-		if w.Status != api.StatusProvisioned {
+		if w.Status != api.StatusProvisioned && w.Status != api.StatusBootstrapping {
 			continue
 		}
 		httpIncludes = append(httpIncludes, contourv1.Include{
@@ -361,8 +385,20 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	status := api.WorkspaceStatus(workspace.Status)
+	status := workspace.Status
 	switch status {
+	case api.StatusBootstrapping:
+		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", workspace.ID)
+		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+		c, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+		if err != nil {
+			return err
+		}
+		if c > 0 {
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioned); err != nil {
+				return fmt.Errorf("update workspace status: %w", err)
+			}
+		}
 	case api.StatusProvisioning:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
@@ -429,7 +465,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				return fmt.Errorf("set last access: %v", err)
 			}
 
-			newStatus = api.StatusProvisioned
+			newStatus = api.StatusBootstrapping
 		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			if !helmRelease.Spec.Suspend {
 				helmRelease.Spec.Suspend = true
@@ -630,6 +666,51 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
+	})
+}
+
+// GetBootstrapStatus godoc
+//
+//	@Summary	Get bootstrap status
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Success	200				{object}	api.BootstrapStatusResponse
+//	@Router		/workspace/api/v1/bootstrap/{workspace_name} [get]
+func (s *Server) GetBootstrapStatus(c echo.Context) error {
+	workspaceName := c.Param("workspace_name")
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	if ws == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace not found")
+	}
+
+	if ws.Status == api.StatusProvisioning {
+		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
+			Status: api.BootstrapStatus_CreatingWorkspace,
+		})
+	}
+
+	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", ws.ID)
+	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+	count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
+			Status: api.BootstrapStatus_OnboardConnection,
+		})
+	}
+
+	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
+		Status: api.BootstrapStatus_WaitingForJobs,
 	})
 }
 
@@ -1209,6 +1290,28 @@ func (s *Server) CreateOrganization(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, dbOrg.ToAPI())
+}
+
+// ListOrganization godoc
+//
+//	@Summary	List all organizations
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Success	201	{object}	[]api.Organization
+//	@Router		/workspace/api/v1/organization [get]
+func (s *Server) ListOrganization(c echo.Context) error {
+	orgs, err := s.db.ListOrganizations()
+	if err != nil {
+		return err
+	}
+
+	var apiOrg []api.Organization
+	for _, org := range orgs {
+		apiOrg = append(apiOrg, org.ToAPI())
+	}
+	return c.JSON(http.StatusCreated, apiOrg)
 }
 
 // DeleteOrganization godoc

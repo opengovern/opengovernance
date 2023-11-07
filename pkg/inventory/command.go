@@ -3,7 +3,9 @@ package inventory
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"os"
+	"strconv"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
@@ -14,9 +16,11 @@ import (
 var (
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
-	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
-	ElasticSearchUsername = os.Getenv("ES_USERNAME")
-	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
+	ElasticSearchAddress         = os.Getenv("ES_ADDRESS")
+	ElasticSearchUsername        = os.Getenv("ES_USERNAME")
+	ElasticSearchPassword        = os.Getenv("ES_PASSWORD")
+	ElasticSearchIsOpenSearchStr = os.Getenv("ES_ISOPENSEARCH")
+	ElasticSearchAwsRegion       = os.Getenv("ES_AWS_REGION")
 
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
@@ -54,8 +58,17 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
+	elasticSearchIsOpenSearch, _ := strconv.ParseBool(ElasticSearchIsOpenSearchStr)
+	esConf := config.ElasticSearch{
+		Address:      ElasticSearchAddress,
+		Username:     ElasticSearchUsername,
+		Password:     ElasticSearchPassword,
+		IsOpenSearch: elasticSearchIsOpenSearch,
+		AwsRegion:    ElasticSearchAwsRegion,
+	}
+
 	handler, err := InitializeHttpHandler(
-		ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
+		esConf,
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
 		KafkaService,

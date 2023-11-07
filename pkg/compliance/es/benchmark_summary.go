@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
-	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"strings"
 	"time"
 
@@ -140,7 +139,7 @@ func ListBenchmarkSummaries(client kaytu.Client, benchmarkID *string) ([]types.B
 	sort := []map[string]any{
 		{"_id": "desc"},
 	}
-	res["size"] = summarizer.EsFetchPageSize
+	res["size"] = 10000
 	res["sort"] = sort
 	res["query"] = map[string]any{
 		"bool": map[string]any{
