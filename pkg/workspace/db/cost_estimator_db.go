@@ -74,12 +74,22 @@ func (db CostEstimatorDatabase) FindAmazonCloudWatchPrice(regionCode string, Sta
 	return &cloudWatch, nil
 }
 
-func (db CostEstimatorDatabase) FindEC2CpuCreditsPrice(regionCode string, operatingSystem string, usageType string, costUnit string) (*EC2CpuCreditsCost, error) {
-	var cpuCredits EC2CpuCreditsCost
-	err := db.orm.Model(&EC2CpuCreditsCost{}).Where("regionCode = ?", regionCode).
+func (db CostEstimatorDatabase) FindEC2CpuCreditsPrice(regionCode string, operatingSystem string, usageType string, costUnit string) (*EC2CpuCreditsPrice, error) {
+	var cpuCredits EC2CpuCreditsPrice
+	err := db.orm.Model(&EC2CpuCreditsPrice{}).Where("regionCode = ?", regionCode).
 		Where("operatingSystem = ?", operatingSystem).Where("usageType = ?", usageType).Where("costUnit = ?", costUnit).Find(&cpuCredits).Error
 	if err != nil {
 		return nil, err
 	}
 	return &cpuCredits, nil
+}
+
+func (db CostEstimatorDatabase) FindLBPrice(regionCode string, productFamily string, usageType string, costUnit string) (*LBPrice, error) {
+	var lb LBPrice
+	err := db.orm.Model(&LBPrice{}).Where("regionCode = ?", regionCode).
+		Where("productFamily = ?", productFamily).Where("usageType LIKE '%?%'", usageType).Where("costUnit = ?", costUnit).Find(&lb).Error
+	if err != nil {
+		return nil, err
+	}
+	return &lb, nil
 }

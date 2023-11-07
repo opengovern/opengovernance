@@ -6,14 +6,15 @@ import (
 )
 
 func GetComputeVirtualMachineCost(h *HttpHandler, resourceId string) (float64, error) {
-	resource, err := es.GetMicrosoftVirtualMachine(h.client, resourceId)
+	var response es.MicrosoftVirtualMachineResponse
+	resource, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/virtualMachines", response)
 	if err != nil {
 		return 0, err
 	}
 
-	OSType := resource.Hits.Hits[0].Source.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
-	location := resource.Hits.Hits[0].Source.Description.VirtualMachine.Location
-	VMSize := resource.Hits.Hits[0].Source.Description.VirtualMachine.Properties.HardwareProfile.VMSize
+	OSType := resource.(es.MicrosoftVirtualMachineResponse).Hits.Hits[0].Source.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
+	location := resource.(es.MicrosoftVirtualMachineResponse).Hits.Hits[0].Source.Description.VirtualMachine.Location
+	VMSize := resource.(es.MicrosoftVirtualMachineResponse).Hits.Hits[0].Source.Description.VirtualMachine.Properties.HardwareProfile.VMSize
 	cost, err := azure.VirtualMachineCostEstimator(OSType, location, VMSize)
 	if err != nil {
 		return 0, err

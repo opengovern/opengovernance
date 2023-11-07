@@ -3,15 +3,11 @@ package aws
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"strings"
 )
 
-const (
-	TimeInterval = 24 // Hours (One day)
-)
-
-// EC2InstanceCostByResource time interval (Hrs)
 func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2InstanceResponse) (float64, error) {
 	var cost float64
 	description := instance.Hits.Hits[0].Source.Description
@@ -24,14 +20,14 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 	if err != nil {
 		return 0, err
 	}
-	cost += instanceCost.Price * TimeInterval
+	cost += instanceCost.Price * costestimator.TimeInterval
 
 	for _, volume := range description.LaunchTemplateData.BlockDeviceMappings {
 		volumeCost, err := calcEC2VolumeCost(db, instance.Hits.Hits[0].Source.Region, string(volume.Ebs.VolumeType), *volume.Ebs.VolumeSize, *volume.Ebs.Iops)
 		if err != nil {
 			return 0, err
 		}
-		cost += volumeCost * TimeInterval
+		cost += volumeCost * costestimator.TimeInterval
 	}
 
 	if description.LaunchTemplateData.CreditSpecification.CpuCredits != nil {
@@ -43,7 +39,7 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 			if err != nil {
 				return 0, err
 			}
-			cost += cpuCreditsCost.Price * TimeInterval
+			cost += cpuCreditsCost.Price * costestimator.TimeInterval
 		}
 	}
 
@@ -54,7 +50,7 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 				return 0, err
 			}
 			days := getNumberOfDays()
-			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * TimeInterval //TODO: Change this default metrics number
+			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * costestimator.TimeInterval //TODO: Change this default metrics number
 		}
 	}
 
@@ -66,7 +62,7 @@ func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, instance es.EC2Inst
 			if err != nil {
 				return 0, err
 			}
-			cost += ebsCost.Price * TimeInterval
+			cost += ebsCost.Price * costestimator.TimeInterval
 		}
 	}
 

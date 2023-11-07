@@ -2,6 +2,7 @@ package aws
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"time"
 )
@@ -13,7 +14,7 @@ func EC2VolumeCostByResource(db *db.CostEstimatorDatabase, volume es.EC2VolumeRe
 	if err != nil {
 		return 0, err
 	}
-	return cost, nil
+	return cost * costestimator.TimeInterval, nil
 }
 
 // calcEC2VolumeCost Calculates ec2 volume (ebs volume) cost for one hour
