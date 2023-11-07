@@ -72,14 +72,12 @@ type LBPrice struct {
 type RDSDBInstancePrice struct {
 	SKU              string `gorm:"primaryKey"`
 	EffectiveDate    int64
-	region           string
-	instanceType     string
-	databaseEngine   string
-	databaseEdition  string
-	licenseModel     string
-	deploymentOption string
-	storageType      string
-	UsageType        string
+	RegionCode       string
+	InstanceType     string
+	DatabaseEngine   string
+	DatabaseEdition  string
+	LicenseModel     string
+	DeploymentOption string
 	PriceUnit        string
 	Price            float64
 }
