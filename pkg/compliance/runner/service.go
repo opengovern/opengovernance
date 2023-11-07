@@ -6,7 +6,8 @@ import (
 	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -31,6 +32,7 @@ type Config struct {
 	Kafka                 config.Kafka
 	Compliance            config.KaytuService
 	Onboard               config.KaytuService
+	Inventory             config.KaytuService
 	Steampipe             config.Postgres
 	PrometheusPushAddress string
 }
@@ -189,7 +191,8 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 		config:           w.config,
 		logger:           w.logger,
 		complianceClient: complianceClient.NewComplianceClient(w.config.Compliance.BaseURL),
-		onboardClient:    client.NewOnboardServiceClient(w.config.Onboard.BaseURL, nil),
+		onboardClient:    onboardClient.NewOnboardServiceClient(w.config.Onboard.BaseURL, nil),
+		inventoryClient:  inventoryClient.NewInventoryServiceClient(w.config.Inventory.BaseURL),
 		steampipeConn:    w.steampipeConn,
 		esClient:         w.esClient,
 		kafkaProducer:    w.kafkaProducer,
