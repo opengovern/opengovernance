@@ -173,6 +173,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	costEstimatorGroup := v1Group.Group("/cost_estimator")
 	costEstimatorGroup.GET("/ec2_instance/:interval", httpserver2.AuthorizeHandler(s.GetEC2InstancePrice, authapi.InternalRole))
+	costEstimatorGroup.GET("/rds_instance", httpserver2.AuthorizeHandler(s.GetRDSInstancePrice, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {

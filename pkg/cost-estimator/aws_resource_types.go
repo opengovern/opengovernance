@@ -19,10 +19,15 @@ func GetEC2InstanceCost(h *HttpHandler, resourceId string, timeInterval int) (fl
 	return cost, nil
 }
 
-func GetRDSInstanceCost(h *HttpHandler, resourceId string, timeInterval int64) (float64, error) {
+func GetRDSInstanceCost(h *HttpHandler, resourceId string, timeInterval int) (float64, error) {
 	resource, err := es.GetRDSInstance(h.client, resourceId)
 	if err != nil {
 		return 0, err
 	}
+	cost, err := h.workspaceClient.GetRDSInstance(&httpclient.Context{UserRole: apiAuth.InternalRole}, resource)
+	if err != nil {
+		return 0, err
+	}
 
+	return cost, nil
 }

@@ -57,3 +57,19 @@ type EC2CpuCreditsCost struct {
 	PriceUnit       string
 	Price           float64
 }
+
+// RDSDBInstancePrice Service = AmazonRDS, ProductFamily = Database Instance
+type RDSDBInstancePrice struct {
+	SKU              string `gorm:"primaryKey"`
+	EffectiveDate    int64
+	region           string
+	instanceType     string
+	databaseEngine   string
+	databaseEdition  string
+	licenseModel     string
+	deploymentOption string
+	storageType      string
+	UsageType        string
+	PriceUnit        string
+	Price            float64
+}
