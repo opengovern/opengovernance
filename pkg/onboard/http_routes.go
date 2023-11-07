@@ -1019,7 +1019,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		awsCnf.AccessKey,
 		awsCnf.SecretKey,
 		"",
-		"",
+		awsCnf.AssumeAdminRoleName,
 		nil)
 	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
 	if cfg.Region == "" {
@@ -1311,7 +1311,7 @@ func (h HttpHandler) CredentialAccounts(ctx echo.Context) error {
 			awsCnf.AccessKey,
 			awsCnf.SecretKey,
 			"",
-			"",
+			awsCnf.AssumeAdminRoleName,
 			nil)
 		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
 		if cfg.Region == "" {
