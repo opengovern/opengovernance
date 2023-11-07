@@ -3,6 +3,7 @@ package onboard
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
@@ -83,6 +84,7 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 		return nil, err
 	}
 	userName := strings.Split(*caller.Arn, "/")[1]
+	fmt.Println("userName", userName)
 
 	iamClient := iam.NewFromConfig(creds)
 	//user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
