@@ -61,7 +61,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
-	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
+	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
 	if err != nil {
 		return nil, err
 	}

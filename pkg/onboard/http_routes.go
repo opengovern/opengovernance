@@ -1505,6 +1505,9 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		if newConfig.AssumeRoleName != "" {
 			config.AssumeRoleName = newConfig.AssumeRoleName
 		}
+		if newConfig.AssumeAdminRoleName != "" {
+			config.AssumeAdminRoleName = newConfig.AssumeAdminRoleName
+		}
 		if newConfig.AssumeRolePolicyName != "" {
 			config.AssumeRolePolicyName = newConfig.AssumeRolePolicyName
 		}
