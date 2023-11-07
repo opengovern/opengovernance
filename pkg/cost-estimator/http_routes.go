@@ -23,12 +23,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/azure [get]
+//	@Router			/cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType} [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
 
-	cost, err := azureResourceTypes[resourceType](h, resourceId, 1)
+	cost, err := azureResourceTypes[resourceType](h, resourceId)
 	if err != nil {
 		return err
 	}
@@ -46,12 +46,12 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/aws [get]
+//	@Router			/cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType} [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
 
-	cost, err := awsResourceTypes[resourceType](h, resourceId, 1)
+	cost, err := awsResourceTypes[resourceType](h, resourceId)
 	if err != nil {
 		return err
 	}

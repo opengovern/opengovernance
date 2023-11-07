@@ -25,6 +25,7 @@ type AWSCredentialConfig struct {
 	AccessKey            string   `json:"accessKey" validate:"required"`
 	SecretKey            string   `json:"secretKey" validate:"required"`
 	AssumeRoleName       string   `json:"assumeRoleName,omitempty"`
+	AssumeAdminRoleName  string   `json:"assumeAdminRoleName,omitempty"`
 	AssumeRolePolicyName string   `json:"assumeRolePolicyName,omitempty"`
 	ExternalId           *string  `json:"externalId,omitempty"`
 }

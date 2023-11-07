@@ -8,6 +8,7 @@ var azureResourceTypes = map[string]CostEstimatorFunc{
 }
 
 var awsResourceTypes = map[string]CostEstimatorFunc{
-	"AWS::EC2::Instance":   GetEC2InstanceCost,
+	"AWS::EC2::Instance": GetEC2InstanceCost,
+	"AWS::EC2::Volume":   GetEC2VolumeCost,
 	"AWS::RDS::DBInstance": GetRDSInstanceCost,
 }

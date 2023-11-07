@@ -1806,6 +1806,8 @@ definitions:
         type: string
       accountId:
         type: string
+      assumeAdminRoleName:
+        type: string
       assumeRoleName:
         type: string
       assumeRolePolicyName:
@@ -4054,7 +4056,7 @@ paths:
       summary: Sync queries
       tags:
       - compliance
-  /cost_estimator/api/v1/cost/aws:
+  /cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType}:
     get:
       description: Get AWS cost for each resource
       parameters:
@@ -4080,7 +4082,7 @@ paths:
       summary: Get AWS cost
       tags:
       - cost-estimator
-  /cost_estimator/api/v1/cost/azure:
+  /cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType}:
     get:
       description: Get Azure cost for each resource
       parameters:

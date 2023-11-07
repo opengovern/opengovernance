@@ -1,22 +1,21 @@
 package runner
 
 import (
-	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
-	"io"
 	"time"
 )
 
@@ -47,8 +46,9 @@ type Job struct {
 type JobConfig struct {
 	config           Config
 	logger           *zap.Logger
-	complianceClient client.ComplianceServiceClient
-	onboardClient    client2.OnboardServiceClient
+	complianceClient complianceClient.ComplianceServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
+	inventoryClient  inventoryClient.InventoryServiceClient
 	steampipeConn    *steampipe.Database
 	esClient         kaytu.Client
 	kafkaProducer    *confluent_kafka.Producer
@@ -56,9 +56,12 @@ type JobConfig struct {
 
 func (j *Job) Initialize(ctx context.Context, jc JobConfig) error {
 	providerAccountID := "all"
-	if j.ExecutionPlan.ConnectionID != nil {
+	if j.ExecutionPlan.ConnectionID != nil &&
+		*j.ExecutionPlan.ConnectionID != "" &&
+		*j.ExecutionPlan.ConnectionID != "all" {
 		conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ConnectionID)
 		if err != nil {
+			jc.logger.Error("failed to get source", zap.Error(err), zap.String("connection_id", *j.ExecutionPlan.ConnectionID))
 			return err
 		}
 		providerAccountID = conn.ConnectionID
@@ -66,14 +69,33 @@ func (j *Job) Initialize(ctx context.Context, jc JobConfig) error {
 
 	err := jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, providerAccountID)
 	if err != nil {
+		jc.logger.Error("failed to set account id", zap.Error(err))
 		return err
 	}
-	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
 	err = jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "compliance")
 	if err != nil {
+		jc.logger.Error("failed to set client type", zap.Error(err))
 		return err
 	}
-	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+
+	if j.ExecutionPlan.ResourceCollectionID != nil {
+		rc, err := jc.inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ResourceCollectionID)
+		if err != nil {
+			jc.logger.Error("failed to get resource collection", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
+			return err
+		}
+		filtersJson, err := json.Marshal(rc.Filters)
+		if err != nil {
+			jc.logger.Error("failed to marshal resource collection filters", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
+			return err
+		}
+		err = jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters, base64.StdEncoding.EncodeToString(filtersJson))
+		if err != nil {
+			jc.logger.Error("failed to set resource collection filters", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -90,6 +112,9 @@ func (j *Job) Run(jc JobConfig) error {
 	if err := j.Initialize(ctx, jc); err != nil {
 		return err
 	}
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 
 	query, err := jc.complianceClient.GetQuery(&httpclient.Context{UserRole: api.InternalRole}, j.ExecutionPlan.QueryID)
 	if err != nil {
@@ -120,14 +145,15 @@ func (j *Job) Run(jc JobConfig) error {
 
 		err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
 		if err != nil {
+			jc.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
 			return err
 		}
 
-		//TODO-Saleh fix this
-		//err = j.RemoveOldFindings(jc)
-		//if err != nil {
-		//	return err
-		//}
+		err = RemoveOldFindings(jc, j.ID, *j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.PolicyID)
+		if err != nil {
+			jc.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
+			return err
+		}
 	}
 	jc.logger.Info("Finished job",
 		zap.Uint("job_id", j.ID),
@@ -138,16 +164,57 @@ func (j *Job) Run(jc JobConfig) error {
 	return nil
 }
 
-func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
+type DocIdResponse struct {
+	Took int `json:"took"`
+	Hits struct {
+		Total struct {
+			Value int `json:"value"`
+		}
+		Hits []struct {
+			ID   string   `json:"_id"`
+			Sort []string `json:"sort"`
+		}
+	}
+}
+
+func RemoveOldFindings(jc JobConfig, jobID uint,
+	connectionId string,
+	resourceCollectionId *string,
+	benchmarkID,
+	policyID string) error {
 	ctx := context.Background()
-	es := jc.esClient.ES()
-
-	index := []string{types.FindingsIndex, types.ResourceCollectionsFindingsIndex}
-
+	idx := types.FindingsIndex
+	if resourceCollectionId != nil {
+		idx = types.ResourceCollectionsFindingsIndex
+	}
 	var filters []map[string]any
+	mustFilters := make([]map[string]any, 0, 4)
+	mustFilters = append(mustFilters, map[string]any{
+		"term": map[string]any{
+			"benchmarkID": benchmarkID,
+		},
+	})
+	mustFilters = append(mustFilters, map[string]any{
+		"term": map[string]any{
+			"policyID": policyID,
+		},
+	})
+	mustFilters = append(mustFilters, map[string]any{
+		"term": map[string]any{
+			"connectionID": connectionId,
+		},
+	})
+	if resourceCollectionId != nil {
+		mustFilters = append(mustFilters, map[string]any{
+			"term": map[string]any{
+				"resourceCollection": resourceCollectionId,
+			},
+		})
+	}
+
 	filters = append(filters, map[string]any{
 		"bool": map[string]any{
-			"should": []map[string]any{
+			"must": []map[string]any{
 				{
 					"bool": map[string]any{
 						"must_not": map[string]any{
@@ -159,11 +226,7 @@ func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
 				},
 				{
 					"bool": map[string]any{
-						"must": map[string]any{
-							"term": map[string]any{
-								"parentBenchmarks": benchmarkID,
-							},
-						},
+						"filter": mustFilters,
 					},
 				},
 			},
@@ -176,40 +239,41 @@ func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
 			"filter": filters,
 		},
 	}
-
-	query, err := json.Marshal(request)
-	if err != nil {
-		return err
+	request["size"] = 10000
+	request["_source"] = false
+	request["sort"] = map[string]any{
+		"_id": "asc",
 	}
+	searchAfter := make([]string, 0)
 
-	jc.logger.Info("delete by query", zap.String("body", string(query)))
-
-	res, err := es.DeleteByQuery(
-		index,
-		bytes.NewReader(query),
-		es.DeleteByQuery.WithContext(ctx),
-	)
-	if err != nil {
-		return err
-	}
-
-	defer kaytu.CloseSafe(res)
-	if err != nil {
-		b, _ := io.ReadAll(res.Body)
-		fmt.Printf("failure while deleting es: %v\n%s\n", err, string(b))
-		return err
-	} else if err := kaytu.CheckError(res); err != nil {
-		if kaytu.IsIndexNotFoundErr(err) {
-			return nil
+	for {
+		request["search_after"] = searchAfter
+		query, err := json.Marshal(request)
+		if err != nil {
+			return err
 		}
-		b, _ := io.ReadAll(res.Body)
-		fmt.Printf("failure while querying es: %v\n%s\n", err, string(b))
-		return err
-	}
 
-	_, err = io.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("read response: %w", err)
+		res := DocIdResponse{}
+		err = jc.esClient.Search(ctx, idx, string(query), &res)
+		if err != nil {
+			jc.logger.Error("failed to search", zap.Error(err), zap.String("query", string(query)), zap.String("index", idx))
+			return err
+		}
+		if len(res.Hits.Hits) == 0 {
+			break
+		}
+		searchAfter = res.Hits.Hits[len(res.Hits.Hits)-1].Sort
+
+		tombstoneDocs := make([]*confluent_kafka.Message, 0, 10000)
+		for _, hit := range res.Hits.Hits {
+			msg := kafka.Msg(hit.ID, nil, idx, jc.config.Kafka.Topic, confluent_kafka.PartitionAny)
+			tombstoneDocs = append(tombstoneDocs, msg)
+		}
+		err = kafka.SyncSendWithRetry(jc.logger, jc.kafkaProducer, tombstoneDocs, nil, 5)
+		if err != nil {
+			jc.logger.Error("failed to send tombstone docs", zap.Error(err), zap.String("index", idx))
+			return err
+		}
 	}
 
 	return nil

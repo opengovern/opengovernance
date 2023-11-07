@@ -5,7 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 )
 
-func GetComputeVirtualMachineCost(h *HttpHandler, resourceId string, timeInterval int) (float64, error) {
+func GetComputeVirtualMachineCost(h *HttpHandler, resourceId string) (float64, error) {
 	resource, err := es.GetMicrosoftVirtualMachine(h.client, resourceId)
 	if err != nil {
 		return 0, err
@@ -21,7 +21,7 @@ func GetComputeVirtualMachineCost(h *HttpHandler, resourceId string, timeInterva
 	return cost, nil
 }
 
-func GetVirtualNetworkCost(h *HttpHandler, resourceId string, timeInterval int) (float64, error) {
+func GetVirtualNetworkCost(h *HttpHandler, resourceId string) (float64, error) {
 	//var resource azureCompute.VirtualNetwork
 	//err := h.GetResource("Microsoft.Network/virtualNetworks", resourceId, &resource)
 	//if err != nil {

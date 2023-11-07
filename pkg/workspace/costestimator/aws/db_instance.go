@@ -20,7 +20,8 @@ func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, dbInstance es.RDS
 	if err != nil {
 		return 0, err
 	}
-	return dbInstanceCost.Price, nil
+	cost := dbInstanceCost.Price * TimeInterval
+	return cost, nil
 }
 
 type dbType struct {
