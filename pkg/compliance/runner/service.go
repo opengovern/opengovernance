@@ -38,11 +38,14 @@ type Config struct {
 }
 
 type Worker struct {
-	config        Config
-	logger        *zap.Logger
-	steampipeConn *steampipe.Database
-	esClient      kaytu.Client
-	kafkaProducer *kafka2.Producer
+	config           Config
+	logger           *zap.Logger
+	steampipeConn    *steampipe.Database
+	esClient         kaytu.Client
+	kafkaProducer    *kafka2.Producer
+	complianceClient complianceClient.ComplianceServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
+	inventoryClient  inventoryClient.InventoryServiceClient
 }
 
 func InitializeNewWorker(
@@ -81,11 +84,14 @@ func InitializeNewWorker(
 	}
 
 	w := &Worker{
-		config:        config,
-		logger:        logger,
-		steampipeConn: steampipeConn,
-		esClient:      esClient,
-		kafkaProducer: producer,
+		config:           config,
+		logger:           logger,
+		steampipeConn:    steampipeConn,
+		esClient:         esClient,
+		kafkaProducer:    producer,
+		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
+		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil),
+		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 	}
 
 	return w, nil
@@ -160,14 +166,14 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 		return true, false, err
 	}
 
+	result := JobResult{
+		Job:               job,
+		StartedAt:         startTime,
+		Status:            ComplianceRunnerSucceeded,
+		Error:             "",
+		TotalFindingCount: nil,
+	}
 	defer func() {
-		result := JobResult{
-			Job:       job,
-			StartedAt: startTime,
-			Status:    ComplianceRunnerSucceeded,
-			Error:     "",
-		}
-
 		if err != nil {
 			result.Error = err.Error()
 			result.Status = ComplianceRunnerFailed
@@ -187,19 +193,11 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 	}()
 
 	w.logger.Info("running job", zap.String("job", string(msg.Value)))
-	err = job.Run(JobConfig{
-		config:           w.config,
-		logger:           w.logger,
-		complianceClient: complianceClient.NewComplianceClient(w.config.Compliance.BaseURL),
-		onboardClient:    onboardClient.NewOnboardServiceClient(w.config.Onboard.BaseURL, nil),
-		inventoryClient:  inventoryClient.NewInventoryServiceClient(w.config.Inventory.BaseURL),
-		steampipeConn:    w.steampipeConn,
-		esClient:         w.esClient,
-		kafkaProducer:    w.kafkaProducer,
-	})
+	totalFindingCount, err := w.RunJob(job)
 	if err != nil {
 		return true, false, err
 	}
+	result.TotalFindingCount = &totalFindingCount
 
 	return true, false, nil
 }

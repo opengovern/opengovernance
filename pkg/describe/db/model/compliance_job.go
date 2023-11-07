@@ -34,12 +34,13 @@ type ComplianceRunner struct {
 	QueryID              string
 	ConnectionID         *string
 	ResourceCollectionID *string
-	ParentJobID          uint
+	ParentJobID          uint `gorm:"index"`
 
-	StartedAt      time.Time
-	RetryCount     int
-	Status         runner.ComplianceRunnerStatus
-	FailureMessage string
+	StartedAt         time.Time
+	TotalFindingCount *int
+	Status            runner.ComplianceRunnerStatus
+	FailureMessage    string
+	RetryCount        int
 }
 
 func (cr *ComplianceRunner) GetCallers() ([]runner.Caller, error) {

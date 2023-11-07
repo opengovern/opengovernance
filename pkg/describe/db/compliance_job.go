@@ -105,17 +105,29 @@ UPDATE compliance_jobs j SET status = 'RUNNERS_IN_PROGRESS' WHERE status = 'CREA
 	return nil
 }
 
-func (db Database) ListJobsToSummarize() ([]model.ComplianceJob, error) {
+func (db Database) ListJobsWithRunnersCompleted() ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Raw(`
 SELECT * FROM compliance_jobs j WHERE status = 'RUNNERS_IN_PROGRESS' AND
-	(select count(*) from compliance_runners where parent_job_id = j.id AND (status = 'SUCCEEDED' OR (status = 'FAILED' and retry_count >= 3))) > 0
+	(select count(*) from compliance_runners where parent_job_id = j.id AND 
+	                                               NOT (status = 'SUCCEEDED' OR (status = 'FAILED' and retry_count >= 3))
+	                                         ) = 0
 `).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return jobs, nil
+}
+
+func (db Database) FetchTotalFindingCountForComplianceJob(jobID uint) (int, error) {
+	var count int
+	tx := db.ORM.Raw(`SELECT sum(total_finding_count) FROM compliance_runners WHERE parent_job_id = ?`, jobID).Scan(&count)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return count, nil
 }
 
 func (db Database) ListJobsToFinish() ([]model.ComplianceJob, error) {
