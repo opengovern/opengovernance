@@ -1,16 +1,76 @@
 package compliance
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"go.uber.org/zap"
 	"time"
 )
 
 const SummarizerSchedulingInterval = 5 * time.Minute
+
+type SankDocumentCountResponse struct {
+	Hits struct {
+		Total struct {
+			Value int `json:"value"`
+		}
+	}
+}
+
+func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string) (int, error) {
+	request := make(map[string]any)
+	filters := make([]map[string]any, 0)
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"benchmarkID": benchmarkId,
+		},
+	})
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	request["size"] = 0
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		s.logger.Error("failed to marshal request", zap.Error(err))
+		return 0, err
+	}
+	sankDocumentCountResponse := SankDocumentCountResponse{}
+	err = s.esClient.SearchWithTrackTotalHits(
+		context.TODO(), types.FindingsIndex,
+		string(query),
+		nil,
+		&sankDocumentCountResponse, true,
+	)
+	if err != nil {
+		s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", benchmarkId))
+		return 0, err
+	}
+
+	totalValue := sankDocumentCountResponse.Hits.Total.Value
+	sankDocumentCountResponse = SankDocumentCountResponse{}
+	err = s.esClient.SearchWithTrackTotalHits(
+		context.TODO(), types.ResourceCollectionsFindingsIndex,
+		string(query),
+		nil,
+		&sankDocumentCountResponse, true,
+	)
+	if err != nil {
+		s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", benchmarkId))
+		return 0, err
+	}
+	totalValue += sankDocumentCountResponse.Hits.Total.Value
+
+	return totalValue, nil
+}
 
 func (s *JobScheduler) runSummarizer() error {
 	err := s.db.SetJobToRunnersInProgress()
@@ -18,10 +78,24 @@ func (s *JobScheduler) runSummarizer() error {
 		return err
 	}
 
-	jobs, err := s.db.ListJobsToSummarize()
+	jobs, err := s.db.ListJobsWithRunnersCompleted()
 	for _, job := range jobs {
+		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID)
+		if err != nil {
+			s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			return err
+		}
+		totalDocCount, err := s.db.FetchTotalFindingCountForComplianceJob(job.ID)
+		if err != nil {
+			s.logger.Error("failed to get total document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			return err
+		}
+		if sankDocCount < totalDocCount {
+			continue
+		}
 		err = s.createSummarizer(job)
 		if err != nil {
+			s.logger.Error("failed to create summarizer", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
 		}
 	}
