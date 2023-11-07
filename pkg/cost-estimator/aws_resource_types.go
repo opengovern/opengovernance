@@ -17,3 +17,11 @@ func GetEC2InstanceCost(h *HttpHandler, resourceId string, timeInterval int64) (
 
 	return cost, nil
 }
+
+func GetRDSInstanceCost(h *HttpHandler, resourceId string, timeInterval int64) (float64, error) {
+	resource, err := es.GetRDSInstance(h.client, resourceId)
+	if err != nil {
+		return 0, err
+	}
+
+}

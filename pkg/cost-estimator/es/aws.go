@@ -19,3 +19,17 @@ func GetEC2Instance(client kaytu.Client, resourceId string) (EC2InstanceResponse
 	}
 	return resp, nil
 }
+
+func GetRDSInstance(client kaytu.Client, resourceId string) (RDSDBInstanceResponse, error) {
+	index := es.ResourceTypeToESIndex("AWS::RDS::DBInstance")
+	queryBytes, err := GetResourceQuery(resourceId)
+	if err != nil {
+		return RDSDBInstanceResponse{}, err
+	}
+	var resp RDSDBInstanceResponse
+	err = client.Search(context.Background(), index, string(queryBytes), &resp)
+	if err != nil {
+		return RDSDBInstanceResponse{}, err
+	}
+	return resp, nil
+}
