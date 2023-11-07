@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (j *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
+func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
 
 	queryResourceType := ""
@@ -79,26 +79,26 @@ func (j *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 		}
 
 		connectionID := "all"
-		if j.ExecutionPlan.ConnectionID != nil {
-			connectionID = *j.ExecutionPlan.ConnectionID
+		if w.ExecutionPlan.ConnectionID != nil {
+			connectionID = *w.ExecutionPlan.ConnectionID
 		}
 		findings = append(findings, types.Finding{
 			BenchmarkID:        caller.RootBenchmark,
 			PolicyID:           caller.PolicyID,
 			ConnectionID:       connectionID,
-			EvaluatedAt:        j.CreatedAt.UnixMilli(),
+			EvaluatedAt:        w.CreatedAt.UnixMilli(),
 			StateActive:        true,
 			Result:             status,
 			Severity:           severity,
-			Evaluator:          j.ExecutionPlan.QueryEngine,
-			Connector:          j.ExecutionPlan.QueryConnector,
+			Evaluator:          w.ExecutionPlan.QueryEngine,
+			Connector:          w.ExecutionPlan.QueryConnector,
 			ResourceID:         resourceID,
 			ResourceName:       resourceName,
 			ResourceLocation:   resourceLocation,
 			ResourceType:       resourceType,
 			Reason:             reason,
-			ComplianceJobID:    j.ID,
-			ResourceCollection: j.ExecutionPlan.ResourceCollectionID,
+			ComplianceJobID:    w.ID,
+			ResourceCollection: w.ExecutionPlan.ResourceCollectionID,
 			ParentBenchmarks:   caller.ParentBenchmarkIDs,
 		})
 	}
