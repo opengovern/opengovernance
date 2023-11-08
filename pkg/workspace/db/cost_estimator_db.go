@@ -38,6 +38,27 @@ func (db CostEstimatorDatabase) FindRDSInstancePrice(regionCode string, instance
 	return &dbInstance, nil
 }
 
+func (db CostEstimatorDatabase) FindRDSDBStoragePrice(deploymentOption string, volumeType string, costUnit string) (*RDSDBStoragePrice, error) {
+	var dbStorage RDSDBStoragePrice
+	tx := db.orm.Model(RDSDBStoragePrice{}).Where("deployment_option = ?", deploymentOption).Where("cost_unit = ?", costUnit).
+		Where("volume_type = ?", volumeType).Find(&dbStorage)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &dbStorage, nil
+}
+
+func (db CostEstimatorDatabase) FindRDSDBIopsPrice(deploymentOption string, costUnit string) (*RDSDBIopsPrice, error) {
+	var DBIops RDSDBIopsPrice
+	tx := db.orm.Model(RDSDBIopsPrice{}).Where("deployment_option = ?", deploymentOption).Where("cost_unit = ?", costUnit).Find(&DBIops)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &DBIops, nil
+}
+
 func (db CostEstimatorDatabase) FindEC2InstancePrice(regionCode string, capacityStatus string, instanceType string, tenancy string,
 	operatingSystem string, preInstalledSW string, costUnit string) (*EC2InstancePrice, error) {
 	var instance EC2InstancePrice

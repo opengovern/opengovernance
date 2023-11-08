@@ -19,5 +19,5 @@ type GetLBCostRequest struct {
 
 type GetRDSInstanceRequest struct {
 	RegionCode string
-	Instance   aws.RDSDBInstanceDescription
+	DBInstance aws.RDSDBInstanceDescription
 }
