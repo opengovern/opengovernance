@@ -1,6 +1,9 @@
 package api
 
-import "time"
+import (
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"time"
+)
 
 type CreateWorkspaceRequest struct {
 	Name           string `json:"name"`
@@ -11,6 +14,11 @@ type CreateWorkspaceRequest struct {
 
 type CreateWorkspaceResponse struct {
 	ID string `json:"id"`
+}
+
+type AddCredentialRequest struct {
+	Config        any         `json:"config"`
+	ConnectorType source.Type `json:"connectorType"`
 }
 
 type BootstrapStatus string
