@@ -5866,6 +5866,28 @@ paths:
       summary: Get bootstrap status
       tags:
       - workspace
+  /workspace/api/v1/bootstrap/{workspace_name}/credential:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Add credential for workspace to be onboarded
+      tags:
+      - workspace
   /workspace/api/v1/organization:
     get:
       consumes:

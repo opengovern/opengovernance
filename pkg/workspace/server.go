@@ -5,8 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -65,6 +70,9 @@ type Server struct {
 	cfg             *Config
 	db              *Database
 	costEstimatorDb *db2.CostEstimatorDatabase
+	credentialDb    *db2.CredentialDatabase
+	kms             *vault.KMSVaultSourceConfig
+	keyARN          string
 	authClient      authclient.AuthServiceClient
 	kubeClient      k8sclient.Client // the kubernetes client
 	rdb             *redis.Client
@@ -102,6 +110,12 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("new cost estimator database: %w", err)
 	}
 	s.costEstimatorDb = costEstimatorDb
+
+	credentialDb, err := db2.NewCredentialDatabase(pgCfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new cost estimator database: %w", err)
+	}
+	s.credentialDb = credentialDb
 
 	kubeClient, err := s.newKubeClient()
 	if err != nil {
@@ -158,6 +172,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	bootstrapGroup := v1Group.Group("/bootstrap")
 	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/credential", httpserver2.AuthorizeHandler(s.AddCredential, authapi.EditorRole))
 
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
@@ -653,7 +668,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Name:           strings.ToLower(request.Name),
 		OwnerId:        userID,
 		URI:            uri,
-		Status:         api.StatusProvisioning,
+		Status:         api.StatusBootstrapping,
 		Description:    request.Description,
 		Size:           api.SizeXS,
 		Tier:           api.Tier(request.Tier),
@@ -720,6 +735,90 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
 		Status: status,
 	})
+}
+
+// AddCredential godoc
+//
+//	@Summary	Add credential for workspace to be onboarded
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Success	200				{object}	api.BootstrapStatusResponse
+//	@Router		/workspace/api/v1/bootstrap/{workspace_name}/credential [post]
+func (s *Server) AddCredential(ctx echo.Context) error {
+	workspaceName := ctx.Param("workspace_name")
+	var request api.AddCredentialRequest
+	if err := ctx.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	configStr, err := json.Marshal(request.Config)
+	if err != nil {
+		return err
+	}
+
+	switch request.ConnectorType {
+	case source.CloudAWS:
+		config := api2.AWSCredentialConfig{}
+		err = json.Unmarshal(configStr, &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+
+		awsConfig, err := describe.AWSAccountConfigFromMap(config.AsMap())
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		var sdkCnf aws.Config
+		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		err = kaytuAws.CheckGetUserPermission(s.logger, sdkCnf)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	case source.CloudAzure:
+		config := api2.AzureCredentialConfig{}
+		err = json.Unmarshal(configStr, &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+
+		var azureConfig describe.AzureSubscriptionConfig
+		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config.AsMap())
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		err = kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
+			TenantID:            azureConfig.TenantID,
+			ObjectID:            azureConfig.ObjectID,
+			SecretID:            azureConfig.SecretID,
+			ClientID:            azureConfig.ClientID,
+			ClientSecret:        azureConfig.ClientSecret,
+			CertificatePath:     azureConfig.CertificatePath,
+			CertificatePassword: azureConfig.CertificatePass,
+			Username:            azureConfig.Username,
+			Password:            azureConfig.Password,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	}
+
+	cred := db2.Credential{
+		ConnectorType: request.ConnectorType,
+		Workspace:     workspaceName,
+		Metadata:      configStr,
+	}
+	err = s.credentialDb.CreateCredential(&cred)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, cred.ID.String())
 }
 
 // DeleteWorkspace godoc
