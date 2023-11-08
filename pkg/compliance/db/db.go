@@ -272,6 +272,20 @@ func (db Database) DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId string) er
 	return nil
 }
 
+func (db Database) ListComplianceTagKeysWithPossibleValues() (map[string][]string, error) {
+	var tags []BenchmarkTag
+	tx := db.Orm.Model(BenchmarkTag{}).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]model.TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := model.GetTagsMap(tagLikes)
+	return result, nil
+}
+
 func (db Database) ListInsightTagKeysWithPossibleValues() (map[string][]string, error) {
 	var tags []InsightTag
 	tx := db.Orm.Model(InsightTag{}).Find(&tags)
