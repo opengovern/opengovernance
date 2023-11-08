@@ -28,18 +28,29 @@ type Response struct {
 			Id     string `json:"_id"`
 			Score  int64  `json:"_score"`
 			Source struct {
-				Metadata     interface{} `json:"metadata"`
-				SourceJobId  int64       `json:"source_job_id"`
-				ResourceType string      `json:"resource_type"`
-				CreatedAt    int64       `json:"created_at"`
-				Description  any         `json:"description"`
-				ARN          string
-				ID           string
-				Name         string
-				Account      string
-				Region       string
-				Partition    string
-				Type         string
+				Metadata struct {
+					Partition    string `json:"Partition"`
+					AccountID    string `json:"AccountID"`
+					SourceID     string `json:"SourceID"`
+					name         string `json:"name"`
+					Region       string `json:"Region"`
+					ResourceType string `json:"ResourceType"`
+					Name         string `json:"Name"`
+				} `json:"metadata"`
+				SourceJobId   int64  `json:"source_job_id"`
+				EsId          string `json:"es_id"`
+				ResourceType  string `json:"resource_type"`
+				CreatedAt     int64  `json:"created_at"`
+				Description   any    `json:"description"`
+				ResourceJobId string `json:"resource_job_id"`
+				ResourceGroup string `json:"resource_group"`
+				Name          string `json:"name"`
+				Location      string `json:"location"`
+				EsIndex       string `json:"es_index"`
+				ID            string `json:"id"`
+				ScheduleJobId string `json:"schedule_job_id"`
+				SourceId      string `json:"source_id"`
+				ARN           string `json:"arn"`
 			} `json:"_source"`
 		}
 	}

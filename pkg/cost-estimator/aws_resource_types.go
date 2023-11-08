@@ -20,7 +20,7 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 	var request api.GetEC2InstanceCostRequest
 	if instance, ok := response.Hits.Hits[0].Source.Description.(aws.EC2InstanceDescription); ok {
 		request = api.GetEC2InstanceCostRequest{
-			RegionCode: response.Hits.Hits[0].Source.Region,
+			RegionCode: response.Hits.Hits[0].Source.Location,
 			Instance:   instance,
 		}
 	} else {
@@ -46,7 +46,7 @@ func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, err
 	var request api.GetEC2VolumeCostRequest
 	if volume, ok := response.Hits.Hits[0].Source.Description.(aws.EC2VolumeDescription); ok {
 		request = api.GetEC2VolumeCostRequest{
-			RegionCode: response.Hits.Hits[0].Source.Region,
+			RegionCode: response.Hits.Hits[0].Source.Location,
 			Volume:     volume,
 		}
 	} else {
@@ -75,7 +75,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 		}
 		if lb, ok := response.Hits.Hits[0].Source.Description.(aws.ElasticLoadBalancingV2LoadBalancerDescription); ok {
 			request = api.GetLBCostRequest{
-				RegionCode: response.Hits.Hits[0].Source.Region,
+				RegionCode: response.Hits.Hits[0].Source.Location,
 				LBType:     string(lb.LoadBalancer.Type),
 			}
 		} else {
@@ -91,7 +91,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 		}
 		if _, ok := response.Hits.Hits[0].Source.Description.(aws.ElasticLoadBalancingLoadBalancerDescription); ok {
 			request = api.GetLBCostRequest{
-				RegionCode: response.Hits.Hits[0].Source.Region,
+				RegionCode: response.Hits.Hits[0].Source.Location,
 				LBType:     "classic",
 			}
 		} else {
@@ -118,8 +118,8 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 	var request api.GetRDSInstanceRequest
 	if dbInstance, ok := response.Hits.Hits[0].Source.Description.(aws.RDSDBInstanceDescription); ok {
 		request = api.GetRDSInstanceRequest{
-			RegionCode: response.Hits.Hits[0].Source.Region,
-			DBInstance:   dbInstance,
+			RegionCode: response.Hits.Hits[0].Source.Location,
+			DBInstance: dbInstance,
 		}
 	} else {
 		return 0, fmt.Errorf("cannot parse resource")

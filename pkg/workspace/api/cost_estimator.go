@@ -1,6 +1,9 @@
 package api
 
-import aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+import (
+	aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+)
 
 type GetEC2InstanceCostRequest struct {
 	RegionCode string
@@ -20,4 +23,9 @@ type GetLBCostRequest struct {
 type GetRDSInstanceRequest struct {
 	RegionCode string
 	DBInstance aws.RDSDBInstanceDescription
+}
+
+type GetAzureVmRequest struct {
+	RegionCode string
+	VM         azure.ComputeVirtualMachineDescription
 }

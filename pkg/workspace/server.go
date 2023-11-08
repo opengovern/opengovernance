@@ -172,10 +172,11 @@ func (s *Server) Register(e *echo.Echo) {
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 
 	costEstimatorGroup := v1Group.Group("/costestimator")
-	costEstimatorGroup.GET("/ec2instance", httpserver2.AuthorizeHandler(s.GetEC2InstanceCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/ec2volume", httpserver2.AuthorizeHandler(s.GetEC2VolumeCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/loadbalancer", httpserver2.AuthorizeHandler(s.GetLBCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/aws/ec2instance", httpserver2.AuthorizeHandler(s.GetEC2InstanceCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/aws/ec2volume", httpserver2.AuthorizeHandler(s.GetEC2VolumeCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/aws/loadbalancer", httpserver2.AuthorizeHandler(s.GetLBCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/aws/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/azure/virtualmachine", httpserver2.AuthorizeHandler(s.GetAzureVmCost, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
