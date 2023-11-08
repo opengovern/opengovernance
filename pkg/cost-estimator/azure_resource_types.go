@@ -3,12 +3,13 @@ package cost_estimator
 import (
 	"fmt"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/calculator/azure"
+	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 )
 
 func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-
 	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/virtualMachines")
 	if err != nil {
 		return 0, err
@@ -16,19 +17,20 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var vm azureModel.ComputeVirtualMachineDescription
-	if resource, ok := response.Hits.Hits[0].Source.Description.(azureModel.ComputeVirtualMachineDescription); ok {
-		vm = resource
+	var request api.GetAzureVmRequest
+	if vm, ok := response.Hits.Hits[0].Source.Description.(azureModel.ComputeVirtualMachineDescription); ok {
+		request = api.GetAzureVmRequest{
+			RegionCode: response.Hits.Hits[0].Source.Location,
+			VM:         vm,
+		}
 	} else {
 		return 0, fmt.Errorf("cannot parse resource")
 	}
-	OSType := vm.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
-	location := vm.VirtualMachine.Location
-	VMSize := vm.VirtualMachine.Properties.HardwareProfile.VMSize
-	cost, err := azure.VirtualMachineCostEstimator(OSType, location, VMSize)
+	cost, err := h.workspaceClient.GetAzureVm(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
 		return 0, err
 	}
+
 	return cost, nil
 }
 

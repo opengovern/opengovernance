@@ -9,8 +9,8 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	v1.GET("/cost/azure/:resourceId/:resourceType", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
-	v1.GET("/cost/aws/:resourceId/:resourceType", httpserver.AuthorizeHandler(h.AwsCost, authapi.ViewerRole))
+	v1.GET("/cost/azure/:resourceType/:resourceId", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
+	v1.GET("/cost/aws/:resourceType/:resourceId", httpserver.AuthorizeHandler(h.AwsCost, authapi.ViewerRole))
 }
 
 // AzureCost godoc
@@ -23,7 +23,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType} [get]
+//	@Router			/cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId} [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
@@ -46,7 +46,7 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType} [get]
+//	@Router			/cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId} [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")

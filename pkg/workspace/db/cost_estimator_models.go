@@ -1,7 +1,20 @@
 package db
 
-// EC2InstancePrice Service = AmazonEC2, ProductFamily = Compute Instance
-type EC2InstancePrice struct {
+// AzureVirtualMachinePrice Service = Virtual Machines, Family = Compute
+type AzureVirtualMachinePrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	ArmSkuName    string
+	ProductName   string
+	Priority      string
+	SkuName       string
+	PriceUnit     string
+	Price         float64
+}
+
+// AwsEC2InstancePrice Service = AmazonEC2, ProductFamily = Compute Instance
+type AwsEC2InstancePrice struct {
 	SKU             string `gorm:"primaryKey"`
 	EffectiveDate   int64
 	RegionCode      string
@@ -15,8 +28,8 @@ type EC2InstancePrice struct {
 	Price           float64
 }
 
-// EC2InstanceSystemOperationPrice Service = AmazonEC2, ProductFamily = System Operation
-type EC2InstanceSystemOperationPrice struct {
+// AwsEC2InstanceSystemOperationPrice Service = AmazonEC2, ProductFamily = System Operation
+type AwsEC2InstanceSystemOperationPrice struct {
 	SKU           string `gorm:"primaryKey"`
 	EffectiveDate int64
 	RegionCode    string
@@ -26,8 +39,8 @@ type EC2InstanceSystemOperationPrice struct {
 	Price         float64
 }
 
-// EC2InstanceStoragePrice Service = AmazonEC2, ProductFamily = Storage
-type EC2InstanceStoragePrice struct {
+// AwsEC2InstanceStoragePrice Service = AmazonEC2, ProductFamily = Storage
+type AwsEC2InstanceStoragePrice struct {
 	SKU           string `gorm:"primaryKey"`
 	EffectiveDate int64
 	RegionCode    string
@@ -36,8 +49,8 @@ type EC2InstanceStoragePrice struct {
 	Price         float64
 }
 
-// AmazonCloudWatchPrice Service = AmazonCloudWatch
-type AmazonCloudWatchPrice struct {
+// AwsCloudwatchPrice Service = AmazonCloudWatch
+type AwsCloudwatchPrice struct {
 	SKU           string `gorm:"primaryKey"`
 	ProductFamily string
 	EffectiveDate int64
@@ -47,8 +60,8 @@ type AmazonCloudWatchPrice struct {
 	Price         float64
 }
 
-// EC2CpuCreditsPrice Service = AmazonEC2, ProductFamily = CPU Credits
-type EC2CpuCreditsPrice struct {
+// AwsEC2CpuCreditsPrice Service = AmazonEC2, ProductFamily = CPU Credits
+type AwsEC2CpuCreditsPrice struct {
 	SKU             string `gorm:"primaryKey"`
 	EffectiveDate   int64
 	RegionCode      string
@@ -58,18 +71,20 @@ type EC2CpuCreditsPrice struct {
 	Price           float64
 }
 
-// LBPrice service = Elastic Load Balancing,
+// AwsElasticLoadBalancingPrice service = Elastic Load Balancing,
 // ProductFamily = (Load Balancer-Gateway), (Load Balancer-Application), (Load Balancer-Network), (Load Balancer)
-type LBPrice struct {
+type AwsElasticLoadBalancingPrice struct {
 	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
 	ProductFamily string
+	RegionCode    string
 	UsageType     string
 	PriceUnit     string
 	Price         float64
 }
 
-// RDSDBInstancePrice Service = AmazonRDS, ProductFamily = Database Instance
-type RDSDBInstancePrice struct {
+// AwsRdsInstancePrice Service = AmazonRDS, ProductFamily = Database Instance
+type AwsRdsInstancePrice struct {
 	SKU              string `gorm:"primaryKey"`
 	EffectiveDate    int64
 	RegionCode       string
@@ -82,20 +97,22 @@ type RDSDBInstancePrice struct {
 	Price            float64
 }
 
-// RDSDBStoragePrice Service = AmazonRDS, ProductFamily = Database Storage
-type RDSDBStoragePrice struct {
+// AwsRdsStoragePrice Service = AmazonRDS, ProductFamily = Database Storage
+type AwsRdsStoragePrice struct {
 	SKU              string `gorm:"primaryKey"`
 	EffectiveDate    int64
+	RegionCode       string
 	DeploymentOption string
 	VolumeType       string
 	PriceUnit        string
 	Price            float64
 }
 
-// RDSDBIopsPrice Service = AmazonRDS, ProductFamily = Provisioned IOPS
-type RDSDBIopsPrice struct {
+// AwsRdsIopsPrice Service = AmazonRDS, ProductFamily = Provisioned IOPS
+type AwsRdsIopsPrice struct {
 	SKU              string `gorm:"primaryKey"`
 	EffectiveDate    int64
+	RegionCode       string
 	DeploymentOption string
 	PriceUnit        string
 	Price            float64
