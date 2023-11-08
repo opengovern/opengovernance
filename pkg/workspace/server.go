@@ -391,13 +391,11 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 	status := workspace.Status
 	switch status {
 	case api.StatusBootstrapping:
-		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", workspace.ID)
-		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-		c, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+		st, err := s.getBootstrapStatus(workspace.Name)
 		if err != nil {
 			return err
 		}
-		if c > 0 {
+		if st == api.BootstrapStatus_Finished {
 			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioned); err != nil {
 				return fmt.Errorf("update workspace status: %w", err)
 			}
@@ -672,6 +670,34 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	})
 }
 
+func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, error) {
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return "", err
+	}
+
+	if ws == nil {
+		return "", errors.New("workspace not found")
+	}
+
+	if ws.Status == api.StatusProvisioning {
+		return api.BootstrapStatus_CreatingWorkspace, nil
+	}
+
+	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", ws.ID)
+	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+	count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+	if err != nil {
+		return "", err
+	}
+
+	if count == 0 {
+		return api.BootstrapStatus_OnboardConnection, nil
+	}
+
+	return api.BootstrapStatus_WaitingForJobs, nil
+}
+
 // GetBootstrapStatus godoc
 //
 //	@Summary	Get bootstrap status
@@ -684,36 +710,14 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name} [get]
 func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
-	ws, err := s.db.GetWorkspaceByName(workspaceName)
+
+	status, err := s.getBootstrapStatus(workspaceName)
 	if err != nil {
 		return err
-	}
-
-	if ws == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace not found")
-	}
-
-	if ws.Status == api.StatusProvisioning {
-		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-			Status: api.BootstrapStatus_CreatingWorkspace,
-		})
-	}
-
-	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", ws.ID)
-	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-	count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-			Status: api.BootstrapStatus_OnboardConnection,
-		})
 	}
 
 	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-		Status: api.BootstrapStatus_WaitingForJobs,
+		Status: status,
 	})
 }
 

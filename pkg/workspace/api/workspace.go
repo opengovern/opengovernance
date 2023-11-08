@@ -19,6 +19,7 @@ const (
 	BootstrapStatus_OnboardConnection BootstrapStatus = "OnboardConnection"
 	BootstrapStatus_CreatingWorkspace BootstrapStatus = "CreatingWorkspace"
 	BootstrapStatus_WaitingForJobs    BootstrapStatus = "WaitingForJobs"
+	BootstrapStatus_Finished          BootstrapStatus = "Finished"
 )
 
 type BootstrapStatusResponse struct {
