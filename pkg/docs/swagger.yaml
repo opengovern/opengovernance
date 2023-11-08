@@ -2237,11 +2237,13 @@ definitions:
     - OnboardConnection
     - CreatingWorkspace
     - WaitingForJobs
+    - Finished
     type: string
     x-enum-varnames:
     - BootstrapStatus_OnboardConnection
     - BootstrapStatus_CreatingWorkspace
     - BootstrapStatus_WaitingForJobs
+    - BootstrapStatus_Finished
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
     properties:
       status:
@@ -3364,6 +3366,13 @@ paths:
           type: string
         name: connector
         type: array
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
+        in: query
+        items:
+          type: string
+        name: tag
+        type: array
       - description: timestamp for values in epoch seconds
         in: query
         name: timeAt
@@ -4020,6 +4029,27 @@ paths:
       summary: Get insight metadata
       tags:
       - insights
+  /compliance/api/v1/metadata/tag/compliance:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving a list of compliance tag keys with their possible values.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      security:
+      - BearerToken: []
+      summary: List compliance tag keys
+      tags:
+      - compliance
   /compliance/api/v1/metadata/tag/insight:
     get:
       consumes:
