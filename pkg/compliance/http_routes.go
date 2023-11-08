@@ -583,10 +583,12 @@ func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
 //	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
 //	@Success		200					{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -611,7 +613,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	outputS, span2 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_ListRootBenchmarks")
 
-	benchmarks, err := h.db.ListRootBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks(tagMap)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
@@ -1492,7 +1494,7 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	output1, span1 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListRootBenchmarks")
 
-	benchmarks, err := h.db.ListRootBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks(nil)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
