@@ -70,6 +70,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	assignments.DELETE("/:benchmark_id/connection", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
 
 	metadata := v1.Group("/metadata")
+	metadata.GET("/tag/compliance", httpserver.AuthorizeHandler(h.ListComplianceTags, authApi.ViewerRole))
 	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, authApi.ViewerRole))
 	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, authApi.ViewerRole))
 	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, authApi.ViewerRole))
@@ -1707,6 +1708,33 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		return err
 	}
 	return ctx.JSON(http.StatusOK, struct{}{})
+}
+
+// ListComplianceTags godoc
+//
+//	@Summary		List compliance tag keys
+//	@Description	Retrieving a list of compliance tag keys with their possible values.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string][]string
+//	@Router			/compliance/api/v1/metadata/tag/compliance [get]
+func (h *HttpHandler) ListComplianceTags(ctx echo.Context) error {
+	// trace :
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListComplianceTagKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListComplianceTagKeysWithPossibleValues")
+
+	tags, err := h.db.ListComplianceTagKeysWithPossibleValues()
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.End()
+
+	tags = model.TrimPrivateTags(tags)
+	return ctx.JSON(http.StatusOK, tags)
 }
 
 // ListInsightTags godoc

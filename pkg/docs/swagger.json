@@ -1035,6 +1035,16 @@
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "timestamp for values in epoch seconds",
                         "name": "timeAt",
@@ -2209,6 +2219,40 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/metadata/tag/compliance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving a list of compliance tag keys with their possible values.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "List compliance tag keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     }
                 }
@@ -8793,12 +8837,14 @@
             "enum": [
                 "OnboardConnection",
                 "CreatingWorkspace",
-                "WaitingForJobs"
+                "WaitingForJobs",
+                "Finished"
             ],
             "x-enum-varnames": [
                 "BootstrapStatus_OnboardConnection",
                 "BootstrapStatus_CreatingWorkspace",
-                "BootstrapStatus_WaitingForJobs"
+                "BootstrapStatus_WaitingForJobs",
+                "BootstrapStatus_Finished"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse": {
