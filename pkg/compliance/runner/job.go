@@ -148,7 +148,7 @@ func (w *Worker) RunJob(j Job) (int, error) {
 			return 0, err
 		}
 
-		err = w.RemoveOldFindings(j.ID, *j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.PolicyID)
+		err = w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.PolicyID)
 		if err != nil {
 			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
 			return 0, err
@@ -164,7 +164,7 @@ func (w *Worker) RunJob(j Job) (int, error) {
 }
 
 func (w *Worker) RemoveOldFindings(jobID uint,
-	connectionId string,
+	connectionId *string,
 	resourceCollectionId *string,
 	benchmarkID,
 	policyID string) error {
@@ -185,15 +185,17 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 			"policyID": policyID,
 		},
 	})
-	mustFilters = append(mustFilters, map[string]any{
-		"term": map[string]any{
-			"connectionID": connectionId,
-		},
-	})
+	if connectionId != nil {
+		mustFilters = append(mustFilters, map[string]any{
+			"term": map[string]any{
+				"connectionID": *connectionId,
+			},
+		})
+	}
 	if resourceCollectionId != nil {
 		mustFilters = append(mustFilters, map[string]any{
 			"term": map[string]any{
-				"resourceCollection": resourceCollectionId,
+				"resourceCollection": *resourceCollectionId,
 			},
 		})
 	}
