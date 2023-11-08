@@ -86,6 +86,7 @@ type RDSDBInstancePrice struct {
 type RDSDBStoragePrice struct {
 	SKU              string `gorm:"primaryKey"`
 	EffectiveDate    int64
+	RegionCode       string
 	DeploymentOption string
 	VolumeType       string
 	PriceUnit        string
@@ -96,6 +97,7 @@ type RDSDBStoragePrice struct {
 type RDSDBIopsPrice struct {
 	SKU              string `gorm:"primaryKey"`
 	EffectiveDate    int64
+	RegionCode       string
 	DeploymentOption string
 	PriceUnit        string
 	Price            float64

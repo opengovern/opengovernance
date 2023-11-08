@@ -33,14 +33,14 @@ func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetRD
 		volumeType = "General Purpose"
 	}
 
-	storageCost, err := db.FindRDSDBStoragePrice(deploymentOption, volumeType, "GB")
+	storageCost, err := db.FindRDSDBStoragePrice(request.RegionCode, deploymentOption, volumeType, "GB")
 	if err != nil {
 		return 0, err
 	}
 	cost += storageCost.Price * costestimator.TimeInterval
 
 	if strings.HasPrefix(*request.DBInstance.DBInstance.StorageType, "io") {
-		IOPSCost, err := db.FindRDSDBIopsPrice(deploymentOption, "IOPS")
+		IOPSCost, err := db.FindRDSDBIopsPrice(request.RegionCode, deploymentOption, "IOPS")
 		if err != nil {
 			return 0, err
 		}

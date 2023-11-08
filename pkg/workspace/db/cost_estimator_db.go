@@ -38,9 +38,10 @@ func (db CostEstimatorDatabase) FindRDSInstancePrice(regionCode string, instance
 	return &dbInstance, nil
 }
 
-func (db CostEstimatorDatabase) FindRDSDBStoragePrice(deploymentOption string, volumeType string, costUnit string) (*RDSDBStoragePrice, error) {
+func (db CostEstimatorDatabase) FindRDSDBStoragePrice(regionCode string, deploymentOption string, volumeType string, costUnit string) (*RDSDBStoragePrice, error) {
 	var dbStorage RDSDBStoragePrice
-	tx := db.orm.Model(RDSDBStoragePrice{}).Where("deployment_option = ?", deploymentOption).Where("cost_unit = ?", costUnit).
+	tx := db.orm.Model(RDSDBStoragePrice{}).Where("deployment_option = ?", deploymentOption).
+		Where("region_code = ?", regionCode).Where("cost_unit = ?", costUnit).
 		Where("volume_type = ?", volumeType).Find(&dbStorage)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -49,9 +50,10 @@ func (db CostEstimatorDatabase) FindRDSDBStoragePrice(deploymentOption string, v
 	return &dbStorage, nil
 }
 
-func (db CostEstimatorDatabase) FindRDSDBIopsPrice(deploymentOption string, costUnit string) (*RDSDBIopsPrice, error) {
+func (db CostEstimatorDatabase) FindRDSDBIopsPrice(regionCode string, deploymentOption string, costUnit string) (*RDSDBIopsPrice, error) {
 	var DBIops RDSDBIopsPrice
-	tx := db.orm.Model(RDSDBIopsPrice{}).Where("deployment_option = ?", deploymentOption).Where("cost_unit = ?", costUnit).Find(&DBIops)
+	tx := db.orm.Model(RDSDBIopsPrice{}).Where("deployment_option = ?", deploymentOption).
+		Where("region_code = ?", regionCode).Where("cost_unit = ?", costUnit).Find(&DBIops)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
