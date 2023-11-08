@@ -4,14 +4,15 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"strings"
 )
 
 func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetRDSInstanceRequest) (float64, error) {
-	dbType := dbTypeMap[*request.Instance.DBInstance.Engine]
-	licenseModel := licenseModelMap[*request.Instance.DBInstance.LicenseModel]
+	dbType := dbTypeMap[*request.DBInstance.DBInstance.Engine]
+	licenseModel := licenseModelMap[*request.DBInstance.DBInstance.LicenseModel]
 
 	deploymentOption := "Single-AZ"
-	if request.Instance.DBInstance.MultiAZ {
+	if request.DBInstance.DBInstance.MultiAZ {
 		deploymentOption = "Multi-AZ"
 	}
 
@@ -21,6 +22,31 @@ func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetRD
 		return 0, err
 	}
 	cost := dbInstanceCost.Price * costestimator.TimeInterval
+
+	var volumeType string
+	switch *request.DBInstance.DBInstance.StorageType {
+	case "standard":
+		volumeType = "Magnetic"
+	case "io1", "io2":
+		volumeType = "Provisioned IOPS"
+	default:
+		volumeType = "General Purpose"
+	}
+
+	storageCost, err := db.FindRDSDBStoragePrice(deploymentOption, volumeType, "GB")
+	if err != nil {
+		return 0, err
+	}
+	cost += storageCost.Price * costestimator.TimeInterval
+
+	if strings.HasPrefix(*request.DBInstance.DBInstance.StorageType, "io") {
+		IOPSCost, err := db.FindRDSDBIopsPrice(deploymentOption, "IOPS")
+		if err != nil {
+			return 0, err
+		}
+		cost += IOPSCost.Price * costestimator.TimeInterval
+	}
+
 	return cost, nil
 }
 

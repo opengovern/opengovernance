@@ -116,10 +116,10 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetRDSInstanceRequest
-	if instance, ok := response.Hits.Hits[0].Source.Description.(aws.RDSDBInstanceDescription); ok {
+	if dbInstance, ok := response.Hits.Hits[0].Source.Description.(aws.RDSDBInstanceDescription); ok {
 		request = api.GetRDSInstanceRequest{
 			RegionCode: response.Hits.Hits[0].Source.Region,
-			Instance:   instance,
+			DBInstance:   dbInstance,
 		}
 	} else {
 		return 0, fmt.Errorf("cannot parse resource")
