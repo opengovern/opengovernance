@@ -276,7 +276,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		return err
 	}
 
-	switch field {
+	switch strings.ToLower(field) {
 	case "service":
 		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
@@ -313,6 +313,28 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			response.Records = serviceCountList
 		}
 		response.TotalCount = len(serviceCountList)
+	case "connectionid":
+		connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+		if err != nil {
+			h.logger.Error("failed to get connections", zap.Error(err))
+			return err
+		}
+		connectionIdToNameMap := make(map[string]string)
+		for _, connection := range connections {
+			connectionIdToNameMap[connection.ID.String()] = connection.ConnectionName
+		}
+
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			val := connectionIdToNameMap[item.Key]
+			if val == "" {
+				val = item.Key
+			}
+			response.Records = append(response.Records, api.TopFieldRecord{
+				Value: connectionIdToNameMap[item.Key],
+				Count: item.DocCount,
+			})
+		}
+		response.TotalCount = res.Aggregations.BucketCount.Value
 	default:
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
 			response.Records = append(response.Records, api.TopFieldRecord{
