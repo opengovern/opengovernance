@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func VmCostByResource(db *db.CostEstimatorDatabase, request api.GetAzureVmRequest) (float64, error) {
+func VmCostByResource(db *db.Database, request api.GetAzureVmRequest) (float64, error) {
 	var cost float64
 	prices, err := db.FindAzureVMPrice(request.RegionCode, string(*request.VM.VirtualMachine.Properties.HardwareProfile.VMSize), "request")
 	if err != nil {

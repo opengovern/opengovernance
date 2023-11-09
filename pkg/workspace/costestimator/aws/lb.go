@@ -6,7 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
-func LBCostByResource(db *db.CostEstimatorDatabase, request api.GetLBCostRequest) (float64, error) {
+func LBCostByResource(db *db.Database, request api.GetLBCostRequest) (float64, error) {
 	var cost float64
 	var family string
 	switch request.LBType {

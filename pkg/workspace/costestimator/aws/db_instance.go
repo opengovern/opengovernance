@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func RDSDBInstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetRDSInstanceRequest) (float64, error) {
+func RDSDBInstanceCostByResource(db *db.Database, request api.GetRDSInstanceRequest) (float64, error) {
 	dbType := dbTypeMap[*request.DBInstance.DBInstance.Engine]
 	licenseModel := licenseModelMap[*request.DBInstance.DBInstance.LicenseModel]
 
