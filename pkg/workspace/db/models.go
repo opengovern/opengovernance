@@ -23,6 +23,12 @@ type Workspace struct {
 }
 
 func (w *Workspace) ToAPI() api.Workspace {
+	var org *api.Organization
+	if w.Organization != nil {
+		v := w.Organization.ToAPI()
+		org = &v
+	}
+
 	return api.Workspace{
 		ID:           w.ID,
 		Name:         w.Name,
@@ -31,7 +37,7 @@ func (w *Workspace) ToAPI() api.Workspace {
 		Status:       w.Status,
 		Description:  w.Description,
 		Tier:         w.Tier,
-		Organization: w.Organization.ToAPI(),
+		Organization: org,
 		CreatedAt:    w.Model.CreatedAt,
 	}
 }
