@@ -5898,6 +5898,24 @@ paths:
       summary: Add credential for workspace to be onboarded
       tags:
       - workspace
+  /workspace/api/v1/bootstrap/{workspace_name}/finish:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerToken: []
+      summary: finish bootstrap
+      tags:
+      - workspace
   /workspace/api/v1/organization:
     get:
       consumes:

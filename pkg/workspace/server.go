@@ -138,6 +138,7 @@ func (s *Server) Register(e *echo.Echo) {
 	bootstrapGroup := v1Group.Group("/bootstrap")
 	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
 	bootstrapGroup.POST("/:workspace_name/credential", httpserver2.AuthorizeHandler(s.AddCredential, authapi.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/finish", httpserver2.AuthorizeHandler(s.FinishBootstrap, authapi.EditorRole))
 
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
@@ -288,6 +289,31 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
 		Status: status,
 	})
+}
+
+// FinishBootstrap godoc
+//
+//	@Summary	finish bootstrap
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_name	path	string	true	"Workspace Name"
+//	@Router		/workspace/api/v1/bootstrap/{workspace_name}/finish [get]
+func (s *Server) FinishBootstrap(c echo.Context) error {
+	workspaceName := c.Param("workspace_name")
+
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.SetWorkspaceBootstrapInputFinished(ws.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 // AddCredential godoc

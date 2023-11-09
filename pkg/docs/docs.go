@@ -5087,6 +5087,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/bootstrap/{workspace_name}/finish": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "finish bootstrap",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/workspace/api/v1/organization": {
             "get": {
                 "security": [

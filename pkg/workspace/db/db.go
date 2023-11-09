@@ -48,6 +48,10 @@ func (s *Database) SetWorkspaceCreated(id string) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("is_created", true).Error
 }
 
+func (s *Database) SetWorkspaceBootstrapInputFinished(id string) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("is_bootstrap_input_finished", true).Error
+}
+
 func (s *Database) DeleteWorkspace(id string) error {
 	return s.orm.Where("id = ?", id).Unscoped().Delete(&Workspace{}).Error
 }
