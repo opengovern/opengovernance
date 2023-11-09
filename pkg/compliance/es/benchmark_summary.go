@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"strings"
 	"time"
 
@@ -26,9 +27,9 @@ type FetchBenchmarkSummaryTrendResponse struct {
 }
 
 func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client, benchmarkIDs, connectionIDs, resourceCollections []string, from, to time.Time) (map[string][]TrendDatapoint, error) {
-	idx := types2.BenchmarkSummaryIndex
+	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"BenchmarkID", "BenchmarkResult.SecurityScore", "EvaluatedAtEpoch"}
+	includes := []string{"BenchmarkID", "Connections.BenchmarkResult.SecurityScore", "EvaluatedAtEpoch"}
 	for _, connectionID := range connectionIDs {
 		includes = append(includes, fmt.Sprintf("Connections.%s.SecurityScore", connectionID))
 	}
@@ -125,9 +126,9 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
 	timeAt time.Time) (map[string]types2.BenchmarkSummary, error) {
 
-	idx := types2.BenchmarkSummaryIndex
+	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"BenchmarkResult", "EvaluatedAtEpoch"}
+	includes := []string{"Connections.BenchmarkResult", "EvaluatedAtEpoch"}
 	for _, connectionID := range connectionIDs {
 		includes = append(includes, fmt.Sprintf("Connections.%s", connectionID))
 	}
@@ -218,7 +219,7 @@ type BenchmarkConnectionSummaryResponse struct {
 }
 
 func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.Result, int64, error) {
-	includes := []string{"Connections", "EvaluatedAtEpoch"}
+	includes := []string{"Connections.Connections", "EvaluatedAtEpoch"}
 	request := map[string]any{
 		"aggs": map[string]any{
 			"last_result": map[string]any{
@@ -256,7 +257,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 
 	logger.Info("BenchmarkConnectionSummary", zap.String("query", string(queryBytes)))
 	var resp BenchmarkConnectionSummaryResponse
-	err = client.Search(context.Background(), types2.BenchmarkSummaryIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -268,7 +269,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 }
 
 func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.PolicyResult, int64, error) {
-	includes := []string{"Policies", "EvaluatedAtEpoch"}
+	includes := []string{"Connections.Policies", "EvaluatedAtEpoch"}
 	request := map[string]any{
 		"aggs": map[string]any{
 			"last_result": map[string]any{
@@ -306,7 +307,7 @@ func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID
 
 	logger.Info("BenchmarkPolicySummary", zap.String("query", string(queryBytes)))
 	var resp BenchmarkConnectionSummaryResponse
-	err = client.Search(context.Background(), types2.BenchmarkSummaryIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, -1, err
 	}
