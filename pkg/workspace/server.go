@@ -323,7 +323,8 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Param		workspace_name	path		string						true	"Workspace Name"
+//	@Param		request			body		api.AddCredentialRequest	true	"Request"
 //	@Success	200				{object}	uint
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name}/credential [post]
 func (s *Server) AddCredential(ctx echo.Context) error {

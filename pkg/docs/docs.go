@@ -5075,6 +5075,15 @@ const docTemplate = `{
                         "name": "workspace_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -8914,6 +8923,15 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "config": {},
+                "connectorType": {
+                    "$ref": "#/definitions/source.Type"
                 }
             }
         },

@@ -2242,6 +2242,12 @@ definitions:
       name:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest:
+    properties:
+      config: {}
+      connectorType:
+        $ref: '#/definitions/source.Type'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus:
     enum:
     - OnboardConnection
@@ -5886,6 +5892,12 @@ paths:
         name: workspace_name
         required: true
         type: string
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest'
       produces:
       - application/json
       responses:
