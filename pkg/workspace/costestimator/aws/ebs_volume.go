@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func EC2VolumeCostByResource(db *db.CostEstimatorDatabase, request api.GetEC2VolumeCostRequest) (float64, error) {
+func EC2VolumeCostByResource(db *db.Database, request api.GetEC2VolumeCostRequest) (float64, error) {
 	volumeDescription := request.Volume.Volume
 	cost, err := calcEC2VolumeCost(db, request.RegionCode, string(volumeDescription.VolumeType),
 		*volumeDescription.Size, *volumeDescription.Iops)
@@ -18,7 +18,7 @@ func EC2VolumeCostByResource(db *db.CostEstimatorDatabase, request api.GetEC2Vol
 }
 
 // calcEC2VolumeCost Calculates ec2 volume (ebs volume) cost for one hour
-func calcEC2VolumeCost(db *db.CostEstimatorDatabase, region string, volumeType string, volumeSize int32, iops int32) (float64, error) {
+func calcEC2VolumeCost(db *db.Database, region string, volumeType string, volumeSize int32, iops int32) (float64, error) {
 	var cost float64
 	volumeCost, err := db.FindEC2InstanceStoragePrice(region, volumeType)
 	if err != nil {

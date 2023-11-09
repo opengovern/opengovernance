@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func EC2InstanceCostByResource(db *db.CostEstimatorDatabase, request api.GetEC2InstanceCostRequest) (float64, error) {
+func EC2InstanceCostByResource(db *db.Database, request api.GetEC2InstanceCostRequest) (float64, error) {
 	var cost float64
 	operatingSystem, err := getInstanceOperatingSystem(request)
 	if err != nil {
