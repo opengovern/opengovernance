@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 )
@@ -102,67 +101,6 @@ func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client, benchma
 		})
 	}
 	return trend, nil
-}
-
-type BenchmarkSummaryQueryResponse struct {
-	Hits BenchmarkSummaryQueryHits `json:"hits"`
-}
-type BenchmarkSummaryQueryHits struct {
-	Total kaytu.SearchTotal          `json:"total"`
-	Hits  []BenchmarkSummaryQueryHit `json:"hits"`
-}
-type BenchmarkSummaryQueryHit struct {
-	ID      string                 `json:"_id"`
-	Score   float64                `json:"_score"`
-	Index   string                 `json:"_index"`
-	Type    string                 `json:"_type"`
-	Version int64                  `json:"_version,omitempty"`
-	Source  types.BenchmarkSummary `json:"_source"`
-	Sort    []any                  `json:"sort"`
-}
-
-func ListBenchmarkSummaries(client kaytu.Client, benchmarkID *string) ([]types.BenchmarkSummary, error) {
-	var hits []types.BenchmarkSummary
-	res := make(map[string]any)
-	var filters []any
-
-	if benchmarkID != nil {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"benchmark_id": {*benchmarkID}},
-		})
-	}
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(types.BenchmarksSummary)}},
-	})
-
-	sort := []map[string]any{
-		{"_id": "desc"},
-	}
-	res["size"] = 10000
-	res["sort"] = sort
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-
-	var response BenchmarkSummaryQueryResponse
-	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, hit := range response.Hits.Hits {
-		hits = append(hits, hit.Source)
-	}
-	return hits, nil
 }
 
 type ListBenchmarkSummariesAtTimeResponse struct {
@@ -324,7 +262,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 	}
 
 	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
-		return res.Source.Connections, res.Source.EvaluatedAtEpoch, nil
+		return res.Source.Connections.Connections, res.Source.EvaluatedAtEpoch, nil
 	}
 	return nil, 0, nil
 }
@@ -374,7 +312,7 @@ func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID
 	}
 
 	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
-		return res.Source.Policies, res.Source.EvaluatedAtEpoch, nil
+		return res.Source.Connections.Policies, res.Source.EvaluatedAtEpoch, nil
 	}
 	return nil, 0, nil
 }

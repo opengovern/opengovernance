@@ -32,22 +32,47 @@ func (w *Worker) RunJob(j Job) error {
 		return err
 	}
 
-	w.logger.Info("Paginator ready")
+	w.logger.Info("FindingsIndex paginator ready")
 
 	bs := types2.BenchmarkSummary{
 		BenchmarkID:      j.BenchmarkID,
 		JobID:            j.ID,
 		EvaluatedAtEpoch: j.CreatedAt.Unix(),
-		BenchmarkResult: types2.Result{
-			QueryResult:    map[types.ComplianceResult]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
-			SecurityScore:  0,
+
+		Connections: types2.BenchmarkSummaryResult{
+			BenchmarkResult: types2.Result{
+				QueryResult:    map[types.ComplianceResult]int{},
+				SeverityResult: map[types.FindingSeverity]int{},
+				SecurityScore:  0,
+			},
+			Connections:   map[string]types2.Result{},
+			ResourceTypes: map[string]types2.Result{},
+			Policies:      map[string]types2.PolicyResult{},
 		},
-		Connections:         map[string]types2.Result{},
-		ResourceCollections: map[string]types2.Result{},
-		ResourceTypes:       map[string]types2.Result{},
-		Policies:            map[string]types2.PolicyResult{},
+		ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
 	}
+
+	for paginator.HasNext() {
+		w.logger.Info("Next page")
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+
+		w.logger.Info("page size", zap.Int("pageSize", len(page)))
+		for _, f := range page {
+			bs.AddFinding(f)
+		}
+	}
+
+	paginator, err = es.NewFindingPaginator(w.esClient, types.ResourceCollectionsFindingsIndex, []kaytu.BoolFilter{
+		kaytu.NewTermFilter("parentBenchmarks", j.BenchmarkID),
+	}, nil)
+	if err != nil {
+		return err
+	}
+
+	w.logger.Info("ResourceCollectionsFindingsIndex paginator ready")
 
 	for paginator.HasNext() {
 		w.logger.Info("Next page")
