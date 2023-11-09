@@ -58,7 +58,7 @@ type Workspace struct {
 	Status       WorkspaceStatus `json:"status" example:"PROVISIONED"`
 	Description  string          `json:"description" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
 	Tier         Tier            `json:"tier" example:"ENTERPRISE"`
-	Organization Organization    `json:"organization,omitempty"`
+	Organization *Organization   `json:"organization,omitempty"`
 	Size         WorkspaceSize   `json:"size" example:"sm"`
 	CreatedAt    time.Time       `json:"createdAt" example:"2023-05-17T14:39:02.707659Z"`
 }
