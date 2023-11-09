@@ -153,7 +153,8 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 		idx = types.StackFindingsIndex
 	}
 
-	query := map[string]any{
+	query := make(map[string]any)
+	query["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": filters,
 		},
