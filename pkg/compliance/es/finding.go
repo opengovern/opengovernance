@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"go.uber.org/zap"
+	"sort"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -81,16 +82,38 @@ func ListActiveFindings(client kaytu.Client, policyID string) (FindingPaginator,
 	}, nil)
 }
 
-func FindingsQuery(client kaytu.Client,
-	resourceIDs []string,
-	provider []source.Type,
-	connectionID []string,
-	resourceCollections []string,
-	benchmarkID []string,
-	policyID []string,
-	severity []string,
-	activeOnly bool) ([]types.Finding, error) {
+func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
+	provider []source.Type, connectionID []string, resourceCollections []string,
+	benchmarkID []string, policyID []string, severity []string,
+	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
+
+	filteredSortMap := make(map[string]string)
+	for sortField, sortDirection := range sorts {
+		key := ""
+		switch sortField {
+		case "policyTitle":
+			key = "policyID"
+		case "providerConnectionID", "providerConnectionName":
+			key = "connectionID"
+		default:
+			key = sortField
+		}
+		filteredSortMap[key] = sortDirection
+	}
+	sortMapArray := make([]map[string]string, 0)
+	for k, v := range filteredSortMap {
+		sortMapArray = append(sortMapArray, map[string]string{k: v})
+	}
+	sort.Slice(sortMapArray, func(i, j int) bool {
+		for k := range sortMapArray[i] {
+			for l := range sortMapArray[j] {
+				return k < l
+			}
+		}
+		return false
+	})
+	sortMapArray = append(sortMapArray, map[string]string{"_id": "asc"})
 
 	var filters []kaytu.BoolFilter
 	if len(resourceIDs) > 0 {
@@ -119,9 +142,6 @@ func FindingsQuery(client kaytu.Client,
 		idx = types.ResourceCollectionsFindingsIndex
 		filters = append(filters, kaytu.NewTermsFilter("resourceCollection", resourceCollections))
 	}
-	if activeOnly {
-		filters = append(filters, kaytu.NewTermFilter("stateActive", "true"))
-	}
 
 	isStack := false
 	if len(connectionID) > 0 {
@@ -132,22 +152,31 @@ func FindingsQuery(client kaytu.Client,
 	if isStack {
 		idx = types.StackFindingsIndex
 	}
-	var findings []types.Finding
-	paginator, err := NewFindingPaginator(client, idx, filters, nil)
+
+	query := map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["sort"] = sortMapArray
+	if len(searchAfter) > 0 {
+		query["search_after"] = searchAfter
+	}
+	query["size"] = pageSizeLimit
+	queryJson, err := json.Marshal(query)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	ctx := context.Background()
-	for paginator.HasNext() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
+	logger.Info("FindingsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
 
-		findings = append(findings, page...)
+	var response FindingsQueryResponse
+	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	if err != nil {
+		return nil, 0, err
 	}
-	return findings, err
+
+	return response.Hits.Hits, response.Hits.Total.Value, err
 }
 
 type FindingFiltersAggregationResponse struct {
