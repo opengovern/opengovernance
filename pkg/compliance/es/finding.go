@@ -163,6 +163,9 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	if len(searchAfter) > 0 {
 		query["search_after"] = searchAfter
 	}
+	if pageSizeLimit == 0 {
+		pageSizeLimit = 1000
+	}
 	query["size"] = pageSizeLimit
 	queryJson, err := json.Marshal(query)
 	if err != nil {
