@@ -207,7 +207,7 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 			return fmt.Errorf("put role binding: %w", err)
 		}
 
-		err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), s.cfg.AutoSuspendDuration).Err()
+		err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), time.Duration(s.cfg.AutoSuspendDurationMinutes)*time.Minute).Err()
 		if err != nil {
 			return fmt.Errorf("set last access: %v", err)
 		}
