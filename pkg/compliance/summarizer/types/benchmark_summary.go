@@ -5,8 +5,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
-const BenchmarkSummaryIndex = "benchmark_summary"
-
 type Result struct {
 	QueryResult    map[types.ComplianceResult]int
 	SeverityResult map[types.FindingSeverity]int
@@ -20,14 +18,14 @@ type PolicyResult struct {
 	FailedResourcesCount int
 	TotalResourcesCount  int
 
-	allResources    map[string]interface{}
-	failedResources map[string]interface{}
+	allResources    map[string]any
+	failedResources map[string]any
 
 	FailedConnectionCount int
 	TotalConnectionCount  int
 
-	allConnections    map[string]interface{}
-	failedConnections map[string]interface{}
+	allConnections    map[string]any
+	failedConnections map[string]any
 }
 
 type BenchmarkSummaryResult struct {
@@ -47,7 +45,7 @@ type BenchmarkSummary struct {
 }
 
 func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
-	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, BenchmarkSummaryIndex
+	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, types.BenchmarkSummaryIndex
 }
 
 func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
@@ -80,10 +78,10 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 	if !ok {
 		policy = PolicyResult{
 			Passed:            true,
-			allResources:      map[string]interface{}{},
-			failedResources:   map[string]interface{}{},
-			allConnections:    map[string]interface{}{},
-			failedConnections: map[string]interface{}{},
+			allResources:      map[string]any{},
+			failedResources:   map[string]any{},
+			allConnections:    map[string]any{},
+			failedConnections: map[string]any{},
 		}
 	}
 
