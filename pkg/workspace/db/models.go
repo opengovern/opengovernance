@@ -1,4 +1,4 @@
-package workspace
+package db
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
@@ -8,16 +8,18 @@ import (
 type Workspace struct {
 	gorm.Model
 
-	ID             string              `json:"id"`
-	Name           string              `gorm:"uniqueIndex" json:"name"`
-	OwnerId        string              `json:"owner_id"`
-	URI            string              `json:"uri"`
-	Status         api.WorkspaceStatus `json:"status"`
-	Description    string              `json:"description"`
-	Size           api.WorkspaceSize   `json:"workspace_size"`
-	Tier           api.Tier            `json:"tier"`
-	OrganizationID int                 `json:"organization_id"`
-	Organization   Organization        `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	ID                       string              `json:"id"`
+	Name                     string              `gorm:"uniqueIndex" json:"name"`
+	OwnerId                  string              `json:"owner_id"`
+	URI                      string              `json:"uri"`
+	Status                   api.WorkspaceStatus `json:"status"`
+	Description              string              `json:"description"`
+	Size                     api.WorkspaceSize   `json:"workspace_size"`
+	Tier                     api.Tier            `json:"tier"`
+	OrganizationID           int                 `json:"organization_id"`
+	Organization             Organization        `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	IsCreated                bool                `json:"is_created"`
+	IsBootstrapInputFinished bool                `json:"is_bootstrap_input_finished"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {

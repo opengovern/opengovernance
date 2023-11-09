@@ -9,9 +9,10 @@ import (
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
@@ -36,28 +36,17 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-
-	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/go-redis/redis/v8"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/labstack/echo/v4"
+	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"k8s.io/apimachinery/pkg/api/meta"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/sony/sonyflake"
-)
-
-const (
-	reconcilerInterval = 30 * time.Second
 )
 
 var (
@@ -65,22 +54,18 @@ var (
 )
 
 type Server struct {
-	logger          *zap.Logger
-	e               *echo.Echo
-	cfg             *Config
-	db              *Database
-	costEstimatorDb *db2.CostEstimatorDatabase
-	credentialDb    *db2.CredentialDatabase
-	kms             *vault.KMSVaultSourceConfig
-	keyARN          string
-	authClient      authclient.AuthServiceClient
-	kubeClient      k8sclient.Client // the kubernetes client
-	rdb             *redis.Client
-	cache           *cache.Cache
-	awsConfig       aws.Config
+	logger       *zap.Logger
+	e            *echo.Echo
+	cfg          config.Config
+	db           *db.Database
+	authClient   authclient.AuthServiceClient
+	kubeClient   k8sclient.Client // the kubernetes client
+	rdb          *redis.Client
+	cache        *cache.Cache
+	StateManager *statemanager.Service
 }
 
-func NewServer(cfg *Config) (*Server, error) {
+func NewServer(cfg config.Config) (*Server, error) {
 	s := &Server{
 		cfg: cfg,
 	}
@@ -91,33 +76,13 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 	s.e, _ = httpserver2.Register(logger, s)
 
-	db, err := NewDatabase(cfg, logger)
+	dbs, err := db.NewDatabase(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("new database: %w", err)
 	}
-	s.db = db
+	s.db = dbs
 
-	pgCfg := &postgres.Config{
-		Host:    cfg.Host,
-		Port:    cfg.Port,
-		User:    cfg.User,
-		Passwd:  cfg.Password,
-		DB:      cfg.CostEstimatorDBName,
-		SSLMode: cfg.SSLMode,
-	}
-	costEstimatorDb, err := db2.NewCostEstimatorDatabase(pgCfg, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new cost estimator database: %w", err)
-	}
-	s.costEstimatorDb = costEstimatorDb
-
-	credentialDb, err := db2.NewCredentialDatabase(pgCfg, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new cost estimator database: %w", err)
-	}
-	s.credentialDb = credentialDb
-
-	kubeClient, err := s.newKubeClient()
+	kubeClient, err := statemanager.NewKubeClient()
 	if err != nil {
 		return nil, fmt.Errorf("new kube client: %w", err)
 	}
@@ -133,10 +98,10 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("add v1 to scheme: %w", err)
 	}
 
-	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
+	s.authClient = authclient.NewAuthServiceClient(cfg.Auth.BaseURL)
 
 	s.rdb = redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddress,
+		Addr:     cfg.Redis.Address,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
@@ -146,12 +111,12 @@ func NewServer(cfg *Config) (*Server, error) {
 		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
 	})
 
-	s.awsConfig, err = aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	s.logger = logger
+
+	s.StateManager, err = statemanager.New(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	s.logger = logger
 
 	return s, nil
 }
@@ -195,428 +160,11 @@ func (s *Server) Register(e *echo.Echo) {
 }
 
 func (s *Server) Start() error {
-	go s.startReconciler()
+	go s.StateManager.StartReconciler()
 
 	s.e.Logger.SetLevel(log.DEBUG)
-	s.e.Logger.Infof("workspace service is started on %s", s.cfg.ServerAddr)
-	return s.e.Start(s.cfg.ServerAddr)
-}
-
-func (s *Server) startReconciler() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("reconciler crashed: %v, restarting ...\n", r)
-			go s.startReconciler()
-		}
-	}()
-
-	ticker := time.NewTimer(reconcilerInterval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		fmt.Printf("reconsiler started\n")
-
-		workspaces, err := s.db.ListWorkspaces()
-		if err != nil {
-			s.e.Logger.Errorf("list workspaces: %v", err)
-		} else {
-			for _, workspace := range workspaces {
-				if err := s.handleWorkspace(workspace); err != nil {
-					s.e.Logger.Errorf("handle workspace %s: %v", workspace.ID, err)
-				}
-
-				if err := s.handleAutoSuspend(workspace); err != nil {
-					s.e.Logger.Errorf("handleAutoSuspend: %v", err)
-				}
-			}
-
-			if err := s.syncHTTPProxy(workspaces); err != nil {
-				s.e.Logger.Errorf("syncing http proxy: %v", err)
-			}
-		}
-		// reset the time ticker
-		ticker.Reset(reconcilerInterval)
-	}
-}
-
-func (s *Server) handleAutoSuspend(workspace *Workspace) error {
-	if workspace.Tier != api.Tier_Free {
-		return nil
-	}
-	switch api.WorkspaceStatus(workspace.Status) {
-	case api.StatusDeleting, api.StatusDeleted:
-		return nil
-	}
-
-	fmt.Printf("checking for auto-suspend %s\n", workspace.Name)
-
-	res, err := s.rdb.Get(context.Background(), "last_access_"+workspace.Name).Result()
-	if err != nil {
-		if err != redis.Nil {
-			return fmt.Errorf("get last access: %v", err)
-		}
-	}
-	lastAccess, _ := strconv.ParseInt(res, 10, 64)
-	fmt.Printf("last access: %d [%s]\n", lastAccess, res)
-
-	if time.Now().UnixMilli()-lastAccess > s.cfg.AutoSuspendDuration.Milliseconds() {
-		if workspace.Status == api.StatusProvisioned {
-			fmt.Printf("suspending workspace %s\n", workspace.Name)
-			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspending); err != nil {
-				return fmt.Errorf("update workspace status: %w", err)
-			}
-		}
-	} /* else {
-		if workspace.Status == string(StatusSuspended) {
-			fmt.Printf("resuming workspace %s\n", workspace.Name)
-			if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusProvisioning); err != nil {
-				return fmt.Errorf("update workspace status: %w", err)
-			}
-		}
-	}*/
-	return nil
-}
-
-func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-
-	var httpIncludes []contourv1.Include
-	var grpcIncludes []contourv1.Include
-	for _, w := range workspaces {
-		if w.Status != api.StatusProvisioned && w.Status != api.StatusBootstrapping {
-			continue
-		}
-		httpIncludes = append(httpIncludes, contourv1.Include{
-			Name:      "http-proxy-route",
-			Namespace: w.ID,
-			Conditions: []contourv1.MatchCondition{
-				{
-					Prefix: "/" + w.Name,
-				},
-			},
-		})
-		grpcIncludes = append(grpcIncludes, contourv1.Include{
-			Name:      "grpc-proxy-route",
-			Namespace: w.ID,
-			Conditions: []contourv1.MatchCondition{
-				{
-					Header: &contourv1.HeaderMatchCondition{
-						Name:  "workspace-name",
-						Exact: w.Name,
-					},
-				},
-			},
-		})
-	}
-
-	httpKey := types.NamespacedName{
-		Name:      "http-proxy-route",
-		Namespace: s.cfg.KaytuOctopusNamespace,
-	}
-	var httpProxy contourv1.HTTPProxy
-
-	grpcKey := types.NamespacedName{
-		Name:      "grpc-proxy-route",
-		Namespace: s.cfg.KaytuOctopusNamespace,
-	}
-	var grpcProxy contourv1.HTTPProxy
-
-	httpExists := true
-	if err := s.kubeClient.Get(ctx, httpKey, &httpProxy); err != nil {
-		if apierrors.IsNotFound(err) {
-			httpExists = false
-		} else {
-			return err
-		}
-	}
-
-	grpcExists := true
-	if err := s.kubeClient.Get(ctx, grpcKey, &grpcProxy); err != nil {
-		if apierrors.IsNotFound(err) {
-			grpcExists = false
-		} else {
-			return err
-		}
-	}
-
-	httpResourceVersion := httpProxy.GetResourceVersion()
-	httpProxy = contourv1.HTTPProxy{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "HTTPProxy",
-			APIVersion: "projectcontour.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "http-proxy-route",
-			Namespace: s.cfg.KaytuOctopusNamespace,
-		},
-		Spec: contourv1.HTTPProxySpec{
-			Includes: httpIncludes,
-		},
-		Status: contourv1.HTTPProxyStatus{},
-	}
-
-	grpcResourceVersion := grpcProxy.GetResourceVersion()
-	grpcProxy = contourv1.HTTPProxy{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "HTTPProxy",
-			APIVersion: "projectcontour.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "grpc-proxy-route",
-			Namespace: s.cfg.KaytuOctopusNamespace,
-		},
-		Spec: contourv1.HTTPProxySpec{
-			Includes: grpcIncludes,
-		},
-		Status: contourv1.HTTPProxyStatus{},
-	}
-
-	if httpExists {
-		httpProxy.SetResourceVersion(httpResourceVersion)
-		err := s.kubeClient.Update(ctx, &httpProxy)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := s.kubeClient.Create(ctx, &httpProxy)
-		if err != nil {
-			return err
-		}
-	}
-
-	if grpcExists {
-		grpcProxy.SetResourceVersion(grpcResourceVersion)
-		err := s.kubeClient.Update(ctx, &grpcProxy)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := s.kubeClient.Create(ctx, &grpcProxy)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Server) handleWorkspace(workspace *Workspace) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	status := workspace.Status
-	switch status {
-	case api.StatusBootstrapping:
-		st, err := s.getBootstrapStatus(workspace.Name)
-		if err != nil {
-			return err
-		}
-		if st == api.BootstrapStatus_Finished {
-			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioned); err != nil {
-				return fmt.Errorf("update workspace status: %w", err)
-			}
-		}
-	case api.StatusProvisioning:
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
-		if err != nil {
-			return fmt.Errorf("find helm release: %w", err)
-		}
-		if helmRelease == nil {
-			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID, workspace.Status)
-			if err := s.createHelmRelease(ctx, workspace); err != nil {
-				return fmt.Errorf("create helm release: %w", err)
-			}
-			// update the workspace status next loop
-			return nil
-		}
-
-		values := helmRelease.GetValues()
-		currentReplicaCount, err := getReplicaCount(values)
-		if err != nil {
-			return fmt.Errorf("getReplicaCount: %w", err)
-		}
-
-		if currentReplicaCount == 0 {
-			values, err = updateValuesSetReplicaCount(values, 1)
-			if err != nil {
-				return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
-			}
-
-			b, err := json.Marshal(values)
-			if err != nil {
-				return fmt.Errorf("marshalling values: %w", err)
-			}
-			helmRelease.Spec.Values.Raw = b
-			err = s.kubeClient.Update(ctx, helmRelease)
-			if err != nil {
-				return fmt.Errorf("updating replica count: %w", err)
-			}
-
-			return nil
-		}
-
-		newStatus := status
-		// check the status of helm release
-		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-			// when the helm release installed successfully, set the rolebinding
-			limits := api.GetLimitsByTier(workspace.Tier)
-			authCtx := &httpclient.Context{
-				UserID:         workspace.OwnerId,
-				UserRole:       authapi.AdminRole,
-				WorkspaceName:  workspace.Name,
-				WorkspaceID:    workspace.ID,
-				MaxUsers:       limits.MaxUsers,
-				MaxConnections: limits.MaxConnections,
-				MaxResources:   limits.MaxResources,
-			}
-
-			if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-				UserID:   workspace.OwnerId,
-				RoleName: authapi.AdminRole,
-			}); err != nil {
-				return fmt.Errorf("put role binding: %w", err)
-			}
-
-			err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), s.cfg.AutoSuspendDuration).Err()
-			if err != nil {
-				return fmt.Errorf("set last access: %v", err)
-			}
-
-			newStatus = api.StatusBootstrapping
-		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-			if !helmRelease.Spec.Suspend {
-				helmRelease.Spec.Suspend = true
-				err = s.kubeClient.Update(ctx, helmRelease)
-				if err != nil {
-					return fmt.Errorf("suspend helmrelease: %v", err)
-				}
-			} else {
-				helmRelease.Spec.Suspend = false
-				err = s.kubeClient.Update(ctx, helmRelease)
-				if err != nil {
-					return fmt.Errorf("suspend helmrelease: %v", err)
-				}
-			}
-			newStatus = api.StatusProvisioning
-		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
-			newStatus = api.StatusProvisioningFailed
-		}
-		if newStatus != status {
-			if err := s.db.UpdateWorkspaceStatus(workspace.ID, newStatus); err != nil {
-				return fmt.Errorf("update workspace status: %w", err)
-			}
-		}
-	case api.StatusProvisioningFailed:
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
-		if err != nil {
-			return fmt.Errorf("find helm release: %w", err)
-		}
-		if helmRelease == nil {
-			return nil
-		}
-
-		newStatus := status
-		// check the status of helm release
-		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-			newStatus = api.StatusProvisioning
-		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-			newStatus = api.StatusProvisioning
-		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
-			newStatus = api.StatusProvisioningFailed
-		}
-		if newStatus != status {
-			if err := s.db.UpdateWorkspaceStatus(workspace.ID, newStatus); err != nil {
-				return fmt.Errorf("update workspace status: %w", err)
-			}
-		}
-	case api.StatusDeleting:
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
-		if err != nil {
-			return fmt.Errorf("find helm release: %w", err)
-		}
-
-		if helmRelease != nil {
-			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID, workspace.Status)
-			if err := s.deleteHelmRelease(ctx, workspace); err != nil {
-				return fmt.Errorf("delete helm release: %w", err)
-			}
-			// update the workspace status next loop
-			return nil
-		}
-
-		namespace, err := s.findTargetNamespace(ctx, workspace.ID)
-		if err != nil {
-			return fmt.Errorf("find target namespace: %w", err)
-		}
-		if namespace != nil {
-			s.e.Logger.Infof("delete target namespace %s with status %s", workspace.ID, workspace.Status)
-			if err := s.deleteTargetNamespace(ctx, workspace.ID); err != nil {
-				return fmt.Errorf("delete target namespace: %w", err)
-			}
-			// update the workspace status next loop
-			return nil
-		}
-
-		if err := s.db.DeleteWorkspace(workspace.ID); err != nil {
-			return fmt.Errorf("update workspace status: %w", err)
-		}
-	case api.StatusSuspending:
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
-		if err != nil {
-			return fmt.Errorf("find helm release: %w", err)
-		}
-		if helmRelease == nil {
-			return fmt.Errorf("cannot find helmrelease")
-		}
-
-		var pods corev1.PodList
-		err = s.kubeClient.List(ctx, &pods, k8sclient.InNamespace(workspace.ID))
-		if err != nil {
-			return fmt.Errorf("fetching list of pods: %w", err)
-		}
-
-		for _, pod := range pods.Items {
-			if strings.HasPrefix(pod.Name, "describe-connection-worker") {
-				// waiting for describe jobs to finish
-				return nil
-			}
-		}
-
-		values := helmRelease.GetValues()
-		currentReplicaCount, err := getReplicaCount(values)
-		if err != nil {
-			return fmt.Errorf("getReplicaCount: %w", err)
-		}
-
-		if currentReplicaCount != 0 {
-			values, err = updateValuesSetReplicaCount(values, 0)
-			if err != nil {
-				return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
-			}
-
-			b, err := json.Marshal(values)
-			if err != nil {
-				return fmt.Errorf("marshalling values: %w", err)
-			}
-			helmRelease.Spec.Values.Raw = b
-			err = s.kubeClient.Update(ctx, helmRelease)
-			if err != nil {
-				return fmt.Errorf("updating replica count: %w", err)
-			}
-
-			return nil
-		}
-
-		if len(pods.Items) > 0 {
-			// waiting for pods to go down
-			return nil
-		}
-
-		if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspended); err != nil {
-			return fmt.Errorf("update workspace status: %w", err)
-		}
-	}
-	return nil
+	s.e.Logger.Infof("workspace service is started on %s", s.cfg.Http.Address)
+	return s.e.Start(s.cfg.Http.Address)
 }
 
 // CreateWorkspace godoc
@@ -663,7 +211,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return err
 	}
 
-	workspace := &Workspace{
+	workspace := &db.Workspace{
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           strings.ToLower(request.Name),
 		OwnerId:        userID,
@@ -700,7 +248,7 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 		return api.BootstrapStatus_CreatingWorkspace, nil
 	}
 
-	onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", ws.ID)
+	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", ws.ID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 	count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
 	if err != nil {
@@ -745,7 +293,7 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		workspace_name	path		string	true	"Workspace Name"
-//	@Success	200				{object}	api.BootstrapStatusResponse
+//	@Success	200				{object}	uint
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name}/credential [post]
 func (s *Server) AddCredential(ctx echo.Context) error {
 	workspaceName := ctx.Param("workspace_name")
@@ -761,13 +309,13 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 
 	switch request.ConnectorType {
 	case source.CloudAWS:
-		config := api2.AWSCredentialConfig{}
-		err = json.Unmarshal(configStr, &config)
+		cfg := api2.AWSCredentialConfig{}
+		err = json.Unmarshal(configStr, &cfg)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
 
-		awsConfig, err := describe.AWSAccountConfigFromMap(config.AsMap())
+		awsConfig, err := describe.AWSAccountConfigFromMap(cfg.AsMap())
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -781,14 +329,14 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 	case source.CloudAzure:
-		config := api2.AzureCredentialConfig{}
-		err = json.Unmarshal(configStr, &config)
+		cfg := api2.AzureCredentialConfig{}
+		err = json.Unmarshal(configStr, &cfg)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
 
 		var azureConfig describe.AzureSubscriptionConfig
-		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config.AsMap())
+		azureConfig, err = describe.AzureSubscriptionConfigFromMap(cfg.AsMap())
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -813,12 +361,12 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		Workspace:     workspaceName,
 		Metadata:      configStr,
 	}
-	err = s.credentialDb.CreateCredential(&cred)
+	err = s.db.CreateCredential(&cred)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, cred.ID.String())
+	return ctx.JSON(http.StatusOK, cred.ID)
 }
 
 // DeleteWorkspace godoc
@@ -1303,12 +851,12 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		}
 		response.CurrentUsers = int64(len(resp))
 
-		inventoryURL := strings.ReplaceAll(InventoryTemplate, "%NAMESPACE%", dbWorkspace.ID)
+		inventoryURL := strings.ReplaceAll(s.cfg.Inventory.BaseURL, "%NAMESPACE%", dbWorkspace.ID)
 		inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
 		resourceCount, err := inventoryClient.CountResources(httpclient.FromEchoContext(c))
 		response.CurrentResources = resourceCount
 
-		onboardURL := strings.ReplaceAll(OnboardTemplate, "%NAMESPACE%", dbWorkspace.ID)
+		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", dbWorkspace.ID)
 		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 		response.CurrentConnections = count
@@ -1380,7 +928,7 @@ func (s *Server) CreateOrganization(c echo.Context) error {
 		return err
 	}
 
-	dbOrg := Organization{
+	dbOrg := db.Organization{
 		CompanyName:  request.CompanyName,
 		Url:          request.Url,
 		Address:      request.Address,

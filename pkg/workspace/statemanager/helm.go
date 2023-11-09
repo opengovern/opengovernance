@@ -1,4 +1,4 @@
-package workspace
+package statemanager
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 
 	"reflect"
 	"time"
@@ -49,7 +50,7 @@ type WorkspaceConfig struct {
 	Size api.WorkspaceSize `json:"size"`
 }
 
-func (s *Server) newKubeClient() (client.Client, error) {
+func NewKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
 	if err := helmv2.AddToScheme(scheme); err != nil {
 		return nil, err
@@ -64,7 +65,7 @@ func (s *Server) newKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func (s *Server) createInsightBucket(ctx context.Context, workspace *Workspace) error {
+func (s *Service) createInsightBucket(ctx context.Context, workspace *db.Workspace) error {
 	cli := s3.NewFromConfig(s.awsConfig)
 	_, err := cli.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(fmt.Sprintf("insights-%s", workspace.ID)),
@@ -76,7 +77,7 @@ func (s *Server) createInsightBucket(ctx context.Context, workspace *Workspace) 
 	return err
 }
 
-func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) error {
+func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace) error {
 	id := workspace.ID
 
 	if err := s.createInsightBucket(ctx, workspace); err != nil {
@@ -180,7 +181,7 @@ func updateValuesSetReplicaCount(values map[string]interface{}, replicaCount int
 	}
 }
 
-func (s *Server) deleteTargetNamespace(ctx context.Context, name string) error {
+func (s *Service) deleteTargetNamespace(ctx context.Context, name string) error {
 	ns := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -189,7 +190,7 @@ func (s *Server) deleteTargetNamespace(ctx context.Context, name string) error {
 	return s.kubeClient.Delete(ctx, &ns)
 }
 
-func (s *Server) createTargetNamespace(ctx context.Context, name string) error {
+func (s *Service) createTargetNamespace(ctx context.Context, name string) error {
 	ns := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -198,7 +199,7 @@ func (s *Server) createTargetNamespace(ctx context.Context, name string) error {
 	return s.kubeClient.Create(ctx, &ns)
 }
 
-func (s *Server) findTargetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+func (s *Service) findTargetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	key := client.ObjectKey{
 		Name: name,
 	}
@@ -212,7 +213,7 @@ func (s *Server) findTargetNamespace(ctx context.Context, name string) (*corev1.
 	return &ns, nil
 }
 
-func (s *Server) findHelmRelease(ctx context.Context, workspace *Workspace) (*helmv2.HelmRelease, error) {
+func (s *Service) findHelmRelease(ctx context.Context, workspace *db.Workspace) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
 		Name:      workspace.ID,
 		Namespace: s.cfg.FluxSystemNamespace,
@@ -227,7 +228,7 @@ func (s *Server) findHelmRelease(ctx context.Context, workspace *Workspace) (*he
 	return &helmRelease, nil
 }
 
-func (s *Server) deleteHelmRelease(ctx context.Context, workspace *Workspace) error {
+func (s *Service) deleteHelmRelease(ctx context.Context, workspace *db.Workspace) error {
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workspace.ID,
