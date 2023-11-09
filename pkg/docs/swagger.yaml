@@ -4086,7 +4086,7 @@ paths:
       summary: Sync queries
       tags:
       - compliance
-  /cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType}:
+  /cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId}:
     get:
       description: Get AWS cost for each resource
       parameters:
@@ -4112,7 +4112,7 @@ paths:
       summary: Get AWS cost
       tags:
       - cost-estimator
-  /cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType}:
+  /cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId}:
     get:
       description: Get Azure cost for each resource
       parameters:

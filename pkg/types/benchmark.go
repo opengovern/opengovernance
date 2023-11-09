@@ -1,8 +1,6 @@
 package types
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -49,62 +47,4 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		index = StackFindingsIndex
 	}
 	return keys, index
-}
-
-type BenchmarkReportType string
-
-const (
-	BenchmarksSummary                 BenchmarkReportType = "BenchmarksSummary"
-	BenchmarksSummaryHistory          BenchmarkReportType = "BenchmarksSummaryHistory"
-	BenchmarksConnectorSummary        BenchmarkReportType = "BenchmarksConnectorSummary"
-	BenchmarksConnectorSummaryHistory BenchmarkReportType = "BenchmarksConnectorHistory"
-)
-
-type PolicySummary struct {
-	PolicyID      string                  `json:"policy_id"`
-	ConnectorType source.Type             `json:"connector_type"`
-	TotalResult   ComplianceResultSummary `json:"total_result"`
-	TotalSeverity SeverityResult          `json:"total_severity"`
-}
-
-type BenchmarkSummary struct {
-	BenchmarkID    string          `json:"benchmark_id"`
-	ConnectionID   string          `json:"connection_id"`
-	ConnectorTypes []source.Type   `json:"connector_types"`
-	DescribedAt    int64           `json:"described_at"`
-	EvaluatedAt    int64           `json:"evaluated_at"`
-	Policies       []PolicySummary `json:"policies"`
-
-	FailedResources map[string]struct{}
-	AllResources    map[string]struct{}
-	Resources       ComplianceResultShortSummary
-
-	TotalResult   ComplianceResultSummary `json:"total_result"`
-	TotalSeverity SeverityResult          `json:"total_severity"`
-
-	ReportType BenchmarkReportType `json:"report_type"`
-
-	SummarizeJobId uint `json:"summarize_job_id"`
-
-	ResourceCollection *string `json:"resource_collection"`
-}
-
-func (r BenchmarkSummary) KeysAndIndex() ([]string, string) {
-	connectionsTypesStr, _ := json.Marshal(r.ConnectorTypes)
-	keys := []string{
-		r.BenchmarkID,
-		r.ConnectionID,
-		string(connectionsTypesStr),
-		string(r.ReportType),
-	}
-	if r.ReportType == BenchmarksSummaryHistory ||
-		r.ReportType == BenchmarksConnectorSummaryHistory {
-		keys = append(keys, fmt.Sprintf("%d", r.DescribedAt))
-	}
-	idx := BenchmarkSummaryIndex
-	if r.ResourceCollection != nil {
-		keys = append(keys, *r.ResourceCollection)
-		idx = ResourceCollectionsBenchmarkSummaryIndex
-	}
-	return keys, idx
 }
