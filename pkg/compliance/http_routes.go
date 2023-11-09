@@ -168,10 +168,10 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	var response api.GetFindingsResponse
 
-	res, err := es.FindingsQuery(h.client,
+	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceCollection, req.Filters.BenchmarkID, req.Filters.PolicyID,
-		req.Filters.Severity, req.Filters.ActiveOnly)
+		req.Filters.Severity, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		return err
 	}
@@ -188,10 +188,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	for _, h := range res {
 		finding := api.Finding{
-			Finding:                h,
+			Finding:                h.Source,
 			PolicyTitle:            "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
+
+			SortKey: h.Sort,
 		}
 
 		for _, src := range allSources {
@@ -203,13 +205,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		}
 
 		for _, policy := range policies {
-			if policy.ID == h.PolicyID {
+			if policy.ID == h.Source.PolicyID {
 				finding.PolicyTitle = policy.Title
 			}
 		}
 		response.Findings = append(response.Findings, finding)
 	}
-	response.TotalCount = int64(len(res))
+	response.TotalCount = totalCount
 	return ctx.JSON(http.StatusOK, response)
 }
 
