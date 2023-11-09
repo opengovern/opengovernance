@@ -19,6 +19,19 @@ func (db Database) CreateRunnerJobs(runners []*model.ComplianceRunner) error {
 	return nil
 }
 
+func (db Database) DeleteOldRunnerJob(parentJobId *uint) error {
+	tx := db.ORM.Model(&model.ComplianceRunner{}).Where("created_at < ?", time.Now().Add(-time.Hour*24*2))
+	if parentJobId != nil {
+		tx = tx.Where("parent_job_id = ?", *parentJobId)
+	}
+	tx = tx.Delete(&model.ComplianceRunner{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 	var jobs []model.ComplianceRunner
 	tx := db.ORM.Model(&model.ComplianceRunner{}).

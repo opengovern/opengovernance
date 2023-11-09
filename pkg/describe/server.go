@@ -277,7 +277,17 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID)
+	lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if lastJob != nil && (lastJob.Status == model2.ComplianceJobRunnersInProgress ||
+		lastJob.Status == model2.ComplianceJobSummarizerInProgress ||
+		lastJob.Status == model2.ComplianceJobCreated) {
+		return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
+	}
+
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}

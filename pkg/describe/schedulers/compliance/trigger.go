@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -100,7 +101,7 @@ func (s *JobScheduler) buildRunners(
 	return jobs, nil
 }
 
-func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, error) {
+func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string, lastJob *model.ComplianceJob) (uint, error) {
 	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
 	if err != nil {
 		return 0, err
@@ -113,6 +114,13 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 	}
 	err = s.db.CreateComplianceJob(&job)
 	if err != nil {
+		return 0, err
+	}
+
+	// delete old runners
+	err = s.db.DeleteOldRunnerJob(&job.ID)
+	if err != nil {
+		s.logger.Error("error while deleting old runners", zap.Error(err))
 		return 0, err
 	}
 
