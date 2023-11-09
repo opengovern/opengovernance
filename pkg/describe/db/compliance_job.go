@@ -120,6 +120,16 @@ SELECT * FROM compliance_jobs j WHERE status = 'RUNNERS_IN_PROGRESS' AND
 	return jobs, nil
 }
 
+func (db Database) ListChildJobIDsForParent(jobId uint) ([]uint, error) {
+	var ids []uint
+	tx := db.ORM.Model(model.ComplianceRunner{}).Where("parent_job_id = ?", jobId).Pluck("id", &ids)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return ids, nil
+}
+
 func (db Database) FetchTotalFindingCountForComplianceJob(jobID uint) (int, error) {
 	var count int
 	tx := db.ORM.Raw(`SELECT sum(total_finding_count) FROM compliance_runners WHERE parent_job_id = ?`, jobID).Scan(&count)
