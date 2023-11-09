@@ -2322,7 +2322,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/aws/{resourceId}/{resourceType}": {
+        "/cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId}": {
             "get": {
                 "security": [
                     {
@@ -2363,7 +2363,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/azure/{resourceId}/{resourceType}": {
+        "/cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId}": {
             "get": {
                 "security": [
                     {

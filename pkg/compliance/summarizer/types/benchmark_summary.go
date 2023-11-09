@@ -5,8 +5,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
-const BenchmarkSummaryIndex = "benchmark_summary"
-
 type Result struct {
 	QueryResult    map[types.ComplianceResult]int
 	SeverityResult map[types.FindingSeverity]int
@@ -20,14 +18,21 @@ type PolicyResult struct {
 	FailedResourcesCount int
 	TotalResourcesCount  int
 
-	allResources    map[string]interface{}
-	failedResources map[string]interface{}
+	allResources    map[string]any
+	failedResources map[string]any
 
 	FailedConnectionCount int
 	TotalConnectionCount  int
 
-	allConnections    map[string]interface{}
-	failedConnections map[string]interface{}
+	allConnections    map[string]any
+	failedConnections map[string]any
+}
+
+type BenchmarkSummaryResult struct {
+	BenchmarkResult Result
+	Connections     map[string]Result
+	ResourceTypes   map[string]Result
+	Policies        map[string]PolicyResult
 }
 
 type BenchmarkSummary struct {
@@ -35,16 +40,60 @@ type BenchmarkSummary struct {
 	JobID            uint
 	EvaluatedAtEpoch int64
 
-	BenchmarkResult Result
-
-	Connections         map[string]Result
-	ResourceCollections map[string]Result
-	ResourceTypes       map[string]Result
-	Policies            map[string]PolicyResult
+	Connections         BenchmarkSummaryResult
+	ResourceCollections map[string]BenchmarkSummaryResult
 }
 
 func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
-	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, BenchmarkSummaryIndex
+	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, types.BenchmarkSummaryIndex
+}
+
+func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
+	r.BenchmarkResult.SeverityResult[f.Severity]++
+	r.BenchmarkResult.QueryResult[f.Result]++
+
+	connection, ok := r.Connections[f.ConnectionID]
+	if !ok {
+		connection = Result{
+			QueryResult:    map[types.ComplianceResult]int{},
+			SeverityResult: map[types.FindingSeverity]int{},
+		}
+	}
+	connection.SeverityResult[f.Severity]++
+	connection.QueryResult[f.Result]++
+	r.Connections[f.ConnectionID] = connection
+
+	resourceType, ok := r.ResourceTypes[f.ResourceType]
+	if !ok {
+		resourceType = Result{
+			QueryResult:    map[types.ComplianceResult]int{},
+			SeverityResult: map[types.FindingSeverity]int{},
+		}
+	}
+	resourceType.SeverityResult[f.Severity]++
+	resourceType.QueryResult[f.Result]++
+	r.ResourceTypes[f.ResourceType] = resourceType
+
+	policy, ok := r.Policies[f.PolicyID]
+	if !ok {
+		policy = PolicyResult{
+			Passed:            true,
+			allResources:      map[string]any{},
+			failedResources:   map[string]any{},
+			allConnections:    map[string]any{},
+			failedConnections: map[string]any{},
+		}
+	}
+
+	if !f.Result.IsPassed() {
+		policy.Passed = false
+
+		policy.failedResources[f.ResourceID] = struct{}{}
+		policy.failedConnections[f.ConnectionID] = struct{}{}
+	}
+	policy.allResources[f.ResourceID] = struct{}{}
+	policy.allConnections[f.ConnectionID] = struct{}{}
+	r.Policies[f.PolicyID] = policy
 }
 
 func (b *BenchmarkSummary) AddFinding(f types.Finding) {
@@ -59,78 +108,40 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 	}
 
 	if f.ResourceCollection == nil {
-		b.BenchmarkResult.SeverityResult[f.Severity]++
-		b.BenchmarkResult.QueryResult[f.Result]++
-
-		connection, ok := b.Connections[f.ConnectionID]
-		if !ok {
-			connection = Result{
-				QueryResult:    map[types.ComplianceResult]int{},
-				SeverityResult: map[types.FindingSeverity]int{},
-			}
-		}
-		connection.SeverityResult[f.Severity]++
-		connection.QueryResult[f.Result]++
-		b.Connections[f.ConnectionID] = connection
+		b.Connections.addFinding(f)
 	} else {
 		rc, ok := b.ResourceCollections[*f.ResourceCollection]
 		if !ok {
-			rc = Result{
-				QueryResult:    map[types.ComplianceResult]int{},
-				SeverityResult: map[types.FindingSeverity]int{},
+			rc = BenchmarkSummaryResult{
+				BenchmarkResult: Result{
+					QueryResult:    map[types.ComplianceResult]int{},
+					SeverityResult: map[types.FindingSeverity]int{},
+					SecurityScore:  0,
+				},
+				Connections:   map[string]Result{},
+				ResourceTypes: map[string]Result{},
+				Policies:      map[string]PolicyResult{},
 			}
 		}
-		rc.SeverityResult[f.Severity]++
-		rc.QueryResult[f.Result]++
+
+		rc.addFinding(f)
 		b.ResourceCollections[*f.ResourceCollection] = rc
 	}
-
-	resourceType, ok := b.ResourceTypes[f.ResourceType]
-	if !ok {
-		resourceType = Result{
-			QueryResult:    map[types.ComplianceResult]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
-		}
-	}
-	resourceType.SeverityResult[f.Severity]++
-	resourceType.QueryResult[f.Result]++
-	b.ResourceTypes[f.ResourceType] = resourceType
-
-	policy, ok := b.Policies[f.PolicyID]
-	if !ok {
-		policy = PolicyResult{
-			Passed:            true,
-			allResources:      map[string]interface{}{},
-			failedResources:   map[string]interface{}{},
-			allConnections:    map[string]interface{}{},
-			failedConnections: map[string]interface{}{},
-		}
-	}
-
-	if !f.Result.IsPassed() {
-		policy.Passed = false
-
-		policy.failedResources[f.ResourceID] = struct{}{}
-		policy.failedConnections[f.ConnectionID] = struct{}{}
-	}
-	policy.allResources[f.ResourceID] = struct{}{}
-	policy.allConnections[f.ConnectionID] = struct{}{}
-	b.Policies[f.PolicyID] = policy
 }
 
-func (b *BenchmarkSummary) Summarize() {
+func (r *BenchmarkSummaryResult) summarize() {
 	// update security scores
-	for policyID, summary := range b.Policies {
+	for policyID, summary := range r.Policies {
 		summary.FailedConnectionCount = len(summary.failedConnections)
 		summary.TotalConnectionCount = len(summary.allConnections)
 
 		summary.FailedResourcesCount = len(summary.failedResources)
 		summary.TotalResourcesCount = len(summary.allResources)
 
-		b.Policies[policyID] = summary
+		r.Policies[policyID] = summary
 	}
 
-	for connectionID, summary := range b.Connections {
+	for connectionID, summary := range r.Connections {
 		total := 0
 		for _, count := range summary.QueryResult {
 			total += count
@@ -140,10 +151,10 @@ func (b *BenchmarkSummary) Summarize() {
 			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
 		}
 
-		b.Connections[connectionID] = summary
+		r.Connections[connectionID] = summary
 	}
 
-	for resourceCollection, summary := range b.ResourceCollections {
+	for resourceType, summary := range r.ResourceTypes {
 		total := 0
 		for _, count := range summary.QueryResult {
 			total += count
@@ -153,27 +164,22 @@ func (b *BenchmarkSummary) Summarize() {
 			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
 		}
 
-		b.ResourceCollections[resourceCollection] = summary
-	}
-
-	for resourceType, summary := range b.ResourceTypes {
-		total := 0
-		for _, count := range summary.QueryResult {
-			total += count
-		}
-
-		if total > 0 {
-			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
-		}
-
-		b.ResourceTypes[resourceType] = summary
+		r.ResourceTypes[resourceType] = summary
 	}
 
 	total := 0
-	for _, count := range b.BenchmarkResult.QueryResult {
+	for _, count := range r.BenchmarkResult.QueryResult {
 		total += count
 	}
 	if total > 0 {
-		b.BenchmarkResult.SecurityScore = float64(b.BenchmarkResult.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
+		r.BenchmarkResult.SecurityScore = float64(r.BenchmarkResult.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
+	}
+}
+
+func (b *BenchmarkSummary) Summarize() {
+	b.Connections.summarize()
+	for rcId, rc := range b.ResourceCollections {
+		rc.summarize()
+		b.ResourceCollections[rcId] = rc
 	}
 }
