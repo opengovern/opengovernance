@@ -5882,7 +5882,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse'
+            type: integer
       security:
       - BearerToken: []
       summary: Add credential for workspace to be onboarded
