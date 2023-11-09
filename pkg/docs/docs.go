@@ -6777,6 +6777,10 @@ const docTemplate = `{
                     ],
                     "example": "low"
                 },
+                "sortKey": {
+                    "type": "array",
+                    "items": {}
+                },
                 "stateActive": {
                     "type": "boolean",
                     "example": true
@@ -6786,9 +6790,6 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters": {
             "type": "object",
             "properties": {
-                "activeOnly": {
-                    "type": "boolean"
-                },
                 "benchmarkID": {
                     "description": "Benchmark ID",
                     "type": "array",
@@ -6870,7 +6871,6 @@ const docTemplate = `{
                     ]
                 },
                 "status": {
-                    "description": "Compliance result status",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.ComplianceResult"
@@ -6912,8 +6912,22 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest": {
             "type": "object",
             "properties": {
+                "afterSortKey": {
+                    "type": "array",
+                    "items": {}
+                },
                 "filters": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "sort": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },

@@ -739,14 +739,15 @@ definitions:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
         example: low
+      sortKey:
+        items: {}
+        type: array
       stateActive:
         example: true
         type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
-      activeOnly:
-        type: boolean
       benchmarkID:
         description: Benchmark ID
         example:
@@ -804,7 +805,6 @@ definitions:
           type: string
         type: array
       status:
-        description: Compliance result status
         example:
         - alarm
         items:
@@ -831,8 +831,18 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
+      afterSortKey:
+        items: {}
+        type: array
       filters:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      limit:
+        example: 100
+        type: integer
+      sort:
+        additionalProperties:
+          type: string
+        type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
     properties:

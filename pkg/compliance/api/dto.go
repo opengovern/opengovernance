@@ -42,12 +42,14 @@ type FindingFilters struct {
 	BenchmarkID        []string                 `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
 	PolicyID           []string                 `json:"policyID" example:"azure_cis_v140_7_5"`                                                                        // Policy ID
 	Severity           []string                 `json:"severity" example:"low"`                                                                                       // Severity
-	Status             []types.ComplianceResult `json:"status" example:"alarm"`                                                                                       // Compliance result status
-	ActiveOnly         bool                     `json:"activeOnly"`
+	Status             []types.ComplianceResult `json:"status" example:"alarm"`
 }
 
 type GetFindingsRequest struct {
-	Filters FindingFilters `json:"filters"`
+	Filters      FindingFilters    `json:"filters"`
+	Sort         map[string]string `json:"sort"`
+	Limit        int               `json:"limit" example:"100"`
+	AfterSortKey []any             `json:"afterSortKey"`
 }
 
 type TopFieldRecord struct {
@@ -110,6 +112,8 @@ type Finding struct {
 	PolicyTitle            string `json:"policyTitle"`
 	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
 	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+
+	SortKey []any `json:"sortKey"`
 }
 
 type GetFindingsResponse struct {
