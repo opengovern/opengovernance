@@ -16,7 +16,7 @@ func (s *Server) GetEC2InstanceCost(ctx echo.Context) error {
 		return err
 	}
 
-	cost, err := aws.EC2InstanceCostByResource(s.costEstimatorDb, request)
+	cost, err := aws.EC2InstanceCostByResource(s.db, request)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (s *Server) GetEC2VolumeCost(ctx echo.Context) error {
 		return err
 	}
 
-	cost, err := aws.EC2VolumeCostByResource(s.costEstimatorDb, request)
+	cost, err := aws.EC2VolumeCostByResource(s.db, request)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (s *Server) GetLBCost(ctx echo.Context) error {
 		return err
 	}
 
-	cost, err := aws.LBCostByResource(s.costEstimatorDb, request)
+	cost, err := aws.LBCostByResource(s.db, request)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (s *Server) GetRDSInstanceCost(ctx echo.Context) error {
 		return err
 	}
 
-	cost, err := aws.RDSDBInstanceCostByResource(s.costEstimatorDb, request)
+	cost, err := aws.RDSDBInstanceCostByResource(s.db, request)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (s *Server) GetAzureVmCost(ctx echo.Context) error {
 		return err
 	}
 
-	cost, err := azure.VmCostByResource(s.costEstimatorDb, request)
+	cost, err := azure.VmCostByResource(s.db, request)
 	if err != nil {
 		return err
 	}

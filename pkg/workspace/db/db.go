@@ -1,7 +1,8 @@
-package workspace
+package db
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"gorm.io/gorm/clause"
@@ -16,14 +17,14 @@ type Database struct {
 	orm *gorm.DB
 }
 
-func NewDatabase(settings *Config, logger *zap.Logger) (*Database, error) {
+func NewDatabase(settings config.Config, logger *zap.Logger) (*Database, error) {
 	cfg := postgres.Config{
-		Host:    settings.Host,
-		Port:    settings.Port,
-		User:    settings.User,
-		Passwd:  settings.Password,
-		DB:      settings.DBName,
-		SSLMode: settings.SSLMode,
+		Host:    settings.Postgres.Host,
+		Port:    settings.Postgres.Port,
+		User:    settings.Postgres.Username,
+		Passwd:  settings.Postgres.Password,
+		DB:      settings.Postgres.DB,
+		SSLMode: settings.Postgres.SSLMode,
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {
@@ -41,6 +42,10 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 
 func (s *Database) UpdateWorkspaceStatus(id string, status api.WorkspaceStatus) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
+}
+
+func (s *Database) SetWorkspaceCreated(id string) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("is_created", true).Error
 }
 
 func (s *Database) DeleteWorkspace(id string) error {
