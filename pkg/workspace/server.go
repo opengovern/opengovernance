@@ -211,6 +211,11 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return err
 	}
 
+	var organizationID *int
+	if request.OrganizationID != -1 {
+		organizationID = &request.OrganizationID
+	}
+
 	workspace := &db.Workspace{
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           strings.ToLower(request.Name),
@@ -220,7 +225,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Description:    request.Description,
 		Size:           api.SizeXS,
 		Tier:           api.Tier(request.Tier),
-		OrganizationID: request.OrganizationID,
+		OrganizationID: organizationID,
 	}
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
