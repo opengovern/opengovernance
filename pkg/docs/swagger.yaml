@@ -5922,7 +5922,11 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
       security:
       - BearerToken: []
       summary: finish bootstrap

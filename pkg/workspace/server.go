@@ -298,7 +298,8 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_name	path	string	true	"Workspace Name"
+//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Success	200				{object}	string
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name}/finish [get]
 func (s *Server) FinishBootstrap(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
@@ -313,7 +314,7 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 		return err
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, "")
 }
 
 // AddCredential godoc
