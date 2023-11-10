@@ -98,7 +98,15 @@ func (s *JobScheduler) runSummarizer() error {
 			s.logger.Error("failed to get total document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
 		}
-		if float64(sankDocCount) < float64(totalDocCount)*0.9 {
+
+		lastUpdatedRunner, err := s.db.GetLastUpdatedRunnerForParent(job.ID)
+		if err != nil {
+			s.logger.Error("failed to get last updated runner", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			return err
+		}
+
+		if time.Now().Add(-1*time.Hour).Before(lastUpdatedRunner.UpdatedAt) &&
+			(float64(sankDocCount) < float64(totalDocCount)*0.9) {
 			continue
 		}
 		err = s.createSummarizer(job)

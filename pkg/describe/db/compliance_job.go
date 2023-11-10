@@ -120,14 +120,17 @@ SELECT * FROM compliance_jobs j WHERE status = 'RUNNERS_IN_PROGRESS' AND
 	return jobs, nil
 }
 
-func (db Database) ListChildJobIDsForParent(jobId uint) ([]uint, error) {
-	var ids []uint
-	tx := db.ORM.Model(model.ComplianceRunner{}).Where("parent_job_id = ?", jobId).Pluck("id", &ids)
+func (db Database) GetLastUpdatedRunnerForParent(jobId uint) (model.ComplianceRunner, error) {
+	var runner model.ComplianceRunner
+	tx := db.ORM.Where("parent_job_id = ?", jobId).Order("updated_at DESC").First(&runner)
 	if tx.Error != nil {
-		return nil, tx.Error
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return model.ComplianceRunner{}, nil
+		}
+		return model.ComplianceRunner{}, tx.Error
 	}
 
-	return ids, nil
+	return runner, nil
 }
 
 func (db Database) FetchTotalFindingCountForComplianceJob(jobID uint) (int, error) {
