@@ -1034,7 +1034,7 @@ func (h *HttpHandler) populatePoliciesMap(benchmarkID string, basePoliciesMap ma
 	}
 
 	for _, policy := range benchmark.Policies {
-		if _, ok := basePoliciesMap[policy.ID]; ok {
+		if _, ok := basePoliciesMap[policy.ID]; !ok {
 			basePoliciesMap[policy.ID] = policy.ToApi()
 		}
 	}
