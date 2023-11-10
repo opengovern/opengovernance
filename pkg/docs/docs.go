@@ -4161,6 +4161,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connections/{connectionId}/state": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Change connection lifecycle state",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connection ID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "connectionId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connector": {
             "get": {
                 "security": [
@@ -8505,6 +8544,14 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 0,
                     "example": 5
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
                 }
             }
         },

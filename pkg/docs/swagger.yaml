@@ -1885,6 +1885,11 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
+    properties:
+      state:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection:
     properties:
       assetDiscoveryMethod:
@@ -5238,6 +5243,30 @@ paths:
       summary: Get connection group
       tags:
       - connection-groups
+  /onboard/api/v1/connections/{connectionId}/state:
+    post:
+      parameters:
+      - description: Connection ID
+        in: path
+        name: connectionId
+        required: true
+        type: string
+      - description: Request
+        in: body
+        name: connectionId
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Change connection lifecycle state
+      tags:
+      - onboard
   /onboard/api/v1/connections/summary:
     get:
       consumes:
