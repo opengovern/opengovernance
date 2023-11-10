@@ -342,6 +342,31 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	switch strings.ToLower(field) {
+	case "resourcetype":
+		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			resourceTypeList = append(resourceTypeList, item.Key)
+		}
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+			nil, nil, resourceTypeList, false, nil, 10000, 1)
+		if err != nil {
+			return err
+		}
+		resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+		for _, item := range resourceTypeMetadata.ResourceTypes {
+			resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+		}
+		resourceTypeCountMap := make(map[string]int)
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			resourceTypeCountMap[item.Key] += item.DocCount
+		}
+		resourceTypeCountList := make([]api.TopFieldRecord, 0, len(resourceTypeCountMap))
+		for k, v := range resourceTypeCountMap {
+			resourceTypeCountList = append(resourceTypeCountList, api.TopFieldRecord{
+				ResourceType: resourceTypeMetadataMap[strings.ToLower(k)],
+				Count:        v,
+			})
+		}
 	case "service":
 		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
@@ -364,9 +389,10 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		serviceCountList := make([]api.TopFieldRecord, 0, len(serviceCountMap))
 		for k, v := range serviceCountMap {
+			k := k
 			serviceCountList = append(serviceCountList, api.TopFieldRecord{
-				Value: k,
-				Count: v,
+				Service: &k,
+				Count:   v,
 			})
 		}
 		sort.Slice(serviceCountList, func(i, j int) bool {
@@ -384,26 +410,23 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			h.logger.Error("failed to get connections", zap.Error(err))
 			return err
 		}
-		connectionIdToNameMap := make(map[string]string)
+		connectionMap := make(map[string]*onboardApi.Connection)
 		for _, connection := range connections {
-			connectionIdToNameMap[connection.ID.String()] = connection.ConnectionName
+			connectionMap[connection.ID.String()] = &connection
 		}
 
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
-			val := connectionIdToNameMap[item.Key]
-			if val == "" {
-				val = item.Key
-			}
 			response.Records = append(response.Records, api.TopFieldRecord{
-				Value: connectionIdToNameMap[item.Key],
-				Count: item.DocCount,
+				Connection: connectionMap[item.Key],
+				Count:      item.DocCount,
 			})
 		}
 		response.TotalCount = res.Aggregations.BucketCount.Value
 	default:
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			item := item
 			response.Records = append(response.Records, api.TopFieldRecord{
-				Value: item.Key,
+				Field: &item.Key,
 				Count: item.DocCount,
 			})
 		}
@@ -472,7 +495,8 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	for _, b := range res.Aggregations.PolicyCount.Buckets {
 		var fieldCounts []api.TopFieldRecord
 		for _, bucketField := range b.Results.Buckets {
-			fieldCounts = append(fieldCounts, api.TopFieldRecord{Value: bucketField.Key, Count: bucketField.FieldCount.Value})
+			bucketField := bucketField
+			fieldCounts = append(fieldCounts, api.TopFieldRecord{Field: &bucketField.Key, Count: bucketField.FieldCount.Value})
 		}
 		response.Policies = append(response.Policies, struct {
 			PolicyName  string               `json:"policyName"`

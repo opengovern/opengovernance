@@ -1,6 +1,8 @@
 package api
 
 import (
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -53,8 +55,12 @@ type GetFindingsRequest struct {
 }
 
 type TopFieldRecord struct {
-	Value string `json:"value"`
-	Count int    `json:"count"`
+	Connection   *onboardApi.Connection
+	ResourceType *inventoryApi.ResourceType
+	Service      *string
+
+	Field *string `json:"field"`
+	Count int     `json:"count"`
 }
 
 type BenchmarkRemediation struct {
