@@ -98,7 +98,7 @@ func (s *JobScheduler) runSummarizer() error {
 			s.logger.Error("failed to get total document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
 		}
-		if sankDocCount < totalDocCount {
+		if float64(sankDocCount) < float64(totalDocCount)*0.9 {
 			continue
 		}
 		err = s.createSummarizer(job)
