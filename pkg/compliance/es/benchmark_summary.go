@@ -140,10 +140,9 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
 			}
-			trendDataPoint := TrendDatapoint{
-				DateEpoch: date,
-			}
+			trendDataPoint := TrendDatapoint{}
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
+				trendDataPoint.DateEpoch = date
 				if len(connectionIDs) > 0 {
 					for _, connectionID := range connectionIDs {
 						if connection, ok := hit.Source.Connections.Connections[connectionID]; ok {
@@ -154,7 +153,9 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 					trendDataPoint.Score += hit.Source.Connections.BenchmarkResult.SecurityScore
 				}
 			}
-			trend[benchmarkID] = append(trend[benchmarkID], trendDataPoint)
+			if trendDataPoint.DateEpoch != 0 {
+				trend[benchmarkID] = append(trend[benchmarkID], trendDataPoint)
+			}
 		}
 		sort.Slice(trend[benchmarkID], func(i, j int) bool {
 			return trend[benchmarkID][i].DateEpoch < trend[benchmarkID][j].DateEpoch
@@ -266,10 +267,9 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
 			}
-			trendDataPoint := TrendDatapoint{
-				DateEpoch: date,
-			}
+			trendDataPoint := TrendDatapoint{}
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
+				trendDataPoint.DateEpoch = date
 				for _, resourceCollection := range hit.Source.ResourceCollections {
 					if len(connectionIDs) > 0 {
 						for _, connectionID := range connectionIDs {
@@ -282,7 +282,9 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 					}
 				}
 			}
-			trend[benchmarkID] = append(trend[benchmarkID], trendDataPoint)
+			if trendDataPoint.DateEpoch != 0 {
+				trend[benchmarkID] = append(trend[benchmarkID], trendDataPoint)
+			}
 		}
 		sort.Slice(trend[benchmarkID], func(i, j int) bool {
 			return trend[benchmarkID][i].DateEpoch < trend[benchmarkID][j].DateEpoch
