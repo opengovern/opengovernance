@@ -1179,9 +1179,15 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
+      connection:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
       count:
         type: integer
-      value:
+      field:
+        type: string
+      resourceType:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
+      service:
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType:
