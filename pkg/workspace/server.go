@@ -300,7 +300,7 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 //	@Produce	json
 //	@Param		workspace_name	path		string	true	"Workspace Name"
 //	@Success	200				{object}	string
-//	@Router		/workspace/api/v1/bootstrap/{workspace_name}/finish [get]
+//	@Router		/workspace/api/v1/bootstrap/{workspace_name}/finish [post]
 func (s *Server) FinishBootstrap(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
 

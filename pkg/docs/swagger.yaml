@@ -5925,7 +5925,7 @@ paths:
       tags:
       - workspace
   /workspace/api/v1/bootstrap/{workspace_name}/finish:
-    get:
+    post:
       consumes:
       - application/json
       parameters:

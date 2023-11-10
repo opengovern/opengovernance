@@ -5097,7 +5097,7 @@ const docTemplate = `{
             }
         },
         "/workspace/api/v1/bootstrap/{workspace_name}/finish": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerToken": []

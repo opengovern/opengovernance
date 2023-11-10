@@ -19,5 +19,6 @@ type Config struct {
 	AutoSuspendDurationMinutes int64
 	S3AccessKey                string
 	S3SecretKey                string
+	S3Region                   string
 	KMSAccountRegion           string
 }
