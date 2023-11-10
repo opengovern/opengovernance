@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -58,6 +59,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies/:policyId", httpserver.AuthorizeHandler(h.GetBenchmarkPolicy, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -840,7 +842,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
-	policies, err := h.getPolicies(benchmarkID)
+	policies, err := h.getPolicies(benchmarkID, nil)
 	if err != nil {
 		return err
 	}
@@ -852,7 +854,10 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 
 	var policySummary []api.PolicySummary
 	for _, policy := range policies {
-		result := policyResult[policy.ID]
+		result, ok := policyResult[policy.ID]
+		if !ok {
+			result = types.PolicyResult{Passed: true}
+		}
 		policySummary = append(policySummary, api.PolicySummary{
 			Policy:                policy,
 			Passed:                result.Passed,
@@ -867,30 +872,114 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, policySummary)
 }
 
-func (h *HttpHandler) getPolicies(benchmarkID string) ([]api.Policy, error) {
+// GetBenchmarkPolicy godoc
+//
+//	@Summary	Get benchmark policies
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmark_id	path		string	true	"Benchmark ID"
+//	@Param		policyId		path		string	true	"Policy ID"
+//	@Success	200				{object}	api.PolicySummary
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId [get]
+func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+	policyID := ctx.Param("policyId")
+
+	policy, err := h.db.GetPolicy(policyID)
+	if err != nil {
+		h.logger.Error("failed to fetch policy", zap.Error(err), zap.String("policyID", policyID), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
+
+	apiPolicy := policy.ToApi()
+	if policy.QueryID != nil {
+		query, err := h.db.GetQuery(*policy.QueryID)
+		if err != nil {
+			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *policy.QueryID), zap.String("benchmarkID", benchmarkID))
+			return err
+		}
+		apiPolicy.Connector, _ = source.ParseType(query.Connector)
+	}
+
+	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	result, ok := policyResult[policy.ID]
+	if !ok {
+		result = types.PolicyResult{Passed: true}
+	}
+	policySummary := api.PolicySummary{
+		Policy:                apiPolicy,
+		Passed:                result.Passed,
+		FailedResourcesCount:  result.FailedResourcesCount,
+		TotalResourcesCount:   result.TotalResourcesCount,
+		FailedConnectionCount: result.FailedConnectionCount,
+		TotalConnectionCount:  result.TotalConnectionCount,
+		EvaluatedAt:           evaluatedAt,
+	})
+
+	return ctx.JSON(http.StatusOK, policySummary)
+}
+
+func (h *HttpHandler) getPolicies(benchmarkID string, basePoliciesMap map[string]api.Policy) ([]api.Policy, error) {
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return nil, err
 	}
 
-	policiesMap := map[string]api.Policy{}
+	if basePoliciesMap == nil {
+		basePoliciesMap = make(map[string]api.Policy)
+	}
+
 	for _, child := range benchmark.Children {
-		childPolicies, err := h.getPolicies(child.ID)
+		childPolicies, err := h.getPolicies(child.ID, basePoliciesMap)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, ch := range childPolicies {
-			policiesMap[ch.ID] = ch
+			if _, ok := basePoliciesMap[ch.ID]; !ok {
+				basePoliciesMap[ch.ID] = ch
+			}
 		}
 	}
 
 	for _, policy := range benchmark.Policies {
-		policiesMap[policy.ID] = policy.ToApi()
+		if _, ok := basePoliciesMap[policy.ID]; ok {
+			basePoliciesMap[policy.ID] = policy.ToApi()
+		}
+	}
+
+	queryIDs := make([]string, 0, len(basePoliciesMap))
+	for _, policy := range basePoliciesMap {
+		if policy.QueryID == nil {
+			continue
+		}
+		queryIDs = append(queryIDs, *policy.QueryID)
+	}
+
+	queries, err := h.db.GetQueries(queryIDs)
+	if err != nil {
+		h.logger.Error("failed to fetch queries", zap.Error(err))
+		return nil, err
+	}
+	queryMap := make(map[string]db.Query)
+	for _, query := range queries {
+		queryMap[query.ID] = query
 	}
 
 	var policies []api.Policy
-	for _, v := range policiesMap {
+	for _, v := range basePoliciesMap {
+		if v.QueryID != nil {
+			if query, ok := queryMap[*v.QueryID]; ok {
+				v.Connector, _ = source.ParseType(query.Connector)
+			}
+		}
+
 		policies = append(policies, v)
 	}
 	return policies, nil
