@@ -127,3 +127,13 @@ func (s *Database) FindAzureVMPrice(regionCode string, size string, priority str
 	}
 	return vm, nil
 }
+
+func (s *Database) FindAzureManagedStoragePrice(regionCode string, skuName string, meter string) (*AzureManagedStoragePrice, error) {
+	var vm *AzureManagedStoragePrice
+	err := s.orm.Model(&AzureManagedStoragePrice{}).Where("arm_region_name = ?", regionCode).
+		Where("sku_name = ?", skuName).Where("meter = ?", meter).Find(&vm).Error
+	if err != nil {
+		return nil, err
+	}
+	return vm, nil
+}

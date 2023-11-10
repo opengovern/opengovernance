@@ -49,7 +49,7 @@ func EC2InstanceCostByResource(db *db.Database, request api.GetEC2InstanceCostRe
 			if err != nil {
 				return 0, err
 			}
-			days := getNumberOfDays()
+			days := costestimator.GetNumberOfDays()
 			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * costestimator.TimeInterval //TODO: Change this default metrics number
 		}
 	}

@@ -82,3 +82,18 @@ func (s *Server) GetAzureVmCost(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, cost)
 }
+
+// GetAzureManagedStorageCost get azure virtual machine cost for a day
+// route: /workspace/api/v1/costestimator/azure/managedstorage
+func (s *Server) GetAzureManagedStorageCost(ctx echo.Context) error {
+	var request api.GetAzureManagedStorageRequest
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+
+	cost, err := azure.ManagedStorageCostByResource(s.db, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}
