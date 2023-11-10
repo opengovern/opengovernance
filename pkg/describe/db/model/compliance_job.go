@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"gorm.io/gorm"
 	"time"
 )
@@ -18,12 +19,26 @@ const (
 	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
 )
 
+func (c ComplianceJobStatus) ToApi() api.ComplianceJobStatus {
+	return api.ComplianceJobStatus(c)
+}
+
 type ComplianceJob struct {
 	gorm.Model
 	BenchmarkID    string
 	Status         ComplianceJobStatus
 	FailureMessage string
 	IsStack        bool
+}
+
+func (c ComplianceJob) ToApi() api.ComplianceJob {
+	return api.ComplianceJob{
+		ID:             c.ID,
+		BenchmarkID:    c.BenchmarkID,
+		Status:         c.Status.ToApi(),
+		FailureMessage: c.FailureMessage,
+		IsStack:        c.IsStack,
+	}
 }
 
 type ComplianceRunner struct {

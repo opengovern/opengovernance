@@ -6763,6 +6763,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "azure_cis_v140"
                 },
+                "lastJobStatus": {
+                    "description": "Last job status",
+                    "type": "string",
+                    "example": "success"
+                },
                 "result": {
                     "description": "Compliance result summary",
                     "allOf": [
