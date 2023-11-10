@@ -7,7 +7,6 @@ import (
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -27,8 +26,8 @@ type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 				Key                   string `json:"key"`
 				EvaluatedAtRangeGroup struct {
 					Buckets []struct {
-						Key       string `json:"key"`
-						DocCount  int    `json:"doc_count"`
+						Key       float64 `json:"key"`
+						DocCount  int     `json:"doc_count"`
 						HitSelect struct {
 							Hits struct {
 								Hits []struct {
@@ -133,7 +132,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
 		benchmarkID := bucket.Key
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
-			date, err := strconv.ParseInt(rangeBucket.Key, 10, 64)
+			date := int64(rangeBucket.Key)
 			if err != nil {
 				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
@@ -257,7 +256,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
 		benchmarkID := bucket.Key
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
-			date, err := strconv.ParseInt(rangeBucket.Key, 10, 64)
+			date := int64(rangeBucket.Key)
 			if err != nil {
 				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
