@@ -1039,16 +1039,7 @@ func (h *HttpHandler) populatePoliciesMap(benchmarkID string, basePoliciesMap ma
 		}
 	}
 
-	var policies []api.Policy
-	for _, v := range basePoliciesMap {
-		if v.QueryID != nil {
-			if query, ok := queryMap[*v.QueryID]; ok {
-				v.Connector, _ = source.ParseType(query.Connector)
-			}
-		}
-		policies = append(policies, v)
-	}
-	return policies, nil
+	return nil
 }
 
 // GetBenchmarkTrend godoc
