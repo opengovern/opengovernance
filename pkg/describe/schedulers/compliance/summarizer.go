@@ -23,12 +23,17 @@ type SankDocumentCountResponse struct {
 	}
 }
 
-func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string) (int, error) {
+func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, jobIDs []uint) (int, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	filters = append(filters, map[string]any{
 		"term": map[string]any{
 			"benchmarkID": benchmarkId,
+		},
+	})
+	filters = append(filters, map[string]any{
+		"terms": map[string]any{
+			"complianceJobID": jobIDs,
 		},
 	})
 	request["query"] = map[string]any{
@@ -80,7 +85,11 @@ func (s *JobScheduler) runSummarizer() error {
 
 	jobs, err := s.db.ListJobsWithRunnersCompleted()
 	for _, job := range jobs {
-		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID)
+		childIds, err := s.db.ListChildJobIDsForParent(job.ID)
+		if err != nil {
+			return err
+		}
+		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID, childIds)
 		if err != nil {
 			s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err

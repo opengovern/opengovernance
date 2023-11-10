@@ -16,23 +16,32 @@ type Workspace struct {
 	Description              string              `json:"description"`
 	Size                     api.WorkspaceSize   `json:"workspace_size"`
 	Tier                     api.Tier            `json:"tier"`
-	OrganizationID           int                 `json:"organization_id"`
-	Organization             Organization        `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	OrganizationID           *int                `json:"organization_id"`
+	Organization             *Organization       `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	IsCreated                bool                `json:"is_created"`
 	IsBootstrapInputFinished bool                `json:"is_bootstrap_input_finished"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {
+	var org *api.Organization
+	if w.Organization != nil {
+		v := w.Organization.ToAPI()
+		org = &v
+	}
+
 	return api.Workspace{
-		ID:           w.ID,
-		Name:         w.Name,
-		OwnerId:      w.OwnerId,
-		URI:          w.URI,
-		Status:       w.Status,
-		Description:  w.Description,
-		Tier:         w.Tier,
-		Organization: w.Organization.ToAPI(),
-		CreatedAt:    w.Model.CreatedAt,
+		ID:                       w.ID,
+		Name:                     w.Name,
+		OwnerId:                  w.OwnerId,
+		URI:                      w.URI,
+		Status:                   w.Status,
+		Description:              w.Description,
+		Tier:                     w.Tier,
+		Organization:             org,
+		Size:                     w.Size,
+		CreatedAt:                w.Model.CreatedAt,
+		IsCreated:                w.IsCreated,
+		IsBootstrapInputFinished: w.IsBootstrapInputFinished,
 	}
 }
 

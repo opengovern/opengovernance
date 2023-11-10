@@ -2242,17 +2242,29 @@ definitions:
       name:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest:
+    properties:
+      config: {}
+      connectorType:
+        $ref: '#/definitions/source.Type'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus:
     enum:
     - OnboardConnection
     - CreatingWorkspace
-    - WaitingForJobs
+    - WaitingForDiscovery
+    - WaitingForAnalytics
+    - WaitingForCompliance
+    - WaitingForInsights
     - Finished
     type: string
     x-enum-varnames:
     - BootstrapStatus_OnboardConnection
     - BootstrapStatus_CreatingWorkspace
-    - BootstrapStatus_WaitingForJobs
+    - BootstrapStatus_WaitingForDiscovery
+    - BootstrapStatus_WaitingForAnalytics
+    - BootstrapStatus_WaitingForCompliance
+    - BootstrapStatus_WaitingForInsights
     - BootstrapStatus_Finished
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
     properties:
@@ -2339,6 +2351,10 @@ definitions:
       id:
         example: ws-698542025141040315
         type: string
+      is_bootstrap_input_finished:
+        type: boolean
+      is_created:
+        type: boolean
       name:
         example: kaytu
         type: string
@@ -2410,6 +2426,10 @@ definitions:
       id:
         example: ws-698542025141040315
         type: string
+      is_bootstrap_input_finished:
+        type: boolean
+      is_created:
+        type: boolean
       name:
         example: kaytu
         type: string
@@ -5886,6 +5906,12 @@ paths:
         name: workspace_name
         required: true
         type: string
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest'
       produces:
       - application/json
       responses:
@@ -5896,6 +5922,28 @@ paths:
       security:
       - BearerToken: []
       summary: Add credential for workspace to be onboarded
+      tags:
+      - workspace
+  /workspace/api/v1/bootstrap/{workspace_name}/finish:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerToken: []
+      summary: finish bootstrap
       tags:
       - workspace
   /workspace/api/v1/organization:

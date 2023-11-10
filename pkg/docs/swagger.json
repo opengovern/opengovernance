@@ -5069,6 +5069,15 @@
                         "name": "workspace_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -5076,6 +5085,42 @@
                         "description": "OK",
                         "schema": {
                             "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/bootstrap/{workspace_name}/finish": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "finish bootstrap",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -8882,18 +8927,33 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "config": {},
+                "connectorType": {
+                    "$ref": "#/definitions/source.Type"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus": {
             "type": "string",
             "enum": [
                 "OnboardConnection",
                 "CreatingWorkspace",
-                "WaitingForJobs",
+                "WaitingForDiscovery",
+                "WaitingForAnalytics",
+                "WaitingForCompliance",
+                "WaitingForInsights",
                 "Finished"
             ],
             "x-enum-varnames": [
                 "BootstrapStatus_OnboardConnection",
                 "BootstrapStatus_CreatingWorkspace",
-                "BootstrapStatus_WaitingForJobs",
+                "BootstrapStatus_WaitingForDiscovery",
+                "BootstrapStatus_WaitingForAnalytics",
+                "BootstrapStatus_WaitingForCompliance",
+                "BootstrapStatus_WaitingForInsights",
                 "BootstrapStatus_Finished"
             ]
         },
@@ -9025,6 +9085,12 @@
                     "type": "string",
                     "example": "ws-698542025141040315"
                 },
+                "is_bootstrap_input_finished": {
+                    "type": "boolean"
+                },
+                "is_created": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string",
                     "example": "kaytu"
@@ -9131,6 +9197,12 @@
                 "id": {
                     "type": "string",
                     "example": "ws-698542025141040315"
+                },
+                "is_bootstrap_input_finished": {
+                    "type": "boolean"
+                },
+                "is_created": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string",

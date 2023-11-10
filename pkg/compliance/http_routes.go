@@ -1348,10 +1348,16 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	))
 	span3.End()
 
+	if benchmark.AutoAssign {
+		for idx, r := range assignedConnections {
+			r.Status = true
+			assignedConnections[idx] = r
+		}
+	}
 	for _, assignment := range dbAssignments {
-		if assignment.ConnectionId != nil {
+		if assignment.ConnectionId != nil && !benchmark.AutoAssign {
 			for idx, r := range assignedConnections {
-				if r.ConnectionID == *assignment.ConnectionId || benchmark.AutoAssign {
+				if r.ConnectionID == *assignment.ConnectionId {
 					r.Status = true
 					assignedConnections[idx] = r
 				}

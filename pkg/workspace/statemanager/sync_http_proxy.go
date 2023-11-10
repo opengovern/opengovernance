@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
+	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -61,6 +62,7 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 		if apierrors.IsNotFound(err) {
 			httpExists = false
 		} else {
+			s.logger.Error("failed to get http proxy", zap.Error(err))
 			return err
 		}
 	}
@@ -70,6 +72,7 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 		if apierrors.IsNotFound(err) {
 			grpcExists = false
 		} else {
+			s.logger.Error("failed to get grpc proxy", zap.Error(err))
 			return err
 		}
 	}
@@ -110,11 +113,13 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 		httpProxy.SetResourceVersion(httpResourceVersion)
 		err := s.kubeClient.Update(ctx, &httpProxy)
 		if err != nil {
+			s.logger.Error("failed to update http proxy", zap.Error(err), zap.Any("httpProxy", httpProxy))
 			return err
 		}
 	} else {
 		err := s.kubeClient.Create(ctx, &httpProxy)
 		if err != nil {
+			s.logger.Error("failed to create http proxy", zap.Error(err), zap.Any("httpProxy", httpProxy))
 			return err
 		}
 	}
@@ -123,11 +128,13 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 		grpcProxy.SetResourceVersion(grpcResourceVersion)
 		err := s.kubeClient.Update(ctx, &grpcProxy)
 		if err != nil {
+			s.logger.Error("failed to update grpc proxy", zap.Error(err), zap.Any("grpcProxy", grpcProxy))
 			return err
 		}
 	} else {
 		err := s.kubeClient.Create(ctx, &grpcProxy)
 		if err != nil {
+			s.logger.Error("failed to create grpc proxy", zap.Error(err), zap.Any("grpcProxy", grpcProxy))
 			return err
 		}
 	}

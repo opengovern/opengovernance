@@ -138,6 +138,7 @@ func (s *Server) Register(e *echo.Echo) {
 	bootstrapGroup := v1Group.Group("/bootstrap")
 	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
 	bootstrapGroup.POST("/:workspace_name/credential", httpserver2.AuthorizeHandler(s.AddCredential, authapi.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/finish", httpserver2.AuthorizeHandler(s.FinishBootstrap, authapi.EditorRole))
 
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
@@ -211,6 +212,11 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return err
 	}
 
+	var organizationID *int
+	if request.OrganizationID != -1 {
+		organizationID = &request.OrganizationID
+	}
+
 	workspace := &db.Workspace{
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           strings.ToLower(request.Name),
@@ -220,7 +226,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Description:    request.Description,
 		Size:           api.SizeXS,
 		Tier:           api.Tier(request.Tier),
-		OrganizationID: request.OrganizationID,
+		OrganizationID: organizationID,
 	}
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
@@ -259,7 +265,7 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 		return api.BootstrapStatus_OnboardConnection, nil
 	}
 
-	return api.BootstrapStatus_WaitingForJobs, nil
+	return api.BootstrapStatus_WaitingForDiscovery, nil
 }
 
 // GetBootstrapStatus godoc
@@ -285,6 +291,32 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	})
 }
 
+// FinishBootstrap godoc
+//
+//	@Summary	finish bootstrap
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Success	200				{object}	string
+//	@Router		/workspace/api/v1/bootstrap/{workspace_name}/finish [post]
+func (s *Server) FinishBootstrap(c echo.Context) error {
+	workspaceName := c.Param("workspace_name")
+
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.SetWorkspaceBootstrapInputFinished(ws.ID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, "")
+}
+
 // AddCredential godoc
 //
 //	@Summary	Add credential for workspace to be onboarded
@@ -292,7 +324,8 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Param		workspace_name	path		string						true	"Workspace Name"
+//	@Param		request			body		api.AddCredentialRequest	true	"Request"
 //	@Success	200				{object}	uint
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name}/credential [post]
 func (s *Server) AddCredential(ctx echo.Context) error {
@@ -320,7 +353,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", awsConfig.AssumeAdminRoleName, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

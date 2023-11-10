@@ -86,7 +86,9 @@ func New(cfg config.Config) (*Service, error) {
 		kubeClient: kubeClient,
 		rdb:        rdb,
 		cache:      cache,
-		awsConfig:  aws.Config{},
+		awsConfig: aws.Config{
+			Region: cfg.S3Region,
+		},
 	}, nil
 }
 

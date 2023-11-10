@@ -30,7 +30,8 @@ func (s *Service) handleAutoSuspend(workspace *db.Workspace) error {
 	lastAccess, _ := strconv.ParseInt(res, 10, 64)
 	fmt.Printf("last access: %d [%s]\n", lastAccess, res)
 
-	if time.Now().UnixMilli()-lastAccess > s.cfg.AutoSuspendDuration.Milliseconds() {
+	autoSuspendDuration := time.Duration(s.cfg.AutoSuspendDurationMinutes) * time.Minute
+	if time.Now().UnixMilli()-lastAccess > autoSuspendDuration.Milliseconds() {
 		if workspace.Status == api.StatusProvisioned {
 			fmt.Printf("suspending workspace %s\n", workspace.Name)
 			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspending); err != nil {
