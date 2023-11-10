@@ -875,16 +875,22 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.SeverityResult)
 	}
 
+	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(ctx), benchmarkID)
+	if err != nil {
+		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
 	response := api.BenchmarkEvaluationSummary{
-		ID:          benchmark.ID,
-		Title:       benchmark.Title,
-		Description: benchmark.Description,
-		Connectors:  be.Connectors,
-		Tags:        be.Tags,
-		Enabled:     benchmark.Enabled,
-		Result:      csResult,
-		Checks:      sResult,
-		EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
+		ID:            benchmark.ID,
+		Title:         benchmark.Title,
+		Description:   benchmark.Description,
+		Connectors:    be.Connectors,
+		Tags:          be.Tags,
+		Enabled:       benchmark.Enabled,
+		Result:        csResult,
+		Checks:        sResult,
+		EvaluatedAt:   time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
+		LastJobStatus: string(lastJob.Status),
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -903,7 +909,8 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
-	policies, err := h.getPolicies(benchmarkID, nil)
+	policiesMap := make(map[string]api.Policy)
+	err := h.populatePoliciesMap(benchmarkID, policiesMap)
 	if err != nil {
 		return err
 	}
@@ -913,8 +920,31 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		return err
 	}
 
+	queryIDs := make([]string, 0, len(policiesMap))
+	for _, policy := range policiesMap {
+		if policy.QueryID == nil {
+			continue
+		}
+		queryIDs = append(queryIDs, *policy.QueryID)
+	}
+
+	queries, err := h.db.GetQueriesIdAndConnector(queryIDs)
+	if err != nil {
+		h.logger.Error("failed to fetch queries", zap.Error(err))
+		return err
+	}
+	queryMap := make(map[string]db.Query)
+	for _, query := range queries {
+		queryMap[query.ID] = query
+	}
+
 	var policySummary []api.PolicySummary
-	for _, policy := range policies {
+	for _, policy := range policiesMap {
+		if policy.QueryID != nil {
+			if query, ok := queryMap[*policy.QueryID]; ok {
+				policy.Connector, _ = source.ParseType(query.Connector)
+			}
+		}
 		result, ok := policyResult[policy.ID]
 		if !ok {
 			result = types.PolicyResult{Passed: true}
@@ -986,26 +1016,20 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, policySummary)
 }
 
-func (h *HttpHandler) getPolicies(benchmarkID string, basePoliciesMap map[string]api.Policy) ([]api.Policy, error) {
+func (h *HttpHandler) populatePoliciesMap(benchmarkID string, basePoliciesMap map[string]api.Policy) error {
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if basePoliciesMap == nil {
-		basePoliciesMap = make(map[string]api.Policy)
+		return errors.New("basePoliciesMap cannot be nil")
 	}
 
 	for _, child := range benchmark.Children {
-		childPolicies, err := h.getPolicies(child.ID, basePoliciesMap)
+		err := h.populatePoliciesMap(child.ID, basePoliciesMap)
 		if err != nil {
-			return nil, err
-		}
-
-		for _, ch := range childPolicies {
-			if _, ok := basePoliciesMap[ch.ID]; !ok {
-				basePoliciesMap[ch.ID] = ch
-			}
+			return err
 		}
 	}
 
@@ -1013,24 +1037,6 @@ func (h *HttpHandler) getPolicies(benchmarkID string, basePoliciesMap map[string
 		if _, ok := basePoliciesMap[policy.ID]; ok {
 			basePoliciesMap[policy.ID] = policy.ToApi()
 		}
-	}
-
-	queryIDs := make([]string, 0, len(basePoliciesMap))
-	for _, policy := range basePoliciesMap {
-		if policy.QueryID == nil {
-			continue
-		}
-		queryIDs = append(queryIDs, *policy.QueryID)
-	}
-
-	queries, err := h.db.GetQueries(queryIDs)
-	if err != nil {
-		h.logger.Error("failed to fetch queries", zap.Error(err))
-		return nil, err
-	}
-	queryMap := make(map[string]db.Query)
-	for _, query := range queries {
-		queryMap[query.ID] = query
 	}
 
 	var policies []api.Policy

@@ -645,6 +645,10 @@ definitions:
         description: Benchmark ID
         example: azure_cis_v140
         type: string
+      lastJobStatus:
+        description: Last job status
+        example: success
+        type: string
       result:
         allOf:
         - $ref: '#/definitions/types.ComplianceResultSummary'

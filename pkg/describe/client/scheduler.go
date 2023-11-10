@@ -19,6 +19,7 @@ type SchedulerServiceClient interface {
 	GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error)
 	GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error)
 	ListPendingConnections(ctx *httpclient.Context) ([]string, error)
+	GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkID string) (*api.ComplianceJob, error)
 }
 
 type schedulerClient struct {
@@ -53,6 +54,19 @@ func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceTyp
 		return nil, err
 	}
 	return res, nil
+}
+
+func (s *schedulerClient) GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkId string) (*api.ComplianceJob, error) {
+	url := fmt.Sprintf("%s/api/v1/compliance/status/%s", s.baseURL, benchmarkId)
+
+	var res api.ComplianceJob
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &res, nil
 }
 
 func (s *schedulerClient) GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error) {
