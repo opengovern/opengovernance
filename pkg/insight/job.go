@@ -70,7 +70,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(esConfig config.ElasticSearch,
+func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres,
 	onboardClient client.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient,
 	producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket,
 	currentWorkspaceID string,
@@ -169,6 +169,7 @@ func (j Job) Do(esConfig config.ElasticSearch,
 		fail(fmt.Errorf("populating steampipe config: %w", err))
 		return
 	}
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(esConfig, steampipePgConfig)
 
 	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
