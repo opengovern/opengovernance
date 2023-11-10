@@ -38,8 +38,9 @@ type ExecutionPlan struct {
 }
 
 type Job struct {
-	ID        uint
-	CreatedAt time.Time
+	ID          uint
+	ParentJobID uint
+	CreatedAt   time.Time
 
 	ExecutionPlan ExecutionPlan
 }
