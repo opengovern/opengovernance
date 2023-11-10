@@ -48,6 +48,9 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, jobIDs 
 		s.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, err
 	}
+
+	s.logger.Info("GetSankDocumentCountBenchmark", zap.String("benchmarkId", benchmarkId), zap.String("query", string(query)))
+
 	sankDocumentCountResponse := SankDocumentCountResponse{}
 	err = s.esClient.SearchWithTrackTotalHits(
 		context.TODO(), types.FindingsIndex,
