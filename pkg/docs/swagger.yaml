@@ -3232,6 +3232,33 @@ paths:
       summary: Get benchmark policies
       tags:
       - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Policy ID
+        in: path
+        name: policyId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
+      security:
+      - BearerToken: []
+      summary: Get benchmark policies
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
     get:
       consumes:
@@ -3680,6 +3707,30 @@ paths:
       security:
       - BearerToken: []
       summary: Get services findings summary
+      tags:
+      - compliance
+  /compliance/api/v1/findings/filters:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving possible values for finding filters.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      security:
+      - BearerToken: []
+      summary: Get possible values for finding filters
       tags:
       - compliance
   /compliance/api/v1/insight:
