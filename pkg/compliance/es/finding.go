@@ -199,7 +199,6 @@ type FindingFiltersAggregationResponse struct {
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
 		ResourceCollectionFilter AggregationResult `json:"resource_collection_filter"`
-		StatusFilter             AggregationResult `json:"status_filter"`
 	} `json:"aggregations"`
 }
 
@@ -240,13 +239,12 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 
 	aggs := map[string]any{
 		"connector_filter":           map[string]any{"terms": map[string]any{"field": "connector", "size": 1000}},
-		"resource_type_filter":       map[string]any{"terms": map[string]any{"field": "resourceTypeID", "size": 1000}},
+		"resource_type_filter":       map[string]any{"terms": map[string]any{"field": "resourceType", "size": 1000}},
 		"connection_id_filter":       map[string]any{"terms": map[string]any{"field": "connectionID", "size": 1000}},
 		"resource_collection_filter": map[string]any{"terms": map[string]any{"field": "resourceCollection", "size": 1000}},
 		"benchmark_id_filter":        map[string]any{"terms": map[string]any{"field": "benchmarkID", "size": 1000}},
 		"policy_id_filter":           map[string]any{"terms": map[string]any{"field": "policyID", "size": 1000}},
 		"severity_filter":            map[string]any{"terms": map[string]any{"field": "severity", "size": 1000}},
-		"status_filter":              map[string]any{"terms": map[string]any{"field": "status", "size": 1000}},
 	}
 	root["aggs"] = aggs
 
@@ -280,6 +278,16 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 		logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
 	}
+	if len(resourceCollections) == 0 {
+		var rcResp FindingFiltersAggregationResponse
+		err = client.Search(context.Background(), types.ResourceCollectionsFindingsIndex, string(queryBytes), &resp)
+		if err != nil {
+			logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
+			return nil, err
+		}
+		resp.Aggregations.ResourceCollectionFilter = rcResp.Aggregations.ResourceCollectionFilter
+	}
+
 	return &resp, nil
 }
 

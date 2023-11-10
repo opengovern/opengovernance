@@ -252,7 +252,6 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		BenchmarkID:        req.BenchmarkID,
 		PolicyID:           req.PolicyID,
 		Severity:           req.Severity,
-		Status:             req.Status,
 	}
 	if len(possibleFilters.Aggregations.BenchmarkIDFilter.Buckets) > 0 {
 		response.BenchmarkID = possibleFilters.Aggregations.BenchmarkIDFilter.GetBucketsKeys()
@@ -274,12 +273,6 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 	if len(possibleFilters.Aggregations.SeverityFilter.Buckets) > 0 {
 		response.Severity = possibleFilters.Aggregations.SeverityFilter.GetBucketsKeys()
-	}
-	if len(possibleFilters.Aggregations.StatusFilter.Buckets) > 0 {
-		response.Status = make([]kaytuTypes.ComplianceResult, 0, len(possibleFilters.Aggregations.StatusFilter.Buckets))
-		for _, item := range possibleFilters.Aggregations.StatusFilter.Buckets {
-			response.Status = append(response.Status, kaytuTypes.ComplianceResult(item.Key))
-		}
 	}
 
 	return ctx.JSON(http.StatusOK, response)
