@@ -25,10 +25,8 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 	if workspace.IsBootstrapInputFinished {
 		// run jobs
+		// jobs finished
+		// change to provisioned
 	}
-
-	// jobs finished
-	// change to provisioned
-
 	return nil
 }
