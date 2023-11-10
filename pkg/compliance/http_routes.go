@@ -88,6 +88,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
+	findings.POST("/filters", httpserver.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
@@ -214,6 +215,73 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingFilterValues godoc
+//
+//	@Summary		Get possible values for finding filters
+//	@Description	Retrieving possible values for finding filters.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.FindingFilters	true	"Request Body"
+//	@Success		200		{object}	api.FindingFilters
+//	@Router			/compliance/api/v1/findings/filters [post]
+func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
+	var req api.FindingFilters
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
+		req.ResourceID, req.Connector, req.ConnectionID,
+		req.ResourceCollection, req.BenchmarkID, req.PolicyID,
+		req.Severity)
+	if err != nil {
+		h.logger.Error("failed to get possible filters", zap.Error(err))
+		return err
+	}
+	response := api.FindingFilters{
+		Connector:          req.Connector,
+		ResourceID:         req.ResourceID,
+		ResourceTypeID:     req.ResourceTypeID,
+		ConnectionID:       req.ConnectionID,
+		ResourceCollection: req.ResourceCollection,
+		BenchmarkID:        req.BenchmarkID,
+		PolicyID:           req.PolicyID,
+		Severity:           req.Severity,
+		Status:             req.Status,
+	}
+	if len(possibleFilters.Aggregations.BenchmarkIDFilter.Buckets) > 0 {
+		response.BenchmarkID = possibleFilters.Aggregations.BenchmarkIDFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.PolicyIDFilter.Buckets) > 0 {
+		response.PolicyID = possibleFilters.Aggregations.PolicyIDFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
+		response.Connector = source.ParseTypes(possibleFilters.Aggregations.ConnectorFilter.GetBucketsKeys())
+	}
+	if len(possibleFilters.Aggregations.ResourceTypeFilter.Buckets) > 0 {
+		response.ResourceTypeID = possibleFilters.Aggregations.ResourceTypeFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.ConnectionIDFilter.Buckets) > 0 {
+		response.ConnectionID = possibleFilters.Aggregations.ConnectionIDFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.ResourceCollectionFilter.Buckets) > 0 {
+		response.ResourceCollection = possibleFilters.Aggregations.ResourceCollectionFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.SeverityFilter.Buckets) > 0 {
+		response.Severity = possibleFilters.Aggregations.SeverityFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.StatusFilter.Buckets) > 0 {
+		response.Status = make([]kaytuTypes.ComplianceResult, 0, len(possibleFilters.Aggregations.StatusFilter.Buckets))
+		for _, item := range possibleFilters.Aggregations.StatusFilter.Buckets {
+			response.Status = append(response.Status, kaytuTypes.ComplianceResult(item.Key))
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -920,7 +988,7 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 		FailedConnectionCount: result.FailedConnectionCount,
 		TotalConnectionCount:  result.TotalConnectionCount,
 		EvaluatedAt:           evaluatedAt,
-	})
+	}
 
 	return ctx.JSON(http.StatusOK, policySummary)
 }
@@ -979,7 +1047,6 @@ func (h *HttpHandler) getPolicies(benchmarkID string, basePoliciesMap map[string
 				v.Connector, _ = source.ParseType(query.Connector)
 			}
 		}
-
 		policies = append(policies, v)
 	}
 	return policies, nil
