@@ -88,6 +88,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 			"filter": filters,
 		},
 	}
+	query["size"] = 0
 
 	query["aggs"] = map[string]any{
 		"benchmark_id_group": map[string]any{
@@ -213,6 +214,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 			"filter": filters,
 		},
 	}
+	query["size"] = 0
 
 	query["aggs"] = map[string]any{
 		"benchmark_id_group": map[string]any{
