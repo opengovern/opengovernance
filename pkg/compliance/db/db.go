@@ -180,6 +180,29 @@ func (db Database) GetPolicies(policyIDs []string) ([]Policy, error) {
 	return s, nil
 }
 
+func (db Database) GetQueries(queryIDs []string) ([]Query, error) {
+	var s []Query
+	tx := db.Orm.Model(&Query{}).
+		Where("id IN ?", queryIDs).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetQueriesIdAndConnector(queryIDs []string) ([]Query, error) {
+	var s []Query
+	tx := db.Orm.Model(&Query{}).
+		Select("id, connector").
+		Where("id IN ?", queryIDs).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // =========== BenchmarkAssignment ===========
 
 func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error {

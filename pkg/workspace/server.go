@@ -251,22 +251,17 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 		return "", errors.New("workspace not found")
 	}
 
-	if ws.Status == api.StatusProvisioning {
-		return api.BootstrapStatus_CreatingWorkspace, nil
+	if ws.Status == api.StatusBootstrapping {
+		if !ws.IsBootstrapInputFinished {
+			return api.BootstrapStatus_OnboardConnection, nil
+		}
+		if !ws.IsCreated {
+			return api.BootstrapStatus_CreatingWorkspace, nil
+		}
+		return api.BootstrapStatus_WaitingForDiscovery, nil
 	}
 
-	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", ws.ID)
-	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-	count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
-	if err != nil {
-		return "", err
-	}
-
-	if count == 0 {
-		return api.BootstrapStatus_OnboardConnection, nil
-	}
-
-	return api.BootstrapStatus_WaitingForDiscovery, nil
+	return api.BootstrapStatus_Finished, nil
 }
 
 // GetBootstrapStatus godoc

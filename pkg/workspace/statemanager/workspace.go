@@ -251,10 +251,15 @@ func (s *Service) addCredentialToWorkspace(workspaceID string, credentialID uint
 		return err
 	}
 
-	_, err = onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
+	credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
 		SourceType: cred.ConnectorType,
 		Config:     cred.Metadata,
 	})
+	if err != nil {
+		return err
+	}
+
+	_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole}, credential.ID)
 	if err != nil {
 		return err
 	}

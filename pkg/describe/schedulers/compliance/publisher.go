@@ -41,8 +41,9 @@ func (s *JobScheduler) runPublisher() error {
 			}
 
 			job := runner.Job{
-				ID:        it.ID,
-				CreatedAt: it.CreatedAt,
+				ID:          it.ID,
+				ParentJobID: it.ParentJobID,
+				CreatedAt:   it.CreatedAt,
 				ExecutionPlan: runner.ExecutionPlan{
 					Callers:              callers,
 					QueryID:              it.QueryID,

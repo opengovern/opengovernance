@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
+	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -77,6 +78,11 @@ func New(cfg config.Config) (*Service, error) {
 		return nil, fmt.Errorf("add v1 to scheme: %w", err)
 	}
 
+	awsConfig, err := aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Service{
 		logger:     logger,
 		cfg:        cfg,
@@ -86,9 +92,7 @@ func New(cfg config.Config) (*Service, error) {
 		kubeClient: kubeClient,
 		rdb:        rdb,
 		cache:      cache,
-		awsConfig: aws.Config{
-			Region: cfg.S3Region,
-		},
+		awsConfig:  awsConfig,
 	}, nil
 }
 

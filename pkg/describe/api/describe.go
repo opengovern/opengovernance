@@ -21,3 +21,21 @@ type ConnectionDescribeStatus struct {
 	ResourceType string
 	Status       DescribeResourceJobStatus
 }
+
+type ComplianceJobStatus string
+
+const (
+	ComplianceJobCreated              ComplianceJobStatus = "CREATED"
+	ComplianceJobRunnersInProgress    ComplianceJobStatus = "RUNNERS_IN_PROGRESS"
+	ComplianceJobSummarizerInProgress ComplianceJobStatus = "SUMMARIZER_IN_PROGRESS"
+	ComplianceJobFailed               ComplianceJobStatus = "FAILED"
+	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
+)
+
+type ComplianceJob struct {
+	ID             uint
+	BenchmarkID    string
+	Status         ComplianceJobStatus
+	FailureMessage string
+	IsStack        bool
+}

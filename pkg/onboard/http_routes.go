@@ -2094,6 +2094,16 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
+// ChangeConnectionLifecycleState godoc
+//
+//	@Summary	Change connection lifecycle state
+//	@Security	BearerToken
+//	@Tags		onboard
+//	@Produce	json
+//	@Param		connectionId	path	string										true	"Connection ID"
+//	@Param		connectionId	body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
+//	@Success	200
+//	@Router		/onboard/api/v1/connections/{connectionId}/state [post]
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {

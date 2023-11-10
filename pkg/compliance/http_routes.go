@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -58,6 +59,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies/:policyId", httpserver.AuthorizeHandler(h.GetBenchmarkPolicy, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -86,6 +88,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
+	findings.POST("/filters", httpserver.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
@@ -212,6 +215,66 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingFilterValues godoc
+//
+//	@Summary		Get possible values for finding filters
+//	@Description	Retrieving possible values for finding filters.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.FindingFilters	true	"Request Body"
+//	@Success		200		{object}	api.FindingFilters
+//	@Router			/compliance/api/v1/findings/filters [post]
+func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
+	var req api.FindingFilters
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
+		req.ResourceID, req.Connector, req.ConnectionID,
+		req.ResourceCollection, req.BenchmarkID, req.PolicyID,
+		req.Severity)
+	if err != nil {
+		h.logger.Error("failed to get possible filters", zap.Error(err))
+		return err
+	}
+	response := api.FindingFilters{
+		Connector:          req.Connector,
+		ResourceID:         req.ResourceID,
+		ResourceTypeID:     req.ResourceTypeID,
+		ConnectionID:       req.ConnectionID,
+		ResourceCollection: req.ResourceCollection,
+		BenchmarkID:        req.BenchmarkID,
+		PolicyID:           req.PolicyID,
+		Severity:           req.Severity,
+	}
+	if len(possibleFilters.Aggregations.BenchmarkIDFilter.Buckets) > 0 {
+		response.BenchmarkID = possibleFilters.Aggregations.BenchmarkIDFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.PolicyIDFilter.Buckets) > 0 {
+		response.PolicyID = possibleFilters.Aggregations.PolicyIDFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
+		response.Connector = source.ParseTypes(possibleFilters.Aggregations.ConnectorFilter.GetBucketsKeys())
+	}
+	if len(possibleFilters.Aggregations.ResourceTypeFilter.Buckets) > 0 {
+		response.ResourceTypeID = possibleFilters.Aggregations.ResourceTypeFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.ConnectionIDFilter.Buckets) > 0 {
+		response.ConnectionID = possibleFilters.Aggregations.ConnectionIDFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.ResourceCollectionFilter.Buckets) > 0 {
+		response.ResourceCollection = possibleFilters.Aggregations.ResourceCollectionFilter.GetBucketsKeys()
+	}
+	if len(possibleFilters.Aggregations.SeverityFilter.Buckets) > 0 {
+		response.Severity = possibleFilters.Aggregations.SeverityFilter.GetBucketsKeys()
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -812,16 +875,22 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.SeverityResult)
 	}
 
+	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(ctx), benchmarkID)
+	if err != nil {
+		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
 	response := api.BenchmarkEvaluationSummary{
-		ID:          benchmark.ID,
-		Title:       benchmark.Title,
-		Description: benchmark.Description,
-		Connectors:  be.Connectors,
-		Tags:        be.Tags,
-		Enabled:     benchmark.Enabled,
-		Result:      csResult,
-		Checks:      sResult,
-		EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
+		ID:            benchmark.ID,
+		Title:         benchmark.Title,
+		Description:   benchmark.Description,
+		Connectors:    be.Connectors,
+		Tags:          be.Tags,
+		Enabled:       benchmark.Enabled,
+		Result:        csResult,
+		Checks:        sResult,
+		EvaluatedAt:   time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
+		LastJobStatus: string(lastJob.Status),
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -840,7 +909,8 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
-	policies, err := h.getPolicies(benchmarkID)
+	policiesMap := make(map[string]api.Policy)
+	err := h.populatePoliciesMap(benchmarkID, policiesMap)
 	if err != nil {
 		return err
 	}
@@ -850,9 +920,35 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		return err
 	}
 
+	queryIDs := make([]string, 0, len(policiesMap))
+	for _, policy := range policiesMap {
+		if policy.QueryID == nil {
+			continue
+		}
+		queryIDs = append(queryIDs, *policy.QueryID)
+	}
+
+	queries, err := h.db.GetQueriesIdAndConnector(queryIDs)
+	if err != nil {
+		h.logger.Error("failed to fetch queries", zap.Error(err))
+		return err
+	}
+	queryMap := make(map[string]db.Query)
+	for _, query := range queries {
+		queryMap[query.ID] = query
+	}
+
 	var policySummary []api.PolicySummary
-	for _, policy := range policies {
-		result := policyResult[policy.ID]
+	for _, policy := range policiesMap {
+		if policy.QueryID != nil {
+			if query, ok := queryMap[*policy.QueryID]; ok {
+				policy.Connector, _ = source.ParseType(query.Connector)
+			}
+		}
+		result, ok := policyResult[policy.ID]
+		if !ok {
+			result = types.PolicyResult{Passed: true}
+		}
 		policySummary = append(policySummary, api.PolicySummary{
 			Policy:                policy,
 			Passed:                result.Passed,
@@ -867,33 +963,83 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, policySummary)
 }
 
-func (h *HttpHandler) getPolicies(benchmarkID string) ([]api.Policy, error) {
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
+// GetBenchmarkPolicy godoc
+//
+//	@Summary	Get benchmark policies
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmark_id	path		string	true	"Benchmark ID"
+//	@Param		policyId		path		string	true	"Policy ID"
+//	@Success	200				{object}	api.PolicySummary
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId [get]
+func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+	policyID := ctx.Param("policyId")
+
+	policy, err := h.db.GetPolicy(policyID)
 	if err != nil {
-		return nil, err
+		h.logger.Error("failed to fetch policy", zap.Error(err), zap.String("policyID", policyID), zap.String("benchmarkID", benchmarkID))
+		return err
 	}
 
-	policiesMap := map[string]api.Policy{}
-	for _, child := range benchmark.Children {
-		childPolicies, err := h.getPolicies(child.ID)
+	apiPolicy := policy.ToApi()
+	if policy.QueryID != nil {
+		query, err := h.db.GetQuery(*policy.QueryID)
 		if err != nil {
-			return nil, err
+			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *policy.QueryID), zap.String("benchmarkID", benchmarkID))
+			return err
 		}
+		apiPolicy.Connector, _ = source.ParseType(query.Connector)
+	}
 
-		for _, ch := range childPolicies {
-			policiesMap[ch.ID] = ch
+	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	result, ok := policyResult[policy.ID]
+	if !ok {
+		result = types.PolicyResult{Passed: true}
+	}
+	policySummary := api.PolicySummary{
+		Policy:                apiPolicy,
+		Passed:                result.Passed,
+		FailedResourcesCount:  result.FailedResourcesCount,
+		TotalResourcesCount:   result.TotalResourcesCount,
+		FailedConnectionCount: result.FailedConnectionCount,
+		TotalConnectionCount:  result.TotalConnectionCount,
+		EvaluatedAt:           evaluatedAt,
+	}
+
+	return ctx.JSON(http.StatusOK, policySummary)
+}
+
+func (h *HttpHandler) populatePoliciesMap(benchmarkID string, basePoliciesMap map[string]api.Policy) error {
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	if basePoliciesMap == nil {
+		return errors.New("basePoliciesMap cannot be nil")
+	}
+
+	for _, child := range benchmark.Children {
+		err := h.populatePoliciesMap(child.ID, basePoliciesMap)
+		if err != nil {
+			return err
 		}
 	}
 
 	for _, policy := range benchmark.Policies {
-		policiesMap[policy.ID] = policy.ToApi()
+		if _, ok := basePoliciesMap[policy.ID]; !ok {
+			basePoliciesMap[policy.ID] = policy.ToApi()
+		}
 	}
 
-	var policies []api.Policy
-	for _, v := range policiesMap {
-		policies = append(policies, v)
-	}
-	return policies, nil
+	return nil
 }
 
 // GetBenchmarkTrend godoc

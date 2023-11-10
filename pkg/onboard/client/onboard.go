@@ -30,6 +30,7 @@ type OnboardServiceClient interface {
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 	PostCredentials(ctx *httpclient.Context, req api.CreateCredentialRequest) (*api.CreateCredentialResponse, error)
+	AutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 	GetSourceHealthcheck(ctx *httpclient.Context, connection string, updateMetadata bool) (*api.Connection, error)
 	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
 	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
@@ -227,6 +228,19 @@ func (s *onboardClient) PostCredentials(ctx *httpclient.Context, req api.CreateC
 	}
 
 	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *onboardClient) AutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v1/credential/%s/autoonboard", s.baseURL, credentialId)
+	var response []api.Connection
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

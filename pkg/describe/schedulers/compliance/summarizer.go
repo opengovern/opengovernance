@@ -23,7 +23,7 @@ type SankDocumentCountResponse struct {
 	}
 }
 
-func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, jobIDs []uint) (int, error) {
+func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJobID uint) (int, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	filters = append(filters, map[string]any{
@@ -32,8 +32,8 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, jobIDs 
 		},
 	})
 	filters = append(filters, map[string]any{
-		"terms": map[string]any{
-			"complianceJobID": jobIDs,
+		"term": map[string]any{
+			"parentComplianceJobID": parentJobID,
 		},
 	})
 	request["query"] = map[string]any{
@@ -48,6 +48,9 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, jobIDs 
 		s.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, err
 	}
+
+	s.logger.Info("GetSankDocumentCountBenchmark", zap.String("benchmarkId", benchmarkId), zap.String("query", string(query)))
+
 	sankDocumentCountResponse := SankDocumentCountResponse{}
 	err = s.esClient.SearchWithTrackTotalHits(
 		context.TODO(), types.FindingsIndex,
@@ -85,11 +88,7 @@ func (s *JobScheduler) runSummarizer() error {
 
 	jobs, err := s.db.ListJobsWithRunnersCompleted()
 	for _, job := range jobs {
-		childIds, err := s.db.ListChildJobIDsForParent(job.ID)
-		if err != nil {
-			return err
-		}
-		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID, childIds)
+		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID, job.ID)
 		if err != nil {
 			s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
@@ -99,7 +98,15 @@ func (s *JobScheduler) runSummarizer() error {
 			s.logger.Error("failed to get total document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
 		}
-		if sankDocCount < totalDocCount {
+
+		lastUpdatedRunner, err := s.db.GetLastUpdatedRunnerForParent(job.ID)
+		if err != nil {
+			s.logger.Error("failed to get last updated runner", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			return err
+		}
+
+		if time.Now().Add(-1*time.Hour).Before(lastUpdatedRunner.UpdatedAt) &&
+			(float64(sankDocCount) < float64(totalDocCount)*0.9) {
 			continue
 		}
 		err = s.createSummarizer(job)

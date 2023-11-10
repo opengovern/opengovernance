@@ -1106,6 +1106,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark policies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Policy ID",
+                        "name": "policyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/benchmarks/{benchmark_id}/summary": {
             "get": {
                 "security": [
@@ -1325,6 +1368,45 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings/filters": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving possible values for finding filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get possible values for finding filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
                         }
                     }
                 }
@@ -4079,6 +4161,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connections/{connectionId}/state": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Change connection lifecycle state",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connection ID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "connectionId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connector": {
             "get": {
                 "security": [
@@ -6682,6 +6803,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "azure_cis_v140"
                 },
+                "lastJobStatus": {
+                    "description": "Last job status",
+                    "type": "string",
+                    "example": "success"
+                },
                 "result": {
                     "description": "Compliance result summary",
                     "allOf": [
@@ -6764,6 +6890,10 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "parentComplianceJobID": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "policyID": {
                     "type": "string",
@@ -8414,6 +8544,14 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 0,
                     "example": 5
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
                 }
             }
         },
