@@ -405,7 +405,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		response.TotalCount = len(serviceCountList)
 	case "connectionid":
-		connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+		resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			resConnectionIDs = append(resConnectionIDs, item.Key)
+		}
+		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
 		if err != nil {
 			h.logger.Error("failed to get connections", zap.Error(err))
 			return err
