@@ -700,6 +700,9 @@ definitions:
         items:
           type: string
         type: array
+      parentComplianceJobID:
+        example: 1
+        type: integer
       policyID:
         example: azure_cis_v140_7_5
         type: string

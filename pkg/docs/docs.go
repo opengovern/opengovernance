@@ -6846,6 +6846,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "parentComplianceJobID": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "policyID": {
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
