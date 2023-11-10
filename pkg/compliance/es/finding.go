@@ -280,7 +280,7 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(resourceCollections) == 0 {
 		var rcResp FindingFiltersAggregationResponse
-		err = client.Search(context.Background(), types.ResourceCollectionsFindingsIndex, string(queryBytes), &resp)
+		err = client.Search(context.Background(), types.ResourceCollectionsFindingsIndex, string(queryBytes), &rcResp)
 		if err != nil {
 			logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 			return nil, err
