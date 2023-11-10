@@ -265,7 +265,7 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 		return api.BootstrapStatus_OnboardConnection, nil
 	}
 
-	return api.BootstrapStatus_WaitingForJobs, nil
+	return api.BootstrapStatus_WaitingForDiscovery, nil
 }
 
 // GetBootstrapStatus godoc

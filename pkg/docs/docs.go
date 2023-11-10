@@ -8947,13 +8947,19 @@ const docTemplate = `{
             "enum": [
                 "OnboardConnection",
                 "CreatingWorkspace",
-                "WaitingForJobs",
+                "WaitingForDiscovery",
+                "WaitingForAnalytics",
+                "WaitingForCompliance",
+                "WaitingForInsights",
                 "Finished"
             ],
             "x-enum-varnames": [
                 "BootstrapStatus_OnboardConnection",
                 "BootstrapStatus_CreatingWorkspace",
-                "BootstrapStatus_WaitingForJobs",
+                "BootstrapStatus_WaitingForDiscovery",
+                "BootstrapStatus_WaitingForAnalytics",
+                "BootstrapStatus_WaitingForCompliance",
+                "BootstrapStatus_WaitingForInsights",
                 "BootstrapStatus_Finished"
             ]
         },
@@ -9085,6 +9091,12 @@ const docTemplate = `{
                     "type": "string",
                     "example": "ws-698542025141040315"
                 },
+                "is_bootstrap_input_finished": {
+                    "type": "boolean"
+                },
+                "is_created": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string",
                     "example": "kaytu"
@@ -9191,6 +9203,12 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "ws-698542025141040315"
+                },
+                "is_bootstrap_input_finished": {
+                    "type": "boolean"
+                },
+                "is_created": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string",
