@@ -26,7 +26,8 @@ type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 				Key                   string `json:"key"`
 				EvaluatedAtRangeGroup struct {
 					Buckets []struct {
-						Key       float64 `json:"key"`
+						From      float64 `json:"from"`
+						To        float64 `json:"to"`
 						DocCount  int     `json:"doc_count"`
 						HitSelect struct {
 							Hits struct {
@@ -43,9 +44,10 @@ type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 }
 
 func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, from, to time.Time) (map[string][]TrendDatapoint, error) {
-	pathFilters := make([]string, 0, len(connectionIDs)+3)
+	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.SecurityScore")
 	for _, connectionID := range connectionIDs {
 		pathFilters = append(pathFilters,
@@ -132,7 +134,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
 		benchmarkID := bucket.Key
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
-			date := int64(rangeBucket.Key)
+			date := int64(rangeBucket.To)
 			if err != nil {
 				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
@@ -165,9 +167,10 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 	if len(resourceCollections) == 0 {
 		return nil, fmt.Errorf("resource collections cannot be empty")
 	}
-	pathFilters := make([]string, 0, (len(connectionIDs)+1)*len(resourceCollections)+2)
+	pathFilters := make([]string, 0, (len(connectionIDs)+1)*len(resourceCollections)+3)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
 	for _, resourceCollection := range resourceCollections {
 		pathFilters = append(pathFilters, fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.BenchmarkResult.SecurityScore", resourceCollection))
 		for _, connectionID := range connectionIDs {
@@ -256,7 +259,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
 		benchmarkID := bucket.Key
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
-			date := int64(rangeBucket.Key)
+			date := int64(rangeBucket.To)
 			if err != nil {
 				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
