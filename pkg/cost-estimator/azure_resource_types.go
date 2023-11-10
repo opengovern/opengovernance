@@ -34,6 +34,31 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 	return cost, nil
 }
 
+func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
+	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/disks")
+	if err != nil {
+		return 0, err
+	}
+	if len(response.Hits.Hits) == 0 {
+		return 0, fmt.Errorf("no resource found")
+	}
+	var request api.GetAzureManagedStorageRequest
+	if storage, ok := response.Hits.Hits[0].Source.Description.(azureModel.ComputeDiskDescription); ok {
+		request = api.GetAzureManagedStorageRequest{
+			RegionCode:     response.Hits.Hits[0].Source.Location,
+			ManagedStorage: storage,
+		}
+	} else {
+		return 0, fmt.Errorf("cannot parse resource")
+	}
+	cost, err := h.workspaceClient.GetAzureManagedStorage(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	if err != nil {
+		return 0, err
+	}
+
+	return cost, nil
+}
+
 func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	//var resource azureCompute.VirtualNetwork
 	//err := h.GetResource("Microsoft.Network/virtualNetworks", resourceId, &resource)

@@ -14,6 +14,7 @@ type CostEstimatorPricesClient interface {
 	GetLBCost(ctx *httpclient.Context, req api.GetLBCostRequest) (float64, error)
 	GetRDSInstance(ctx *httpclient.Context, req api.GetRDSInstanceRequest) (float64, error)
 	GetAzureVm(ctx *httpclient.Context, req api.GetAzureVmRequest) (float64, error)
+	GetAzureManagedStorage(ctx *httpclient.Context, req api.GetAzureManagedStorageRequest) (float64, error)
 }
 
 type costEstimatorClient struct {
@@ -82,6 +83,20 @@ func (s *costEstimatorClient) GetRDSInstance(ctx *httpclient.Context, req api.Ge
 
 func (s *costEstimatorClient) GetAzureVm(ctx *httpclient.Context, req api.GetAzureVmRequest) (float64, error) {
 	url := fmt.Sprintf("%s/api/v1/costestimator/azure/virtualmachine", s.baseURL)
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return 0, err
+	}
+	var response float64
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
+		return 0, err
+	}
+	return response, nil
+}
+
+func (s *costEstimatorClient) GetAzureManagedStorage(ctx *httpclient.Context, req api.GetAzureManagedStorageRequest) (float64, error) {
+	url := fmt.Sprintf("%s/api/v1/costestimator/azure/managedstorage", s.baseURL)
 
 	payload, err := json.Marshal(req)
 	if err != nil {

@@ -29,3 +29,8 @@ type GetAzureVmRequest struct {
 	RegionCode string
 	VM         azure.ComputeVirtualMachineDescription
 }
+
+type GetAzureManagedStorageRequest struct {
+	RegionCode     string
+	ManagedStorage azure.ComputeDiskDescription
+}

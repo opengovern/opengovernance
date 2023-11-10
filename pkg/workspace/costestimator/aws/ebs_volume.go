@@ -4,7 +4,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"time"
 )
 
 func EC2VolumeCostByResource(db *db.Database, request api.GetEC2VolumeCostRequest) (float64, error) {
@@ -32,23 +31,6 @@ func calcEC2VolumeCost(db *db.Database, region string, volumeType string, volume
 		}
 		cost += iopsCost.Price * float64(iops)
 	}
-	numberOfDays := getNumberOfDays()
+	numberOfDays := costestimator.GetNumberOfDays()
 	return (cost / (float64(numberOfDays))) / 24, nil
-}
-
-func getNumberOfDays() int {
-	currentTime := time.Now()
-
-	firstDayOfNextMonth := time.Date(
-		currentTime.Year(),
-		currentTime.Month()+1,
-		1,
-		0, 0, 0, 0,
-		currentTime.Location(),
-	)
-
-	lastDayOfCurrentMonth := firstDayOfNextMonth.Add(-24 * time.Hour)
-
-	numDaysInCurrentMonth := lastDayOfCurrentMonth.Day()
-	return numDaysInCurrentMonth
 }

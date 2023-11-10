@@ -1,18 +1,5 @@
 package db
 
-// AzureVirtualMachinePrice Service = Virtual Machines, Family = Compute
-type AzureVirtualMachinePrice struct {
-	SKU           string `gorm:"primaryKey"`
-	EffectiveDate int64
-	ArmRegionName string
-	ArmSkuName    string
-	ProductName   string
-	Priority      string
-	SkuName       string
-	PriceUnit     string
-	Price         float64
-}
-
 // AwsEC2InstancePrice Service = AmazonEC2, ProductFamily = Compute Instance
 type AwsEC2InstancePrice struct {
 	SKU             string `gorm:"primaryKey"`
@@ -116,4 +103,27 @@ type AwsRdsIopsPrice struct {
 	DeploymentOption string
 	PriceUnit        string
 	Price            float64
+}
+
+// AzureVirtualMachinePrice Service = Virtual Machines, Family = Compute
+type AzureVirtualMachinePrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	ArmSkuName    string
+	ProductName   string
+	Priority      string
+	SkuName       string
+	PriceUnit     string
+	Price         float64
+}
+
+type AzureManagedStoragePrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	SkuName       string
+	Meter         string
+	PriceUnit     string
+	Price         float64
 }
