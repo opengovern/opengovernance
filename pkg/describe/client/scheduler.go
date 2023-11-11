@@ -65,9 +65,9 @@ func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, er
 	var jobID uint
 	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobID); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
-			return -1, echo.NewHTTPError(statusCode, err.Error())
+			return 0, echo.NewHTTPError(statusCode, err.Error())
 		}
-		return -1, err
+		return 0, err
 	}
 	return jobID, nil
 }

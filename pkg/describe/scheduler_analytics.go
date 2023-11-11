@@ -61,12 +61,12 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		s.logger.Error("Failed to get ongoing AnalyticsJob",
 			zap.Error(err),
 		)
-		return -1, err
+		return 0, err
 	}
 
 	if lastJob != nil && lastJob.Status == analytics.JobInProgress {
 		s.logger.Info("There is ongoing AnalyticsJob skipping this schedule")
-		return -1, fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
+		return 0, fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
 
 	job := newAnalyticsJob(analyticsJobType)
@@ -78,7 +78,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 			zap.Uint("jobId", job.ID),
 			zap.Error(err),
 		)
-		return -1, err
+		return 0, err
 	}
 
 	err = s.enqueueAnalyticsJobs(job)
@@ -96,7 +96,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 				zap.Error(err),
 			)
 		}
-		return -1, err
+		return 0, err
 	}
 
 	AnalyticsJobsCount.WithLabelValues("successful").Inc()
