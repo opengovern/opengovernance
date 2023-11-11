@@ -16,6 +16,11 @@ type BenchmarkAssignment struct {
 	AssignedAt           time.Time `json:"assignedAt"`                                                  // Unix timestamp
 }
 
+type ConnectionAssignedBenchmark struct {
+	Benchmark Benchmark `json:"benchmarkId"`
+	Status    bool      `json:"status" example:"true"` // Status
+}
+
 type BenchmarkAssignedConnection struct {
 	ConnectionID           string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 	ProviderConnectionID   string      `json:"providerConnectionID" example:"1283192749"`                   // Provider Connection ID

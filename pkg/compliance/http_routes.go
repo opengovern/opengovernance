@@ -67,7 +67,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	assignments := v1.Group("/assignments")
 	assignments.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, authApi.ViewerRole))
-	assignments.GET("/connection", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
+	assignments.GET("/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
 	assignments.POST("/:benchmark_id/connection", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
 	assignments.DELETE("/:benchmark_id/connection", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
 
@@ -1368,74 +1368,84 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	return echo.NewHTTPError(http.StatusBadRequest, "connection or resource collection is required")
 }
 
+// ListAssignmentsByConnection godoc
+//
+//	@Summary		Get list of benchmark assignments for a connection
+//	@Description	Retrieving all benchmark assigned to a connection with connection id
+//	@Security		BearerToken
+//	@Tags			benchmarks_assignment
+//	@Accept			json
+//	@Produce		json
+//	@Param			connection_id	path		string	true	"Connection ID"
+//	@Success		200				{object}	[]api.ConnectionAssignedBenchmark
+//	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
 func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
-	connectionID, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
+	connectionId := ctx.Param("connection_id")
+	if connectionId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 
-	var dbAssignments []db.BenchmarkAssignment
 	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
 
-	for _, connectionId := range connectionID {
-		// trace :
-		_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
-		span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
+	_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
 
-		dbAssignmentsCG, err := h.db.GetBenchmarkAssignmentsByConnectionId(connectionId)
-		if err != nil {
-			span1.RecordError(err)
-			span1.SetStatus(codes.Error, err.Error())
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
-			}
-			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
-			return err
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByConnectionId(connectionId)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
 		}
-		dbAssignments = append(dbAssignments, dbAssignmentsCG...)
-
-		span1.AddEvent("information", trace.WithAttributes(
-			attribute.String("connection ID", connectionId),
-		))
-		span1.End()
+		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
+		return err
 	}
-	span2.End()
+
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("connection ID", connectionId),
+	))
+	span1.End()
 
 	benchmarks, err := h.db.ListBenchmarks()
 	if err != nil {
 		return err
 	}
 
-	srcs, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionId)
 	if err != nil {
 		return err
 	}
 
+	result := make([]api.ConnectionAssignedBenchmark, 0, len(dbAssignments))
 	for _, benchmark := range benchmarks {
-		if benchmark.AutoAssign {
-			for _, src := range srcs {
-				if !src.IsEnabled() {
-					continue
-				}
-
-				exists := false
-				for _, assignment := range dbAssignments {
-					if assignment.ConnectionId != nil && *assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
-						exists = true
-					}
-				}
-				if !exists {
-					dbAssignments = append(dbAssignments, db.BenchmarkAssignment{
-						BenchmarkId:  benchmark.ID,
-						ConnectionId: utils.GetPointer(src.ID.String()),
-					})
+		apiBenchmark := benchmark.ToApi()
+		err = benchmark.PopulateConnectors(context.Background(), h.db, &apiBenchmark)
+		if err != nil {
+			h.logger.Error("failed to populate connectors", zap.Error(err))
+			return err
+		}
+		if !utils.Includes(apiBenchmark.Connectors, src.Connector) {
+			continue
+		}
+		res := api.ConnectionAssignedBenchmark{
+			Benchmark: benchmark.ToApi(),
+			Status:    false,
+		}
+		if benchmark.AutoAssign && src.IsEnabled() {
+			res.Status = true
+		} else {
+			for _, assignment := range dbAssignments {
+				if assignment.ConnectionId != nil && *assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
+					res.Status = true
+					break
 				}
 			}
 		}
+		result = append(result, res)
 	}
 
-	return ctx.JSON(http.StatusOK, dbAssignments)
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // ListAssignmentsByBenchmark godoc
