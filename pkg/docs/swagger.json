@@ -9296,7 +9296,10 @@
             "type": "object",
             "properties": {
                 "connection_count": {
-                    "type": "integer"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 },
                 "maxConnections": {
                     "type": "integer"

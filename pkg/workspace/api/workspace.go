@@ -34,10 +34,10 @@ const (
 )
 
 type BootstrapStatusResponse struct {
-	MinRequiredConnections int64           `json:"minRequiredConnections"`
-	MaxConnections         int64           `json:"maxConnections"`
-	ConnectionCount        int64           `json:"connection_count"`
-	Status                 BootstrapStatus `json:"status"`
+	MinRequiredConnections int64                 `json:"minRequiredConnections"`
+	MaxConnections         int64                 `json:"maxConnections"`
+	ConnectionCount        map[source.Type]int64 `json:"connection_count"`
+	Status                 BootstrapStatus       `json:"status"`
 }
 
 type ChangeWorkspaceOwnershipRequest struct {

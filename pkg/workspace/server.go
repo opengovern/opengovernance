@@ -282,16 +282,22 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return err
 	}
 
-	var currentConnectionCount int64
+	currentConnectionCount := map[source.Type]int64{}
 	if ws.IsCreated {
 		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", ws.ID)
 		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 
-		count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+		count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.CloudAWS)
 		if err != nil {
 			return err
 		}
-		currentConnectionCount = count
+		currentConnectionCount[source.CloudAWS] = count
+
+		count, err = onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.CloudAzure)
+		if err != nil {
+			return err
+		}
+		currentConnectionCount[source.CloudAzure] = count
 	}
 	limits := api.GetLimitsByTier(ws.Tier)
 

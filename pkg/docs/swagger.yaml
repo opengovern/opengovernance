@@ -2377,7 +2377,9 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
     properties:
       connection_count:
-        type: integer
+        additionalProperties:
+          type: integer
+        type: object
       maxConnections:
         type: integer
       minRequiredConnections:
