@@ -876,7 +876,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConnectionAssignedBenchmark"
                             }
                         }
                     }
@@ -6995,6 +6995,19 @@ const docTemplate = `{
                     "description": "Time",
                     "type": "integer",
                     "example": 1686346668
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConnectionAssignedBenchmark": {
+            "type": "object",
+            "properties": {
+                "benchmarkId": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
+                },
+                "status": {
+                    "description": "Status",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

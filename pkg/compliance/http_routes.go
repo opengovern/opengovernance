@@ -1377,7 +1377,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connection_id	path		string	true	"Connection ID"
-//	@Success		200				{object}	[]api.Benchmark
+//	@Success		200				{object}	[]api.ConnectionAssignedBenchmark
 //	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
 func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	connectionId := ctx.Param("connection_id")
@@ -1417,18 +1417,32 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		return err
 	}
 
-	result := make([]api.Benchmark, 0, len(dbAssignments))
+	result := make([]api.ConnectionAssignedBenchmark, 0, len(dbAssignments))
 	for _, benchmark := range benchmarks {
-		if benchmark.AutoAssign && src.IsEnabled() {
-			result = append(result, benchmark.ToApi())
+		apiBenchmark := benchmark.ToApi()
+		err = benchmark.PopulateConnectors(context.Background(), h.db, &apiBenchmark)
+		if err != nil {
+			h.logger.Error("failed to populate connectors", zap.Error(err))
+			return err
+		}
+		if !utils.Includes(apiBenchmark.Connectors, src.Connector) {
 			continue
 		}
-		for _, assignment := range dbAssignments {
-			if assignment.ConnectionId != nil && *assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
-				result = append(result, benchmark.ToApi())
-				break
+		res := api.ConnectionAssignedBenchmark{
+			Benchmark: benchmark.ToApi(),
+			Status:    false,
+		}
+		if benchmark.AutoAssign && src.IsEnabled() {
+			res.Status = true
+		} else {
+			for _, assignment := range dbAssignments {
+				if assignment.ConnectionId != nil && *assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
+					res.Status = true
+					break
+				}
 			}
 		}
+		result = append(result, res)
 	}
 
 	return ctx.JSON(http.StatusOK, result)
