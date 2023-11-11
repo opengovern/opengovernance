@@ -17,7 +17,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 	for _, cred := range creds {
 		if !cred.IsCreated {
-			err := s.addCredentialToWorkspace(workspace.ID, cred)
+			err := s.addCredentialToWorkspace(workspace, cred)
 			if err != nil {
 				return err
 			}

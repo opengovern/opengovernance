@@ -253,8 +253,8 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	return nil
 }
 
-func (s *Service) addCredentialToWorkspace(workspaceID string, cred db.Credential) error {
-	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspaceID)
+func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Credential) error {
+	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 
 	credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
@@ -265,7 +265,8 @@ func (s *Service) addCredentialToWorkspace(workspaceID string, cred db.Credentia
 		return err
 	}
 
-	_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole}, credential.ID)
+	limits := api.GetLimitsByTier(workspace.Tier)
+	_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
 	if err != nil {
 		return err
 	}
