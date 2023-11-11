@@ -48,10 +48,10 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.SecurityScore")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Result.SecurityScore")
 	for _, connectionID := range connectionIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.SecurityScore", connectionID))
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Result.SecurityScore", connectionID))
 	}
 
 	query := make(map[string]any)
@@ -146,11 +146,11 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 				if len(connectionIDs) > 0 {
 					for _, connectionID := range connectionIDs {
 						if connection, ok := hit.Source.Connections.Connections[connectionID]; ok {
-							trendDataPoint.Score += connection.SecurityScore
+							trendDataPoint.Score += connection.Result.SecurityScore
 						}
 					}
 				} else {
-					trendDataPoint.Score += hit.Source.Connections.BenchmarkResult.SecurityScore
+					trendDataPoint.Score += hit.Source.Connections.BenchmarkResult.Result.SecurityScore
 				}
 			}
 			if trendDataPoint.DateEpoch != 0 {
@@ -174,10 +174,10 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
 	for _, resourceCollection := range resourceCollections {
-		pathFilters = append(pathFilters, fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.BenchmarkResult.SecurityScore", resourceCollection))
+		pathFilters = append(pathFilters, fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result.SecurityScore", resourceCollection))
 		for _, connectionID := range connectionIDs {
 			pathFilters = append(pathFilters,
-				fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.Connections.%s.SecurityScore", resourceCollection, connectionID))
+				fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.Connections.%s.Result.SecurityScore", resourceCollection, connectionID))
 		}
 	}
 
@@ -274,11 +274,11 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 					if len(connectionIDs) > 0 {
 						for _, connectionID := range connectionIDs {
 							if connection, ok := resourceCollection.Connections[connectionID]; ok {
-								trendDataPoint.Score += connection.SecurityScore
+								trendDataPoint.Score += connection.Result.SecurityScore
 							}
 						}
 					} else {
-						trendDataPoint.Score += resourceCollection.BenchmarkResult.SecurityScore
+						trendDataPoint.Score += resourceCollection.BenchmarkResult.Result.SecurityScore
 					}
 				}
 			}
@@ -325,12 +325,27 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 
 	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"Connections.BenchmarkResult", "EvaluatedAtEpoch"}
+	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
 	}
 	if len(resourceCollections) > 0 {
 		includes = append(includes, "ResourceCollections")
+	}
+	pathFilters := make([]string, 0, len(connectionIDs)+(len(resourceCollections)*(len(connectionIDs)+1))+2)
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
+	for _, connectionID := range connectionIDs {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Result", connectionID))
+	}
+	for _, resourceCollection := range resourceCollections {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result", resourceCollection))
+		for _, connectionID := range connectionIDs {
+			pathFilters = append(pathFilters,
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Result", resourceCollection, connectionID))
+		}
 	}
 
 	request := map[string]any{
@@ -389,7 +404,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response ListBenchmarkSummariesAtTimeResponse
-	err = client.Search(context.Background(), idx, string(query), &response)
+	err = client.SearchWithFilterPath(context.Background(), idx, string(query), pathFilters, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -415,8 +430,11 @@ type BenchmarkConnectionSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.Result, int64, error) {
+func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
 	includes := []string{"Connections.Connections", "EvaluatedAtEpoch"}
+	pathFilters := make([]string, 0, 2)
+	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Connections.Connections.*.Result")
+	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.EvaluatedAtEpoch")
 	request := map[string]any{
 		"aggs": map[string]any{
 			"last_result": map[string]any{
@@ -454,7 +472,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 
 	logger.Info("BenchmarkConnectionSummary", zap.String("query", string(queryBytes)))
 	var resp BenchmarkConnectionSummaryResponse
-	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), &resp)
+	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -465,8 +483,20 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 	return nil, 0, nil
 }
 
-func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.PolicyResult, int64, error) {
-	includes := []string{"Connections.Policies", "EvaluatedAtEpoch"}
+func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID string, connectionIDs []string) (map[string]types2.PolicyResult, int64, error) {
+	includes := []string{"Connections.BenchmarkResult.Policies", "EvaluatedAtEpoch"}
+	if len(connectionIDs) > 0 {
+		includes = append(includes, "Connections.Connections")
+	}
+
+	pathFilters := make([]string, 0, len(connectionIDs)+2)
+	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Connections.BenchmarkResult.Policies")
+	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.EvaluatedAtEpoch")
+	for _, connectionID := range connectionIDs {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.last_result.hits.hits._source.Connections.Connections.%s.Policies", connectionID))
+	}
+
 	request := map[string]any{
 		"aggs": map[string]any{
 			"last_result": map[string]any{
@@ -502,15 +532,40 @@ func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID
 		return nil, -1, err
 	}
 
-	logger.Info("BenchmarkPolicySummary", zap.String("query", string(queryBytes)))
+	logger.Info("BenchmarkPolicySummary", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var resp BenchmarkConnectionSummaryResponse
-	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), &resp)
+	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex,
+		string(queryBytes), pathFilters, &resp)
 	if err != nil {
 		return nil, -1, err
 	}
 
+	evAt := int64(0)
+	result := make(map[string]types2.PolicyResult)
 	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
-		return res.Source.Connections.Policies, res.Source.EvaluatedAtEpoch, nil
+		if len(connectionIDs) > 0 {
+			for _, connectionID := range connectionIDs {
+				if connection, ok := res.Source.Connections.Connections[connectionID]; ok {
+					for key, policyRes := range connection.Policies {
+						if v, ok := result[key]; !ok {
+							result[key] = policyRes
+						} else {
+							v.FailedResourcesCount += policyRes.FailedResourcesCount
+							v.FailedConnectionCount += policyRes.FailedConnectionCount
+							v.TotalResourcesCount += policyRes.TotalResourcesCount
+							v.TotalConnectionCount += policyRes.TotalConnectionCount
+							v.Passed = v.Passed && policyRes.Passed
+							result[key] = v
+						}
+					}
+					evAt = res.Source.EvaluatedAtEpoch
+				}
+			}
+		} else {
+			result = res.Source.Connections.BenchmarkResult.Policies
+			evAt = res.Source.EvaluatedAtEpoch
+			break
+		}
 	}
-	return nil, 0, nil
+	return result, evAt, nil
 }
