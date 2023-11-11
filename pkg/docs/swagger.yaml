@@ -2376,6 +2376,12 @@ definitions:
     - BootstrapStatus_Finished
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
     properties:
+      connection_count:
+        type: integer
+      maxConnections:
+        type: integer
+      minRequiredConnections:
+        type: integer
       status:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus'
     type: object

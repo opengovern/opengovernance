@@ -3,7 +3,7 @@ package statemanager
 import "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 
 func (s *Service) runBootstrapping(workspace *db.Workspace) error {
-	creds, err := s.db.ListCredentialsByWorkspace(workspace.Name)
+	creds, err := s.db.ListCredentialsByWorkspaceID(workspace.ID)
 	if err != nil {
 		return err
 	}

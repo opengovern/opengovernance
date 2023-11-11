@@ -55,7 +55,7 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 	case api.StatusDeleting:
-		creds, err := s.db.ListCredentialsByWorkspace(workspace.Name)
+		creds, err := s.db.ListCredentialsByWorkspaceID(workspace.ID)
 		if err != nil {
 			return fmt.Errorf("listing credentials: %w", err)
 		}

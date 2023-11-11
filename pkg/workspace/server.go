@@ -241,16 +241,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	})
 }
 
-func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, error) {
-	ws, err := s.db.GetWorkspaceByName(workspaceName)
-	if err != nil {
-		return "", err
-	}
-
-	if ws == nil {
-		return "", errors.New("workspace not found")
-	}
-
+func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, error) {
 	if ws.Status == api.StatusBootstrapping {
 		if !ws.IsBootstrapInputFinished {
 			return api.BootstrapStatus_OnboardConnection, nil
@@ -277,13 +268,38 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
 
-	status, err := s.getBootstrapStatus(workspaceName)
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
 	if err != nil {
 		return err
 	}
 
+	if ws == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("workspace not found"))
+	}
+
+	status, err := s.getBootstrapStatus(ws)
+	if err != nil {
+		return err
+	}
+
+	var currentConnectionCount int64
+	if ws.IsCreated {
+		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", ws.ID)
+		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+
+		count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.Nil)
+		if err != nil {
+			return err
+		}
+		currentConnectionCount = count
+	}
+	limits := api.GetLimitsByTier(ws.Tier)
+
 	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-		Status: status,
+		MinRequiredConnections: 3,
+		MaxConnections:         limits.MaxConnections,
+		ConnectionCount:        currentConnectionCount,
+		Status:                 status,
 	})
 }
 
@@ -329,6 +345,11 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 	var request api.AddCredentialRequest
 	if err := ctx.Bind(&request); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
 	}
 
 	configStr, err := json.Marshal(request.Config)
@@ -387,7 +408,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 
 	cred := db2.Credential{
 		ConnectorType: request.ConnectorType,
-		Workspace:     workspaceName,
+		WorkspaceID:   ws.ID,
 		Metadata:      configStr,
 	}
 	err = s.db.CreateCredential(&cred)
