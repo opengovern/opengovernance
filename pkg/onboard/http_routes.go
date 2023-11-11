@@ -1084,6 +1084,9 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						localConn.LifecycleState = ConnectionLifecycleStateArchived
 					} else if localConn.LifecycleState == ConnectionLifecycleStateArchived {
 						localConn.LifecycleState = ConnectionLifecycleStateDiscovered
+						if credential.AutoOnboardEnabled {
+							localConn.LifecycleState = ConnectionLifecycleStateOnboard
+						}
 					}
 					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
 						// tracer :
