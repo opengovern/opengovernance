@@ -22,6 +22,8 @@ type ComplianceServiceClient interface {
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
 	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
 	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
+	ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error)
+	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
 }
 
 type complianceClient struct {
@@ -195,4 +197,24 @@ func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, b
 		return compliance.GetAccountsFindingsSummaryResponse{}, err
 	}
 	return res, nil
+}
+
+func (s *complianceClient) ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
+
+	var insights []compliance.Insight
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+		return nil, err
+	}
+	return insights, nil
+}
+
+func (s *complianceClient) CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error) {
+	url := fmt.Sprintf("%s/api/v1/assignments/%s/connection?connectionId=%s", s.baseURL, benchmarkID, connectionId)
+
+	var assignments []compliance.BenchmarkAssignment
+	if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &assignments); err != nil {
+		return nil, err
+	}
+	return assignments, nil
 }

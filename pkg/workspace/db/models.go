@@ -20,6 +20,9 @@ type Workspace struct {
 	Organization             *Organization       `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	IsCreated                bool                `json:"is_created"`
 	IsBootstrapInputFinished bool                `json:"is_bootstrap_input_finished"`
+	AnalyticsTriggered       bool                `json:"analyticsTriggered"`
+	InsightTriggered         bool                `json:"insightTriggered"`
+	ComplianceTriggered      bool                `json:"complianceTriggered"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {

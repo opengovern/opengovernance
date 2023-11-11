@@ -20,6 +20,9 @@ type SchedulerServiceClient interface {
 	GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error)
 	ListPendingConnections(ctx *httpclient.Context) ([]string, error)
 	GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkID string) (*api.ComplianceJob, error)
+	GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error)
+	TriggerAnalyticsJob(ctx *httpclient.Context) error
+	TriggerInsightJob(ctx *httpclient.Context, insightID uint) error
 }
 
 type schedulerClient struct {
@@ -41,6 +44,43 @@ func (s *schedulerClient) GetStack(ctx *httpclient.Context, stackID string) (*ap
 		return nil, err
 	}
 	return &stack, nil
+}
+
+func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error) {
+	url := fmt.Sprintf("%s/describe/all/jobs/state", s.baseURL)
+
+	var status api.DescribeAllJobsStatus
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &status); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &status, nil
+}
+
+func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/analytics/trigger", s.baseURL)
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *schedulerClient) TriggerInsightJob(ctx *httpclient.Context, insightID uint) error {
+	url := fmt.Sprintf("%s/insight/trigger/%d", s.baseURL, insightID)
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error) {

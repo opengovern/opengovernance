@@ -5857,7 +5857,7 @@ paths:
         in: path
         name: insight_id
         required: true
-        type: string
+        type: integer
       produces:
       - application/json
       responses:

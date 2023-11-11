@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -69,6 +70,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
+	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -230,7 +232,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
-//	@Param			insight_id	path	string	true	"Insight ID"
+//	@Param			insight_id	path	uint	true	"Insight ID"
 //	@Router			/schedule/api/v1/insight/trigger/{insight_id} [put]
 func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	insightID, err := strconv.ParseUint(ctx.Param("insight_id"), 10, 64)
@@ -352,6 +354,37 @@ func (h HttpServer) ListAllPendingConnection(ctx echo.Context) error {
 		return err
 	}
 	return ctx.JSON(http.StatusOK, status)
+}
+
+func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
+	count, sum, err := h.DB.CountJobsAndResources()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
+	}
+
+	status, err := h.DB.ListAllPendingConnection()
+	if err != nil {
+		return err
+	}
+
+	if len(status) > 0 {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsRunning)
+	}
+
+	resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es)
+	if err != nil {
+		return err
+	}
+
+	if sum != resourceCount {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsFinished)
+	}
+
+	return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

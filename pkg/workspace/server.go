@@ -5,7 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/smithy-go"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
@@ -283,22 +288,18 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	}
 
 	currentConnectionCount := map[source.Type]int64{}
-	if ws.IsCreated {
-		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", ws.ID)
-		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-
-		count, err := onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.CloudAWS)
-		if err != nil {
-			return err
-		}
-		currentConnectionCount[source.CloudAWS] = count
-
-		count, err = onboardClient.CountSources(&httpclient.Context{UserRole: authapi.InternalRole}, source.CloudAzure)
-		if err != nil {
-			return err
-		}
-		currentConnectionCount[source.CloudAzure] = count
+	awsCount, err := s.db.CountConnectionsByConnector(source.CloudAWS)
+	if err != nil {
+		return err
 	}
+	currentConnectionCount[source.CloudAWS] = awsCount
+
+	azureCount, err := s.db.CountConnectionsByConnector(source.CloudAzure)
+	if err != nil {
+		return err
+	}
+	currentConnectionCount[source.CloudAzure] = azureCount
+
 	limits := api.GetLimitsByTier(ws.Tier)
 
 	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
@@ -335,6 +336,13 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 	return c.JSON(http.StatusOK, "")
 }
 
+func ignoreAwsOrgError(err error) bool {
+	var ae smithy.APIError
+	return errors.As(err, &ae) &&
+		(ae.ErrorCode() == (&types.AWSOrganizationsNotInUseException{}).ErrorCode() ||
+			ae.ErrorCode() == (&types.AccessDeniedException{}).ErrorCode())
+}
+
 // AddCredential godoc
 //
 //	@Summary	Add credential for workspace to be onboarded
@@ -363,6 +371,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
+	count := 0
 	switch request.ConnectorType {
 	case source.CloudAWS:
 		cfg := api2.AWSCredentialConfig{}
@@ -383,6 +392,20 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		err = kaytuAws.CheckGetUserPermission(s.logger, sdkCnf)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		accounts, err := describer.OrganizationAccounts(context.Background(), sdkCnf)
+		if err != nil {
+			if !ignoreAwsOrgError(err) {
+				return err
+			}
+		}
+
+		for _, account := range accounts {
+			if account.Id == nil {
+				continue
+			}
+			count++
 		}
 	case source.CloudAzure:
 		cfg := api2.AzureCredentialConfig{}
@@ -410,12 +433,42 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+
+		identity, err := azidentity.NewClientSecretCredential(
+			azureConfig.TenantID,
+			azureConfig.ClientID,
+			azureConfig.ClientSecret,
+			nil)
+		if err != nil {
+			return err
+		}
+
+		subClient, err := armsubscription.NewSubscriptionsClient(identity, nil)
+		if err != nil {
+			return err
+		}
+
+		ctx2 := context.Background()
+		it := subClient.NewListPager(nil)
+		for it.More() {
+			page, err := it.NextPage(ctx2)
+			if err != nil {
+				return err
+			}
+			for _, v := range page.Value {
+				if v == nil || v.State == nil {
+					continue
+				}
+				count++
+			}
+		}
 	}
 
 	cred := db2.Credential{
-		ConnectorType: request.ConnectorType,
-		WorkspaceID:   ws.ID,
-		Metadata:      configStr,
+		ConnectorType:   request.ConnectorType,
+		WorkspaceID:     ws.ID,
+		Metadata:        configStr,
+		ConnectionCount: count,
 	}
 	err = s.db.CreateCredential(&cred)
 	if err != nil {

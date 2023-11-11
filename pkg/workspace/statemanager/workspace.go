@@ -271,7 +271,7 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 		return err
 	}
 
-	err = s.db.DeleteCredential(cred.ID)
+	err = s.db.SetIsCreated(cred.ID)
 	if err != nil {
 		return err
 	}

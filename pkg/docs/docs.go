@@ -4811,7 +4811,7 @@ const docTemplate = `{
                 "summary": "Triggers insight job",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "Insight ID",
                         "name": "insight_id",
                         "in": "path",
