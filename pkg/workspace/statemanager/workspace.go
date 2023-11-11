@@ -55,6 +55,17 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 	case api.StatusDeleting:
+		creds, err := s.db.ListCredentialsByWorkspace(workspace.Name)
+		if err != nil {
+			return fmt.Errorf("listing credentials: %w", err)
+		}
+		for _, cred := range creds {
+			err = s.db.DeleteCredential(cred.ID)
+			if err != nil {
+				return fmt.Errorf("deleting credentials: %w", err)
+			}
+		}
+
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
@@ -264,7 +275,7 @@ func (s *Service) addCredentialToWorkspace(workspaceID string, credentialID uint
 		return err
 	}
 
-	err = s.db.SetCredentialCreated(credentialID)
+	err = s.db.DeleteCredential(credentialID)
 	if err != nil {
 		return err
 	}

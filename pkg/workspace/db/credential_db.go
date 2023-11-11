@@ -38,3 +38,11 @@ func (s *Database) SetCredentialCreated(id uint) error {
 	}
 	return nil
 }
+
+func (s *Database) DeleteCredential(id uint) error {
+	err := s.orm.Unscoped().Model(&Credential{}).Where("id = ?", id).Delete(&Credential{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
