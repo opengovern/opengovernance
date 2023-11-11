@@ -32,7 +32,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
+			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -45,7 +45,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
+			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -54,19 +54,19 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	}
 }
 
-func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType) error {
+func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType) (uint, error) {
 	lastJob, err := s.db.FetchLastAnalyticsJobForJobType(analyticsJobType)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get ongoing AnalyticsJob",
 			zap.Error(err),
 		)
-		return err
+		return -1, err
 	}
 
 	if lastJob != nil && lastJob.Status == analytics.JobInProgress {
 		s.logger.Info("There is ongoing AnalyticsJob skipping this schedule")
-		return fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
+		return -1, fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
 
 	job := newAnalyticsJob(analyticsJobType)
@@ -78,7 +78,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 			zap.Uint("jobId", job.ID),
 			zap.Error(err),
 		)
-		return err
+		return -1, err
 	}
 
 	err = s.enqueueAnalyticsJobs(job)
@@ -96,11 +96,11 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 				zap.Error(err),
 			)
 		}
-		return err
+		return -1, err
 	}
 
 	AnalyticsJobsCount.WithLabelValues("successful").Inc()
-	return nil
+	return job.ID, nil
 }
 
 func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {

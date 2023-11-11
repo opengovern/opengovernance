@@ -5863,6 +5863,10 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            items:
+              type: integer
+            type: array
       security:
       - BearerToken: []
       summary: Triggers insight job

@@ -49,12 +49,12 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		}
 
 		// run analytics if not running
-		if !workspace.AnalyticsTriggered {
-			err = schedulerClient.TriggerAnalyticsJob(&httpclient.Context{UserRole: authapi.InternalRole})
+		if workspace.AnalyticsJobID <= 0 {
+			jobID, err := schedulerClient.TriggerAnalyticsJob(&httpclient.Context{UserRole: authapi.InternalRole})
 			if err != nil {
 				return err
 			}
-			err = s.db.SetWorkspaceAnalyticsTriggered(workspace.ID)
+			err = s.db.SetWorkspaceAnalyticsJobID(workspace.ID, jobID)
 			if err != nil {
 				return err
 			}
@@ -64,20 +64,22 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		complianceClient := client.NewComplianceClient(complianceURL)
 
 		// run insight if not running
-		if !workspace.InsightTriggered {
+		if len(workspace.InsightJobID) == 0 {
 			ins, err := complianceClient.ListInsights(&httpclient.Context{UserRole: authapi.InternalRole})
 			if err != nil {
 				return err
 			}
 
+			var allJobIDs []uint
 			for _, insight := range ins {
-				err = schedulerClient.TriggerInsightJob(&httpclient.Context{UserRole: authapi.InternalRole}, insight.ID)
+				jobIDs, err := schedulerClient.TriggerInsightJob(&httpclient.Context{UserRole: authapi.InternalRole}, insight.ID)
 				if err != nil {
 					return err
 				}
+				allJobIDs = append(allJobIDs, jobIDs...)
 			}
 
-			err = s.db.SetWorkspaceInsightsTriggered(workspace.ID)
+			err = s.db.SetWorkspaceInsightsJobIDs(workspace.ID, allJobIDs)
 			if err != nil {
 				return err
 			}

@@ -231,8 +231,8 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
-//	@Success		200
-//	@Param			insight_id	path	uint	true	"Insight ID"
+//	@Success		200			{object}	[]uint
+//	@Param			insight_id	path		uint	true	"Insight ID"
 //	@Router			/schedule/api/v1/insight/trigger/{insight_id} [put]
 func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	insightID, err := strconv.ParseUint(ctx.Param("insight_id"), 10, 64)
@@ -244,18 +244,21 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	var jobIDs []uint
 	for _, ins := range insights {
 		if ins.ID != uint(insightID) {
 			continue
 		}
 
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector, nil)
+		jobID, err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector, nil)
 		if err != nil {
 			return err
 		}
+		jobIDs = append(jobIDs, jobID)
 	}
-	return ctx.JSON(http.StatusOK, "")
+	return ctx.JSON(http.StatusOK, jobIDs)
 }
 
 // TriggerConnectionsComplianceJob godoc
@@ -311,12 +314,12 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
-	err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal)
+	jobID, err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal)
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
-	return ctx.JSON(http.StatusOK, "")
+	return ctx.JSON(http.StatusOK, jobID)
 }
 
 func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {

@@ -100,12 +100,12 @@ func (s *Database) UpdateWorkspaceOwner(workspaceUUID string, newOwnerID string)
 	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("owner_id", newOwnerID).Error
 }
 
-func (s *Database) SetWorkspaceAnalyticsTriggered(workspaceID string) error {
-	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("analytics_triggered", true).Error
+func (s *Database) SetWorkspaceAnalyticsJobID(workspaceID string, jobID uint) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("analytics_job_id", jobID).Error
 }
 
-func (s *Database) SetWorkspaceInsightsTriggered(workspaceID string) error {
-	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("insight_triggered", true).Error
+func (s *Database) SetWorkspaceInsightsJobIDs(workspaceID string, jobIDs []uint) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("insight_job_id", jobIDs).Error
 }
 
 func (s *Database) SetWorkspaceComplianceTriggered(workspaceID string) error {

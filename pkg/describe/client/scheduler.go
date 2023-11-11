@@ -21,8 +21,8 @@ type SchedulerServiceClient interface {
 	ListPendingConnections(ctx *httpclient.Context) ([]string, error)
 	GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkID string) (*api.ComplianceJob, error)
 	GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error)
-	TriggerAnalyticsJob(ctx *httpclient.Context) error
-	TriggerInsightJob(ctx *httpclient.Context, insightID uint) error
+	TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error)
+	TriggerInsightJob(ctx *httpclient.Context, insightID uint) ([]uint, error)
 }
 
 type schedulerClient struct {
@@ -59,28 +59,30 @@ func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*ap
 	return &status, nil
 }
 
-func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) error {
+func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error) {
 	url := fmt.Sprintf("%s/analytics/trigger", s.baseURL)
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+	var jobID uint
+	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobID); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
+			return -1, echo.NewHTTPError(statusCode, err.Error())
 		}
-		return err
+		return -1, err
 	}
-	return nil
+	return jobID, nil
 }
 
-func (s *schedulerClient) TriggerInsightJob(ctx *httpclient.Context, insightID uint) error {
+func (s *schedulerClient) TriggerInsightJob(ctx *httpclient.Context, insightID uint) ([]uint, error) {
 	url := fmt.Sprintf("%s/insight/trigger/%d", s.baseURL, insightID)
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+	var jobIDs []uint
+	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobIDs); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
+			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
-		return err
+		return nil, err
 	}
-	return nil
+	return jobIDs, nil
 }
 
 func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error) {

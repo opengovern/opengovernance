@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -20,8 +21,8 @@ type Workspace struct {
 	Organization             *Organization       `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	IsCreated                bool                `json:"is_created"`
 	IsBootstrapInputFinished bool                `json:"is_bootstrap_input_finished"`
-	AnalyticsTriggered       bool                `json:"analyticsTriggered"`
-	InsightTriggered         bool                `json:"insightTriggered"`
+	AnalyticsJobID           uint                `json:"analytics_job_id"`
+	InsightJobID             pq.Int64Array       `gorm:"type:integer[]" json:"insight_job_id"`
 	ComplianceTriggered      bool                `json:"complianceTriggered"`
 }
 

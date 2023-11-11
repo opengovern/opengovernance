@@ -59,7 +59,7 @@ func (s *Scheduler) checkJobSequences() error {
 func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 	switch job.NextJob {
 	case string(model.JobSequencerJobTypeAnalytics):
-		err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
+		_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 		if err != nil {
 			return err
 		}

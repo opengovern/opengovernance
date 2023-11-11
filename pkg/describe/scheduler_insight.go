@@ -51,7 +51,7 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 
 	for _, ins := range insights {
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector, nil)
+		_, err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector, nil)
 		if err != nil {
 			s.logger.Error("Failed to run InsightJob", zap.Error(err))
 			InsightJobsCount.WithLabelValues("failure").Inc()
@@ -79,10 +79,10 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 	//}
 }
 
-func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) error {
+func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) (uint, error) {
 	lastJob, err := s.db.GetLastInsightJobForResourceCollection(ins.ID, srcID, resourceCollectionId)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	if forceCreate || lastJob == nil ||
@@ -91,7 +91,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 		job := newInsightJob(ins, srcType, srcID, accountID, resourceCollectionId)
 		err := s.db.AddInsightJob(&job)
 		if err != nil {
-			return err
+			return -1, err
 		}
 
 		err = enqueueInsightJobs(s.insightJobQueue, job, ins)
@@ -99,10 +99,11 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 			job.Status = insightapi.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
 			s.db.UpdateInsightJobStatus(job)
-			return err
+			return -1, err
 		}
+		return job.ID, nil
 	}
-	return nil
+	return -1, nil
 }
 
 func enqueueInsightJobs(q queue.Interface, job model.InsightJob, ins complianceapi.Insight) error {
