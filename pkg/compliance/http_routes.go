@@ -931,9 +931,9 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmark_id		path		string		true	"Benchmark ID"
-//	@Param		connectionId		query		[]string		false	"Connection IDs to filter by"
-//	@Param		connectionGroup		query		[]string		false	"Connection groups to filter by "//	@Success	200				{object}	[]api.PolicySummary
+//	@Param		benchmark_id	path	string		true	"Benchmark ID"
+//	@Param		connectionId	query	[]string	false	"Connection IDs to filter by"
+//	@Param		connectionGroup	query	[]string	false	"Connection groups to filter by "//	@Success	200	{object}	[]api.PolicySummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
@@ -1005,10 +1005,10 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmark_id	path		string	true	"Benchmark ID"
-//	@Param		policyId		path		string	true	"Policy ID"
-//	@Param		connectionId		query		[]string		false	"Connection IDs to filter by"
-//	@Param		connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param		benchmark_id	path		string		true	"Benchmark ID"
+//	@Param		policyId		path		string		true	"Policy ID"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success	200				{object}	api.PolicySummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId [get]
 func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {

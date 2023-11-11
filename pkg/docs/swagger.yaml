@@ -3358,15 +3358,23 @@ paths:
         name: benchmark_id
         required: true
         type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
       produces:
       - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
-            type: array
+      responses: {}
       security:
       - BearerToken: []
       summary: Get benchmark policies
@@ -3387,6 +3395,20 @@ paths:
         name: policyId
         required: true
         type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
       produces:
       - application/json
       responses:
