@@ -1145,7 +1145,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		span4.End()
 
 		if count >= maxConnections {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("maximum number of connections reached: [%d/%d]", count, maxConnections))
 		}
 
 		src := NewAWSAutoOnboardedConnection(
