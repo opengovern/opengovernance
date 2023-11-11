@@ -8,17 +8,18 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		return err
 	}
 
-	if !workspace.IsCreated && len(creds) > 0 {
-		return s.createWorkspace(workspace)
+	if !workspace.IsCreated {
+		if len(creds) > 0 {
+			return s.createWorkspace(workspace)
+		}
+		return nil
 	}
 
-	if workspace.IsCreated {
-		for _, cred := range creds {
-			if !cred.IsCreated {
-				err := s.addCredentialToWorkspace(workspace.ID, cred.ID)
-				if err != nil {
-					return err
-				}
+	for _, cred := range creds {
+		if !cred.IsCreated {
+			err := s.addCredentialToWorkspace(workspace.ID, cred)
+			if err != nil {
+				return err
 			}
 		}
 	}

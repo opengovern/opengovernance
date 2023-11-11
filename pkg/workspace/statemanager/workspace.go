@@ -253,14 +253,9 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	return nil
 }
 
-func (s *Service) addCredentialToWorkspace(workspaceID string, credentialID uint) error {
+func (s *Service) addCredentialToWorkspace(workspaceID string, cred db.Credential) error {
 	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspaceID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-
-	cred, err := s.db.GetCredentialByID(credentialID)
-	if err != nil {
-		return err
-	}
 
 	credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
 		SourceType: cred.ConnectorType,
@@ -275,7 +270,7 @@ func (s *Service) addCredentialToWorkspace(workspaceID string, credentialID uint
 		return err
 	}
 
-	err = s.db.DeleteCredential(credentialID)
+	err = s.db.DeleteCredential(cred.ID)
 	if err != nil {
 		return err
 	}
