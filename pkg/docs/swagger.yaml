@@ -549,6 +549,87 @@ definitions:
             type: integer
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark:
+    properties:
+      autoAssign:
+        description: Whether the benchmark is auto assigned or not
+        example: true
+        type: boolean
+      baseline:
+        description: Whether the benchmark is baseline or not
+        example: true
+        type: boolean
+      category:
+        description: Benchmark category
+        type: string
+      children:
+        description: Benchmark children
+        example:
+        - '[azure_cis_v140_1'
+        - ' azure_cis_v140_2]'
+        items:
+          type: string
+        type: array
+      connectors:
+        description: Benchmark connectors
+        example:
+        - '[azure]'
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      createdAt:
+        description: Benchmark creation date
+        example: "2020-01-01T00:00:00Z"
+        type: string
+      description:
+        description: Benchmark description
+        example: The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive
+          guidance for establishing a secure baseline configuration for Microsoft
+          Azure.
+        type: string
+      documentURI:
+        description: Benchmark document URI
+        example: benchmarks/azure_cis_v140.md
+        type: string
+      enabled:
+        description: Whether the benchmark is enabled or not
+        example: true
+        type: boolean
+      id:
+        description: Benchmark ID
+        example: azure_cis_v140
+        type: string
+      logoURI:
+        description: Benchmark logo URI
+        type: string
+      managed:
+        description: Whether the benchmark is managed or not
+        example: true
+        type: boolean
+      policies:
+        description: Benchmark policies
+        example:
+        - '[azure_cis_v140_1_1'
+        - ' azure_cis_v140_1_2]'
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Benchmark tags
+        type: object
+      title:
+        description: Benchmark title
+        example: Azure CIS v1.4.0
+        type: string
+      updatedAt:
+        description: Benchmark last update date
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection:
     properties:
       connectionID:
@@ -3224,6 +3305,32 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark assigned sources
+      tags:
+      - benchmarks_assignment
+  /compliance/api/v1/assignments/connection/{connection_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving all benchmark assigned to a connection with connection
+        id
+      parameters:
+      - description: Connection ID
+        in: path
+        name: connection_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get list of benchmark assignments for a connection
       tags:
       - benchmarks_assignment
   /compliance/api/v1/benchmarks/{benchmark_id}/policies:

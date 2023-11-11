@@ -13,7 +13,6 @@ import (
 )
 
 type ComplianceServiceClient interface {
-	GetAllBenchmarkAssignmentsByConnectionId(ctx *httpclient.Context, sourceID string) ([]compliance.BenchmarkAssignment, error)
 	ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.BenchmarkAssignedEntities, error)
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
@@ -31,16 +30,6 @@ type complianceClient struct {
 
 func NewComplianceClient(baseURL string) ComplianceServiceClient {
 	return &complianceClient{baseURL: baseURL}
-}
-
-func (s *complianceClient) GetAllBenchmarkAssignmentsByConnectionId(ctx *httpclient.Context, sourceID string) ([]compliance.BenchmarkAssignment, error) {
-	url := fmt.Sprintf("%s/api/v1/assignments/connection?connectionId=%s", s.baseURL, sourceID)
-
-	var response []compliance.BenchmarkAssignment
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		return nil, err
-	}
-	return response, nil
 }
 
 func (s *complianceClient) ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.BenchmarkAssignedEntities, error) {
