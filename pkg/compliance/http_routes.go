@@ -558,23 +558,23 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 	for _, src := range srcs {
 		summary, ok := res[src.ID.String()]
 		if !ok {
-			summary.SeverityResult = map[kaytuTypes.FindingSeverity]int{}
+			summary.Result.SeverityResult = map[kaytuTypes.FindingSeverity]int{}
 		}
 
 		account := api.AccountsFindingsSummary{
 			AccountName:   src.ConnectionName,
 			AccountId:     src.ConnectionID,
-			SecurityScore: summary.SecurityScore,
+			SecurityScore: summary.Result.SecurityScore,
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
 				Low      int `json:"low"`
 				Medium   int `json:"medium"`
 			}{
-				Critical: summary.SeverityResult[kaytuTypes.FindingSeverityCritical],
-				High:     summary.SeverityResult[kaytuTypes.FindingSeverityHigh],
-				Low:      summary.SeverityResult[kaytuTypes.FindingSeverityLow],
-				Medium:   summary.SeverityResult[kaytuTypes.FindingSeverityMedium],
+				Critical: summary.Result.SeverityResult[kaytuTypes.FindingSeverityCritical],
+				High:     summary.Result.SeverityResult[kaytuTypes.FindingSeverityHigh],
+				Low:      summary.Result.SeverityResult[kaytuTypes.FindingSeverityLow],
+				Medium:   summary.Result.SeverityResult[kaytuTypes.FindingSeverityMedium],
 			},
 			LastCheckTime: time.Unix(evaluatedAt, 0),
 		}
@@ -773,23 +773,23 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		sResult := kaytuTypes.SeverityResult{}
 		if len(connectionIDs) > 0 {
 			for _, connectionID := range connectionIDs {
-				csResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].QueryResult)
-				sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].SeverityResult)
-				response.TotalResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].QueryResult)
-				response.TotalChecks.AddResultMap(summaryAtTime.Connections.Connections[connectionID].SeverityResult)
+				csResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+				sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
+				response.TotalResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 			}
 		} else if len(resourceCollections) > 0 {
 			for _, resourceCollection := range resourceCollections {
-				csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.QueryResult)
-				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.SeverityResult)
-				response.TotalResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.QueryResult)
-				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.SeverityResult)
+				csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
+				response.TotalResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 			}
 		} else {
-			csResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.QueryResult)
-			sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.SeverityResult)
-			response.TotalResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.QueryResult)
-			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.SeverityResult)
+			csResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+			sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
+			response.TotalResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 		}
 
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
@@ -890,17 +890,17 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	sResult := kaytuTypes.SeverityResult{}
 	if len(connectionIDs) > 0 {
 		for _, connectionID := range connectionIDs {
-			csResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].QueryResult)
-			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].SeverityResult)
+			csResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 		}
 	} else if len(resourceCollections) > 0 {
 		for _, resourceCollection := range resourceCollections {
-			csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.QueryResult)
-			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.SeverityResult)
+			csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 		}
 	} else {
-		csResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.QueryResult)
-		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.SeverityResult)
+		csResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 	}
 
 	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(ctx), benchmarkID)
@@ -931,19 +931,26 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmark_id	path		string	true	"Benchmark ID"
-//	@Success	200				{object}	[]api.PolicySummary
+//	@Param		benchmark_id		path		string		true	"Benchmark ID"
+//	@Param		connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param		connectionGroup		query		[]string		false	"Connection groups to filter by "//	@Success	200				{object}	[]api.PolicySummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		h.logger.Error("failed to get connection IDs", zap.Error(err))
+		return err
+	}
+
 	policiesMap := make(map[string]api.Policy)
-	err := h.populatePoliciesMap(benchmarkID, policiesMap)
+	err = h.populatePoliciesMap(benchmarkID, policiesMap)
 	if err != nil {
 		return err
 	}
 
-	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID, connectionIDs)
 	if err != nil {
 		return err
 	}
@@ -1000,11 +1007,19 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		benchmark_id	path		string	true	"Benchmark ID"
 //	@Param		policyId		path		string	true	"Policy ID"
+//	@Param		connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param		connectionGroup		query		[]string		false	"Connection groups to filter by "
 //	@Success	200				{object}	api.PolicySummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId [get]
 func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 	policyID := ctx.Param("policyId")
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		h.logger.Error("failed to get connection IDs", zap.Error(err))
+		return err
+	}
 
 	policy, err := h.db.GetPolicy(policyID)
 	if err != nil {
@@ -1022,7 +1037,7 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 		apiPolicy.Connector, _ = source.ParseType(query.Connector)
 	}
 
-	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID, connectionIDs)
 	if err != nil {
 		return err
 	}

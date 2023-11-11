@@ -40,14 +40,16 @@ func (w *Worker) RunJob(j Job) error {
 		EvaluatedAtEpoch: j.CreatedAt.Unix(),
 
 		Connections: types2.BenchmarkSummaryResult{
-			BenchmarkResult: types2.Result{
-				QueryResult:    map[types.ComplianceResult]int{},
-				SeverityResult: map[types.FindingSeverity]int{},
-				SecurityScore:  0,
+			BenchmarkResult: types2.ResultGroup{
+				Result: types2.Result{
+					QueryResult:    map[types.ComplianceResult]int{},
+					SeverityResult: map[types.FindingSeverity]int{},
+					SecurityScore:  0,
+				},
+				ResourceTypes: map[string]types2.Result{},
+				Policies:      map[string]types2.PolicyResult{},
 			},
-			Connections:   map[string]types2.Result{},
-			ResourceTypes: map[string]types2.Result{},
-			Policies:      map[string]types2.PolicyResult{},
+			Connections: map[string]types2.ResultGroup{},
 		},
 		ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
 	}
