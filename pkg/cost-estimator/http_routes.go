@@ -22,12 +22,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Tags			cost-estimator
 //	@Produce		json
 //	@Param			resourceId		query		string	true	"Connection ID"
-//	@Param			resourceType	path		string	true	"ResourceType"
+//	@Param			resourceType	query		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId} [get]
+//	@Router			/cost_estimator/api/v1/cost/azure [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.QueryParam("resourceId")
-	resourceType := ctx.Param("resourceType")
+	resourceType := ctx.QueryParam("resourceType")
 
 	if _, ok := azureResourceTypes[resourceType]; !ok {
 		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("resource type not found"))
@@ -48,12 +48,12 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Tags			cost-estimator
 //	@Produce		json
 //	@Param			resourceId		query		string	true	"Connection ID"
-//	@Param			resourceType	path		string	true	"ResourceType"
+//	@Param			resourceType	query		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/aws/{resourceType} [get]
+//	@Router			/cost_estimator/api/v1/cost/aws [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.QueryParam("resourceId")
-	resourceType := ctx.Param("resourceType")
+	resourceType := ctx.QueryParam("resourceType")
 
 	if _, ok := awsResourceTypes[resourceType]; !ok {
 		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("resource type not found"))
