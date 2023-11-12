@@ -117,14 +117,14 @@ func (s *schedulerClient) GetLatestComplianceJobForBenchmark(ctx *httpclient.Con
 func (s *schedulerClient) GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (*model.AnalyticsJob, error) {
 	url := fmt.Sprintf("%s/api/v1/analytics/job/%d", s.baseURL, jobID)
 
-	var res *model.AnalyticsJob
+	var res model.AnalyticsJob
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
 	}
-	return res, nil
+	return &res, nil
 }
 
 func (s *schedulerClient) GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error) {
