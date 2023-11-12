@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"net/http"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -22,7 +23,9 @@ type SchedulerServiceClient interface {
 	GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkID string) (*api.ComplianceJob, error)
 	GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error)
 	TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error)
+	GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (*model.AnalyticsJob, error)
 	TriggerInsightJob(ctx *httpclient.Context, insightID uint) ([]uint, error)
+	GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error)
 }
 
 type schedulerClient struct {
@@ -109,6 +112,32 @@ func (s *schedulerClient) GetLatestComplianceJobForBenchmark(ctx *httpclient.Con
 		return nil, err
 	}
 	return &res, nil
+}
+
+func (s *schedulerClient) GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (*model.AnalyticsJob, error) {
+	url := fmt.Sprintf("%s/api/v1/analytics/job/%d", s.baseURL, jobID)
+
+	var res *model.AnalyticsJob
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, res); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *schedulerClient) GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/job/%d", s.baseURL, jobID)
+
+	var res *model.InsightJob
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, res); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return res, nil
 }
 
 func (s *schedulerClient) GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error) {

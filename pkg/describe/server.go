@@ -64,9 +64,11 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
+	v1.GET("/insight/job/:job_id", httpserver.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
 	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
+	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
 	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
@@ -311,6 +313,36 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.ComplianceJob{})
 	}
 	return ctx.JSON(http.StatusOK, lastComplianceJob.ToApi())
+}
+
+func (h HttpServer) GetAnalyticsJob(ctx echo.Context) error {
+	jobIDstr := ctx.Param("job_id")
+	jobID, err := strconv.ParseInt(jobIDstr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	job, err := h.Scheduler.db.GetAnalyticsJobByID(uint(jobID))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, job)
+}
+
+func (h HttpServer) GetInsightJob(ctx echo.Context) error {
+	jobIDstr := ctx.Param("job_id")
+	jobID, err := strconv.ParseInt(jobIDstr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	job, err := h.Scheduler.db.GetInsightJobById(uint(jobID))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, job)
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {

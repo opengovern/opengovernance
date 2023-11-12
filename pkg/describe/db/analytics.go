@@ -8,6 +8,18 @@ import (
 	"gorm.io/gorm"
 )
 
+func (db Database) GetAnalyticsJobByID(jobID uint) (*model.AnalyticsJob, error) {
+	var job model.AnalyticsJob
+	tx := db.ORM.Model(&model.AnalyticsJob{}).Where("id = ?", jobID).First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
 func (db Database) FetchLastAnalyticsJobForJobType(analyticsJobType model.AnalyticsJobType) (*model.AnalyticsJob, error) {
 	var job model.AnalyticsJob
 	tx := db.ORM.Model(&model.AnalyticsJob{}).Order("created_at DESC").Where("type = ?", analyticsJobType).First(&job)
