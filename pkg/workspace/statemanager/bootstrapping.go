@@ -13,6 +13,7 @@ import (
 	api4 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -26,6 +27,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 	if !workspace.IsCreated {
 		if len(creds) > 0 {
+			s.logger.Info("creating workspace", zap.String("workspaceID", workspace.ID))
 			return s.createWorkspace(workspace)
 		}
 		return nil
@@ -33,6 +35,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 	for _, cred := range creds {
 		if !cred.IsCreated {
+			s.logger.Info("adding credential", zap.String("workspaceID", workspace.ID), zap.Uint("credentialID", cred.ID))
 			err := s.addCredentialToWorkspace(workspace, cred)
 			if err != nil {
 				return err
@@ -51,11 +54,13 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 		// waiting for all connections to finish
 		if status == nil || *status != api.DescribeAllJobsStatusResourcesPublished {
+			s.logger.Info("waiting for connections to finish describing", zap.String("workspaceID", workspace.ID))
 			return nil
 		}
 
 		// run analytics if not running
 		if workspace.AnalyticsJobID <= 0 {
+			s.logger.Info("running analytics", zap.String("workspaceID", workspace.ID))
 			jobID, err := schedulerClient.TriggerAnalyticsJob(hctx)
 			if err != nil {
 				return err
@@ -72,6 +77,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 		// run insight if not running
 		if len(workspace.InsightJobID) == 0 {
+			s.logger.Info("running insights", zap.String("workspaceID", workspace.ID))
 			ins, err := complianceClient.ListInsights(hctx)
 			if err != nil {
 				return err
@@ -98,6 +104,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 
 		// assign compliance for aws cis v2, azure cis v2 (jobs will be triggeredl
 		if !workspace.ComplianceTriggered {
+			s.logger.Info("running compliance", zap.String("workspaceID", workspace.ID))
 			srcs, err := onboardClient.ListSources(hctx, []source.Type{source.CloudAWS})
 			if err != nil {
 				return err
@@ -129,6 +136,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			return nil
 		}
 
+		s.logger.Info("checking analytics job", zap.String("workspaceID", workspace.ID))
 		job, err := schedulerClient.GetAnalyticsJob(hctx, workspace.AnalyticsJobID)
 		if err != nil {
 			return err
@@ -137,9 +145,11 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			return errors.New("analytics job not found")
 		}
 		if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
+			s.logger.Info("analytics job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", job.ID))
 			return nil
 		}
 
+		s.logger.Info("checking insight job", zap.String("workspaceID", workspace.ID))
 		for _, insJobID := range workspace.InsightJobID {
 			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
 			if err != nil {
@@ -149,19 +159,23 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 				return errors.New("insight job not found")
 			}
 			if job.Status == api3.InsightJobInProgress {
+				s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", job.ID))
 				return nil
 			}
 		}
 
+		s.logger.Info("checking compliance job", zap.String("workspaceID", workspace.ID))
 		complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
 		if err != nil {
 			return err
 		}
 
 		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
+			s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
 			return nil
 		}
 
+		s.logger.Info("workspace provisioned", zap.String("workspaceID", workspace.ID))
 		err = s.db.UpdateWorkspaceStatus(workspace.ID, api4.StatusProvisioned)
 		if err != nil {
 			return err
