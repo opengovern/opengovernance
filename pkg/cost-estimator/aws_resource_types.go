@@ -12,7 +12,7 @@ import (
 func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::EC2::Instance")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
@@ -38,7 +38,7 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::EC2::Volume")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
@@ -68,7 +68,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 	if resourceType == "AWS::ElasticLoadBalancingV2::LoadBalancer" {
 		response, err = es.GetElasticsearch(h.client, resourceId, "AWS::ElasticLoadBalancingV2::LoadBalancer")
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("failed to get resource")
 		}
 		if len(response.Hits.Hits) == 0 {
 			return 0, fmt.Errorf("no resource found")
@@ -84,7 +84,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 	} else if resourceType == "AWS::ElasticLoadBalancing::LoadBalancer" {
 		response, err = es.GetElasticsearch(h.client, resourceId, "AWS::ElasticLoadBalancing::LoadBalancer")
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("failed to get resource")
 		}
 		if len(response.Hits.Hits) == 0 {
 			return 0, fmt.Errorf("no resource found")
@@ -110,7 +110,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::RDS::DBInstance")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
