@@ -136,6 +136,12 @@ func (s *JobScheduler) runSummarizer() error {
 		}
 	}
 
+	err = s.db.RetryFailedSummarizers()
+	if err != nil {
+		s.logger.Error("failed to retry failed runners", zap.Error(err))
+		return err
+	}
+
 	return nil
 }
 
