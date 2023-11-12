@@ -21,16 +21,16 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Security		BearerToken
 //	@Tags			cost-estimator
 //	@Produce		json
-//	@Param			resourceId		path		string	true	"ResourceID"
+//	@Param			resourceId		query		string	true	"Connection ID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200				{object}	int
 //	@Router			/cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId} [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
-	resourceId := ctx.Param("resourceId")
+	resourceId := ctx.QueryParam("resourceId")
 	resourceType := ctx.Param("resourceType")
 
 	if _, ok := azureResourceTypes[resourceType]; !ok {
-		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("resource Type not found"))
+		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("resource type not found"))
 	}
 	cost, err := azureResourceTypes[resourceType](h, resourceType, resourceId)
 	if err != nil {
@@ -47,17 +47,20 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			cost-estimator
 //	@Produce		json
-//	@Param			resourceId		path		string	true	"ResourceID"
+//	@Param			resourceId		query		string	true	"Connection ID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200				{object}	int
-//	@Router			/cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId} [get]
+//	@Router			/cost_estimator/api/v1/cost/aws/{resourceType} [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
-	resourceId := ctx.Param("resourceId")
+	resourceId := ctx.QueryParam("resourceId")
 	resourceType := ctx.Param("resourceType")
 
+	if _, ok := awsResourceTypes[resourceType]; !ok {
+		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("resource type not found"))
+	}
 	cost, err := awsResourceTypes[resourceType](h, resourceType, resourceId)
 	if err != nil {
-		return err
+		return ctx.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.JSON(http.StatusOK, cost)
