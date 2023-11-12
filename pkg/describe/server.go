@@ -396,6 +396,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(count, sum)
 
 	if count == 0 {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
