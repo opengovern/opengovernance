@@ -34,6 +34,7 @@ func (s *Database) CountConnectionsByConnector(connector source.Type) (int64, er
 
 func (s *Database) SetIsCreated(id uint) error {
 	tx := s.orm.
+		Model(&Credential{}).
 		Where("id = ?", id).
 		Update("is_created", true)
 	if tx.Error != nil {
