@@ -95,3 +95,42 @@ func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, search
 
 	return &response, nil
 }
+
+type InventoryCountResponse struct {
+	Took     int  `json:"took"`
+	TimedOut bool `json:"timed_out"`
+	Shards   struct {
+		Total      int `json:"total"`
+		Successful int `json:"successful"`
+		Skipped    int `json:"skipped"`
+		Failed     int `json:"failed"`
+	} `json:"_shards"`
+	Hits struct {
+		Total struct {
+			Value    int64  `json:"value"`
+			Relation string `json:"relation"`
+		} `json:"total"`
+		MaxScore interface{}   `json:"max_score"`
+		Hits     []interface{} `json:"hits"`
+	} `json:"hits"`
+}
+
+func GetInventoryCountResponse(client kaytu.Client) (int64, error) {
+	root := map[string]any{}
+	root["size"] = 0
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return 0, err
+	}
+
+	var response InventoryCountResponse
+	err = client.Search(context.Background(), es.InventorySummaryIndex,
+		string(queryBytes), &response)
+	if err != nil {
+		fmt.Println("query=", string(queryBytes))
+		return 0, err
+	}
+
+	return response.Hits.Total.Value, nil
+}

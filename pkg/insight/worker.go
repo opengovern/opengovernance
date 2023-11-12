@@ -44,6 +44,7 @@ type WorkerConfig struct {
 	Kafka                 config.Kafka
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
+	SteampipePg           config.Postgres
 	PrometheusPushAddress string
 }
 
@@ -155,6 +156,7 @@ func (w *Worker) Run() error {
 	}
 	w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
 	result := job.Do(w.config.ElasticSearch,
+		w.config.SteampipePg,
 		w.onboardClient,
 		w.inventoryClient,
 		w.kfkProducer,

@@ -351,3 +351,12 @@ func (db Database) ListAllPendingConnection() ([]string, error) {
 	}
 	return connectionIDs, nil
 }
+
+func (db Database) CountJobsAndResources() (int64, int64, error) {
+	var count, sum int64
+	err := db.ORM.Raw("select count(*), sum(described_resource_count) from describe_connection_jobs").Row().Scan(&count, &sum)
+	if err != nil {
+		return 0, 0, err
+	}
+	return count, sum, nil
+}

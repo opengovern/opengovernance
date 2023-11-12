@@ -1,6 +1,8 @@
 package api
 
 import (
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -12,6 +14,11 @@ type BenchmarkAssignment struct {
 	ConnectionId         *string   `json:"connectionId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 	ResourceCollectionId *string   `json:"resourceCollectionId" example:"example-rc"`                   // Resource Collection ID
 	AssignedAt           time.Time `json:"assignedAt"`                                                  // Unix timestamp
+}
+
+type ConnectionAssignedBenchmark struct {
+	Benchmark Benchmark `json:"benchmarkId"`
+	Status    bool      `json:"status" example:"true"` // Status
 }
 
 type BenchmarkAssignedConnection struct {
@@ -53,8 +60,12 @@ type GetFindingsRequest struct {
 }
 
 type TopFieldRecord struct {
-	Value string `json:"value"`
-	Count int    `json:"count"`
+	Connection   *onboardApi.Connection
+	ResourceType *inventoryApi.ResourceType
+	Service      *string
+
+	Field *string `json:"field"`
+	Count int     `json:"count"`
 }
 
 type BenchmarkRemediation struct {

@@ -55,6 +55,17 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 	case api.StatusDeleting:
+		creds, err := s.db.ListCredentialsByWorkspaceID(workspace.ID)
+		if err != nil {
+			return fmt.Errorf("listing credentials: %w", err)
+		}
+		for _, cred := range creds {
+			err = s.db.DeleteCredential(cred.ID)
+			if err != nil {
+				return fmt.Errorf("deleting credentials: %w", err)
+			}
+		}
+
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
@@ -242,14 +253,9 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	return nil
 }
 
-func (s *Service) addCredentialToWorkspace(workspaceID string, credentialID uint) error {
-	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspaceID)
+func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Credential) error {
+	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
-
-	cred, err := s.db.GetCredentialByID(credentialID)
-	if err != nil {
-		return err
-	}
 
 	credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
 		SourceType: cred.ConnectorType,
@@ -259,12 +265,13 @@ func (s *Service) addCredentialToWorkspace(workspaceID string, credentialID uint
 		return err
 	}
 
-	_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole}, credential.ID)
+	limits := api.GetLimitsByTier(workspace.Tier)
+	_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
 	if err != nil {
 		return err
 	}
 
-	err = s.db.SetCredentialCreated(credentialID)
+	err = s.db.SetIsCreated(cred.ID)
 	if err != nil {
 		return err
 	}

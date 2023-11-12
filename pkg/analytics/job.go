@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"reflect"
 	"regexp"
 	"strings"
@@ -26,15 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type JobStatus string
-
-const (
-	JobCreated              JobStatus = "CREATED"
-	JobInProgress           JobStatus = "IN_PROGRESS"
-	JobCompletedWithFailure JobStatus = "COMPLETED_WITH_FAILURE"
-	JobCompleted            JobStatus = "COMPLETED"
-)
-
 type Job struct {
 	JobID                 uint
 	ResourceCollectionIDs []string
@@ -42,7 +34,7 @@ type Job struct {
 
 type JobResult struct {
 	JobID  uint
-	Status JobStatus
+	Status api.JobStatus
 	Error  string
 }
 
@@ -58,12 +50,12 @@ func (j *Job) Do(
 ) JobResult {
 	result := JobResult{
 		JobID:  j.JobID,
-		Status: JobCompleted,
+		Status: api.JobCompleted,
 		Error:  "",
 	}
 	fail := func(err error) JobResult {
 		result.Error = err.Error()
-		result.Status = JobCompletedWithFailure
+		result.Status = api.JobCompletedWithFailure
 		return result
 	}
 

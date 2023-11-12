@@ -1084,6 +1084,9 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						localConn.LifecycleState = ConnectionLifecycleStateArchived
 					} else if localConn.LifecycleState == ConnectionLifecycleStateArchived {
 						localConn.LifecycleState = ConnectionLifecycleStateDiscovered
+						if credential.AutoOnboardEnabled {
+							localConn.LifecycleState = ConnectionLifecycleStateOnboard
+						}
 					}
 					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
 						// tracer :
@@ -1142,7 +1145,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		span4.End()
 
 		if count >= maxConnections {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("maximum number of connections reached: [%d/%d]", count, maxConnections))
 		}
 
 		src := NewAWSAutoOnboardedConnection(
