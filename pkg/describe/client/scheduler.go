@@ -50,7 +50,7 @@ func (s *schedulerClient) GetStack(ctx *httpclient.Context, stackID string) (*ap
 }
 
 func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error) {
-	url := fmt.Sprintf("%s/describe/all/jobs/state", s.baseURL)
+	url := fmt.Sprintf("%s/api/v1/describe/all/jobs/state", s.baseURL)
 
 	var status api.DescribeAllJobsStatus
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &status); err != nil {
@@ -63,7 +63,7 @@ func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*ap
 }
 
 func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error) {
-	url := fmt.Sprintf("%s/analytics/trigger", s.baseURL)
+	url := fmt.Sprintf("%s/api/v1/analytics/trigger", s.baseURL)
 
 	var jobID uint
 	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobID); err != nil {
@@ -76,7 +76,7 @@ func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, er
 }
 
 func (s *schedulerClient) TriggerInsightJob(ctx *httpclient.Context, insightID uint) ([]uint, error) {
-	url := fmt.Sprintf("%s/insight/trigger/%d", s.baseURL, insightID)
+	url := fmt.Sprintf("%s/api/v1/insight/trigger/%d", s.baseURL, insightID)
 
 	var jobIDs []uint
 	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobIDs); err != nil {
