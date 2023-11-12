@@ -118,12 +118,23 @@ type AzureVirtualMachinePrice struct {
 	Price         float64
 }
 
+// AzureManagedStoragePrice Product Name contains "Disk"
 type AzureManagedStoragePrice struct {
 	SKU           string `gorm:"primaryKey"`
 	EffectiveDate int64
 	ArmRegionName string
 	SkuName       string
 	Meter         string
+	PriceUnit     string
+	Price         float64
+}
+
+// AzureLoadBalancerPrice Service = Load Balancer, Family = Networking
+type AzureLoadBalancerPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	MeterName     string
 	PriceUnit     string
 	Price         float64
 }
