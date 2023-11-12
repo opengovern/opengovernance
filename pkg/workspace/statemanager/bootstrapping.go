@@ -2,7 +2,7 @@ package statemanager
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
+	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
@@ -136,7 +136,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		if job == nil {
 			return errors.New("analytics job not found")
 		}
-		if job.Status == analytics.JobCreated || job.Status == analytics.JobInProgress {
+		if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
 			return nil
 		}
 

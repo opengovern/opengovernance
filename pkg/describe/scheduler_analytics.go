@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -64,7 +65,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		return 0, err
 	}
 
-	if lastJob != nil && lastJob.Status == analytics.JobInProgress {
+	if lastJob != nil && lastJob.Status == api.JobInProgress {
 		s.logger.Info("There is ongoing AnalyticsJob skipping this schedule")
 		return 0, fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
@@ -88,7 +89,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 			zap.Uint("jobId", job.ID),
 			zap.Error(err),
 		)
-		job.Status = analytics.JobCompletedWithFailure
+		job.Status = api.JobCompletedWithFailure
 		err = s.db.UpdateAnalyticsJobStatus(job)
 		if err != nil {
 			s.logger.Error("Failed to update AnalyticsJob status",
@@ -140,7 +141,7 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 	return model.AnalyticsJob{
 		Model:          gorm.Model{},
 		Type:           analyticsJobType,
-		Status:         analytics.JobCreated,
+		Status:         api.JobCreated,
 		FailureMessage: "",
 	}
 }
@@ -188,7 +189,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				zap.String("status", string(result.Status)),
 			)
 
-			if result.Status == analytics.JobCompleted {
+			if result.Status == api.JobCompleted {
 				AnalyticsJobResultsCount.WithLabelValues("successful").Inc()
 			} else {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
