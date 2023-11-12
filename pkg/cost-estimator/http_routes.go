@@ -1,6 +1,7 @@
 package cost_estimator
 
 import (
+	"fmt"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
@@ -28,9 +29,12 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
 
+	if _, ok := azureResourceTypes[resourceType]; !ok {
+		return ctx.JSON(http.StatusBadRequest, fmt.Errorf("resource Type not found"))
+	}
 	cost, err := azureResourceTypes[resourceType](h, resourceType, resourceId)
 	if err != nil {
-		return err
+		return ctx.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.JSON(http.StatusOK, cost)

@@ -12,7 +12,7 @@ import (
 func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/virtualMachines")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
@@ -37,7 +37,7 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/disks")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
@@ -62,7 +62,7 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Network/loadBalancers")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
