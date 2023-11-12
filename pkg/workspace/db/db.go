@@ -3,6 +3,8 @@ package db
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
+	"strconv"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"gorm.io/gorm/clause"
@@ -105,7 +107,12 @@ func (s *Database) SetWorkspaceAnalyticsJobID(workspaceID string, jobID uint) er
 }
 
 func (s *Database) SetWorkspaceInsightsJobIDs(workspaceID string, jobIDs []uint) error {
-	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("insight_job_id", jobIDs).Error
+	var jobIDstr []string
+	for _, j := range jobIDs {
+		jobIDstr = append(jobIDstr, strconv.FormatInt(int64(j), 10))
+	}
+	str := strings.Join(jobIDstr, ",")
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("insight_jobs_id", str).Error
 }
 
 func (s *Database) SetWorkspaceComplianceTriggered(workspaceID string) error {

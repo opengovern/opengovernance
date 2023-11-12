@@ -76,7 +76,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		complianceClient := client.NewComplianceClient(complianceURL)
 
 		// run insight if not running
-		if len(workspace.InsightJobID) == 0 {
+		if len(workspace.InsightJobsID) == 0 {
 			s.logger.Info("running insights", zap.String("workspaceID", workspace.ID))
 			ins, err := complianceClient.ListInsights(hctx)
 			if err != nil {
@@ -150,7 +150,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		}
 
 		s.logger.Info("checking insight job", zap.String("workspaceID", workspace.ID))
-		for _, insJobID := range workspace.InsightJobID {
+		for _, insJobID := range workspace.InsightJobsID {
 			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
 			if err != nil {
 				return err
