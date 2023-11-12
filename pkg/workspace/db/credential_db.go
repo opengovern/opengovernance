@@ -24,7 +24,7 @@ func (s *Database) CreateCredential(cred *Credential) error {
 
 func (s *Database) CountConnectionsByConnector(connector source.Type) (int64, error) {
 	var count int64
-	tx := s.orm.Raw("select sum(connection_count) from credentials where connector_type = ?", connector).Find(&count)
+	tx := s.orm.Raw("select coalesce(sum(connection_count),0) from credentials where connector_type = ?", connector).Find(&count)
 	err := tx.Error
 	if err != nil {
 		return 0, err
