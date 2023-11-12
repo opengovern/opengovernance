@@ -7,11 +7,13 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"go.uber.org/zap"
 )
 
 func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::EC2::Instance")
 	if err != nil {
+		h.logger.Error("failed to get resource", zap.Error(err))
 		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
@@ -29,6 +31,7 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 
 	cost, err := h.workspaceClient.GetEC2InstanceCost(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
 	}
 
@@ -38,6 +41,7 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::EC2::Volume")
 	if err != nil {
+		h.logger.Error("failed to get resource", zap.Error(err))
 		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
@@ -55,6 +59,7 @@ func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, err
 
 	cost, err := h.workspaceClient.GetEC2VolumeCost(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
 	}
 
@@ -68,6 +73,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 	if resourceType == "AWS::ElasticLoadBalancingV2::LoadBalancer" {
 		response, err = es.GetElasticsearch(h.client, resourceId, "AWS::ElasticLoadBalancingV2::LoadBalancer")
 		if err != nil {
+			h.logger.Error("failed to get resource", zap.Error(err))
 			return 0, fmt.Errorf("failed to get resource")
 		}
 		if len(response.Hits.Hits) == 0 {
@@ -84,6 +90,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 	} else if resourceType == "AWS::ElasticLoadBalancing::LoadBalancer" {
 		response, err = es.GetElasticsearch(h.client, resourceId, "AWS::ElasticLoadBalancing::LoadBalancer")
 		if err != nil {
+			h.logger.Error("failed to get resource", zap.Error(err))
 			return 0, fmt.Errorf("failed to get resource")
 		}
 		if len(response.Hits.Hits) == 0 {
@@ -101,6 +108,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 
 	cost, err := h.workspaceClient.GetLBCost(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
 	}
 
@@ -110,6 +118,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::RDS::DBInstance")
 	if err != nil {
+		h.logger.Error("failed to get resource", zap.Error(err))
 		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
@@ -126,6 +135,7 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 	}
 	cost, err := h.workspaceClient.GetRDSInstance(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
 	}
 
