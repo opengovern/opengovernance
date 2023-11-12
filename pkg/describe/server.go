@@ -310,7 +310,7 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 		return err
 	}
 	if lastComplianceJob == nil {
-		return ctx.JSON(http.StatusOK, api.ComplianceJob{})
+		return ctx.JSON(http.StatusOK, nil)
 	}
 	return ctx.JSON(http.StatusOK, lastComplianceJob.ToApi())
 }

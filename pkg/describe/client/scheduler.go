@@ -104,14 +104,14 @@ func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceTyp
 func (s *schedulerClient) GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkId string) (*api.ComplianceJob, error) {
 	url := fmt.Sprintf("%s/api/v1/compliance/status/%s", s.baseURL, benchmarkId)
 
-	var res api.ComplianceJob
+	var res *api.ComplianceJob
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
 	}
-	return &res, nil
+	return res, nil
 }
 
 func (s *schedulerClient) GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (*model.AnalyticsJob, error) {

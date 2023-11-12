@@ -908,6 +908,11 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return err
 	}
+
+	var lastJobStatus string
+	if lastJob != nil {
+		lastJobStatus = string(lastJob.Status)
+	}
 	response := api.BenchmarkEvaluationSummary{
 		ID:            benchmark.ID,
 		Title:         benchmark.Title,
@@ -918,7 +923,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Result:        csResult,
 		Checks:        sResult,
 		EvaluatedAt:   time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
-		LastJobStatus: string(lastJob.Status),
+		LastJobStatus: lastJobStatus,
 	}
 
 	return ctx.JSON(http.StatusOK, response)
