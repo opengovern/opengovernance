@@ -124,13 +124,15 @@ func GetInventoryCountResponse(client kaytu.Client) (int64, error) {
 		return 0, err
 	}
 
+	fmt.Println("GetInventoryCountResponse, query=", string(queryBytes))
 	var response InventoryCountResponse
-	err = client.Search(context.Background(), es.InventorySummaryIndex,
-		string(queryBytes), &response)
+	err = client.SearchWithTrackTotalHits(context.Background(), es.InventorySummaryIndex,
+		string(queryBytes), nil, &response, true)
 	if err != nil {
 		fmt.Println("query=", string(queryBytes))
 		return 0, err
 	}
+	fmt.Println("GetInventoryCountResponse, response=", response)
 
 	return response.Hits.Total.Value, nil
 }
