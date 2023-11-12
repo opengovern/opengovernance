@@ -131,7 +131,7 @@ func (s *schedulerClient) GetInsightJob(ctx *httpclient.Context, jobID uint) (*m
 	url := fmt.Sprintf("%s/api/v1/insight/job/%d", s.baseURL, jobID)
 
 	var res *model.InsightJob
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, res); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
