@@ -12,7 +12,11 @@ import (
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	api4 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -248,6 +252,8 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 }
 
 func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, error) {
+	hctx := &httpclient.Context{UserRole: authapi.InternalRole}
+
 	if ws.Status == api.StatusBootstrapping {
 		if !ws.IsBootstrapInputFinished {
 			return api.BootstrapStatus_OnboardConnection, nil
@@ -255,6 +261,61 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 		if !ws.IsCreated {
 			return api.BootstrapStatus_CreatingWorkspace, nil
 		}
+
+		schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
+		schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
+
+		status, err := schedulerClient.GetDescribeAllJobsStatus(hctx)
+		if err != nil {
+			return api.BootstrapStatus_WaitingForDiscovery, err
+		}
+
+		if status == nil || *status != api3.DescribeAllJobsStatusResourcesPublished {
+			return api.BootstrapStatus_WaitingForDiscovery, nil
+		}
+
+		job, err := schedulerClient.GetAnalyticsJob(hctx, ws.AnalyticsJobID)
+		if err != nil {
+			return api.BootstrapStatus_WaitingForAnalytics, err
+		}
+		if job == nil {
+			return api.BootstrapStatus_WaitingForAnalytics, nil
+		}
+		if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
+			return api.BootstrapStatus_WaitingForAnalytics, nil
+		}
+
+		complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
+		if err != nil {
+			return api.BootstrapStatus_WaitingForCompliance, err
+		}
+
+		if complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed {
+			return api.BootstrapStatus_WaitingForCompliance, nil
+		}
+
+		complianceJob, err = schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
+		if err != nil {
+			return api.BootstrapStatus_WaitingForCompliance, err
+		}
+
+		if complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed {
+			return api.BootstrapStatus_WaitingForCompliance, nil
+		}
+
+		for _, insJobID := range ws.InsightJobsID {
+			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
+			if err != nil {
+				return api.BootstrapStatus_WaitingForInsights, err
+			}
+			if job == nil {
+				return api.BootstrapStatus_WaitingForInsights, errors.New("insight job not found")
+			}
+			if job.Status == api4.InsightJobInProgress {
+				return api.BootstrapStatus_WaitingForInsights, nil
+			}
+		}
+
 		return api.BootstrapStatus_WaitingForDiscovery, nil
 	}
 

@@ -164,14 +164,25 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			}
 		}
 
-		s.logger.Info("checking compliance job", zap.String("workspaceID", workspace.ID))
+		s.logger.Info("checking aws compliance job", zap.String("workspaceID", workspace.ID))
 		complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
 		if err != nil {
 			return err
 		}
 
 		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
-			s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
+			s.logger.Info("aws compliance job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
+			return nil
+		}
+
+		s.logger.Info("checking azure compliance job", zap.String("workspaceID", workspace.ID))
+		complianceJob, err = schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
+		if err != nil {
+			return err
+		}
+
+		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
+			s.logger.Info("azure compliance job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
 			return nil
 		}
 
