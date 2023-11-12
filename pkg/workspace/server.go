@@ -394,6 +394,9 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
+		if sdkCnf.Region == "" {
+			sdkCnf.Region = "us-east-1"
+		}
 		accounts, err := describer.OrganizationAccounts(context.Background(), sdkCnf)
 		if err != nil {
 			if !ignoreAwsOrgError(err) {
