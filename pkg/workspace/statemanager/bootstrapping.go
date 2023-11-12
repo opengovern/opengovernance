@@ -111,7 +111,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			}
 
 			for _, src := range srcs {
-				_, err = complianceClient.CreateBenchmarkAssignment(hctx, "aws_cis_v200", src.ConnectionID)
+				_, err = complianceClient.CreateBenchmarkAssignment(hctx, "aws_cis_v200", src.ID.String())
 				if err != nil {
 					return err
 				}
@@ -123,7 +123,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			}
 
 			for _, src := range srcs {
-				_, err = complianceClient.CreateBenchmarkAssignment(hctx, "azure_cis_v200", src.ConnectionID)
+				_, err = complianceClient.CreateBenchmarkAssignment(hctx, "azure_cis_v200", src.ID.String())
 				if err != nil {
 					return err
 				}
