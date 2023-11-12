@@ -3,7 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"gorm.io/gorm"
 )
@@ -55,8 +55,8 @@ func (db Database) UpdateAnalyticsJobsTimedOut(analyticsIntervalHours int64) err
 	tx := db.ORM.
 		Model(&model.AnalyticsJob{}).
 		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", analyticsIntervalHours*2)).
-		Where("status IN ?", []string{string(analytics.JobInProgress)}).
-		Updates(model.AnalyticsJob{Status: analytics.JobCompletedWithFailure, FailureMessage: "Job timed out"})
+		Where("status IN ?", []string{string(api.JobInProgress)}).
+		Updates(model.AnalyticsJob{Status: api.JobCompletedWithFailure, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -64,7 +64,7 @@ func (db Database) UpdateAnalyticsJobsTimedOut(analyticsIntervalHours int64) err
 	return nil
 }
 
-func (db Database) UpdateAnalyticsJob(jobID uint, status analytics.JobStatus, failedMessage string) error {
+func (db Database) UpdateAnalyticsJob(jobID uint, status api.JobStatus, failedMessage string) error {
 	tx := db.ORM.Model(&model.AnalyticsJob{}).
 		Where("id = ?", jobID).
 		Updates(model.AnalyticsJob{
