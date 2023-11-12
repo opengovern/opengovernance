@@ -59,6 +59,31 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	return cost, nil
 }
 
+func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
+	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Network/loadBalancers")
+	if err != nil {
+		return 0, err
+	}
+	if len(response.Hits.Hits) == 0 {
+		return 0, fmt.Errorf("no resource found")
+	}
+	var request api.GetAzureLoadBalancerRequest
+	if lb, ok := response.Hits.Hits[0].Source.Description.(azureModel.LoadBalancerDescription); ok {
+		request = api.GetAzureLoadBalancerRequest{
+			RegionCode:   response.Hits.Hits[0].Source.Location,
+			LoadBalancer: lb,
+		}
+	} else {
+		return 0, fmt.Errorf("cannot parse resource")
+	}
+	cost, err := h.workspaceClient.GetAzureLoadBalancer(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	if err != nil {
+		return 0, err
+	}
+
+	return cost, nil
+}
+
 func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
 	//var resource azureCompute.VirtualNetwork
 	//err := h.GetResource("Microsoft.Network/virtualNetworks", resourceId, &resource)

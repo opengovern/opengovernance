@@ -129,11 +129,21 @@ func (s *Database) FindAzureVMPrice(regionCode string, size string, priority str
 }
 
 func (s *Database) FindAzureManagedStoragePrice(regionCode string, skuName string, meter string) (*AzureManagedStoragePrice, error) {
-	var vm *AzureManagedStoragePrice
+	var ms *AzureManagedStoragePrice
 	err := s.orm.Model(&AzureManagedStoragePrice{}).Where("arm_region_name = ?", regionCode).
-		Where("sku_name = ?", skuName).Where("meter = ?", meter).Find(&vm).Error
+		Where("sku_name = ?", skuName).Where("meter = ?", meter).Find(&ms).Error
 	if err != nil {
 		return nil, err
 	}
-	return vm, nil
+	return ms, nil
+}
+
+func (s *Database) FindAzureLoadBalancerPrice(regionCode string, meterName string) (*AzureLoadBalancerPrice, error) {
+	var lb *AzureLoadBalancerPrice
+	err := s.orm.Model(&AzureLoadBalancerPrice{}).Where("arm_region_name = ?", regionCode).
+		Where("meter_name = ?", meterName).Find(&lb).Error
+	if err != nil {
+		return nil, err
+	}
+	return lb, nil
 }

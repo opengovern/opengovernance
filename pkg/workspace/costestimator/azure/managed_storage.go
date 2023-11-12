@@ -50,8 +50,12 @@ func ManagedStorageCostByResource(db *db.Database, request api.GetAzureManagedSt
 		}
 		numberOfDays := costestimator.GetNumberOfDays()
 		cost += (price.Price / (float64(numberOfDays))) / 24
-		if (sku[0] == "Premium") && (*request.ManagedStorage.Disk.Properties.DiskSizeGB >= 1024) {
-			cost += (burstPrice[request.RegionCode] / (float64(numberOfDays))) / 24
+		if (sku[0] == "Premium") && (*request.ManagedStorage.Disk.Properties.DiskSizeGB >= 1024) && *request.ManagedStorage.Disk.Properties.BurstingEnabled {
+			burstPrice, err := db.FindAzureManagedStoragePrice(request.RegionCode, "Burst Enablement LRS", "Per Month")
+			if err != nil {
+				return 0, nil
+			}
+			cost += (burstPrice.Price / (float64(numberOfDays))) / 24
 		}
 	}
 	return cost * costestimator.TimeInterval, nil
@@ -99,61 +103,4 @@ var skuNames = map[skuDetails]string{
 	skuDetails{DiskOption: "Premium", DiskSize: 8192}:  "P60",
 	skuDetails{DiskOption: "Premium", DiskSize: 16384}: "P70",
 	skuDetails{DiskOption: "Premium", DiskSize: 32767}: "P80",
-}
-
-// burstPrice Price (monthly) for enabling bursting for Premium SSD
-// Maps region to price
-// Couldn't find this price in the list
-var burstPrice = map[string]float64{
-	"centralus":          30.228,
-	"eastus":             24.576,
-	"eastus2":            24.576,
-	"northcentralus":     29.491,
-	"southcentralus":     29.491,
-	"westcentralus":      29.491,
-	"westus":             31.949,
-	"westus2":            24.576,
-	"westus3":            24.576,
-	"uksouth":            30.72,
-	"ukwest":             32.195,
-	"uaecentral":         42.172,
-	"uaenorth":           32.44,
-	"switzerlandnorth":   36.864,
-	"switzerlandwest":    47.923,
-	"swedencentral":      31.949,
-	"swedensouth":        41.534,
-	"qatarcentral":       32.44,
-	"polandcentral":      35.144,
-	"norwayeast":         35.144,
-	"norwaywest":         45.687,
-	"koreacentral":       33.178,
-	"koreasouth":         30.72,
-	"japaneast":          35.635,
-	"japanwest":          38.093,
-	"italynorth":         31.949,
-	"israelcentral":      32.44,
-	"centralindia":       34.406,
-	"southindia":         37.11,
-	"westindia":          33.915,
-	"germanynorth":       41.533,
-	"germanywestcentral": 31.949,
-	"francecentral":      30.72,
-	"francesouth":        39.936,
-	"northeurope":        29.491,
-	"westeurope":         31.949,
-	"canadacentral":      29.491,
-	"canadaeast":         29.491,
-	"brazilsouth":        49.152,
-	"brazilsoutheast":    63.898,
-	"usgovarizona":       30.72,
-	"usgovtexas":         30.72,
-	"usgovvirginia":      30.72,
-	"australiacentral":   35.635,
-	"australiacentral2":  35.635,
-	"australiaeast":      35.635,
-	"australiasoutheast": 34.406,
-	"eastasia":           38.093,
-	"southeastasia":      31.949,
-	"southafricanorth":   35.881,
-	"southafricawest":    46.645,
 }

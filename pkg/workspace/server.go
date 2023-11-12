@@ -164,6 +164,7 @@ func (s *Server) Register(e *echo.Echo) {
 	costEstimatorGroup.GET("/aws/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/azure/virtualmachine", httpserver2.AuthorizeHandler(s.GetAzureVmCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/azure/managedstorage", httpserver2.AuthorizeHandler(s.GetAzureManagedStorageCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/azure/loadbalancer", httpserver2.AuthorizeHandler(s.GetAzureLoadBalancerCost, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
