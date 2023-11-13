@@ -1633,6 +1633,23 @@ definitions:
       size:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection:
+    properties:
+      filters:
+        items:
+          $ref: '#/definitions/kaytu.ResourceCollectionFilter'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType:
     properties:
       attributes:
@@ -2605,6 +2622,29 @@ definitions:
     - StatusDeleted
     - StatusSuspending
     - StatusSuspended
+  kaytu.ResourceCollectionFilter:
+    properties:
+      account_ids:
+        items:
+          type: string
+        type: array
+      connectors:
+        items:
+          type: string
+        type: array
+      regions:
+        items:
+          type: string
+        type: array
+      resource_types:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   source.AssetDiscoveryMethodType:
     enum:
     - scheduled
@@ -4331,17 +4371,17 @@ paths:
       summary: Sync queries
       tags:
       - compliance
-  /cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId}:
+  /cost_estimator/api/v1/cost/aws:
     get:
       description: Get AWS cost for each resource
       parameters:
-      - description: ResourceID
-        in: path
+      - description: Connection ID
+        in: query
         name: resourceId
         required: true
         type: string
       - description: ResourceType
-        in: path
+        in: query
         name: resourceType
         required: true
         type: string
@@ -4357,17 +4397,17 @@ paths:
       summary: Get AWS cost
       tags:
       - cost-estimator
-  /cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId}:
+  /cost_estimator/api/v1/cost/azure:
     get:
       description: Get Azure cost for each resource
       parameters:
-      - description: ResourceID
-        in: path
+      - description: Connection ID
+        in: query
         name: resourceId
         required: true
         type: string
       - description: ResourceType
-        in: path
+        in: query
         name: resourceType
         required: true
         type: string
@@ -5195,6 +5235,52 @@ paths:
       summary: Get metric trend
       tags:
       - analytics
+  /inventory/api/v2/metadata/resource-collection:
+    get:
+      description: Retrieving list of resource collections by specified filters
+      parameters:
+      - collectionFormat: csv
+        description: Resource collection IDs
+        in: query
+        items:
+          type: string
+        name: id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List resource collections
+      tags:
+      - resource_collection
+  /inventory/api/v2/metadata/resource-collection/{resourceCollectionId}:
+    get:
+      description: Retrieving resource collection by specified ID
+      parameters:
+      - description: Resource collection ID
+        in: path
+        name: resourceCollectionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection'
+      security:
+      - BearerToken: []
+      summary: Get resource collection
+      tags:
+      - resource_collection
   /inventory/api/v2/resources/metric/{resourceType}:
     get:
       consumes:

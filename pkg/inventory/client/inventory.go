@@ -343,7 +343,7 @@ func (s *inventoryClient) GetResourceCollection(ctx *httpclient.Context, id stri
 }
 
 func (s *inventoryClient) GetResourceCollections(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error) {
-	url := fmt.Sprintf("%s/api/v2/resource-collection", s.baseURL)
+	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection", s.baseURL)
 
 	firstParamAttached := false
 	for _, id := range ids {
@@ -367,7 +367,7 @@ func (s *inventoryClient) GetResourceCollections(ctx *httpclient.Context, ids []
 }
 
 func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error) {
-	url := fmt.Sprintf("%s/api/v2/resource-collection", s.baseURL)
+	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection", s.baseURL)
 
 	var response []api.ResourceCollection
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
