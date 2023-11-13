@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"strconv"
@@ -47,7 +48,9 @@ func (s *Database) GetReservedWorkspace() (*Workspace, error) {
 	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).
 		Where("status = ?", api.StatusReserved).
 		First(&workspace).Error; err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
 	}
 
 	return &workspace, nil
