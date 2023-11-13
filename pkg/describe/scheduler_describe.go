@@ -79,6 +79,10 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
+	if s.WorkspaceName == "" {
+		return errors.New("workspace name is empty")
+	}
+
 	count, err := s.db.CountQueuedDescribeConnectionJobs()
 	if err != nil {
 		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeConnectionJobs"), zap.Error(err))
