@@ -352,6 +352,19 @@ func (db Database) ListAllPendingConnection() ([]string, error) {
 	return connectionIDs, nil
 }
 
+func (db Database) ListAllFirstTryPendingConnection() ([]string, error) {
+	var connectionIDs []string
+
+	tx := db.ORM.Raw(`select distinct(connection_id) from describe_connection_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS') and retry_count = 0`).Find(&connectionIDs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return connectionIDs, nil
+}
+
 func (db Database) CountJobsAndResources() (int64, int64, error) {
 	var count, sum int64
 	err := db.ORM.Raw("select count(*), sum(described_resource_count) from describe_connection_jobs").Row().Scan(&count, &sum)

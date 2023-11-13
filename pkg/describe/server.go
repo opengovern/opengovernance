@@ -401,7 +401,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
 	}
 
-	status, err := h.DB.ListAllPendingConnection()
+	status, err := h.DB.ListAllFirstTryPendingConnection()
 	if err != nil {
 		return err
 	}
