@@ -11,7 +11,7 @@ import (
 )
 
 func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::EC2::Instance")
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "AWS::EC2::Instance")
 	if err != nil {
 		h.logger.Error("failed to get resource", zap.Error(err))
 		return 0, fmt.Errorf("failed to get resource")
@@ -39,7 +39,7 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 }
 
 func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::EC2::Volume")
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "AWS::EC2::Volume")
 	if err != nil {
 		h.logger.Error("failed to get resource", zap.Error(err))
 		return 0, fmt.Errorf("failed to get resource")
@@ -71,7 +71,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 	var err error
 	var request api.GetLBCostRequest
 	if resourceType == "AWS::ElasticLoadBalancingV2::LoadBalancer" {
-		response, err = es.GetElasticsearch(h.client, resourceId, "AWS::ElasticLoadBalancingV2::LoadBalancer")
+		response, err = es.GetElasticsearch(h.logger, h.client, resourceId, "AWS::ElasticLoadBalancingV2::LoadBalancer")
 		if err != nil {
 			h.logger.Error("failed to get resource", zap.Error(err))
 			return 0, fmt.Errorf("failed to get resource")
@@ -88,7 +88,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 			return 0, fmt.Errorf("cannot parse resource")
 		}
 	} else if resourceType == "AWS::ElasticLoadBalancing::LoadBalancer" {
-		response, err = es.GetElasticsearch(h.client, resourceId, "AWS::ElasticLoadBalancing::LoadBalancer")
+		response, err = es.GetElasticsearch(h.logger, h.client, resourceId, "AWS::ElasticLoadBalancing::LoadBalancer")
 		if err != nil {
 			h.logger.Error("failed to get resource", zap.Error(err))
 			return 0, fmt.Errorf("failed to get resource")
@@ -116,7 +116,7 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 }
 
 func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	response, err := es.GetElasticsearch(h.client, resourceId, "AWS::RDS::DBInstance")
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "AWS::RDS::DBInstance")
 	if err != nil {
 		h.logger.Error("failed to get resource", zap.Error(err))
 		return 0, fmt.Errorf("failed to get resource")
