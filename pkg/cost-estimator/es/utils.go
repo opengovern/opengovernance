@@ -22,12 +22,12 @@ type Response struct {
 			Value    int64  `json:"value"`
 			Relation string `json:"relation"`
 		}
-		MaxScore int64 `json:"max_score"`
+		MaxScore float64 `json:"max_score"`
 		Hits     []struct {
-			Index  string `json:"_index"`
-			Type   string `json:"_type"`
-			Id     string `json:"_id"`
-			Score  int64  `json:"_score"`
+			Index  string  `json:"_index"`
+			Type   string  `json:"_type"`
+			Id     string  `json:"_id"`
+			Score  float64 `json:"_score"`
 			Source struct {
 				Metadata struct {
 					Partition    string `json:"Partition"`
