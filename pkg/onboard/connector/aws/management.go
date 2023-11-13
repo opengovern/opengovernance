@@ -24,6 +24,7 @@ func CreateManagement(workspaceID string) error {
 
 	ctx := context.Background()
 	iamClient := iam.NewFromConfig(cfg)
+
 	user, err := iamClient.CreateUser(ctx, &iam.CreateUserInput{UserName: aws.String(userName)})
 	if err != nil {
 		return err

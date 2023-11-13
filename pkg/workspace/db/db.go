@@ -49,8 +49,9 @@ func (s *Database) GetReservedWorkspace() (*Workspace, error) {
 		Where("status = ?", api.StatusReserved).
 		First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
+			return nil, nil
 		}
+		return nil, err
 	}
 
 	return &workspace, nil
