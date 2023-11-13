@@ -30,6 +30,12 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			return err
 		}
 
+	case api.StatusReserved:
+		err := s.createWorkspace(workspace)
+		if err != nil {
+			return err
+		}
+
 	case api.StatusProvisioning:
 	case api.StatusProvisioningFailed:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
@@ -201,21 +207,23 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 		// when the helm release installed successfully, set the rolebinding
 		limits := api.GetLimitsByTier(workspace.Tier)
-		authCtx := &httpclient.Context{
-			UserID:         workspace.OwnerId,
-			UserRole:       authapi.AdminRole,
-			WorkspaceName:  workspace.Name,
-			WorkspaceID:    workspace.ID,
-			MaxUsers:       limits.MaxUsers,
-			MaxConnections: limits.MaxConnections,
-			MaxResources:   limits.MaxResources,
-		}
+		if workspace.OwnerId != nil {
+			authCtx := &httpclient.Context{
+				UserID:         *workspace.OwnerId,
+				UserRole:       authapi.AdminRole,
+				WorkspaceName:  workspace.Name,
+				WorkspaceID:    workspace.ID,
+				MaxUsers:       limits.MaxUsers,
+				MaxConnections: limits.MaxConnections,
+				MaxResources:   limits.MaxResources,
+			}
 
-		if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-			UserID:   workspace.OwnerId,
-			RoleName: authapi.AdminRole,
-		}); err != nil {
-			return fmt.Errorf("put role binding: %w", err)
+			if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
+				UserID:   *workspace.OwnerId,
+				RoleName: authapi.AdminRole,
+			}); err != nil {
+				return fmt.Errorf("put role binding: %w", err)
+			}
 		}
 
 		err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), time.Duration(s.cfg.AutoSuspendDurationMinutes)*time.Minute).Err()

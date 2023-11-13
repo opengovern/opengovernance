@@ -76,7 +76,7 @@ func (s *Database) GetWorkspaceByName(name string) (*Workspace, error) {
 
 func (s *Database) ListWorkspacesByOwner(ownerId string) ([]*Workspace, error) {
 	var workspaces []*Workspace
-	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
+	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{OwnerId: &ownerId}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
