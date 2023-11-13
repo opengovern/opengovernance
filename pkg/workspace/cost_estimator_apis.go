@@ -97,3 +97,18 @@ func (s *Server) GetAzureManagedStorageCost(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, cost)
 }
+
+// GetAzureSqlServerDatabase get azure RDS Instance cost for a day
+// route: /workspace/api/v1/costestimator/azure/sqlserverdatabase
+func (s *Server) GetAzureSqlServerDatabase(ctx echo.Context) error {
+	var request api.GetAzureSqlServersDatabasesRequest
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+
+	cost, err := azure.SqlServerDatabaseCostByResource(s.db, request)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}

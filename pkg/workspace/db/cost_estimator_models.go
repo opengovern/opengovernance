@@ -127,3 +127,33 @@ type AzureManagedStoragePrice struct {
 	PriceUnit     string
 	Price         float64
 }
+
+type AzureSqlServerDatabasePrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	SkuName       string
+	ProductName   string
+	MeterName     string
+	PriceUnit     string
+	Price         float64
+}
+
+type AzureSqlServerDatabaseReadReplicaCostComponentPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	SkuName       string
+	ProductName   string
+	PriceUnit     string
+	Price         float64
+}
+
+type AzureSqlServerDatabaseLicenseCostComponentPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	ProductName   string
+	PriceUnit     string
+	Price         float64
+}

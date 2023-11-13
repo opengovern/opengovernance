@@ -68,3 +68,28 @@ func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64
 
 	return 0, nil
 }
+
+func GetSQLDatabaseCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
+	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Sql/servers/databases")
+	if err != nil {
+		return 0, err
+	}
+	if len(response.Hits.Hits) == 0 {
+		return 0, fmt.Errorf("no resource found")
+	}
+	var request api.GetAzureSqlServersDatabasesRequest
+	if sqlServerDB, ok := response.Hits.Hits[0].Source.Description.(azureModel.SqlDatabaseDescription); ok {
+		request = api.GetAzureSqlServersDatabasesRequest{
+			RegionCode:  response.Hits.Hits[0].Source.Location,
+			SqlServerDB: sqlServerDB,
+		}
+	} else {
+		return 0, fmt.Errorf("cannot parse resource")
+	}
+
+	cost, err := h.workspaceClient.GetAzureSqlServerDatabase(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	if err != nil {
+		return 0, err
+	}
+	return cost, nil
+}

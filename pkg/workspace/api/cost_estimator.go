@@ -34,3 +34,8 @@ type GetAzureManagedStorageRequest struct {
 	RegionCode     string
 	ManagedStorage azure.ComputeDiskDescription
 }
+
+type GetAzureSqlServersDatabasesRequest struct {
+	RegionCode  string
+	SqlServerDB azure.SqlDatabaseDescription
+}
