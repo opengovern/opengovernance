@@ -17,6 +17,10 @@ func (s *JobScheduler) runPublisher() error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 
 	for i := 0; i < 10; i++ {
+		err := s.db.UpdateTimedOutRunners()
+		if err != nil {
+			s.logger.Error("failed to update timed out runners", zap.Error(err))
+		}
 		runners, err := s.db.FetchCreatedRunners()
 		if err != nil {
 			s.logger.Error("failed to fetch created runners", zap.Error(err))
