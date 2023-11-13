@@ -239,13 +239,31 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Tier:           api.Tier(request.Tier),
 		OrganizationID: organizationID,
 	}
-	if err := s.db.CreateWorkspace(workspace); err != nil {
-		if strings.Contains(err.Error(), "duplicate key value") {
-			return echo.NewHTTPError(http.StatusFound, "workspace already exists")
-		}
-		c.Logger().Errorf("create workspace: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+
+	rs, err := s.db.GetReservedWorkspace()
+	if err != nil {
+		return err
 	}
+
+	if rs == nil {
+		if err := s.db.CreateWorkspace(workspace); err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				return echo.NewHTTPError(http.StatusFound, "workspace already exists")
+			}
+			c.Logger().Errorf("create workspace: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+		}
+	} else {
+		workspace.ID = rs.ID
+		if err := s.db.UpdateWorkspace(workspace); err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				return echo.NewHTTPError(http.StatusFound, "workspace already exists")
+			}
+			c.Logger().Errorf("create workspace: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+		}
+	}
+
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
 	})

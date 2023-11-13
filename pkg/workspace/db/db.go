@@ -42,6 +42,21 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.orm.Model(&Workspace{}).Create(m).Error
 }
 
+func (s *Database) GetReservedWorkspace() (*Workspace, error) {
+	var workspace Workspace
+	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).
+		Where("status = ?", api.StatusReserved).
+		First(&workspace).Error; err != nil {
+		return nil, err
+	}
+
+	return &workspace, nil
+}
+
+func (s *Database) UpdateWorkspace(m *Workspace) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", m.ID).Updates(m).Error
+}
+
 func (s *Database) UpdateWorkspaceStatus(id string, status api.WorkspaceStatus) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
