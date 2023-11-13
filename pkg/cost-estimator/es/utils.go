@@ -49,7 +49,7 @@ type Response struct {
 				Location      string `json:"location"`
 				EsIndex       string `json:"es_index"`
 				ID            string `json:"id"`
-				ScheduleJobId string `json:"schedule_job_id"`
+				ScheduleJobId int64  `json:"schedule_job_id"`
 				SourceId      string `json:"source_id"`
 				ARN           string `json:"arn"`
 			} `json:"_source"`
