@@ -291,7 +291,6 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 		Credential:           creds,
 		LifecycleState:       ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
 		Metadata:             datatypes.JSON(jsonMetadata),
 	}
