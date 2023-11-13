@@ -2469,7 +2469,7 @@
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId}": {
+        "/cost_estimator/api/v1/cost/aws": {
             "get": {
                 "security": [
                     {
@@ -2487,16 +2487,16 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ResourceID",
+                        "description": "Connection ID",
                         "name": "resourceId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "ResourceType",
                         "name": "resourceType",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -2510,7 +2510,7 @@
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId}": {
+        "/cost_estimator/api/v1/cost/azure": {
             "get": {
                 "security": [
                     {
@@ -2528,16 +2528,16 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ResourceID",
+                        "description": "Connection ID",
                         "name": "resourceId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "ResourceType",
                         "name": "resourceType",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -3756,6 +3756,80 @@
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metadata/resource-collection": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of resource collections by specified filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "List resource collections",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection IDs",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metadata/resource-collection/{resourceCollectionId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving resource collection by specified ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "Get resource collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource collection ID",
+                        "name": "resourceCollectionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection"
                         }
                     }
                 }
@@ -8275,6 +8349,32 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/kaytu.ResourceCollectionFilter"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType": {
             "type": "object",
             "properties": {
@@ -9639,6 +9739,41 @@
                 "StatusSuspending",
                 "StatusSuspended"
             ]
+        },
+        "kaytu.ResourceCollectionFilter": {
+            "type": "object",
+            "properties": {
+                "account_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "source.AssetDiscoveryMethodType": {
             "type": "string",
