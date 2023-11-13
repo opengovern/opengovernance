@@ -28,8 +28,7 @@ func CreateManagement(workspaceID string) error {
 	if err != nil {
 		return err
 	}
-
-	iamClient.CreateRole()
+	_ = user
 
 	policy, err := iamClient.CreatePolicy(ctx, &iam.CreatePolicyInput{
 		PolicyDocument: aws.String(managementPolicyStr),
@@ -38,5 +37,21 @@ func CreateManagement(workspaceID string) error {
 	if err != nil {
 		return err
 	}
+	_ = policy
 
+	role, err := iamClient.CreateRole(ctx, &iam.CreateRoleInput{
+		AssumeRolePolicyDocument: nil,
+		RoleName:                 nil,
+		Description:              nil,
+		MaxSessionDuration:       nil,
+		Path:                     nil,
+		PermissionsBoundary:      nil,
+		Tags:                     nil,
+	})
+	if err != nil {
+		return err
+	}
+	_ = role
+
+	return nil
 }
