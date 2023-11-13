@@ -43,13 +43,13 @@ type Response struct {
 				ResourceType  string `json:"resource_type"`
 				CreatedAt     int64  `json:"created_at"`
 				Description   any    `json:"description"`
-				ResourceJobId string `json:"resource_job_id"`
+				ResourceJobId int64  `json:"resource_job_id"`
 				ResourceGroup string `json:"resource_group"`
 				Name          string `json:"name"`
 				Location      string `json:"location"`
 				EsIndex       string `json:"es_index"`
 				ID            string `json:"id"`
-				ScheduleJobId string `json:"schedule_job_id"`
+				ScheduleJobId int64  `json:"schedule_job_id"`
 				SourceId      string `json:"source_id"`
 				ARN           string `json:"arn"`
 			} `json:"_source"`
