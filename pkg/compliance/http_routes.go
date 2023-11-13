@@ -1488,7 +1488,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
 
-	benchmark, err := h.db.GetBenchmark(benchmarkId)
+	benchmark, err := h.db.GetBenchmarkBare(benchmarkId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())

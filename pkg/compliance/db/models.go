@@ -31,6 +31,7 @@ type BenchmarkAssignment struct {
 type Benchmark struct {
 	ID          string `gorm:"primarykey"`
 	Title       string
+	Connector   source.Type
 	Description string
 	LogoURI     string
 	Category    string
@@ -64,6 +65,9 @@ func (b Benchmark) ToApi() api.Benchmark {
 		CreatedAt:   b.CreatedAt,
 		UpdatedAt:   b.UpdatedAt,
 		Tags:        b.GetTagsMap(),
+	}
+	if b.Connector != source.Nil {
+		ba.Connectors = []source.Type{b.Connector}
 	}
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
