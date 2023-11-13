@@ -26,6 +26,8 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 			VM:         vm,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetAzureVm(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
@@ -53,6 +55,8 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 			ManagedStorage: storage,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetAzureManagedStorage(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
@@ -80,6 +84,8 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 			LoadBalancer: lb,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetAzureLoadBalancer(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)

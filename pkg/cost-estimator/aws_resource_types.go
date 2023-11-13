@@ -26,6 +26,8 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 			Instance:   instance,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 
@@ -54,6 +56,8 @@ func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, err
 			Volume:     volume,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 
@@ -85,6 +89,8 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 				LBType:     string(lb.LoadBalancer.Type),
 			}
 		} else {
+			h.logger.Error("cannot parse resource", zap.String("Description",
+				fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 			return 0, fmt.Errorf("cannot parse resource")
 		}
 	} else if resourceType == "AWS::ElasticLoadBalancing::LoadBalancer" {
@@ -131,6 +137,8 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 			DBInstance: dbInstance,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetRDSInstance(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
