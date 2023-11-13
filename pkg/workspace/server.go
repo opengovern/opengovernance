@@ -786,7 +786,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			hasRoleInWorkspace = true
 		}
 
-		if *workspace.OwnerId != userId && !hasRoleInWorkspace {
+		if workspace.OwnerId == nil || (*workspace.OwnerId != userId && !hasRoleInWorkspace) {
 			continue
 		}
 
