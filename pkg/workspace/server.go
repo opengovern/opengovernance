@@ -262,6 +262,24 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 			c.Logger().Errorf("create workspace: %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 		}
+
+		limits := api.GetLimitsByTier(workspace.Tier)
+		authCtx := &httpclient.Context{
+			UserID:         *workspace.OwnerId,
+			UserRole:       authapi.AdminRole,
+			WorkspaceName:  workspace.Name,
+			WorkspaceID:    workspace.ID,
+			MaxUsers:       limits.MaxUsers,
+			MaxConnections: limits.MaxConnections,
+			MaxResources:   limits.MaxResources,
+		}
+
+		if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
+			UserID:   *workspace.OwnerId,
+			RoleName: authapi.AdminRole,
+		}); err != nil {
+			return fmt.Errorf("put role binding: %w", err)
+		}
 	}
 
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
