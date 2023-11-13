@@ -158,6 +158,11 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			if job == nil {
 				return errors.New("insight job not found")
 			}
+
+			if job.Status == api3.InsightJobSucceeded {
+				break
+			}
+
 			if job.Status == api3.InsightJobInProgress {
 				s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", job.ID))
 				return nil
