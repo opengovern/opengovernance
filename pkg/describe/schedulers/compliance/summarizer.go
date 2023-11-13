@@ -81,8 +81,11 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJ
 }
 
 func (s *JobScheduler) runSummarizer() error {
+	s.logger.Info("checking for benchmarks to summarize")
+
 	err := s.db.SetJobToRunnersInProgress()
 	if err != nil {
+		s.logger.Error("failed to set jobs to runners in progress", zap.Error(err))
 		return err
 	}
 
