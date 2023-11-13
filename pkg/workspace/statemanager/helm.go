@@ -212,7 +212,7 @@ func (s *Service) findTargetNamespace(ctx context.Context, name string) (*corev1
 	return &ns, nil
 }
 
-func (s *Service) findHelmRelease(ctx context.Context, workspace *db.Workspace) (*helmv2.HelmRelease, error) {
+func (s *Service) FindHelmRelease(ctx context.Context, workspace *db.Workspace) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
 		Name:      workspace.ID,
 		Namespace: s.cfg.FluxSystemNamespace,

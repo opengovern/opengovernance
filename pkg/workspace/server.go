@@ -280,6 +280,37 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		}); err != nil {
 			return fmt.Errorf("put role binding: %w", err)
 		}
+
+		helmRelease, err := s.StateManager.FindHelmRelease(context.Background(), workspace)
+		if err != nil {
+			return fmt.Errorf("find helm release: %w", err)
+		}
+		if helmRelease == nil {
+			return fmt.Errorf("helm release not found")
+		}
+
+		values := helmRelease.GetValues()
+		valuesJSON, err := json.Marshal(values)
+		if err != nil {
+			return err
+		}
+
+		var settings statemanager.KaytuWorkspaceSettings
+		err = json.Unmarshal(valuesJSON, &settings)
+		if err != nil {
+			return err
+		}
+
+		settings.Kaytu.Workspace.Name = workspace.Name
+		b, err := json.Marshal(settings)
+		if err != nil {
+			return fmt.Errorf("marshalling values: %w", err)
+		}
+		helmRelease.Spec.Values.Raw = b
+		err = s.kubeClient.Update(context.Background(), helmRelease)
+		if err != nil {
+			return fmt.Errorf("updating workspace name: %w", err)
+		}
 	}
 
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
