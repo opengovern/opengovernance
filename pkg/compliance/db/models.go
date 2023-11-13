@@ -83,6 +83,7 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 		return nil
 	}
 	// tracer :
+
 	output2, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
 	span2.SetName("new_GetBenchmark(loop)")
 	for _, childObj := range b.Children {
