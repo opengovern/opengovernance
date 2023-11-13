@@ -1276,6 +1276,18 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+
+		for _, onboardedSrc := range onboardedSources {
+			src, err := h.db.GetSource(onboardedSrc.ID)
+			if err != nil {
+				return err
+			}
+
+			_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
+			if err != nil {
+				return err
+			}
+		}
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")
 	}
