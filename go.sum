@@ -2320,6 +2320,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.18.0 h1:fd76ymiF9cDguq+1eDZNVBQNlDiKx
 github.com/kaytu-io/kaytu-aws-describer v0.18.0/go.mod h1:dLDa7NpOQexHzxuG2Xr5miEyCbgf72PidEHVHNKXqkc=
 github.com/kaytu-io/kaytu-aws-describer v0.18.1 h1:or4gV4zNZPRP33IzTgblUM129ybri8MEQtprmtRHyV4=
 github.com/kaytu-io/kaytu-aws-describer v0.18.1/go.mod h1:dLDa7NpOQexHzxuG2Xr5miEyCbgf72PidEHVHNKXqkc=
+github.com/kaytu-io/kaytu-aws-describer v0.18.2 h1:HCiXd374mQ+E2BXV006wJEq7KtnubJC6kLFx5fGpcRQ=
+github.com/kaytu-io/kaytu-aws-describer v0.18.2/go.mod h1:dLDa7NpOQexHzxuG2Xr5miEyCbgf72PidEHVHNKXqkc=
 github.com/kaytu-io/kaytu-azure-describer v0.13.0 h1:AlmGYmUtAIsK69PgMALdMkgfrSGctaBNiS5DKKN+EIg=
 github.com/kaytu-io/kaytu-azure-describer v0.13.0/go.mod h1:mOBLsdOODUNJ5NoF5C67KQaDpHfnjpqWuek7YlEl8IA=
 github.com/kaytu-io/kaytu-util v0.0.0-20231106102215-774e3d2824d9 h1:eRqZJ5IM1vjlhCwqpnFEUse+9RDL6DF4BisPU/MENrc=
