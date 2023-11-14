@@ -18,7 +18,7 @@ const (
 	ResultQueue   = "compliance-summarizer-job-result"
 	ConsumerGroup = "compliance-summarizer"
 
-	JobTimeoutCheckInterval = 5 * time.Minute
+	JobTimeoutCheckInterval = 1 * time.Minute
 )
 
 type Config struct {
