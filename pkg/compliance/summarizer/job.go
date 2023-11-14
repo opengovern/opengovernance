@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -80,6 +81,9 @@ func (w *Worker) RunJob(j Job) error {
 		w.logger.Info("Next page")
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
+			if strings.Contains(err.Error(), "java.io.EOFException") {
+				break
+			}
 			return err
 		}
 
