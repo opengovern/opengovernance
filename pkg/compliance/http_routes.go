@@ -748,22 +748,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		return err
 	}
 	// tracer :
-	output3, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	_, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_PopulateConnectors(loop)")
 
 	for _, b := range benchmarks {
 		be := b.ToApi()
-		//tracer :
-		outputs4, span4 := tracer.Start(output3, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
-		span4.SetName("new_PopulateConnectors")
-
-		err = b.PopulateConnectors(outputs4, h.db, &be)
-		if err != nil {
-			span4.RecordError(err)
-			span4.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span4.End()
 		if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
 			continue
 		}
@@ -845,7 +834,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 	benchmarkID := ctx.Param("benchmark_id")
 	// tracer :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
@@ -863,17 +852,6 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 	be := benchmark.ToApi()
-	//tracer :
-	outputS, span2 := tracer.Start(output1, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnectors")
-
-	err = benchmark.PopulateConnectors(outputS, h.db, &be)
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span2.End()
 
 	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
@@ -1135,7 +1113,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	}
 	benchmarkID := ctx.Param("benchmark_id")
 	// tracer :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark")
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark")
 	span1.SetName("new_GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
@@ -1154,17 +1132,6 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	}
 
 	be := benchmark.ToApi()
-	// tracer :
-	outputS2, span2 := tracer.Start(output1, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnectors")
-
-	err = benchmark.PopulateConnectors(outputS2, h.db, &be)
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span2.End()
 
 	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
@@ -1261,41 +1228,6 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	//span2.SetName("new_GetQuery(loop)")
 
 	ca := benchmark.ToApi()
-	err = benchmark.PopulateConnectors(context.Background(), h.db, &ca)
-	if err != nil {
-		return err
-	}
-	//
-	//for _, policy := range benchmark.Policies {
-	//	if policy.QueryID == nil {
-	//		continue
-	//	}
-	//	//trace :
-	//	_, span3 := tracer.Start(outputS2, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
-	//	span3.SetName("new_GetQuery")
-	//
-	//	q, err := h.db.GetQuery(*policy.QueryID)
-	//	if err != nil {
-	//		span3.RecordError(err)
-	//		span3.SetStatus(codes.Error, err.Error())
-	//		return err
-	//	}
-	//	span3.SetAttributes(
-	//		attribute.String("query ID", q.ID),
-	//	)
-	//	span3.End()
-	//
-	//	if q == nil {
-	//		return fmt.Errorf("query %s not found", *policy.QueryID)
-	//	}
-	//
-	//	if t, _ := source.ParseType(q.Connector); t != source.Nil {
-	//		connectorType = t
-	//		break
-	//	}
-	//}
-	//span2.End()
-
 	switch {
 	case len(connectionIDs) > 0:
 		connections := make([]onboardApi.Connection, 0)
@@ -1440,11 +1372,6 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	result := make([]api.ConnectionAssignedBenchmark, 0, len(dbAssignments))
 	for _, benchmark := range benchmarks {
 		apiBenchmark := benchmark.ToApi()
-		err = benchmark.PopulateConnectors(context.Background(), h.db, &apiBenchmark)
-		if err != nil {
-			h.logger.Error("failed to populate connectors", zap.Error(err))
-			return err
-		}
 		if !utils.Includes(apiBenchmark.Connectors, src.Connector) {
 			continue
 		}
@@ -1724,27 +1651,11 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	span1.End()
 
 	// tracer :
-	output2, span2 := tracer.Start(output1, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	_, span2 := tracer.Start(output1, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_PopulateConnectors(loop)")
 
 	for _, b := range benchmarks {
-		be := b.ToApi()
-		// tracer :
-		outputS3, span3 := tracer.Start(output2, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
-		span3.SetName("new_PopulateConnectors")
-
-		err = b.PopulateConnectors(outputS3, h.db, &be)
-		if err != nil {
-			span3.RecordError(err)
-			span3.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span3.SetAttributes(
-			attribute.String("ID", be.ID),
-		)
-		span3.End()
-
-		response = append(response, be)
+		response = append(response, b.ToApi())
 	}
 	span2.End()
 
@@ -1754,7 +1665,7 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
 	// trace :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
@@ -1771,20 +1682,8 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
-	resp := benchmark.ToApi()
 
-	outputS2, span2 := tracer.Start(output1, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnectors")
-
-	err = benchmark.PopulateConnectors(outputS2, h.db, &resp)
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span2.End()
-
-	return ctx.JSON(http.StatusOK, resp)
+	return ctx.JSON(http.StatusOK, benchmark.ToApi())
 }
 
 func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID string) ([]db.Policy, error) {
