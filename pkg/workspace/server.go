@@ -311,6 +311,20 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		if err != nil {
 			return fmt.Errorf("updating workspace name: %w", err)
 		}
+
+		var res corev1.PodList
+		err = s.kubeClient.List(context.Background(), &res)
+		if err != nil {
+			return fmt.Errorf("listing pods: %w", err)
+		}
+		for _, pod := range res.Items {
+			if strings.HasPrefix(pod.Name, "describe-scheduler") {
+				err = s.kubeClient.Delete(context.Background(), &pod)
+				if err != nil {
+					return fmt.Errorf("deleting pods: %w", err)
+				}
+			}
+		}
 	}
 
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
