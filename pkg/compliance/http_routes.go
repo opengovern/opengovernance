@@ -1499,44 +1499,30 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	))
 	span1.End()
 
-	var apiBenchmark api.Benchmark
-	// tracer :
-	outputS2, span2 := tracer.Start(outputS, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnectors")
-
-	err = benchmark.PopulateConnectors(outputS2, h.db, &apiBenchmark)
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span2.End()
-
 	hctx := httpclient.FromEchoContext(ctx)
 
 	var assignedConnections []api.BenchmarkAssignedConnection
 	var assignedResourceCollections []api.BenchmarkAssignedResourceCollection
 
-	for _, connector := range apiBenchmark.Connectors {
-		connections, err := h.onboardClient.ListSources(hctx, []source.Type{connector})
-		if err != nil {
-			return err
-		}
-
-		for _, connection := range connections {
-			if !connection.IsEnabled() {
-				continue
-			}
-			ba := api.BenchmarkAssignedConnection{
-				ConnectionID:           connection.ID.String(),
-				ProviderConnectionID:   connection.ConnectionID,
-				ProviderConnectionName: connection.ConnectionName,
-				Connector:              connector,
-				Status:                 false,
-			}
-			assignedConnections = append(assignedConnections, ba)
-		}
+	connections, err := h.onboardClient.ListSources(hctx, []source.Type{benchmark.Connector})
+	if err != nil {
+		return err
 	}
+
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
+		ba := api.BenchmarkAssignedConnection{
+			ConnectionID:           connection.ID.String(),
+			ProviderConnectionID:   connection.ConnectionID,
+			ProviderConnectionName: connection.ConnectionName,
+			Connector:              benchmark.Connector,
+			Status:                 false,
+		}
+		assignedConnections = append(assignedConnections, ba)
+	}
+
 	// trace :
 	_, span3 := tracer.Start(outputS, "new_GetBenchmarkAssignmentsByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_GetBenchmarkAssignmentsByBenchmarkId")
