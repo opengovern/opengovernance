@@ -11,6 +11,8 @@ import (
 )
 
 func (s *Service) handleAutoSuspend(workspace *db.Workspace) error {
+	return nil
+
 	if workspace.Tier != api.Tier_Free {
 		return nil
 	}

@@ -242,6 +242,7 @@ func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
 	defer t.Stop()
 	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
+			s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
 			t.Reset(time.Minute * 2)
 		} else {
 			t.Reset(time.Minute * 1)
