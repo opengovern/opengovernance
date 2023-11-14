@@ -357,7 +357,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 			return api.BootstrapStatus_WaitingForCompliance, err
 		}
 
-		if complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed {
+		if complianceJob == nil || (complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed) {
 			return api.BootstrapStatus_WaitingForCompliance, nil
 		}
 
@@ -366,7 +366,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 			return api.BootstrapStatus_WaitingForCompliance, err
 		}
 
-		if complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed {
+		if complianceJob == nil || (complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed) {
 			return api.BootstrapStatus_WaitingForCompliance, nil
 		}
 
