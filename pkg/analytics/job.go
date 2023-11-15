@@ -59,7 +59,7 @@ func (j *Job) Do(
 		return result
 	}
 
-	var encodedResourceCollectionFilters []string
+	var encodedResourceCollectionFilters map[string]string
 	if len(j.ResourceCollectionIDs) > 0 {
 		rcs, err := inventoryClient.GetResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole},
 			j.ResourceCollectionIDs)
@@ -71,7 +71,7 @@ func (j *Job) Do(
 			if err != nil {
 				return fail(err)
 			}
-			encodedResourceCollectionFilters = append(encodedResourceCollectionFilters, base64.StdEncoding.EncodeToString(filtersJson))
+			encodedResourceCollectionFilters[rc.ID] = base64.StdEncoding.EncodeToString(filtersJson)
 		}
 	}
 
@@ -95,7 +95,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters []string, steampipeDB *steampipe.Database, kfkProducer *confluent_kafka.Producer, kfkTopic string, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger) error {
+func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, kfkProducer *confluent_kafka.Producer, kfkTopic string, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics(true)
 	if err != nil {
@@ -307,7 +307,7 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 		}, nil
 }
 
-func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceCollectionFilters []string, kfkProducer *confluent_kafka.Producer, kfkTopic string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus) error {
+func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, kfkProducer *confluent_kafka.Producer, kfkTopic string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus) error {
 	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
@@ -332,11 +332,11 @@ func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceColl
 		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectionMetricTrendSummaryResult)
 		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectorMetricTrendSummaryResult)
 
-		for _, encodedFilter := range encodedResourceCollectionFilters {
+		for rcId, encodedFilter := range encodedResourceCollectionFilters {
 			err := steampipeDB.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, encodedFilter)
 			if err != nil {
 				logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err),
-					zap.String("resource_collection_filters", encodedFilter))
+					zap.String("resource_collection", rcId))
 				return err
 			}
 			perConnection, perConnector, err := j.DoSingleAssetMetric(logger, steampipeDB, metric, connectionCache, status, onboardClient)
@@ -344,8 +344,8 @@ func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceColl
 				logger.Error("failed to do single asset metric for rc", zap.Error(err), zap.String("metric", metric.ID), zap.String("resource_collection_filters", encodedFilter))
 				return err
 			}
-			connectionMetricTrendSummary.ResourceCollections[encodedFilter] = *perConnection
-			connectorMetricTrendSummary.ResourceCollections[encodedFilter] = *perConnector
+			connectionMetricTrendSummary.ResourceCollections[rcId] = *perConnection
+			connectorMetricTrendSummary.ResourceCollections[rcId] = *perConnector
 		}
 	} else {
 		err := steampipeDB.UnsetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters)
