@@ -51,17 +51,15 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	}
 	var request api.GetAzureManagedStorageRequest
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
-	var interfaceData interface{} = jsonData
-
-	if storage, ok := interfaceData.(azureModel.ComputeDiskDescription); ok {
-		request = api.GetAzureManagedStorageRequest{
-			RegionCode:     response.Hits.Hits[0].Source.Location,
-			ManagedStorage: storage,
-		}
-	} else {
+	if err != nil {
+		h.logger.Error("failed to marshal request", zap.Error(err))
+		return 0, fmt.Errorf("failed to marshal request")
+	}
+	err = json.Unmarshal(jsonData, &request)
+	if err != nil {
 		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", interfaceData)))
-		return 0, fmt.Errorf("cannot parse resource")
+			fmt.Sprintf("%v", string(jsonData))))
+		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", request)
 	if err != nil {
