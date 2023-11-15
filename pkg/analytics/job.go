@@ -59,7 +59,7 @@ func (j *Job) Do(
 		return result
 	}
 
-	var encodedResourceCollectionFilters map[string]string
+	encodedResourceCollectionFilters := make(map[string]string)
 	if len(j.ResourceCollectionIDs) > 0 {
 		rcs, err := inventoryClient.GetResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole},
 			j.ResourceCollectionIDs)
