@@ -96,7 +96,7 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 			if err2 != nil {
 				h.logger.Error("error description to record", zap.Error(err2))
 			}
-			h.logger.Info("JSON DATA", zap.String("jsonData", fmt.Sprintf("%v", jsonData)))
+			h.logger.Info("JSON DATA", zap.String("jsonData", string(jsonData)))
 			result, err2 := azureSteampipe.AzureDescriptionToRecord(jsonData, "azure_compute_disk")
 			if err2 != nil {
 				h.logger.Error("error description to record", zap.Error(err2))
