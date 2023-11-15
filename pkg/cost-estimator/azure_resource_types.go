@@ -1,6 +1,7 @@
 package cost_estimator
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
@@ -91,7 +92,11 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 		}
 
 		if err := decoder.Decode(diskInterface); err != nil {
-			result, err2 := azureSteampipe.AzureDescriptionToRecord(response.Hits.Hits[0].Source.Description.(interface{}), "azure_compute_disk")
+			jsonData, err2 := json.Marshal(response.Hits.Hits[0].Source.Description)
+			if err2 != nil {
+				h.logger.Error("error description to record", zap.Error(err2))
+			}
+			result, err2 := azureSteampipe.AzureDescriptionToRecord(jsonData, "azure_compute_disk")
 			if err2 != nil {
 				h.logger.Error("error description to record", zap.Error(err2))
 			}
