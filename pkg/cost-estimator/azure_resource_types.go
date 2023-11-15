@@ -2,11 +2,13 @@ package cost_estimator
 
 import (
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 )
 
@@ -20,16 +22,37 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetAzureVmRequest
-	if vm, ok := response.Hits.Hits[0].Source.Description.(azureModel.ComputeVirtualMachineDescription); ok {
+	if description, ok := response.Hits.Hits[0].Source.Description.(map[string]interface{}); ok {
+		vmInterface, vmExists := description["VM"]
+		if !vmExists {
+			h.logger.Error("cannot find 'VM' field in Description", zap.Any("Description", response.Hits.Hits[0].Source.Description))
+			return 0, fmt.Errorf("cannot find 'VM' field in Description")
+		}
+
+		var vmStruct azureModel.ComputeVirtualMachineDescription
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &vmStruct,
+			TagName: "json",
+		})
+		if err != nil {
+			h.logger.Error("error creating mapstructure decoder", zap.Error(err))
+			return 0, err
+		}
+
+		if err := decoder.Decode(vmInterface); err != nil {
+			h.logger.Error("error decoding 'VM' field", zap.Error(err))
+			return 0, err
+		}
+
 		request = api.GetAzureVmRequest{
 			RegionCode: response.Hits.Hits[0].Source.Location,
-			VM:         vm,
+			VM:         vmStruct,
 		}
 	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		h.logger.Error("cannot parse resource", zap.String("Description", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
+
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_machine", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
@@ -49,14 +72,39 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetAzureManagedStorageRequest
-	if storage, ok := response.Hits.Hits[0].Source.Description.(azureModel.ComputeDiskDescription); ok {
+	if description, ok := response.Hits.Hits[0].Source.Description.(map[string]interface{}); ok {
+		diskInterface, diskExists := description["Disk"]
+		if !diskExists {
+			h.logger.Error("cannot find 'Disk' field in Description", zap.Any("Description", response.Hits.Hits[0].Source.Description))
+			return 0, fmt.Errorf("cannot find 'Disk' field in Description")
+		}
+
+		var diskStruct armcompute.Disk
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &diskStruct,
+			TagName: "json",
+		})
+		if err != nil {
+			h.logger.Error("error creating mapstructure decoder", zap.Error(err))
+			return 0, err
+		}
+
+		if err := decoder.Decode(diskInterface); err != nil {
+			h.logger.Error("error decoding 'Disk' field", zap.Error(err))
+			return 0, err
+		}
+
+		computeDiskDescription := azureModel.ComputeDiskDescription{
+			Disk:          diskStruct,
+			ResourceGroup: response.Hits.Hits[0].Source.ResourceGroup,
+		}
+
 		request = api.GetAzureManagedStorageRequest{
 			RegionCode:     response.Hits.Hits[0].Source.Location,
-			ManagedStorage: storage,
+			ManagedStorage: computeDiskDescription,
 		}
 	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		h.logger.Error("cannot parse resource", zap.String("Description", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", request)
@@ -78,16 +126,37 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetAzureLoadBalancerRequest
-	if lb, ok := response.Hits.Hits[0].Source.Description.(azureModel.LoadBalancerDescription); ok {
+	if description, ok := response.Hits.Hits[0].Source.Description.(map[string]interface{}); ok {
+		lbInterface, lbExists := description["LoadBalancer"]
+		if !lbExists {
+			h.logger.Error("cannot find 'LoadBalancer' field in Description", zap.Any("Description", response.Hits.Hits[0].Source.Description))
+			return 0, fmt.Errorf("cannot find 'LoadBalancer' field in Description")
+		}
+
+		var lbStruct azureModel.LoadBalancerDescription
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &lbStruct,
+			TagName: "json",
+		})
+		if err != nil {
+			h.logger.Error("error creating mapstructure decoder", zap.Error(err))
+			return 0, err
+		}
+
+		if err := decoder.Decode(lbInterface); err != nil {
+			h.logger.Error("error decoding 'LoadBalancer' field", zap.Error(err))
+			return 0, err
+		}
+
 		request = api.GetAzureLoadBalancerRequest{
 			RegionCode:   response.Hits.Hits[0].Source.Location,
-			LoadBalancer: lb,
+			LoadBalancer: lbStruct,
 		}
 	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		h.logger.Error("cannot parse resource", zap.String("Description", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
+
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
