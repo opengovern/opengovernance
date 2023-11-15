@@ -3,6 +3,7 @@ package resources
 import (
 	azure "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/azure_terracost/resource_types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"go.uber.org/zap"
 )
 
 type ResourceRequest struct {
@@ -10,7 +11,7 @@ type ResourceRequest struct {
 	Request any
 }
 
-func GetResource(provider string, resourceType string, request ResourceRequest) (*query.Resource, error) {
+func GetResource(logger *zap.Logger, provider string, resourceType string, request ResourceRequest) (*query.Resource, error) {
 	var resource query.Resource
 	if provider == "AWS" {
 		resource = query.Resource{
@@ -30,11 +31,12 @@ func GetResource(provider string, resourceType string, request ResourceRequest) 
 		if err != nil {
 			return nil, err
 		}
-		components, err := provider.ResourceComponents(resourceType, request)
+		components, err := provider.ResourceComponents(logger, resourceType, request)
 		if err != nil {
 			return nil, err
 		}
 		resource.Components = components
 	}
+	logger.Info("Components", zap.Any("Components", resource.Components))
 	return &resource, nil
 }

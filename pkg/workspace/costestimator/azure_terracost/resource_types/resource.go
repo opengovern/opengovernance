@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"go.uber.org/zap"
 )
 
 var (
@@ -76,7 +77,7 @@ func NewProvider(key string) (*Provider, error) {
 func (p *Provider) Name() string { return p.key }
 
 // ResourceComponents returns Component queries for a given terraform.Resource.
-func (p *Provider) ResourceComponents(resourceType string, request any) ([]query.Component, error) {
+func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, request any) ([]query.Component, error) {
 	switch resourceType {
 	case "azurerm_linux_virtual_machine":
 		var vmRequest api.GetAzureVmRequest
@@ -104,6 +105,7 @@ func (p *Provider) ResourceComponents(resourceType string, request any) ([]query
 			return nil, fmt.Errorf("could not parse request")
 		}
 		vals := decodeManagedStorageValues(mdRequest)
+		logger.Info("Vals", zap.Any("Vals", vals))
 		return p.newManagedStorage(vals).Components(), nil
 	default:
 		return nil, nil
