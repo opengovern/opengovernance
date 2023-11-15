@@ -231,7 +231,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	workspace := &db.Workspace{
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           strings.ToLower(request.Name),
-		OwnerId:        userID,
+		OwnerId:        &userID,
 		URI:            uri,
 		Status:         api.StatusBootstrapping,
 		Description:    request.Description,
@@ -311,12 +311,15 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 			if job == nil {
 				return api.BootstrapStatus_WaitingForInsights, errors.New("insight job not found")
 			}
+			if job.Status == api4.InsightJobSucceeded {
+				break
+			}
 			if job.Status == api4.InsightJobInProgress {
 				return api.BootstrapStatus_WaitingForInsights, nil
 			}
 		}
 
-		return api.BootstrapStatus_WaitingForDiscovery, nil
+		return api.BootstrapStatus_Finished, nil
 	}
 
 	return api.BootstrapStatus_Finished, nil
@@ -570,7 +573,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		c.Logger().Errorf("find workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	if workspace.OwnerId != userID {
+	if *workspace.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
@@ -623,7 +626,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 		hasRoleInWorkspace = true
 	}
 
-	if workspace.OwnerId != userId && !hasRoleInWorkspace {
+	if *workspace.OwnerId != userId && !hasRoleInWorkspace {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
@@ -765,7 +768,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			hasRoleInWorkspace = true
 		}
 
-		if workspace.OwnerId != userId && !hasRoleInWorkspace {
+		if *workspace.OwnerId != userId && !hasRoleInWorkspace {
 			continue
 		}
 
@@ -857,7 +860,7 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 		return err
 	}
 
-	if w.OwnerId != userID {
+	if *w.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
