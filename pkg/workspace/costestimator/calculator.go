@@ -10,14 +10,15 @@ import (
 )
 
 func CalcCosts(db *db.Database, logger *zap.Logger, provider string, resourceType string, request kaytuResources.ResourceRequest) (float64, error) {
-	resource, err := kaytuResources.GetResource(provider, resourceType, request)
+	resource, err := kaytuResources.GetResource(logger, provider, resourceType, request)
 	if err != nil {
 		return 0, nil
 	}
 	resources := []query.Resource{*resource}
-
+	logger.Info("Resources", zap.Any("Resources", resources))
 	backend := postgresql.NewBackend(db)
 	state, err := cost.NewState(backend, resources)
+	logger.Info("State", zap.Any("State", state))
 	if err != nil {
 		logger.Error("Error while making cost state", zap.Error(err))
 		return 0, err
