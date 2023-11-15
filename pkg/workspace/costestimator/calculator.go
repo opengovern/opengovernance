@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func CalcCosts(db db.Database, logger zap.Logger, provider string, resourceType string, request kaytuResources.ResourceRequest) (float64, error) {
+func CalcCosts(db *db.Database, logger *zap.Logger, provider string, resourceType string, request kaytuResources.ResourceRequest) (float64, error) {
 	resource, err := kaytuResources.GetResource(provider, resourceType, request)
 	if err != nil {
 		return 0, nil

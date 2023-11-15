@@ -39,11 +39,11 @@ func NewState(backend backend.Backend, queries []query.Resource) (*State, error)
 			}
 
 			quantity := comp.MonthlyQuantity
-			rate := NewMonthly(price.Price, price.Currency)
+			rate := NewMonthly(price.Price, "USD")
 
 			if quantity.IsZero() {
 				quantity = comp.HourlyQuantity
-				rate = NewHourly(price.Price, price.Currency)
+				rate = NewHourly(price.Price, "USD")
 			}
 
 			component := Component{

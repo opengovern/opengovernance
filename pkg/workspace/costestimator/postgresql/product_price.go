@@ -9,11 +9,11 @@ import (
 
 // ProductRepository implements the product.Repository.
 type ProductRepository struct {
-	db db.Database
+	db *db.Database
 }
 
 // NewProductRepository returns an implementation of product.Repository.
-func NewProductRepository(db db.Database) *ProductRepository {
+func NewProductRepository(db *db.Database) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 

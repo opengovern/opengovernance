@@ -9,12 +9,12 @@ import (
 // Backend is the MySQL implementation of the costestimation.Backend, using repositories that connect
 // to a MySQL database.
 type Backend struct {
-	Db          db.Database
+	Db          *db.Database
 	productRepo *ProductRepository
 }
 
 // NewBackend returns a new Backend with a product.Repository and a price.Repository included.
-func NewBackend(db db.Database) *Backend {
+func NewBackend(db *db.Database) *Backend {
 	return &Backend{
 		Db:          db,
 		productRepo: NewProductRepository(db),

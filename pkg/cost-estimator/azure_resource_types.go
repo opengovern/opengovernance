@@ -30,7 +30,7 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
-	cost, err := h.workspaceClient.GetAzureVm(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_machine", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -59,7 +59,7 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
-	cost, err := h.workspaceClient.GetAzureManagedStorage(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -88,7 +88,7 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
-	cost, err := h.workspaceClient.GetAzureLoadBalancer(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err

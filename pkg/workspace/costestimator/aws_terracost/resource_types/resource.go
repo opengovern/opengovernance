@@ -96,7 +96,13 @@ func (p *Provider) ResourceComponents(resourceType string, request any) ([]query
 		//return p.newElasticIP(vals).Components()
 	case "aws_elb":
 		// ELB Classic does not have any special configuration.
-		vals := lbValues{LoadBalancerType: "classic"}
+		var ebsVolumeRequest api.GetLBCostRequest
+		if req, ok := request.(api.GetLBCostRequest); ok {
+			ebsVolumeRequest = req
+		} else {
+			return nil, fmt.Errorf("could not parse request")
+		}
+		vals := decodeLBValues(ebsVolumeRequest)
 		return p.newLB(vals).Components(), nil
 	case "aws_eks_cluster":
 		return nil, nil

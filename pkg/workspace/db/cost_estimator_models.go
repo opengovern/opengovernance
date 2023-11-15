@@ -13,7 +13,6 @@ type AwsEC2InstancePrice struct {
 	CapacityStatus  string
 	PreInstalledSw  string
 	UsageType       string
-	Currency        string
 	PriceUnit       string
 	Price           decimal.Decimal
 }
@@ -36,7 +35,6 @@ type AwsEC2InstanceStoragePrice struct {
 	EffectiveDate int64
 	RegionCode    string
 	VolumeAPIName string
-	Currency      string
 	PriceUnit     string
 	Price         decimal.Decimal
 }
@@ -48,7 +46,6 @@ type AwsCloudwatchPrice struct {
 	EffectiveDate int64
 	RegionCode    string
 	BeginRange    int
-	Currency      string
 	PriceUnit     string
 	Price         decimal.Decimal
 }
@@ -72,7 +69,6 @@ type AwsElasticLoadBalancingPrice struct {
 	ProductFamily string
 	RegionCode    string
 	UsageType     string
-	Currency      string
 	PriceUnit     string
 	Price         decimal.Decimal
 }
@@ -87,7 +83,6 @@ type AwsRdsInstancePrice struct {
 	DatabaseEdition  string
 	LicenseModel     string
 	DeploymentOption string
-	Currency         string
 	PriceUnit        string
 	Price            decimal.Decimal
 }
@@ -99,7 +94,6 @@ type AwsRdsStoragePrice struct {
 	RegionCode       string
 	DeploymentOption string
 	VolumeType       string
-	Currency         string
 	PriceUnit        string
 	Price            decimal.Decimal
 }
@@ -110,7 +104,6 @@ type AwsRdsIopsPrice struct {
 	EffectiveDate    int64
 	RegionCode       string
 	DeploymentOption string
-	Currency         string
 	PriceUnit        string
 	Price            decimal.Decimal
 }
@@ -124,7 +117,6 @@ type AzureVirtualMachinePrice struct {
 	ProductName   string
 	Priority      string
 	SkuName       string
-	Currency      string
 	PriceUnit     string
 	Price         decimal.Decimal
 }
@@ -136,7 +128,6 @@ type AzureManagedStoragePrice struct {
 	ArmRegionName string
 	SkuName       string
 	Meter         string
-	Currency      string
 	PriceUnit     string
 	Price         decimal.Decimal
 }
@@ -147,7 +138,6 @@ type AzureLoadBalancerPrice struct {
 	EffectiveDate int64
 	ArmRegionName string
 	MeterName     string
-	Currency      string
 	PriceUnit     string
 	Price         decimal.Decimal
 }

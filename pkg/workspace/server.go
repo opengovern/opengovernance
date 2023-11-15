@@ -162,13 +162,16 @@ func (s *Server) Register(e *echo.Echo) {
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 
 	costEstimatorGroup := v1Group.Group("/costestimator")
-	costEstimatorGroup.GET("/aws/ec2instance", httpserver2.AuthorizeHandler(s.GetEC2InstanceCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/aws/ec2volume", httpserver2.AuthorizeHandler(s.GetEC2VolumeCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/aws/loadbalancer", httpserver2.AuthorizeHandler(s.GetLBCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/aws/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/azure/virtualmachine", httpserver2.AuthorizeHandler(s.GetAzureVmCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/azure/managedstorage", httpserver2.AuthorizeHandler(s.GetAzureManagedStorageCost, authapi.InternalRole))
-	costEstimatorGroup.GET("/azure/loadbalancer", httpserver2.AuthorizeHandler(s.GetAzureLoadBalancerCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/aws/:resource_type", httpserver2.AuthorizeHandler(s.GetAwsCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/azure/:resource_type", httpserver2.AuthorizeHandler(s.GetAwsCost, authapi.InternalRole))
+
+	//costEstimatorGroup.GET("/aws/ec2instance", httpserver2.AuthorizeHandler(s.GetEC2InstanceCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/aws/ec2volume", httpserver2.AuthorizeHandler(s.GetEC2VolumeCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/aws/loadbalancer", httpserver2.AuthorizeHandler(s.GetLBCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/aws/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/azure/virtualmachine", httpserver2.AuthorizeHandler(s.GetAzureVmCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/azure/managedstorage", httpserver2.AuthorizeHandler(s.GetAzureManagedStorageCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/azure/loadbalancer", httpserver2.AuthorizeHandler(s.GetAzureLoadBalancerCost, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
