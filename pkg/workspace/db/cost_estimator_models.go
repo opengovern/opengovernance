@@ -1,5 +1,7 @@
 package db
 
+import "github.com/shopspring/decimal"
+
 // AwsEC2InstancePrice Service = AmazonEC2, ProductFamily = Compute Instance
 type AwsEC2InstancePrice struct {
 	SKU             string `gorm:"primaryKey"`
@@ -11,8 +13,9 @@ type AwsEC2InstancePrice struct {
 	CapacityStatus  string
 	PreInstalledSw  string
 	UsageType       string
+	Currency        string
 	PriceUnit       string
-	Price           float64
+	Price           decimal.Decimal
 }
 
 // AwsEC2InstanceSystemOperationPrice Service = AmazonEC2, ProductFamily = System Operation
@@ -22,8 +25,9 @@ type AwsEC2InstanceSystemOperationPrice struct {
 	RegionCode    string
 	VolumeAPIName string
 	UsageType     string
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }
 
 // AwsEC2InstanceStoragePrice Service = AmazonEC2, ProductFamily = Storage
@@ -32,8 +36,9 @@ type AwsEC2InstanceStoragePrice struct {
 	EffectiveDate int64
 	RegionCode    string
 	VolumeAPIName string
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }
 
 // AwsCloudwatchPrice Service = AmazonCloudWatch
@@ -43,8 +48,9 @@ type AwsCloudwatchPrice struct {
 	EffectiveDate int64
 	RegionCode    string
 	BeginRange    int
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }
 
 // AwsEC2CpuCreditsPrice Service = AmazonEC2, ProductFamily = CPU Credits
@@ -66,8 +72,9 @@ type AwsElasticLoadBalancingPrice struct {
 	ProductFamily string
 	RegionCode    string
 	UsageType     string
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }
 
 // AwsRdsInstancePrice Service = AmazonRDS, ProductFamily = Database Instance
@@ -80,8 +87,9 @@ type AwsRdsInstancePrice struct {
 	DatabaseEdition  string
 	LicenseModel     string
 	DeploymentOption string
+	Currency         string
 	PriceUnit        string
-	Price            float64
+	Price            decimal.Decimal
 }
 
 // AwsRdsStoragePrice Service = AmazonRDS, ProductFamily = Database Storage
@@ -91,8 +99,9 @@ type AwsRdsStoragePrice struct {
 	RegionCode       string
 	DeploymentOption string
 	VolumeType       string
+	Currency         string
 	PriceUnit        string
-	Price            float64
+	Price            decimal.Decimal
 }
 
 // AwsRdsIopsPrice Service = AmazonRDS, ProductFamily = Provisioned IOPS
@@ -101,8 +110,9 @@ type AwsRdsIopsPrice struct {
 	EffectiveDate    int64
 	RegionCode       string
 	DeploymentOption string
+	Currency         string
 	PriceUnit        string
-	Price            float64
+	Price            decimal.Decimal
 }
 
 // AzureVirtualMachinePrice Service = Virtual Machines, Family = Compute
@@ -114,8 +124,9 @@ type AzureVirtualMachinePrice struct {
 	ProductName   string
 	Priority      string
 	SkuName       string
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }
 
 // AzureManagedStoragePrice Product Name contains "Disk"
@@ -125,8 +136,9 @@ type AzureManagedStoragePrice struct {
 	ArmRegionName string
 	SkuName       string
 	Meter         string
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }
 
 // AzureLoadBalancerPrice Service = Load Balancer, Family = Networking
@@ -135,6 +147,7 @@ type AzureLoadBalancerPrice struct {
 	EffectiveDate int64
 	ArmRegionName string
 	MeterName     string
+	Currency      string
 	PriceUnit     string
-	Price         float64
+	Price         decimal.Decimal
 }

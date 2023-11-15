@@ -55,19 +55,19 @@ type dbType struct {
 }
 
 var dbTypeMap = map[string]dbType{
-	"aurora":        {"Aurora MySQL", ""},
-	"aurora-mysql":  {"Aurora MySQL", ""},
-	"mariadb":       {"MariaDB", ""},
-	"mysql":         {"MySQL", ""},
-	"postgres":      {"PostgreSQL", ""},
-	"oracle-se":     {"Oracle", "Standard"},
-	"oracle-se1":    {"Oracle", "Standard One"},
-	"oracle-se2":    {"Oracle", "Standard Two"},
-	"oracle-ee":     {"Oracle", "Enterprise"},
-	"sqlserver-se":  {"SQL Server", "Standard"},
-	"sqlserver-ee":  {"SQL Server", "Enterprise"},
-	"sqlserver-ex":  {"SQL Server", "Express"},
-	"sqlserver-web": {"SQL Server", "Web"},
+	"aurora":            {"Aurora MySQL", ""},
+	"aurora-postgresql": {"Aurora MySQL", ""},
+	"mariadb":           {"MariaDB", ""},
+	"postgresql":        {"MySQL", ""},
+	"postgres":          {"PostgreSQL", ""},
+	"oracle-se":         {"Oracle", "Standard"},
+	"oracle-se1":        {"Oracle", "Standard One"},
+	"oracle-se2":        {"Oracle", "Standard Two"},
+	"oracle-ee":         {"Oracle", "Enterprise"},
+	"sqlserver-se":      {"SQL Server", "Standard"},
+	"sqlserver-ee":      {"SQL Server", "Enterprise"},
+	"sqlserver-ex":      {"SQL Server", "Express"},
+	"sqlserver-web":     {"SQL Server", "Web"},
 }
 var licenseModelMap = map[string]string{
 	"license-included":       "License included",
