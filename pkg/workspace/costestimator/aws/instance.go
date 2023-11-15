@@ -20,7 +20,7 @@ func EC2InstanceCostByResource(db *db.Database, request api.GetEC2InstanceCostRe
 	if err != nil {
 		return 0, err
 	}
-	cost += instanceCost.Price * costestimator.TimeInterval
+	cost += instanceCost.Price.InexactFloat64() * costestimator.TimeInterval
 
 	for _, volume := range description.LaunchTemplateData.BlockDeviceMappings {
 		volumeCost, err := calcEC2VolumeCost(db, request.RegionCode, string(volume.Ebs.VolumeType), *volume.Ebs.VolumeSize, *volume.Ebs.Iops)
@@ -50,7 +50,7 @@ func EC2InstanceCostByResource(db *db.Database, request api.GetEC2InstanceCostRe
 				return 0, err
 			}
 			days := costestimator.GetNumberOfDays()
-			cost += (((cloudWatch.Price * 7) / float64(days)) / 24) * costestimator.TimeInterval //TODO: Change this default metrics number
+			cost += (((cloudWatch.Price.InexactFloat64() * 7) / float64(days)) / 24) * costestimator.TimeInterval //TODO: Change this default metrics number
 		}
 	}
 
@@ -62,7 +62,7 @@ func EC2InstanceCostByResource(db *db.Database, request api.GetEC2InstanceCostRe
 			if err != nil {
 				return 0, err
 			}
-			cost += ebsCost.Price * costestimator.TimeInterval
+			cost += ebsCost.Price.InexactFloat64() * costestimator.TimeInterval
 		}
 	}
 

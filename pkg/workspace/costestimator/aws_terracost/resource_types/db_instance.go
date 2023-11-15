@@ -1,9 +1,9 @@
 package terraform
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/shopspring/decimal"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
@@ -77,22 +77,17 @@ var licenseModelMap = map[string]string{
 	"bring-your-own-license": "Bring your own license",
 }
 
-func decodeDBInstanceValues(tfVals map[string]interface{}) (dbInstanceValues, error) {
-	var v dbInstanceValues
-	config := &mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &v,
+func decodeDBInstanceValues(request api.GetRDSInstanceRequest) dbInstanceValues {
+	return dbInstanceValues{
+		InstanceClass:    "dbinstance",
+		AvailabilityZone: request.RegionCode,
+		Engine:           *request.DBInstance.DBInstance.Engine,
+		LicenseModel:     *request.DBInstance.DBInstance.LicenseModel,
+		MultiAZ:          request.DBInstance.DBInstance.MultiAZ,
+		AllocatedStorage: float64(request.DBInstance.DBInstance.AllocatedStorage),
+		StorageType:      *request.DBInstance.DBInstance.StorageType,
+		IOPS:             float64(*request.DBInstance.DBInstance.Iops),
 	}
-
-	decoder, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return v, err
-	}
-
-	if err := decoder.Decode(tfVals); err != nil {
-		return v, err
-	}
-	return v, nil
 }
 
 // NewInstance creates a new Instance from Terraform values.

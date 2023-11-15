@@ -2,9 +2,9 @@ package terraform
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/shopspring/decimal"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
@@ -74,23 +74,86 @@ type instanceValues struct {
 }
 
 // decodeInstanceValues decodes and returns instanceValues from a Terraform values map.
-func decodeInstanceValues(tfVals map[string]interface{}) (instanceValues, error) {
-	var v instanceValues
-	config := &mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &v,
-	}
-
-	decoder, err := mapstructure.NewDecoder(config)
+func decodeInstanceValues(request api.GetEC2InstanceCostRequest) (*instanceValues, error) {
+	operatingSystem, err := getInstanceOperatingSystem(request)
 	if err != nil {
-		return v, err
+		return nil, err
 	}
-
-	if err := decoder.Decode(tfVals); err != nil {
-		return v, err
+	ebsOptimized := false
+	if request.Instance.LaunchTemplateData.EbsOptimized != nil {
+		if *request.Instance.LaunchTemplateData.EbsOptimized == true {
+			ebsOptimized = true
+		}
 	}
+	enableMonitoring := false
+	if request.Instance.LaunchTemplateData.Monitoring.Enabled != nil {
+		if *request.Instance.LaunchTemplateData.Monitoring.Enabled {
+			enableMonitoring = true
+		}
+	}
+	cpuCredits := []struct {
+		CPUCredits string `mapstructure:"cpu_credits"`
+	}{{CPUCredits: *request.Instance.LaunchTemplateData.CreditSpecification.CpuCredits}}
+	var rootBlockDevice []struct {
+		VolumeType string  `mapstructure:"volume_type"`
+		VolumeSize float64 `mapstructure:"volume_size"`
+		IOPS       float64 `mapstructure:"iops"`
+	}
+	for _, volume := range request.Instance.LaunchTemplateData.BlockDeviceMappings {
+		rootBlockDevice = append(rootBlockDevice, struct {
+			VolumeType string  `mapstructure:"volume_type"`
+			VolumeSize float64 `mapstructure:"volume_size"`
+			IOPS       float64 `mapstructure:"iops"`
+		}{
+			VolumeType: string(volume.Ebs.VolumeType),
+			VolumeSize: float64(*volume.Ebs.VolumeSize),
+			IOPS:       float64(*volume.Ebs.Iops),
+		})
+	}
+	return &instanceValues{
+		InstanceType:     string(request.Instance.Instance.InstanceType),
+		Tenancy:          string(request.Instance.Instance.Placement.Tenancy),
+		AvailabilityZone: request.RegionCode,
+		OperatingSystem:  operatingSystem,
 
-	return v, nil
+		EBSOptimized:        ebsOptimized,
+		EnableMonitoring:    enableMonitoring,
+		CreditSpecification: cpuCredits,
+
+		RootBlockDevice: rootBlockDevice,
+	}, nil
+}
+
+// getInstanceOperatingSystem get instance operating system
+// not sure about this function, should check operating systems in our resources and in cost tables
+func getInstanceOperatingSystem(request api.GetEC2InstanceCostRequest) (string, error) {
+	instanceTags := request.Instance.Instance.Tags
+	launchTableDataTags := request.Instance.LaunchTemplateData.TagSpecifications[0].Tags
+	var operatingSystem string
+	for _, tag := range instanceTags {
+		if *tag.Key == "wk_gbs_interpreted_os_type" {
+			operatingSystem = *tag.Value
+			break
+		}
+	}
+	if operatingSystem == "" {
+		for _, tag := range launchTableDataTags {
+			if *tag.Key == "wk_gbs_interpreted_os_type" {
+				operatingSystem = *tag.Value
+				break
+			}
+		}
+	}
+	if operatingSystem == "" {
+		return "", fmt.Errorf("could not find operating system")
+	}
+	if strings.Contains(operatingSystem, "Linux") {
+		return "Linux", nil
+	} else if strings.Contains(operatingSystem, "Windows") { // Make sure
+		return "Windows", nil
+	} else {
+		return operatingSystem, nil
+	}
 }
 
 // newInstance creates a new Instance from instanceValues.

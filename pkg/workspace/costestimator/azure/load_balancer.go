@@ -35,13 +35,13 @@ func getStandardLoadBalancerCost(db *db.Database, request api.GetAzureLoadBalanc
 		if err != nil {
 			return 0, err
 		}
-		cost += includeRules.Price
+		cost += includeRules.Price.InexactFloat64()
 	} else if string(*request.LoadBalancer.LoadBalancer.SKU.Tier) == "Global" {
 		includeRules, err := db.FindAzureLoadBalancerPrice(regionCode, "Global Included LB Rules and Outbound Rules")
 		if err != nil {
 			return 0, err
 		}
-		cost += includeRules.Price
+		cost += includeRules.Price.InexactFloat64()
 	}
 	if rulesNumber > 5 {
 		overageRules := rulesNumber - 5
@@ -50,13 +50,13 @@ func getStandardLoadBalancerCost(db *db.Database, request api.GetAzureLoadBalanc
 			if err != nil {
 				return 0, err
 			}
-			cost += overagePrice.Price * float64(overageRules)
+			cost += overagePrice.Price.InexactFloat64() * float64(overageRules)
 		} else if string(*request.LoadBalancer.LoadBalancer.SKU.Tier) == "Global" {
 			overagePrice, err := db.FindAzureLoadBalancerPrice(regionCode, "Global Overage LB Rules and Outbound Rules")
 			if err != nil {
 				return 0, err
 			}
-			cost += overagePrice.Price * float64(overageRules)
+			cost += overagePrice.Price.InexactFloat64() * float64(overageRules)
 		}
 	}
 
@@ -73,13 +73,13 @@ func getStandardLoadBalancerCost(db *db.Database, request api.GetAzureLoadBalanc
 		if err != nil {
 			return 0, err
 		}
-		cost += overagePrice.Price * float64(dataProceeded)
+		cost += overagePrice.Price.InexactFloat64() * float64(dataProceeded)
 	} else if string(*request.LoadBalancer.LoadBalancer.SKU.Tier) == "Global" {
 		overagePrice, err := db.FindAzureLoadBalancerPrice(regionCode, "Global Data Processed")
 		if err != nil {
 			return 0, err
 		}
-		cost += overagePrice.Price * float64(dataProceeded)
+		cost += overagePrice.Price.InexactFloat64() * float64(dataProceeded)
 	}
 	return cost * costestimator.TimeInterval, nil
 }

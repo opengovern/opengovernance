@@ -1,11 +1,11 @@
 package terraform
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/price"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
-	"github.com/mitchellh/mapstructure"
 	"github.com/shopspring/decimal"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
@@ -24,33 +24,23 @@ type LB struct {
 
 // lbValues represents the structure of Terraform values for aws_lb/aws_alb resource.
 type lbValues struct {
+	Region           string
 	LoadBalancerType string `mapstructure:"load_balancer_type"`
 }
 
 // decodeLBValues decodes and returns lbValues from a Terraform values map.
-func decodeLBValues(tfVals map[string]interface{}) (lbValues, error) {
-	var v lbValues
-	config := &mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &v,
+func decodeLBValues(request api.GetLBCostRequest) lbValues {
+	return lbValues{
+		Region:           request.RegionCode,
+		LoadBalancerType: request.LBType,
 	}
-
-	decoder, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return v, err
-	}
-
-	if err := decoder.Decode(tfVals); err != nil {
-		return v, err
-	}
-	return v, nil
 }
 
 // newLB created a new LB from lbValues.
 func (p *Provider) newLB(vals lbValues) *LB {
 	return &LB{
 		provider: p,
-		region:   p.region,
+		region:   region.Code(vals.Region),
 		lbType:   vals.LoadBalancerType,
 	}
 }

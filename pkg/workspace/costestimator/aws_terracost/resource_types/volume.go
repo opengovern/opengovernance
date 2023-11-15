@@ -1,7 +1,7 @@
 package terraform
 
 import (
-	"github.com/mitchellh/mapstructure"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/shopspring/decimal"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
@@ -29,22 +29,13 @@ type volumeValues struct {
 }
 
 // decodeVolumeValues decodes and returns volumeValues from a Terraform values map.
-func decodeVolumeValues(tfVals map[string]interface{}) (volumeValues, error) {
-	var v volumeValues
-	config := &mapstructure.DecoderConfig{
-		WeaklyTypedInput: true,
-		Result:           &v,
+func decodeVolumeValues(request api.GetEC2VolumeCostRequest) volumeValues {
+	return volumeValues{
+		AvailabilityZone: request.RegionCode,
+		Type:             string(request.Volume.Volume.VolumeType),
+		Size:             float64(*request.Volume.Volume.Size),
+		IOPS:             float64(*request.Volume.Volume.Iops),
 	}
-
-	decoder, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return v, err
-	}
-
-	if err := decoder.Decode(tfVals); err != nil {
-		return v, err
-	}
-	return v, nil
 }
 
 // newVolume creates a new Volume from volumeValues.
