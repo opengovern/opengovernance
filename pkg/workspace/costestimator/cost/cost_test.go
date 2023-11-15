@@ -3,7 +3,7 @@ package cost_test
 import (
 	"testing"
 
-	"github.com/kaytu-io/terracost/cost"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/cost"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )

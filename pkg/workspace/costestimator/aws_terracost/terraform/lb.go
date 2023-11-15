@@ -1,14 +1,14 @@
 package terraform
 
 import (
-	"github.com/kaytu-io/terracost/price"
-	"github.com/kaytu-io/terracost/product"
-	"github.com/kaytu-io/terracost/query"
-	"github.com/kaytu-io/terracost/util"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/price"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
 	"github.com/mitchellh/mapstructure"
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/terracost/aws/region"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
 )
 
 // LB represents a Load Balancer definition that can be cost-estimated.

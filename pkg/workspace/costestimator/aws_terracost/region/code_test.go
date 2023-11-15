@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kaytu-io/terracost/aws/region"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
 )
 
 func TestNewFromZone(t *testing.T) {

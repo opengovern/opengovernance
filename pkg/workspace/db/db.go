@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"strconv"
@@ -94,7 +95,7 @@ func (s *Database) GetWorkspaceByName(name string) (*Workspace, error) {
 
 func (s *Database) ListWorkspacesByOwner(ownerId string) ([]*Workspace, error) {
 	var workspaces []*Workspace
-	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
+	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{OwnerId: &ownerId}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil

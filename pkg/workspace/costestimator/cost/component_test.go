@@ -7,7 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kaytu-io/terracost/cost"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/cost"
 )
 
 func TestComponentDiff_PriorCost(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/terraform"
 )
 
 // Provider is an implementation of the terraform.Provider, used to extract component queries from
@@ -27,109 +26,39 @@ func NewProvider(key string, regionCode region.Code) (*Provider, error) {
 func (p *Provider) Name() string { return p.key }
 
 // ResourceComponents returns Component queries for a given terraform.Resource.
-func (p *Provider) ResourceComponents(rss map[string]terraform.Resource, tfRes terraform.Resource) []query.Component {
-	switch tfRes.Type {
+func (p *Provider) ResourceComponents(resourceType string, request any) ([]query.Component, error) {
+	switch resourceType {
 	case "aws_instance":
 		vals, err := decodeInstanceValues(tfRes.Values)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		return p.newInstance(vals).Components()
-	case "aws_autoscaling_group":
-		vals, err := decodeAutoscalingGroupValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newAutoscalingGroup(rss, vals).Components()
+		return p.newInstance(vals).Components(), nil
 	case "aws_db_instance":
 		vals, err := decodeDBInstanceValues(tfRes.Values)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		return p.newDBInstance(vals).Components()
+		return p.newDBInstance(vals).Components(), nil
 	case "aws_ebs_volume":
 		vals, err := decodeVolumeValues(tfRes.Values)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		return p.newVolume(vals).Components()
-	case "aws_efs_file_system":
-		vals, err := decodeEFSFileSystemValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newEFSFileSystem(rss, vals).Components()
-	case "aws_elasticache_cluster":
-		vals, err := decodeElastiCacheValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newElastiCache(vals).Components()
-	case "aws_elasticache_replication_group":
-		vals, err := decodeElastiCacheReplicationValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newElastiCacheReplication(vals).Components()
-	case "aws_eip":
-		vals, err := decodeElasticIPValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newElasticIP(vals).Components()
+		return p.newVolume(vals).Components(), nil
 	case "aws_elb":
 		// ELB Classic does not have any special configuration.
 		vals := lbValues{LoadBalancerType: "classic"}
-		return p.newLB(vals).Components()
-	case "aws_eks_cluster":
-		vals, err := decodeEKSClusterValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newEKSCluster(vals).Components()
-	case "aws_eks_node_group":
-		vals, err := decodeEKSNodeGroupValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newEKSNodeGroup(rss, vals).Components()
-	case "aws_fsx_lustre_file_system":
-		vals, err := decodeFSxLustreFileSystemValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newFSxLustreFileSystem(rss, vals).Components()
-	case "aws_fsx_ontap_file_system":
-		vals, err := decodeFSxOntapFileSystemValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newFSxOntapFileSystem(rss, vals).Components()
-	case "aws_fsx_openzfs_file_system":
-		vals, err := decodeFSxOpenzfsFileSystemValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newFSxOpenzfsFileSystem(rss, vals).Components()
-	case "aws_fsx_windows_file_system":
-		vals, err := decodeFSxWindowsFileSystemValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newFSxWindowsFileSystem(rss, vals).Components()
+		return p.newLB(vals).Components(), nil
+
 	case "aws_lb", "aws_alb":
 		vals, err := decodeLBValues(tfRes.Values)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-		return p.newLB(vals).Components()
-	case "aws_nat_gateway":
-		vals, err := decodeNatGatewayValues(tfRes.Values)
-		if err != nil {
-			return nil
-		}
-		return p.newNatGateway(vals).Components()
+		return p.newLB(vals).Components(), nil
+
 	default:
-		return nil
+		return nil, nil
 	}
 }

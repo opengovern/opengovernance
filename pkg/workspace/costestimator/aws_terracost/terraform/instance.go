@@ -7,11 +7,11 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/terracost/aws/region"
-	"github.com/kaytu-io/terracost/price"
-	"github.com/kaytu-io/terracost/product"
-	"github.com/kaytu-io/terracost/query"
-	"github.com/kaytu-io/terracost/util"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/price"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
 )
 
 // Instance represents an EC2 instance definition that can be cost-estimated.
