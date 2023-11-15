@@ -34,7 +34,10 @@ const (
 )
 
 type BootstrapStatusResponse struct {
-	Status BootstrapStatus `json:"status"`
+	MinRequiredConnections int64                 `json:"minRequiredConnections"`
+	MaxConnections         int64                 `json:"maxConnections"`
+	ConnectionCount        map[source.Type]int64 `json:"connection_count"`
+	Status                 BootstrapStatus       `json:"status"`
 }
 
 type ChangeWorkspaceOwnershipRequest struct {
@@ -56,7 +59,7 @@ type ChangeWorkspaceOrganizationRequest struct {
 type Workspace struct {
 	ID                       string          `json:"id" example:"ws-698542025141040315"`
 	Name                     string          `json:"name" example:"kaytu"`
-	OwnerId                  string          `json:"ownerId" example:"google-oauth2|204590896945502695694"`
+	OwnerId                  *string         `json:"ownerId" example:"google-oauth2|204590896945502695694"`
 	URI                      string          `json:"uri" example:"https://app.kaytu.dev/kaytu"`
 	Status                   WorkspaceStatus `json:"status" example:"PROVISIONED"`
 	Description              string          `json:"description" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`

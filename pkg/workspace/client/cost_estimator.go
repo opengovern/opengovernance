@@ -15,6 +15,7 @@ type CostEstimatorPricesClient interface {
 	GetRDSInstance(ctx *httpclient.Context, req api.GetRDSInstanceRequest) (float64, error)
 	GetAzureVm(ctx *httpclient.Context, req api.GetAzureVmRequest) (float64, error)
 	GetAzureManagedStorage(ctx *httpclient.Context, req api.GetAzureManagedStorageRequest) (float64, error)
+	GetAzureLoadBalancer(ctx *httpclient.Context, req api.GetAzureLoadBalancerRequest) (float64, error)
 	GetAzureSqlServerDatabase(ctx *httpclient.Context, req api.GetAzureSqlServersDatabasesRequest) (float64, error)
 }
 
@@ -98,6 +99,20 @@ func (s *costEstimatorClient) GetAzureVm(ctx *httpclient.Context, req api.GetAzu
 
 func (s *costEstimatorClient) GetAzureManagedStorage(ctx *httpclient.Context, req api.GetAzureManagedStorageRequest) (float64, error) {
 	url := fmt.Sprintf("%s/api/v1/costestimator/azure/managedstorage", s.baseURL)
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return 0, err
+	}
+	var response float64
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
+		return 0, err
+	}
+	return response, nil
+}
+
+func (s *costEstimatorClient) GetAzureLoadBalancer(ctx *httpclient.Context, req api.GetAzureLoadBalancerRequest) (float64, error) {
+	url := fmt.Sprintf("%s/api/v1/costestimator/azure/loadbalancer", s.baseURL)
 
 	payload, err := json.Marshal(req)
 	if err != nil {

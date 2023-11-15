@@ -51,3 +51,12 @@ const (
 	DescribeResourceJobFailed     DescribeResourceJobStatus = "FAILED"
 	DescribeResourceJobSucceeded  DescribeResourceJobStatus = "SUCCEEDED"
 )
+
+type DescribeAllJobsStatus string
+
+const (
+	DescribeAllJobsStatusNoJobToRun         DescribeAllJobsStatus = "NO_JOB_TO_RUN"
+	DescribeAllJobsStatusJobsRunning        DescribeAllJobsStatus = "JOBS_RUNNING"
+	DescribeAllJobsStatusJobsFinished       DescribeAllJobsStatus = "JOBS_FINISHED"
+	DescribeAllJobsStatusResourcesPublished DescribeAllJobsStatus = "RESOURCES_PUBLISHED"
+)

@@ -5,9 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/smithy-go"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	api4 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -159,6 +168,7 @@ func (s *Server) Register(e *echo.Echo) {
 	costEstimatorGroup.GET("/aws/rdsinstance", httpserver2.AuthorizeHandler(s.GetRDSInstanceCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/azure/virtualmachine", httpserver2.AuthorizeHandler(s.GetAzureVmCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/azure/managedstorage", httpserver2.AuthorizeHandler(s.GetAzureManagedStorageCost, authapi.InternalRole))
+	costEstimatorGroup.GET("/azure/loadbalancer", httpserver2.AuthorizeHandler(s.GetAzureLoadBalancerCost, authapi.InternalRole))
 	costEstimatorGroup.GET("/azure/sqlserverdatabase", httpserver2.AuthorizeHandler(s.GetAzureSqlServerDatabase, authapi.InternalRole))
 }
 
@@ -222,7 +232,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	workspace := &db.Workspace{
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           strings.ToLower(request.Name),
-		OwnerId:        userID,
+		OwnerId:        &userID,
 		URI:            uri,
 		Status:         api.StatusBootstrapping,
 		Description:    request.Description,
@@ -230,27 +240,87 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Tier:           api.Tier(request.Tier),
 		OrganizationID: organizationID,
 	}
-	if err := s.db.CreateWorkspace(workspace); err != nil {
-		if strings.Contains(err.Error(), "duplicate key value") {
-			return echo.NewHTTPError(http.StatusFound, "workspace already exists")
-		}
-		c.Logger().Errorf("create workspace: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+
+	rs, err := s.db.GetReservedWorkspace()
+	if err != nil {
+		return err
 	}
+
+	if rs == nil {
+		if err := s.db.CreateWorkspace(workspace); err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				return echo.NewHTTPError(http.StatusFound, "workspace already exists")
+			}
+			c.Logger().Errorf("create workspace: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+		}
+	} else {
+		workspace.ID = rs.ID
+		if err := s.db.UpdateWorkspace(workspace); err != nil {
+			if strings.Contains(err.Error(), "duplicate key value") {
+				return echo.NewHTTPError(http.StatusFound, "workspace already exists")
+			}
+			c.Logger().Errorf("create workspace: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+		}
+
+		limits := api.GetLimitsByTier(workspace.Tier)
+		authCtx := &httpclient.Context{
+			UserID:         *workspace.OwnerId,
+			UserRole:       authapi.AdminRole,
+			WorkspaceName:  workspace.Name,
+			WorkspaceID:    workspace.ID,
+			MaxUsers:       limits.MaxUsers,
+			MaxConnections: limits.MaxConnections,
+			MaxResources:   limits.MaxResources,
+		}
+
+		if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
+			UserID:   *workspace.OwnerId,
+			RoleName: authapi.AdminRole,
+		}); err != nil {
+			return fmt.Errorf("put role binding: %w", err)
+		}
+
+		helmRelease, err := s.StateManager.FindHelmRelease(context.Background(), workspace)
+		if err != nil {
+			return fmt.Errorf("find helm release: %w", err)
+		}
+		if helmRelease == nil {
+			return fmt.Errorf("helm release not found")
+		}
+
+		values := helmRelease.GetValues()
+		valuesJSON, err := json.Marshal(values)
+		if err != nil {
+			return err
+		}
+
+		var settings statemanager.KaytuWorkspaceSettings
+		err = json.Unmarshal(valuesJSON, &settings)
+		if err != nil {
+			return err
+		}
+
+		settings.Kaytu.Workspace.Name = workspace.Name
+		b, err := json.Marshal(settings)
+		if err != nil {
+			return fmt.Errorf("marshalling values: %w", err)
+		}
+		helmRelease.Spec.Values.Raw = b
+		err = s.kubeClient.Update(context.Background(), helmRelease)
+		if err != nil {
+			return fmt.Errorf("updating workspace name: %w", err)
+		}
+	}
+
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
 	})
 }
 
-func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, error) {
-	ws, err := s.db.GetWorkspaceByName(workspaceName)
-	if err != nil {
-		return "", err
-	}
-
-	if ws == nil {
-		return "", errors.New("workspace not found")
-	}
+func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, error) {
+	hctx := &httpclient.Context{UserRole: authapi.InternalRole}
 
 	if ws.Status == api.StatusBootstrapping {
 		if !ws.IsBootstrapInputFinished {
@@ -259,7 +329,65 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 		if !ws.IsCreated {
 			return api.BootstrapStatus_CreatingWorkspace, nil
 		}
-		return api.BootstrapStatus_WaitingForDiscovery, nil
+
+		schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
+		schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
+
+		status, err := schedulerClient.GetDescribeAllJobsStatus(hctx)
+		if err != nil {
+			return api.BootstrapStatus_WaitingForDiscovery, err
+		}
+
+		if status == nil || *status != api3.DescribeAllJobsStatusResourcesPublished {
+			return api.BootstrapStatus_WaitingForDiscovery, nil
+		}
+
+		job, err := schedulerClient.GetAnalyticsJob(hctx, ws.AnalyticsJobID)
+		if err != nil {
+			return api.BootstrapStatus_WaitingForAnalytics, err
+		}
+		if job == nil {
+			return api.BootstrapStatus_WaitingForAnalytics, nil
+		}
+		if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
+			return api.BootstrapStatus_WaitingForAnalytics, nil
+		}
+
+		complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
+		if err != nil {
+			return api.BootstrapStatus_WaitingForCompliance, err
+		}
+
+		if complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed {
+			return api.BootstrapStatus_WaitingForCompliance, nil
+		}
+
+		complianceJob, err = schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
+		if err != nil {
+			return api.BootstrapStatus_WaitingForCompliance, err
+		}
+
+		if complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed {
+			return api.BootstrapStatus_WaitingForCompliance, nil
+		}
+
+		for _, insJobID := range ws.InsightJobsID {
+			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
+			if err != nil {
+				return api.BootstrapStatus_WaitingForInsights, err
+			}
+			if job == nil {
+				return api.BootstrapStatus_WaitingForInsights, errors.New("insight job not found")
+			}
+			if job.Status == api4.InsightJobSucceeded {
+				break
+			}
+			if job.Status == api4.InsightJobInProgress {
+				return api.BootstrapStatus_WaitingForInsights, nil
+			}
+		}
+
+		return api.BootstrapStatus_Finished, nil
 	}
 
 	return api.BootstrapStatus_Finished, nil
@@ -278,13 +406,40 @@ func (s *Server) getBootstrapStatus(workspaceName string) (api.BootstrapStatus, 
 func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
 
-	status, err := s.getBootstrapStatus(workspaceName)
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
 	if err != nil {
 		return err
 	}
 
+	if ws == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("workspace not found"))
+	}
+
+	status, err := s.getBootstrapStatus(ws)
+	if err != nil {
+		return err
+	}
+
+	currentConnectionCount := map[source.Type]int64{}
+	awsCount, err := s.db.CountConnectionsByConnector(source.CloudAWS)
+	if err != nil {
+		return err
+	}
+	currentConnectionCount[source.CloudAWS] = awsCount
+
+	azureCount, err := s.db.CountConnectionsByConnector(source.CloudAzure)
+	if err != nil {
+		return err
+	}
+	currentConnectionCount[source.CloudAzure] = azureCount
+
+	limits := api.GetLimitsByTier(ws.Tier)
+
 	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-		Status: status,
+		MinRequiredConnections: 3,
+		MaxConnections:         limits.MaxConnections,
+		ConnectionCount:        currentConnectionCount,
+		Status:                 status,
 	})
 }
 
@@ -314,6 +469,13 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 	return c.JSON(http.StatusOK, "")
 }
 
+func ignoreAwsOrgError(err error) bool {
+	var ae smithy.APIError
+	return errors.As(err, &ae) &&
+		(ae.ErrorCode() == (&types.AWSOrganizationsNotInUseException{}).ErrorCode() ||
+			ae.ErrorCode() == (&types.AccessDeniedException{}).ErrorCode())
+}
+
 // AddCredential godoc
 //
 //	@Summary	Add credential for workspace to be onboarded
@@ -332,11 +494,17 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
+	ws, err := s.db.GetWorkspaceByName(workspaceName)
+	if err != nil {
+		return err
+	}
+
 	configStr, err := json.Marshal(request.Config)
 	if err != nil {
 		return err
 	}
 
+	count := 0
 	switch request.ConnectorType {
 	case source.CloudAWS:
 		cfg := api2.AWSCredentialConfig{}
@@ -357,6 +525,23 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		err = kaytuAws.CheckGetUserPermission(s.logger, sdkCnf)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		if sdkCnf.Region == "" {
+			sdkCnf.Region = "us-east-1"
+		}
+		accounts, err := describer.OrganizationAccounts(context.Background(), sdkCnf)
+		if err != nil {
+			if !ignoreAwsOrgError(err) {
+				return err
+			}
+		}
+
+		for _, account := range accounts {
+			if account.Id == nil {
+				continue
+			}
+			count++
 		}
 	case source.CloudAzure:
 		cfg := api2.AzureCredentialConfig{}
@@ -384,12 +569,42 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+
+		identity, err := azidentity.NewClientSecretCredential(
+			azureConfig.TenantID,
+			azureConfig.ClientID,
+			azureConfig.ClientSecret,
+			nil)
+		if err != nil {
+			return err
+		}
+
+		subClient, err := armsubscription.NewSubscriptionsClient(identity, nil)
+		if err != nil {
+			return err
+		}
+
+		ctx2 := context.Background()
+		it := subClient.NewListPager(nil)
+		for it.More() {
+			page, err := it.NextPage(ctx2)
+			if err != nil {
+				return err
+			}
+			for _, v := range page.Value {
+				if v == nil || v.State == nil {
+					continue
+				}
+				count++
+			}
+		}
 	}
 
 	cred := db2.Credential{
-		ConnectorType: request.ConnectorType,
-		Workspace:     workspaceName,
-		Metadata:      configStr,
+		ConnectorType:   request.ConnectorType,
+		WorkspaceID:     ws.ID,
+		Metadata:        configStr,
+		ConnectionCount: count,
 	}
 	err = s.db.CreateCredential(&cred)
 	if err != nil {
@@ -426,7 +641,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		c.Logger().Errorf("find workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	if workspace.OwnerId != userID {
+	if *workspace.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
@@ -479,7 +694,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 		hasRoleInWorkspace = true
 	}
 
-	if workspace.OwnerId != userId && !hasRoleInWorkspace {
+	if *workspace.OwnerId != userId && !hasRoleInWorkspace {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
@@ -621,7 +836,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			hasRoleInWorkspace = true
 		}
 
-		if workspace.OwnerId != userId && !hasRoleInWorkspace {
+		if workspace.OwnerId == nil || (*workspace.OwnerId != userId && !hasRoleInWorkspace) {
 			continue
 		}
 
@@ -713,7 +928,7 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 		return err
 	}
 
-	if w.OwnerId != userID {
+	if *w.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 

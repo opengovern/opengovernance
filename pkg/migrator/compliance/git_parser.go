@@ -3,6 +3,7 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -152,9 +153,12 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 				BenchmarkID: o.ID,
 			})
 		}
+		connector, _ := source.ParseType(o.Connector)
+
 		b := db.Benchmark{
 			ID:          o.ID,
 			Title:       o.Title,
+			Connector:   connector,
 			Description: o.Description,
 			LogoURI:     o.LogoURI,
 			Category:    o.Category,

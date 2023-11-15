@@ -10,7 +10,7 @@ type Workspace struct {
 
 	ID                       string              `json:"id"`
 	Name                     string              `gorm:"uniqueIndex" json:"name"`
-	OwnerId                  string              `json:"owner_id"`
+	OwnerId                  *string             `json:"owner_id"`
 	URI                      string              `json:"uri"`
 	Status                   api.WorkspaceStatus `json:"status"`
 	Description              string              `json:"description"`
@@ -20,6 +20,9 @@ type Workspace struct {
 	Organization             *Organization       `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	IsCreated                bool                `json:"is_created"`
 	IsBootstrapInputFinished bool                `json:"is_bootstrap_input_finished"`
+	AnalyticsJobID           uint                `json:"analytics_job_id"`
+	InsightJobsID            string              `json:"insight_jobs_id"`
+	ComplianceTriggered      bool                `json:"complianceTriggered"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {

@@ -35,6 +35,12 @@ type GetAzureManagedStorageRequest struct {
 	ManagedStorage azure.ComputeDiskDescription
 }
 
+type GetAzureLoadBalancerRequest struct {
+	RegionCode         string
+	DailyDataProceeded *int64 // (GB)
+	LoadBalancer       azure.LoadBalancerDescription
+}
+
 type GetAzureSqlServersDatabasesRequest struct {
 	RegionCode  string
 	SqlServerDB azure.SqlDatabaseDescription

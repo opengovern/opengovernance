@@ -291,7 +291,6 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 		Credential:           creds,
 		LifecycleState:       ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
 		Metadata:             datatypes.JSON(jsonMetadata),
 	}
@@ -308,6 +307,10 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 	}
 
 	lifecycleState := ConnectionLifecycleStateDiscovered
+	if creds.AutoOnboardEnabled {
+		lifecycleState = ConnectionLifecycleStateOnboard
+	}
+
 	if account.Account.Status != types.AccountStatusActive {
 		lifecycleState = ConnectionLifecycleStateArchived
 	}

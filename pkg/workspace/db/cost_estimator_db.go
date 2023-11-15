@@ -129,16 +129,26 @@ func (s *Database) FindAzureVMPrice(regionCode string, size string, priority str
 }
 
 func (s *Database) FindAzureManagedStoragePrice(regionCode string, skuName string, meter string) (*AzureManagedStoragePrice, error) {
-	var vm *AzureManagedStoragePrice
+	var ms *AzureManagedStoragePrice
 	err := s.orm.Model(&AzureManagedStoragePrice{}).Where("arm_region_name = ?", regionCode).
-		Where("sku_name = ?", skuName).Where("meter = ?", meter).Find(&vm).Error
+		Where("sku_name = ?", skuName).Where("meter = ?", meter).Find(&ms).Error
 	if err != nil {
 		return nil, err
 	}
-	return vm, nil
+	return ms, nil
 }
 
-func (s *Database) FindAzureSqlServerDatabaseLongTermRetentionPrice(regionCode string, skuName string, productName string, meterName string, priceUint string) (*AzureSqlServerDatabasePrice, error) {
+func (s *Database) FindAzureLoadBalancerPrice(regionCode string, meterName string) (*AzureLoadBalancerPrice, error) {
+	var lb *AzureLoadBalancerPrice
+	err := s.orm.Model(&AzureLoadBalancerPrice{}).Where("arm_region_name = ?", regionCode).
+		Where("meter_name = ?", meterName).Find(&lb).Error
+	if err != nil {
+		return nil, err
+	}
+	return lb, nil
+}
+
+func (s *Database) FindAzureSqlServerDatabasePrice(regionCode string, skuName string, productName string, meterName string, priceUint string) (*AzureSqlServerDatabasePrice, error) {
 	var sqlSD *AzureSqlServerDatabasePrice
 	err := s.orm.Model(&AzureSqlServerDatabasePrice{}).Where("arm_region_name = ?", regionCode).
 		Where("sku_name = ?", skuName).Where("product_name = ?", productName).Where("meter_name = ?", meterName).
@@ -150,7 +160,7 @@ func (s *Database) FindAzureSqlServerDatabaseLongTermRetentionPrice(regionCode s
 	return sqlSD, nil
 }
 
-func (s *Database) FindAzureSqlServerDatabaseReadReplicaCostComponentPrice(regionCode string, skuName string, productName string, priceUint string) (*AzureSqlServerDatabaseReadReplicaCostComponentPrice, error) {
+func (s *Database) FindAzureSqlServerDatabaseVCoreComponentsPrice(regionCode string, skuName string, productName string, priceUint string) (*AzureSqlServerDatabaseReadReplicaCostComponentPrice, error) {
 	var sqlSD *AzureSqlServerDatabaseReadReplicaCostComponentPrice
 	err := s.orm.Model(&AzureSqlServerDatabaseReadReplicaCostComponentPrice{}).Where("arm_region_name = ?", regionCode).
 		Where("sku_name = ?", skuName).Where("product_name = ?", productName).
@@ -161,7 +171,8 @@ func (s *Database) FindAzureSqlServerDatabaseReadReplicaCostComponentPrice(regio
 
 	return sqlSD, nil
 }
-func (s *Database) FindAzureSqlServerDatabaseLicenseCostComponentPrice(regionCode string, serviceName string, serviceFamily string, productName string, priceUint string) (*AzureSqlServerDatabaseLicenseCostComponentPrice, error) {
+
+func (s *Database) FindAzureSqlServerDatabaseVCoreForServerLessTierComponentPrice(regionCode string, serviceName string, serviceFamily string, productName string, priceUint string) (*AzureSqlServerDatabaseLicenseCostComponentPrice, error) {
 	var sqlSD *AzureSqlServerDatabaseLicenseCostComponentPrice
 	err := s.orm.Model(&AzureSqlServerDatabaseLicenseCostComponentPrice{}).Where("arm_region_name = ?", regionCode).
 		Where("service_name = ?", serviceName).Where("product_name = ?", productName).

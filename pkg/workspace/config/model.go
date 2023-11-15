@@ -5,12 +5,14 @@ import (
 )
 
 type Config struct {
-	Postgres  config.Postgres
-	Redis     config.Redis
-	Http      config.HttpServer
-	Auth      config.KaytuService
-	Onboard   config.KaytuService
-	Inventory config.KaytuService
+	Postgres   config.Postgres
+	Redis      config.Redis
+	Http       config.HttpServer
+	Auth       config.KaytuService
+	Onboard    config.KaytuService
+	Scheduler  config.KaytuService
+	Compliance config.KaytuService
+	Inventory  config.KaytuService
 
 	DomainSuffix               string
 	KaytuHelmChartLocation     string

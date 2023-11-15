@@ -843,6 +843,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/assignments/connection/{connection_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving all benchmark assigned to a connection with connection id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Get list of benchmark assignments for a connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connection ID",
+                        "name": "connection_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConnectionAssignedBenchmark"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/assignments/{benchmark_id}/connection": {
             "post": {
                 "security": [
@@ -1090,19 +1130,29 @@ const docTemplate = `{
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
-                            }
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
         "/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId": {
@@ -1136,6 +1186,26 @@ const docTemplate = `{
                         "name": "policyId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2404,7 +2474,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/aws/{resourceType}/{resourceId}": {
+        "/cost_estimator/api/v1/cost/aws": {
             "get": {
                 "security": [
                     {
@@ -2422,16 +2492,16 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ResourceID",
+                        "description": "Connection ID",
                         "name": "resourceId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "ResourceType",
                         "name": "resourceType",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -2445,7 +2515,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/azure/{resourceType}/{resourceId}": {
+        "/cost_estimator/api/v1/cost/azure": {
             "get": {
                 "security": [
                     {
@@ -2463,16 +2533,16 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ResourceID",
+                        "description": "Connection ID",
                         "name": "resourceId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "ResourceType",
                         "name": "resourceType",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -3696,6 +3766,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/metadata/resource-collection": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of resource collections by specified filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "List resource collections",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection IDs",
+                        "name": "id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metadata/resource-collection/{resourceCollectionId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving resource collection by specified ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "Get resource collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource collection ID",
+                        "name": "resourceCollectionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/metric/{resourceType}": {
             "get": {
                 "security": [
@@ -4740,7 +4884,7 @@ const docTemplate = `{
                 "summary": "Triggers insight job",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "Insight ID",
                         "name": "insight_id",
                         "in": "path",
@@ -4749,7 +4893,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
                     }
                 }
             }
@@ -6669,6 +6819,111 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark": {
+            "type": "object",
+            "properties": {
+                "autoAssign": {
+                    "description": "Whether the benchmark is auto assigned or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "baseline": {
+                    "description": "Whether the benchmark is baseline or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "category": {
+                    "description": "Benchmark category",
+                    "type": "string"
+                },
+                "children": {
+                    "description": "Benchmark children",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[azure_cis_v140_1",
+                        " azure_cis_v140_2]"
+                    ]
+                },
+                "connectors": {
+                    "description": "Benchmark connectors",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "[azure]"
+                    ]
+                },
+                "createdAt": {
+                    "description": "Benchmark creation date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
+                "description": {
+                    "description": "Benchmark description",
+                    "type": "string",
+                    "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
+                },
+                "documentURI": {
+                    "description": "Benchmark document URI",
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140.md"
+                },
+                "enabled": {
+                    "description": "Whether the benchmark is enabled or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "id": {
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
+                },
+                "logoURI": {
+                    "description": "Benchmark logo URI",
+                    "type": "string"
+                },
+                "managed": {
+                    "description": "Whether the benchmark is managed or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "policies": {
+                    "description": "Benchmark policies",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[azure_cis_v140_1_1",
+                        " azure_cis_v140_1_2]"
+                    ]
+                },
+                "tags": {
+                    "description": "Benchmark tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "title": {
+                    "description": "Benchmark title",
+                    "type": "string",
+                    "example": "Azure CIS v1.4.0"
+                },
+                "updatedAt": {
+                    "description": "Benchmark last update date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection": {
             "type": "object",
             "properties": {
@@ -6850,6 +7105,19 @@ const docTemplate = `{
                     "description": "Time",
                     "type": "integer",
                     "example": 1686346668
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConnectionAssignedBenchmark": {
+            "type": "object",
+            "properties": {
+                "benchmarkId": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
+                },
+                "status": {
+                    "description": "Status",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -8086,6 +8354,32 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/kaytu.ResourceCollectionFilter"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType": {
             "type": "object",
             "properties": {
@@ -9112,6 +9406,18 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse": {
             "type": "object",
             "properties": {
+                "connection_count": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "maxConnections": {
+                    "type": "integer"
+                },
+                "minRequiredConnections": {
+                    "type": "integer"
+                },
                 "status": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus"
                 }
@@ -9438,6 +9744,41 @@ const docTemplate = `{
                 "StatusSuspending",
                 "StatusSuspended"
             ]
+        },
+        "kaytu.ResourceCollectionFilter": {
+            "type": "object",
+            "properties": {
+                "account_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "source.AssetDiscoveryMethodType": {
             "type": "string",

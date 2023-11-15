@@ -7,12 +7,14 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"go.uber.org/zap"
 )
 
 func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/virtualMachines")
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "Microsoft.Compute/virtualMachines")
 	if err != nil {
-		return 0, err
+		h.logger.Error("failed to get resource", zap.Error(err))
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
@@ -24,10 +26,13 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 			VM:         vm,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetAzureVm(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
 	}
 
@@ -35,9 +40,10 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 }
 
 func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Compute/disks")
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "Microsoft.Compute/disks")
 	if err != nil {
-		return 0, err
+		h.logger.Error("failed to get resource", zap.Error(err))
+		return 0, fmt.Errorf("failed to get resource")
 	}
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
@@ -49,10 +55,42 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 			ManagedStorage: storage,
 		}
 	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 	cost, err := h.workspaceClient.GetAzureManagedStorage(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
 	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
+		return 0, err
+	}
+
+	return cost, nil
+}
+
+func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "Microsoft.Network/loadBalancers")
+	if err != nil {
+		h.logger.Error("failed to get resource", zap.Error(err))
+		return 0, fmt.Errorf("failed to get resource")
+	}
+	if len(response.Hits.Hits) == 0 {
+		return 0, fmt.Errorf("no resource found")
+	}
+	var request api.GetAzureLoadBalancerRequest
+	if lb, ok := response.Hits.Hits[0].Source.Description.(azureModel.LoadBalancerDescription); ok {
+		request = api.GetAzureLoadBalancerRequest{
+			RegionCode:   response.Hits.Hits[0].Source.Location,
+			LoadBalancer: lb,
+		}
+	} else {
+		h.logger.Error("cannot parse resource", zap.String("Description",
+			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		return 0, fmt.Errorf("cannot parse resource")
+	}
+	cost, err := h.workspaceClient.GetAzureLoadBalancer(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
 	}
 
@@ -70,7 +108,7 @@ func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64
 }
 
 func GetSQLDatabaseCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	response, err := es.GetElasticsearch(h.client, resourceId, "Microsoft.Sql/servers/databases")
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "Microsoft.Sql/servers/databases")
 	if err != nil {
 		return 0, err
 	}

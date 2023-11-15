@@ -12,9 +12,9 @@ func GetLimitsByTier(tier Tier) WorkspaceLimits {
 	switch tier {
 	case Tier_Free:
 		return WorkspaceLimits{
-			MaxUsers:       25,
-			MaxConnections: 25,
-			MaxResources:   2500,
+			MaxUsers:       5,
+			MaxConnections: 10,
+			MaxResources:   100000,
 		}
 	case Tier_Teams:
 		return WorkspaceLimits{

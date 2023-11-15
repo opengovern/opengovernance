@@ -95,8 +95,7 @@ func (db Database) ListComplianceRunnersWithStatus(status model.ComplianceJobSta
 func (db Database) SetJobToRunnersInProgress() error {
 	tx := db.ORM.Exec(`
 UPDATE compliance_jobs j SET status = 'RUNNERS_IN_PROGRESS' WHERE status = 'CREATED' AND
-	(select count(*) from compliance_runners where parent_job_id = j.id) > 0 AND
-	(select count(*) from compliance_runners where parent_job_id = j.id and status IN ('CREATED', 'IN_PROGRESS')) > 0
+	(select count(*) from compliance_runners where parent_job_id = j.id) > 0
 `)
 	if tx.Error != nil {
 		return tx.Error

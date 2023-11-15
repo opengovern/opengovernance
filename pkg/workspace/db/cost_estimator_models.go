@@ -128,6 +128,16 @@ type AzureManagedStoragePrice struct {
 	Price         float64
 }
 
+// AzureLoadBalancerPrice Service = Load Balancer, Family = Networking
+type AzureLoadBalancerPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	MeterName     string
+	PriceUnit     string
+	Price         float64
+}
+
 type AzureSqlServerDatabasePrice struct {
 	SKU           string `gorm:"primaryKey"`
 	EffectiveDate int64

@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +15,6 @@ const (
 type AnalyticsJob struct {
 	gorm.Model
 	Type           AnalyticsJobType
-	Status         analytics.JobStatus
+	Status         api.JobStatus
 	FailureMessage string
 }

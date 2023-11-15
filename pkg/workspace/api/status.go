@@ -9,6 +9,7 @@ func (ws WorkspaceStatus) String() string {
 const (
 	StatusProvisioned        WorkspaceStatus = "PROVISIONED"
 	StatusBootstrapping      WorkspaceStatus = "BOOTSTRAPPING"
+	StatusReserved           WorkspaceStatus = "RESERVED"
 	StatusProvisioning       WorkspaceStatus = "PROVISIONING"
 	StatusProvisioningFailed WorkspaceStatus = "PROVISIONING_FAILED"
 	StatusDeleting           WorkspaceStatus = "DELETING"

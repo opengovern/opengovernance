@@ -1,8 +1,11 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
+	"strconv"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"gorm.io/gorm/clause"
@@ -40,6 +43,24 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.orm.Model(&Workspace{}).Create(m).Error
 }
 
+func (s *Database) GetReservedWorkspace() (*Workspace, error) {
+	var workspace Workspace
+	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).
+		Where("status = ?", api.StatusReserved).
+		First(&workspace).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &workspace, nil
+}
+
+func (s *Database) UpdateWorkspace(m *Workspace) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", m.ID).Updates(m).Error
+}
+
 func (s *Database) UpdateWorkspaceStatus(id string, status api.WorkspaceStatus) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
@@ -74,7 +95,7 @@ func (s *Database) GetWorkspaceByName(name string) (*Workspace, error) {
 
 func (s *Database) ListWorkspacesByOwner(ownerId string) ([]*Workspace, error) {
 	var workspaces []*Workspace
-	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{OwnerId: ownerId}).Find(&workspaces).Error; err != nil {
+	if err := s.orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{OwnerId: &ownerId}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
@@ -98,6 +119,23 @@ func (s *Database) ListWorkspacesByStatus(status api.WorkspaceStatus) ([]*Worksp
 
 func (s *Database) UpdateWorkspaceOwner(workspaceUUID string, newOwnerID string) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceUUID).Update("owner_id", newOwnerID).Error
+}
+
+func (s *Database) SetWorkspaceAnalyticsJobID(workspaceID string, jobID uint) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("analytics_job_id", jobID).Error
+}
+
+func (s *Database) SetWorkspaceInsightsJobIDs(workspaceID string, jobIDs []uint) error {
+	var jobIDstr []string
+	for _, j := range jobIDs {
+		jobIDstr = append(jobIDstr, strconv.FormatInt(int64(j), 10))
+	}
+	str := strings.Join(jobIDstr, ",")
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("insight_jobs_id", str).Error
+}
+
+func (s *Database) SetWorkspaceComplianceTriggered(workspaceID string) error {
+	return s.orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("compliance_triggered", true).Error
 }
 
 func (s *Database) UpdateWorkspaceName(workspaceUUID string, newName string) error {

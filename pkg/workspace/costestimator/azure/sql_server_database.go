@@ -3,7 +3,9 @@ package azure
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"math"
 	"strings"
 )
 
@@ -13,6 +15,11 @@ const (
 )
 
 var (
+	mssqlServiceTier = map[string]string{
+		"GeneralPurpose":   "General Purpose",
+		"BusinessCritical": "Business Critical",
+		"Hyperscale":       "Hyperscale",
+	}
 	mssqlTierMapping = map[string]string{
 		"b": "Basic",
 		"p": "Premium",
@@ -41,7 +48,7 @@ func SqlServerDatabaseCostByResource(db *db.Database, request api.GetAzureSqlSer
 		if err != nil {
 			return 0, err
 		}
-		return cost, nil
+		return cost * costestimator.TimeInterval, nil
 	}
 
 	if request.SqlServerDB.Database.SKU.Capacity != nil {
@@ -49,7 +56,7 @@ func SqlServerDatabaseCostByResource(db *db.Database, request api.GetAzureSqlSer
 		if err != nil {
 			return 0, err
 		}
-		return vCoreCost, nil
+		return vCoreCost * costestimator.TimeInterval, nil
 	}
 
 	cost, err := dtuCostComponents(db, request)
@@ -57,7 +64,7 @@ func SqlServerDatabaseCostByResource(db *db.Database, request api.GetAzureSqlSer
 		return 0, err
 	}
 
-	return cost, nil
+	return cost * costestimator.TimeInterval, nil
 }
 
 func elasticPoolCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesRequest) (float64, error) {
@@ -87,15 +94,25 @@ func vCoreCostComponents(db *db.Database, request api.GetAzureSqlServersDatabase
 	sku := request.SqlServerDB.Database.SKU
 
 	if strings.ToLower(*sku.Tier) == sqlHyperscaleTier {
-		readReplicaCost, err := readReplicaCostComponent(db, request)
+		ServiceTier, _ := mssqlServiceTier[*request.SqlServerDB.Database.SKU.Tier]
+		productName := fmt.Sprintf("SQL Database Single %s - Compute %s", ServiceTier, *request.SqlServerDB.Database.SKU.Family)
+		skuName := fmt.Sprintf("%d vCore", request.SqlServerDB.Database.SKU.Capacity)
+		if *request.SqlServerDB.Database.Properties.ZoneRedundant {
+			skuName += " Zone Redundancy"
+		}
+
+		readReplicaCostResponse, err := db.FindAzureSqlServerDatabaseVCoreComponentsPrice(request.RegionCode, skuName, productName, "hours")
 		if err != nil {
 			return 0, err
 		}
-		costComponents += readReplicaCost
+
+		costComponents += readReplicaCostResponse.Price
 	}
+
 	if strings.ToLower(*sku.Tier) != sqlServerlessTier && strings.ToLower(string(*request.SqlServerDB.Database.Properties.LicenseType)) == "licenseincluded" {
+		//it is wrong it should check
 		productName := fmt.Sprintf("/%s - %s/", *request.SqlServerDB.Database.SKU.Tier, "SQL License")
-		response, err := db.FindAzureSqlServerDatabaseLicenseCostComponentPrice(request.RegionCode, "SQL Database", "Databases", productName, "vCore-hours")
+		response, err := db.FindAzureSqlServerDatabaseVCoreForServerLessTierComponentPrice(request.RegionCode, "SQL Database", "Databases", productName, "vCore-hours")
 		if err != nil {
 			return 0, err
 		}
@@ -117,7 +134,7 @@ func vCoreCostComponents(db *db.Database, request api.GetAzureSqlServersDatabase
 	}
 
 	productNameRegex := fmt.Sprintf("/%s - Storage/", storageTier)
-	StorageCostComponent, err := db.FindAzureSqlServerDatabaseLongTermRetentionPrice(request.RegionCode, skuName, productNameRegex, "Data Stored", "GB")
+	StorageCostComponent, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, skuName, productNameRegex, "Data Stored", "GB")
 	if err != nil {
 		return 0, err
 	}
@@ -149,7 +166,7 @@ func dtuCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesR
 	// we have problem here :
 	productName := fmt.Sprintf("SQL Database Single %s", mssqlTierMapping[])
 	meterName := fmt.Sprintln("DTUs")
-	response, err := db.FindAzureSqlServerDatabaseLongTermRetentionPrice(request.RegionCode, skuName, productName, meterName, "hours")
+	response, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, skuName, productName, meterName, "hours")
 	if err != nil {
 		return 0, err
 	}
@@ -157,6 +174,41 @@ func dtuCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesR
 
 	// we need to check ExtraStorageGB to see if we have that field
 	// actually it should implement right here
+	var extraStorageGB float64
+
+	maxsizeGB := float64(*request.SqlServerDB.Database.Properties.MaxSizeBytes) / math.Pow(10, 9)
+
+	if strings.HasPrefix(skuName, "b") {
+		extraStorageGB = maxsizeGB
+	} else if strings.HasPrefix(skuName, "s") {
+		includedStorageGB := 250.0
+		extraStorageGB = maxsizeGB - includedStorageGB
+	} else if strings.HasPrefix(skuName, "p") {
+		// we should not check if the extra size is bigger than the max storage that azure can support and if it was we send a message or something like that
+		includedStorageGB, ok := mssqlStandardDTUIncludedStorage[*request.SqlServerDB.Database.Properties.CurrentServiceObjectiveName]
+		if ok {
+			extraStorageGB = maxsizeGB - includedStorageGB
+		}
+	}
+
+	if extraStorageGB > 0 {
+		tier := *request.SqlServerDB.Database.SKU.Tier
+		if request.SqlServerDB.Database.SKU.Tier == nil {
+			var ok bool
+			tier, ok = mssqlTierMapping[strings.ToLower(*request.SqlServerDB.Database.SKU.Name)[:1]]
+			if !ok {
+				// what should put for resource address
+				return 0, fmt.Errorf(fmt.Sprintf("Unrecognized tier for SKU '%s' for resource %s", *request.SqlServerDB.Database.SKU.Name, *request.SqlServerDB.Database.Name))
+			}
+		}
+		productName = fmt.Sprintf("SQL Database %s - Storage", tier)
+		// check tier in as sku name
+		ExtraDataStorageResponse, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, tier, productName, "Data Stored", "GB")
+		if err != nil {
+			return 0, err
+		}
+		cost += ExtraDataStorageResponse.Price
+	}
 
 	longTermRetentionCost, err := longTermRetentionCostComponent(db, request)
 	if err != nil {
@@ -184,7 +236,7 @@ func longTermRetentionCostComponent(dbFunc *db.Database, request api.GetAzureSql
 	productName := fmt.Sprintln("SQL Database - LTR Backup Storage")
 	meterName := fmt.Sprintf("%s Data Stored", skuName)
 
-	longTermRetentionCost, err := dbFunc.FindAzureSqlServerDatabaseLongTermRetentionPrice(request.RegionCode, skuName, productName, meterName, "GB")
+	longTermRetentionCost, err := dbFunc.FindAzureSqlServerDatabasePrice(request.RegionCode, skuName, productName, meterName, "GB")
 	if err != nil {
 		return 0, err
 	}
@@ -202,7 +254,7 @@ func pitrBackupCostComponent(dbFunc *db.Database, request api.GetAzureSqlServers
 	skuName := fmt.Sprintf("Backup %s", redundancyType)
 	meterName := fmt.Sprintf("%s Data Stored", redundancyType)
 
-	longTermRetentionCost, err := dbFunc.FindAzureSqlServerDatabaseLongTermRetentionPrice(request.RegionCode, skuName, productName, meterName, "GB")
+	longTermRetentionCost, err := dbFunc.FindAzureSqlServerDatabasePrice(request.RegionCode, skuName, productName, meterName, "GB")
 	if err != nil {
 		return 0, err
 	}
@@ -210,55 +262,37 @@ func pitrBackupCostComponent(dbFunc *db.Database, request api.GetAzureSqlServers
 }
 
 func computeHoursCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesRequest) (float64, error) {
+	var cost float64
 	if strings.ToLower(*request.SqlServerDB.Database.SKU.Tier) == sqlServerlessTier {
-		responseCost, err := serverlessComputeHoursCostComponents(db, request)
+		productName := fmt.Sprintf("%s - %s", *request.SqlServerDB.Database.SKU.Tier, *request.SqlServerDB.Database.SKU.Family)
+		// check the meter name
+		response, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, "1 vCore", productName, "1 vCore - Free", "vCore-hours")
 		if err != nil {
 			return 0, err
 		}
-		return responseCost, nil
-	}
+		cost += response.Price
 
-	responseCost, err := provisionedComputeCostComponents(db, request)
-	if err != nil {
-		return 0, err
-	}
-	return responseCost, nil
-}
-
-func serverlessComputeHoursCostComponents(dbfunc *db.Database, request api.GetAzureSqlServersDatabasesRequest) (float64, error) {
-	var cost float64
-	productName := fmt.Sprintf("%s - %s", *request.SqlServerDB.Database.SKU.Tier, *request.SqlServerDB.Database.SKU.Family)
-	// check the meter name
-	response, err := dbfunc.FindAzureSqlServerDatabaseLongTermRetentionPrice(request.RegionCode, "1 vCore", productName, "1 vCore - Free", "vCore-hours")
-	if err != nil {
-		return 0, err
-	}
-	cost += response.Price
-
-	if *request.SqlServerDB.Database.Properties.ZoneRedundant {
-		// we don't have any '1 vCore Zone Redundancy' sku name
-		responseZoneRedundant, err := dbfunc.FindAzureSqlServerDatabaseLongTermRetentionPrice(request.RegionCode, "1 vCore Zone Redundancy", productName, "Data Stored", "vCore-hours")
-		if err != nil {
-			return 0, err
+		if *request.SqlServerDB.Database.Properties.ZoneRedundant {
+			// we don't have any '1 vCore Zone Redundancy' sku name
+			responseZoneRedundant, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, "1 vCore Zone Redundancy", productName, "Data Stored", "vCore-hours")
+			if err != nil {
+				return 0, err
+			}
+			cost += responseZoneRedundant.Price
 		}
-		cost += responseZoneRedundant.Price
+
+		return cost, nil
 	}
 
-	return cost, nil
-}
-
-func provisionedComputeCostComponents(dbfunc *db.Database, request api.GetAzureSqlServersDatabasesRequest) (float64, error) {
-	var cost float64
-
 	productName := fmt.Sprintf("%s - %s", *request.SqlServerDB.Database.SKU.Tier, *request.SqlServerDB.Database.SKU.Family)
-	responseCost, err := dbfunc.FindAzureSqlServerDatabaseReadReplicaCostComponentPrice(request.RegionCode, fmt.Sprintf("%d vCore", *request.SqlServerDB.Database.SKU.Capacity), productName, "hours")
+	responseCost, err := db.FindAzureSqlServerDatabaseVCoreComponentsPrice(request.RegionCode, fmt.Sprintf("%d vCore", *request.SqlServerDB.Database.SKU.Capacity), productName, "hours")
 	if err != nil {
 		return 0, err
 	}
 	cost += responseCost.Price
 
 	if *request.SqlServerDB.Database.Properties.ZoneRedundant {
-		ReadReplicaResponseCost, err := dbfunc.FindAzureSqlServerDatabaseReadReplicaCostComponentPrice(request.RegionCode, fmt.Sprintf("%d vCore Zone Redundancy", *request.SqlServerDB.Database.SKU.Capacity), productName, "hours")
+		ReadReplicaResponseCost, err := db.FindAzureSqlServerDatabaseVCoreComponentsPrice(request.RegionCode, fmt.Sprintf("%d vCore Zone Redundancy", *request.SqlServerDB.Database.SKU.Capacity), productName, "hours")
 		if err != nil {
 			return 0, err
 		}
@@ -266,18 +300,4 @@ func provisionedComputeCostComponents(dbfunc *db.Database, request api.GetAzureS
 	}
 
 	return cost, nil
-}
-
-func readReplicaCostComponent(db *db.Database, request api.GetAzureSqlServersDatabasesRequest) (float64, error) {
-	productName := fmt.Sprintf("%s - %s", *request.SqlServerDB.Database.SKU.Tier, *request.SqlServerDB.Database.SKU.Family)
-	skuName := fmt.Sprintf("%d vCore", request.SqlServerDB.Database.SKU.Capacity)
-	if *request.SqlServerDB.Database.Properties.ZoneRedundant {
-		skuName += " Zone Redundancy"
-	}
-
-	readReplicaCostResponse, err := db.FindAzureSqlServerDatabaseReadReplicaCostComponentPrice(request.RegionCode, skuName, productName, "hours")
-	if err != nil {
-		return 0, err
-	}
-	return readReplicaCostResponse.Price, nil
 }

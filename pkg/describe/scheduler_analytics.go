@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -32,7 +33,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
+			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -45,7 +46,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
+			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -54,19 +55,19 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	}
 }
 
-func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType) error {
+func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType) (uint, error) {
 	lastJob, err := s.db.FetchLastAnalyticsJobForJobType(analyticsJobType)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get ongoing AnalyticsJob",
 			zap.Error(err),
 		)
-		return err
+		return 0, err
 	}
 
-	if lastJob != nil && lastJob.Status == analytics.JobInProgress {
+	if lastJob != nil && lastJob.Status == api.JobInProgress {
 		s.logger.Info("There is ongoing AnalyticsJob skipping this schedule")
-		return fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
+		return 0, fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
 
 	job := newAnalyticsJob(analyticsJobType)
@@ -78,7 +79,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 			zap.Uint("jobId", job.ID),
 			zap.Error(err),
 		)
-		return err
+		return 0, err
 	}
 
 	err = s.enqueueAnalyticsJobs(job)
@@ -88,7 +89,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 			zap.Uint("jobId", job.ID),
 			zap.Error(err),
 		)
-		job.Status = analytics.JobCompletedWithFailure
+		job.Status = api.JobCompletedWithFailure
 		err = s.db.UpdateAnalyticsJobStatus(job)
 		if err != nil {
 			s.logger.Error("Failed to update AnalyticsJob status",
@@ -96,11 +97,11 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 				zap.Error(err),
 			)
 		}
-		return err
+		return 0, err
 	}
 
 	AnalyticsJobsCount.WithLabelValues("successful").Inc()
-	return nil
+	return job.ID, nil
 }
 
 func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
@@ -140,7 +141,7 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 	return model.AnalyticsJob{
 		Model:          gorm.Model{},
 		Type:           analyticsJobType,
-		Status:         analytics.JobCreated,
+		Status:         api.JobCreated,
 		FailureMessage: "",
 	}
 }
@@ -188,7 +189,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				zap.String("status", string(result.Status)),
 			)
 
-			if result.Status == analytics.JobCompleted {
+			if result.Status == api.JobCompleted {
 				AnalyticsJobResultsCount.WithLabelValues("successful").Inc()
 			} else {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()

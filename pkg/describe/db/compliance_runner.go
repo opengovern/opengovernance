@@ -47,8 +47,21 @@ func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 	return jobs, nil
 }
 
+func (db Database) UpdateTimedOutRunners() error {
+	tx := db.ORM.
+		Model(&model.ComplianceRunner{}).
+		Where("status = ?", runner.ComplianceRunnerInProgress).
+		Where("updated_at < NOW() - INTERVAL '1 HOURS'").
+		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerFailed, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) RetryFailedRunners() error {
-	tx := db.ORM.Exec("UPDATE compliance_runners SET retry_count = retry_count + 1, status = 'CREATED' WHERE status = 'FAILED' AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'")
+	tx := db.ORM.Exec("UPDATE compliance_runners SET retry_count = retry_count + 1, status = 'CREATED', updated_at = NOW() WHERE status = 'FAILED' AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'")
 	if tx.Error != nil {
 		return tx.Error
 	}

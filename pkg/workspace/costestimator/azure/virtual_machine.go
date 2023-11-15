@@ -9,7 +9,7 @@ import (
 
 func VmCostByResource(db *db.Database, request api.GetAzureVmRequest) (float64, error) {
 	var cost float64
-	prices, err := db.FindAzureVMPrice(request.RegionCode, string(*request.VM.VirtualMachine.Properties.HardwareProfile.VMSize), "request")
+	prices, err := db.FindAzureVMPrice(request.RegionCode, string(*request.VM.VirtualMachine.Properties.HardwareProfile.VMSize), "regular")
 	if err != nil {
 		return 0, nil
 	}

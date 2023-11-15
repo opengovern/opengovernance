@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -63,12 +64,15 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
+	v1.GET("/insight/job/:job_id", httpserver.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
 	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
+	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
 	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
+	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -229,8 +233,8 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
-//	@Success		200
-//	@Param			insight_id	path	string	true	"Insight ID"
+//	@Success		200			{object}	[]uint
+//	@Param			insight_id	path		uint	true	"Insight ID"
 //	@Router			/schedule/api/v1/insight/trigger/{insight_id} [put]
 func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	insightID, err := strconv.ParseUint(ctx.Param("insight_id"), 10, 64)
@@ -242,18 +246,21 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	var jobIDs []uint
 	for _, ins := range insights {
 		if ins.ID != uint(insightID) {
 			continue
 		}
 
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector, nil)
+		jobID, err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector, nil)
 		if err != nil {
 			return err
 		}
+		jobIDs = append(jobIDs, jobID)
 	}
-	return ctx.JSON(http.StatusOK, "")
+	return ctx.JSON(http.StatusOK, jobIDs)
 }
 
 // TriggerConnectionsComplianceJob godoc
@@ -303,18 +310,48 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 		return err
 	}
 	if lastComplianceJob == nil {
-		return ctx.JSON(http.StatusOK, api.ComplianceJob{})
+		return ctx.JSON(http.StatusOK, nil)
 	}
 	return ctx.JSON(http.StatusOK, lastComplianceJob.ToApi())
 }
 
+func (h HttpServer) GetAnalyticsJob(ctx echo.Context) error {
+	jobIDstr := ctx.Param("job_id")
+	jobID, err := strconv.ParseInt(jobIDstr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	job, err := h.Scheduler.db.GetAnalyticsJobByID(uint(jobID))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, job)
+}
+
+func (h HttpServer) GetInsightJob(ctx echo.Context) error {
+	jobIDstr := ctx.Param("job_id")
+	jobID, err := strconv.ParseInt(jobIDstr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	job, err := h.Scheduler.db.GetInsightJobById(uint(jobID))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, job)
+}
+
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
-	err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal)
+	jobID, err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal)
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
-	return ctx.JSON(http.StatusOK, "")
+	return ctx.JSON(http.StatusOK, jobID)
 }
 
 func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
@@ -352,6 +389,38 @@ func (h HttpServer) ListAllPendingConnection(ctx echo.Context) error {
 		return err
 	}
 	return ctx.JSON(http.StatusOK, status)
+}
+
+func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
+	count, sum, err := h.DB.CountJobsAndResources()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
+	}
+
+	status, err := h.DB.ListAllFirstTryPendingConnection()
+	if err != nil {
+		return err
+	}
+
+	if len(status) > 0 {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsRunning)
+	}
+
+	resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es)
+	if err != nil {
+		return err
+	}
+	fmt.Println(count, sum, resourceCount)
+
+	if sum != resourceCount {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsFinished)
+	}
+
+	return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

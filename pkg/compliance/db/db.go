@@ -85,6 +85,22 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
+func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
+	var s Benchmark
+	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+		Where("id = ?", benchmarkId).
+		First(&s)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &s, nil
+}
+
 func (db Database) GetQuery(queryID string) (*Query, error) {
 	var s Query
 	tx := db.Orm.Model(&Query{}).

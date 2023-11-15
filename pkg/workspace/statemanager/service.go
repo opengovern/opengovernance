@@ -128,6 +128,11 @@ func (s *Service) StartReconciler() {
 				s.logger.Error(fmt.Sprintf("syncing http proxy: %v", err))
 			}
 		}
+
+		err = s.handleReservation()
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("reservation: %v", err))
+		}
 		// reset the time ticker
 		ticker.Reset(reconcilerInterval)
 	}

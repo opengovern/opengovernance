@@ -90,7 +90,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
-	resourceCollection := v2.Group("/resource-collection")
+	resourceCollection := metadata.Group("/resource-collection")
 	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
 	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
 
@@ -2350,6 +2350,16 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
+// ListResourceCollections godoc
+//
+//	@Summary		List resource collections
+//	@Description	Retrieving list of resource collections by specified filters
+//	@Security		BearerToken
+//	@Tags			resource_collection
+//	@Produce		json
+//	@Param			id	query		[]string	false	"Resource collection IDs"
+//	@Success		200	{object}	[]inventoryApi.ResourceCollection
+//	@Router			/inventory/api/v2/metadata/resource-collection [get]
 func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 	ids := httpserver.QueryArrayParam(ctx, "id")
 
@@ -2366,6 +2376,16 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+// GetResourceCollection godoc
+//
+//	@Summary		Get resource collection
+//	@Description	Retrieving resource collection by specified ID
+//	@Security		BearerToken
+//	@Tags			resource_collection
+//	@Produce		json
+//	@Param			resourceCollectionId	path		string	true	"Resource collection ID"
+//	@Success		200						{object}	inventoryApi.ResourceCollection
+//	@Router			/inventory/api/v2/metadata/resource-collection/{resourceCollectionId} [get]
 func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 	collectionID := ctx.Param("resourceCollectionId")
 	resourceCollection, err := h.db.GetResourceCollection(collectionID)

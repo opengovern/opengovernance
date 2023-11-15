@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
 
@@ -21,12 +22,12 @@ type Response struct {
 			Value    int64  `json:"value"`
 			Relation string `json:"relation"`
 		}
-		MaxScore int64 `json:"max_score"`
+		MaxScore float64 `json:"max_score"`
 		Hits     []struct {
-			Index  string `json:"_index"`
-			Type   string `json:"_type"`
-			Id     string `json:"_id"`
-			Score  int64  `json:"_score"`
+			Index  string  `json:"_index"`
+			Type   string  `json:"_type"`
+			Id     string  `json:"_id"`
+			Score  float64 `json:"_score"`
 			Source struct {
 				Metadata struct {
 					Partition    string `json:"Partition"`
@@ -42,13 +43,13 @@ type Response struct {
 				ResourceType  string `json:"resource_type"`
 				CreatedAt     int64  `json:"created_at"`
 				Description   any    `json:"description"`
-				ResourceJobId string `json:"resource_job_id"`
+				ResourceJobId int64  `json:"resource_job_id"`
 				ResourceGroup string `json:"resource_group"`
 				Name          string `json:"name"`
 				Location      string `json:"location"`
 				EsIndex       string `json:"es_index"`
 				ID            string `json:"id"`
-				ScheduleJobId string `json:"schedule_job_id"`
+				ScheduleJobId int64  `json:"schedule_job_id"`
 				SourceId      string `json:"source_id"`
 				ARN           string `json:"arn"`
 			} `json:"_source"`
@@ -56,47 +57,62 @@ type Response struct {
 	}
 }
 
-func GetElasticsearch(client kaytu.Client, resourceId string, resourceType string) (*Response, error) {
+func GetElasticsearch(logger *zap.Logger, client kaytu.Client, resourceId string, resourceType string) (*Response, error) {
 	var resp Response
 	index := es.ResourceTypeToESIndex(resourceType)
-	queryBytes, err := GetResourceQuery(resourceId)
+	queryBytes, err := GetResourceQuery(logger, resourceId)
 	if err != nil {
 		return nil, err
 	}
 	err = client.Search(context.Background(), index, string(queryBytes), &resp)
 	if err != nil {
+		logger.Error("Error getting Elastic response", zap.Error(err))
 		return nil, err
 	}
 	return &resp, nil
 }
 
-func GetResourceQuery(resourceId string) ([]byte, error) {
-	terms := make(map[string]any)
-	terms["id"] = resourceId
+func GetResourceQuery(logger *zap.Logger, resourceId string) ([]byte, error) {
+	//terms := make(map[string]any)
+	//terms["id"] = resourceId
+	//
+	//root := map[string]any{}
+	//
+	//boolQuery := make(map[string]any)
+	//if terms != nil && len(terms) > 0 {
+	//	var filters []map[string]any
+	//	for k, vs := range terms {
+	//		filters = append(filters, map[string]any{
+	//			"terms": map[string]any{
+	//				k: vs,
+	//			},
+	//		})
+	//	}
+	//
+	//	boolQuery["filter"] = filters
+	//}
+	//if len(boolQuery) > 0 {
+	//	root["query"] = map[string]any{
+	//		"bool": boolQuery,
+	//	}
+	//}
 
-	root := map[string]any{}
-
-	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]any
-		for k, vs := range terms {
-			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
+	root := map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": []map[string]any{
+					{
+						"term": map[string]string{
+							"id": resourceId,
+						},
+					},
 				},
-			})
-		}
-
-		boolQuery["filter"] = filters
+			},
+		},
 	}
-	if len(boolQuery) > 0 {
-		root["query"] = map[string]any{
-			"bool": boolQuery,
-		}
-	}
-
 	queryBytes, err := json.Marshal(root)
 	if err != nil {
+		logger.Error("Unable to marshal", zap.Error(err))
 		return nil, err
 	}
 

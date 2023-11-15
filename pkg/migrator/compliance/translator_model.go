@@ -3,6 +3,7 @@ package compliance
 type Benchmark struct {
 	ID          string
 	Title       string
+	Connector   string
 	DocumentURI string
 	Description string
 	Children    []string
