@@ -2521,12 +2521,12 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	needCostStr := ctx.QueryParam("needCost")
 	needCost := true
 	// cost for resource collections is not supported yet
-	if nc, _ := strconv.ParseBool(needCostStr); !nc || len(resourceCollections) > 0 {
+	if nc, err := strconv.ParseBool(needCostStr); (err == nil && !nc) || len(resourceCollections) > 0 {
 		needCost = false
 	}
 	needResourceCountStr := ctx.QueryParam("needResourceCount")
 	needResourceCount := true
-	if nrc, _ := strconv.ParseBool(needResourceCountStr); !nrc {
+	if nrc, err := strconv.ParseBool(needResourceCountStr); err == nil && !nrc {
 		needResourceCount = false
 	}
 
