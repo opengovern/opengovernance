@@ -44,4 +44,5 @@ type GetAzureLoadBalancerRequest struct {
 type GetAzureSqlServersDatabasesRequest struct {
 	RegionCode  string
 	SqlServerDB azure.SqlDatabaseDescription
+	ResourceId  string
 }

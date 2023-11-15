@@ -121,7 +121,7 @@ func (s *Server) GetAzureSqlServerDatabase(ctx echo.Context) error {
 		return err
 	}
 
-	cost, err := azure.SqlServerDatabaseCostByResource(s.db, request)
+	cost, err := azure.SqlServerDatabaseCostByResource(s.db, request, s.logger)
 	if err != nil {
 		return err
 	}

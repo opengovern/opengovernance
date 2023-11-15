@@ -120,6 +120,7 @@ func GetSQLDatabaseCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		request = api.GetAzureSqlServersDatabasesRequest{
 			RegionCode:  response.Hits.Hits[0].Source.Location,
 			SqlServerDB: sqlServerDB,
+			ResourceId:  resourceId,
 		}
 	} else {
 		return 0, fmt.Errorf("cannot parse resource")
