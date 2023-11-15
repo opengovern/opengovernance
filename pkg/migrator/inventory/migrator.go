@@ -216,6 +216,9 @@ func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory s
 			createdAt := time.Now()
 			if currentRc, ok := currentRcMap[resourceCollection.ID]; ok {
 				createdAt = currentRc.Created
+				if createdAt == (time.Time{}) {
+					createdAt = time.Now()
+				}
 			}
 			if resourceCollection.Status == "" {
 				resourceCollection.Status = inventory.ResourceCollectionStatusActive
