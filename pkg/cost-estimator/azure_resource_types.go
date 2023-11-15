@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -90,6 +91,11 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 		}
 
 		if err := decoder.Decode(diskInterface); err != nil {
+			result, err2 := azureSteampipe.AzureDescriptionToRecord(response.Hits.Hits[0].Source.Description.(interface{}), "azure_compute_disk")
+			if err2 != nil {
+				h.logger.Error("error description to record", zap.Error(err2))
+			}
+			h.logger.Info("AzureDescriptionToRecord", zap.String("Description", fmt.Sprintf("%v", result)))
 			h.logger.Error("error decoding 'Disk' field", zap.Error(err))
 			return 0, err
 		}
