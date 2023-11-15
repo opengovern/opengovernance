@@ -81,10 +81,30 @@ type ResourceCollectionTag struct {
 	ResourceCollectionID string `gorm:"primaryKey"`
 }
 
+type ResourceCollectionStatus string
+
+const (
+	ResourceCollectionStatusActive   ResourceCollectionStatus = "active"
+	ResourceCollectionStatusInactive ResourceCollectionStatus = "inactive"
+)
+
+func (r ResourceCollectionStatus) ToApi() api.ResourceCollectionStatus {
+	switch r {
+	case ResourceCollectionStatusActive:
+		return api.ResourceCollectionStatusActive
+	case ResourceCollectionStatusInactive:
+		return api.ResourceCollectionStatusInactive
+	default:
+		return api.ResourceCollectionStatusUnknown
+	}
+}
+
 type ResourceCollection struct {
 	ID          string `gorm:"primarykey"`
 	Name        string
 	FiltersJson pgtype.JSONB `gorm:"type:jsonb"`
+	Description string
+	Status      ResourceCollectionStatus
 
 	Tags    []ResourceCollectionTag `gorm:"foreignKey:ResourceCollectionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string     `gorm:"-:all"`
@@ -98,10 +118,13 @@ type ResourceCollection struct {
 
 func (r ResourceCollection) ToApi() api.ResourceCollection {
 	apiResourceCollection := api.ResourceCollection{
-		ID:      r.ID,
-		Name:    r.Name,
-		Tags:    model.TrimPrivateTags(r.GetTagsMap()),
-		Filters: r.Filters,
+		ID:          r.ID,
+		Name:        r.Name,
+		Tags:        model.TrimPrivateTags(r.GetTagsMap()),
+		Description: r.Description,
+		CreatedAt:   r.CreatedAt,
+		Status:      r.Status.ToApi(),
+		Filters:     r.Filters,
 	}
 	return apiResourceCollection
 }
