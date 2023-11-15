@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 )
 
@@ -20,14 +21,34 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetEC2InstanceCostRequest
-	if instance, ok := response.Hits.Hits[0].Source.Description.(aws.EC2InstanceDescription); ok {
+	if description, ok := response.Hits.Hits[0].Source.Description.(map[string]interface{}); ok {
+		instanceInterface, instanceExists := description["Instance"]
+		if !instanceExists {
+			h.logger.Error("cannot find 'Instance' field in Description", zap.Any("Description", response.Hits.Hits[0].Source.Description))
+			return 0, fmt.Errorf("cannot find 'Instance' field in Description")
+		}
+
+		var instanceStruct aws.EC2InstanceDescription
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &instanceStruct,
+			TagName: "json",
+		})
+		if err != nil {
+			h.logger.Error("error creating mapstructure decoder", zap.Error(err))
+			return 0, err
+		}
+
+		if err := decoder.Decode(instanceInterface); err != nil {
+			h.logger.Error("error decoding 'Instance' field", zap.Error(err))
+			return 0, err
+		}
+
 		request = api.GetEC2InstanceCostRequest{
 			RegionCode: response.Hits.Hits[0].Source.Location,
-			Instance:   instance,
+			Instance:   instanceStruct,
 		}
 	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		h.logger.Error("cannot parse resource", zap.String("Description", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 
@@ -50,14 +71,34 @@ func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, err
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetEC2VolumeCostRequest
-	if volume, ok := response.Hits.Hits[0].Source.Description.(aws.EC2VolumeDescription); ok {
+	if description, ok := response.Hits.Hits[0].Source.Description.(map[string]interface{}); ok {
+		volumeInterface, volumeExists := description["Volume"]
+		if !volumeExists {
+			h.logger.Error("cannot find 'Volume' field in Description", zap.Any("Description", response.Hits.Hits[0].Source.Description))
+			return 0, fmt.Errorf("cannot find 'Volume' field in Description")
+		}
+
+		var volumeStruct aws.EC2VolumeDescription
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &volumeStruct,
+			TagName: "json",
+		})
+		if err != nil {
+			h.logger.Error("error creating mapstructure decoder", zap.Error(err))
+			return 0, err
+		}
+
+		if err := decoder.Decode(volumeInterface); err != nil {
+			h.logger.Error("error decoding 'Volume' field", zap.Error(err))
+			return 0, err
+		}
+
 		request = api.GetEC2VolumeCostRequest{
 			RegionCode: response.Hits.Hits[0].Source.Location,
-			Volume:     volume,
+			Volume:     volumeStruct,
 		}
 	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		h.logger.Error("cannot parse resource", zap.String("Description", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 
@@ -131,16 +172,37 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetRDSInstanceRequest
-	if dbInstance, ok := response.Hits.Hits[0].Source.Description.(aws.RDSDBInstanceDescription); ok {
+	if description, ok := response.Hits.Hits[0].Source.Description.(map[string]interface{}); ok {
+		dbInstanceInterface, dbInstanceExists := description["DBInstance"]
+		if !dbInstanceExists {
+			h.logger.Error("cannot find 'DBInstance' field in Description", zap.Any("Description", response.Hits.Hits[0].Source.Description))
+			return 0, fmt.Errorf("cannot find 'DBInstance' field in Description")
+		}
+
+		var dbInstanceStruct aws.RDSDBInstanceDescription
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &dbInstanceStruct,
+			TagName: "json",
+		})
+		if err != nil {
+			h.logger.Error("error creating mapstructure decoder", zap.Error(err))
+			return 0, err
+		}
+
+		if err := decoder.Decode(dbInstanceInterface); err != nil {
+			h.logger.Error("error decoding 'DBInstance' field", zap.Error(err))
+			return 0, err
+		}
+
 		request = api.GetRDSInstanceRequest{
 			RegionCode: response.Hits.Hits[0].Source.Location,
-			DBInstance: dbInstance,
+			DBInstance: dbInstanceStruct,
 		}
 	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+		h.logger.Error("cannot parse resource", zap.String("Description", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
+
 	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_db_instance", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
