@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/connector"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -53,11 +52,6 @@ func Command() *cobra.Command {
 }
 
 func start(ctx context.Context) error {
-	err := connector.Init()
-	if err != nil {
-		return fmt.Errorf("populating connectors: %w", err)
-	}
-
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return fmt.Errorf("new logger: %w", err)

@@ -38,7 +38,7 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 
 	case api.StatusProvisioning:
 	case api.StatusProvisioningFailed:
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		helmRelease, err := s.FindHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
 		}
@@ -72,7 +72,7 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		helmRelease, err := s.FindHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
 		}
@@ -103,7 +103,7 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
 	case api.StatusSuspending:
-		helmRelease, err := s.findHelmRelease(ctx, workspace)
+		helmRelease, err := s.FindHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
 		}
@@ -164,7 +164,7 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	ctx := context.Background()
 
-	helmRelease, err := s.findHelmRelease(ctx, workspace)
+	helmRelease, err := s.FindHelmRelease(ctx, workspace)
 	if err != nil {
 		return fmt.Errorf("find helm release: %w", err)
 	}

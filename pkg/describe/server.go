@@ -401,7 +401,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
 	}
 
-	status, err := h.DB.ListAllPendingConnection()
+	status, err := h.DB.ListAllFirstTryPendingConnection()
 	if err != nil {
 		return err
 	}
@@ -416,11 +416,27 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 	}
 	fmt.Println(count, sum, resourceCount)
 
-	if sum != resourceCount {
-		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsFinished)
+	if sum == resourceCount {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
 
-	return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
+	job, err := h.DB.GetLastSuccessfulDescribeJob()
+	if err != nil {
+		return err
+	}
+
+	if job != nil &&
+		job.UpdatedAt.Before(time.Now().Add(-1*time.Minute)) &&
+		resourceCount > int64(float64(sum)*0.9) {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
+	}
+
+	if job != nil &&
+		job.UpdatedAt.Before(time.Now().Add(-5*time.Minute)) {
+		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
+	}
+
+	return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsFinished)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

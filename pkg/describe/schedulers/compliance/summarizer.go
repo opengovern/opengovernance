@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const SummarizerSchedulingInterval = 5 * time.Minute
+const SummarizerSchedulingInterval = 1 * time.Minute
 
 type SankDocumentCountResponse struct {
 	Hits struct {

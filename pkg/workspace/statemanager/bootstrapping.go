@@ -150,6 +150,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		}
 
 		s.logger.Info("checking insight job", zap.String("workspaceID", workspace.ID))
+		isInProgress := false
 		for _, insJobID := range workspace.InsightJobsID {
 			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
 			if err != nil {
@@ -160,13 +161,18 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			}
 
 			if job.Status == api3.InsightJobSucceeded {
+				isInProgress = false
 				break
 			}
 
 			if job.Status == api3.InsightJobInProgress {
-				s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", job.ID))
-				return nil
+				isInProgress = true
 			}
+		}
+
+		if isInProgress {
+			s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", job.ID))
+			return nil
 		}
 
 		s.logger.Info("checking aws compliance job", zap.String("workspaceID", workspace.ID))

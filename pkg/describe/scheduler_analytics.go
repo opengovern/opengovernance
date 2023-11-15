@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	analyticsApi "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"time"
@@ -65,7 +66,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		return 0, err
 	}
 
-	if lastJob != nil && lastJob.Status == api.JobInProgress {
+	if lastJob != nil && lastJob.Status == analyticsApi.JobInProgress {
 		s.logger.Info("There is ongoing AnalyticsJob skipping this schedule")
 		return 0, fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
@@ -89,7 +90,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 			zap.Uint("jobId", job.ID),
 			zap.Error(err),
 		)
-		job.Status = api.JobCompletedWithFailure
+		job.Status = analyticsApi.JobCompletedWithFailure
 		err = s.db.UpdateAnalyticsJobStatus(job)
 		if err != nil {
 			s.logger.Error("Failed to update AnalyticsJob status",
@@ -108,12 +109,15 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
 	var resourceCollectionIds []string
 
 	if job.Type == model.AnalyticsJobTypeResourceCollection {
-		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api2.InternalRole})
+		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole})
 		if err != nil {
 			s.logger.Error("Failed to list resource collections", zap.Error(err))
 			return err
 		}
 		for _, resourceCollection := range resourceCollections {
+			if resourceCollection.Status != inventoryApi.ResourceCollectionStatusActive {
+				continue
+			}
 			resourceCollectionIds = append(resourceCollectionIds, resourceCollection.ID)
 		}
 	}
@@ -141,7 +145,7 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 	return model.AnalyticsJob{
 		Model:          gorm.Model{},
 		Type:           analyticsJobType,
-		Status:         api.JobCreated,
+		Status:         analyticsApi.JobCreated,
 		FailureMessage: "",
 	}
 }
@@ -189,7 +193,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				zap.String("status", string(result.Status)),
 			)
 
-			if result.Status == api.JobCompleted {
+			if result.Status == analyticsApi.JobCompleted {
 				AnalyticsJobResultsCount.WithLabelValues("successful").Inc()
 			} else {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
