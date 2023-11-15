@@ -699,7 +699,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	}
 
 	query := string(b)
-	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query)
+	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query, "index =", idx)
 	var response FetchConnectionAnalyticsResourcesCountAtTimeResponse
 	err = client.Search(
 		context.Background(),
