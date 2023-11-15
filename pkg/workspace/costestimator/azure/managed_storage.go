@@ -26,12 +26,12 @@ func ManagedStorageCostByResource(db *db.Database, request api.GetAzureManagedSt
 		if err != nil {
 			return 0, err
 		}
-		cost += throughputPrice.Price * float64(*request.ManagedStorage.Disk.Properties.DiskMBpsReadWrite)
+		cost += throughputPrice.Price.InexactFloat64() * float64(*request.ManagedStorage.Disk.Properties.DiskMBpsReadWrite)
 		capacityPrice, err := db.FindAzureManagedStoragePrice(request.RegionCode, "Ultra LRS", "Ultra LRS Provisioned Capacity")
 		if err != nil {
 			return 0, err
 		}
-		cost += capacityPrice.Price * float64(*request.ManagedStorage.Disk.Properties.DiskSizeGB)
+		cost += capacityPrice.Price.InexactFloat64() * float64(*request.ManagedStorage.Disk.Properties.DiskSizeGB)
 		iopsPrice, err := db.FindAzureManagedStoragePrice(request.RegionCode, "Ultra LRS", "Ultra LRS Provisioned IOPS")
 		if err != nil {
 			return 0, err
@@ -40,7 +40,7 @@ func ManagedStorageCostByResource(db *db.Database, request api.GetAzureManagedSt
 		// TODO: Take care of vCPU reservation
 		// Provisioned vcpu reservation charge :: This reservation charge is only imposed if you enable Ultra Disk compatibility on the VM without attaching an Ultra Disk.
 
-		cost += iopsPrice.Price * float64(*request.ManagedStorage.Disk.Properties.DiskIOPSReadWrite)
+		cost += iopsPrice.Price.InexactFloat64() * float64(*request.ManagedStorage.Disk.Properties.DiskIOPSReadWrite)
 	} else {
 		skuName := skuNames[skuDetails{DiskOption: sku[0], DiskSize: *request.ManagedStorage.Disk.Properties.DiskSizeGB}]
 		skuName = fmt.Sprintf("%s %s", skuName, sku[1])
@@ -49,13 +49,13 @@ func ManagedStorageCostByResource(db *db.Database, request api.GetAzureManagedSt
 			return 0, nil
 		}
 		numberOfDays := costestimator.GetNumberOfDays()
-		cost += (price.Price / (float64(numberOfDays))) / 24
+		cost += (price.Price.InexactFloat64() / (float64(numberOfDays))) / 24
 		if (sku[0] == "Premium") && (*request.ManagedStorage.Disk.Properties.DiskSizeGB >= 1024) && *request.ManagedStorage.Disk.Properties.BurstingEnabled {
 			burstPrice, err := db.FindAzureManagedStoragePrice(request.RegionCode, "Burst Enablement LRS", "Per Month")
 			if err != nil {
 				return 0, nil
 			}
-			cost += (burstPrice.Price / (float64(numberOfDays))) / 24
+			cost += (burstPrice.Price.InexactFloat64() / (float64(numberOfDays))) / 24
 		}
 	}
 	return cost * costestimator.TimeInterval, nil

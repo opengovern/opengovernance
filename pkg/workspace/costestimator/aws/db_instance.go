@@ -21,7 +21,7 @@ func RDSDBInstanceCostByResource(db *db.Database, request api.GetRDSInstanceRequ
 	if err != nil {
 		return 0, err
 	}
-	cost := dbInstanceCost.Price * costestimator.TimeInterval
+	cost := dbInstanceCost.Price.InexactFloat64() * costestimator.TimeInterval
 
 	var volumeType string
 	switch *request.DBInstance.DBInstance.StorageType {
@@ -37,14 +37,14 @@ func RDSDBInstanceCostByResource(db *db.Database, request api.GetRDSInstanceRequ
 	if err != nil {
 		return 0, err
 	}
-	cost += storageCost.Price * costestimator.TimeInterval
+	cost += storageCost.Price.InexactFloat64() * costestimator.TimeInterval
 
 	if strings.HasPrefix(*request.DBInstance.DBInstance.StorageType, "io") {
 		IOPSCost, err := db.FindRDSDBIopsPrice(request.RegionCode, deploymentOption, "IOPS")
 		if err != nil {
 			return 0, err
 		}
-		cost += IOPSCost.Price * costestimator.TimeInterval
+		cost += IOPSCost.Price.InexactFloat64() * costestimator.TimeInterval
 	}
 
 	return cost, nil
@@ -55,19 +55,19 @@ type dbType struct {
 }
 
 var dbTypeMap = map[string]dbType{
-	"aurora":        {"Aurora MySQL", ""},
-	"aurora-mysql":  {"Aurora MySQL", ""},
-	"mariadb":       {"MariaDB", ""},
-	"mysql":         {"MySQL", ""},
-	"postgres":      {"PostgreSQL", ""},
-	"oracle-se":     {"Oracle", "Standard"},
-	"oracle-se1":    {"Oracle", "Standard One"},
-	"oracle-se2":    {"Oracle", "Standard Two"},
-	"oracle-ee":     {"Oracle", "Enterprise"},
-	"sqlserver-se":  {"SQL Server", "Standard"},
-	"sqlserver-ee":  {"SQL Server", "Enterprise"},
-	"sqlserver-ex":  {"SQL Server", "Express"},
-	"sqlserver-web": {"SQL Server", "Web"},
+	"aurora":            {"Aurora MySQL", ""},
+	"aurora-postgresql": {"Aurora MySQL", ""},
+	"mariadb":           {"MariaDB", ""},
+	"postgresql":        {"MySQL", ""},
+	"postgres":          {"PostgreSQL", ""},
+	"oracle-se":         {"Oracle", "Standard"},
+	"oracle-se1":        {"Oracle", "Standard One"},
+	"oracle-se2":        {"Oracle", "Standard Two"},
+	"oracle-ee":         {"Oracle", "Enterprise"},
+	"sqlserver-se":      {"SQL Server", "Standard"},
+	"sqlserver-ee":      {"SQL Server", "Enterprise"},
+	"sqlserver-ex":      {"SQL Server", "Express"},
+	"sqlserver-web":     {"SQL Server", "Web"},
 }
 var licenseModelMap = map[string]string{
 	"license-included":       "License included",

@@ -23,13 +23,13 @@ func calcEC2VolumeCost(db *db.Database, region string, volumeType string, volume
 	if err != nil {
 		return 0, err
 	}
-	cost += volumeCost.Price * float64(volumeSize)
+	cost += volumeCost.Price.InexactFloat64() * float64(volumeSize)
 	if volumeType == "io1" || volumeType == "io2" {
 		iopsCost, err := db.FindEC2InstanceSystemOperationPrice(region, volumeType, "EBS:VolumeP-IOPS")
 		if err != nil {
 			return 0, err
 		}
-		cost += iopsCost.Price * float64(iops)
+		cost += iopsCost.Price.InexactFloat64() * float64(iops)
 	}
 	numberOfDays := costestimator.GetNumberOfDays()
 	return (cost / (float64(numberOfDays))) / 24, nil

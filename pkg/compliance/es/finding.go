@@ -55,7 +55,7 @@ func (p FindingPaginator) HasNext() bool {
 
 func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
 	var response FindingsQueryResponse
-	err := p.paginator.Search(ctx, &response)
+	err := p.paginator.SearchWithLog(ctx, &response, true)
 	if err != nil {
 		return nil, err
 	}

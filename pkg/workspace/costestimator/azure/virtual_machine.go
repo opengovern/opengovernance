@@ -16,11 +16,11 @@ func VmCostByResource(db *db.Database, request api.GetAzureVmRequest) (float64, 
 	for _, p := range prices {
 		if string(*request.VM.VirtualMachine.Properties.StorageProfile.OSDisk.OSType) == "Windows" {
 			if strings.Contains(p.ProductName, "Windows") {
-				cost += p.Price
+				cost += p.Price.InexactFloat64()
 			}
 		} else {
 			if !strings.Contains(p.ProductName, "Windows") {
-				cost += p.Price
+				cost += p.Price.InexactFloat64()
 			}
 		}
 	}

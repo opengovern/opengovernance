@@ -4,7 +4,7 @@ import "github.com/kaytu-io/kaytu-util/pkg/source"
 
 func (s *Database) ListCredentialsByWorkspaceID(id string) ([]Credential, error) {
 	var creds []Credential
-	err := s.orm.Model(&Credential{}).
+	err := s.Orm.Model(&Credential{}).
 		Where("workspace_id = ?", id).
 		Find(&creds).Error
 	if err != nil {
@@ -14,7 +14,7 @@ func (s *Database) ListCredentialsByWorkspaceID(id string) ([]Credential, error)
 }
 
 func (s *Database) CreateCredential(cred *Credential) error {
-	err := s.orm.Model(&Credential{}).
+	err := s.Orm.Model(&Credential{}).
 		Create(cred).Error
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func (s *Database) CreateCredential(cred *Credential) error {
 
 func (s *Database) CountConnectionsByConnector(connector source.Type) (int64, error) {
 	var count int64
-	tx := s.orm.Raw("select coalesce(sum(connection_count),0) from credentials where connector_type = ?", connector).Find(&count)
+	tx := s.Orm.Raw("select coalesce(sum(connection_count),0) from credentials where connector_type = ?", connector).Find(&count)
 	err := tx.Error
 	if err != nil {
 		return 0, err
@@ -33,7 +33,7 @@ func (s *Database) CountConnectionsByConnector(connector source.Type) (int64, er
 }
 
 func (s *Database) SetIsCreated(id uint) error {
-	tx := s.orm.
+	tx := s.Orm.
 		Model(&Credential{}).
 		Where("id = ?", id).
 		Update("is_created", true)
@@ -45,7 +45,7 @@ func (s *Database) SetIsCreated(id uint) error {
 }
 
 func (s *Database) DeleteCredential(id uint) error {
-	tx := s.orm.
+	tx := s.Orm.
 		Where("id = ?", id).
 		Unscoped().
 		Delete(&Credential{})

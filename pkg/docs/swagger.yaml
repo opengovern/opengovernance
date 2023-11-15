@@ -1635,6 +1635,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection:
     properties:
+      created_at:
+        type: string
+      description:
+        type: string
       filters:
         items:
           $ref: '#/definitions/kaytu.ResourceCollectionFilter'
@@ -1643,6 +1647,8 @@ definitions:
         type: string
       name:
         type: string
+      status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionStatus'
       tags:
         additionalProperties:
           items:
@@ -1650,6 +1656,16 @@ definitions:
           type: array
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionStatus:
+    enum:
+    - ""
+    - active
+    - inactive
+    type: string
+    x-enum-varnames:
+    - ResourceCollectionStatusUnknown
+    - ResourceCollectionStatusActive
+    - ResourceCollectionStatusInactive
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType:
     properties:
       attributes:
@@ -2606,6 +2622,7 @@ definitions:
     enum:
     - PROVISIONED
     - BOOTSTRAPPING
+    - RESERVED
     - PROVISIONING
     - PROVISIONING_FAILED
     - DELETING
@@ -2616,6 +2633,7 @@ definitions:
     x-enum-varnames:
     - StatusProvisioned
     - StatusBootstrapping
+    - StatusReserved
     - StatusProvisioning
     - StatusProvisioningFailed
     - StatusDeleting
@@ -5532,6 +5550,13 @@ paths:
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Connection Groups

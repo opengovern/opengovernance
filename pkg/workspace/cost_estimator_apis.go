@@ -2,8 +2,11 @@ package workspace
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/azure"
+	kaytuResources "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/resources"
+
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -122,6 +125,38 @@ func (s *Server) GetAzureSqlServerDatabase(ctx echo.Context) error {
 	}
 
 	cost, err := azure.SqlServerDatabaseCostByResource(s.db, request, s.logger)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}
+
+// GetAwsCost get azure load balancer cost for a day
+// route: /workspace/api/v1/costestimator/aws/{resource_type}
+func (s *Server) GetAwsCost(ctx echo.Context) error {
+	var request any
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+	resourceType := ctx.Param("resource_type")
+	cost, err := costestimator.CalcCosts(s.db, s.logger, "AWS", resourceType,
+		kaytuResources.ResourceRequest{Request: request, Address: "test"})
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}
+
+// GetAzureCost get azure load balancer cost for a day
+// route: /workspace/api/v1/costestimator/azure/{resource_type}
+func (s *Server) GetAzureCost(ctx echo.Context) error {
+	var request any
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+	resourceType := ctx.Param("resource_type")
+	cost, err := costestimator.CalcCosts(s.db, s.logger, "Azure", resourceType,
+		kaytuResources.ResourceRequest{Request: request, Address: "test"})
 	if err != nil {
 		return err
 	}

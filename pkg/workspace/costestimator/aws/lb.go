@@ -23,6 +23,6 @@ func LBCostByResource(db *db.Database, request api.GetLBCostRequest) (float64, e
 	if err != nil {
 		return 0, err
 	}
-	cost += lbPrice.Price * costestimator.TimeInterval
+	cost += lbPrice.Price.InexactFloat64() * costestimator.TimeInterval
 	return cost, nil
 }

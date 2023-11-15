@@ -4215,6 +4215,16 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "Resource collection IDs to filter by",
+                        "name": "resourceCollection",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection Groups",
                         "name": "connectionGroups",
                         "in": "query"
@@ -8357,6 +8367,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
                 "filters": {
                     "type": "array",
                     "items": {
@@ -8369,6 +8385,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionStatus"
+                },
                 "tags": {
                     "type": "object",
                     "additionalProperties": {
@@ -8379,6 +8398,19 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionStatus": {
+            "type": "string",
+            "enum": [
+                "",
+                "active",
+                "inactive"
+            ],
+            "x-enum-varnames": [
+                "ResourceCollectionStatusUnknown",
+                "ResourceCollectionStatusActive",
+                "ResourceCollectionStatusInactive"
+            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType": {
             "type": "object",
@@ -9727,6 +9759,7 @@ const docTemplate = `{
             "enum": [
                 "PROVISIONED",
                 "BOOTSTRAPPING",
+                "RESERVED",
                 "PROVISIONING",
                 "PROVISIONING_FAILED",
                 "DELETING",
@@ -9737,6 +9770,7 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "StatusProvisioned",
                 "StatusBootstrapping",
+                "StatusReserved",
                 "StatusProvisioning",
                 "StatusProvisioningFailed",
                 "StatusDeleting",

@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 type ResourceType struct {
@@ -154,10 +155,12 @@ func RunResourceType(conf postgres.Config, logger *zap.Logger, folder string) er
 }
 
 type ResourceCollection struct {
-	ID      string                           `json:"id"`
-	Name    string                           `json:"name"`
-	Tags    map[string][]string              `json:"tags"`
-	Filters []kaytu.ResourceCollectionFilter `json:"filters"`
+	ID          string                             `json:"id"`
+	Name        string                             `json:"name"`
+	Tags        map[string][]string                `json:"tags"`
+	Filters     []kaytu.ResourceCollectionFilter   `json:"filters"`
+	Description string                             `json:"description"`
+	Status      inventory.ResourceCollectionStatus `json:"status"`
 }
 
 func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory string) error {
@@ -183,6 +186,17 @@ func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory s
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
+		currentRCs := make([]inventory.ResourceCollection, 0)
+		err := tx.Model(&inventory.ResourceCollection{}).Find(&currentRCs).Error
+		if err != nil {
+			logger.Error("failed to get current resource collections", zap.Error(err))
+			return err
+		}
+		currentRcMap := make(map[string]inventory.ResourceCollection)
+		for _, rc := range currentRCs {
+			currentRcMap[rc.ID] = rc
+		}
+
 		tx.Model(&inventory.ResourceCollection{}).Where("1=1").Unscoped().Delete(&inventory.ResourceCollection{})
 		tx.Model(&inventory.ResourceCollectionTag{}).Where("1=1").Unscoped().Delete(&inventory.ResourceCollectionTag{})
 		for _, resourceCollection := range resourceCollections {
@@ -199,10 +213,24 @@ func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory s
 				return err
 			}
 
+			createdAt := time.Now()
+			if currentRc, ok := currentRcMap[resourceCollection.ID]; ok {
+				createdAt = currentRc.Created
+				if createdAt.IsZero() || createdAt.Year() == 1 {
+					createdAt = time.Now()
+				}
+			}
+			if resourceCollection.Status == "" {
+				resourceCollection.Status = inventory.ResourceCollectionStatusActive
+			}
+
 			dbResourceCollection := inventory.ResourceCollection{
 				ID:          resourceCollection.ID,
 				Name:        resourceCollection.Name,
 				FiltersJson: jsonb,
+				Description: resourceCollection.Description,
+				Status:      resourceCollection.Status,
+				Created:     createdAt,
 			}
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,

@@ -57,7 +57,7 @@ func SqlServerDatabaseCostByResource(db *db.Database, request api.GetAzureSqlSer
 
 	if request.SqlServerDB.Database.SKU.Capacity != nil {
 		logger.Info("Cost calculation in Virtual core purchasing model ")
-		vCoreCost, err := vCoreCostComponents(db, request, logger, kind)
+		vCoreCost, err := vCoreCostComponents(db, request, logger)
 		if err != nil {
 			return 0, err
 		}

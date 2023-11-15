@@ -53,7 +53,7 @@ type CloudNativeCall struct {
 func (s *Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
-	t := time.NewTicker(1 * time.Minute)
+	t := time.NewTicker(30 * time.Second)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -238,14 +238,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
-	t := time.NewTicker(time.Minute * 1)
+	t := time.NewTicker(time.Second * 30)
 	defer t.Stop()
 	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
-			t.Reset(time.Minute * 2)
-		} else {
-			t.Reset(time.Minute * 1)
+			s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
 		}
+		t.Reset(time.Second * 30)
 	}
 }
 

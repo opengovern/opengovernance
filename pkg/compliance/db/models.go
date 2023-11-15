@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -76,101 +75,6 @@ func (b Benchmark) ToApi() api.Benchmark {
 		ba.Policies = append(ba.Policies, policy.ID)
 	}
 	return ba
-}
-
-func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *api.Benchmark) error {
-	if len(api.Connectors) > 0 {
-		return nil
-	}
-	// tracer :
-
-	output2, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
-	span2.SetName("new_GetBenchmark(loop)")
-	for _, childObj := range b.Children {
-		//tracer :
-		_, span3 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(output2, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindClient))
-		span3.SetName("new_GetBenchmark")
-
-		child, err := db.GetBenchmark(childObj.ID)
-		if err != nil {
-			span3.RecordError(err)
-			span3.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span3.AddEvent("information", trace.WithAttributes(
-			attribute.String("benchmark ID", child.ID),
-		))
-		span3.End()
-
-		if child == nil {
-			return fmt.Errorf("child %s not found", childObj.ID)
-		}
-
-		ca := child.ToApi()
-		err = child.PopulateConnectors(ctx, db, &ca)
-		if err != nil {
-			return err
-		}
-
-		for _, conn := range ca.Connectors {
-
-			exists := false
-			for _, c := range api.Connectors {
-				if c == conn {
-					exists = true
-				}
-			}
-			if !exists {
-				api.Connectors = append(api.Connectors, conn)
-			}
-		}
-	}
-	span2.End()
-	// tracer :
-	output4, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(output2, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindClient))
-	span4.SetName("new_GetQuery(loop)")
-
-	for _, policy := range b.Policies {
-		if policy.QueryID == nil {
-			continue
-		}
-		//tracer :
-		_, span5 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(output4, "new_GetQuery", trace.WithSpanKind(trace.SpanKindClient))
-		span5.SetName("new_GetQuery")
-
-		query, err := db.GetQuery(*policy.QueryID)
-		if err != nil {
-			span5.RecordError(err)
-			span5.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span5.AddEvent("information", trace.WithAttributes(
-			attribute.String("policy ID", policy.ID),
-		))
-		span5.End()
-
-		if query == nil {
-			return fmt.Errorf("query %s not found", *policy.QueryID)
-		}
-
-		ty, err := source.ParseType(query.Connector)
-		if err != nil {
-			return err
-		}
-
-		exists := false
-		for _, c := range api.Connectors {
-			if c == ty {
-				exists = true
-			}
-		}
-		if !exists {
-			api.Connectors = append(api.Connectors, ty)
-		}
-	}
-	span4.End()
-
-	return nil
 }
 
 func (b Benchmark) GetTagsMap() map[string][]string {
