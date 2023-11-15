@@ -340,9 +340,11 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 
 	if ws.Status == api.StatusBootstrapping {
 		if !ws.IsBootstrapInputFinished {
+			s.logger.Info("bootstrap: waiting for connections", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_OnboardConnection, nil
 		}
 		if !ws.IsCreated {
+			s.logger.Info("bootstrap: creating workspace", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_CreatingWorkspace, nil
 		}
 
@@ -353,8 +355,10 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 		if err != nil {
 			return api.BootstrapStatus_WaitingForDiscovery, err
 		}
+		s.logger.Info("bootstrap: describe status", zap.String("workspaceID", ws.ID), zap.String("status", fmt.Sprintf("%v", status)))
 
 		if status == nil || *status != api3.DescribeAllJobsStatusResourcesPublished {
+			s.logger.Info("bootstrap: waiting for discovery", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_WaitingForDiscovery, nil
 		}
 
@@ -363,9 +367,11 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 			return api.BootstrapStatus_WaitingForAnalytics, err
 		}
 		if job == nil {
+			s.logger.Info("bootstrap: waiting for analytics job", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_WaitingForAnalytics, nil
 		}
 		if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
+			s.logger.Info("bootstrap: waiting for analytics", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_WaitingForAnalytics, nil
 		}
 
@@ -375,6 +381,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 		}
 
 		if complianceJob == nil || (complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed) {
+			s.logger.Info("bootstrap: waiting for aws compliance", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_WaitingForCompliance, nil
 		}
 
@@ -384,25 +391,35 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 		}
 
 		if complianceJob == nil || (complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed) {
+			s.logger.Info("bootstrap: waiting for azure compliance", zap.String("workspaceID", ws.ID))
 			return api.BootstrapStatus_WaitingForCompliance, nil
 		}
 
+		inProgress := false
 		for _, insJobID := range ws.InsightJobsID {
 			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
 			if err != nil {
 				return api.BootstrapStatus_WaitingForInsights, err
 			}
 			if job == nil {
+				s.logger.Info("bootstrap: waiting for insight job", zap.String("workspaceID", ws.ID))
 				return api.BootstrapStatus_WaitingForInsights, errors.New("insight job not found")
 			}
 			if job.Status == api4.InsightJobSucceeded {
+				inProgress = false
 				break
 			}
 			if job.Status == api4.InsightJobInProgress {
-				return api.BootstrapStatus_WaitingForInsights, nil
+				inProgress = true
 			}
 		}
 
+		if inProgress {
+			s.logger.Info("bootstrap: waiting for insight job", zap.String("workspaceID", ws.ID))
+			return api.BootstrapStatus_WaitingForInsights, nil
+		}
+
+		s.logger.Info("bootstrap: finished", zap.String("workspaceID", ws.ID))
 		return api.BootstrapStatus_Finished, nil
 	}
 
