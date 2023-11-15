@@ -713,21 +713,24 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	result := make(map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue)
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
 		for _, hit := range metricBucket.Latest.Hits.Hits {
-			for _, connectionResults := range hit.Source.Connections.Connections {
-				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
-					(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
-					continue
+			if len(resourceCollections) > 0 {
+				for rcId, rcResult := range hit.Source.ResourceCollections {
+					if !includeResourceCollectionMap[rcId] {
+						continue
+					}
+					for _, connectionResults := range rcResult.Connections {
+						if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
+							(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+							continue
+						}
+						v := result[connectionResults.ConnectionID]
+						v.ResourceCountsSum += connectionResults.ResourceCount
+						v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
+						result[connectionResults.ConnectionID] = v
+					}
 				}
-				v := result[connectionResults.ConnectionID]
-				v.ResourceCountsSum += connectionResults.ResourceCount
-				v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
-				result[connectionResults.ConnectionID] = v
-			}
-			for rcId, rcResult := range hit.Source.ResourceCollections {
-				if !includeResourceCollectionMap[rcId] {
-					continue
-				}
-				for _, connectionResults := range rcResult.Connections {
+			} else {
+				for _, connectionResults := range hit.Source.Connections.Connections {
 					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
 						(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
 						continue
