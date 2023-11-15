@@ -2376,6 +2376,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Param			filter				query		string			false	"Filter costs"
 //	@Param			connector			query		[]source.Type	false	"Connector"
 //	@Param			connectionId		query		[]string		false	"Connection IDs"
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			connectionGroups	query		[]string		false	"Connection Groups"
 //	@Param			lifecycleState		query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
 //	@Param			healthState			query		string			false	"health state filter"		Enums(healthy,unhealthy)
@@ -2392,6 +2393,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	connectionGroups := httpserver.QueryArrayParam(ctx, "connectionGroups")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -2529,7 +2531,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 
 	connectionData := map[string]api2.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}

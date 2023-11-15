@@ -1838,7 +1838,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			metricIDs = append(metricIDs, m.ID)
 		}
 
-		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, metricIDs, endTime, EsFetchPageSize)
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, nil, metricIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1857,7 +1857,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
-		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, metricIDs, startTime, EsFetchPageSize)
+		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, nil, metricIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}

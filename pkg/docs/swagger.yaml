@@ -5552,6 +5552,13 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connection Groups
         in: query
         items:

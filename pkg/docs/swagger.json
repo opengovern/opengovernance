@@ -4210,6 +4210,16 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "Resource collection IDs to filter by",
+                        "name": "resourceCollection",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection Groups",
                         "name": "connectionGroups",
                         "in": "query"

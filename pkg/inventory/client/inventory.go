@@ -20,7 +20,7 @@ type InventoryServiceClient interface {
 	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
 	GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
 	GetInsightTrendResults(ctx *httpclient.Context, connectionIds, resourceCollections []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
-	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
+	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
@@ -211,12 +211,17 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 	return response, nil
 }
 
-func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error) {
+func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectionIds, resourceCollections []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error) {
 	url := fmt.Sprintf("%s/api/v2/connections/data", s.baseURL)
 	params := url2.Values{}
 	if len(connectionIds) > 0 {
 		for _, connectionId := range connectionIds {
-			params.Set("connectionId", connectionId)
+			params.Add("connectionId", connectionId)
+		}
+	}
+	if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			params.Add("resourceCollection", resourceCollection)
 		}
 	}
 	if startTime != nil {

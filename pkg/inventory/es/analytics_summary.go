@@ -630,7 +630,13 @@ type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
 	LatestEvaluatedAt int64
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, metricIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
+func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string,
+	resourceCollections []string, metricIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
+	idx := resource.AnalyticsConnectionSummaryIndex
+	if len(resourceCollections) > 0 {
+		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
+	}
+
 	res := make(map[string]any)
 	var filters []any
 	filters = append(filters, map[string]any{
@@ -682,6 +688,10 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	for _, connector := range connectors {
 		includeConnectorMap[connector.String()] = true
 	}
+	includeResourceCollectionMap := make(map[string]bool)
+	for _, resourceCollection := range resourceCollections {
+		includeResourceCollectionMap[resourceCollection] = true
+	}
 
 	b, err := json.Marshal(res)
 	if err != nil {
@@ -693,7 +703,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	var response FetchConnectionAnalyticsResourcesCountAtTimeResponse
 	err = client.Search(
 		context.Background(),
-		resource.AnalyticsConnectionSummaryIndex,
+		idx,
 		query,
 		&response)
 	if err != nil {
@@ -704,10 +714,29 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
 		for _, hit := range metricBucket.Latest.Hits.Hits {
 			for _, connectionResults := range hit.Source.Connections.Connections {
+				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+					continue
+				}
 				v := result[connectionResults.ConnectionID]
 				v.ResourceCountsSum += connectionResults.ResourceCount
 				v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
 				result[connectionResults.ConnectionID] = v
+			}
+			for rcId, rcResult := range hit.Source.ResourceCollections {
+				if !includeResourceCollectionMap[rcId] {
+					continue
+				}
+				for _, connectionResults := range rcResult.Connections {
+					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
+						(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+						continue
+					}
+					v := result[connectionResults.ConnectionID]
+					v.ResourceCountsSum += connectionResults.ResourceCount
+					v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
+					result[connectionResults.ConnectionID] = v
+				}
 			}
 		}
 	}
