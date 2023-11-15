@@ -216,7 +216,7 @@ func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory s
 			createdAt := time.Now()
 			if currentRc, ok := currentRcMap[resourceCollection.ID]; ok {
 				createdAt = currentRc.Created
-				if createdAt == (time.Time{}) {
+				if createdAt.IsZero() || createdAt.Year() == 1 {
 					createdAt = time.Now()
 				}
 			}
