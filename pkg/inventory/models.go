@@ -109,6 +109,7 @@ type ResourceCollection struct {
 	Tags    []ResourceCollectionTag `gorm:"foreignKey:ResourceCollectionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string     `gorm:"-:all"`
 
+	Created   time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -122,7 +123,7 @@ func (r ResourceCollection) ToApi() api.ResourceCollection {
 		Name:        r.Name,
 		Tags:        model.TrimPrivateTags(r.GetTagsMap()),
 		Description: r.Description,
-		CreatedAt:   r.CreatedAt,
+		CreatedAt:   r.Created,
 		Status:      r.Status.ToApi(),
 		Filters:     r.Filters,
 	}

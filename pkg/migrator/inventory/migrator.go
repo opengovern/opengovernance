@@ -215,7 +215,7 @@ func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory s
 
 			createdAt := time.Now()
 			if currentRc, ok := currentRcMap[resourceCollection.ID]; ok {
-				createdAt = currentRc.CreatedAt
+				createdAt = currentRc.Created
 			}
 			if resourceCollection.Status == "" {
 				resourceCollection.Status = inventory.ResourceCollectionStatusActive
@@ -227,7 +227,7 @@ func RunResourceCollection(conf postgres.Config, logger *zap.Logger, directory s
 				FiltersJson: jsonb,
 				Description: resourceCollection.Description,
 				Status:      resourceCollection.Status,
-				CreatedAt:   createdAt,
+				Created:     createdAt,
 			}
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
