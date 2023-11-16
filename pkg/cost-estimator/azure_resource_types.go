@@ -90,7 +90,7 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 		return 0, fmt.Errorf("cannot parse resource")
 	}
-	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "", request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_load_balancer", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
