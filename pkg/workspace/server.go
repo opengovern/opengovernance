@@ -355,7 +355,11 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, err
 		if err != nil {
 			return api.BootstrapStatus_WaitingForDiscovery, err
 		}
-		s.logger.Info("bootstrap: describe status", zap.String("workspaceID", ws.ID), zap.String("status", fmt.Sprintf("%v", status)))
+		statusStr := "null"
+		if status != nil {
+			statusStr = string(*status)
+		}
+		s.logger.Info("bootstrap: describe status", zap.String("workspaceID", ws.ID), zap.String("status", statusStr))
 
 		if status == nil || *status != api3.DescribeAllJobsStatusResourcesPublished {
 			s.logger.Info("bootstrap: waiting for discovery", zap.String("workspaceID", ws.ID))
