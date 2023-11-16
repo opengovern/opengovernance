@@ -36,7 +36,7 @@ type GetAzureManagedStorageRequest struct {
 }
 
 type GetAzureLoadBalancerRequest struct {
-	RegionCode         string
-	DailyDataProceeded *int64 // (GB)
-	LoadBalancer       azure.LoadBalancerDescription
+	RegionCode       string
+	DailyDataProceed *int64 // (GB)
+	LoadBalancer     azure.LoadBalancerDescription
 }
