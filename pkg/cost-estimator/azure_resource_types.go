@@ -3,7 +3,7 @@ package cost_estimator
 import (
 	"encoding/json"
 	"fmt"
-	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -20,16 +20,21 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var request api.GetAzureVmRequest
-	if vm, ok := response.Hits.Hits[0].Source.Description.(azureModel.ComputeVirtualMachineDescription); ok {
-		request = api.GetAzureVmRequest{
-			RegionCode: response.Hits.Hits[0].Source.Location,
-			VM:         vm,
-		}
-	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
-		return 0, fmt.Errorf("cannot parse resource")
+	var description azure.ComputeVirtualMachineDescription
+	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
+	if err != nil {
+		h.logger.Error("failed to marshal request", zap.Error(err))
+		return 0, fmt.Errorf("failed to marshal request")
+	}
+	err = json.Unmarshal(jsonData, &description)
+	if err != nil {
+		h.logger.Error("cannot parse resource", zap.String("interface",
+			fmt.Sprintf("%v", string(jsonData))))
+		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+	}
+	request := api.GetAzureVmRequest{
+		RegionCode: response.Hits.Hits[0].Source.Location,
+		VM:         description,
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_machine", request)
 	if err != nil {
@@ -49,17 +54,21 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var request api.GetAzureManagedStorageRequest
+	var description azure.ComputeDiskDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &request)
+	err = json.Unmarshal(jsonData, &description)
 	if err != nil {
 		h.logger.Error("cannot parse resource", zap.String("interface",
 			fmt.Sprintf("%v", string(jsonData))))
 		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+	}
+	request := api.GetAzureManagedStorageRequest{
+		RegionCode:     response.Hits.Hits[0].Source.Location,
+		ManagedStorage: description,
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", request)
 	if err != nil {
@@ -79,16 +88,21 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var request api.GetAzureLoadBalancerRequest
-	if lb, ok := response.Hits.Hits[0].Source.Description.(azureModel.LoadBalancerDescription); ok {
-		request = api.GetAzureLoadBalancerRequest{
-			RegionCode:   response.Hits.Hits[0].Source.Location,
-			LoadBalancer: lb,
-		}
-	} else {
-		h.logger.Error("cannot parse resource", zap.String("Description",
-			fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
-		return 0, fmt.Errorf("cannot parse resource")
+	var description azure.LoadBalancerDescription
+	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
+	if err != nil {
+		h.logger.Error("failed to marshal request", zap.Error(err))
+		return 0, fmt.Errorf("failed to marshal request")
+	}
+	err = json.Unmarshal(jsonData, &description)
+	if err != nil {
+		h.logger.Error("cannot parse resource", zap.String("interface",
+			fmt.Sprintf("%v", string(jsonData))))
+		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+	}
+	request := api.GetAzureLoadBalancerRequest{
+		RegionCode:   response.Hits.Hits[0].Source.Location,
+		LoadBalancer: description,
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_load_balancer", request)
 	if err != nil {
