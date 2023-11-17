@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"go.uber.org/zap"
+	"strings"
 )
 
 func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
@@ -68,6 +69,8 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	}
 	h.logger.Info("Compute Disk", zap.String("elasticsearch", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
 	h.logger.Info("Compute Disk", zap.String("jsonData", string(jsonData)))
+	jsonData = []byte(strings.ReplaceAll(string(jsonData), "\\\"", "\""))
+	h.logger.Info("Compute Disk", zap.String("jsonData CONVERTED", string(jsonData)))
 	h.logger.Info("Compute Disk", zap.String("description", fmt.Sprintf("%v", description)))
 	request := api.GetAzureManagedStorageRequest{
 		RegionCode:     response.Hits.Hits[0].Source.Location,
