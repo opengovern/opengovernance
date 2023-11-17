@@ -34,7 +34,7 @@ type virtualMachineValues struct {
 	OperatingSystem OS     `mapstructure:"operating_system"`
 }
 
-// decodeVirtualMachineValues decodes and returns computeInstanceValues from a Terraform values map.
+// decodeVirtualMachineValues decodes and returns computeInstanceValues
 func decodeVirtualMachineValues(request api.GetAzureVmRequest) virtualMachineValues {
 	return virtualMachineValues{
 		VMSize:          string(*request.VM.VirtualMachine.Properties.HardwareProfile.VMSize),

@@ -114,11 +114,68 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 }
 
 func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
-	//var resource azureCompute.VirtualNetwork
-	//err := h.GetResource("Microsoft.Network/virtualNetworks", resourceId, &resource)
-	//if err != nil {
-	//	return 0, err
-	//}
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "Microsoft.Network/virtualNetworks")
+	if err != nil {
+		h.logger.Error("failed to get resource", zap.Error(err))
+		return 0, fmt.Errorf("failed to get resource")
+	}
+	if len(response.Hits.Hits) == 0 {
+		return 0, fmt.Errorf("no resource found")
+	}
+	var description azure.VirtualNetworkDescription
+	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
+	if err != nil {
+		h.logger.Error("failed to marshal request", zap.Error(err))
+		return 0, fmt.Errorf("failed to marshal request")
+	}
+	err = json.Unmarshal(jsonData, &description)
+	if err != nil {
+		h.logger.Error("cannot parse resource", zap.String("interface",
+			fmt.Sprintf("%v", string(jsonData))))
+		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+	}
+	var peeringLocations []string
+	for _, p := range description.VirtualNetwork.Properties.VirtualNetworkPeerings {
+		id := *p.Properties.RemoteVirtualNetwork.ID
+		location, err := getVirtualNetworkPeering(h, id)
+		if err != nil {
+			h.logger.Error(fmt.Sprintf("can not get virtual network peering %s", id))
+			return 0, fmt.Errorf("can not get virtual network peering %s", id)
+		}
+		peeringLocations = append(peeringLocations, *location)
+	}
+	request := api.GetAzureVirtualNetworkRequest{
+		RegionCode:       response.Hits.Hits[0].Source.Location,
+		PeeringLocations: peeringLocations,
+	}
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_network", request)
+	if err != nil {
+		h.logger.Error("failed in calculating cost", zap.Error(err))
+		return 0, err
+	}
+	return cost, nil
+}
 
-	return 0, nil
+func getVirtualNetworkPeering(h *HttpHandler, resourceId string) (*string, error) {
+	response, err := es.GetElasticsearch(h.logger, h.client, resourceId, "Microsoft.Network/virtualNetworks")
+	if err != nil {
+		h.logger.Error("failed to get resource", zap.Error(err))
+		return nil, fmt.Errorf("failed to get resource")
+	}
+	if len(response.Hits.Hits) == 0 {
+		return nil, fmt.Errorf("no resource found")
+	}
+	var description azure.VirtualNetworkDescription
+	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
+	if err != nil {
+		h.logger.Error("failed to marshal request", zap.Error(err))
+		return nil, fmt.Errorf("failed to marshal request")
+	}
+	err = json.Unmarshal(jsonData, &description)
+	if err != nil {
+		h.logger.Error("cannot parse resource", zap.String("interface",
+			fmt.Sprintf("%v", string(jsonData))))
+		return nil, fmt.Errorf("cannot parse resource %s", err.Error())
+	}
+	return description.VirtualNetwork.Location, nil
 }

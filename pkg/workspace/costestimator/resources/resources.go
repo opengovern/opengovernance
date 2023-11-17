@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"fmt"
 	azure "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/azure_terracost/resource_types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 	"go.uber.org/zap"
@@ -31,6 +32,7 @@ func GetResource(logger *zap.Logger, provider string, resourceType string, reque
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("READING COMPONENTS", request)
 		components, err := provider.ResourceComponents(logger, resourceType, request)
 		if err != nil {
 			return nil, err

@@ -40,3 +40,9 @@ type GetAzureLoadBalancerRequest struct {
 	DailyDataProceed *int64 // (GB)
 	LoadBalancer     azure.LoadBalancerDescription
 }
+
+type GetAzureVirtualNetworkRequest struct {
+	RegionCode            string
+	PeeringLocations      []string
+	MonthlyDataTransferGB *float64
+}

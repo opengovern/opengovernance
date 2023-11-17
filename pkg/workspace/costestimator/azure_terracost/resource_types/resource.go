@@ -106,6 +106,7 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		}
 		vals := decodeManagedStorageValues(mdRequest)
 		logger.Info("Vals", zap.Any("Vals", vals))
+		fmt.Println("Vals: ", vals)
 		return p.newManagedStorage(vals).Components(), nil
 	case "azurerm_load_balancer":
 		var lbRequest api.GetAzureLoadBalancerRequest
@@ -117,6 +118,16 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		vals := decodeLoadBalancerValues(lbRequest)
 		logger.Info("Vals", zap.Any("Vals", vals))
 		return p.newLoadBalancer(vals).Components(), nil
+	case "azurerm_virtual_network":
+		var vnRequest api.GetAzureVirtualNetworkRequest
+		if req, ok := request.(api.GetAzureVirtualNetworkRequest); ok {
+			vnRequest = req
+		} else {
+			return nil, fmt.Errorf("could not parse request")
+		}
+		vals := decodeVirtualNetworkPeeringValues(vnRequest)
+		logger.Info("Vals", zap.Any("Vals", vals))
+		return p.newVirtualNetwork(vals).Components(), nil
 	default:
 		return nil, nil
 	}
