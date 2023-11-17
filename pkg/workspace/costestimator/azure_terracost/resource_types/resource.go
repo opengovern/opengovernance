@@ -131,7 +131,7 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		logger.Info("Vals", zap.Any("Vals", vals))
 		return p.newVirtualNetwork(vals).Components(), nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("resource type not found in cost calculator")
 	}
 }
 
