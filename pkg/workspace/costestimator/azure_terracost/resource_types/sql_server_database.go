@@ -305,7 +305,6 @@ func longTermRetentionCostComponent(longTermRetentionStorageGB int64, currentBac
 	}
 
 	skuName := fmt.Sprintf("Backup %s", redundancyType)
-	productName := fmt.Sprintln("SQL Database - LTR Backup Storage")
 	meterName := fmt.Sprintf("%s Data Stored", skuName)
 
 	return query.Component{
@@ -315,7 +314,7 @@ func longTermRetentionCostComponent(longTermRetentionStorageGB int64, currentBac
 		ProductFilter: &product.Filter{
 			AttributeFilters: []*product.AttributeFilter{
 				{Key: "skuName", Value: util.StringPtr(skuName)},
-				{Key: "productName", Value: util.StringPtr(productName)},
+				{Key: "productName", Value: util.StringPtr(fmt.Sprintln("SQL Database - LTR Backup Storage"))},
 				{Key: "meterName", ValueRegex: util.StringPtr(meterName)},
 			},
 		},

@@ -189,7 +189,7 @@ func GetSQLDatabaseCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		return 0, fmt.Errorf("no resource found")
 	}
 	var request api.GetAzureSqlServersDatabasesRequest
-	if sqlServerDB, ok := response.Hits.Hits[0].Source.Description.(azureModel.SqlDatabaseDescription); ok {
+	if sqlServerDB, ok := response.Hits.Hits[0].Source.Description.(azure.SqlDatabaseDescription); ok {
 		request = api.GetAzureSqlServersDatabasesRequest{
 			RegionCode:  response.Hits.Hits[0].Source.Location,
 			SqlServerDB: sqlServerDB,
