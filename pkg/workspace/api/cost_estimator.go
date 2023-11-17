@@ -46,3 +46,9 @@ type GetAzureVirtualNetworkRequest struct {
 	PeeringLocations      []string
 	MonthlyDataTransferGB *float64
 }
+
+type GetAzureVirtualNetworkPeeringRequest struct {
+	SourceLocation        string
+	DestinationLocation   string
+	MonthlyDataTransferGB *float64
+}

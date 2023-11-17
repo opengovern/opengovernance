@@ -42,7 +42,7 @@ func decodeVolumeValues(request api.GetEC2VolumeCostRequest) volumeValues {
 func (p *Provider) newVolume(vals volumeValues) *Volume {
 	v := &Volume{
 		provider:   p,
-		region:     p.region,
+		region:     region.Code(vals.AvailabilityZone),
 		volumeType: "gp3",
 		size:       decimal.NewFromInt(8),
 		iops:       decimal.NewFromInt(16000),

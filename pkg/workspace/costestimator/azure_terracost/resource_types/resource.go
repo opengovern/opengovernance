@@ -78,6 +78,8 @@ func (p *Provider) Name() string { return p.key }
 
 // ResourceComponents returns Component queries for a given terraform.Resource.
 func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, request any) ([]query.Component, error) {
+	fmt.Println("REQUEST: ", request)
+	fmt.Println("RESOURCE TYPE: ", resourceType)
 	switch resourceType {
 	case "azurerm_linux_virtual_machine":
 		var vmRequest api.GetAzureVmRequest
@@ -125,7 +127,7 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
-		vals := decodeVirtualNetworkPeeringValues(vnRequest)
+		vals := decodeVirtualNetworkValues(vnRequest)
 		logger.Info("Vals", zap.Any("Vals", vals))
 		return p.newVirtualNetwork(vals).Components(), nil
 	default:

@@ -3,31 +3,27 @@ package terraform
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"go.uber.org/zap"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 )
 
 // Provider is an implementation of the terraform.Provider, used to extract component queries from
 // terraform resources.
 type Provider struct {
-	key    string
-	region region.Code
+	key string
 }
 
 // NewProvider returns a new Provider with the provided default region and a query key.
-func NewProvider(key string, regionCode region.Code) (*Provider, error) {
-	if !regionCode.Valid() {
-		return nil, fmt.Errorf("invalid AWS region: %q", regionCode)
-	}
-	return &Provider{key: key, region: regionCode}, nil
+func NewProvider(key string) (*Provider, error) {
+	return &Provider{key: key}, nil
 }
 
 // Name returns the Provider's common name.
 func (p *Provider) Name() string { return p.key }
 
 // ResourceComponents returns Component queries for a given terraform.Resource.
-func (p *Provider) ResourceComponents(resourceType string, request any) ([]query.Component, error) {
+func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, request any) ([]query.Component, error) {
 	switch resourceType {
 	case "aws_instance":
 		var instanceRequest api.GetEC2InstanceCostRequest

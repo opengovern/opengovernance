@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	aws "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/resource_types"
 	azure "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/azure_terracost/resource_types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 	"go.uber.org/zap"
@@ -21,6 +22,16 @@ func GetResource(logger *zap.Logger, provider string, resourceType string, reque
 			Type:       resourceType,
 			Components: nil,
 		}
+		provider, err := aws.NewProvider(provider)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("READING COMPONENTS", request)
+		components, err := provider.ResourceComponents(logger, resourceType, request)
+		if err != nil {
+			return nil, err
+		}
+		resource.Components = components
 	} else if provider == "Azure" {
 		resource = query.Resource{
 			Address:    request.Address,
@@ -39,6 +50,7 @@ func GetResource(logger *zap.Logger, provider string, resourceType string, reque
 		}
 		resource.Components = components
 	}
+	fmt.Println("COMPONENTS", resource.Components)
 	logger.Info("Components", zap.Any("Components", resource.Components))
 	return &resource, nil
 }

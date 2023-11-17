@@ -43,6 +43,7 @@ type DBInstance struct {
 }
 
 type dbInstanceValues struct {
+	RegionCode       string  `mapstructure:"region_code"`
 	InstanceClass    string  `mapstructure:"instance_class"`
 	AvailabilityZone string  `mapstructure:"availability_zone"`
 	Engine           string  `mapstructure:"engine"`
@@ -79,6 +80,7 @@ var licenseModelMap = map[string]string{
 
 func decodeDBInstanceValues(request api.GetRDSInstanceRequest) dbInstanceValues {
 	return dbInstanceValues{
+		RegionCode:       request.RegionCode,
 		InstanceClass:    "dbinstance",
 		AvailabilityZone: request.RegionCode,
 		Engine:           *request.DBInstance.DBInstance.Engine,
@@ -102,7 +104,7 @@ func (p *Provider) newDBInstance(vals dbInstanceValues) *DBInstance {
 
 	inst := &DBInstance{
 		providerKey:      p.key,
-		region:           p.region,
+		region:           region.Code(vals.RegionCode),
 		instanceType:     vals.InstanceClass,
 		databaseEngine:   dbType.engine,
 		databaseEdition:  dbType.edition,
