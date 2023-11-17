@@ -129,11 +129,6 @@ func vCoreCostComponents(db *db.Database, request api.GetAzureSqlServersDatabase
 		costComponents += response.Price
 	}
 
-	// check the max size field that is with byte type in our resource
-	//	if maxSizeGB != nil {
-	//		storageGB = decimalPtr(decimal.NewFromFloat(*maxSizeGB))
-	//	}
-
 	storageTier := *request.SqlServerDB.Database.SKU.Tier
 	if strings.ToLower(storageTier) == "general purpose - serverless" {
 		storageTier = "General Purpose"
@@ -193,14 +188,13 @@ func dtuCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesR
 	var extraStorageGB float64
 
 	maxsizeGB := float64(*request.SqlServerDB.Database.Properties.MaxSizeBytes) / math.Pow(10, 9)
-
+	// TODO : we should find ExtraDataStorageGB field because in the first condition we should check if the extraDataStorage is't empty we enter the first condition
 	if strings.HasPrefix(skuName, "b") {
 		extraStorageGB = maxsizeGB
-	} else if strings.HasPrefix(skuName, "s") {
+	} else if strings.HasPrefix(skuName, "s") && maxsizeGB != 0 {
 		includedStorageGB := 250.0
 		extraStorageGB = maxsizeGB - includedStorageGB
-	} else if strings.HasPrefix(skuName, "p") {
-		// we should not check if the extra size is bigger than the max storage that azure can support and if it was we send a message or something like that
+	} else if strings.HasPrefix(skuName, "p") && maxsizeGB != 0 {
 		includedStorageGB, ok := mssqlStandardDTUIncludedStorage[*request.SqlServerDB.Database.Properties.CurrentServiceObjectiveName]
 		if ok {
 			extraStorageGB = maxsizeGB - includedStorageGB
@@ -238,7 +232,6 @@ func dtuCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesR
 		return 0, err
 	}
 	cost += pitrBackupCost
-
 	return cost, nil
 }
 

@@ -105,6 +105,15 @@ func (p *Provider) ResourceComponents(resourceType string, request any) ([]query
 		}
 		vals := decodeManagedStorageValues(mdRequest)
 		return p.newManagedStorage(vals).Components(), nil
+	case "azurerm_sql_server_DB":
+		var sqlSDB api.GetAzureSqlServersDatabasesRequest
+		if req, ok := request.(api.GetAzureSqlServersDatabasesRequest); ok {
+			sqlSDB = req
+		} else {
+			return nil, fmt.Errorf("could not parse request")
+		}
+		vals := decodeSqlServerDB(sqlSDB, sqlSDB.MonthlyVCoreHours, sqlSDB.ExtraDataStorageGB, sqlSDB.LongTermRetentionStorageGB, sqlSDB.BackupStorageGB)
+		return p.newSqlServerDB(vals).Components(), nil
 	default:
 		return nil, nil
 	}

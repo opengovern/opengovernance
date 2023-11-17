@@ -150,7 +150,7 @@ func (s *Database) FindAzureLoadBalancerPrice(regionCode string, meterName strin
 
 func (s *Database) FindAzureSqlServerDatabasePrice(regionCode string, skuName string, productName string, meterName string, priceUint string) (*AzureSqlServerDatabasePrice, error) {
 	var sqlSD *AzureSqlServerDatabasePrice
-	err := s.orm.Model(&AzureSqlServerDatabasePrice{}).Where("arm_region_name = ?", regionCode).
+	err := s.Orm.Model(&AzureSqlServerDatabasePrice{}).Where("arm_region_name = ?", regionCode).
 		Where("sku_name = ?", skuName).Where("product_name = ?", productName).Where("meter_name = ?", meterName).
 		Where("price-uint = ?", priceUint).Find(&sqlSD).Error
 	if err != nil {
@@ -162,7 +162,7 @@ func (s *Database) FindAzureSqlServerDatabasePrice(regionCode string, skuName st
 
 func (s *Database) FindAzureSqlServerDatabaseVCoreComponentsPrice(regionCode string, skuName string, productName string, priceUint string) (*AzureSqlServerDatabaseReadReplicaCostComponentPrice, error) {
 	var sqlSD *AzureSqlServerDatabaseReadReplicaCostComponentPrice
-	err := s.orm.Model(&AzureSqlServerDatabaseReadReplicaCostComponentPrice{}).Where("arm_region_name = ?", regionCode).
+	err := s.Orm.Model(&AzureSqlServerDatabaseReadReplicaCostComponentPrice{}).Where("arm_region_name = ?", regionCode).
 		Where("sku_name = ?", skuName).Where("product_name = ?", productName).
 		Where("price-uint = ?", priceUint).Find(&sqlSD).Error
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *Database) FindAzureSqlServerDatabaseVCoreComponentsPrice(regionCode str
 
 func (s *Database) FindAzureSqlServerDatabaseVCoreForServerLessTierComponentPrice(regionCode string, serviceName string, serviceFamily string, productName string, priceUint string) (*AzureSqlServerDatabaseLicenseCostComponentPrice, error) {
 	var sqlSD *AzureSqlServerDatabaseLicenseCostComponentPrice
-	err := s.orm.Model(&AzureSqlServerDatabaseLicenseCostComponentPrice{}).Where("arm_region_name = ?", regionCode).
+	err := s.Orm.Model(&AzureSqlServerDatabaseLicenseCostComponentPrice{}).Where("arm_region_name = ?", regionCode).
 		Where("service_name = ?", serviceName).Where("product_name = ?", productName).
 		Where("service-family = ?", serviceFamily).Where("price-uint = ?", priceUint).Find(&sqlSD).Error
 	if err != nil {
