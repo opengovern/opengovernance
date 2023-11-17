@@ -1,6 +1,7 @@
 package costestimator
 
 import (
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/cost"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/postgresql"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
@@ -14,6 +15,7 @@ func CalcCosts(db *db.Database, logger *zap.Logger, provider string, resourceTyp
 	if err != nil {
 		return 0, nil
 	}
+	fmt.Println("CALC COSTS")
 	resources := []query.Resource{*resource}
 	logger.Info("Resources", zap.Any("Resources", resources))
 	backend := postgresql.NewBackend(db)
