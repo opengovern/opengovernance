@@ -172,6 +172,7 @@ func (s *Server) Register(e *echo.Echo) {
 	//costEstimatorGroup.GET("/azure/virtualmachine", httpserver2.AuthorizeHandler(s.GetAzureVmCost, authapi.InternalRole))
 	//costEstimatorGroup.GET("/azure/managedstorage", httpserver2.AuthorizeHandler(s.GetAzureManagedStorageCost, authapi.InternalRole))
 	//costEstimatorGroup.GET("/azure/loadbalancer", httpserver2.AuthorizeHandler(s.GetAzureLoadBalancerCost, authapi.InternalRole))
+	//costEstimatorGroup.GET("/azure/sqlserverdatabase", httpserver2.AuthorizeHandler(s.GetAzureSqlServerDatabase, authapi.InternalRole))
 }
 
 func (s *Server) Start() error {
@@ -313,20 +314,6 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		err = s.kubeClient.Update(context.Background(), helmRelease)
 		if err != nil {
 			return fmt.Errorf("updating workspace name: %w", err)
-		}
-
-		var res corev1.PodList
-		err = s.kubeClient.List(context.Background(), &res)
-		if err != nil {
-			return fmt.Errorf("listing pods: %w", err)
-		}
-		for _, pod := range res.Items {
-			if strings.HasPrefix(pod.Name, "describe-scheduler") {
-				err = s.kubeClient.Delete(context.Background(), &pod)
-				if err != nil {
-					return fmt.Errorf("deleting pods: %w", err)
-				}
-			}
 		}
 	}
 

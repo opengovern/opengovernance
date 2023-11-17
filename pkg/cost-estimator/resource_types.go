@@ -7,6 +7,7 @@ var azureResourceTypes = map[string]CostEstimatorFunc{
 	"Microsoft.Compute/disks":           GetManagedStorageCost,
 	"Microsoft.Network/loadBalancers":   GetLoadBalancerCost,
 	"Microsoft.Network/virtualNetworks": GetVirtualNetworkCost,
+	"Microsoft.Sql/servers/databases":   GetSQLDatabaseCost,
 }
 
 var awsResourceTypes = map[string]CostEstimatorFunc{

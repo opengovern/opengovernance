@@ -46,3 +46,13 @@ type GetAzureVirtualNetworkRequest struct {
 	PeeringLocations      []string
 	MonthlyDataTransferGB *float64
 }
+
+type GetAzureSqlServersDatabasesRequest struct {
+	RegionCode                 string
+	SqlServerDB                azure.SqlDatabaseDescription
+	MonthlyVCoreHours          int64
+	ExtraDataStorageGB         float64
+	LongTermRetentionStorageGB int64
+	BackupStorageGB            int64
+	ResourceId                 string
+}
