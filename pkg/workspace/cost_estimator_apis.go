@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws"
@@ -139,11 +140,13 @@ func (s *Server) GetAwsCost(ctx echo.Context) error {
 		return err
 	}
 	resourceType := ctx.Param("resource_type")
+	s.logger.Info(fmt.Sprintf("calculating cost for %s", resourceType))
 	cost, err := costestimator.CalcCosts(s.db, s.logger, "AWS", resourceType,
 		kaytuResources.ResourceRequest{Request: request, Address: "test"})
 	if err != nil {
 		return err
 	}
+	s.logger.Info(fmt.Sprintf("calculating cost for %s is done, value: %v", resourceType, cost))
 	return ctx.JSON(http.StatusOK, cost)
 }
 
@@ -155,10 +158,12 @@ func (s *Server) GetAzureCost(ctx echo.Context) error {
 		return err
 	}
 	resourceType := ctx.Param("resource_type")
+	s.logger.Info(fmt.Sprintf("calculating cost for %s", resourceType))
 	cost, err := costestimator.CalcCosts(s.db, s.logger, "Azure", resourceType,
 		kaytuResources.ResourceRequest{Request: request, Address: "test"})
 	if err != nil {
 		return err
 	}
+	s.logger.Info(fmt.Sprintf("calculating cost for %s is done, value: %v", resourceType, cost))
 	return ctx.JSON(http.StatusOK, cost)
 }

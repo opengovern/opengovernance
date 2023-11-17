@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"go.uber.org/zap"
 )
 
 var (
@@ -104,6 +105,8 @@ func (p *Provider) ResourceComponents(resourceType string, request any) ([]query
 			return nil, fmt.Errorf("could not parse request")
 		}
 		vals := decodeManagedStorageValues(mdRequest)
+		logger.Info("Vals", zap.Any("Vals", vals))
+		fmt.Println("Vals: ", vals)
 		return p.newManagedStorage(vals).Components(), nil
 	case "azurerm_sql_server_DB":
 		var sqlSDB api.GetAzureSqlServersDatabasesRequest
@@ -114,6 +117,26 @@ func (p *Provider) ResourceComponents(resourceType string, request any) ([]query
 		}
 		vals := decodeSqlServerDB(sqlSDB, sqlSDB.MonthlyVCoreHours, sqlSDB.ExtraDataStorageGB, sqlSDB.LongTermRetentionStorageGB, sqlSDB.BackupStorageGB)
 		return p.newSqlServerDB(vals).Components(), nil
+	case "azurerm_load_balancer":
+		var lbRequest api.GetAzureLoadBalancerRequest
+		if req, ok := request.(api.GetAzureLoadBalancerRequest); ok {
+			lbRequest = req
+		} else {
+			return nil, fmt.Errorf("could not parse request")
+		}
+		vals := decodeLoadBalancerValues(lbRequest)
+		logger.Info("Vals", zap.Any("Vals", vals))
+		return p.newLoadBalancer(vals).Components(), nil
+	case "azurerm_virtual_network":
+		var vnRequest api.GetAzureVirtualNetworkRequest
+		if req, ok := request.(api.GetAzureVirtualNetworkRequest); ok {
+			vnRequest = req
+		} else {
+			return nil, fmt.Errorf("could not parse request")
+		}
+		vals := decodeVirtualNetworkPeeringValues(vnRequest)
+		logger.Info("Vals", zap.Any("Vals", vals))
+		return p.newVirtualNetwork(vals).Components(), nil
 	default:
 		return nil, nil
 	}

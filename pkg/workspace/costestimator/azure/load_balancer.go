@@ -62,8 +62,8 @@ func getStandardLoadBalancerCost(db *db.Database, request api.GetAzureLoadBalanc
 
 	// NAT rules are free.
 	var dataProceeded int64 // GBs
-	if request.DailyDataProceeded != nil {
-		dataProceeded = *request.DailyDataProceeded
+	if request.DailyDataProceed != nil {
+		dataProceeded = *request.DailyDataProceed
 	} else {
 		dataProceeded = 1000
 	}
