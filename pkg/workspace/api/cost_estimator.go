@@ -47,6 +47,12 @@ type GetAzureVirtualNetworkRequest struct {
 	MonthlyDataTransferGB *float64
 }
 
+type GetAzureVirtualNetworkPeeringRequest struct {
+	SourceLocation        string
+	DestinationLocation   string
+	MonthlyDataTransferGB *float64
+}
+
 type GetAzureSqlServersDatabasesRequest struct {
 	RegionCode                 string
 	SqlServerDB                azure.SqlDatabaseDescription

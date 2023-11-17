@@ -13,7 +13,7 @@ import (
 func CalcCosts(db *db.Database, logger *zap.Logger, provider string, resourceType string, request kaytuResources.ResourceRequest) (float64, error) {
 	resource, err := kaytuResources.GetResource(logger, provider, resourceType, request)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	fmt.Println("CALC COSTS")
 	resources := []query.Resource{*resource}

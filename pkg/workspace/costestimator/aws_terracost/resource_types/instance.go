@@ -55,6 +55,7 @@ type Instance struct {
 
 // instanceValues represents the structure of Terraform values for aws_instance resource.
 type instanceValues struct {
+	RegionCode       string `mapstructure:"region_code"`
 	InstanceType     string `mapstructure:"instance_type"`
 	Tenancy          string `mapstructure:"tenancy"`
 	AvailabilityZone string `mapstructure:"availability_zone"`
@@ -111,6 +112,7 @@ func decodeInstanceValues(request api.GetEC2InstanceCostRequest) (*instanceValue
 		})
 	}
 	return &instanceValues{
+		RegionCode:       request.RegionCode,
 		InstanceType:     string(request.Instance.Instance.InstanceType),
 		Tenancy:          string(request.Instance.Instance.Placement.Tenancy),
 		AvailabilityZone: request.RegionCode,
@@ -160,7 +162,7 @@ func getInstanceOperatingSystem(request api.GetEC2InstanceCostRequest) (string, 
 func (p *Provider) newInstance(vals instanceValues) *Instance {
 	inst := &Instance{
 		provider: p,
-		region:   p.region,
+		region:   region.Code(vals.RegionCode),
 		tenancy:  "Shared",
 
 		// Note: every Instance is estimated as a Linux without pre-installed S/W
