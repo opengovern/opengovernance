@@ -335,7 +335,7 @@ func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, con
 }
 
 func (s *inventoryClient) GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error) {
-	url := fmt.Sprintf("%s/api/v2/resource-collection/%s", s.baseURL, id)
+	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection/%s", s.baseURL, id)
 
 	var response api.ResourceCollection
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
