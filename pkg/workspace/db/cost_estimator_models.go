@@ -121,7 +121,6 @@ type AzureVirtualMachinePrice struct {
 	Price         decimal.Decimal
 }
 
-// AzureManagedStoragePrice Product Name contains "Disk"
 type AzureManagedStoragePrice struct {
 	SKU           string `gorm:"primaryKey"`
 	EffectiveDate int64
@@ -140,4 +139,34 @@ type AzureLoadBalancerPrice struct {
 	MeterName     string
 	PriceUnit     string
 	Price         decimal.Decimal
+}
+
+type AzureSqlServerDatabasePrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	SkuName       string
+	ProductName   string
+	MeterName     string
+	PriceUnit     string
+	Price         float64
+}
+
+type AzureSqlServerDatabaseReadReplicaCostComponentPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	SkuName       string
+	ProductName   string
+	PriceUnit     string
+	Price         float64
+}
+
+type AzureSqlServerDatabaseLicenseCostComponentPrice struct {
+	SKU           string `gorm:"primaryKey"`
+	EffectiveDate int64
+	ArmRegionName string
+	ProductName   string
+	PriceUnit     string
+	Price         float64
 }

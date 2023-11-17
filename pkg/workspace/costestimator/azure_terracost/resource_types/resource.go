@@ -110,6 +110,15 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		logger.Info("Vals", zap.Any("Vals", vals))
 		fmt.Println("Vals: ", vals)
 		return p.newManagedStorage(vals).Components(), nil
+	case "azurerm_sql_server_DB":
+		var sqlSDB api.GetAzureSqlServersDatabasesRequest
+		if req, ok := request.(api.GetAzureSqlServersDatabasesRequest); ok {
+			sqlSDB = req
+		} else {
+			return nil, fmt.Errorf("could not parse request")
+		}
+		vals := decodeSqlServerDB(sqlSDB, sqlSDB.MonthlyVCoreHours, sqlSDB.ExtraDataStorageGB, sqlSDB.LongTermRetentionStorageGB, sqlSDB.BackupStorageGB)
+		return p.newSqlServerDB(vals).Components(), nil
 	case "azurerm_load_balancer":
 		var lbRequest api.GetAzureLoadBalancerRequest
 		if req, ok := request.(api.GetAzureLoadBalancerRequest); ok {

@@ -117,6 +117,21 @@ func (s *Server) GetAzureLoadBalancerCost(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cost)
 }
 
+// GetAzureSqlServerDatabase get azure RDS Instance cost for a day
+// route: /workspace/api/v1/costestimator/azure/sqlserverdatabase
+func (s *Server) GetAzureSqlServerDatabase(ctx echo.Context) error {
+	var request api.GetAzureSqlServersDatabasesRequest
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+
+	cost, err := azure.SqlServerDatabaseCostByResource(s.db, request, s.logger)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, cost)
+}
+
 // GetAwsCost get azure load balancer cost for a day
 // route: /workspace/api/v1/costestimator/aws/{resource_type}
 func (s *Server) GetAwsCost(ctx echo.Context) error {
