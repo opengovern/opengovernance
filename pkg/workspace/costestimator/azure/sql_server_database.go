@@ -174,9 +174,8 @@ func dtuCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesR
 	}
 
 	// we have problem here :
-	productName := fmt.Sprintf("SQL Database Single %s", mssqlTierMapping[])
 	meterName := fmt.Sprintf(" %v DTUs", request.SqlServerDB.Database.Properties.CurrentServiceObjectiveName)
-	response, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, skuName, productName, meterName, "hours")
+	response, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, skuName, "^SQL Database Single", meterName, "hours")
 	if err != nil {
 		log.Error(fmt.Errorf("Error in receiving compute %v cost ", request.SqlServerDB.Database.SKU.Name), zap.String("resourceId", request.ResourceId))
 		return 0, err
@@ -211,7 +210,7 @@ func dtuCostComponents(db *db.Database, request api.GetAzureSqlServersDatabasesR
 				return 0, fmt.Errorf(fmt.Sprintf("Unrecognized tier for SKU '%s' for resource %s", *request.SqlServerDB.Database.SKU.Name, *request.SqlServerDB.Database.Name))
 			}
 		}
-		productName = fmt.Sprintf("SQL Database %s - Storage", tier)
+		productName := fmt.Sprintf("SQL Database %s - Storage", tier)
 		// check tier in as sku name
 		ExtraDataStorageResponse, err := db.FindAzureSqlServerDatabasePrice(request.RegionCode, tier, productName, "Data Stored", "GB")
 		if err != nil {
