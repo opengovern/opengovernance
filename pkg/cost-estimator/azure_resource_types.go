@@ -66,6 +66,9 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 			fmt.Sprintf("%v", string(jsonData))))
 		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
 	}
+	h.logger.Info("Compute Disk", zap.String("elasticsearch", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
+	h.logger.Info("Compute Disk", zap.String("jsonData", string(jsonData)))
+	h.logger.Info("Compute Disk", zap.String("description", fmt.Sprintf("%v", description)))
 	request := api.GetAzureManagedStorageRequest{
 		RegionCode:     response.Hits.Hits[0].Source.Location,
 		ManagedStorage: description,
