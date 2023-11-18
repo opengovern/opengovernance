@@ -79,10 +79,10 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	}
 	disk := mapData["Disk"].(map[string]interface{})
 	h.logger.Info("Compute Disk Fields", zap.String("SkuName", disk["SKU"].(map[string]interface{})["Name"].(string)))
-	h.logger.Info("Compute Disk Fields", zap.String("DiskSize", string(disk["Properties"].(map[string]interface{})["DiskSizeGB"].(int64))))
+	h.logger.Info("Compute Disk Fields", zap.String("DiskSize", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["DiskSizeGB"].(float64))))
 	h.logger.Info("Compute Disk Fields", zap.String("BurstingEnabled", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["BurstingEnabled"])))
-	h.logger.Info("Compute Disk Fields", zap.String("DiskThroughput", string(disk["Properties"].(map[string]interface{})["DiskMBpsReadWrite"].(int64))))
-	h.logger.Info("Compute Disk Fields", zap.String("DiskIOPS", string(disk["Properties"].(map[string]interface{})["DiskIOPSReadWrite"].(int64))))
+	h.logger.Info("Compute Disk Fields", zap.String("DiskThroughput", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["DiskMBpsReadWrite"].(float64))))
+	h.logger.Info("Compute Disk Fields", zap.String("DiskIOPS", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["DiskIOPSReadWrite"].(float64))))
 
 	request := api.GetAzureManagedStorageRequest{
 		RegionCode:     response.Hits.Hits[0].Source.Location,
