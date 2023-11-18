@@ -72,6 +72,18 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	jsonData = []byte(strings.ReplaceAll(string(jsonData), "\\\"", "\""))
 	h.logger.Info("Compute Disk", zap.String("jsonData CONVERTED", string(jsonData)))
 	h.logger.Info("Compute Disk", zap.String("description", fmt.Sprintf("%v", description)))
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
+	if err != nil {
+		return 0, err
+	}
+	disk := mapData["Disk"].(map[string]interface{})
+	h.logger.Info("Compute Disk Fields", zap.String("SkuName", disk["SKU"].(map[string]interface{})["Name"].(string)))
+	h.logger.Info("Compute Disk Fields", zap.String("DiskSize", disk["Properties"].(map[string]interface{})["DiskSizeGB"].(string)))
+	h.logger.Info("Compute Disk Fields", zap.String("BurstingEnabled", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["BurstingEnabled"])))
+	h.logger.Info("Compute Disk Fields", zap.String("DiskThroughput", disk["Properties"].(map[string]interface{})["DiskMBpsReadWrite"].(string)))
+	h.logger.Info("Compute Disk Fields", zap.String("DiskIOPS", disk["Properties"].(map[string]interface{})["DiskIOPSReadWrite"].(string)))
+
 	request := api.GetAzureManagedStorageRequest{
 		RegionCode:     response.Hits.Hits[0].Source.Location,
 		ManagedStorage: description,
