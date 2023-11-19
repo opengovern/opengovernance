@@ -20,21 +20,34 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description azure.ComputeVirtualMachineDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
-	request := api.GetAzureVmRequest{
-		RegionCode: response.Hits.Hits[0].Source.Location,
-		VM:         description,
+	var request api.GetAzureVmRequest
+	request.ResourceId = resourceId
+	request.RegionCode = response.Hits.Hits[0].Source.Location
+	if virtualMachine, ok := mapData["VirtualMachine"].(map[string]interface{}); ok {
+		if properties, ok := virtualMachine["Properties"].(map[string]interface{}); ok {
+			if storageProfile, ok := properties["StorageProfile"].(map[string]interface{}); ok {
+				if osDisk, ok := storageProfile["OSDisk"].(map[string]interface{}); ok {
+					if osType, ok := osDisk["OSType"].(string); ok {
+						request.OperatingSystem = osType
+					}
+				}
+			}
+			if hardwareProfile, ok := properties["HardwareProfile"].(map[string]interface{}); ok {
+				if vmSize, ok := hardwareProfile["VMSize"].(string); ok {
+					request.VMSize = vmSize
+				}
+			}
+		}
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_machine", request)
 	if err != nil {
@@ -65,6 +78,7 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 		return 0, err
 	}
 	var request api.GetAzureManagedStorageRequest
+	request.ResourceId = resourceId
 	request.RegionCode = response.Hits.Hits[0].Source.Location
 	if disk, ok := mapData["Disk"].(map[string]interface{}); ok {
 		if skuName, ok := disk["SKU"].(map[string]interface{})["Name"].(string); ok {
@@ -111,6 +125,7 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 		return 0, err
 	}
 	var request api.GetAzureLoadBalancerRequest
+	request.ResourceId = resourceId
 	request.RegionCode = response.Hits.Hits[0].Source.Location
 	if loadBalancer, ok := mapData["LoadBalancer"].(map[string]interface{}); ok {
 		if properties, ok := loadBalancer["Properties"].(map[string]interface{}); ok {
@@ -181,6 +196,7 @@ func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64
 		}
 	}
 	request := api.GetAzureVirtualNetworkRequest{
+		ResourceId:       resourceId,
 		RegionCode:       response.Hits.Hits[0].Source.Location,
 		PeeringLocations: peeringLocations,
 	}
