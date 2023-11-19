@@ -59,7 +59,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	ctx.UserRole = authApi.KaytuAdminRole
+	ctx.UserRole = authApi.InternalRole
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Connection
@@ -140,7 +140,7 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 }
 
 func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Connection, error) {
-	ctx.UserRole = authApi.KaytuAdminRole
+	ctx.UserRole = authApi.InternalRole
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 
 	var req api.GetSourcesRequest
@@ -187,7 +187,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 }
 
 func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error) {
-	ctx.UserRole = authApi.KaytuAdminRole
+	ctx.UserRole = authApi.InternalRole
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 	for i, v := range t {
 		if i == 0 {
