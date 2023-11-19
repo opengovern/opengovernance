@@ -28,7 +28,7 @@ type linuxVirtualMachineValues struct {
 // decodeLinuxVirtualMachineValues decodes and returns computeInstanceValues from a Terraform values map.
 func decodeLinuxVirtualMachineValues(request api.GetAzureVmRequest) linuxVirtualMachineValues {
 	return linuxVirtualMachineValues{
-		Size:     string(*request.VM.VirtualMachine.Properties.HardwareProfile.VMSize),
+		Size:     request.VMSize,
 		Location: request.RegionCode,
 	}
 }
