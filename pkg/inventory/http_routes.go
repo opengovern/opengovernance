@@ -2389,7 +2389,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 	}
 
 	var awsLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
-		ID:          source.CloudAWS,
+		ID:          source.CloudAWS.String(),
 		Name:        "AWS",
 		Description: "AWS resources",
 		Subcategories: []inventoryApi.ResourceCollectionLandscapeSubcategory{
@@ -2402,7 +2402,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		},
 	}
 	var azureLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
-		ID:          source.CloudAzure,
+		ID:          source.CloudAzure.String(),
 		Name:        "Azure",
 		Description: "Azure resources",
 		Subcategories: []inventoryApi.ResourceCollectionLandscapeSubcategory{
