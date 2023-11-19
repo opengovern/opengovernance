@@ -102,27 +102,27 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
 		onboardClient := client3.NewOnboardServiceClient(onboardURL, nil)
 
+		awsSrcs, err := onboardClient.ListSources(hctx, []source.Type{source.CloudAWS})
+		if err != nil {
+			return err
+		}
+
+		azureSrcs, err := onboardClient.ListSources(hctx, []source.Type{source.CloudAzure})
+		if err != nil {
+			return err
+		}
+
 		// assign compliance for aws cis v2, azure cis v2 (jobs will be triggeredl
 		if !workspace.ComplianceTriggered {
 			s.logger.Info("running compliance", zap.String("workspaceID", workspace.ID))
-			srcs, err := onboardClient.ListSources(hctx, []source.Type{source.CloudAWS})
-			if err != nil {
-				return err
-			}
-
-			for _, src := range srcs {
+			for _, src := range awsSrcs {
 				_, err = complianceClient.CreateBenchmarkAssignment(hctx, "aws_cis_v200", src.ID.String())
 				if err != nil {
 					return err
 				}
 			}
 
-			srcs, err = onboardClient.ListSources(hctx, []source.Type{source.CloudAzure})
-			if err != nil {
-				return err
-			}
-
-			for _, src := range srcs {
+			for _, src := range azureSrcs {
 				_, err = complianceClient.CreateBenchmarkAssignment(hctx, "azure_cis_v200", src.ID.String())
 				if err != nil {
 					return err
@@ -175,26 +175,30 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 			return nil
 		}
 
-		s.logger.Info("checking aws compliance job", zap.String("workspaceID", workspace.ID))
-		complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
-		if err != nil {
-			return err
+		if len(awsSrcs) > 0 {
+			s.logger.Info("checking aws compliance job", zap.String("workspaceID", workspace.ID))
+			complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
+			if err != nil {
+				return err
+			}
+
+			if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
+				s.logger.Info("aws compliance job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
+				return nil
+			}
 		}
 
-		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
-			s.logger.Info("aws compliance job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
-			return nil
-		}
+		if len(azureSrcs) > 0 {
+			s.logger.Info("checking azure compliance job", zap.String("workspaceID", workspace.ID))
+			complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
+			if err != nil {
+				return err
+			}
 
-		s.logger.Info("checking azure compliance job", zap.String("workspaceID", workspace.ID))
-		complianceJob, err = schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
-		if err != nil {
-			return err
-		}
-
-		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
-			s.logger.Info("azure compliance job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
-			return nil
+			if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
+				s.logger.Info("azure compliance job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", complianceJob.ID))
+				return nil
+			}
 		}
 
 		s.logger.Info("workspace provisioned", zap.String("workspaceID", workspace.ID))
