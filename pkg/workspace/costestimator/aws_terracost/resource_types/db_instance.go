@@ -83,12 +83,12 @@ func decodeDBInstanceValues(request api.GetRDSInstanceRequest) dbInstanceValues 
 		RegionCode:       request.RegionCode,
 		InstanceClass:    "dbinstance",
 		AvailabilityZone: request.RegionCode,
-		Engine:           *request.DBInstance.DBInstance.Engine,
-		LicenseModel:     *request.DBInstance.DBInstance.LicenseModel,
-		MultiAZ:          request.DBInstance.DBInstance.MultiAZ,
-		AllocatedStorage: float64(request.DBInstance.DBInstance.AllocatedStorage),
-		StorageType:      *request.DBInstance.DBInstance.StorageType,
-		IOPS:             float64(*request.DBInstance.DBInstance.Iops),
+		Engine:           request.InstanceEngine,
+		LicenseModel:     request.InstanceLicenseModel,
+		MultiAZ:          request.InstanceMultiAZ,
+		AllocatedStorage: request.AllocatedStorage,
+		StorageType:      request.StorageType,
+		IOPS:             request.IOPs,
 	}
 }
 
