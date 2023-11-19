@@ -61,10 +61,16 @@ type GetAzureVirtualNetworkPeeringRequest struct {
 }
 
 type GetAzureSqlServersDatabasesRequest struct {
-	RegionCode                 string
-	SqlServerDB                azure.SqlDatabaseDescription
-	MonthlyVCoreHours          int64
-	ExtraDataStorageGB         float64
+	RegionCode  string
+	SqlServerDB azure.SqlDatabaseDescription
+	// MonthlyVCoreHours represents a usage param that allows users to define how many hours of usage a serverless sql database instance uses.
+	MonthlyVCoreHours int64
+	// ExtraDataStorageGB represents a usage cost of additional backup storage used by the sql database.
+	ExtraDataStorageGB float64
+	// LongTermRetentionStorageGB defines a usage param that allows users to define how many GB of cold storage the database uses.
+	// This is storage that can be kept for up to 10 years.
 	LongTermRetentionStorageGB int64
-	BackupStorageGB            int64
+	// BackupStorageGB defines a usage param that allows users to define how many GB Point-In-Time Restore (PITR) backup storage the database uses.
+	BackupStorageGB int64
+	ResourceId      string
 }
