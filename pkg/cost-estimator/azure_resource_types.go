@@ -100,21 +100,37 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description azure.LoadBalancerDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
-	request := api.GetAzureLoadBalancerRequest{
-		RegionCode:   response.Hits.Hits[0].Source.Location,
-		LoadBalancer: description,
+	var request api.GetAzureLoadBalancerRequest
+	request.RegionCode = response.Hits.Hits[0].Source.Location
+	if loadBalancer, ok := mapData["LoadBalancer"].(map[string]interface{}); ok {
+		if properties, ok := loadBalancer["Properties"].(map[string]interface{}); ok {
+			var rulesNumber int
+			if loadBalancingRules, ok := properties["LoadBalancingRules"].([]map[string]interface{}); ok {
+				rulesNumber = rulesNumber + len(loadBalancingRules)
+			}
+			if outboundRules, ok := properties["OutboundRules"].([]map[string]interface{}); ok {
+				rulesNumber = rulesNumber + len(outboundRules)
+			}
+			request.RulesNumber = int32(rulesNumber)
+		}
+		if sku, ok := loadBalancer["SKU"].(map[string]string); ok {
+			if name, ok := sku["Name"]; ok {
+				request.SkuName = name
+			}
+			if tier, ok := sku["Tier"]; ok {
+				request.SkuTier = tier
+			}
+		}
 	}
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_load_balancer", request)
 	if err != nil {
