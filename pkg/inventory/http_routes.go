@@ -2422,9 +2422,9 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		metric := metricsMap[metricID]
 
 		for _, table := range metric.Tables {
-			if awsResourceType, ok := kaytuAws.GetResourceTypesMap()[awsSteampipe.GetResourceTypeByTableName(table)]; ok {
+			if awsResourceType, err := kaytuAws.GetResourceType(table); err == nil && awsResourceType != nil {
 				includedResourceTypes[awsResourceType.ResourceName] = awsResourceType
-			} else if azureResourceType, ok := kaytuAzure.GetResourceTypesMap()[azureSteampipe.GetResourceTypeByTableName(table)]; ok {
+			} else if azureResourceType, err := kaytuAzure.GetResourceType(table); err == nil && azureResourceType != nil {
 				includedResourceTypes[azureResourceType.ResourceName] = azureResourceType
 			}
 		}
