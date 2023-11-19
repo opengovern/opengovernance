@@ -31,8 +31,12 @@ type GetAzureVmRequest struct {
 }
 
 type GetAzureManagedStorageRequest struct {
-	RegionCode     string
-	ManagedStorage azure.ComputeDiskDescription
+	RegionCode      string
+	SkuName         string
+	DiskSize        float64
+	BurstingEnabled bool
+	DiskThroughput  float64
+	DiskIOPs        float64
 }
 
 type GetAzureLoadBalancerRequest struct {

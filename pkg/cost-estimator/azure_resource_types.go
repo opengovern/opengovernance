@@ -9,7 +9,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"go.uber.org/zap"
-	"strings"
 )
 
 func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
@@ -55,39 +54,34 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description azure.ComputeDiskDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
-	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
-	}
-	h.logger.Info("Compute Disk", zap.String("elasticsearch", fmt.Sprintf("%v", response.Hits.Hits[0].Source.Description)))
-	h.logger.Info("Compute Disk", zap.String("jsonData", string(jsonData)))
-	jsonData = []byte(strings.ReplaceAll(string(jsonData), "\\\"", "\""))
-	h.logger.Info("Compute Disk", zap.String("jsonData CONVERTED", string(jsonData)))
-	h.logger.Info("Compute Disk", zap.String("description", fmt.Sprintf("%v", description)))
 	var mapData map[string]interface{}
 	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
 		return 0, err
 	}
-	disk := mapData["Disk"].(map[string]interface{})
-	h.logger.Info("Compute Disk Fields", zap.String("SkuName", disk["SKU"].(map[string]interface{})["Name"].(string)))
-	h.logger.Info("Compute Disk Fields", zap.String("DiskSize", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["DiskSizeGB"].(float64))))
-	h.logger.Info("Compute Disk Fields", zap.String("BurstingEnabled", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["BurstingEnabled"])))
-	h.logger.Info("Compute Disk Fields", zap.String("DiskThroughput", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["DiskMBpsReadWrite"].(float64))))
-	h.logger.Info("Compute Disk Fields", zap.String("DiskIOPS", fmt.Sprintf("%v", disk["Properties"].(map[string]interface{})["DiskIOPSReadWrite"].(float64))))
-
-	request := api.GetAzureManagedStorageRequest{
-		RegionCode:     response.Hits.Hits[0].Source.Location,
-		ManagedStorage: description,
+	var request api.GetAzureManagedStorageRequest
+	request.RegionCode = response.Hits.Hits[0].Source.Location
+	if disk, ok := mapData["Disk"].(map[string]interface{}); ok {
+		if skuName, ok := disk["SKU"].(map[string]interface{})["Name"].(string); ok {
+			request.SkuName = skuName
+		}
+		if properties, ok := disk["Properties"].(map[string]interface{}); ok {
+			request.DiskSize = properties["DiskSizeGB"].(float64)
+			if fmt.Sprintf("%v", properties["BurstingEnabled"]) == "true" {
+				request.BurstingEnabled = true
+			} else {
+				request.BurstingEnabled = false
+			}
+			request.DiskThroughput = properties["DiskMBpsReadWrite"].(float64)
+			request.DiskIOPs = properties["DiskIOPSReadWrite"].(float64)
+		}
 	}
+
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", request)
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
@@ -140,27 +134,35 @@ func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description azure.VirtualNetworkDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
 	var peeringLocations []string
-	for _, p := range description.VirtualNetwork.Properties.VirtualNetworkPeerings {
-		id := *p.Properties.RemoteVirtualNetwork.ID
-		location, err := getVirtualNetworkPeering(h, id)
-		if err != nil {
-			h.logger.Error(fmt.Sprintf("can not get virtual network peering %s", id))
-			return 0, fmt.Errorf("can not get virtual network peering %s", id)
+	if virtualNetwork, ok := mapData["VirtualNetwork"].(map[string]interface{}); ok {
+		if properties, ok := virtualNetwork["Properties"].(map[string]interface{}); ok {
+			if peerings, ok := properties["VirtualNetworkPeerings"].([]map[string]interface{}); ok {
+				for _, p := range peerings {
+					if peeringProperties, ok := p["Properties"].(map[string]interface{}); ok {
+						if remoteVirtualNetwork, ok := peeringProperties["RemoteVirtualNetwork"].(map[string]string); ok {
+							if id, ok := remoteVirtualNetwork["ID"]; ok {
+								location, err := getVirtualNetworkPeering(h, id)
+								if err != nil {
+									return 0, err
+								}
+								peeringLocations = append(peeringLocations, *location)
+							}
+						}
+					}
+				}
+			}
 		}
-		peeringLocations = append(peeringLocations, *location)
 	}
 	request := api.GetAzureVirtualNetworkRequest{
 		RegionCode:       response.Hits.Hits[0].Source.Location,
@@ -183,19 +185,7 @@ func getVirtualNetworkPeering(h *HttpHandler, resourceId string) (*string, error
 	if len(response.Hits.Hits) == 0 {
 		return nil, fmt.Errorf("no resource found")
 	}
-	var description azure.VirtualNetworkDescription
-	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
-	if err != nil {
-		h.logger.Error("failed to marshal request", zap.Error(err))
-		return nil, fmt.Errorf("failed to marshal request")
-	}
-	err = json.Unmarshal(jsonData, &description)
-	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return nil, fmt.Errorf("cannot parse resource %s", err.Error())
-	}
-	return description.VirtualNetwork.Location, nil
+	return &response.Hits.Hits[0].Source.Location, nil
 }
 
 func GetSQLDatabaseCost(h *HttpHandler, _ string, resourceId string) (float64, error) {
