@@ -33,6 +33,8 @@ func AuthorizeHandler(h echo.HandlerFunc, minRole api.Role) echo.HandlerFunc {
 
 func RequireMinRole(ctx echo.Context, minRole api.Role) error {
 	if !hasAccess(GetUserRole(ctx), minRole) {
+		userRole := GetUserRole(ctx)
+		fmt.Println("required role = ", minRole, " user role = ", userRole)
 		return echo.NewHTTPError(http.StatusForbidden, "missing required permission")
 	}
 
