@@ -37,7 +37,13 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		Instance:   description,
 	}
 
-	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_instance", request)
+	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_instance", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -72,7 +78,13 @@ func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, err
 		Volume:     description,
 	}
 
-	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_ebs_volume", request)
+	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_ebs_volume", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -136,7 +148,13 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 			LBType:     "classic",
 		}
 	}
-	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_elb", request)
+	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_elb", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -171,7 +189,13 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		DBInstance: description,
 	}
 
-	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_db_instance", request)
+	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_db_instance", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err

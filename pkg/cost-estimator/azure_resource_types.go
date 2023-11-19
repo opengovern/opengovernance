@@ -31,7 +31,6 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 		return 0, err
 	}
 	var request api.GetAzureVmRequest
-	request.ResourceId = resourceId
 	request.RegionCode = response.Hits.Hits[0].Source.Location
 	if virtualMachine, ok := mapData["VirtualMachine"].(map[string]interface{}); ok {
 		if properties, ok := virtualMachine["Properties"].(map[string]interface{}); ok {
@@ -49,7 +48,13 @@ func GetComputeVirtualMachineCost(h *HttpHandler, _ string, resourceId string) (
 			}
 		}
 	}
-	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_machine", request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_machine", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -78,7 +83,6 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 		return 0, err
 	}
 	var request api.GetAzureManagedStorageRequest
-	request.ResourceId = resourceId
 	request.RegionCode = response.Hits.Hits[0].Source.Location
 	if disk, ok := mapData["Disk"].(map[string]interface{}); ok {
 		if skuName, ok := disk["SKU"].(map[string]interface{})["Name"].(string); ok {
@@ -96,7 +100,13 @@ func GetManagedStorageCost(h *HttpHandler, _ string, resourceId string) (float64
 		}
 	}
 
-	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_managed_disk", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -125,7 +135,6 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 		return 0, err
 	}
 	var request api.GetAzureLoadBalancerRequest
-	request.ResourceId = resourceId
 	request.RegionCode = response.Hits.Hits[0].Source.Location
 	if loadBalancer, ok := mapData["LoadBalancer"].(map[string]interface{}); ok {
 		if properties, ok := loadBalancer["Properties"].(map[string]interface{}); ok {
@@ -147,7 +156,13 @@ func GetLoadBalancerCost(h *HttpHandler, _ string, resourceId string) (float64, 
 			}
 		}
 	}
-	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_load_balancer", request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_load_balancer", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -196,11 +211,16 @@ func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64
 		}
 	}
 	request := api.GetAzureVirtualNetworkRequest{
-		ResourceId:       resourceId,
 		RegionCode:       response.Hits.Hits[0].Source.Location,
 		PeeringLocations: peeringLocations,
 	}
-	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_network", request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_network", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		h.logger.Error("failed in calculating cost", zap.Error(err))
 		return 0, err
@@ -233,13 +253,18 @@ func GetSQLDatabaseCost(h *HttpHandler, _ string, resourceId string) (float64, e
 		request = api.GetAzureSqlServersDatabasesRequest{
 			RegionCode:  response.Hits.Hits[0].Source.Location,
 			SqlServerDB: sqlServerDB,
-			ResourceId:  resourceId,
 		}
 	} else {
 		return 0, fmt.Errorf("cannot parse resource")
 	}
 
-	cost, err := h.workspaceClient.GetAzureSqlServerDatabase(&httpclient.Context{UserRole: apiAuth.InternalRole}, request)
+	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_sql_server_DB", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})
 	if err != nil {
 		return 0, err
 	}
