@@ -500,13 +500,13 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	}
 
 	currentConnectionCount := map[source.Type]int64{}
-	awsCount, err := s.db.CountConnectionsByConnector(source.CloudAWS)
+	awsCount, err := s.db.CountConnectionsByConnector(ws.ID, source.CloudAWS)
 	if err != nil {
 		return err
 	}
 	currentConnectionCount[source.CloudAWS] = awsCount
 
-	azureCount, err := s.db.CountConnectionsByConnector(source.CloudAzure)
+	azureCount, err := s.db.CountConnectionsByConnector(ws.ID, source.CloudAzure)
 	if err != nil {
 		return err
 	}
