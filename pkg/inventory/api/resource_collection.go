@@ -22,3 +22,28 @@ type ResourceCollection struct {
 	Status      ResourceCollectionStatus         `json:"status"`
 	Filters     []kaytu.ResourceCollectionFilter `json:"filters"`
 }
+
+type ResourceCollectionLandscapeItem struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	LogoURI     string `json:"logo_uri"`
+}
+
+type ResourceCollectionLandscapeSubcategory struct {
+	ID          string                            `json:"id"`
+	Name        string                            `json:"name"`
+	Description string                            `json:"description"`
+	Items       []ResourceCollectionLandscapeItem `json:"items"`
+}
+
+type ResourceCollectionLandscapeCategory struct {
+	ID            string                                   `json:"id"`
+	Name          string                                   `json:"name"`
+	Description   string                                   `json:"description"`
+	Subcategories []ResourceCollectionLandscapeSubcategory `json:"subcategories"`
+}
+
+type ResourceCollectionLandscape struct {
+	Categories []ResourceCollectionLandscapeCategory `json:"categories"`
+}

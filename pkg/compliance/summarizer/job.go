@@ -100,7 +100,7 @@ func (w *Worker) RunJob(j Job) error {
 
 	bs.Summarize()
 
-	w.logger.Info("Summarize done")
+	w.logger.Info("Summarize done", zap.Any("summary", bs))
 
 	err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, []kafka.Doc{bs}, w.logger, nil)
 	if err != nil {

@@ -233,89 +233,108 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 
 	workspace := &db.Workspace{
-		ID:             fmt.Sprintf("ws-%d", id),
-		Name:           strings.ToLower(request.Name),
-		OwnerId:        &userID,
-		URI:            uri,
-		Status:         api.StatusBootstrapping,
-		Description:    request.Description,
-		Size:           api.SizeXS,
-		Tier:           api.Tier(request.Tier),
-		OrganizationID: organizationID,
+		ID:                       fmt.Sprintf("ws-%d", id),
+		Name:                     strings.ToLower(request.Name),
+		OwnerId:                  &userID,
+		URI:                      uri,
+		Status:                   api.StatusBootstrapping,
+		Description:              request.Description,
+		Size:                     api.SizeXS,
+		Tier:                     api.Tier(request.Tier),
+		OrganizationID:           organizationID,
+		IsCreated:                false,
+		IsBootstrapInputFinished: false,
+		AnalyticsJobID:           0,
+		InsightJobsID:            "",
+		ComplianceTriggered:      false,
 	}
 
-	rs, err := s.db.GetReservedWorkspace()
-	if err != nil {
-		return err
+	//rs, err := s.db.GetReservedWorkspace()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if rs == nil {
+	if err := s.db.CreateWorkspace(workspace); err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			return echo.NewHTTPError(http.StatusFound, "workspace already exists")
+		}
+		c.Logger().Errorf("create workspace: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-
-	if rs == nil {
-		if err := s.db.CreateWorkspace(workspace); err != nil {
-			if strings.Contains(err.Error(), "duplicate key value") {
-				return echo.NewHTTPError(http.StatusFound, "workspace already exists")
-			}
-			c.Logger().Errorf("create workspace: %v", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
-		}
-	} else {
-		workspace.ID = rs.ID
-		if err := s.db.UpdateWorkspace(workspace); err != nil {
-			if strings.Contains(err.Error(), "duplicate key value") {
-				return echo.NewHTTPError(http.StatusFound, "workspace already exists")
-			}
-			c.Logger().Errorf("create workspace: %v", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
-		}
-
-		limits := api.GetLimitsByTier(workspace.Tier)
-		authCtx := &httpclient.Context{
-			UserID:         *workspace.OwnerId,
-			UserRole:       authapi.AdminRole,
-			WorkspaceName:  workspace.Name,
-			WorkspaceID:    workspace.ID,
-			MaxUsers:       limits.MaxUsers,
-			MaxConnections: limits.MaxConnections,
-			MaxResources:   limits.MaxResources,
-		}
-
-		if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-			UserID:   *workspace.OwnerId,
-			RoleName: authapi.AdminRole,
-		}); err != nil {
-			return fmt.Errorf("put role binding: %w", err)
-		}
-
-		helmRelease, err := s.StateManager.FindHelmRelease(context.Background(), workspace)
-		if err != nil {
-			return fmt.Errorf("find helm release: %w", err)
-		}
-		if helmRelease == nil {
-			return fmt.Errorf("helm release not found")
-		}
-
-		values := helmRelease.GetValues()
-		valuesJSON, err := json.Marshal(values)
-		if err != nil {
-			return err
-		}
-
-		var settings statemanager.KaytuWorkspaceSettings
-		err = json.Unmarshal(valuesJSON, &settings)
-		if err != nil {
-			return err
-		}
-
-		settings.Kaytu.Workspace.Name = workspace.Name
-		b, err := json.Marshal(settings)
-		if err != nil {
-			return fmt.Errorf("marshalling values: %w", err)
-		}
-		helmRelease.Spec.Values.Raw = b
-		err = s.kubeClient.Update(context.Background(), helmRelease)
-		if err != nil {
-			return fmt.Errorf("updating workspace name: %w", err)
-		}
-	}
+	//} else {
+	//	workspace.ID = rs.ID
+	//	if err := s.db.UpdateWorkspace(workspace); err != nil {
+	//		if strings.Contains(err.Error(), "duplicate key value") {
+	//			return echo.NewHTTPError(http.StatusFound, "workspace already exists")
+	//		}
+	//		c.Logger().Errorf("create workspace: %v", err)
+	//		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	//	}
+	//
+	//	limits := api.GetLimitsByTier(workspace.Tier)
+	//	authCtx := &httpclient.Context{
+	//		UserID:         *workspace.OwnerId,
+	//		UserRole:       authapi.AdminRole,
+	//		WorkspaceName:  workspace.Name,
+	//		WorkspaceID:    workspace.ID,
+	//		MaxUsers:       limits.MaxUsers,
+	//		MaxConnections: limits.MaxConnections,
+	//		MaxResources:   limits.MaxResources,
+	//	}
+	//
+	//	if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
+	//		UserID:   *workspace.OwnerId,
+	//		RoleName: authapi.AdminRole,
+	//	}); err != nil {
+	//		return fmt.Errorf("put role binding: %w", err)
+	//	}
+	//
+	//	helmRelease, err := s.StateManager.FindHelmRelease(context.Background(), workspace)
+	//	if err != nil {
+	//		return fmt.Errorf("find helm release: %w", err)
+	//	}
+	//	if helmRelease == nil {
+	//		return fmt.Errorf("helm release not found")
+	//	}
+	//
+	//	values := helmRelease.GetValues()
+	//	valuesJSON, err := json.Marshal(values)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	var settings statemanager.KaytuWorkspaceSettings
+	//	err = json.Unmarshal(valuesJSON, &settings)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	settings.Kaytu.Workspace.Name = workspace.Name
+	//	b, err := json.Marshal(settings)
+	//	if err != nil {
+	//		return fmt.Errorf("marshalling values: %w", err)
+	//	}
+	//	helmRelease.Spec.Values.Raw = b
+	//	err = s.kubeClient.Update(context.Background(), helmRelease)
+	//	if err != nil {
+	//		return fmt.Errorf("updating workspace name: %w", err)
+	//	}
+	//
+	//	var res corev1.PodList
+	//	err = s.kubeClient.List(context.Background(), &res)
+	//	if err != nil {
+	//		return fmt.Errorf("listing pods: %w", err)
+	//	}
+	//	for _, pod := range res.Items {
+	//		if strings.HasPrefix(pod.Name, "describe-scheduler") {
+	//			err = s.kubeClient.Delete(context.Background(), &pod)
+	//			if err != nil {
+	//				return fmt.Errorf("deleting pods: %w", err)
+	//			}
+	//		}
+	//	}
+	//}
 
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,

@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -87,12 +90,15 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, authApi.ViewerRole))
 	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, authApi.ViewerRole))
 
+	resourceCollection := v2.Group("/resource-collection")
+	resourceCollection.GET("/:resourceCollectionId/landscape", httpserver.AuthorizeHandler(h.GetResourceCollectionLandscape, authApi.ViewerRole))
+
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
-	resourceCollection := metadata.Group("/resource-collection")
-	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
-	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
+	resourceCollectionMetadata := metadata.Group("/resource-collection")
+	resourceCollectionMetadata.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
+	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
 
 }
 
@@ -190,7 +196,7 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 
 func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string,
-	connectorTypes []source.Type, connectionIDs, resourceCollections []string,
+	connectorTypes []source.Type, connectionIDs []string, resourceCollections []string,
 	minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	// tracer :
@@ -2349,6 +2355,108 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetResourceCollectionLandscape godoc
+//
+//	@Summary		Get resource collection landscape
+//	@Description	Retrieving resource collection landscape by specified ID
+//	@Security		BearerToken
+//	@Tags			resource_collection
+//	@Produce		json
+//	@Param			resourceCollectionId	path		string	true	"Resource collection ID"
+//	@Success		200						{object}	inventoryApi.ResourceCollectionLandscape
+//	@Router			/inventory/api/v2/metadata/resource-collection/{resourceCollectionId}/landscape [get]
+func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
+	resourceCollectionID := ctx.Param("resourceCollectionId")
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
+		nil, nil, false)
+	if err != nil {
+		return err
+	}
+
+	metricsMap := make(map[string]analyticsDB.AnalyticMetric)
+	filteredMetricIDs := make([]string, 0, len(metrics))
+	for _, metric := range metrics {
+		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
+		metricsMap[metric.ID] = metric
+	}
+	metricIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	var awsLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
+		ID:          source.CloudAWS.String(),
+		Name:        "AWS",
+		Description: "AWS resources",
+		Subcategories: []inventoryApi.ResourceCollectionLandscapeSubcategory{
+			{
+				ID:          "main",
+				Name:        "AWS main",
+				Description: "AWS main",
+				Items:       nil,
+			},
+		},
+	}
+	var azureLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
+		ID:          source.CloudAzure.String(),
+		Name:        "Azure",
+		Description: "Azure resources",
+		Subcategories: []inventoryApi.ResourceCollectionLandscapeSubcategory{
+			{
+				ID:          "main",
+				Name:        "Azure main",
+				Description: "Azure main",
+				Items:       nil,
+			},
+		},
+	}
+	includedResourceTypes := make(map[string]describe.ResourceType)
+	for metricID, count := range metricIndexed {
+		if count == 0 {
+			continue
+		}
+		metric := metricsMap[metricID]
+
+		for _, table := range metric.Tables {
+			if awsResourceType, err := kaytuAws.GetResourceType(table); err == nil && awsResourceType != nil {
+				includedResourceTypes[awsResourceType.ResourceName] = awsResourceType
+			} else if azureResourceType, err := kaytuAzure.GetResourceType(table); err == nil && azureResourceType != nil {
+				includedResourceTypes[azureResourceType.ResourceName] = azureResourceType
+			}
+		}
+	}
+
+	for _, resourceType := range includedResourceTypes {
+		switch resourceType.GetConnector() {
+		case source.CloudAWS:
+			awsLandscapesCategory.Subcategories[0].Items = append(awsLandscapesCategory.Subcategories[0].Items, inventoryApi.ResourceCollectionLandscapeItem{
+				ID:          resourceType.GetResourceName(),
+				Name:        resourceType.GetResourceLabel(),
+				Description: "", //TODO
+				LogoURI:     "", //TODO
+			})
+		case source.CloudAzure:
+			azureLandscapesCategory.Subcategories[0].Items = append(azureLandscapesCategory.Subcategories[0].Items, inventoryApi.ResourceCollectionLandscapeItem{
+				ID:          resourceType.GetResourceName(),
+				Name:        resourceType.GetResourceLabel(),
+				Description: "", //TODO
+				LogoURI:     "", //TODO
+			})
+		}
+	}
+
+	landscape := inventoryApi.ResourceCollectionLandscape{
+		Categories: []inventoryApi.ResourceCollectionLandscapeCategory{
+			awsLandscapesCategory,
+			azureLandscapesCategory,
+		},
+	}
+
+	return ctx.JSON(http.StatusOK, landscape)
 }
 
 // ListResourceCollections godoc

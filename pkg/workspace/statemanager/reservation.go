@@ -8,6 +8,15 @@ import (
 )
 
 func (s *Service) handleReservation() error {
+	rs, err := s.db.GetReservedWorkspace()
+	if err != nil {
+		return err
+	}
+
+	if rs != nil {
+		return nil
+	}
+
 	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
 	id, err := sf.NextID()
 	if err != nil {
