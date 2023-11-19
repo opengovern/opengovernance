@@ -34,8 +34,8 @@ const (
 )
 
 type BootstrapProgress struct {
-	Done  int64
-	Total int64
+	Done  int64 `json:"done"`
+	Total int64 `json:"total"`
 }
 
 type BootstrapStatusResponse struct {
