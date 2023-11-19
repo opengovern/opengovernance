@@ -18,10 +18,34 @@ const (
 
 var (
 	HourToMonthUnitMultiplier = decimal.NewFromInt(730)
-	MonthToHourUnitMultiplier = decimal.NewFromInt(1).Div(HourToMonthUnitMultiplier)
-	DaysInMonth               = HourToMonthUnitMultiplier.DivRound(decimal.NewFromInt(24), 24)
-	DayToMonthUnitMultiplier  = DaysInMonth.DivRound(HourToMonthUnitMultiplier, 24)
 )
+
+var (
+	isElasticPool bool
+
+	sqlFamilyMapping = map[string]string{
+		"gen5": "Compute Gen5",
+		"gen4": "Compute Gen4",
+		"m":    "Compute M Series",
+	}
+	sqlTierMapping = map[string]string{
+		"GeneralPurpose":           "General Purpose",
+		"GeneralPurposeServerless": "General Purpose - Serverless",
+		"Hyperscale":               "Hyperscale",
+		"BusinessCritical":         "Business Critical",
+	}
+
+	dtuMap = dtuMapping{
+		"free":  true,
+		"basic": true,
+
+		"s": true, // covers Standard, System editions
+		"d": true, // covers DataWarehouse editions
+		"p": true, // covers Premium editions
+	}
+)
+
+type dtuMapping map[string]bool
 
 var (
 	mssqlServiceTier = map[string]string{
@@ -52,7 +76,7 @@ var (
 )
 
 // SqlServerDB is the entity that holds the logic to calculate price
-// of the google_compute_instance
+// of the azure_sql_serverdatabase
 type SqlServerDB struct {
 	provider *Provider
 
@@ -66,6 +90,7 @@ type SqlServerDB struct {
 	licenseType                    string
 	maxSizeBytes                   int64
 	readScale                      string
+	elasticPoolId                  *string
 	monthlyVCoreHours              int64
 	extraDataStorageGB             float64
 	longTermRetentionStorageGB     int64
@@ -75,7 +100,7 @@ type SqlServerDB struct {
 }
 
 // SqlServerDBValues is holds the values that we need to be able
-// to calculate the price of the ComputeInstance
+// to calculate the price of the Sql ServerDB Values
 type SqlServerDBValues struct {
 	Location                       string  `json:"location"`
 	SkuName                        string  `json:"sku_name"`
@@ -87,6 +112,7 @@ type SqlServerDBValues struct {
 	LicenseType                    string  `json:"license_type"`
 	MaxSizeBytes                   int64   `json:"max_size_bytes"`
 	ReadScale                      string  `json:"read_scale"`
+	ElasticPoolId                  *string `json:"elastic_pool_id"`
 	MonthlyVCoreHours              int64   `json:"monthly_vcore_hours"`
 	ExtraDataStorageGB             float64 `json:"extra_data_storage_gb"`
 	LongTermRetentionStorageGB     int64   `json:"long_term_retention_storage_gb"`
@@ -95,7 +121,7 @@ type SqlServerDBValues struct {
 	CurrentBackupStorageRedundancy string  `json:"current_backup_storage_redundancy"`
 }
 
-// decodeSqlServerDB decodes and returns computeInstanceValues from a Terraform values map.
+// decodeSqlServerDB decodes and returns sql serverDB values from a Terraform values map.
 func decodeSqlServerDB(request api.GetAzureSqlServersDatabasesRequest, monthlyVCoreHours int64, extraDataStorageGB float64, longTermRetentionStorageGB int64, backupStorageGB int64) SqlServerDBValues {
 	return SqlServerDBValues{
 		Location:                       *request.SqlServerDB.Database.Location,
@@ -108,6 +134,7 @@ func decodeSqlServerDB(request api.GetAzureSqlServersDatabasesRequest, monthlyVC
 		LicenseType:                    string(*request.SqlServerDB.Database.Properties.LicenseType),
 		MaxSizeBytes:                   *request.SqlServerDB.Database.Properties.MaxSizeBytes,
 		ReadScale:                      string(*request.SqlServerDB.Database.Properties.ReadScale),
+		ElasticPoolId:                  request.SqlServerDB.Database.Properties.ElasticPoolID,
 		MonthlyVCoreHours:              monthlyVCoreHours,
 		ExtraDataStorageGB:             extraDataStorageGB,
 		LongTermRetentionStorageGB:     longTermRetentionStorageGB,
@@ -132,6 +159,7 @@ func (p *Provider) newSqlServerDB(vals SqlServerDBValues) *SqlServerDB {
 		licenseType:                    vals.LicenseType,
 		maxSizeBytes:                   vals.MaxSizeBytes,
 		readScale:                      vals.ReadScale,
+		elasticPoolId:                  vals.ElasticPoolId,
 		monthlyVCoreHours:              vals.MonthlyVCoreHours,
 		extraDataStorageGB:             vals.ExtraDataStorageGB,
 		longTermRetentionStorageGB:     vals.LongTermRetentionStorageGB,
@@ -143,11 +171,63 @@ func (p *Provider) newSqlServerDB(vals SqlServerDBValues) *SqlServerDB {
 	return inst
 }
 
+func (d dtuMapping) usesDTUUnits(skuName string) bool {
+	sanitized := strings.ToLower(skuName)
+	if d[sanitized] {
+		return true
+	}
+
+	if sanitized == "" {
+		return false
+	}
+
+	return d[sanitized[0:1]]
+}
+
+// SQLDatabase splits pricing into two different models. DTU & vCores.
+//
+//	Database Transaction Unit (DTU) is made a performance metric representing a mixture of performance metrics
+//	in Azure SQL. Some include: CPU, I/O, Memory. DTU is used as Azure tries to simplify billing by using a single metric.
+//
+//	Virtual Core (vCore) pricing is designed to translate from on premise hardware metrics (cores) into the cloud
+//	SQL instance. vCore is designed to allow users to better estimate their resource limits, e.g. RAM.
+//
+// SQL databases that follow a DTU pricing model have the following costs associated with them:
+//
+//  1. Costs based on the number of DTUs that the sql database has
+//  2. Extra backup data costs - this is configured using SQLDatabase.ExtraDataStorageGB
+//  3. Long term data backup costs - this is configured using SQLDatabase.LongTermRetentionStorageGB
+//
+// SQL databases that follow a vCore pricing model have the following costs associated with them:
+//
+//  1. Costs based on the number of vCores the resource has
+//  2. Extra pricing if any database read replicas have been provisioned
+//  3. Additional charge for SQL Server licensing based on vCores amount
+//  4. Charges for storage used
+//  5. Charges for long term data backup - this is configured using SQLDatabase.LongTermRetentionStorageGB
+
 // Components returns the price component queries that make up this Instance.
 func (inst *SqlServerDB) Components() []query.Component {
+	if strings.ToLower(inst.skuName) == "elasticpool" || inst.elasticPoolId != nil {
+		isElasticPool = true
+	} else if !dtuMap.usesDTUUnits(inst.skuName) {
+		familyKey := strings.ToLower(inst.skuFamily)
+		family, ok := sqlFamilyMapping[familyKey]
+		if !ok {
+			// TODO : i should set a error in here like : "Invalid family in MSSQL SKU for resource %s: %s", address, sku
+			return nil
+		}
+		inst.skuFamily = family
+	}
+
+	tier, ok := mssqlServiceTier[inst.tier]
+	if ok {
+		inst.tier = tier
+	}
+
 	maxSizeGB := float64(inst.maxSizeBytes) / math.Pow(10, 9)
 
-	if strings.ToLower(inst.skuName) == "elasticpool" {
+	if isElasticPool {
 		return elasticPoolCostComponents(inst.currentBackupStorageRedundancy)
 	}
 
@@ -176,12 +256,13 @@ func vCoreCostComponents(inst *SqlServerDB, maxsizeGB float64) []query.Component
 		replicaCount = decimal.NewFromInt(1)
 	}
 
-	computeHoursComponent := computeHoursCostComponents(inst.tier, inst.skuFamily, inst.skuCapacity, inst.skuName, inst.zoneRedundant, inst.monthlyVCoreHours)
+	computeHoursComponent := computeHoursCostComponents(inst.tier, inst.skuFamily, inst.skuCapacity, inst.skuName, inst.kind,
+		inst.zoneRedundant, inst.monthlyVCoreHours)
 	for i := 0; i < len(computeHoursComponent); i++ {
 		costComponents = append(costComponents, computeHoursComponent[i])
 	}
 
-	if inst.tier == sqlHyperscaleTier {
+	if strings.ToLower(inst.tier) == sqlHyperscaleTier {
 
 		ServiceTier, _ := mssqlServiceTier[inst.tier]
 		productName := fmt.Sprintf("/%s - %s/", ServiceTier, inst.skuFamily)
@@ -334,27 +415,23 @@ func pitrBackupCostComponent(backupStorageGB int64, currentBackupStorageRedundan
 		redundancyType = "RA-GRS"
 	}
 
-	productName := fmt.Sprintln("PITR Backup Storage")
-	skuName := fmt.Sprintf("Backup %s", redundancyType)
-	meterName := fmt.Sprintf("%s Data Stored", redundancyType)
-
 	return query.Component{
 		Name:            fmt.Sprintf("PITR backup storage (%s)", redundancyType),
 		Unit:            "GB",
 		MonthlyQuantity: pitrGB,
 		ProductFilter: &product.Filter{
 			AttributeFilters: []*product.AttributeFilter{
-				{Key: "productName", ValueRegex: util.StringPtr(productName)},
-				{Key: "skuName", Value: util.StringPtr(skuName)},
-				{Key: "meterName", ValueRegex: util.StringPtr(meterName)},
+				{Key: "productName", ValueRegex: util.StringPtr("PITR Backup Storage")},
+				{Key: "skuName", Value: util.StringPtr(fmt.Sprintf("Backup %s", redundancyType))},
+				{Key: "meterName", ValueRegex: util.StringPtr(fmt.Sprintf("%s Data Stored", redundancyType))},
 			},
 		},
 	}
 }
 
 // computeHoursCostComponents is a component for the vCore sql serverDB component
-func computeHoursCostComponents(tier string, skuFamily string, skuCapabilities int32, skuName string, zoneRedundant bool, monthlyVCoreHours int64) []query.Component {
-	if tier == sqlServerlessTier {
+func computeHoursCostComponents(tier string, skuFamily string, skuCapabilities int32, skuName string, kind string, zoneRedundant bool, monthlyVCoreHours int64) []query.Component {
+	if strings.ToLower(tier) == sqlServerlessTier && !strings.Contains(kind, "serverless") {
 		return serverlessComputeHoursCostComponents(tier, skuFamily, skuName, zoneRedundant, monthlyVCoreHours)
 	}
 	return provisionedComputeCostComponents(tier, skuName, skuFamily, skuCapabilities, zoneRedundant)
@@ -369,15 +446,13 @@ func serverlessComputeHoursCostComponents(tier string, skuFamily string, skuName
 		vCoreHours = decimal.NewFromInt(monthlyVCoreHours)
 	}
 
-	productName := fmt.Sprintf("%s - %s", tier, skuFamily)
-
 	costComponents = append(costComponents, query.Component{
 		Name:            fmt.Sprintf("Compute (serverless, %s)", skuName),
 		Unit:            "vCore-hours",
 		MonthlyQuantity: vCoreHours,
 		ProductFilter: &product.Filter{
 			AttributeFilters: []*product.AttributeFilter{
-				{Key: "productName", ValueRegex: util.StringPtr(productName)},
+				{Key: "productName", ValueRegex: util.StringPtr(fmt.Sprintf("%s - %s", tier, skuFamily))},
 				{Key: "skuName", Value: util.StringPtr("1 vCore")},
 				{Key: "meterName", ValueRegex: util.StringPtr("^(?!.* - Free$).*$")},
 			},
@@ -392,7 +467,7 @@ func serverlessComputeHoursCostComponents(tier string, skuFamily string, skuName
 			MonthlyQuantity: vCoreHours,
 			ProductFilter: &product.Filter{
 				AttributeFilters: []*product.AttributeFilter{
-					{Key: "productName", ValueRegex: util.StringPtr(productName)},
+					{Key: "productName", ValueRegex: util.StringPtr(fmt.Sprintf("%s - %s", tier, skuFamily))},
 					{Key: "skuName", Value: util.StringPtr("1 vCore Zone Redundancy")},
 					{Key: "meterName", ValueRegex: util.StringPtr("^(?!.* - Free$).*$")},
 				},
@@ -486,13 +561,13 @@ func mssqlStorageCostComponent(tier string, zoneRedundant bool, maxsizeGB float6
 	}
 
 	storageTier := tier
-	if strings.ToLower(storageTier) == "general purpose - serverless" {
+	if strings.ToLower(storageTier) == "general purpose" {
 		storageTier = "General Purpose"
 	} else {
 		storageTier, _ = mssqlServiceTier[tier]
 	}
 
-	skuName := storageTier
+	skuName := tier
 	if zoneRedundant {
 		skuName += " Zone Redundancy"
 	}
