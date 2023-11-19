@@ -34,17 +34,15 @@ type loadBalancerValues struct {
 // decodeLoadBalancerValues decodes and returns computeInstanceValues from a Terraform values map.
 func decodeLoadBalancerValues(request api.GetAzureLoadBalancerRequest) loadBalancerValues {
 	regionCode := convertRegion(request.RegionCode)
-	rulesNumber := int32(len(request.LoadBalancer.LoadBalancer.Properties.LoadBalancingRules) +
-		len(request.LoadBalancer.LoadBalancer.Properties.OutboundRules))
 	dailyDataProceed := int64(1000)
 	if request.DailyDataProceed != nil {
 		dailyDataProceed = *request.DailyDataProceed
 	}
 	return loadBalancerValues{
-		SkuName:          string(*request.LoadBalancer.LoadBalancer.SKU.Name),
+		SkuName:          request.SkuName,
 		Location:         regionCode,
-		RulesNumber:      rulesNumber,
-		SkuTier:          string(*request.LoadBalancer.LoadBalancer.SKU.Tier),
+		RulesNumber:      request.RulesNumber,
+		SkuTier:          request.SkuTier,
 		DailyDataProceed: dailyDataProceed,
 	}
 }

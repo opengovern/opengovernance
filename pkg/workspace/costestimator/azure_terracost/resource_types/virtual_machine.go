@@ -37,9 +37,9 @@ type virtualMachineValues struct {
 // decodeVirtualMachineValues decodes and returns computeInstanceValues
 func decodeVirtualMachineValues(request api.GetAzureVmRequest) virtualMachineValues {
 	return virtualMachineValues{
-		VMSize:          string(*request.VM.VirtualMachine.Properties.HardwareProfile.VMSize),
+		VMSize:          request.VMSize,
 		Location:        request.RegionCode,
-		OperatingSystem: OS(*request.VM.VirtualMachine.Properties.StorageProfile.OSDisk.OSType),
+		OperatingSystem: OS(request.OperatingSystem),
 	}
 }
 

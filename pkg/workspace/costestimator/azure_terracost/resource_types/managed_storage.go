@@ -38,12 +38,12 @@ type managedStorageValues struct {
 // decodeManagedStorageValues decodes and returns computeInstanceValues from a Terraform values map.
 func decodeManagedStorageValues(request api.GetAzureManagedStorageRequest) managedStorageValues {
 	return managedStorageValues{
-		SkuName:         string(*request.ManagedStorage.Disk.SKU.Name),
+		SkuName:         request.SkuName,
 		Location:        request.RegionCode,
-		DiskSize:        *request.ManagedStorage.Disk.Properties.DiskSizeGB,
-		BurstingEnabled: *request.ManagedStorage.Disk.Properties.BurstingEnabled,
-		DiskThroughput:  *request.ManagedStorage.Disk.Properties.DiskMBpsReadWrite,
-		DiskIOPs:        *request.ManagedStorage.Disk.Properties.DiskIOPSReadWrite,
+		DiskSize:        int32(request.DiskSize),
+		BurstingEnabled: request.BurstingEnabled,
+		DiskThroughput:  int64(request.DiskThroughput),
+		DiskIOPs:        int64(request.DiskIOPs),
 	}
 }
 

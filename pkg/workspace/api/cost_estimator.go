@@ -26,19 +26,26 @@ type GetRDSInstanceRequest struct {
 }
 
 type GetAzureVmRequest struct {
-	RegionCode string
-	VM         azure.ComputeVirtualMachineDescription
+	RegionCode      string
+	VMSize          string
+	OperatingSystem string
 }
 
 type GetAzureManagedStorageRequest struct {
-	RegionCode     string
-	ManagedStorage azure.ComputeDiskDescription
+	RegionCode      string
+	SkuName         string
+	DiskSize        float64
+	BurstingEnabled bool
+	DiskThroughput  float64
+	DiskIOPs        float64
 }
 
 type GetAzureLoadBalancerRequest struct {
 	RegionCode       string
 	DailyDataProceed *int64 // (GB)
-	LoadBalancer     azure.LoadBalancerDescription
+	SkuName          string
+	SkuTier          string
+	RulesNumber      int32
 }
 
 type GetAzureVirtualNetworkRequest struct {
