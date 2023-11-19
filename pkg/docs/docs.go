@@ -3840,6 +3840,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/metadata/resource-collection/{resourceCollectionId}/landscape": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving resource collection landscape by specified ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "Get resource collection landscape",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource collection ID",
+                        "name": "resourceCollectionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscape"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/metric/{resourceType}": {
             "get": {
                 "security": [
@@ -8396,6 +8430,74 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscape": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeCategory"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeCategory": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subcategories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeSubcategory"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo_uri": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeSubcategory": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeItem"
+                    }
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

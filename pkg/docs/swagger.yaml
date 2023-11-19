@@ -1656,6 +1656,50 @@ definitions:
           type: array
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscape:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeCategory'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeCategory:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      subcategories:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeSubcategory'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeItem:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      logo_uri:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeSubcategory:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscapeItem'
+        type: array
+      name:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionStatus:
     enum:
     - ""
@@ -5297,6 +5341,27 @@ paths:
       security:
       - BearerToken: []
       summary: Get resource collection
+      tags:
+      - resource_collection
+  /inventory/api/v2/metadata/resource-collection/{resourceCollectionId}/landscape:
+    get:
+      description: Retrieving resource collection landscape by specified ID
+      parameters:
+      - description: Resource collection ID
+        in: path
+        name: resourceCollectionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscape'
+      security:
+      - BearerToken: []
+      summary: Get resource collection landscape
       tags:
       - resource_collection
   /inventory/api/v2/resources/metric/{resourceType}:
