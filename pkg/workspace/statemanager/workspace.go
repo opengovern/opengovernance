@@ -176,6 +176,11 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 			}
 
 			if rs != nil {
+				err = s.db.DeleteWorkspace(workspace.ID)
+				if err != nil {
+					return err
+				}
+
 				workspace.ID = rs.ID
 				if err := s.db.UpdateWorkspace(workspace); err != nil {
 					return err
