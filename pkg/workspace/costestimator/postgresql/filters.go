@@ -8,9 +8,9 @@ import (
 func parseProductFilter(filter *product.Filter) string {
 	query := ""
 	if *filter.Provider == "AWS" {
-		query = query + fmt.Sprintf("region_code = %s", *filter.Location)
+		query = query + fmt.Sprintf("region_code = '%s'", *filter.Location)
 	} else if *filter.Provider == "Azure" {
-		query = query + fmt.Sprintf("arm_region_name = %s", *filter.Location)
+		query = query + fmt.Sprintf("arm_region_name = '%s'", *filter.Location)
 	}
 
 	for _, f := range filter.AttributeFilters {
