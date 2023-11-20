@@ -20,32 +20,31 @@ func NewProductRepository(db *db.Database) *ProductRepository {
 // Filter returns all the product.Product that match the given product.Filter.
 func (r *ProductRepository) Filter(filter *product.Filter) (*price.Price, error) {
 	table := fmt.Sprintf("%s %s", *filter.Service, *filter.Family)
-	q := r.db.Orm.Model(tables[table])
-	q = parseProductFilter(r.db.Orm, filter)
+	query := fmt.Sprintf("SELECT sku, price_unit, price FROM %s WHERE %s;", tables[table], parseProductFilter(filter))
 
 	var price price.Price
-	err := q.Select("sku, price_unit, price").Scan(&price).Error
+	err := r.db.Orm.Raw(query).Find(&price).Error
 	if err != nil {
 		return nil, err
 	}
 	return &price, nil
 }
 
-var tables = map[string]any{
-	"AmazonEC2 Compute Instance":       &AwsEC2InstancePrice{},
-	"AmazonEC2 Storage":                &AwsEC2InstanceStoragePrice{},
-	"AmazonEC2 System Operation":       &AwsEC2InstanceSystemOperationPrice{},
-	"AmazonCloudWatch Metric":          &AwsCloudwatchPrice{},
-	"AmazonEC2 CPU Credits":            &AwsEC2CpuCreditsPrice{},
-	"AWSELB Load Balancer-Network":     &AwsElasticLoadBalancingPrice{},
-	"AWSELB Load Balancer-Gateway":     &AwsElasticLoadBalancingPrice{},
-	"AWSELB Load Balancer":             &AwsElasticLoadBalancingPrice{},
-	"AWSELB Load Balancer-Application": &AwsElasticLoadBalancingPrice{},
-	"AmazonRDS Database Instance":      &AwsRdsInstancePrice{},
-	"AmazonRDS Database Storage":       &AwsRdsStoragePrice{},
-	"AmazonRDS Provisioned IOPS":       &AwsRdsIopsPrice{},
+var tables = map[string]string{
+	"AmazonEC2 Compute Instance":       "",
+	"AmazonEC2 Storage":                "",
+	"AmazonEC2 System Operation":       "",
+	"AmazonCloudWatch Metric":          "",
+	"AmazonEC2 CPU Credits":            "",
+	"AWSELB Load Balancer-Network":     "",
+	"AWSELB Load Balancer-Gateway":     "",
+	"AWSELB Load Balancer":             "",
+	"AWSELB Load Balancer-Application": "",
+	"AmazonRDS Database Instance":      "",
+	"AmazonRDS Database Storage":       "",
+	"AmazonRDS Provisioned IOPS":       "",
 
-	"Virtual Machines Compute": &AzureVirtualMachinePrice{},
-	"Storage Storage":          &AzureManagedStoragePrice{},
-	"Load Balancer Networking": &AzureLoadBalancerPrice{},
+	"Virtual Machines Compute": "",
+	"Storage Storage":          "azure_managedstorage_prices",
+	"Load Balancer Networking": "",
 }
