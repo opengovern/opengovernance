@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator"
 	kaytuResources "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/resources"
 
@@ -10,43 +11,47 @@ import (
 )
 
 // GetAwsCost get azure load balancer cost for a day
-// route: /workspace/api/v1/costestimator/aws/{resource_type}
+// route: /workspace/api/v1/costestimator/aws
 func (s *Server) GetAwsCost(ctx echo.Context) error {
-	var request struct {
-		request    any
-		resourceId string
+	var request api.BaseRequest
+	if err := bindValidate(ctx, &request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := ctx.Bind(&request); err != nil {
-		return err
-	}
-	resourceType := ctx.Param("resource_type")
-	s.logger.Info(fmt.Sprintf("calculating cost for %s", resourceType))
-	cost, err := costestimator.CalcCosts(s.db, s.logger, "AWS", resourceType,
-		kaytuResources.ResourceRequest{Request: request.request, Address: request.resourceId})
+	s.logger.Info(fmt.Sprintf("calculating cost for %v", request))
+	cost, err := costestimator.CalcCosts(s.db, s.logger, "AWS", request.ResourceType,
+		kaytuResources.ResourceRequest{Request: request.Request, Address: request.ResourceId})
 	if err != nil {
 		return err
 	}
-	s.logger.Info(fmt.Sprintf("calculating cost for %s is done, value: %v", resourceType, cost))
+	s.logger.Info(fmt.Sprintf("calculating cost for %s is done, value: %v", request.ResourceType, cost))
 	return ctx.JSON(http.StatusOK, cost)
 }
 
 // GetAzureCost get azure load balancer cost for a day
-// route: /workspace/api/v1/costestimator/azure/{resource_type}
+// route: /workspace/api/v1/costestimator/azure
 func (s *Server) GetAzureCost(ctx echo.Context) error {
-	var request struct {
-		request    any
-		resourceId string
+	var request api.BaseRequest
+	if err := bindValidate(ctx, &request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := ctx.Bind(&request); err != nil {
-		return err
-	}
-	resourceType := ctx.Param("resource_type")
-	s.logger.Info(fmt.Sprintf("calculating cost for %s", resourceType))
-	cost, err := costestimator.CalcCosts(s.db, s.logger, "Azure", resourceType,
-		kaytuResources.ResourceRequest{Request: request.request, Address: request.resourceId})
+	s.logger.Info(fmt.Sprintf("calculating cost for %v", request))
+	cost, err := costestimator.CalcCosts(s.db, s.logger, "Azure", request.ResourceType,
+		kaytuResources.ResourceRequest{Request: request.Request, Address: request.ResourceId})
 	if err != nil {
 		return err
 	}
-	s.logger.Info(fmt.Sprintf("calculating cost for %s is done, value: %v", resourceType, cost))
+	s.logger.Info(fmt.Sprintf("calculating cost for %s is done, value: %v", request.ResourceType, cost))
 	return ctx.JSON(http.StatusOK, cost)
+}
+
+func bindValidate(ctx echo.Context, i interface{}) error {
+	if err := ctx.Bind(i); err != nil {
+		return err
+	}
+
+	if err := ctx.Validate(i); err != nil {
+		return err
+	}
+
+	return nil
 }

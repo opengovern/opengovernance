@@ -5,6 +5,12 @@ import (
 	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 )
 
+type BaseRequest struct {
+	Request      any
+	ResourceType string
+	ResourceId   string
+}
+
 type GetEC2InstanceCostRequest struct {
 	RegionCode       string
 	Instance         aws.EC2InstanceDescription
