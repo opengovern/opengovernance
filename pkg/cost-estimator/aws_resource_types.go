@@ -3,7 +3,6 @@ package cost_estimator
 import (
 	"encoding/json"
 	"fmt"
-	aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -20,21 +19,32 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description aws.EC2InstanceDescription
+	//var description aws.EC2InstanceDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
 	request := api.GetEC2InstanceCostRequest{
 		RegionCode: response.Hits.Hits[0].Source.Location,
-		Instance:   description,
+	}
+	if launchTemplateData, ok := mapData["LaunchTemplateData"].(map[string]interface{}); ok {
+		if ebsOptimized, ok := launchTemplateData["EbsOptimized"].(bool); ok {
+			request.EBSOptimized = ebsOptimized
+		} else {
+			request.EBSOptimized = false
+		}
+		request.EnabledMonitoring = false
+		if enableMonitoring, ok := launchTemplateData["Monitoring"].(map[string]bool); ok {
+			if enabled, ok := enableMonitoring["Enabled"]; ok {
+				request.EnabledMonitoring = enabled
+			}
+		}
 	}
 
 	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_instance", struct {
@@ -61,21 +71,28 @@ func GetEC2VolumeCost(h *HttpHandler, _ string, resourceId string) (float64, err
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description aws.EC2VolumeDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
-	request := api.GetEC2VolumeCostRequest{
-		RegionCode: response.Hits.Hits[0].Source.Location,
-		Volume:     description,
+	var request api.GetEC2VolumeCostRequest
+	request.RegionCode = response.Hits.Hits[0].Source.Location
+	if volume, ok := mapData["Volume"].(map[string]interface{}); ok {
+		if volumeType, ok := volume["VolumeType"].(string); ok {
+			request.Type = volumeType
+		}
+		if size, ok := volume["Size"].(float64); ok {
+			request.Size = size
+		}
+		if iops, ok := volume["Iops"].(float64); ok {
+			request.IOPs = iops
+		}
 	}
 
 	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_ebs_volume", struct {
@@ -106,21 +123,23 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 		if len(response.Hits.Hits) == 0 {
 			return 0, fmt.Errorf("no resource found")
 		}
-		var description aws.ElasticLoadBalancingV2LoadBalancerDescription
 		jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 		if err != nil {
 			h.logger.Error("failed to marshal request", zap.Error(err))
 			return 0, fmt.Errorf("failed to marshal request")
 		}
-		err = json.Unmarshal(jsonData, &description)
+		var mapData map[string]interface{}
+		err = json.Unmarshal(jsonData, &mapData)
 		if err != nil {
-			h.logger.Error("cannot parse resource", zap.String("interface",
-				fmt.Sprintf("%v", string(jsonData))))
-			return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+			return 0, err
 		}
 		request = api.GetLBCostRequest{
 			RegionCode: response.Hits.Hits[0].Source.Location,
-			LBType:     string(description.LoadBalancer.Type),
+		}
+		if loadBalancer, ok := mapData["LoadBalancer"].(map[string]interface{}); ok {
+			if lbType, ok := loadBalancer["Type"].(string); ok {
+				request.LBType = lbType
+			}
 		}
 	} else if resourceType == "AWS::ElasticLoadBalancing::LoadBalancer" {
 		response, err = es.GetElasticsearch(h.logger, h.client, resourceId, "AWS::ElasticLoadBalancing::LoadBalancer")
@@ -130,18 +149,6 @@ func GetELBCost(h *HttpHandler, resourceType string, resourceId string) (float64
 		}
 		if len(response.Hits.Hits) == 0 {
 			return 0, fmt.Errorf("no resource found")
-		}
-		var description aws.ElasticLoadBalancingLoadBalancerDescription
-		jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
-		if err != nil {
-			h.logger.Error("failed to marshal request", zap.Error(err))
-			return 0, fmt.Errorf("failed to marshal request")
-		}
-		err = json.Unmarshal(jsonData, &description)
-		if err != nil {
-			h.logger.Error("cannot parse resource", zap.String("interface",
-				fmt.Sprintf("%v", string(jsonData))))
-			return 0, fmt.Errorf("cannot parse resource %s", err.Error())
 		}
 		request = api.GetLBCostRequest{
 			RegionCode: response.Hits.Hits[0].Source.Location,
@@ -172,21 +179,38 @@ func GetRDSInstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description aws.RDSDBInstanceDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
 	request := api.GetRDSInstanceRequest{
 		RegionCode: response.Hits.Hits[0].Source.Location,
-		DBInstance: description,
+	}
+	if dbInstance, ok := mapData["DBInstance"].(map[string]interface{}); ok {
+		if engine, ok := dbInstance["Engine"].(string); ok {
+			request.InstanceEngine = engine
+		}
+		if licenseModel, ok := dbInstance["LicenseModel"].(string); ok {
+			request.InstanceLicenseModel = licenseModel
+		}
+		if multiAz, ok := dbInstance["MultiAZ"].(bool); ok {
+			request.InstanceMultiAZ = multiAz
+		}
+		if allocatedStorage, ok := dbInstance["AllocatedStorage"].(float64); ok {
+			request.AllocatedStorage = allocatedStorage
+		}
+		if storageType, ok := dbInstance["StorageType"].(string); ok {
+			request.StorageType = storageType
+		}
+		if iops, ok := dbInstance["Iops"].(float64); ok {
+			request.IOPs = iops
+		}
 	}
 
 	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_db_instance", struct {

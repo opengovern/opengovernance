@@ -32,9 +32,9 @@ type volumeValues struct {
 func decodeVolumeValues(request api.GetEC2VolumeCostRequest) volumeValues {
 	return volumeValues{
 		AvailabilityZone: request.RegionCode,
-		Type:             string(request.Volume.Volume.VolumeType),
-		Size:             float64(*request.Volume.Volume.Size),
-		IOPS:             float64(*request.Volume.Volume.Iops),
+		Type:             request.Type,
+		Size:             request.Size,
+		IOPS:             request.IOPs,
 	}
 }
 

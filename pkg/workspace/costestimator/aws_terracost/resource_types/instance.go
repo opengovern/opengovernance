@@ -55,23 +55,23 @@ type Instance struct {
 
 // instanceValues represents the structure of Terraform values for aws_instance resource.
 type instanceValues struct {
-	RegionCode       string `mapstructure:"region_code"`
-	InstanceType     string `mapstructure:"instance_type"`
-	Tenancy          string `mapstructure:"tenancy"`
-	AvailabilityZone string `mapstructure:"availability_zone"`
-	OperatingSystem  string `mapstructure:"operating_system"`
+	RegionCode       string
+	InstanceType     string
+	Tenancy          string
+	AvailabilityZone string
+	OperatingSystem  string
 
-	EBSOptimized        bool `mapstructure:"ebs_optimized"`
-	EnableMonitoring    bool `mapstructure:"monitoring"`
+	EBSOptimized        bool
+	EnableMonitoring    bool
 	CreditSpecification []struct {
-		CPUCredits string `mapstructure:"cpu_credits"`
-	} `mapstructure:"credit_specification"`
+		CPUCredits string
+	}
 
 	RootBlockDevice []struct {
-		VolumeType string  `mapstructure:"volume_type"`
-		VolumeSize float64 `mapstructure:"volume_size"`
-		IOPS       float64 `mapstructure:"iops"`
-	} `mapstructure:"root_block_device"`
+		VolumeType string
+		VolumeSize float64
+		IOPS       float64
+	}
 }
 
 // decodeInstanceValues decodes and returns instanceValues from a Terraform values map.
@@ -80,12 +80,6 @@ func decodeInstanceValues(request api.GetEC2InstanceCostRequest) (*instanceValue
 	if err != nil {
 		return nil, err
 	}
-	ebsOptimized := false
-	if request.Instance.LaunchTemplateData.EbsOptimized != nil {
-		if *request.Instance.LaunchTemplateData.EbsOptimized == true {
-			ebsOptimized = true
-		}
-	}
 	enableMonitoring := false
 	if request.Instance.LaunchTemplateData.Monitoring.Enabled != nil {
 		if *request.Instance.LaunchTemplateData.Monitoring.Enabled {
@@ -93,18 +87,18 @@ func decodeInstanceValues(request api.GetEC2InstanceCostRequest) (*instanceValue
 		}
 	}
 	cpuCredits := []struct {
-		CPUCredits string `mapstructure:"cpu_credits"`
+		CPUCredits string
 	}{{CPUCredits: *request.Instance.LaunchTemplateData.CreditSpecification.CpuCredits}}
 	var rootBlockDevice []struct {
-		VolumeType string  `mapstructure:"volume_type"`
-		VolumeSize float64 `mapstructure:"volume_size"`
-		IOPS       float64 `mapstructure:"iops"`
+		VolumeType string
+		VolumeSize float64
+		IOPS       float64
 	}
 	for _, volume := range request.Instance.LaunchTemplateData.BlockDeviceMappings {
 		rootBlockDevice = append(rootBlockDevice, struct {
-			VolumeType string  `mapstructure:"volume_type"`
-			VolumeSize float64 `mapstructure:"volume_size"`
-			IOPS       float64 `mapstructure:"iops"`
+			VolumeType string
+			VolumeSize float64
+			IOPS       float64
 		}{
 			VolumeType: string(volume.Ebs.VolumeType),
 			VolumeSize: float64(*volume.Ebs.VolumeSize),
@@ -118,7 +112,7 @@ func decodeInstanceValues(request api.GetEC2InstanceCostRequest) (*instanceValue
 		AvailabilityZone: request.RegionCode,
 		OperatingSystem:  operatingSystem,
 
-		EBSOptimized:        ebsOptimized,
+		EBSOptimized:        request.EBSOptimized,
 		EnableMonitoring:    enableMonitoring,
 		CreditSpecification: cpuCredits,
 

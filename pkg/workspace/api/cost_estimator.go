@@ -6,13 +6,30 @@ import (
 )
 
 type GetEC2InstanceCostRequest struct {
-	RegionCode string
-	Instance   aws.EC2InstanceDescription
+	RegionCode       string
+	Instance         aws.EC2InstanceDescription
+	InstanceType     string
+	Tenancy          string
+	AvailabilityZone string
+	OperatingSystem  string
+
+	EBSOptimized        bool
+	EnabledMonitoring   bool
+	CreditSpecification []struct {
+		CPUCredits string
+	}
+	RootBlockDevice []struct {
+		VolumeType string
+		VolumeSize float64
+		IOPS       float64
+	}
 }
 
 type GetEC2VolumeCostRequest struct {
 	RegionCode string
-	Volume     aws.EC2VolumeDescription
+	Type       string
+	Size       float64
+	IOPs       float64
 }
 
 type GetLBCostRequest struct {
@@ -21,8 +38,13 @@ type GetLBCostRequest struct {
 }
 
 type GetRDSInstanceRequest struct {
-	RegionCode string
-	DBInstance aws.RDSDBInstanceDescription
+	RegionCode           string
+	InstanceEngine       string
+	InstanceLicenseModel string
+	InstanceMultiAZ      bool
+	AllocatedStorage     float64
+	StorageType          string
+	IOPs                 float64
 }
 
 type GetAzureVmRequest struct {

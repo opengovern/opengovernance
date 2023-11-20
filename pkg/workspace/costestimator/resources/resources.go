@@ -44,7 +44,7 @@ func GetResource(logger *zap.Logger, provider string, resourceType string, reque
 			return nil, err
 		}
 		fmt.Println("READING COMPONENTS", request)
-		components, err := provider.ResourceComponents(logger, resourceType, request)
+		components, err := provider.ResourceComponents(logger, resourceType, request.Request)
 		if err != nil {
 			return nil, err
 		}
