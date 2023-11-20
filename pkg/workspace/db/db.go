@@ -177,3 +177,7 @@ func (s *Database) ListOrganizations() ([]*Organization, error) {
 func (s *Database) UpdateOrganization(newOrganization Organization) error {
 	return s.Orm.Model(&Organization{}).Where("id = ?", newOrganization.ID).Updates(newOrganization).Error
 }
+
+func (s *Database) UpdateCredentialWSID(prevId string, newID string) error {
+	return s.Orm.Model(&Credential{}).Where("workspace_id = ?", prevId).Update("workspace_id", newID).Error
+}

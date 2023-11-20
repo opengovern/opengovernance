@@ -121,7 +121,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 
 	connectionMap := map[string]bool{}
 	for _, connectionGroupID := range connectionGroup {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroupID)
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.InternalRole}, connectionGroupID)
 		if err != nil {
 			return nil, err
 		}
@@ -2509,7 +2509,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 
 func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string, error) {
 	var connections []string
-	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, []source.Type{source.CloudAWS, source.CloudAzure})
+	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, []source.Type{source.CloudAWS, source.CloudAzure})
 	if err != nil {
 		return nil, err
 	}
@@ -2539,7 +2539,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 						}
 					}
 				} else if dimKey == "ConnectionGroup" {
-					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: authApi.KaytuAdminRole})
+					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: authApi.InternalRole})
 					if err != nil {
 						return nil, err
 					}

@@ -33,11 +33,20 @@ const (
 	BootstrapStatus_Finished             BootstrapStatus = "Finished"
 )
 
+type BootstrapProgress struct {
+	Done  int64 `json:"done"`
+	Total int64 `json:"total"`
+}
+
 type BootstrapStatusResponse struct {
-	MinRequiredConnections int64                 `json:"minRequiredConnections"`
-	MaxConnections         int64                 `json:"maxConnections"`
-	ConnectionCount        map[source.Type]int64 `json:"connection_count"`
-	Status                 BootstrapStatus       `json:"status"`
+	MinRequiredConnections  int64                 `json:"minRequiredConnections"`
+	MaxConnections          int64                 `json:"maxConnections"`
+	ConnectionCount         map[source.Type]int64 `json:"connection_count"`
+	WorkspaceCreationStatus BootstrapProgress     `json:"workspaceCreationStatus"`
+	DiscoveryStatus         BootstrapProgress     `json:"discoveryStatus"`
+	AnalyticsStatus         BootstrapProgress     `json:"analyticsStatus"`
+	ComplianceStatus        BootstrapProgress     `json:"complianceStatus"`
+	InsightsStatus          BootstrapProgress     `json:"insightsStatus"`
 }
 
 type ChangeWorkspaceOwnershipRequest struct {

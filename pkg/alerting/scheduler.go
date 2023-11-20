@@ -269,7 +269,7 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	check := make(map[string]bool)
 	var connectionIDSChecked []string
 	if scope.ConnectionGroup != nil {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, *scope.ConnectionGroup)
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.InternalRole}, *scope.ConnectionGroup)
 		if err != nil {
 			return nil, fmt.Errorf("error getting connectionId : %v ", err.Error())
 		}

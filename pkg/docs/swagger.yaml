@@ -2433,36 +2433,33 @@ definitions:
       connectorType:
         $ref: '#/definitions/source.Type'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus:
-    enum:
-    - OnboardConnection
-    - CreatingWorkspace
-    - WaitingForDiscovery
-    - WaitingForAnalytics
-    - WaitingForCompliance
-    - WaitingForInsights
-    - Finished
-    type: string
-    x-enum-varnames:
-    - BootstrapStatus_OnboardConnection
-    - BootstrapStatus_CreatingWorkspace
-    - BootstrapStatus_WaitingForDiscovery
-    - BootstrapStatus_WaitingForAnalytics
-    - BootstrapStatus_WaitingForCompliance
-    - BootstrapStatus_WaitingForInsights
-    - BootstrapStatus_Finished
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress:
+    properties:
+      done:
+        type: integer
+      total:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse:
     properties:
+      analyticsStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
+      complianceStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
       connection_count:
         additionalProperties:
           type: integer
         type: object
+      discoveryStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
+      insightsStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
       maxConnections:
         type: integer
       minRequiredConnections:
         type: integer
-      status:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus'
+      workspaceCreationStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
     properties:

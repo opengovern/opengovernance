@@ -166,7 +166,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			switch dc.TriggerType {
 			case enums.DescribeTriggerTypeStack:
 			default:
-				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, dc.ConnectionID)
+				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.InternalRole}, dc.ConnectionID)
 				if err != nil {
 					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure", "get_source").Inc()
@@ -256,7 +256,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, nil)
+	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, nil)
 	if err != nil {
 		s.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()

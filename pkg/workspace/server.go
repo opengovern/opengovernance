@@ -332,99 +332,144 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	})
 }
 
-func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatus, error) {
+func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusResponse, error) {
+	resp := api.BootstrapStatusResponse{
+		MinRequiredConnections: 3,
+		WorkspaceCreationStatus: api.BootstrapProgress{
+			Total: 2,
+		},
+		DiscoveryStatus: api.BootstrapProgress{
+			Total: 4,
+		},
+		AnalyticsStatus: api.BootstrapProgress{
+			Total: 4,
+		},
+		ComplianceStatus: api.BootstrapProgress{
+			Total: 8,
+		},
+		InsightsStatus: api.BootstrapProgress{
+			Total: 2,
+		},
+	}
+
 	hctx := &httpclient.Context{UserRole: authapi.InternalRole}
+	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
+	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
 
 	if ws.Status == api.StatusBootstrapping {
 		if !ws.IsBootstrapInputFinished {
-			s.logger.Info("bootstrap: waiting for connections", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_OnboardConnection, nil
+			return resp, nil
 		}
-		if !ws.IsCreated {
-			s.logger.Info("bootstrap: creating workspace", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_CreatingWorkspace, nil
-		}
+		resp.WorkspaceCreationStatus.Done = 1
 
-		schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
-		schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
+		if !ws.IsCreated {
+			return resp, nil
+		}
+		resp.WorkspaceCreationStatus.Done = 2
 
 		status, err := schedulerClient.GetDescribeAllJobsStatus(hctx)
 		if err != nil {
-			return api.BootstrapStatus_WaitingForDiscovery, err
+			return resp, err
 		}
-		statusStr := "null"
+
 		if status != nil {
-			statusStr = string(*status)
-		}
-		s.logger.Info("bootstrap: describe status", zap.String("workspaceID", ws.ID), zap.String("status", statusStr))
-
-		if status == nil || *status != api3.DescribeAllJobsStatusResourcesPublished {
-			s.logger.Info("bootstrap: waiting for discovery", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_WaitingForDiscovery, nil
-		}
-
-		job, err := schedulerClient.GetAnalyticsJob(hctx, ws.AnalyticsJobID)
-		if err != nil {
-			return api.BootstrapStatus_WaitingForAnalytics, err
-		}
-		if job == nil {
-			s.logger.Info("bootstrap: waiting for analytics job", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_WaitingForAnalytics, nil
-		}
-		if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
-			s.logger.Info("bootstrap: waiting for analytics", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_WaitingForAnalytics, nil
+			switch *status {
+			case api3.DescribeAllJobsStatusNoJobToRun:
+				resp.DiscoveryStatus.Done = 1
+			case api3.DescribeAllJobsStatusJobsRunning:
+				resp.DiscoveryStatus.Done = 2
+			case api3.DescribeAllJobsStatusJobsFinished:
+				resp.DiscoveryStatus.Done = 3
+			case api3.DescribeAllJobsStatusResourcesPublished:
+				resp.DiscoveryStatus.Done = 4
+			}
 		}
 
-		complianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
-		if err != nil {
-			return api.BootstrapStatus_WaitingForCompliance, err
-		}
-
-		if complianceJob == nil || (complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed) {
-			s.logger.Info("bootstrap: waiting for aws compliance", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_WaitingForCompliance, nil
-		}
-
-		complianceJob, err = schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
-		if err != nil {
-			return api.BootstrapStatus_WaitingForCompliance, err
-		}
-
-		if complianceJob == nil || (complianceJob.Status != api3.ComplianceJobSucceeded && complianceJob.Status != api3.ComplianceJobFailed) {
-			s.logger.Info("bootstrap: waiting for azure compliance", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_WaitingForCompliance, nil
-		}
-
-		inProgress := false
-		for _, insJobID := range ws.InsightJobsID {
-			job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
+		if ws.AnalyticsJobID > 0 {
+			resp.AnalyticsStatus.Done = 1
+			job, err := schedulerClient.GetAnalyticsJob(hctx, ws.AnalyticsJobID)
 			if err != nil {
-				return api.BootstrapStatus_WaitingForInsights, err
+				return resp, err
 			}
-			if job == nil {
-				s.logger.Info("bootstrap: waiting for insight job", zap.String("workspaceID", ws.ID))
-				return api.BootstrapStatus_WaitingForInsights, errors.New("insight job not found")
-			}
-			if job.Status == api4.InsightJobSucceeded {
-				inProgress = false
-				break
-			}
-			if job.Status == api4.InsightJobInProgress {
-				inProgress = true
+			if job != nil {
+				switch job.Status {
+				case api5.JobCreated:
+					resp.AnalyticsStatus.Done = 2
+				case api5.JobInProgress:
+					resp.AnalyticsStatus.Done = 3
+				case api5.JobCompleted, api5.JobCompletedWithFailure:
+					resp.AnalyticsStatus.Done = 4
+				}
 			}
 		}
 
-		if inProgress {
-			s.logger.Info("bootstrap: waiting for insight job", zap.String("workspaceID", ws.ID))
-			return api.BootstrapStatus_WaitingForInsights, nil
+		if ws.ComplianceTriggered {
+			awsComplianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
+			if err != nil {
+				return resp, err
+			}
+
+			if awsComplianceJob != nil {
+				switch awsComplianceJob.Status {
+				case api3.ComplianceJobCreated:
+					resp.ComplianceStatus.Done += 1
+				case api3.ComplianceJobRunnersInProgress:
+					resp.ComplianceStatus.Done += 2
+				case api3.ComplianceJobSummarizerInProgress:
+					resp.ComplianceStatus.Done += 3
+				case api3.ComplianceJobSucceeded, api3.ComplianceJobFailed:
+					resp.ComplianceStatus.Done += 4
+				}
+			}
+
+			azureComplianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
+			if err != nil {
+				return resp, err
+			}
+
+			if azureComplianceJob != nil {
+				switch azureComplianceJob.Status {
+				case api3.ComplianceJobCreated:
+					resp.ComplianceStatus.Done += 1
+				case api3.ComplianceJobRunnersInProgress:
+					resp.ComplianceStatus.Done += 2
+				case api3.ComplianceJobSummarizerInProgress:
+					resp.ComplianceStatus.Done += 3
+				case api3.ComplianceJobSucceeded, api3.ComplianceJobFailed:
+					resp.ComplianceStatus.Done += 4
+				}
+			}
 		}
 
-		s.logger.Info("bootstrap: finished", zap.String("workspaceID", ws.ID))
-		return api.BootstrapStatus_Finished, nil
+		if len(ws.InsightJobsID) > 0 {
+			resp.InsightsStatus.Done = 1
+			inProgress := false
+			for _, insJobID := range ws.InsightJobsID {
+				job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
+				if err != nil {
+					return resp, err
+				}
+
+				if job == nil {
+					continue
+				}
+
+				if job.Status == api4.InsightJobSucceeded {
+					inProgress = false
+					break
+				}
+				if job.Status == api4.InsightJobInProgress {
+					inProgress = true
+				}
+			}
+
+			if !inProgress {
+				resp.InsightsStatus.Done = 2
+			}
+		}
 	}
 
-	return api.BootstrapStatus_Finished, nil
+	return resp, nil
 }
 
 // GetBootstrapStatus godoc
@@ -449,19 +494,19 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.New("workspace not found"))
 	}
 
-	status, err := s.getBootstrapStatus(ws)
+	resp, err := s.getBootstrapStatus(ws)
 	if err != nil {
 		return err
 	}
 
 	currentConnectionCount := map[source.Type]int64{}
-	awsCount, err := s.db.CountConnectionsByConnector(source.CloudAWS)
+	awsCount, err := s.db.CountConnectionsByConnector(ws.ID, source.CloudAWS)
 	if err != nil {
 		return err
 	}
 	currentConnectionCount[source.CloudAWS] = awsCount
 
-	azureCount, err := s.db.CountConnectionsByConnector(source.CloudAzure)
+	azureCount, err := s.db.CountConnectionsByConnector(ws.ID, source.CloudAzure)
 	if err != nil {
 		return err
 	}
@@ -469,12 +514,10 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 
 	limits := api.GetLimitsByTier(ws.Tier)
 
-	return c.JSON(http.StatusOK, api.BootstrapStatusResponse{
-		MinRequiredConnections: 3,
-		MaxConnections:         limits.MaxConnections,
-		ConnectionCount:        currentConnectionCount,
-		Status:                 status,
-	})
+	resp.MinRequiredConnections = 3
+	resp.MaxConnections = limits.MaxConnections
+	resp.ConnectionCount = currentConnectionCount
+	return c.JSON(http.StatusOK, resp)
 }
 
 // FinishBootstrap godoc

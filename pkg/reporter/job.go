@@ -879,7 +879,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 
 	awsCred, azureCred, err := w.onboardClient.GetSourceFullCred(&httpclient.Context{
 		Ctx:      ctx,
-		UserRole: api.KaytuAdminRole,
+		UserRole: api.InternalRole,
 	}, connection.ID.String())
 	if err != nil {
 		w.logger.Error("failed to get source full cred", zap.Error(err))

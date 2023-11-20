@@ -2,6 +2,7 @@ package statemanager
 
 import (
 	"errors"
+	"fmt"
 	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
@@ -139,7 +140,7 @@ func (s *Service) runBootstrapping(workspace *db.Workspace) error {
 		s.logger.Info("checking analytics job", zap.String("workspaceID", workspace.ID))
 		job, err := schedulerClient.GetAnalyticsJob(hctx, workspace.AnalyticsJobID)
 		if err != nil {
-			return err
+			return fmt.Errorf("getting analytics job failed: %v", err)
 		}
 		if job == nil {
 			return errors.New("analytics job not found")

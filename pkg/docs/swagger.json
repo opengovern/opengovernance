@@ -9511,35 +9511,37 @@
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus": {
-            "type": "string",
-            "enum": [
-                "OnboardConnection",
-                "CreatingWorkspace",
-                "WaitingForDiscovery",
-                "WaitingForAnalytics",
-                "WaitingForCompliance",
-                "WaitingForInsights",
-                "Finished"
-            ],
-            "x-enum-varnames": [
-                "BootstrapStatus_OnboardConnection",
-                "BootstrapStatus_CreatingWorkspace",
-                "BootstrapStatus_WaitingForDiscovery",
-                "BootstrapStatus_WaitingForAnalytics",
-                "BootstrapStatus_WaitingForCompliance",
-                "BootstrapStatus_WaitingForInsights",
-                "BootstrapStatus_Finished"
-            ]
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress": {
+            "type": "object",
+            "properties": {
+                "done": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatusResponse": {
             "type": "object",
             "properties": {
+                "analyticsStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
+                },
+                "complianceStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
+                },
                 "connection_count": {
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer"
                     }
+                },
+                "discoveryStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
+                },
+                "insightsStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
                 },
                 "maxConnections": {
                     "type": "integer"
@@ -9547,8 +9549,8 @@
                 "minRequiredConnections": {
                     "type": "integer"
                 },
-                "status": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapStatus"
+                "workspaceCreationStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
                 }
             }
         },

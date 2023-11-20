@@ -102,7 +102,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	forceFull := ctx.QueryParam("force_full") == "true"
 	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
 
-	src, err := h.Scheduler.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, connectionID)
+	src, err := h.Scheduler.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionID)
 	if err != nil || src == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 	}
@@ -176,7 +176,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 	}
 
-	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, connectors)
+	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectors)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()

@@ -2026,7 +2026,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	apiRes := src.toAPI()
-	if httpserver.GetUserRole(ctx) == api3.KaytuAdminRole {
+	if httpserver.GetUserRole(ctx) == api3.InternalRole {
 		apiRes.Credential = src.Credential.ToAPI()
 		apiRes.Credential.Config = src.Credential.Secret
 	}
@@ -2234,7 +2234,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		apiRes := s.toAPI()
-		if httpserver.GetUserRole(ctx) == api3.KaytuAdminRole {
+		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = s.Credential.ToAPI()
 			apiRes.Credential.Config = s.Credential.Secret
 		}
@@ -2267,7 +2267,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var res []api.Connection
 	for _, src := range srcs {
 		apiRes := src.toAPI()
-		if httpserver.GetUserRole(ctx) == api3.KaytuAdminRole {
+		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = src.Credential.ToAPI()
 			apiRes.Credential.Config = src.Credential.Secret
 		}
