@@ -44,7 +44,9 @@ var tables = map[string]string{
 	"AmazonRDS Database Storage":       "",
 	"AmazonRDS Provisioned IOPS":       "",
 
-	"Virtual Machines Compute": "",
-	"Storage Storage":          "azure_managedstorage_prices",
-	"Load Balancer Networking": "",
+	"Virtual Machines Compute":   "azure_virtualmachine_prices",
+	"Storage Storage":            "azure_managedstorage_prices",
+	"Load Balancer Networking":   "azure_loadbalancer_prices",
+	"Virtual Network Networking": "azure_virtualnetwork_prices",
+	"VPN Gateway Networking":     "azure_vpngateway_prices",
 }

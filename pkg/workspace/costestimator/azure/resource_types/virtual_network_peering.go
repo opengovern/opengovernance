@@ -72,7 +72,7 @@ func (inst *VirtualNetworkPeering) egressDataProcessedCostComponent(key string) 
 				Family:   util.StringPtr("Networking"),
 				Location: util.StringPtr("Global"),
 				AttributeFilters: []*product.AttributeFilter{
-					{Key: "meterName", Value: util.StringPtr("Intra-Region Egress")},
+					{Key: "meter_name", Value: util.StringPtr("Intra-Region Egress")},
 				},
 			},
 		}
@@ -86,10 +86,10 @@ func (inst *VirtualNetworkPeering) egressDataProcessedCostComponent(key string) 
 			Provider: util.StringPtr(key),
 			Location: util.StringPtr(virtualNetworkPeeringConvertRegion(inst.sourceLocation)),
 			Service:  util.StringPtr("VPN Gateway"),
+			Family:   util.StringPtr("Networking"),
 			AttributeFilters: []*product.AttributeFilter{
-				{Key: "serviceFamily", ValueRegex: util.StringPtr("Networking")},
-				{Key: "productName", ValueRegex: util.StringPtr("VPN Gateway Bandwidth")},
-				{Key: "meterName", ValueRegex: util.StringPtr("Inter-Virtual Network Data Transfer Out")},
+				{Key: "product_name", ValueRegex: util.StringPtr("VPN Gateway Bandwidth")},
+				{Key: "meter_name", ValueRegex: util.StringPtr("Inter-Virtual Network Data Transfer Out")},
 			},
 		},
 	}
@@ -107,7 +107,7 @@ func (inst *VirtualNetworkPeering) ingressDataProcessedCostComponent(key string)
 				Service:  util.StringPtr("Virtual Network"),
 				Family:   util.StringPtr("Networking"),
 				AttributeFilters: []*product.AttributeFilter{
-					{Key: "meterName", Value: util.StringPtr("Intra-Region Ingress")},
+					{Key: "meter_name", Value: util.StringPtr("Intra-Region Ingress")},
 				},
 			},
 		}
@@ -121,10 +121,10 @@ func (inst *VirtualNetworkPeering) ingressDataProcessedCostComponent(key string)
 			Provider: util.StringPtr(key),
 			Location: util.StringPtr(virtualNetworkPeeringConvertRegion(inst.destinationLocation)),
 			Service:  util.StringPtr("VPN Gateway"),
+			Family:   util.StringPtr("Networking"),
 			AttributeFilters: []*product.AttributeFilter{
-				{Key: "serviceFamily", ValueRegex: util.StringPtr("Networking")},
-				{Key: "productName", ValueRegex: util.StringPtr("VPN Gateway Bandwidth")},
-				{Key: "meterName", ValueRegex: util.StringPtr("Inter-Virtual Network Data Transfer Out")},
+				{Key: "product_name", ValueRegex: util.StringPtr("VPN Gateway Bandwidth")},
+				{Key: "meter_name", ValueRegex: util.StringPtr("Inter-Virtual Network Data Transfer Out")},
 			},
 		},
 	}
