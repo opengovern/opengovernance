@@ -181,6 +181,11 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 					return err
 				}
 
+				err = s.db.UpdateCredentialWSID(workspace.ID, rs.ID)
+				if err != nil {
+					return err
+				}
+
 				workspace.ID = rs.ID
 				if err := s.db.UpdateWorkspace(workspace); err != nil {
 					return err
