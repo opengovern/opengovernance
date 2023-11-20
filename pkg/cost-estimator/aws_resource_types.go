@@ -3,7 +3,6 @@ package cost_estimator
 import (
 	"encoding/json"
 	"fmt"
-	aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -20,21 +19,32 @@ func GetEC2InstanceCost(h *HttpHandler, _ string, resourceId string) (float64, e
 	if len(response.Hits.Hits) == 0 {
 		return 0, fmt.Errorf("no resource found")
 	}
-	var description aws.EC2InstanceDescription
+	//var description aws.EC2InstanceDescription
 	jsonData, err := json.Marshal(response.Hits.Hits[0].Source.Description)
 	if err != nil {
 		h.logger.Error("failed to marshal request", zap.Error(err))
 		return 0, fmt.Errorf("failed to marshal request")
 	}
-	err = json.Unmarshal(jsonData, &description)
+	var mapData map[string]interface{}
+	err = json.Unmarshal(jsonData, &mapData)
 	if err != nil {
-		h.logger.Error("cannot parse resource", zap.String("interface",
-			fmt.Sprintf("%v", string(jsonData))))
-		return 0, fmt.Errorf("cannot parse resource %s", err.Error())
+		return 0, err
 	}
 	request := api.GetEC2InstanceCostRequest{
 		RegionCode: response.Hits.Hits[0].Source.Location,
-		Instance:   description,
+	}
+	if launchTemplateData, ok := mapData["LaunchTemplateData"].(map[string]interface{}); ok {
+		if ebsOptimized, ok := launchTemplateData["EbsOptimized"].(bool); ok {
+			request.EBSOptimized = ebsOptimized
+		} else {
+			request.EBSOptimized = false
+		}
+		request.EnabledMonitoring = false
+		if enableMonitoring, ok := launchTemplateData["Monitoring"].(map[string]bool); ok {
+			if enabled, ok := enableMonitoring["Enabled"]; ok {
+				request.EnabledMonitoring = enabled
+			}
+		}
 	}
 
 	cost, err := h.workspaceClient.GetAWS(&httpclient.Context{UserRole: apiAuth.InternalRole}, "aws_instance", struct {

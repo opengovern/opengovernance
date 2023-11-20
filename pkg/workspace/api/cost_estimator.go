@@ -6,8 +6,23 @@ import (
 )
 
 type GetEC2InstanceCostRequest struct {
-	RegionCode string
-	Instance   aws.EC2InstanceDescription
+	RegionCode       string
+	Instance         aws.EC2InstanceDescription
+	InstanceType     string
+	Tenancy          string
+	AvailabilityZone string
+	OperatingSystem  string
+
+	EBSOptimized        bool
+	EnabledMonitoring   bool
+	CreditSpecification []struct {
+		CPUCredits string
+	}
+	RootBlockDevice []struct {
+		VolumeType string
+		VolumeSize float64
+		IOPS       float64
+	}
 }
 
 type GetEC2VolumeCostRequest struct {

@@ -214,6 +214,13 @@ func GetVirtualNetworkCost(h *HttpHandler, _ string, resourceId string) (float64
 		RegionCode:       response.Hits.Hits[0].Source.Location,
 		PeeringLocations: peeringLocations,
 	}
+	h.logger.Info("request", zap.String("Request", fmt.Sprintf("%v", struct {
+		request    any
+		resourceId string
+	}{
+		request:    request,
+		resourceId: resourceId,
+	})))
 	cost, err := h.workspaceClient.GetAzure(&httpclient.Context{UserRole: apiAuth.InternalRole}, "azurerm_virtual_network", struct {
 		request    any
 		resourceId string
