@@ -83,8 +83,11 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 	switch resourceType {
 	case "azurerm_linux_virtual_machine":
 		var vmRequest api.GetAzureVmRequest
-		if req, ok := request.(api.GetAzureVmRequest); ok {
-			vmRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			vmRequest = api.GetAzureVmRequest{
+				RegionCode: req["RegionCode"].(string),
+				VMSize:     req["VMSize"].(string),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -92,8 +95,12 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		return p.newLinuxVirtualMachine(vals).Components(), nil
 	case "azurerm_virtual_machine":
 		var vmRequest api.GetAzureVmRequest
-		if req, ok := request.(api.GetAzureVmRequest); ok {
-			vmRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			vmRequest = api.GetAzureVmRequest{
+				RegionCode:      req["RegionCode"].(string),
+				VMSize:          req["VMSize"].(string),
+				OperatingSystem: req["OperatingSystem"].(string),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -101,8 +108,15 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		return p.newVirtualMachine(vals).Components(), nil
 	case "azurerm_managed_disk":
 		var mdRequest api.GetAzureManagedStorageRequest
-		if req, ok := request.(api.GetAzureManagedStorageRequest); ok {
-			mdRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			mdRequest = api.GetAzureManagedStorageRequest{
+				RegionCode:      req["RegionCode"].(string),
+				SkuName:         req["SkuName"].(string),
+				DiskSize:        req["DiskSize"].(float64),
+				BurstingEnabled: req["BurstingEnabled"].(bool),
+				DiskThroughput:  req["DiskThroughput"].(float64),
+				DiskIOPs:        req["DiskIOPs"].(float64),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -121,8 +135,14 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		return p.newSqlServerDB(vals).Components(), nil
 	case "azurerm_load_balancer":
 		var lbRequest api.GetAzureLoadBalancerRequest
-		if req, ok := request.(api.GetAzureLoadBalancerRequest); ok {
-			lbRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			lbRequest = api.GetAzureLoadBalancerRequest{
+				RegionCode:       req["RegionCode"].(string),
+				DailyDataProceed: nil,
+				SkuName:          req["SkuName"].(string),
+				SkuTier:          req["SkuTier"].(string),
+				RulesNumber:      req["RulesNumber"].(int32),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -131,8 +151,12 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		return p.newLoadBalancer(vals).Components(), nil
 	case "azurerm_virtual_network":
 		var vnRequest api.GetAzureVirtualNetworkRequest
-		if req, ok := request.(api.GetAzureVirtualNetworkRequest); ok {
-			vnRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			vnRequest = api.GetAzureVirtualNetworkRequest{
+				RegionCode:            req["RegionCode"].(string),
+				PeeringLocations:      req["PeeringLocations"].([]string),
+				MonthlyDataTransferGB: nil,
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
