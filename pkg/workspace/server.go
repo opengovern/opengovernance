@@ -162,8 +162,8 @@ func (s *Server) Register(e *echo.Echo) {
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 
 	costEstimatorGroup := v1Group.Group("/costestimator")
-	costEstimatorGroup.GET("/aws/:resource_type", httpserver2.AuthorizeHandler(s.GetAwsCost, authapi.ViewerRole))
-	costEstimatorGroup.GET("/azure/:resource_type", httpserver2.AuthorizeHandler(s.GetAzureCost, authapi.ViewerRole))
+	costEstimatorGroup.GET("/aws", httpserver2.AuthorizeHandler(s.GetAwsCost, authapi.ViewerRole))
+	costEstimatorGroup.GET("/azure", httpserver2.AuthorizeHandler(s.GetAzureCost, authapi.ViewerRole))
 }
 
 func (s *Server) Start() error {
