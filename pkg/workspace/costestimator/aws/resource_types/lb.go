@@ -8,7 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws/region"
 )
 
 // LB represents a Load Balancer definition that can be cost-estimated.

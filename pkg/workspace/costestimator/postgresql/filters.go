@@ -3,23 +3,23 @@ package postgresql
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
-	"gorm.io/gorm"
 )
 
-func parseProductFilter(q *gorm.DB, filter *product.Filter) *gorm.DB {
+func parseProductFilter(filter *product.Filter) string {
+	query := ""
 	if *filter.Provider == "AWS" {
-		q = q.Where("region_code = ?", filter.Location)
+		query = query + fmt.Sprintf("region_code = %s", *filter.Location)
 	} else if *filter.Provider == "Azure" {
-		q = q.Where("arm_region_name = ?", filter.Location)
+		query = query + fmt.Sprintf("arm_region_name = %s", *filter.Location)
 	}
 
 	for _, f := range filter.AttributeFilters {
 		if f.Value != nil {
-			q = q.Where(fmt.Sprintf("%s = ?", f.Key), f.Value)
+			query = query + fmt.Sprintf("%s = '%s'", f.Key, *f.Value)
 		} else if f.ValueRegex != nil {
-			q = q.Where(fmt.Sprintf("%s LIKE '%%?%%'", f.Key), f.Value)
+			query = query + fmt.Sprintf("%s LIKE '%s'", f.Key, *f.ValueRegex)
 		}
 	}
 
-	return q
+	return query
 }

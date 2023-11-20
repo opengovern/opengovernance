@@ -3,7 +3,6 @@ package resource_types
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/price"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
@@ -156,9 +155,6 @@ func (inst *ManagedStorage) managedStorageComponent(key, location, skuName strin
 				{Key: "sku_name", Value: util.StringPtr(skuName)},
 				{Key: "meter", Value: util.StringPtr("Per Month")},
 			},
-		},
-		PriceFilter: &price.Filter{
-			Unit: util.StringPtr("1 Hour"),
 		},
 	}
 }

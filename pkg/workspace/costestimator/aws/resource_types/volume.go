@@ -4,7 +4,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws_terracost/region"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws/region"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
