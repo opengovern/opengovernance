@@ -1,4 +1,4 @@
-package terraform
+package aws
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"

@@ -2,8 +2,8 @@ package resources
 
 import (
 	"fmt"
-	aws "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws/resource_types"
-	azure "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/azure/resource_types"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
 	"go.uber.org/zap"
 )
