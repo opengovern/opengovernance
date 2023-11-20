@@ -2366,7 +2366,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			resourceCollectionId	path		string	true	"Resource collection ID"
 //	@Success		200						{object}	inventoryApi.ResourceCollectionLandscape
-//	@Router			/inventory/api/v2/metadata/resource-collection/{resourceCollectionId}/landscape [get]
+//	@Router			/inventory/api/v2/resource-collection/{resourceCollectionId}/landscape [get]
 func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 	resourceCollectionID := ctx.Param("resourceCollectionId")
 
@@ -2388,32 +2388,6 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		return err
 	}
 
-	var awsLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
-		ID:          source.CloudAWS.String(),
-		Name:        "AWS",
-		Description: "AWS resources",
-		Subcategories: []inventoryApi.ResourceCollectionLandscapeSubcategory{
-			{
-				ID:          "main",
-				Name:        "AWS main",
-				Description: "AWS main",
-				Items:       nil,
-			},
-		},
-	}
-	var azureLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
-		ID:          source.CloudAzure.String(),
-		Name:        "Azure",
-		Description: "Azure resources",
-		Subcategories: []inventoryApi.ResourceCollectionLandscapeSubcategory{
-			{
-				ID:          "main",
-				Name:        "Azure main",
-				Description: "Azure main",
-				Items:       nil,
-			},
-		},
-	}
 	includedResourceTypes := make(map[string]describe.ResourceType)
 	for metricID, count := range metricIndexed {
 		if count == 0 {
@@ -2430,23 +2404,67 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		}
 	}
 
+	var awsLandscapesSubcategories = make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
+	var azureLandscapesSubcategories = make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
 	for _, resourceType := range includedResourceTypes {
+		category := "Other"
+		if resourceType.GetTags() != nil && len(resourceType.GetTags()["category"]) > 0 {
+			category = resourceType.GetTags()["category"][0]
+		}
+		item := inventoryApi.ResourceCollectionLandscapeItem{
+			ID:          resourceType.GetResourceName(),
+			Name:        resourceType.GetResourceLabel(),
+			Description: "", //TODO
+			LogoURI:     "", //TODO
+		}
+		if resourceType.GetTags() != nil && len(resourceType.GetTags()["logo_uri"]) > 0 {
+			item.LogoURI = resourceType.GetTags()["logo_uri"][0]
+		}
 		switch resourceType.GetConnector() {
 		case source.CloudAWS:
-			awsLandscapesCategory.Subcategories[0].Items = append(awsLandscapesCategory.Subcategories[0].Items, inventoryApi.ResourceCollectionLandscapeItem{
-				ID:          resourceType.GetResourceName(),
-				Name:        resourceType.GetResourceLabel(),
-				Description: "", //TODO
-				LogoURI:     "", //TODO
-			})
+			subcategory, ok := awsLandscapesSubcategories[category]
+			if !ok {
+				subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
+					ID:          fmt.Sprintf("%s-%s", source.CloudAWS.String(), category),
+					Name:        category,
+					Description: "",
+					Items:       nil,
+				}
+			}
+			subcategory.Items = append(subcategory.Items, item)
+			awsLandscapesSubcategories[category] = subcategory
 		case source.CloudAzure:
-			azureLandscapesCategory.Subcategories[0].Items = append(azureLandscapesCategory.Subcategories[0].Items, inventoryApi.ResourceCollectionLandscapeItem{
-				ID:          resourceType.GetResourceName(),
-				Name:        resourceType.GetResourceLabel(),
-				Description: "", //TODO
-				LogoURI:     "", //TODO
-			})
+			subcategory, ok := azureLandscapesSubcategories[category]
+			if !ok {
+				subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
+					ID:          fmt.Sprintf("%s-%s", source.CloudAzure.String(), category),
+					Name:        category,
+					Description: "",
+					Items:       nil,
+				}
+			}
+			subcategory.Items = append(subcategory.Items, item)
+			azureLandscapesSubcategories[category] = subcategory
 		}
+	}
+
+	var awsLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
+		ID:            source.CloudAWS.String(),
+		Name:          "AWS",
+		Description:   "AWS resources",
+		Subcategories: nil,
+	}
+	for _, subcategory := range awsLandscapesSubcategories {
+		awsLandscapesCategory.Subcategories = append(awsLandscapesCategory.Subcategories, subcategory)
+	}
+	var azureLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
+		ID:            source.CloudAzure.String(),
+		Name:          "Azure",
+		Description:   "Azure resources",
+		Subcategories: nil,
+	}
+	for _, subcategory := range azureLandscapesSubcategories {
+		azureLandscapesCategory.Subcategories = append(azureLandscapesCategory.Subcategories, subcategory)
 	}
 
 	landscape := inventoryApi.ResourceCollectionLandscape{
