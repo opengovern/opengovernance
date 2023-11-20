@@ -3841,7 +3841,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/metadata/resource-collection/{resourceCollectionId}/landscape": {
+        "/inventory/api/v2/resource-collection/{resourceCollectionId}/landscape": {
             "get": {
                 "security": [
                     {
