@@ -46,8 +46,16 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		//return p.newAutoscalingGroup(rss, vals).Components()
 	case "aws_db_instance":
 		var dbInstanceRequest api.GetRDSInstanceRequest
-		if req, ok := request.(api.GetRDSInstanceRequest); ok {
-			dbInstanceRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			dbInstanceRequest = api.GetRDSInstanceRequest{
+				RegionCode:           req["RegionCode"].(string),
+				InstanceEngine:       req["InstanceEngine"].(string),
+				InstanceLicenseModel: req["InstanceLicenseModel"].(string),
+				InstanceMultiAZ:      req["InstanceMultiAZ"].(bool),
+				AllocatedStorage:     req["AllocatedStorage"].(float64),
+				StorageType:          req["StorageType"].(string),
+				IOPs:                 req["IOPs"].(float64),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -55,8 +63,13 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		return p.newDBInstance(vals).Components(), nil
 	case "aws_ebs_volume":
 		var ebsVolumeRequest api.GetEC2VolumeCostRequest
-		if req, ok := request.(api.GetEC2VolumeCostRequest); ok {
-			ebsVolumeRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			ebsVolumeRequest = api.GetEC2VolumeCostRequest{
+				RegionCode: req["RegionCode"].(string),
+				Type:       req["Type"].(string),
+				Size:       req["Size"].(float64),
+				IOPs:       req["IOPs"].(float64),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -93,8 +106,11 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 	case "aws_elb":
 		// ELB Classic does not have any special configuration.
 		var ebsVolumeRequest api.GetLBCostRequest
-		if req, ok := request.(api.GetLBCostRequest); ok {
-			ebsVolumeRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			ebsVolumeRequest = api.GetLBCostRequest{
+				RegionCode: req["RegionCode"].(string),
+				LBType:     req["LBType"].(string),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
@@ -144,8 +160,11 @@ func (p *Provider) ResourceComponents(logger *zap.Logger, resourceType string, r
 		//return p.newFSxWindowsFileSystem(rss, vals).Components()
 	case "aws_lb", "aws_alb":
 		var loadBalancerRequest api.GetLBCostRequest
-		if req, ok := request.(api.GetLBCostRequest); ok {
-			loadBalancerRequest = req
+		if req, ok := request.(map[string]interface{}); ok {
+			loadBalancerRequest = api.GetLBCostRequest{
+				RegionCode: req["RegionCode"].(string),
+				LBType:     req["LBType"].(string),
+			}
 		} else {
 			return nil, fmt.Errorf("could not parse request")
 		}
