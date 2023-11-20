@@ -15,9 +15,9 @@ func parseProductFilter(filter *product.Filter) string {
 
 	for _, f := range filter.AttributeFilters {
 		if f.Value != nil {
-			query = query + fmt.Sprintf("%s = '%s'", f.Key, *f.Value)
+			query = query + fmt.Sprintf(" AND %s = '%s'", f.Key, *f.Value)
 		} else if f.ValueRegex != nil {
-			query = query + fmt.Sprintf("%s LIKE '%s'", f.Key, *f.ValueRegex)
+			query = query + fmt.Sprintf(" AND %s LIKE '%s'", f.Key, *f.ValueRegex)
 		}
 	}
 
