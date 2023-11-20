@@ -1,4 +1,4 @@
-package resource_types
+package azure
 
 import (
 	"fmt"

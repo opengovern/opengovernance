@@ -1,4 +1,4 @@
-package resource_types
+package azure
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
