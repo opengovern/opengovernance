@@ -416,6 +416,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		connectionMap := make(map[string]*onboardApi.Connection)
 		for _, connection := range connections {
+			connection := connection
 			connectionMap[connection.ID.String()] = &connection
 		}
 
