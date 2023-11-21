@@ -2129,7 +2129,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 //	@Tags		onboard
 //	@Produce	json
 //	@Param		connectionId	path	string										true	"Connection ID"
-//	@Param		connectionId	body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
+//	@Param		request			body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
 //	@Success	200
 //	@Router		/onboard/api/v1/connections/{connectionId}/state [post]
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {

@@ -4383,7 +4383,7 @@ const docTemplate = `{
                     },
                     {
                         "description": "Request",
-                        "name": "connectionId",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
