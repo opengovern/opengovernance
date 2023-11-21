@@ -17,7 +17,7 @@ func parseProductFilter(filter *product.Filter) string {
 		if f.Value != nil {
 			query = query + fmt.Sprintf(" AND %s = '%s'", f.Key, *f.Value)
 		} else if f.ValueRegex != nil {
-			query = query + fmt.Sprintf(" AND %s LIKE '%s'", f.Key, *f.ValueRegex)
+			query = query + fmt.Sprintf(" AND %s ~* '%s'", f.Key, *f.ValueRegex)
 		}
 	}
 
