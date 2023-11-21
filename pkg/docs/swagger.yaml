@@ -3481,13 +3481,19 @@ paths:
         type: array
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
+            type: array
       security:
       - BearerToken: []
       summary: Get benchmark policies
       tags:
       - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId:
+  /compliance/api/v1/benchmarks/{benchmark_id}/policies/{policyId}:
     get:
       consumes:
       - application/json

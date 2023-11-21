@@ -1147,10 +1147,20 @@
                         "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
+                            }
+                        }
+                    }
+                }
             }
         },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/policies/:policyId": {
+        "/compliance/api/v1/benchmarks/{benchmark_id}/policies/{policyId}": {
             "get": {
                 "security": [
                     {
