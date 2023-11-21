@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -249,7 +250,15 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		ComplianceTriggered:      false,
 	}
 	userARN, err := CreateOrGetUser(s.awsCnf, fmt.Sprintf("kaytu-user-%s", workspace.ID))
+	if err != nil {
+		return err
+	}
 	workspace.AWSUserARN = &userARN
+
+	err = AttachPolicy(s.awsCnf, workspace.ID)
+	if err != nil {
+		return err
+	}
 
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
@@ -289,6 +298,58 @@ func CreateOrGetUser(cfg aws.Config, userName string) (string, error) {
 		userARN = *user.User.Arn
 	}
 	return userARN, nil
+}
+
+func AttachPolicy(cfg aws.Config, userName string) error {
+	iamClient := iam.NewFromConfig(cfg)
+
+	kaytuAssumeRolePolicyName := "Kaytu-Allow-Assume-Role-All"
+	policies, err := iamClient.ListPolicies(context.Background(), &iam.ListPoliciesInput{
+		Scope: types2.PolicyScopeTypeLocal,
+	})
+	if err != nil {
+		return err
+	}
+
+	var kaytuPolicy types2.Policy
+	for _, policy := range policies.Policies {
+		if policy.PolicyName != nil && *policy.PolicyName == kaytuAssumeRolePolicyName {
+			kaytuPolicy = policy
+			break
+		}
+	}
+
+	if kaytuPolicy.PolicyName == nil {
+		createPolicy, err := iamClient.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
+			PolicyDocument: aws.String(`{
+    "Version": "2012-10-17",
+    "Statement": {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Resource": "*"
+    }
+}`),
+			PolicyName:  aws.String(kaytuAssumeRolePolicyName),
+			Description: nil,
+			Path:        nil,
+			Tags:        nil,
+		})
+		if err != nil {
+			return err
+		}
+		kaytuPolicy = *createPolicy.Policy
+	}
+
+	_, err = iamClient.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
+		PolicyArn: kaytuPolicy.Arn,
+		UserName:  aws.String(userName),
+	})
+	if err != nil {
+		if !strings.Contains(err.Error(), "cannot be found") {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusResponse, error) {
