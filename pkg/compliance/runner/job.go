@@ -78,7 +78,7 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	}
 
 	if j.ExecutionPlan.ResourceCollectionID != nil {
-		rc, err := w.inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ResourceCollectionID)
+		rc, err := w.inventoryClient.GetResourceCollectionMetadata(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ResourceCollectionID)
 		if err != nil {
 			w.logger.Error("failed to get resource collection", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
 			return err

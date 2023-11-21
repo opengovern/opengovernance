@@ -256,6 +256,108 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 	return result, nil
 }
 
+type CountWithTime struct {
+	Count int
+	Time  time.Time
+}
+
+func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(client kaytu.Client,
+	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]map[string]CountWithTime, error) {
+	idx := resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
+	res := make(map[string]any)
+	var filters []any
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
+
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]string{
+				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+				"gte": strconv.FormatInt(t.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
+			},
+		},
+	})
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"metric_group": map[string]any{
+			"terms": map[string]any{
+				"field": "metric_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"latest": map[string]any{
+					"top_hits": map[string]any{
+						"size": 1,
+						"sort": map[string]string{
+							"evaluated_at": "desc",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	includeConnectorMap := make(map[string]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector.String()] = true
+	}
+	includeResourceCollectionMap := make(map[string]bool)
+	for _, resourceCollection := range resourceCollections {
+		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
+		includeResourceCollectionMap[resourceCollection] = true
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	var response FetchConnectorAnalyticMetricCountAtTimeResponse
+	err = client.Search(context.Background(), idx, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]map[string]CountWithTime)
+
+	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
+		for _, hit := range metricBucket.Latest.Hits.Hits {
+			for rcId, rcResult := range hit.Source.ResourceCollections {
+				if len(resourceCollections) > 0 && !includeResourceCollectionMap[rcId] {
+					continue
+				}
+				if _, ok := result[rcId]; !ok {
+					result[rcId] = make(map[string]CountWithTime)
+				}
+				for _, connectorResults := range rcResult.Connectors {
+					if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
+						continue
+					}
+					v := result[rcId][hit.Source.MetricID]
+					v.Count += connectorResults.ResourceCount
+					if v.Time.Before(time.UnixMilli(hit.Source.EvaluatedAt)) {
+						v.Time = time.UnixMilli(hit.Source.EvaluatedAt)
+					}
+					result[rcId][hit.Source.MetricID] = v
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
 type DatapointWithFailures struct {
 	Cost                       float64
 	Count                      int
