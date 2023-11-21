@@ -131,7 +131,7 @@ func NewServer(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	awsConfig, err := aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	awsConfig, err := aws2.GetConfig(context.Background(), cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}

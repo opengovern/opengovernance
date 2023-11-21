@@ -22,4 +22,6 @@ type Config struct {
 	S3AccessKey                string
 	S3SecretKey                string
 	KMSAccountRegion           string
+	AWSMasterAccessKey         string `yaml:"aws_master_access_key"`
+	AWSMasterSecretKey         string `yaml:"aws_master_secret_key"`
 }
