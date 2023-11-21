@@ -10,6 +10,7 @@ type Workspace struct {
 
 	ID                       string              `json:"id"`
 	Name                     string              `gorm:"uniqueIndex" json:"name"`
+	AWSUserARN               *string             `json:"aws_user_arn"`
 	OwnerId                  *string             `json:"owner_id"`
 	URI                      string              `json:"uri"`
 	Status                   api.WorkspaceStatus `json:"status"`

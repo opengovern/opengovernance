@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -286,22 +284,6 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 			}
 		}
 
-		userName := fmt.Sprintf("kaytu-user-%s", workspace.ID)
-		userARN, err := CreateOrGetUser(s.awsConfig, userName)
-		if err != nil {
-			return err
-		}
-
-		settings, err := GetWorkspaceHelmValues(helmRelease)
-		if err != nil {
-			return err
-		}
-		settings.Kaytu.Workspace.UserARN = userARN
-		err = s.UpdateWorkspaceSettings(helmRelease, settings)
-		if err != nil {
-			return err
-		}
-
 		err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), time.Duration(s.cfg.AutoSuspendDurationMinutes)*time.Minute).Err()
 		if err != nil {
 			return fmt.Errorf("set last access: %v", err)
@@ -392,31 +374,4 @@ func GetWorkspaceHelmValues(helmRelease *v2beta1.HelmRelease) (KaytuWorkspaceSet
 	}
 
 	return settings, nil
-}
-
-func CreateOrGetUser(cfg aws.Config, userName string) (string, error) {
-	iamClient := iam.NewFromConfig(cfg)
-	user, err := iamClient.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
-	if err != nil {
-		if !strings.Contains(err.Error(), "cannot be found") {
-			return "", err
-		}
-	}
-
-	var userARN string
-	if user == nil || user.User == nil {
-		iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
-			UserName:            aws.String(userName),
-			Path:                nil,
-			PermissionsBoundary: nil,
-			Tags:                nil,
-		})
-		if err != nil {
-			return "", err
-		}
-		userARN = *iamUser.User.Arn
-	} else {
-		userARN = *user.User.Arn
-	}
-	return userARN, nil
 }

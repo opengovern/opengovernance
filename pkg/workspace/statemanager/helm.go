@@ -87,8 +87,9 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 		Kaytu: KaytuConfig{
 			ReplicaCount: 1,
 			Workspace: WorkspaceConfig{
-				Name: workspace.Name,
-				Size: workspace.Size,
+				Name:    workspace.Name,
+				Size:    workspace.Size,
+				UserARN: *workspace.AWSUserARN,
 			},
 			Insights: InsightsConfig{
 				S3: S3Config{

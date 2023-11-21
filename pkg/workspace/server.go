@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go"
+	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -72,6 +74,7 @@ type Server struct {
 	rdb          *redis.Client
 	cache        *cache.Cache
 	StateManager *statemanager.Service
+	awsCnf       aws.Config
 }
 
 func NewServer(cfg config.Config) (*Server, error) {
@@ -127,6 +130,12 @@ func NewServer(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	awsConfig, err := aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	s.awsCnf = awsConfig
 	return s, nil
 }
 
@@ -239,13 +248,9 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		InsightJobsID:            "",
 		ComplianceTriggered:      false,
 	}
+	userARN, err := CreateOrGetUser(s.awsCnf, fmt.Sprintf("kaytu-user-%s", workspace.ID))
+	workspace.AWSUserARN = &userARN
 
-	//rs, err := s.db.GetReservedWorkspace()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if rs == nil {
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
 			return echo.NewHTTPError(http.StatusFound, "workspace already exists")
@@ -253,83 +258,37 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		c.Logger().Errorf("create workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
-	//} else {
-	//	workspace.ID = rs.ID
-	//	if err := s.db.UpdateWorkspace(workspace); err != nil {
-	//		if strings.Contains(err.Error(), "duplicate key value") {
-	//			return echo.NewHTTPError(http.StatusFound, "workspace already exists")
-	//		}
-	//		c.Logger().Errorf("create workspace: %v", err)
-	//		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
-	//	}
-	//
-	//	limits := api.GetLimitsByTier(workspace.Tier)
-	//	authCtx := &httpclient.Context{
-	//		UserID:         *workspace.OwnerId,
-	//		UserRole:       authapi.AdminRole,
-	//		WorkspaceName:  workspace.Name,
-	//		WorkspaceID:    workspace.ID,
-	//		MaxUsers:       limits.MaxUsers,
-	//		MaxConnections: limits.MaxConnections,
-	//		MaxResources:   limits.MaxResources,
-	//	}
-	//
-	//	if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-	//		UserID:   *workspace.OwnerId,
-	//		RoleName: authapi.AdminRole,
-	//	}); err != nil {
-	//		return fmt.Errorf("put role binding: %w", err)
-	//	}
-	//
-	//	helmRelease, err := s.StateManager.FindHelmRelease(context.Background(), workspace)
-	//	if err != nil {
-	//		return fmt.Errorf("find helm release: %w", err)
-	//	}
-	//	if helmRelease == nil {
-	//		return fmt.Errorf("helm release not found")
-	//	}
-	//
-	//	values := helmRelease.GetValues()
-	//	valuesJSON, err := json.Marshal(values)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	var settings statemanager.KaytuWorkspaceSettings
-	//	err = json.Unmarshal(valuesJSON, &settings)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	settings.Kaytu.Workspace.Name = workspace.Name
-	//	b, err := json.Marshal(settings)
-	//	if err != nil {
-	//		return fmt.Errorf("marshalling values: %w", err)
-	//	}
-	//	helmRelease.Spec.Values.Raw = b
-	//	err = s.kubeClient.Update(context.Background(), helmRelease)
-	//	if err != nil {
-	//		return fmt.Errorf("updating workspace name: %w", err)
-	//	}
-	//
-	//	var res corev1.PodList
-	//	err = s.kubeClient.List(context.Background(), &res)
-	//	if err != nil {
-	//		return fmt.Errorf("listing pods: %w", err)
-	//	}
-	//	for _, pod := range res.Items {
-	//		if strings.HasPrefix(pod.Name, "describe-scheduler") {
-	//			err = s.kubeClient.Delete(context.Background(), &pod)
-	//			if err != nil {
-	//				return fmt.Errorf("deleting pods: %w", err)
-	//			}
-	//		}
-	//	}
-	//}
 
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
 	})
+}
+
+func CreateOrGetUser(cfg aws.Config, userName string) (string, error) {
+	iamClient := iam.NewFromConfig(cfg)
+	user, err := iamClient.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
+	if err != nil {
+		if !strings.Contains(err.Error(), "cannot be found") {
+			return "", err
+		}
+	}
+
+	var userARN string
+	if user == nil || user.User == nil {
+		iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
+			UserName:            aws.String(userName),
+			Path:                nil,
+			PermissionsBoundary: nil,
+			Tags:                nil,
+		})
+		if err != nil {
+			return "", err
+		}
+		userARN = *iamUser.User.Arn
+	} else {
+		userARN = *user.User.Arn
+	}
+	return userARN, nil
 }
 
 func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusResponse, error) {
