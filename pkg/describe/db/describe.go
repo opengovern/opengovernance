@@ -139,6 +139,19 @@ LIMIT ?
 	return job, nil
 }
 
+func (db Database) ListDescribeJobs() ([]model.DescribeConnectionJob, error) {
+	var job []model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]model.DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()

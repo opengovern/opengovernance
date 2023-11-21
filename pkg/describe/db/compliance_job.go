@@ -82,6 +82,18 @@ func (db Database) GetLastComplianceJob(benchmarkID string) (*model.ComplianceJo
 	return &job, nil
 }
 
+func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
+	var job []model.ComplianceJob
+	tx := db.ORM.Model(&model.ComplianceJob{}).First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListComplianceRunnersWithStatus(status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Where("status = ?", status).Find(&jobs)

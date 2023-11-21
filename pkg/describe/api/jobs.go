@@ -51,3 +51,33 @@ type InsightJob struct {
 	CreatedAt time.Time `json:"createdAt" example:"2021-04-27T15:04:05Z"` // Insight Job creation timestamp
 	UpdatedAt time.Time `json:"updatedAt" example:"2021-04-27T15:04:05Z"` // Insight Job last update timestamp
 }
+
+type JobType string
+
+const (
+	JobType_Discovery  JobType = "discovery"
+	JobType_Analytics  JobType = "analytics"
+	JobType_Compliance JobType = "compliance"
+	JobType_Insight    JobType = "insight"
+)
+
+type JobStatus string
+
+const (
+	JobStatus_Created    JobStatus = "created"
+	JobStatus_Queued     JobStatus = "queued"
+	JobStatus_InProgress JobStatus = "in_progress"
+	JobStatus_Successful JobStatus = "successful"
+	JobStatus_Failure    JobStatus = "failure"
+	JobStatus_Timeout    JobStatus = "timeout"
+)
+
+type Job struct {
+	ID                     uint      `json:"id"`
+	Type                   JobType   `json:"type"`
+	ConnectionID           string    `json:"connectionID"`
+	ConnectionProviderID   string    `json:"connectionProviderID"`
+	ConnectionProviderName string    `json:"connectionProviderName"`
+	Title                  string    `json:"title"`
+	Status                 JobStatus `json:"status"`
+}

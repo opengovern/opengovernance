@@ -1298,6 +1298,51 @@ definitions:
           type: string
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job:
+    properties:
+      connectionID:
+        type: string
+      connectionProviderID:
+        type: string
+      connectionProviderName:
+        type: string
+      id:
+        type: integer
+      status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus'
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus:
+    enum:
+    - created
+    - queued
+    - in_progress
+    - successful
+    - failure
+    - timeout
+    type: string
+    x-enum-varnames:
+    - JobStatus_Created
+    - JobStatus_Queued
+    - JobStatus_InProgress
+    - JobStatus_Successful
+    - JobStatus_Failure
+    - JobStatus_Timeout
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType:
+    enum:
+    - discovery
+    - analytics
+    - compliance
+    - insight
+    type: string
+    x-enum-varnames:
+    - JobType_Discovery
+    - JobType_Analytics
+    - JobType_Compliance
+    - JobType_Insight
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:
       accountIds:
@@ -6132,6 +6177,23 @@ paths:
       security:
       - BearerToken: []
       summary: Triggers insight job
+      tags:
+      - describe
+  /schedule/api/v1/jobs:
+    get:
+      description: Triggers a describe job to run immediately for the given connection
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Triggers describer
       tags:
       - describe
   /schedule/api/v1/stacks:

@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -74,6 +76,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
 	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
+	v1.GET("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
+
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
 	stacks.GET("/:stackId", httpserver.AuthorizeHandler(h.GetStack, apiAuth.ViewerRole))
@@ -84,6 +88,145 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.GET("/resource", httpserver.AuthorizeHandler(h.ListResourceStack, apiAuth.ViewerRole))
 	stacks.POST("/describer/trigger", httpserver.AuthorizeHandler(h.TriggerStackDescriber, apiAuth.AdminRole))
 	stacks.GET("/:stackId/insights", httpserver.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
+}
+
+// ListJobs godoc
+//
+//	@Summary		Triggers describer
+//	@Description	Triggers a describe job to run immediately for the given connection
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200	{object}	[]api.Job
+//	@Router			/schedule/api/v1/jobs [get]
+func (h HttpServer) ListJobs(ctx echo.Context) error {
+	var jobs []api.Job
+
+	describeJobs, err := h.DB.ListDescribeJobs()
+	if err != nil {
+		return err
+	}
+	for _, job := range describeJobs {
+		var status api.JobStatus
+		switch job.Status {
+		case api.DescribeResourceJobCreated:
+			status = api.JobStatus_Created
+		case api.DescribeResourceJobQueued:
+			status = api.JobStatus_Queued
+		case api.DescribeResourceJobInProgress:
+			status = api.JobStatus_InProgress
+		case api.DescribeResourceJobSucceeded:
+			status = api.JobStatus_Successful
+		case api.DescribeResourceJobFailed:
+			status = api.JobStatus_Failure
+		case api.DescribeResourceJobTimeout:
+			status = api.JobStatus_Timeout
+		}
+		jobs = append(jobs, api.Job{
+			ID:                     job.ID,
+			Type:                   api.JobType_Discovery,
+			ConnectionID:           job.ConnectionID,
+			ConnectionProviderID:   "",
+			ConnectionProviderName: "",
+			Title:                  job.ResourceType,
+			Status:                 status,
+		})
+	}
+
+	analyticsJobs, err := h.DB.ListAnalyticsJobs()
+	if err != nil {
+		return err
+	}
+	for _, job := range analyticsJobs {
+		var status api.JobStatus
+		switch job.Status {
+		case api2.JobCreated:
+			status = api.JobStatus_Created
+		case api2.JobInProgress:
+			status = api.JobStatus_InProgress
+		case api2.JobCompleted:
+			status = api.JobStatus_Successful
+		case api2.JobCompletedWithFailure:
+			status = api.JobStatus_Failure
+		}
+		jobs = append(jobs, api.Job{
+			ID:                     job.ID,
+			Type:                   api.JobType_Analytics,
+			ConnectionID:           "all",
+			ConnectionProviderID:   "",
+			ConnectionProviderName: "",
+			Title:                  "",
+			Status:                 status,
+		})
+	}
+
+	complianceJobs, err := h.DB.ListComplianceJobs()
+	if err != nil {
+		return err
+	}
+	for _, job := range complianceJobs {
+		var status api.JobStatus
+		switch job.Status {
+		case model2.ComplianceJobCreated:
+			status = api.JobStatus_Created
+		case model2.ComplianceJobRunnersInProgress:
+			status = api.JobStatus_InProgress
+		case model2.ComplianceJobSummarizerInProgress:
+			status = api.JobStatus_InProgress
+		case model2.ComplianceJobSucceeded:
+			status = api.JobStatus_Successful
+		case model2.ComplianceJobFailed:
+			status = api.JobStatus_Failure
+		}
+
+		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, job.BenchmarkID)
+		if err != nil {
+			return err
+		}
+
+		jobs = append(jobs, api.Job{
+			ID:                     job.ID,
+			Type:                   api.JobType_Compliance,
+			ConnectionID:           "all",
+			ConnectionProviderID:   "",
+			ConnectionProviderName: "",
+			Title:                  benchmark.Title,
+			Status:                 status,
+		})
+	}
+
+	insightJobs, err := h.DB.ListInsightJobs()
+	if err != nil {
+		return err
+	}
+	for _, job := range insightJobs {
+		var status api.JobStatus
+		switch job.Status {
+		case api3.InsightJobInProgress:
+			status = api.JobStatus_InProgress
+		case api3.InsightJobSucceeded:
+			status = api.JobStatus_Successful
+		case api3.InsightJobFailed:
+			status = api.JobStatus_Failure
+		}
+
+		ins, err := h.Scheduler.complianceClient.GetInsight(&httpclient.Context{UserRole: apiAuth.InternalRole}, strconv.Itoa(int(job.InsightID)), nil, nil, nil)
+		if err != nil {
+			return err
+		}
+
+		jobs = append(jobs, api.Job{
+			ID:                     job.ID,
+			Type:                   api.JobType_Insight,
+			ConnectionID:           "all",
+			ConnectionProviderID:   "",
+			ConnectionProviderName: "",
+			Title:                  ins.ShortTitle,
+			Status:                 status,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, jobs)
 }
 
 // TriggerPerConnectionDescribeJob godoc

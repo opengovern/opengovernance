@@ -5062,6 +5062,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/jobs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a describe job to run immediately for the given connection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers describer",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/stacks": {
             "get": {
                 "security": [
@@ -8037,6 +8065,66 @@ const docTemplate = `{
                     ]
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job": {
+            "type": "object",
+            "properties": {
+                "connectionID": {
+                    "type": "string"
+                },
+                "connectionProviderID": {
+                    "type": "string"
+                },
+                "connectionProviderName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus": {
+            "type": "string",
+            "enum": [
+                "created",
+                "queued",
+                "in_progress",
+                "successful",
+                "failure",
+                "timeout"
+            ],
+            "x-enum-varnames": [
+                "JobStatus_Created",
+                "JobStatus_Queued",
+                "JobStatus_InProgress",
+                "JobStatus_Successful",
+                "JobStatus_Failure",
+                "JobStatus_Timeout"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType": {
+            "type": "string",
+            "enum": [
+                "discovery",
+                "analytics",
+                "compliance",
+                "insight"
+            ],
+            "x-enum-varnames": [
+                "JobType_Discovery",
+                "JobType_Analytics",
+                "JobType_Compliance",
+                "JobType_Insight"
+            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack": {
             "type": "object",

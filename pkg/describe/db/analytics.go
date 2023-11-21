@@ -20,6 +20,18 @@ func (db Database) GetAnalyticsJobByID(jobID uint) (*model.AnalyticsJob, error) 
 	return &job, nil
 }
 
+func (db Database) ListAnalyticsJobs() ([]model.AnalyticsJob, error) {
+	var jobs []model.AnalyticsJob
+	tx := db.ORM.Model(&model.AnalyticsJob{}).First(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 func (db Database) FetchLastAnalyticsJobForJobType(analyticsJobType model.AnalyticsJobType) (*model.AnalyticsJob, error) {
 	var job model.AnalyticsJob
 	tx := db.ORM.Model(&model.AnalyticsJob{}).Order("created_at DESC").Where("type = ?", analyticsJobType).First(&job)
