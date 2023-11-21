@@ -2532,6 +2532,9 @@ definitions:
     - Tier_Enterprise
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace:
     properties:
+      aws_user_arn:
+        example: kaytu
+        type: string
       createdAt:
         example: "2023-05-17T14:39:02.707659Z"
         type: string
@@ -2607,6 +2610,9 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse:
     properties:
+      aws_user_arn:
+        example: kaytu
+        type: string
       createdAt:
         example: "2023-05-17T14:39:02.707659Z"
         type: string
