@@ -214,6 +214,9 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 				}
 
 				settings.Kaytu.Workspace.Name = workspace.Name
+				if workspace.AWSUserARN != nil {
+					settings.Kaytu.Workspace.UserARN = *workspace.AWSUserARN
+				}
 				err = s.UpdateWorkspaceSettings(helmRelease, settings)
 				if err != nil {
 					return err

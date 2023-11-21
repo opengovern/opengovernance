@@ -83,13 +83,18 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 		return err
 	}
 
+	var userARN string
+	if workspace.AWSUserARN != nil {
+		userARN = *workspace.AWSUserARN
+	}
+
 	settings := KaytuWorkspaceSettings{
 		Kaytu: KaytuConfig{
 			ReplicaCount: 1,
 			Workspace: WorkspaceConfig{
 				Name:    workspace.Name,
 				Size:    workspace.Size,
-				UserARN: *workspace.AWSUserARN,
+				UserARN: userARN,
 			},
 			Insights: InsightsConfig{
 				S3: S3Config{
