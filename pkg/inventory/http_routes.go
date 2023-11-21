@@ -47,6 +47,11 @@ const (
 )
 
 const (
+	AWSLogoURI   = "https://raw.githubusercontent.com/kaytu-io/awsicons/master/svg-export/icons/AWS.svg"
+	AzureLogoURI = "https://raw.githubusercontent.com/kaytu-io/Azure-Design/master/SVG_Azure_All/Azure.svg"
+)
+
+const (
 	ConnectionIdParam    = "connectionId"
 	ConnectionGroupParam = "connectionGroup"
 )
@@ -2432,6 +2437,9 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 					Items:       nil,
 				}
 			}
+			if item.LogoURI == "" {
+				item.LogoURI = AWSLogoURI
+			}
 			subcategory.Items = append(subcategory.Items, item)
 			awsLandscapesSubcategories[category] = subcategory
 		case source.CloudAzure:
@@ -2443,6 +2451,9 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 					Description: "",
 					Items:       nil,
 				}
+			}
+			if item.LogoURI == "" {
+				item.LogoURI = AzureLogoURI
 			}
 			subcategory.Items = append(subcategory.Items, item)
 			azureLandscapesSubcategories[category] = subcategory
