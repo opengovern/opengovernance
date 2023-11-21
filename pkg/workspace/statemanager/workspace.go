@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -124,26 +127,16 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 
-		values := helmRelease.GetValues()
-		currentReplicaCount, err := getReplicaCount(values)
+		settings, err := GetWorkspaceHelmValues(helmRelease)
 		if err != nil {
 			return fmt.Errorf("getReplicaCount: %w", err)
 		}
 
-		if currentReplicaCount != 0 {
-			values, err = updateValuesSetReplicaCount(values, 0)
+		if settings.Kaytu.ReplicaCount != 0 {
+			settings.Kaytu.ReplicaCount = 0
+			err = s.UpdateWorkspaceSettings(helmRelease, settings)
 			if err != nil {
-				return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
-			}
-
-			b, err := json.Marshal(values)
-			if err != nil {
-				return fmt.Errorf("marshalling values: %w", err)
-			}
-			helmRelease.Spec.Values.Raw = b
-			err = s.kubeClient.Update(ctx, helmRelease)
-			if err != nil {
-				return fmt.Errorf("updating replica count: %w", err)
+				return err
 			}
 
 			return nil
@@ -217,27 +210,15 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 					return fmt.Errorf("helm release not found")
 				}
 
-				values := helmRelease.GetValues()
-				valuesJSON, err := json.Marshal(values)
-				if err != nil {
-					return err
-				}
-
-				var settings KaytuWorkspaceSettings
-				err = json.Unmarshal(valuesJSON, &settings)
+				settings, err := GetWorkspaceHelmValues(helmRelease)
 				if err != nil {
 					return err
 				}
 
 				settings.Kaytu.Workspace.Name = workspace.Name
-				b, err := json.Marshal(settings)
+				err = s.UpdateWorkspaceSettings(helmRelease, settings)
 				if err != nil {
-					return fmt.Errorf("marshalling values: %w", err)
-				}
-				helmRelease.Spec.Values.Raw = b
-				err = s.kubeClient.Update(context.Background(), helmRelease)
-				if err != nil {
-					return fmt.Errorf("updating workspace name: %w", err)
+					return err
 				}
 
 				var res corev1.PodList
@@ -266,26 +247,16 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 		return nil
 	}
 
-	values := helmRelease.GetValues()
-	currentReplicaCount, err := getReplicaCount(values)
+	settings, err := GetWorkspaceHelmValues(helmRelease)
 	if err != nil {
 		return fmt.Errorf("getReplicaCount: %w", err)
 	}
 
-	if currentReplicaCount == 0 {
-		values, err = updateValuesSetReplicaCount(values, 1)
+	if settings.Kaytu.ReplicaCount == 0 {
+		settings.Kaytu.ReplicaCount = 1
+		err = s.UpdateWorkspaceSettings(helmRelease, settings)
 		if err != nil {
-			return fmt.Errorf("updateValuesSetReplicaCount: %w", err)
-		}
-
-		b, err := json.Marshal(values)
-		if err != nil {
-			return fmt.Errorf("marshalling values: %w", err)
-		}
-		helmRelease.Spec.Values.Raw = b
-		err = s.kubeClient.Update(ctx, helmRelease)
-		if err != nil {
-			return fmt.Errorf("updating replica count: %w", err)
+			return err
 		}
 
 		return nil
@@ -313,6 +284,22 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 			}); err != nil {
 				return fmt.Errorf("put role binding: %w", err)
 			}
+		}
+
+		userName := fmt.Sprintf("kaytu-user-%s", workspace.ID)
+		userARN, err := CreateOrGetUser(s.awsConfig, userName)
+		if err != nil {
+			return err
+		}
+
+		settings, err := GetWorkspaceHelmValues(helmRelease)
+		if err != nil {
+			return err
+		}
+		settings.Kaytu.Workspace.UserARN = userARN
+		err = s.UpdateWorkspaceSettings(helmRelease, settings)
+		if err != nil {
+			return err
 		}
 
 		err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(), time.Duration(s.cfg.AutoSuspendDurationMinutes)*time.Minute).Err()
@@ -374,4 +361,62 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 	}
 
 	return nil
+}
+
+func (s *Service) UpdateWorkspaceSettings(helmRelease *v2beta1.HelmRelease, settings KaytuWorkspaceSettings) error {
+	ctx := context.Background()
+	b, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("marshalling values: %w", err)
+	}
+	helmRelease.Spec.Values.Raw = b
+	err = s.kubeClient.Update(ctx, helmRelease)
+	if err != nil {
+		return fmt.Errorf("updating replica count: %w", err)
+	}
+	return nil
+}
+
+func GetWorkspaceHelmValues(helmRelease *v2beta1.HelmRelease) (KaytuWorkspaceSettings, error) {
+	var settings KaytuWorkspaceSettings
+
+	values := helmRelease.GetValues()
+	valuesJSON, err := json.Marshal(values)
+	if err != nil {
+		return settings, err
+	}
+
+	err = json.Unmarshal(valuesJSON, &settings)
+	if err != nil {
+		return settings, err
+	}
+
+	return settings, nil
+}
+
+func CreateOrGetUser(cfg aws.Config, userName string) (string, error) {
+	iamClient := iam.NewFromConfig(cfg)
+	user, err := iamClient.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
+	if err != nil {
+		if !strings.Contains(err.Error(), "cannot be found") {
+			return "", err
+		}
+	}
+
+	var userARN string
+	if user == nil || user.User == nil {
+		iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
+			UserName:            aws.String(userName),
+			Path:                nil,
+			PermissionsBoundary: nil,
+			Tags:                nil,
+		})
+		if err != nil {
+			return "", err
+		}
+		userARN = *iamUser.User.Arn
+	} else {
+		userARN = *user.User.Arn
+	}
+	return userARN, nil
 }

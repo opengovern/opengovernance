@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"reflect"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -45,8 +44,9 @@ type DockerConfig struct {
 	Config string `json:"config"`
 }
 type WorkspaceConfig struct {
-	Name string            `json:"name"`
-	Size api.WorkspaceSize `json:"size"`
+	Name    string            `json:"name"`
+	Size    api.WorkspaceSize `json:"size"`
+	UserARN string            `json:"userARN"`
 }
 
 func NewKubeClient() (client.Client, error) {
@@ -144,40 +144,6 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 		return fmt.Errorf("create helm release: %w", err)
 	}
 	return nil
-}
-
-func getReplicaCount(values map[string]interface{}) (int, error) {
-	if v, ok := values["kaytu"]; ok {
-		if vm, ok := v.(map[string]interface{}); ok {
-			if v, ok := vm["replicaCount"]; ok {
-				if c, ok := v.(float64); ok {
-					return int(c), nil
-				} else {
-					return 0, fmt.Errorf("invalid replicaCount type: %v", reflect.TypeOf(v))
-				}
-			} else {
-				return 1, nil // default
-			}
-		} else {
-			return 0, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
-		}
-	} else {
-		return 0, fmt.Errorf("kaytu not found")
-	}
-}
-
-func updateValuesSetReplicaCount(values map[string]interface{}, replicaCount int) (map[string]interface{}, error) {
-	if v, ok := values["kaytu"]; ok {
-		if vm, ok := v.(map[string]interface{}); ok {
-			vm["replicaCount"] = replicaCount
-			values["kaytu"] = vm
-			return values, nil
-		} else {
-			return nil, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
-		}
-	} else {
-		return nil, fmt.Errorf("kaytu not found")
-	}
 }
 
 func (s *Service) deleteTargetNamespace(ctx context.Context, name string) error {
