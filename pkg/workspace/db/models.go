@@ -36,6 +36,7 @@ func (w *Workspace) ToAPI() api.Workspace {
 	return api.Workspace{
 		ID:                       w.ID,
 		Name:                     w.Name,
+		AWSUserARN:               w.AWSUserARN,
 		OwnerId:                  w.OwnerId,
 		URI:                      w.URI,
 		Status:                   w.Status,
