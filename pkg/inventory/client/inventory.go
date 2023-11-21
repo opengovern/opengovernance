@@ -23,8 +23,8 @@ type InventoryServiceClient interface {
 	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
-	GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
-	GetResourceCollections(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
+	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
+	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
 }
 
 type inventoryClient struct {
@@ -334,7 +334,7 @@ func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, con
 	return &response, nil
 }
 
-func (s *inventoryClient) GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error) {
+func (s *inventoryClient) GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error) {
 	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection/%s", s.baseURL, id)
 
 	var response api.ResourceCollection
@@ -347,7 +347,7 @@ func (s *inventoryClient) GetResourceCollection(ctx *httpclient.Context, id stri
 	return &response, nil
 }
 
-func (s *inventoryClient) GetResourceCollections(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error) {
+func (s *inventoryClient) ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error) {
 	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection", s.baseURL)
 
 	firstParamAttached := false

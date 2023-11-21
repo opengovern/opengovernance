@@ -61,7 +61,7 @@ func (j *Job) Do(
 
 	encodedResourceCollectionFilters := make(map[string]string)
 	if len(j.ResourceCollectionIDs) > 0 {
-		rcs, err := inventoryClient.GetResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole},
+		rcs, err := inventoryClient.ListResourceCollectionsMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
 			j.ResourceCollectionIDs)
 		if err != nil {
 			return fail(err)

@@ -91,15 +91,16 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, authApi.ViewerRole))
 
 	resourceCollection := v2.Group("/resource-collection")
+	resourceCollection.GET("/", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
+	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
 	resourceCollection.GET("/:resourceCollectionId/landscape", httpserver.AuthorizeHandler(h.GetResourceCollectionLandscape, authApi.ViewerRole))
 
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
 	resourceCollectionMetadata := metadata.Group("/resource-collection")
-	resourceCollectionMetadata.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
-	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
-
+	resourceCollectionMetadata.GET("", httpserver.AuthorizeHandler(h.ListResourceCollectionsMetadata, authApi.ViewerRole))
+	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollectionMetadata, authApi.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -2479,18 +2480,183 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 
 // ListResourceCollections godoc
 //
+//	@Summary		List resource collections with inventory data
+//	@Description	Retrieving list of resource collections by specified filters with inventory data
+//	@Security		BearerToken
+//	@Tags			resource_collection
+//	@Produce		json
+//	@Param			id		query		[]string								false	"Resource collection IDs"
+//	@Param			status	query		[]inventoryApi.ResourceCollectionStatus	false	"Resource collection status"
+//	@Success		200		{object}	[]inventoryApi.ResourceCollection
+//	@Router			/inventory/api/v2/resource-collection [get]
+func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
+	ids := httpserver.QueryArrayParam(ctx, "id")
+
+	statuesString := httpserver.QueryArrayParam(ctx, "status")
+	var statuses []ResourceCollectionStatus
+	for _, statusString := range statuesString {
+		statuses = append(statuses, ResourceCollectionStatus(statusString))
+	}
+
+	resourceCollections, err := h.db.ListResourceCollections(ids, statuses)
+	if err != nil {
+		h.logger.Error("failed to list resource collections", zap.Error(err))
+		return err
+	}
+
+	res := make(map[string]inventoryApi.ResourceCollection)
+	collectionIds := make([]string, 0, len(resourceCollections))
+	for _, collection := range resourceCollections {
+		res[collection.ID] = collection.ToApi()
+		collectionIds = append(collectionIds, collection.ID)
+	}
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	filteredMetrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	if err != nil {
+		h.logger.Error("failed to list filtered metrics", zap.Error(err))
+		return err
+	}
+	filteredMetricIds := make([]string, 0, len(filteredMetrics))
+	filteredMetricMap := make(map[string]analyticsDB.AnalyticMetric)
+	for _, metric := range filteredMetrics {
+		filteredMetricIds = append(filteredMetricIds, metric.ID)
+		filteredMetricMap[metric.ID] = metric
+	}
+
+	perRcMetricResult, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.client,
+		filteredMetricIds, nil, collectionIds, time.Now(), EsFetchPageSize)
+	if err != nil {
+		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
+		return err
+	}
+
+	for collectionId, metricCount := range perRcMetricResult {
+		if _, ok := res[collectionId]; !ok {
+			continue
+		}
+		v := res[collectionId]
+		for metricId, count := range metricCount {
+			if count.Count == 0 {
+				continue
+			}
+			count := count
+
+			metric := filteredMetricMap[metricId]
+			for _, connector := range metric.Connectors {
+				found := false
+				for _, c := range v.Connectors {
+					if c.String() == connector {
+						found = true
+						break
+					}
+				}
+				if !found {
+					v.Connectors = append(v.Connectors, source.Type(connector))
+				}
+			}
+			v.ResourceCount = utils.PAdd(v.ResourceCount, &count.Count)
+			if v.LastEvaluatedAt == nil || v.LastEvaluatedAt.IsZero() || v.LastEvaluatedAt.Before(count.Time) {
+				v.LastEvaluatedAt = &count.Time
+			}
+		}
+		res[collectionId] = v
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetResourceCollection godoc
+//
+//	@Summary		Get resource collection with inventory data
+//	@Description	Retrieving resource collection by specified ID with inventory data
+//	@Security		BearerToken
+//	@Tags			resource_collection
+//	@Produce		json
+//	@Param			resourceCollectionId	path		string	true	"Resource collection ID"
+//	@Success		200						{object}	inventoryApi.ResourceCollection
+//	@Router			/inventory/api/v2/resource-collection/{resourceCollectionId} [get]
+func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
+	collectionID := ctx.Param("resourceCollectionId")
+	resourceCollection, err := h.db.GetResourceCollection(collectionID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "resource collection not found")
+		}
+		return err
+	}
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	filteredMetrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	if err != nil {
+		h.logger.Error("failed to list filtered metrics", zap.Error(err))
+		return err
+	}
+
+	filteredMetricIds := make([]string, 0, len(filteredMetrics))
+	filteredMetricMap := make(map[string]analyticsDB.AnalyticMetric)
+	for _, metric := range filteredMetrics {
+		filteredMetricIds = append(filteredMetricIds, metric.ID)
+		filteredMetricMap[metric.ID] = metric
+	}
+
+	metricIndexed, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.client,
+		filteredMetricIds, nil, []string{collectionID}, time.Now(), EsFetchPageSize)
+	if err != nil {
+		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
+		return err
+	}
+
+	result := resourceCollection.ToApi()
+	for metricId, count := range metricIndexed[collectionID] {
+		if count.Count == 0 {
+			continue
+		}
+		count := count
+
+		metric := filteredMetricMap[metricId]
+		for _, connector := range metric.Connectors {
+			found := false
+			for _, c := range result.Connectors {
+				if c.String() == connector {
+					found = true
+					break
+				}
+			}
+			if !found {
+				result.Connectors = append(result.Connectors, source.Type(connector))
+			}
+		}
+		result.ResourceCount = utils.PAdd(result.ResourceCount, &count.Count)
+		if result.LastEvaluatedAt == nil || result.LastEvaluatedAt.IsZero() || result.LastEvaluatedAt.Before(count.Time) {
+			result.LastEvaluatedAt = &count.Time
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// ListResourceCollectionsMetadata godoc
+//
 //	@Summary		List resource collections
 //	@Description	Retrieving list of resource collections by specified filters
 //	@Security		BearerToken
 //	@Tags			resource_collection
 //	@Produce		json
-//	@Param			id	query		[]string	false	"Resource collection IDs"
-//	@Success		200	{object}	[]inventoryApi.ResourceCollection
+//	@Param			id		query		[]string								false	"Resource collection IDs"
+//	@Param			status	query		[]inventoryApi.ResourceCollectionStatus	false	"Resource collection status"
+//	@Success		200		{object}	[]inventoryApi.ResourceCollection
 //	@Router			/inventory/api/v2/metadata/resource-collection [get]
-func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
+func (h *HttpHandler) ListResourceCollectionsMetadata(ctx echo.Context) error {
 	ids := httpserver.QueryArrayParam(ctx, "id")
 
-	resourceCollections, err := h.db.ListResourceCollections(ids)
+	statuesString := httpserver.QueryArrayParam(ctx, "status")
+	var statuses []ResourceCollectionStatus
+	for _, statusString := range statuesString {
+		statuses = append(statuses, ResourceCollectionStatus(statusString))
+	}
+
+	resourceCollections, err := h.db.ListResourceCollections(ids, nil)
 	if err != nil {
 		return err
 	}
@@ -2503,7 +2669,7 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetResourceCollection godoc
+// GetResourceCollectionMetadata godoc
 //
 //	@Summary		Get resource collection
 //	@Description	Retrieving resource collection by specified ID
@@ -2513,7 +2679,7 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 //	@Param			resourceCollectionId	path		string	true	"Resource collection ID"
 //	@Success		200						{object}	inventoryApi.ResourceCollection
 //	@Router			/inventory/api/v2/metadata/resource-collection/{resourceCollectionId} [get]
-func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
+func (h *HttpHandler) GetResourceCollectionMetadata(ctx echo.Context) error {
 	collectionID := ctx.Param("resourceCollectionId")
 	resourceCollection, err := h.db.GetResourceCollection(collectionID)
 	if err != nil {

@@ -174,11 +174,14 @@ func (db Database) GetResourceType(resourceType string) (*ResourceType, error) {
 	return &rtObj, nil
 }
 
-func (db Database) ListResourceCollections(ids []string) ([]ResourceCollection, error) {
+func (db Database) ListResourceCollections(ids []string, statuses []ResourceCollectionStatus) ([]ResourceCollection, error) {
 	var resourceCollections []ResourceCollection
 	tx := db.orm.Model(ResourceCollection{}).Preload(clause.Associations)
 	if len(ids) > 0 {
 		tx = tx.Where("id IN ?", ids)
+	}
+	if len(statuses) > 0 {
+		tx = tx.Where("status IN ?", statuses)
 	}
 	tx.Find(&resourceCollections)
 	if tx.Error != nil {

@@ -148,7 +148,7 @@ func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres
 
 	var encodedResourceCollectionFilter *string
 	if j.ResourceCollectionId != nil {
-		rc, err := inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: authApi.InternalRole},
+		rc, err := inventoryClient.GetResourceCollectionMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
 			*j.ResourceCollectionId)
 		if err != nil {
 			fail(err)

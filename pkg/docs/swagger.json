@@ -3796,6 +3796,21 @@
                         "description": "Resource collection IDs",
                         "name": "id",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "active",
+                                "inactive"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection status",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3826,6 +3841,95 @@
                     "resource_collection"
                 ],
                 "summary": "Get resource collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource collection ID",
+                        "name": "resourceCollectionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resource-collection": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of resource collections by specified filters with inventory data",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "List resource collections with inventory data",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection IDs",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "active",
+                                "inactive"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resource-collection/{resourceCollectionId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving resource collection by specified ID with inventory data",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource_collection"
+                ],
+                "summary": "Get resource collection with inventory data",
                 "parameters": [
                     {
                         "type": "string",
@@ -8406,6 +8510,12 @@
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollection": {
             "type": "object",
             "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8421,8 +8531,14 @@
                 "id": {
                     "type": "string"
                 },
+                "last_evaluated_at": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
+                },
+                "resource_count": {
+                    "type": "integer"
                 },
                 "status": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionStatus"
