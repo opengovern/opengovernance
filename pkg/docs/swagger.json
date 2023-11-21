@@ -5064,14 +5064,21 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Triggers a describe job to run immediately for the given connection",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "describe"
+                    "scheduler"
                 ],
-                "summary": "Triggers describer",
+                "summary": "Lists all jobs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -8073,6 +8080,9 @@
                 "connectionProviderName": {
                     "type": "string"
                 },
+                "createdAt": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -8084,6 +8094,9 @@
                 },
                 "type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         },

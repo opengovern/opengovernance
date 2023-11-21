@@ -139,6 +139,31 @@ LIMIT ?
 	return job, nil
 }
 
+func (db Database) ListAllJobs(limit int) ([]model.Job, error) {
+	var job []model.Job
+
+	tx := db.ORM.Raw(`
+SELECT * FROM (
+(
+(SELECT id, created_at, updated_at, 'discovery', connection_id, resource_type AS title, status FROM describe_connection_jobs)
+UNION ALL 
+(SELECT id, created_at, updated_at, 'insight', source_id::text AS connection_id, insight_id::text AS title, status FROM insight_jobs)
+UNION ALL 
+(SELECT id, created_at, updated_at, 'compliance', 'all' AS connection_id, benchmark_id::text AS title, status FROM compliance_jobs)
+UNION ALL 
+(SELECT id, created_at, updated_at, 'analytics', 'all' AS connection_id, '' AS title, status FROM analytics_jobs)
+)
+) AS t ORDER BY updated_at DESC LIMIT ?;
+`, limit).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListDescribeJobs() ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 

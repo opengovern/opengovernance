@@ -74,6 +74,8 @@ const (
 
 type Job struct {
 	ID                     uint      `json:"id"`
+	CreatedAt              time.Time `json:"createdAt"`
+	UpdatedAt              time.Time `json:"updatedAt"`
 	Type                   JobType   `json:"type"`
 	ConnectionID           string    `json:"connectionID"`
 	ConnectionProviderID   string    `json:"connectionProviderID"`

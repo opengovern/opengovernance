@@ -1306,6 +1306,8 @@ definitions:
         type: string
       connectionProviderName:
         type: string
+      createdAt:
+        type: string
       id:
         type: integer
       status:
@@ -1314,6 +1316,8 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType'
+      updatedAt:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus:
     enum:
@@ -6181,7 +6185,11 @@ paths:
       - describe
   /schedule/api/v1/jobs:
     get:
-      description: Triggers a describe job to run immediately for the given connection
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -6193,9 +6201,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Triggers describer
+      summary: Lists all jobs
       tags:
-      - describe
+      - scheduler
   /schedule/api/v1/stacks:
     get:
       consumes:
