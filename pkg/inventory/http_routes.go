@@ -2480,10 +2480,13 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 	}
 
 	landscape := inventoryApi.ResourceCollectionLandscape{
-		Categories: []inventoryApi.ResourceCollectionLandscapeCategory{
-			awsLandscapesCategory,
-			azureLandscapesCategory,
-		},
+		Categories: make([]inventoryApi.ResourceCollectionLandscapeCategory, 0, 2),
+	}
+	if len(awsLandscapesCategory.Subcategories) > 0 {
+		landscape.Categories = append(landscape.Categories, awsLandscapesCategory)
+	}
+	if len(azureLandscapesCategory.Subcategories) > 0 {
+		landscape.Categories = append(landscape.Categories, azureLandscapesCategory)
 	}
 
 	return ctx.JSON(http.StatusOK, landscape)
