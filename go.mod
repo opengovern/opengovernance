@@ -36,9 +36,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.22.2
-	github.com/kaytu-io/kaytu-azure-describer v0.17.2
-	github.com/kaytu-io/kaytu-util v0.0.0-20231122134649-3e6db8016aa5
+	github.com/kaytu-io/kaytu-aws-describer v0.22.4
+	github.com/kaytu-io/kaytu-azure-describer v0.17.4
+	github.com/kaytu-io/kaytu-util v0.0.0-20231122143217-82d14de890ac
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -429,6 +429,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v5 v5.3.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
+	github.com/jackc/puddle/v2 v2.2.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
