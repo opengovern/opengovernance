@@ -75,7 +75,7 @@ type Server struct {
 	rdb          *redis.Client
 	cache        *cache.Cache
 	StateManager *statemanager.Service
-	awsCnf       aws.Config
+	awsMasterCnf aws.Config
 	policyARN    string
 }
 
@@ -137,7 +137,7 @@ func NewServer(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	s.awsCnf = awsConfig
+	s.awsMasterCnf = awsConfig
 	s.policyARN = cfg.AWSMasterPolicyARN
 	return s, nil
 }
@@ -259,7 +259,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 	userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
 
-	iamClient := iam.NewFromConfig(s.awsCnf)
+	iamClient := iam.NewFromConfig(s.awsMasterCnf)
 	iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
 		UserName:            aws.String(userName),
 		Path:                nil,

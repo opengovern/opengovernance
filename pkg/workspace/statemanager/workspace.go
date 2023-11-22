@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -98,6 +100,40 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 			// update the workspace status next loop
 			return nil
+		}
+
+		userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
+		iamClient := iam.NewFromConfig(s.awsMasterConfig)
+
+		accessKeys, err := iamClient.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
+			UserName: aws.String(userName),
+		})
+		if err != nil {
+			return err
+		}
+		for _, accessKey := range accessKeys.AccessKeyMetadata {
+			_, err := iamClient.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
+				UserName:    aws.String(userName),
+				AccessKeyId: accessKey.AccessKeyId,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = iamClient.DetachUserPolicy(context.Background(), &iam.DetachUserPolicyInput{
+			UserName:  aws.String(userName),
+			PolicyArn: aws.String(s.policyARN),
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = iamClient.DeleteUser(context.Background(), &iam.DeleteUserInput{
+			UserName: aws.String(userName),
+		})
+		if err != nil {
+			return err
 		}
 
 		if err := s.db.DeleteWorkspace(workspace.ID); err != nil {

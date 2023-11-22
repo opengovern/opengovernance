@@ -23,15 +23,17 @@ const (
 )
 
 type Service struct {
-	cfg        config.Config
-	logger     *zap.Logger
-	db         *db.Database
-	kms        *vault.KMSVaultSourceConfig
-	authClient authclient.AuthServiceClient
-	kubeClient k8sclient.Client // the kubernetes client
-	rdb        *redis.Client
-	cache      *cache.Cache
-	awsConfig  aws.Config
+	cfg             config.Config
+	logger          *zap.Logger
+	db              *db.Database
+	kms             *vault.KMSVaultSourceConfig
+	authClient      authclient.AuthServiceClient
+	kubeClient      k8sclient.Client // the kubernetes client
+	rdb             *redis.Client
+	cache           *cache.Cache
+	awsConfig       aws.Config
+	awsMasterConfig aws.Config
+	policyARN       string
 }
 
 func New(cfg config.Config) (*Service, error) {
@@ -83,16 +85,23 @@ func New(cfg config.Config) (*Service, error) {
 		return nil, err
 	}
 
+	awsMasterConfig, err := aws2.GetConfig(context.Background(), cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Service{
-		logger:     logger,
-		cfg:        cfg,
-		db:         dbs,
-		kms:        kms,
-		authClient: authClient,
-		kubeClient: kubeClient,
-		rdb:        rdb,
-		cache:      cache,
-		awsConfig:  awsConfig,
+		logger:          logger,
+		cfg:             cfg,
+		db:              dbs,
+		kms:             kms,
+		authClient:      authClient,
+		kubeClient:      kubeClient,
+		rdb:             rdb,
+		cache:           cache,
+		awsConfig:       awsConfig,
+		awsMasterConfig: awsMasterConfig,
+		policyARN:       cfg.AWSMasterPolicyARN,
 	}, nil
 }
 
