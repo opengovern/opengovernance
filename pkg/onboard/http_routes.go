@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -48,6 +49,7 @@ var tracer = otel.Tracer("onboard")
 
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
+	v2 := r.Group("/api/v2")
 
 	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
 	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.KaytuAdminRole))
@@ -72,7 +74,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
 	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
-	credential.POST("/:credentialId/autoonboard/accounts", httpserver.AuthorizeHandler(h.CredentialAccounts, api3.EditorRole))
+
+	credentialV2 := v2.Group("/credential")
+	credentialV2.POST("", httpserver.AuthorizeHandler(h.CreateCredential, api3.EditorRole))
 
 	connections := v1.Group("/connections")
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
@@ -524,6 +528,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	if config.AccessKey == "" {
 		config.AccessKey = h.masterAccessKey
 		config.SecretKey = h.masterSecretKey
+		config.ExternalId = aws.String("") //TODO-
 	}
 
 	awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
@@ -542,7 +547,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		name = *metadata.OrganizationID
 	}
 
-	cred, err := NewAWSCredential(name, metadata, CredentialTypeManualAwsOrganization)
+	cred, err := NewAWSCredential(name, metadata, CredentialTypeManualAwsOrganization, 1)
 	if err != nil {
 		return err
 	}
@@ -612,6 +617,37 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 	}
 
 	return echo.NewHTTPError(http.StatusBadRequest, "invalid source type")
+}
+
+// CreateCredential godoc
+//
+//	@Summary		Create connection credentials
+//	@Description	Creating connection credentials
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200		{object}	apiv2.CreateCredentialResponse
+//	@Param			config	body		apiv2.CreateCredentialRequest	true	"config"
+//	@Router			/onboard/api/v2/credential [post]
+func (h HttpHandler) CreateCredential(ctx echo.Context) error {
+	var req apiv2.CreateCredentialRequest
+
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	switch req.Connector {
+	case source.CloudAzure:
+		return echo.NewHTTPError(http.StatusNotImplemented)
+	case source.CloudAWS:
+		resp, err := h.createAWSCredential(req)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, *resp)
+	}
+
+	return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 }
 
 // ListCredentials godoc
@@ -1298,66 +1334,6 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, onboardedSources)
-}
-
-func (h HttpHandler) CredentialAccounts(ctx echo.Context) error {
-	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetCredentialByID")
-
-	credential, err := h.db.GetCredentialByID(credId)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
-	))
-	span.End()
-
-	switch credential.ConnectorType {
-	case source.CloudAzure:
-		return errors.New("not implemented")
-		//onboardedSources, err = h.autoOnboardAzureSubscriptions(ctx.Request().Context(), *credential, maxConns)
-		//if err != nil {
-		//	return err
-		//}
-	case source.CloudAWS:
-		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
-		if err != nil {
-			return err
-		}
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		cfg, err := kaytuAws.GetConfig(
-			ctx.Request().Context(),
-			awsCnf.AccessKey,
-			awsCnf.SecretKey,
-			"",
-			awsCnf.AssumeAdminRoleName,
-			nil)
-		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
-		if cfg.Region == "" {
-			cfg.Region = "us-east-1"
-		}
-		accounts, err := discoverAWSAccounts(ctx.Request().Context(), cfg)
-		if err != nil {
-			return err
-		}
-		return ctx.JSON(http.StatusOK, accounts)
-	default:
-		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")
-	}
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
@@ -3008,7 +2984,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("invalid key: ", key)
+			return nil, fmt.Errorf("invalid key: %s", key)
 		}
 	}
 	return connections, nil

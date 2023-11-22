@@ -2490,6 +2490,19 @@ definitions:
       name:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialRequest:
+    properties:
+      config: {}
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialResponse:
+    properties:
+      id:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest:
     properties:
       config: {}
@@ -6111,6 +6124,28 @@ paths:
       security:
       - BearerToken: []
       summary: Create Azure source
+      tags:
+      - onboard
+  /onboard/api/v2/credential:
+    post:
+      description: Creating connection credentials
+      parameters:
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialResponse'
+      security:
+      - BearerToken: []
+      summary: Create connection credentials
       tags:
       - onboard
   /schedule/api/v1/compliance/trigger/{benchmark_id}:

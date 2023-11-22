@@ -446,6 +446,8 @@ type Credential struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt sql.NullTime `gorm:"index"`
+
+	Version int `json:"version"`
 }
 
 func (credential *Credential) ToAPI() api.Credential {
@@ -500,7 +502,7 @@ func NewAzureCredential(name string, credentialType CredentialType, metadata *Az
 	return crd, nil
 }
 
-func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialType CredentialType) (*Credential, error) {
+func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialType CredentialType, version int) (*Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
@@ -513,6 +515,7 @@ func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialTy
 		Secret:         fmt.Sprintf("sources/%s/%s", strings.ToLower(string(source.CloudAWS)), id),
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
+		Version:        version,
 	}
 	if credentialType == CredentialTypeManualAwsOrganization {
 		crd.AutoOnboardEnabled = true
@@ -522,14 +525,14 @@ func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialTy
 }
 
 type AWSCredentialMetadata struct {
-	AccountID string `json:"account_id"`
-	//IamUserName                        *string   `json:"iam_user_name"`
-	//IamApiKeyCreationDate              time.Time `json:"iam_api_key_creation_date"`
-	//AttachedPolicies                   []string  `json:"attached_policies"`
-	OrganizationID                     *string `json:"organization_id"`
-	OrganizationMasterAccountEmail     *string `json:"organization_master_account_email"`
-	OrganizationMasterAccountId        *string `json:"organization_master_account_id"`
-	OrganizationDiscoveredAccountCount *int    `json:"organization_discovered_account_count"`
+	AccountID                          string    `json:"account_id"`
+	IamUserName                        *string   `json:"iam_user_name"`
+	IamApiKeyCreationDate              time.Time `json:"iam_api_key_creation_date"`
+	AttachedPolicies                   []string  `json:"attached_policies"`
+	OrganizationID                     *string   `json:"organization_id"`
+	OrganizationMasterAccountEmail     *string   `json:"organization_master_account_email"`
+	OrganizationMasterAccountId        *string   `json:"organization_master_account_id"`
+	OrganizationDiscoveredAccountCount *int      `json:"organization_discovered_account_count"`
 }
 
 type AzureCredentialMetadata struct {
