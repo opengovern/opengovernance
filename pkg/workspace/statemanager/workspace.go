@@ -103,55 +103,56 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			return nil
 		}
 
-		userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
-		iamClient := iam.NewFromConfig(s.awsMasterConfig)
-
-		accessKeys, err := iamClient.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
-			UserName: aws.String(userName),
-		})
-		if err != nil {
-			return err
-		}
-		for _, accessKey := range accessKeys.AccessKeyMetadata {
-			_, err := iamClient.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
-				UserName:    aws.String(userName),
-				AccessKeyId: accessKey.AccessKeyId,
+		if workspace.AWSUniqueId != nil {
+			userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
+			iamClient := iam.NewFromConfig(s.awsMasterConfig)
+			accessKeys, err := iamClient.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
+				UserName: aws.String(userName),
 			})
 			if err != nil {
 				return err
 			}
-		}
+			for _, accessKey := range accessKeys.AccessKeyMetadata {
+				_, err := iamClient.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
+					UserName:    aws.String(userName),
+					AccessKeyId: accessKey.AccessKeyId,
+				})
+				if err != nil {
+					return err
+				}
+			}
 
-		policies, err := iamClient.ListAttachedUserPolicies(context.Background(), &iam.ListAttachedUserPoliciesInput{
-			UserName: aws.String(userName),
-		})
-		if err != nil {
-			return err
-		}
-
-		for _, policy := range policies.AttachedPolicies {
-			_, err = iamClient.DetachUserPolicy(context.Background(), &iam.DetachUserPolicyInput{
-				UserName:  aws.String(userName),
-				PolicyArn: policy.PolicyArn,
+			policies, err := iamClient.ListAttachedUserPolicies(context.Background(), &iam.ListAttachedUserPoliciesInput{
+				UserName: aws.String(userName),
 			})
 			if err != nil {
 				return err
 			}
 
-			_, err = iamClient.DeleteUserPolicy(context.Background(), &iam.DeleteUserPolicyInput{
-				PolicyName: policy.PolicyName,
-				UserName:   aws.String(userName),
+			for _, policy := range policies.AttachedPolicies {
+				_, err = iamClient.DetachUserPolicy(context.Background(), &iam.DetachUserPolicyInput{
+					UserName:  aws.String(userName),
+					PolicyArn: policy.PolicyArn,
+				})
+				if err != nil {
+					return err
+				}
+
+				_, err = iamClient.DeleteUserPolicy(context.Background(), &iam.DeleteUserPolicyInput{
+					PolicyName: policy.PolicyName,
+					UserName:   aws.String(userName),
+				})
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = iamClient.DeleteUser(context.Background(), &iam.DeleteUserInput{
+				UserName: aws.String(userName),
 			})
 			if err != nil {
 				return err
 			}
-		}
-
-		_, err = iamClient.DeleteUser(context.Background(), &iam.DeleteUserInput{
-			UserName: aws.String(userName),
-		})
-		if err != nil {
-			return err
 		}
 
 		if err := s.db.DeleteWorkspace(workspace.ID); err != nil {
