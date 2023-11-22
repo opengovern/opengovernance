@@ -30,7 +30,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -584,7 +583,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			startTime			query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime				query		int64			false	"timestamp for end in epoch seconds"
-//	@Param			datapointCount		query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Param			granularity			query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Success		200					{object}	[]inventoryApi.ResourceTypeTrendDatapoint
 //	@Router			/inventory/api/v2/analytics/trend [get]
 func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
@@ -625,14 +624,16 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 
-	datapointCountStr := ctx.QueryParam("datapointCount")
-	datapointCount := int64(30)
-	if datapointCountStr != "" {
-		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
-		}
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
+	if granularity == "" {
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
+	}
+
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
@@ -690,7 +691,28 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
 	})
-	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, int(datapointCount))
+
+	filteredDatapointMap := make(map[int]inventoryApi.ResourceTypeTrendDatapoint)
+	for _, apiDatapoint := range apiDatapoints {
+		key := apiDatapoint.Date.Year()*10000 + int(apiDatapoint.Date.Month())*100 + apiDatapoint.Date.Day()
+		switch granularity {
+		case inventoryApi.TableGranularityTypeMonthly:
+			key = apiDatapoint.Date.Year()*100 + int(apiDatapoint.Date.Month())
+		case inventoryApi.TableGranularityTypeYearly:
+			key = apiDatapoint.Date.Year()
+		}
+		if _, ok := filteredDatapointMap[key]; !ok {
+			filteredDatapointMap[key] = apiDatapoint
+		}
+	}
+
+	apiDatapoints = make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(filteredDatapointMap))
+	for _, apiDatapoint := range filteredDatapointMap {
+		apiDatapoints = append(apiDatapoints, apiDatapoint)
+	}
+	sort.Slice(apiDatapoints, func(i, j int) bool {
+		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+	})
 
 	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
