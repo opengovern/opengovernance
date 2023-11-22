@@ -96,7 +96,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, authApi.ViewerRole))
 
 	resourceCollection := v2.Group("/resource-collection")
-	resourceCollection.GET("/", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
+	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
 	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
 	resourceCollection.GET("/:resourceCollectionId/landscape", httpserver.AuthorizeHandler(h.GetResourceCollectionLandscape, authApi.ViewerRole))
 
