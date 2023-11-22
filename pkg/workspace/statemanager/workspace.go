@@ -137,6 +137,14 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			if err != nil {
 				return err
 			}
+
+			_, err = iamClient.DeleteUserPolicy(context.Background(), &iam.DeleteUserPolicyInput{
+				PolicyName: policy.PolicyName,
+				UserName:   aws.String(userName),
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		_, err = iamClient.DeleteUser(context.Background(), &iam.DeleteUserInput{
