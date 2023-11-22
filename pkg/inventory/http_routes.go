@@ -2599,7 +2599,12 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 		res[collectionId] = v
 	}
 
-	return ctx.JSON(http.StatusOK, res)
+	resArray := make([]inventoryApi.ResourceCollection, 0, len(res))
+	for _, collection := range res {
+		resArray = append(resArray, collection)
+	}
+
+	return ctx.JSON(http.StatusOK, resArray)
 }
 
 // GetResourceCollection godoc
