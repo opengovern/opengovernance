@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"time"
@@ -44,9 +45,11 @@ type DockerConfig struct {
 	Config string `json:"config"`
 }
 type WorkspaceConfig struct {
-	Name    string            `json:"name"`
-	Size    api.WorkspaceSize `json:"size"`
-	UserARN string            `json:"userARN"`
+	Name            string            `json:"name"`
+	Size            api.WorkspaceSize `json:"size"`
+	UserARN         string            `json:"userARN"`
+	MasterAccessKey string            `json:"masterAccessKey"`
+	MasterSecretKey string            `json:"masterSecretKey"`
 }
 
 func NewKubeClient() (client.Client, error) {
@@ -104,6 +107,22 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 			},
 		},
 	}
+	if workspace.AWSUniqueId != nil {
+		masterCred, err := s.db.GetMasterCredentialByWorkspaceUID(*workspace.AWSUniqueId)
+		if err != nil {
+			return err
+		}
+
+		var accessKey types2.AccessKey
+		err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
+		if err != nil {
+			return err
+		}
+
+		settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
+		settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
+	}
+
 	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
 		return err

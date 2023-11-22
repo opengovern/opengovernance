@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -252,6 +253,21 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 				settings.Kaytu.Workspace.Name = workspace.Name
 				if workspace.AWSUserARN != nil {
 					settings.Kaytu.Workspace.UserARN = *workspace.AWSUserARN
+				}
+				if workspace.AWSUniqueId != nil {
+					masterCred, err := s.db.GetMasterCredentialByWorkspaceUID(*workspace.AWSUniqueId)
+					if err != nil {
+						return err
+					}
+
+					var accessKey types.AccessKey
+					err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
+					if err != nil {
+						return err
+					}
+
+					settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
+					settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
 				}
 				err = s.UpdateWorkspaceSettings(helmRelease, settings)
 				if err != nil {

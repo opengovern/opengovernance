@@ -17,7 +17,7 @@ func (s *Database) CreateMasterCredential(cred *MasterCredential) error {
 
 func (s *Database) GetMasterCredentialByWorkspaceUID(workspaceUID string) (*MasterCredential, error) {
 	var res MasterCredential
-	err := s.Orm.Model(&MasterCredential{}).Where("workspace_id = ?", workspaceUID).Find(&res).Error
+	err := s.Orm.Model(&MasterCredential{}).Where("workspace_id = ?", workspaceUID).First(&res).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
