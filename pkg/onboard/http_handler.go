@@ -17,16 +17,17 @@ import (
 )
 
 type HttpHandler struct {
-	db                    Database
-	steampipeConn         *steampipe.Database
-	sourceEventsQueue     queue.Interface
-	kms                   *vault.KMSVaultSourceConfig
-	awsPermissionCheckURL string
-	inventoryClient       inventory.InventoryServiceClient
-	describeClient        describeClient.SchedulerServiceClient
-	validator             *validator.Validate
-	keyARN                string
-	logger                *zap.Logger
+	db                               Database
+	steampipeConn                    *steampipe.Database
+	sourceEventsQueue                queue.Interface
+	kms                              *vault.KMSVaultSourceConfig
+	awsPermissionCheckURL            string
+	inventoryClient                  inventory.InventoryServiceClient
+	describeClient                   describeClient.SchedulerServiceClient
+	validator                        *validator.Validate
+	keyARN                           string
+	logger                           *zap.Logger
+	masterAccessKey, masterSecretKey string
 }
 
 func InitializeHttpHandler(
@@ -39,6 +40,7 @@ func InitializeHttpHandler(
 	keyARN string,
 	inventoryBaseURL string,
 	describeBaseURL string,
+	masterAccessKey, masterSecretKey string,
 ) (*HttpHandler, error) {
 
 	logger.Info("Initializing http handler")
@@ -110,6 +112,8 @@ func InitializeHttpHandler(
 		inventoryClient:       inventoryClient,
 		describeClient:        describeCli,
 		keyARN:                keyARN,
+		masterAccessKey:       masterAccessKey,
+		masterSecretKey:       masterSecretKey,
 		validator:             validator.New(),
 	}, nil
 }

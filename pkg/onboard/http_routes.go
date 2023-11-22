@@ -521,6 +521,11 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
+	if config.AccessKey == "" {
+		config.AccessKey = h.masterAccessKey
+		config.SecretKey = h.masterSecretKey
+	}
+
 	awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid config")

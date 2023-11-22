@@ -40,7 +40,9 @@ var (
 	KeyARN           = os.Getenv("KMS_KEY_ARN")
 	KMSAccountRegion = os.Getenv("KMS_ACCOUNT_REGION")
 
-	HttpAddress = os.Getenv("HTTP_ADDRESS")
+	HttpAddress     = os.Getenv("HTTP_ADDRESS")
+	MasterAccessKey = os.Getenv("MASTER_ACCESS_KEY")
+	MasterSecretKey = os.Getenv("MASTER_SECRET_KEY")
 )
 
 func Command() *cobra.Command {
@@ -67,6 +69,7 @@ func start(ctx context.Context) error {
 		KeyARN,
 		InventoryBaseURL,
 		DescribeBaseURL,
+		MasterAccessKey, MasterSecretKey,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
