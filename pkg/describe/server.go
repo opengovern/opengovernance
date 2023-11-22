@@ -459,7 +459,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		return err
 	}
 
-	if count == 0 {
+	if count == nil || *count == 0 {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
 	}
 
@@ -478,7 +478,11 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 	}
 	fmt.Println(count, sum, resourceCount)
 
-	if sum == resourceCount {
+	var sumValue int64
+	if sum != nil {
+		sumValue = *sum
+	}
+	if sumValue == resourceCount {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
 
@@ -489,7 +493,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 
 	if job != nil &&
 		job.UpdatedAt.Before(time.Now().Add(-1*time.Minute)) &&
-		resourceCount > int64(float64(sum)*0.9) {
+		resourceCount > int64(float64(sumValue)*0.9) {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
 
