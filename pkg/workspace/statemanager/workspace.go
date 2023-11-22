@@ -122,17 +122,17 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 
-		policies, err := iamClient.ListUserPolicies(context.Background(), &iam.ListUserPoliciesInput{
+		policies, err := iamClient.ListAttachedUserPolicies(context.Background(), &iam.ListAttachedUserPoliciesInput{
 			UserName: aws.String(userName),
 		})
 		if err != nil {
 			return err
 		}
 
-		for _, policy := range policies.PolicyNames {
+		for _, policy := range policies.AttachedPolicies {
 			_, err = iamClient.DetachUserPolicy(context.Background(), &iam.DetachUserPolicyInput{
 				UserName:  aws.String(userName),
-				PolicyArn: aws.String(policy),
+				PolicyArn: policy.PolicyArn,
 			})
 			if err != nil {
 				return err
