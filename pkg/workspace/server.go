@@ -76,7 +76,6 @@ type Server struct {
 	cache        *cache.Cache
 	StateManager *statemanager.Service
 	awsMasterCnf aws.Config
-	policyARN    string
 }
 
 func NewServer(cfg config.Config) (*Server, error) {
@@ -138,7 +137,6 @@ func NewServer(cfg config.Config) (*Server, error) {
 	}
 
 	s.awsMasterCnf = awsConfig
-	s.policyARN = cfg.AWSMasterPolicyARN
 	return s, nil
 }
 
