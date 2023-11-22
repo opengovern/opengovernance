@@ -289,7 +289,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 
 	err = s.db.CreateMasterCredential(&db2.MasterCredential{
-		WorkspaceID:   workspace.ID,
+		WorkspaceID:   *workspace.AWSUniqueId,
 		ConnectorType: source.CloudAWS,
 		Credential:    string(js),
 	})
@@ -574,7 +574,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		}
 
 		if awsConfig.AccessKey == "" {
-			masterCred, err := s.db.GetMasterCredentialByWorkspaceID(ws.ID)
+			masterCred, err := s.db.GetMasterCredentialByWorkspaceUID(*ws.AWSUniqueId)
 			if err != nil {
 				return err
 			}
