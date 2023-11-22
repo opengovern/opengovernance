@@ -24,4 +24,5 @@ type Config struct {
 	KMSAccountRegion           string
 	AWSMasterAccessKey         string `yaml:"aws_master_access_key"`
 	AWSMasterSecretKey         string `yaml:"aws_master_secret_key"`
+	AWSMasterPolicyARN         string `yaml:"aws_master_policy_arn"`
 }

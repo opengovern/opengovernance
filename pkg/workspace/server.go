@@ -76,6 +76,7 @@ type Server struct {
 	cache        *cache.Cache
 	StateManager *statemanager.Service
 	awsCnf       aws.Config
+	policyARN    string
 }
 
 func NewServer(cfg config.Config) (*Server, error) {
@@ -137,6 +138,7 @@ func NewServer(cfg config.Config) (*Server, error) {
 	}
 
 	s.awsCnf = awsConfig
+	s.policyARN = cfg.AWSMasterPolicyARN
 	return s, nil
 }
 
@@ -256,18 +258,24 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		ComplianceTriggered:      false,
 	}
 	userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
-	userARN, err := CreateOrGetUser(s.awsCnf, userName)
-	if err != nil {
-		return err
-	}
-	workspace.AWSUserARN = &userARN
-
-	err = AttachPolicy(s.awsCnf, userName)
-	if err != nil {
-		return err
-	}
 
 	iamClient := iam.NewFromConfig(s.awsCnf)
+	iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
+		UserName:            aws.String(userName),
+		Path:                nil,
+		PermissionsBoundary: nil,
+		Tags:                nil,
+	})
+	if err != nil {
+		return err
+	}
+	workspace.AWSUserARN = iamUser.User.Arn
+
+	_, err = iamClient.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
+		PolicyArn: aws.String(s.policyARN),
+		UserName:  aws.String(userName),
+	})
+
 	key, err := iamClient.CreateAccessKey(context.Background(), &iam.CreateAccessKeyInput{
 		UserName: aws.String(userName),
 	})
@@ -300,85 +308,6 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
 	})
-}
-
-func CreateOrGetUser(cfg aws.Config, userName string) (string, error) {
-	iamClient := iam.NewFromConfig(cfg)
-	user, err := iamClient.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
-	if err != nil {
-		if !strings.Contains(err.Error(), "cannot be found") {
-			return "", err
-		}
-	}
-
-	var userARN string
-	if user == nil || user.User == nil {
-		iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
-			UserName:            aws.String(userName),
-			Path:                nil,
-			PermissionsBoundary: nil,
-			Tags:                nil,
-		})
-		if err != nil {
-			return "", err
-		}
-		userARN = *iamUser.User.Arn
-	} else {
-		userARN = *user.User.Arn
-	}
-	return userARN, nil
-}
-
-func AttachPolicy(cfg aws.Config, userName string) error {
-	iamClient := iam.NewFromConfig(cfg)
-
-	kaytuAssumeRolePolicyName := "Kaytu-Allow-Assume-Role-All"
-	policies, err := iamClient.ListPolicies(context.Background(), &iam.ListPoliciesInput{
-		Scope: types2.PolicyScopeTypeLocal,
-	})
-	if err != nil {
-		return err
-	}
-
-	var kaytuPolicy types2.Policy
-	for _, policy := range policies.Policies {
-		if policy.PolicyName != nil && *policy.PolicyName == kaytuAssumeRolePolicyName {
-			kaytuPolicy = policy
-			break
-		}
-	}
-
-	if kaytuPolicy.PolicyName == nil {
-		createPolicy, err := iamClient.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
-			PolicyDocument: aws.String(`{
-    "Version": "2012-10-17",
-    "Statement": {
-        "Effect": "Allow",
-        "Action": "sts:AssumeRole",
-        "Resource": "*"
-    }
-}`),
-			PolicyName:  aws.String(kaytuAssumeRolePolicyName),
-			Description: nil,
-			Path:        nil,
-			Tags:        nil,
-		})
-		if err != nil {
-			return err
-		}
-		kaytuPolicy = *createPolicy.Policy
-	}
-
-	_, err = iamClient.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
-		PolicyArn: kaytuPolicy.Arn,
-		UserName:  aws.String(userName),
-	})
-	if err != nil {
-		if !strings.Contains(err.Error(), "cannot be found") {
-			return err
-		}
-	}
-	return nil
 }
 
 func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusResponse, error) {
