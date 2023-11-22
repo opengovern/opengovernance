@@ -14,6 +14,7 @@ import (
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
+	"runtime/debug"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
@@ -108,6 +109,7 @@ func New(cfg config.Config) (*Service, error) {
 func (s *Service) StartReconciler() {
 	defer func() {
 		if r := recover(); r != nil {
+			fmt.Printf("%s", string(debug.Stack()))
 			fmt.Printf("reconciler crashed: %v, restarting ...\n", r)
 			go s.StartReconciler()
 		}
