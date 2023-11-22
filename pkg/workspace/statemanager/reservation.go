@@ -1,10 +1,7 @@
 package statemanager
 
 import (
-	"context"
 	"fmt"
-	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
-	workspace2 "github.com/kaytu-io/kaytu-engine/pkg/workspace"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/sony/sonyflake"
@@ -37,17 +34,6 @@ func (s *Service) handleReservation() error {
 		Tier:           api.Tier_Teams,
 		OrganizationID: nil,
 	}
-
-	awsConfig, err := aws2.GetConfig(context.Background(), s.cfg.AWSMasterAccessKey, s.cfg.AWSMasterSecretKey, "", "", nil)
-	if err != nil {
-		return err
-	}
-
-	userARN, err := workspace2.CreateOrGetUser(awsConfig, fmt.Sprintf("kaytu-user-%s", workspace.ID))
-	if err != nil {
-		return err
-	}
-	workspace.AWSUserARN = &userARN
 
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		return err

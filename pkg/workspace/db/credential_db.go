@@ -1,6 +1,31 @@
 package db
 
-import "github.com/kaytu-io/kaytu-util/pkg/source"
+import (
+	"errors"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gorm.io/gorm"
+)
+
+func (s *Database) CreateMasterCredential(cred *MasterCredential) error {
+	err := s.Orm.Model(&MasterCredential{}).
+		Create(cred).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Database) GetMasterCredentialByWorkspaceID(workspaceID string) (*MasterCredential, error) {
+	var res MasterCredential
+	err := s.Orm.Model(&MasterCredential{}).Where("workspace_id = ?", workspaceID).Find(&res).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &res, nil
+}
 
 func (s *Database) ListCredentialsByWorkspaceID(id string) ([]Credential, error) {
 	var creds []Credential

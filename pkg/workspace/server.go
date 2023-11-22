@@ -228,6 +228,11 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return err
 	}
 
+	awsUID, err := sf.NextID()
+	if err != nil {
+		return err
+	}
+
 	var organizationID *int
 	if request.OrganizationID != -1 {
 		organizationID = &request.OrganizationID
@@ -236,6 +241,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	workspace := &db.Workspace{
 		ID:                       fmt.Sprintf("ws-%d", id),
 		Name:                     strings.ToLower(request.Name),
+		AWSUniqueId:              aws.String(fmt.Sprintf("aws-uid-%d", awsUID)),
 		OwnerId:                  &userID,
 		URI:                      uri,
 		Status:                   api.StatusBootstrapping,
@@ -249,13 +255,36 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		InsightJobsID:            "",
 		ComplianceTriggered:      false,
 	}
-	userARN, err := CreateOrGetUser(s.awsCnf, fmt.Sprintf("kaytu-user-%s", workspace.ID))
+	userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
+	userARN, err := CreateOrGetUser(s.awsCnf, userName)
 	if err != nil {
 		return err
 	}
 	workspace.AWSUserARN = &userARN
 
-	err = AttachPolicy(s.awsCnf, workspace.ID)
+	err = AttachPolicy(s.awsCnf, userName)
+	if err != nil {
+		return err
+	}
+
+	iamClient := iam.NewFromConfig(s.awsCnf)
+	key, err := iamClient.CreateAccessKey(context.Background(), &iam.CreateAccessKeyInput{
+		UserName: aws.String(userName),
+	})
+	if err != nil {
+		return err
+	}
+
+	js, err := json.Marshal(key.AccessKey)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.CreateMasterCredential(&db2.MasterCredential{
+		WorkspaceID:   workspace.ID,
+		ConnectorType: source.CloudAWS,
+		Credential:    string(js),
+	})
 	if err != nil {
 		return err
 	}
@@ -612,10 +641,29 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 
 		awsConfig, err := describe.AWSAccountConfigFromMap(cfg.AsMap())
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return err
 		}
+
+		if awsConfig.AccessKey == "" {
+			masterCred, err := s.db.GetMasterCredentialByWorkspaceID(ws.ID)
+			if err != nil {
+				return err
+			}
+
+			if masterCred != nil {
+				var accessKey types2.AccessKey
+				err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
+				if err != nil {
+					return err
+				}
+
+				awsConfig.AccessKey = *accessKey.AccessKeyId
+				awsConfig.SecretKey = *accessKey.SecretAccessKey
+			}
+		}
+
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", awsConfig.AssumeAdminRoleName, nil)
+		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", awsConfig.AssumeAdminRoleName, ws.AWSUniqueId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

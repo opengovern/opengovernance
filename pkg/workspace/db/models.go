@@ -10,6 +10,7 @@ type Workspace struct {
 
 	ID                       string              `json:"id"`
 	Name                     string              `gorm:"uniqueIndex" json:"name"`
+	AWSUniqueId              *string             `json:"aws_unique_id"`
 	AWSUserARN               *string             `json:"aws_user_arn"`
 	OwnerId                  *string             `json:"owner_id"`
 	URI                      string              `json:"uri"`
@@ -37,6 +38,7 @@ func (w *Workspace) ToAPI() api.Workspace {
 		ID:                       w.ID,
 		Name:                     w.Name,
 		AWSUserARN:               w.AWSUserARN,
+		AWSUniqueId:              w.AWSUniqueId,
 		OwnerId:                  w.OwnerId,
 		URI:                      w.URI,
 		Status:                   w.Status,
