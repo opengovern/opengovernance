@@ -2573,8 +2573,14 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			if localData.Count != nil {
 				result.TotalResourceCount += *localData.Count
 			}
+			if (localData.Count == nil || *localData.Count == 0) && len(resourceCollections) > 0 {
+				continue
+			}
 			result.Connections = append(result.Connections, apiConn)
 		} else {
+			if len(resourceCollections) > 0 {
+				continue
+			}
 			result.Connections = append(result.Connections, connection.toAPI())
 		}
 		switch connection.LifecycleState {
