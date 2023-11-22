@@ -271,8 +271,23 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 	workspace.AWSUserARN = iamUser.User.Arn
 
+	policy, err := iamClient.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
+		PolicyDocument: aws.String(`{
+	"Version": "2012-10-17",
+	"Statement": {
+		"Effect": "Allow",
+		"Action": "sts:AssumeRole",
+		"Resource": "*"
+	}
+}`),
+		PolicyName: aws.String(userName + "-assume-role"),
+	})
+	if err != nil {
+		return err
+	}
+
 	_, err = iamClient.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
-		PolicyArn: aws.String(s.policyARN),
+		PolicyArn: policy.Policy.Arn,
 		UserName:  aws.String(userName),
 	})
 
