@@ -618,6 +618,17 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 		return err
 	}
 
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource types metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMap := make(map[string]inventoryApi.ResourceType)
+	for _, rt := range resourceTypes.ResourceTypes {
+		resourceTypeMap[rt.ResourceType] = rt
+	}
+
 	for _, resourceType := range resp.Aggregations.Summaries.Buckets {
 		s := map[string]int{}
 		for _, severity := range resourceType.Severity.Buckets {
@@ -625,9 +636,21 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 		}
 
 		securityScore := float64(s[string(kaytuTypes.FindingSeverityPassed)]) / float64(resourceType.DocCount) * 100.0
+
+		resourceTypeMetadata := resourceTypeMap[resourceType.Key]
+		if resourceTypeMetadata.ResourceType == "" {
+			resourceTypeMetadata.ResourceType = resourceType.Key
+			if resourceTypeMetadata.ResourceType == "" {
+				resourceTypeMetadata.ResourceType = "Unknown"
+			}
+			resourceTypeMetadata.ResourceLabel = resourceType.Key
+			if resourceTypeMetadata.ResourceLabel == "" {
+				resourceTypeMetadata.ResourceLabel = "Unknown"
+			}
+		}
 		service := api.ServiceFindingsSummary{
-			ServiceName:   resourceType.Key,
-			ServiceLabel:  resourceType.Key,
+			ServiceName:   resourceTypeMetadata.ResourceType,
+			ServiceLabel:  resourceTypeMetadata.ResourceLabel,
 			SecurityScore: securityScore,
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
