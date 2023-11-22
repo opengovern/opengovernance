@@ -36,9 +36,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.22.5
-	github.com/kaytu-io/kaytu-azure-describer v0.17.5
-	github.com/kaytu-io/kaytu-util v0.0.0-20231122174941-f899617cb367
+	github.com/kaytu-io/kaytu-aws-describer v0.22.6
+	github.com/kaytu-io/kaytu-azure-describer v0.17.7
+	github.com/kaytu-io/kaytu-util v0.0.0-20231122185039-4dd1d4c3d42c
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -199,6 +199,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
+	github.com/aws/aws-lambda-go v1.41.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
