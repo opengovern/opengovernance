@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
@@ -60,47 +59,47 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
-	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
+	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
 	if err != nil {
 		return nil, err
 	}
 	if creds.Region == "" {
 		creds.Region = "us-east-1"
 	}
-	iamClient := iam.NewFromConfig(creds)
-	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
-	if err != nil {
-		logger.Warn("failed to get user", zap.Error(err))
-		return nil, err
-	}
-	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
-		UserName: user.User.UserName,
-	})
-
-	policyARNs := make([]string, 0)
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			logger.Warn("failed to get attached policies", zap.Error(err))
-			return nil, err
-		}
-		for _, policy := range page.AttachedPolicies {
-			policyARNs = append(policyARNs, *policy.PolicyArn)
-		}
-	}
-
-	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
-		UserName: user.User.UserName,
-	})
-	if err != nil {
-		logger.Warn("failed to get access keys", zap.Error(err))
-		return nil, err
-	}
-
-	creds, err = kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
-	if err != nil {
-		return nil, err
-	}
+	//iamClient := iam.NewFromConfig(creds)
+	//user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
+	//if err != nil {
+	//	logger.Warn("failed to get user", zap.Error(err))
+	//	return nil, err
+	//}
+	//paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
+	//	UserName: user.User.UserName,
+	//})
+	//
+	//policyARNs := make([]string, 0)
+	//for paginator.HasMorePages() {
+	//	page, err := paginator.NextPage(ctx)
+	//	if err != nil {
+	//		logger.Warn("failed to get attached policies", zap.Error(err))
+	//		return nil, err
+	//	}
+	//	for _, policy := range page.AttachedPolicies {
+	//		policyARNs = append(policyARNs, *policy.PolicyArn)
+	//	}
+	//}
+	//
+	//accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
+	//	UserName: user.User.UserName,
+	//})
+	//if err != nil {
+	//	logger.Warn("failed to get access keys", zap.Error(err))
+	//	return nil, err
+	//}
+	//
+	//creds, err = kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	accID, err := describer.STSAccount(ctx, creds)
 	if err != nil {
@@ -109,15 +108,15 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 	}
 
 	metadata := AWSCredentialMetadata{
-		AccountID:        accID,
-		IamUserName:      user.User.UserName,
-		AttachedPolicies: policyARNs,
+		AccountID: accID,
+		//IamUserName:      user.User.UserName,
+		//AttachedPolicies: policyARNs,
 	}
-	for _, key := range accessKeys.AccessKeyMetadata {
-		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
-			metadata.IamApiKeyCreationDate = *key.CreateDate
-		}
-	}
+	//for _, key := range accessKeys.AccessKeyMetadata {
+	//	if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
+	//		metadata.IamApiKeyCreationDate = *key.CreateDate
+	//	}
+	//}
 
 	organization, err := describer.OrganizationOrganization(ctx, creds)
 	if err != nil {
