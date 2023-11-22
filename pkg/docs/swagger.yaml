@@ -1265,6 +1265,10 @@ definitions:
             type: integer
           medium:
             type: integer
+          none:
+            type: integer
+          passed:
+            type: integer
         type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:

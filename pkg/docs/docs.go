@@ -8027,6 +8027,12 @@ const docTemplate = `{
                         },
                         "medium": {
                             "type": "integer"
+                        },
+                        "none": {
+                            "type": "integer"
+                        },
+                        "passed": {
+                            "type": "integer"
                         }
                     }
                 }

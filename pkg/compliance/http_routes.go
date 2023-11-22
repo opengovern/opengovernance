@@ -626,7 +626,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	}
 	resourceTypeMap := make(map[string]inventoryApi.ResourceType)
 	for _, rt := range resourceTypes.ResourceTypes {
-		resourceTypeMap[rt.ResourceType] = rt
+		resourceTypeMap[strings.ToLower(rt.ResourceType)] = rt
 	}
 
 	for _, resourceType := range resp.Aggregations.Summaries.Buckets {
@@ -637,7 +637,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 
 		securityScore := float64(s[string(kaytuTypes.FindingSeverityPassed)]) / float64(resourceType.DocCount) * 100.0
 
-		resourceTypeMetadata := resourceTypeMap[resourceType.Key]
+		resourceTypeMetadata := resourceTypeMap[strings.ToLower(resourceType.Key)]
 		if resourceTypeMetadata.ResourceType == "" {
 			resourceTypeMetadata.ResourceType = resourceType.Key
 			if resourceTypeMetadata.ResourceType == "" {
@@ -655,13 +655,17 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
-				Low      int `json:"low"`
 				Medium   int `json:"medium"`
+				Low      int `json:"low"`
+				Passed   int `json:"passed"`
+				None     int `json:"none"`
 			}{
 				Critical: s[string(kaytuTypes.FindingSeverityCritical)],
 				High:     s[string(kaytuTypes.FindingSeverityHigh)],
-				Low:      s[string(kaytuTypes.FindingSeverityLow)],
 				Medium:   s[string(kaytuTypes.FindingSeverityMedium)],
+				Low:      s[string(kaytuTypes.FindingSeverityLow)],
+				Passed:   s[string(kaytuTypes.FindingSeverityPassed)],
+				None:     s[string(kaytuTypes.FindingSeverityNone)],
 			},
 		}
 		response.Services = append(response.Services, service)

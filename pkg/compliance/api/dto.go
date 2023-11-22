@@ -108,8 +108,10 @@ type ServiceFindingsSummary struct {
 	SeveritiesCount struct {
 		Critical int `json:"critical"`
 		High     int `json:"high"`
-		Low      int `json:"low"`
 		Medium   int `json:"medium"`
+		Low      int `json:"low"`
+		Passed   int `json:"passed"`
+		None     int `json:"none"`
 	} `json:"severitiesCount"`
 }
 
