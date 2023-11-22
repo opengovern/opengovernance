@@ -9895,6 +9895,10 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace": {
             "type": "object",
             "properties": {
+                "aws_unique_id": {
+                    "type": "string",
+                    "example": "kaytu"
+                },
                 "aws_user_arn": {
                     "type": "string",
                     "example": "kaytu"
@@ -10012,6 +10016,10 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse": {
             "type": "object",
             "properties": {
+                "aws_unique_id": {
+                    "type": "string",
+                    "example": "kaytu"
+                },
                 "aws_user_arn": {
                     "type": "string",
                     "example": "kaytu"

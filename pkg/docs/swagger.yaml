@@ -2589,6 +2589,9 @@ definitions:
     - Tier_Enterprise
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace:
     properties:
+      aws_unique_id:
+        example: kaytu
+        type: string
       aws_user_arn:
         example: kaytu
         type: string
@@ -2667,6 +2670,9 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse:
     properties:
+      aws_unique_id:
+        example: kaytu
+        type: string
       aws_user_arn:
         example: kaytu
         type: string
