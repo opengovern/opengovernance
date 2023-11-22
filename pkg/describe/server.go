@@ -141,6 +141,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 			ConnectionProviderName: "",
 			Title:                  job.Title,
 			Status:                 status,
+			FailureReason:          job.FailureMessage,
 		})
 	}
 

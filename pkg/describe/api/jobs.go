@@ -82,4 +82,5 @@ type Job struct {
 	ConnectionProviderName string    `json:"connectionProviderName"`
 	Title                  string    `json:"title"`
 	Status                 JobStatus `json:"status"`
+	FailureReason          string    `json:"failureReason"`
 }

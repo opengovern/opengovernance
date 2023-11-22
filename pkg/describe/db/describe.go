@@ -145,13 +145,13 @@ func (db Database) ListAllJobs(limit int) ([]model.Job, error) {
 	tx := db.ORM.Raw(`
 SELECT * FROM (
 (
-(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status FROM describe_connection_jobs)
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'insight' AS job_type, source_id::text AS connection_id, insight_id::text AS title, status FROM insight_jobs)
+(SELECT id, created_at, updated_at, 'insight' AS job_type, source_id::text AS connection_id, insight_id::text AS title, status, failure_message FROM insight_jobs)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status FROM compliance_jobs)
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, '' AS title, status FROM analytics_jobs)
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, '' AS title, status, failure_message FROM analytics_jobs)
 )
 ) AS t ORDER BY updated_at DESC LIMIT ?;
 `, limit).Find(&job)

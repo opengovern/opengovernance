@@ -8089,6 +8089,9 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string"
                 },
+                "failureReason": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
