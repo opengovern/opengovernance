@@ -445,7 +445,12 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 		if len(ws.InsightJobsID) > 0 {
 			resp.InsightsStatus.Done = 1
 			inProgress := false
-			for _, insJobID := range ws.InsightJobsID {
+			for _, insJobIDStr := range strings.Split(ws.InsightJobsID, ",") {
+				insJobID, err := strconv.ParseUint(insJobIDStr, 10, 64)
+				if err != nil {
+					return resp, err
+				}
+
 				job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
 				if err != nil {
 					return resp, err

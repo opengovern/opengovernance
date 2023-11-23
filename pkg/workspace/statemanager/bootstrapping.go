@@ -14,6 +14,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
+	"strconv"
 	"strings"
 )
 
@@ -240,7 +241,12 @@ func (s *Service) ensureJobsAreFinished(workspace *db.Workspace) (bool, error) {
 
 	s.logger.Info("checking insight job", zap.String("workspaceID", workspace.ID))
 	isInProgress := false
-	for _, insJobID := range workspace.InsightJobsID {
+	for _, insJobIDStr := range strings.Split(workspace.InsightJobsID, ",") {
+		insJobID, err := strconv.ParseUint(insJobIDStr, 10, 64)
+		if err != nil {
+			return false, err
+		}
+
 		job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
 		if err != nil {
 			return false, err
@@ -261,7 +267,7 @@ func (s *Service) ensureJobsAreFinished(workspace *db.Workspace) (bool, error) {
 	}
 
 	if isInProgress {
-		s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID), zap.Uint("jobID", job.ID))
+		s.logger.Info("insight job is running", zap.String("workspaceID", workspace.ID))
 		return false, nil
 	}
 
