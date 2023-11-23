@@ -2490,7 +2490,7 @@ definitions:
       name:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request:
     properties:
       config: {}
       connector:
@@ -2498,7 +2498,7 @@ definitions:
         - $ref: '#/definitions/source.Type'
         example: Azure
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Response:
     properties:
       id:
         type: string
@@ -6135,14 +6135,14 @@ paths:
         name: config
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Response'
       security:
       - BearerToken: []
       summary: Create connection credentials

@@ -38,7 +38,7 @@ type OnboardServiceClient interface {
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 	GetConnectionGroup(ctx *httpclient.Context, connectionGroupName string) (*api.ConnectionGroup, error)
 	ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error)
-	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialRequest) (*apiv2.CreateCredentialResponse, error)
+	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error)
 }
 
 type onboardClient struct {
@@ -238,9 +238,9 @@ func (s *onboardClient) PostCredentials(ctx *httpclient.Context, req api.CreateC
 	return response, nil
 }
 
-func (s *onboardClient) CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialRequest) (*apiv2.CreateCredentialResponse, error) {
+func (s *onboardClient) CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
 	url := fmt.Sprintf("%s/api/v2/credential", s.baseURL)
-	var response *apiv2.CreateCredentialResponse
+	var response *apiv2.CreateCredentialV2Response
 
 	payload, err := json.Marshal(req)
 	if err != nil {

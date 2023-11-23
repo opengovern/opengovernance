@@ -626,11 +626,11 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200		{object}	apiv2.CreateCredentialResponse
-//	@Param			config	body		apiv2.CreateCredentialRequest	true	"config"
+//	@Success		200		{object}	apiv2.CreateCredentialV2Response
+//	@Param			config	body		apiv2.CreateCredentialV2Request	true	"config"
 //	@Router			/onboard/api/v2/credential [post]
 func (h HttpHandler) CreateCredential(ctx echo.Context) error {
-	var req apiv2.CreateCredentialRequest
+	var req apiv2.CreateCredentialV2Request
 
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")

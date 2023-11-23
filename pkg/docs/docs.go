@@ -4951,7 +4951,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request"
                         }
                     }
                 ],
@@ -4959,7 +4959,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Response"
                         }
                     }
                 }
@@ -9785,7 +9785,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request": {
             "type": "object",
             "properties": {
                 "config": {},
@@ -9799,7 +9799,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Response": {
             "type": "object",
             "properties": {
                 "id": {

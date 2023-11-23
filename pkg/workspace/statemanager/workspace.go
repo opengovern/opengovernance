@@ -399,7 +399,7 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 
 	if cred.ConnectorType == source.CloudAWS {
-		credential, err := onboardClient.CreateCredentialV2(&httpclient.Context{UserRole: authapi.InternalRole}, apiv2.CreateCredentialRequest{
+		credential, err := onboardClient.CreateCredentialV2(&httpclient.Context{UserRole: authapi.InternalRole}, apiv2.CreateCredentialV2Request{
 			Connector: cred.ConnectorType,
 			Config:    cred.Metadata,
 		})

@@ -26,7 +26,7 @@ func generateRoleARN(accountID, roleName string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
 }
 
-func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialRequest) (*apiv2.CreateCredentialResponse, error) {
+func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
 	reqAWSCnf, err := req.GetAWSConfig()
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialRequest) (*ap
 		return nil, err
 	}
 
-	return &apiv2.CreateCredentialResponse{ID: cred.ID.String()}, nil
+	return &apiv2.CreateCredentialV2Response{ID: cred.ID.String()}, nil
 }
 
 func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential Credential, maxConnections int64) ([]api.Connection, error) {

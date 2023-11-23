@@ -13,9 +13,9 @@ func TestName(t *testing.T) {
 		masterAccessKey: "AKIAXMSWAQYFWO7WVLCK",
 		masterSecretKey: "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",
 	}
-	resp, err := h.createAWSCredential(apiv2.CreateCredentialRequest{
+	resp, err := h.createAWSCredential(apiv2.CreateCredentialV2Request{
 		Connector: source.CloudAWS,
-		Config: apiv2.AWSCredentialConfig{
+		Config: apiv2.AWSCredentialV2Config{
 			AssumeRoleName:      "KaytuOrganizationCrossAccountRole",
 			AccountID:           "517592840862",
 			HealthCheckPolicies: nil,
