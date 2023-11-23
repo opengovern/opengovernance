@@ -12,9 +12,11 @@ import (
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -396,21 +398,37 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 
-	credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
-		SourceType: cred.ConnectorType,
-		Config:     cred.Metadata,
-	})
-	if err != nil {
-		return err
+	if cred.ConnectorType == source.CloudAWS {
+		credential, err := onboardClient.CreateCredentialV2(&httpclient.Context{UserRole: authapi.InternalRole}, apiv2.CreateCredentialRequest{
+			Connector: cred.ConnectorType,
+			Config:    cred.Metadata,
+		})
+		if err != nil {
+			return err
+		}
+
+		limits := api.GetLimitsByTier(workspace.Tier)
+		_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
+		if err != nil {
+			return err
+		}
+	} else {
+		credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
+			SourceType: cred.ConnectorType,
+			Config:     cred.Metadata,
+		})
+		if err != nil {
+			return err
+		}
+
+		limits := api.GetLimitsByTier(workspace.Tier)
+		_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
+		if err != nil {
+			return err
+		}
 	}
 
-	limits := api.GetLimitsByTier(workspace.Tier)
-	_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
-	if err != nil {
-		return err
-	}
-
-	err = s.db.SetIsCreated(cred.ID)
+	err := s.db.SetIsCreated(cred.ID)
 	if err != nil {
 		return err
 	}

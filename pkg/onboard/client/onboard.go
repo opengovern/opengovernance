@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"io"
@@ -37,6 +38,7 @@ type OnboardServiceClient interface {
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 	GetConnectionGroup(ctx *httpclient.Context, connectionGroupName string) (*api.ConnectionGroup, error)
 	ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error)
+	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialRequest) (*apiv2.CreateCredentialResponse, error)
 }
 
 type onboardClient struct {
@@ -221,6 +223,24 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 func (s *onboardClient) PostCredentials(ctx *httpclient.Context, req api.CreateCredentialRequest) (*api.CreateCredentialResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/credential", s.baseURL)
 	var response *api.CreateCredentialResponse
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *onboardClient) CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialRequest) (*apiv2.CreateCredentialResponse, error) {
+	url := fmt.Sprintf("%s/api/v2/credential", s.baseURL)
+	var response *apiv2.CreateCredentialResponse
 
 	payload, err := json.Marshal(req)
 	if err != nil {
