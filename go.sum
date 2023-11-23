@@ -971,8 +971,6 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
-github.com/aws/aws-lambda-go v1.41.0 h1:l/5fyVb6Ud9uYd411xdHZzSf2n86TakxzpvIoz7l+3Y=
-github.com/aws/aws-lambda-go v1.41.0/go.mod h1:jwFe2KmMsHmffA1X2R09hH6lFzJQxzI8qK17ewzbQMM=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -2317,16 +2315,10 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.22.5 h1:+J6xC5g26RcY2TsP3/5j3UirN+ZHjbaUuakRt9nYGxo=
-github.com/kaytu-io/kaytu-aws-describer v0.22.5/go.mod h1:1fQcRInC2EoRAgY/U01C0KQ8qZsdis9R5QjaiH3tAOA=
 github.com/kaytu-io/kaytu-aws-describer v0.22.6 h1:Yox1JZFPzicxQtn1q9bNbFEAPlHIg1xBnphLdwOu49s=
 github.com/kaytu-io/kaytu-aws-describer v0.22.6/go.mod h1:ArC5i7W+0d03Lkx8DdduHW+KbWM8fmjuSt5iQG75R70=
-github.com/kaytu-io/kaytu-azure-describer v0.17.5 h1:iXsjiFwwduXQYyGj/qsdw443iGV4ZZk1AfrnGEkWBdU=
-github.com/kaytu-io/kaytu-azure-describer v0.17.5/go.mod h1:qKVny1j5OLLYS3CmXPsn70SvfwDsdi/IBNs/swwSAEQ=
 github.com/kaytu-io/kaytu-azure-describer v0.17.7 h1:Ss3WRoPxet1v3yl1LPyeo3pqvOUYGiR74WWdy7scpbQ=
 github.com/kaytu-io/kaytu-azure-describer v0.17.7/go.mod h1:Fv0tO8l/sZ/r4tguOmKI8S77OviXik0B9PxvUuOtBt8=
-github.com/kaytu-io/kaytu-util v0.0.0-20231122174941-f899617cb367 h1:Us7wMg1AUQ9UP746V8+XNWaEJctnzx9HgTdifZgwwtg=
-github.com/kaytu-io/kaytu-util v0.0.0-20231122174941-f899617cb367/go.mod h1:DASdPC1NLGUE82wMYrzn2XPTebHy58R1hmwd1fWR+lE=
 github.com/kaytu-io/kaytu-util v0.0.0-20231122185039-4dd1d4c3d42c h1:Z6MKpLFdl37qvypBrn9sOVQVZf/wtMwqMdWs1GEiplA=
 github.com/kaytu-io/kaytu-util v0.0.0-20231122185039-4dd1d4c3d42c/go.mod h1:DASdPC1NLGUE82wMYrzn2XPTebHy58R1hmwd1fWR+lE=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
