@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,7 +18,7 @@ func TestName(t *testing.T) {
 		masterAccessKey: "AKIAXMSWAQYFWO7WVLCK",
 		masterSecretKey: "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",
 	}
-	cred := Credential{
+	cred := model.Credential{
 		ID:                  uuid.UUID{},
 		Name:                aws.String("o-y3x84b8zm6"),
 		ConnectorType:       source.CloudAWS,

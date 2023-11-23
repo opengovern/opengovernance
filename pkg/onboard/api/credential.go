@@ -44,7 +44,8 @@ type Credential struct {
 	AutoOnboardEnabled bool           `json:"autoOnboardEnabled" example:"false"`
 	OnboardDate        time.Time      `json:"onboardDate" format:"date-time" example:"2023-06-03T12:21:33.406928Z"`
 
-	Config any `json:"config"`
+	Config  any `json:"config"`
+	Version int `json:"version"`
 
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" format:"date-time" example:"2023-06-03T12:21:33.406928Z"`
 	HealthStatus        source.HealthStatus `json:"healthStatus" example:"healthy"`

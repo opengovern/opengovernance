@@ -757,17 +757,31 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		apiCredential.Config = api.AWSCredentialConfig{
-			AccountId:            awsCnf.AccountID,
-			Regions:              awsCnf.Regions,
-			AccessKey:            awsCnf.AccessKey,
-			AssumeRoleName:       awsCnf.AssumeRoleName,
-			AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
-			ExternalId:           awsCnf.ExternalID,
+		if credential.Version == 2 {
+			awsCnf, err := apiv2.AWSCredentialV2ConfigFromMap(cnf)
+			if err != nil {
+				return err
+			}
+			apiCredential.Config = api.AWSCredentialConfig{
+				AccountId:            awsCnf.AccountID,
+				AccessKey:            h.masterAccessKey,
+				AssumeRoleName:       awsCnf.AssumeRoleName,
+				AssumeRolePolicyName: awsCnf.AssumeRoleName,
+				ExternalId:           awsCnf.ExternalId,
+			}
+		} else {
+			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+			if err != nil {
+				return err
+			}
+			apiCredential.Config = api.AWSCredentialConfig{
+				AccountId:            awsCnf.AccountID,
+				Regions:              awsCnf.Regions,
+				AccessKey:            awsCnf.AccessKey,
+				AssumeRoleName:       awsCnf.AssumeRoleName,
+				AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
+				ExternalId:           awsCnf.ExternalID,
+			}
 		}
 	}
 
@@ -1817,6 +1831,12 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	if httpserver.GetUserRole(ctx) == api3.InternalRole {
 		apiRes.Credential = src.Credential.ToAPI()
 		apiRes.Credential.Config = src.Credential.Secret
+		if apiRes.Credential.Version == 2 {
+			apiRes.Credential.Config, err = h.CredentialV2ToV1(src.Credential.Secret)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, apiRes)
@@ -2025,6 +2045,12 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = s.Credential.ToAPI()
 			apiRes.Credential.Config = s.Credential.Secret
+			if apiRes.Credential.Version == 2 {
+				apiRes.Credential.Config, err = h.CredentialV2ToV1(s.Credential.Secret)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		resp = append(resp, apiRes)
 	}
@@ -2058,6 +2084,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = src.Credential.ToAPI()
 			apiRes.Credential.Config = src.Credential.Secret
+			if apiRes.Credential.Version == 2 {
+				apiRes.Credential.Config, err = h.CredentialV2ToV1(src.Credential.Secret)
+				if err != nil {
+					return err
+				}
+			}
+
 		}
 
 		res = append(res, apiRes)

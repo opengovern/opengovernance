@@ -50,6 +50,7 @@ func (credential *Credential) ToAPI() api.Credential {
 		HealthStatus:        credential.HealthStatus,
 		HealthReason:        credential.HealthReason,
 		Metadata:            metadata,
+		Version:             credential.Version,
 
 		Config: "",
 
