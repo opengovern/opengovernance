@@ -361,6 +361,26 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	}
 
 	discoveryType := model.DiscoveryType_Full
+	if connection.Connector == source.CloudAWS {
+		rt, _ := aws.GetResourceType(resourceType)
+		if rt != nil {
+			if rt.FastDiscovery {
+				discoveryType = model.DiscoveryType_Fast
+			} else if rt.CostDiscovery {
+				discoveryType = model.DiscoveryType_Cost
+			}
+		}
+	} else if connection.Connector == source.CloudAzure {
+		rt, _ := azure.GetResourceType(resourceType)
+		if rt != nil {
+			if rt.FastDiscovery {
+				discoveryType = model.DiscoveryType_Fast
+			} else if rt.CostDiscovery {
+				discoveryType = model.DiscoveryType_Cost
+			}
+		}
+	}
+
 	if job != nil {
 		if scheduled {
 			interval := s.fullDiscoveryIntervalHours
