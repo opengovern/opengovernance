@@ -23,9 +23,11 @@ type ResourceCollection struct {
 	Status      ResourceCollectionStatus         `json:"status"`
 	Filters     []kaytu.ResourceCollectionFilter `json:"filters"`
 
-	Connectors      []source.Type `json:"connectors"`
-	LastEvaluatedAt *time.Time    `json:"last_evaluated_at"`
-	ResourceCount   *int          `json:"resource_count"`
+	Connectors      []source.Type `json:"connectors,omitempty"`
+	LastEvaluatedAt *time.Time    `json:"last_evaluated_at,omitempty"`
+	ResourceCount   *int          `json:"resource_count,omitempty"`
+	ConnectionCount *int          `json:"connection_count,omitempty"`
+	MetricCount     *int          `json:"metric_count,omitempty"`
 }
 
 type ResourceCollectionLandscapeItem struct {
