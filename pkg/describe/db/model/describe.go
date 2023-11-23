@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+type DiscoveryType string
+
+const (
+	DiscoveryType_Fast DiscoveryType = "FAST"
+	DiscoveryType_Full DiscoveryType = "FULL"
+	DiscoveryType_Cost DiscoveryType = "COST"
+)
+
 type DescribeConnectionJob struct {
 	ID             uint `gorm:"primarykey"`
 	CreatedAt      time.Time
@@ -21,7 +29,8 @@ type DescribeConnectionJob struct {
 	AccountID    string
 	TriggerType  enums.DescribeTriggerType
 
-	ResourceType           string                        `gorm:"index:idx_resource_type_status;index"`
+	ResourceType           string `gorm:"index:idx_resource_type_status;index"`
+	DiscoveryType          DiscoveryType
 	Status                 api.DescribeResourceJobStatus `gorm:"index:idx_resource_type_status;index"`
 	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING

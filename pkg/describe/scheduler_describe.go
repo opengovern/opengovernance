@@ -360,6 +360,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return nil, err
 	}
 
+	discoveryType := model.DiscoveryType_Full
 	if job != nil {
 		if scheduled {
 			interval := s.fullDiscoveryIntervalHours
@@ -367,8 +368,10 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 				rt, _ := aws.GetResourceType(resourceType)
 				if rt != nil {
 					if rt.FastDiscovery {
+						discoveryType = model.DiscoveryType_Fast
 						interval = s.describeIntervalHours
 					} else if rt.CostDiscovery {
+						discoveryType = model.DiscoveryType_Cost
 						interval = 24
 					}
 				}
@@ -376,8 +379,10 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 				rt, _ := azure.GetResourceType(resourceType)
 				if rt != nil {
 					if rt.FastDiscovery {
+						discoveryType = model.DiscoveryType_Fast
 						interval = s.describeIntervalHours
 					} else if rt.CostDiscovery {
+						discoveryType = model.DiscoveryType_Cost
 						interval = 24
 					}
 				}
@@ -432,7 +437,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		triggerType = enums.DescribeTriggerTypeCostFullDiscovery
 	}
 	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("connectionID", connection.ID.String()), zap.String("resourceType", resourceType))
-	daj := newDescribeConnectionJob(connection, resourceType, triggerType)
+	daj := newDescribeConnectionJob(connection, resourceType, triggerType, discoveryType)
 	err = s.db.CreateDescribeConnectionJob(&daj)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -452,14 +457,15 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	return &daj, nil
 }
 
-func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType) model.DescribeConnectionJob {
+func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType, discoveryType model.DiscoveryType) model.DescribeConnectionJob {
 	return model.DescribeConnectionJob{
-		ConnectionID: a.ID.String(),
-		Connector:    a.Connector,
-		AccountID:    a.ConnectionID,
-		TriggerType:  triggerType,
-		ResourceType: resourceType,
-		Status:       apiDescribe.DescribeResourceJobCreated,
+		ConnectionID:  a.ID.String(),
+		Connector:     a.Connector,
+		AccountID:     a.ConnectionID,
+		TriggerType:   triggerType,
+		ResourceType:  resourceType,
+		Status:        apiDescribe.DescribeResourceJobCreated,
+		DiscoveryType: discoveryType,
 	}
 }
 
