@@ -207,7 +207,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	// tracer :
 	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
-	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes, false)
+	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 
 	if err != nil {
 		span.RecordError(err)
@@ -541,7 +541,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
 				key: {tagValue},
-			}, metricType, nil, connectorTypes, false)
+			}, metricType, nil, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 			if err != nil {
 				span3.RecordError(err)
 				span3.SetStatus(codes.Error, err.Error())
@@ -638,7 +638,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes, false)
+	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -789,7 +789,8 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes, false)
+	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType,
+		nil, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -904,7 +905,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListMetrics")
 
-	metrics, err := aDB.ListMetrics(false)
+	metrics, err := aDB.ListMetrics([]analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -979,7 +980,8 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
+		nil, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		return err
 	}
@@ -1057,7 +1059,8 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIDs")
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
+		metricIds, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		return err
 	}
@@ -1263,7 +1266,8 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes, false)
+	metrics, err := aDB.ListFilteredMetrics(nil, metricType,
+		nil, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1378,7 +1382,8 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil, false)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
+		nil, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1498,7 +1503,8 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
+		metricIds, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		return err
 	}
@@ -1586,7 +1592,8 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
-	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil, false)
+	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
+		metricIds, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		return err
 	}
@@ -1634,7 +1641,8 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 		span.SetName("new_ListFilteredMetrics")
 
-		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil, false)
+		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
+			metricIds, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -1864,7 +1872,8 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	fmt.Println("ListConnectionsData part1 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
-		metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, connectors, false)
+		metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
+			nil, connectors, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 		if err != nil {
 			return err
 		}
@@ -2400,7 +2409,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
-		nil, nil, false)
+		nil, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		return err
 	}
@@ -2548,7 +2557,8 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	filteredMetrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	filteredMetrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
+		nil, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		h.logger.Error("failed to list filtered metrics", zap.Error(err))
 		return err
@@ -2628,7 +2638,8 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	filteredMetrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	filteredMetrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
+		nil, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
 		h.logger.Error("failed to list filtered metrics", zap.Error(err))
 		return err

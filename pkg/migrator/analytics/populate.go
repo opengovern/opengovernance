@@ -87,11 +87,6 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		return err
 	}
 
-	if metric.Visible == nil {
-		v := true
-		metric.Visible = &v
-	}
-
 	var connectors []string
 	for _, c := range metric.Connectors {
 		connectors = append(connectors, c.String())
@@ -149,14 +144,14 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		Query:       metric.Query,
 		Tables:      metric.Tables,
 		FinderQuery: metric.FinderQuery,
-		Visible:     *metric.Visible,
+		Status:      analyticsDB.AnalyticMetricStatus(metric.Status),
 		Tags:        tags,
 	}
 
 	err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "id"}}, // key column
 		DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query",
-			"tables", "finder_query", "type", "visible"}), // column needed to be updated
+			"tables", "finder_query", "type", "status"}), // column needed to be updated
 	}).Create(dbMetric).Error
 
 	if err != nil {

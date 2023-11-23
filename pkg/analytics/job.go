@@ -97,7 +97,7 @@ func (j *Job) Do(
 
 func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, kfkProducer *confluent_kafka.Producer, kfkTopic string, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger) error {
 	startTime := time.Now()
-	metrics, err := dbc.ListMetrics(true)
+	metrics, err := dbc.ListMetrics([]db.AnalyticMetricStatus{db.AnalyticMetricStatusActive, db.AnalyticMetricStatusInvisible})
 	if err != nil {
 		return err
 	}
