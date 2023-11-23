@@ -9,16 +9,6 @@ import (
 	"time"
 )
 
-func (db Database) ListPendingInsightJobs() ([]model.InsightJob, error) {
-	var jobs []model.InsightJob
-	tx := db.ORM.Where("status = ?", insightapi.InsightJobInProgress).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
 func (db Database) CleanupInsightJobsOlderThan(t time.Time) error {
 	tx := db.ORM.Where("created_at < ?", t).Unscoped().Delete(&model.InsightJob{})
 	if tx.Error != nil {
@@ -134,6 +124,20 @@ func (db Database) GetInsightJobById(jobId uint) (*model.InsightJob, error) {
 	return &job, nil
 }
 
+func (db Database) GetInsightJobByInsightId(insightID uint) ([]model.InsightJob, error) {
+	var jobs []model.InsightJob
+	tx := db.ORM.Model(&model.InsightJob{}).
+		Where("insight_id = ?", insightID).
+		Find(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 // UpdateInsightJobsTimedOut updates the status of InsightJobs
 // that have timed out while in the status of 'IN_PROGRESS' for longer
 // than 4 hours.
@@ -141,6 +145,15 @@ func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours int64) error {
 	tx := db.ORM.
 		Model(&model.InsightJob{}).
 		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", insightIntervalHours*2)).
+		Where("status IN ?", []string{string(insightapi.InsightJobCreated)}).
+		Updates(model.InsightJob{Status: insightapi.InsightJobFailed, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.ORM.
+		Model(&model.InsightJob{}).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '30 MINUTES'")).
 		Where("status IN ?", []string{string(insightapi.InsightJobInProgress)}).
 		Updates(model.InsightJob{Status: insightapi.InsightJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {

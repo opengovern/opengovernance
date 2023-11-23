@@ -459,7 +459,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 					inProgress = false
 					break
 				}
-				if job.Status == api4.InsightJobInProgress {
+				if job.Status == api4.InsightJobCreated || job.Status == api4.InsightJobInProgress {
 					inProgress = true
 				}
 			}

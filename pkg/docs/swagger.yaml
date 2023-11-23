@@ -2386,6 +2386,8 @@ definitions:
         maximum: 100
         minimum: 0
         type: integer
+      version:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType:
     enum:

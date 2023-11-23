@@ -153,11 +153,25 @@ func (s *Service) ensureJobsAreRunning(workspace *db.Workspace) (bool, error) {
 
 		var allJobIDs []uint
 		for _, insight := range ins {
-			jobIDs, err := schedulerClient.TriggerInsightJob(hctx, insight.ID)
+			insightJobs, err := schedulerClient.GetJobsByInsightID(hctx, insight.ID)
 			if err != nil {
 				return false, err
 			}
-			allJobIDs = append(allJobIDs, jobIDs...)
+
+			hasCreated := false
+			for _, job := range insightJobs {
+				if job.Status == api3.InsightJobCreated {
+					hasCreated = true
+				}
+			}
+
+			if !hasCreated {
+				jobIDs, err := schedulerClient.TriggerInsightJob(hctx, insight.ID)
+				if err != nil {
+					return false, err
+				}
+				allJobIDs = append(allJobIDs, jobIDs...)
+			}
 		}
 
 		err = s.db.SetWorkspaceInsightsJobIDs(workspace.ID, allJobIDs)
@@ -239,7 +253,7 @@ func (s *Service) ensureJobsAreFinished(workspace *db.Workspace) (bool, error) {
 			break
 		}
 
-		if job.Status == api3.InsightJobInProgress {
+		if job.Status == api3.InsightJobCreated || job.Status == api3.InsightJobInProgress {
 			isInProgress = true
 		}
 	}

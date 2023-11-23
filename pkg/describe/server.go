@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -64,7 +65,9 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
+	v1.PUT("/insight/in_progress/:job_id", httpserver.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
 	v1.GET("/insight/job/:job_id", httpserver.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
+	v1.GET("/insight/:insight_id/jobs", httpserver.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
 	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
@@ -325,6 +328,20 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, jobIDs)
 }
 
+func (h HttpServer) InsightJobInProgress(ctx echo.Context) error {
+	jobID, err := strconv.ParseUint(ctx.Param("job_id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight_id")
+	}
+
+	err = h.Scheduler.db.UpdateInsightJob(uint(jobID), api2.InsightJobInProgress, "")
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
 // TriggerConnectionsComplianceJob godoc
 //
 //	@Summary		Triggers compliance job
@@ -405,6 +422,21 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, job)
+}
+
+func (h HttpServer) GetJobsByInsightID(ctx echo.Context) error {
+	insightIDstr := ctx.Param("insight_id")
+	insightID, err := strconv.ParseInt(insightIDstr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	jobs, err := h.Scheduler.db.GetInsightJobByInsightId(uint(insightID))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, jobs)
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {

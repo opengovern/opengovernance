@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strconv"
@@ -72,6 +73,7 @@ type JobResult struct {
 
 func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres,
 	onboardClient client.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient,
+	schedulerClient client2.SchedulerServiceClient,
 	producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket,
 	currentWorkspaceID string,
 	topic string, logger *zap.Logger) (r JobResult) {
@@ -91,6 +93,10 @@ func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres
 		}
 	}()
 
+	ierr := schedulerClient.InsightJobInProgress(&httpclient.Context{UserRole: authApi.InternalRole}, j.JobID)
+	if ierr != nil {
+		logger.Error("failed to update job status", zap.Error(ierr))
+	}
 	// Assume it succeeded unless it fails somewhere
 	var (
 		status         = api.InsightJobSucceeded

@@ -3,6 +3,7 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strings"
@@ -32,6 +33,7 @@ type Worker struct {
 	kfkProducer     *confluent_kafka.Producer
 	onboardClient   client.OnboardServiceClient
 	inventoryClient inventoryClient.InventoryServiceClient
+	schedulerClient client2.SchedulerServiceClient
 	pusher          *push.Pusher
 
 	s3Bucket string
@@ -44,6 +46,7 @@ type WorkerConfig struct {
 	Kafka                 config.Kafka
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
+	Scheduler             config.KaytuService
 	SteampipePg           config.Postgres
 	PrometheusPushAddress string
 }
@@ -113,6 +116,7 @@ func InitializeWorker(
 
 	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL, nil)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(workerConfig.Inventory.BaseURL)
+	w.schedulerClient = client2.NewSchedulerServiceClient(workerConfig.Scheduler.BaseURL)
 
 	if s3Region == "" {
 		s3Region = "us-west-2"
@@ -159,6 +163,7 @@ func (w *Worker) Run() error {
 		w.config.SteampipePg,
 		w.onboardClient,
 		w.inventoryClient,
+		w.schedulerClient,
 		w.kfkProducer,
 		w.uploader, w.s3Bucket, CurrentWorkspaceID,
 		w.config.Kafka.Topic, w.logger)

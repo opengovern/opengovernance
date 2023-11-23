@@ -9636,6 +9636,9 @@
                     "maximum": 100,
                     "minimum": 0,
                     "example": 50
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
