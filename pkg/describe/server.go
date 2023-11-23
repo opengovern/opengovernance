@@ -525,9 +525,15 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 			if resourceCount > 0 {
 				publishedJobs++
 			}
+		} else {
+			publishedJobs++
 		}
 	}
 
+	h.Scheduler.logger.Info("job count",
+		zap.Int("publishedJobs", publishedJobs),
+		zap.Int("totalJobs", totalJobs),
+	)
 	if publishedJobs == totalJobs {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
