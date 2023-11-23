@@ -162,6 +162,8 @@ func (s *Service) ensureJobsAreRunning(workspace *db.Workspace) (bool, error) {
 			for _, job := range insightJobs {
 				if job.Status == api3.InsightJobCreated {
 					hasCreated = true
+					allJobIDs = append(allJobIDs, job.ID)
+					break
 				}
 			}
 
