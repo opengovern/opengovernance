@@ -4,17 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsOrgTypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 func generateRoleARN(accountID, roleName string) string {
@@ -252,4 +259,142 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential Cr
 	}
 
 	return onboardedSources, nil
+}
+
+func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred Credential) (bool, error) {
+	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	switch cred.ConnectorType {
+	case source.CloudAWS:
+		if cred.Version == 2 {
+			awsConfig, err := apiv2.AWSCredentialV2ConfigFromMap(config)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			sdkCnf, err := kaytuAws.GetConfig(
+				context.Background(),
+				h.masterAccessKey,
+				h.masterSecretKey,
+				"",
+				generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName),
+				awsConfig.ExternalId,
+			)
+			if err != nil {
+				return false, err
+			}
+			if sdkCnf.Region == "" {
+				sdkCnf.Region = "us-east-1"
+			}
+
+			//err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
+			//if err == nil {
+			//	metadata := AWSCredentialMetadata{
+			//		AccountID: *caller.Account,
+			//	}
+			//	if org != nil {
+			//		metadata.OrganizationID = org.Id
+			//		metadata.OrganizationMasterAccountEmail = org.MasterAccountEmail
+			//		metadata.OrganizationMasterAccountId = org.MasterAccountId
+			//		metadata.OrganizationDiscoveredAccountCount = utils.GetPointer(len(accounts))
+			//	}
+			//
+			//	name := metadata.AccountID
+			//	if metadata.OrganizationID != nil {
+			//		name = *metadata.OrganizationID
+			//	}
+			//	metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
+			//	if err != nil {
+			//		return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			//	}
+			//	jsonMetadata, err := json.Marshal(metadata)
+			//	if err != nil {
+			//		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			//	}
+			//	cred.Metadata = jsonMetadata
+			//}
+		} else {
+			var awsConfig describe.AWSAccountConfig
+			awsConfig, err = describe.AWSAccountConfigFromMap(config)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			var sdkCnf aws.Config
+			sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
+			if err == nil {
+				metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
+				if err != nil {
+					return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				}
+				jsonMetadata, err := json.Marshal(metadata)
+				if err != nil {
+					return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				cred.Metadata = jsonMetadata
+			}
+		}
+	case source.CloudAzure:
+		var azureConfig describe.AzureSubscriptionConfig
+		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		err = kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
+			TenantID:            azureConfig.TenantID,
+			ObjectID:            azureConfig.ObjectID,
+			SecretID:            azureConfig.SecretID,
+			ClientID:            azureConfig.ClientID,
+			ClientSecret:        azureConfig.ClientSecret,
+			CertificatePath:     azureConfig.CertificatePath,
+			CertificatePassword: azureConfig.CertificatePass,
+			Username:            azureConfig.Username,
+			Password:            azureConfig.Password,
+		})
+		if err == nil {
+			metadata, err := getAzureCredentialsMetadata(context.Background(), azureConfig)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			jsonMetadata, err := json.Marshal(metadata)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			cred.Metadata = jsonMetadata
+		}
+	}
+
+	if err != nil {
+		errStr := err.Error()
+		cred.HealthReason = &errStr
+		cred.HealthStatus = source.HealthStatusUnhealthy
+	} else {
+		cred.HealthStatus = source.HealthStatusHealthy
+		cred.HealthReason = utils.GetPointer("")
+	}
+	cred.LastHealthCheckTime = time.Now()
+	// tracer :
+	_, span := tracer.Start(ctx, "new_UpdateCredential", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_UpdateCredential")
+
+	_, dbErr := h.db.UpdateCredential(&cred)
+	if dbErr != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return false, echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name ", *cred.Name),
+	))
+	span.End()
+
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
+	}
+
+	return true, nil
 }
