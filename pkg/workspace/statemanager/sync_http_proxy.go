@@ -19,7 +19,8 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 	var httpIncludes []contourv1.Include
 	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
-		if w.Status != api.StatusProvisioned && w.Status != api.StatusBootstrapping {
+		if !(w.Status == api.StatusProvisioned ||
+			(w.Status == api.StatusBootstrapping && w.IsCreated)) {
 			continue
 		}
 		httpIncludes = append(httpIncludes, contourv1.Include{
