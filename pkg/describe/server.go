@@ -517,7 +517,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		totalJobs++
 
 		if job.DescribedResourceCount > 0 {
-			resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es, job.ResourceType)
+			resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es, strings.ToLower(job.ResourceType))
 			if err != nil {
 				return err
 			}
