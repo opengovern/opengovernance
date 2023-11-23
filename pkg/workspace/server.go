@@ -543,6 +543,10 @@ func ignoreAwsOrgError(err error) bool {
 			ae.ErrorCode() == (&types.AccessDeniedException{}).ErrorCode())
 }
 
+func generateRoleARN(accountID, roleName string) string {
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
+}
+
 // AddCredential godoc
 //
 //	@Summary	Add credential for workspace to be onboarded
@@ -569,31 +573,26 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 	count := 0
 	switch request.ConnectorType {
 	case source.CloudAWS:
-		awsConfig, err := describe.AWSAccountConfigFromMap(request.AWSConfig.AsMap())
+		masterCred, err := s.db.GetMasterCredentialByWorkspaceUID(*ws.AWSUniqueId)
 		if err != nil {
 			return err
 		}
 
-		if awsConfig.AccessKey == "" {
-			masterCred, err := s.db.GetMasterCredentialByWorkspaceUID(*ws.AWSUniqueId)
+		var accessKey, secretKey string
+		if masterCred != nil {
+			var acc types2.AccessKey
+			err = json.Unmarshal([]byte(masterCred.Credential), &acc)
 			if err != nil {
 				return err
 			}
 
-			if masterCred != nil {
-				var accessKey types2.AccessKey
-				err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
-				if err != nil {
-					return err
-				}
-
-				awsConfig.AccessKey = *accessKey.AccessKeyId
-				awsConfig.SecretKey = *accessKey.SecretAccessKey
-			}
+			accessKey = *acc.AccessKeyId
+			secretKey = *acc.SecretAccessKey
 		}
+		roleARN := generateRoleARN(request.AWSConfig.AccountID, request.AWSConfig.AssumeRoleName)
 
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", awsConfig.AssumeAdminRoleName, ws.AWSUniqueId)
+		sdkCnf, err = kaytuAws.GetConfig(context.Background(), accessKey, secretKey, "", roleARN, ws.AWSUniqueId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
