@@ -544,12 +544,6 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 	}
 
 	if job != nil &&
-		job.UpdatedAt.Before(time.Now().Add(-1*time.Minute)) &&
-		publishedJobs > int(float64(totalJobs)*0.9) {
-		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
-	}
-
-	if job != nil &&
 		job.UpdatedAt.Before(time.Now().Add(-5*time.Minute)) {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
