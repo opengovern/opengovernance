@@ -2490,9 +2490,23 @@ definitions:
       name:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config:
+    properties:
+      accountID:
+        type: string
+      assumeRoleName:
+        type: string
+      externalId:
+        type: string
+      healthCheckPolicies:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request:
     properties:
-      config: {}
+      awsConfig:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config'
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
@@ -2505,7 +2519,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest:
     properties:
-      config: {}
+      awsConfig:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config'
+      azureConfig:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig'
       connectorType:
         $ref: '#/definitions/source.Type'
     type: object

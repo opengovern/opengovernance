@@ -398,10 +398,16 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 
+	var request api.AddCredentialRequest
+	err := json.Unmarshal(cred.Metadata, &request)
+	if err != nil {
+		return err
+	}
+
 	if cred.ConnectorType == source.CloudAWS {
 		credential, err := onboardClient.CreateCredentialV2(&httpclient.Context{UserRole: authapi.InternalRole}, apiv2.CreateCredentialV2Request{
 			Connector: cred.ConnectorType,
-			Config:    cred.Metadata,
+			AWSConfig: request.AWSConfig,
 		})
 		if err != nil {
 			return err
@@ -415,7 +421,7 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 	} else {
 		credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
 			SourceType: cred.ConnectorType,
-			Config:     cred.Metadata,
+			Config:     request.AzureConfig,
 		})
 		if err != nil {
 			return err
@@ -428,7 +434,7 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 		}
 	}
 
-	err := s.db.SetIsCreated(cred.ID)
+	err = s.db.SetIsCreated(cred.ID)
 	if err != nil {
 		return err
 	}

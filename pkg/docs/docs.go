@@ -9785,10 +9785,32 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "assumeRoleName": {
+                    "type": "string"
+                },
+                "externalId": {
+                    "type": "string"
+                },
+                "healthCheckPolicies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request": {
             "type": "object",
             "properties": {
-                "config": {},
+                "awsConfig": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config"
+                },
                 "connector": {
                     "allOf": [
                         {
@@ -9810,7 +9832,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest": {
             "type": "object",
             "properties": {
-                "config": {},
+                "awsConfig": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config"
+                },
+                "azureConfig": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig"
+                },
                 "connectorType": {
                     "$ref": "#/definitions/source.Type"
                 }

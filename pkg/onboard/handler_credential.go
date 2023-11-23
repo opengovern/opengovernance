@@ -27,18 +27,13 @@ func generateRoleARN(accountID, roleName string) string {
 }
 
 func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
-	reqAWSCnf, err := req.GetAWSConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	awsConfig, err := kaytuAws.GetConfig(
 		context.Background(),
 		h.masterAccessKey,
 		h.masterSecretKey,
 		"",
-		generateRoleARN(reqAWSCnf.AccountID, reqAWSCnf.AssumeRoleName),
-		reqAWSCnf.ExternalId,
+		generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName),
+		req.AWSConfig.ExternalId,
 	)
 	if err != nil {
 		return nil, err
@@ -101,7 +96,7 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*
 	}
 	cred.HealthStatus = source.HealthStatusHealthy
 
-	secretBytes, err := h.kms.Encrypt(reqAWSCnf.AsMap(), h.keyARN)
+	secretBytes, err := h.kms.Encrypt(req.AWSConfig.AsMap(), h.keyARN)
 	if err != nil {
 		return nil, err
 	}

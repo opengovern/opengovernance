@@ -20,7 +20,6 @@ import (
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	api4 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -567,21 +566,10 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
-	configStr, err := json.Marshal(request.Config)
-	if err != nil {
-		return err
-	}
-
 	count := 0
 	switch request.ConnectorType {
 	case source.CloudAWS:
-		cfg := api2.AWSCredentialConfig{}
-		err = json.Unmarshal(configStr, &cfg)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
-		}
-
-		awsConfig, err := describe.AWSAccountConfigFromMap(cfg.AsMap())
+		awsConfig, err := describe.AWSAccountConfigFromMap(request.AWSConfig.AsMap())
 		if err != nil {
 			return err
 		}
@@ -631,14 +619,8 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			count++
 		}
 	case source.CloudAzure:
-		cfg := api2.AzureCredentialConfig{}
-		err = json.Unmarshal(configStr, &cfg)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
-		}
-
 		var azureConfig describe.AzureSubscriptionConfig
-		azureConfig, err = describe.AzureSubscriptionConfigFromMap(cfg.AsMap())
+		azureConfig, err = describe.AzureSubscriptionConfigFromMap(request.AzureConfig.AsMap())
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -685,6 +667,11 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 				count++
 			}
 		}
+	}
+
+	configStr, err := json.Marshal(request)
+	if err != nil {
+		return err
 	}
 
 	cred := db2.Credential{

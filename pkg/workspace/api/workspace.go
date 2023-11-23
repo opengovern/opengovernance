@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"time"
 )
@@ -17,8 +19,9 @@ type CreateWorkspaceResponse struct {
 }
 
 type AddCredentialRequest struct {
-	Config        any         `json:"config"`
-	ConnectorType source.Type `json:"connectorType"`
+	AWSConfig     *apiv2.AWSCredentialV2Config `json:"awsConfig"`
+	AzureConfig   *api.AzureCredentialConfig   `json:"azureConfig"`
+	ConnectorType source.Type                  `json:"connectorType"`
 }
 
 type BootstrapStatus string

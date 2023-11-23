@@ -6,8 +6,8 @@ import (
 )
 
 type CreateCredentialV2Request struct {
-	Connector source.Type `json:"connector" example:"Azure"`
-	Config    any         `json:"config"`
+	Connector source.Type            `json:"connector" example:"Azure"`
+	AWSConfig *AWSCredentialV2Config `json:"awsConfig"`
 }
 
 type CreateCredentialV2Response struct {
@@ -15,7 +15,7 @@ type CreateCredentialV2Response struct {
 }
 
 func (req CreateCredentialV2Request) GetAWSConfig() (*AWSCredentialV2Config, error) {
-	configStr, err := json.Marshal(req.Config)
+	configStr, err := json.Marshal(req.AWSConfig)
 	if err != nil {
 		return nil, err
 	}
