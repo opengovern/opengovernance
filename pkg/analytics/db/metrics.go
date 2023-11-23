@@ -19,6 +19,14 @@ type MetricTag struct {
 	ID string `gorm:"primaryKey; type:citext"`
 }
 
+type AnalyticMetricStatus string
+
+const (
+	AnalyticMetricStatusActive    AnalyticMetricStatus = "active"
+	AnalyticMetricStatusInvisible AnalyticMetricStatus = "invisible"
+	AnalyticMetricStatusInactive  AnalyticMetricStatus = "inactive"
+)
+
 type AnalyticMetric struct {
 	ID          string         `gorm:"primaryKey"`
 	Connectors  pq.StringArray `gorm:"type:text[]"`
@@ -28,6 +36,7 @@ type AnalyticMetric struct {
 	Tables      pq.StringArray `gorm:"type:text[]"`
 	FinderQuery string
 	Visible     bool
+	Status      AnalyticMetricStatus
 	Tags        []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap     map[string][]string `gorm:"-:all"`
 }
@@ -44,11 +53,11 @@ func (m *AnalyticMetric) GetTagsMap() map[string][]string {
 	return m.tagsMap
 }
 
-func (db Database) ListMetrics(includeInvisible bool) ([]AnalyticMetric, error) {
+func (db Database) ListMetrics(statuses []AnalyticMetricStatus) ([]AnalyticMetric, error) {
 	var s []AnalyticMetric
 	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
-	if !includeInvisible {
-		tx = tx.Where("analytic_metrics.visible = true")
+	if len(statuses) > 0 {
+		tx = tx.Where("analytic_metrics.status IN ?", statuses)
 	}
 	tx = tx.Find(&s)
 
@@ -81,7 +90,8 @@ func (db Database) GetMetric(metricType MetricType, table string) (*AnalyticMetr
 	return s, nil
 }
 
-func (db Database) ListFilteredMetrics(tags map[string][]string, metricType MetricType, metricIDs []string, connectorTypes []source.Type, includeInvisible bool) ([]AnalyticMetric, error) {
+func (db Database) ListFilteredMetrics(tags map[string][]string, metricType MetricType,
+	metricIDs []string, connectorTypes []source.Type, statuses []AnalyticMetricStatus) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
 	if len(tags) != 0 {
@@ -99,8 +109,8 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 			query = query.Where("? = ANY (analytic_metrics.connectors)", ct)
 		}
 	}
-	if !includeInvisible {
-		query = query.Where("analytic_metrics.visible = true")
+	if len(statuses) > 0 {
+		query = query.Where("analytic_metrics.status IN ?", statuses)
 	}
 	if len(metricIDs) != 0 {
 		query = query.Where("analytic_metrics.id IN ?", metricIDs)

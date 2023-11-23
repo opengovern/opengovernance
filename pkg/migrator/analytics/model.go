@@ -9,7 +9,7 @@ type Metric struct {
 	Tables      []string            `json:"tables"`
 	FinderQuery string              `json:"finderQuery"`
 	Tags        map[string][]string `json:"tags"`
-	Visible     *bool               `json:"visible"`
+	Status      string              `json:"status"`
 }
 
 type SmartQuery struct {
