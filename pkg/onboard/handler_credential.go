@@ -3,10 +3,10 @@ package onboard
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsOrgTypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -28,63 +28,72 @@ func generateRoleARN(accountID, roleName string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
 }
 
-func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
+func (h HttpHandler) GetAWSSDKConfig(roleARN string, externalID *string) (aws.Config, error) {
 	awsConfig, err := kaytuAws.GetConfig(
 		context.Background(),
 		h.masterAccessKey,
 		h.masterSecretKey,
 		"",
-		generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName),
-		req.AWSConfig.ExternalId,
+		roleARN,
+		externalID,
 	)
 	if err != nil {
-		return nil, err
+		return aws.Config{}, err
 	}
 	if awsConfig.Region == "" {
 		awsConfig.Region = "us-east-1"
 	}
+	return awsConfig, nil
+}
 
-	org, err := describer.OrganizationOrganization(context.Background(), awsConfig)
+func (h HttpHandler) GetOrgAccounts(sdkConfig aws.Config) (*awsOrgTypes.Organization, []awsOrgTypes.Account, error) {
+	org, err := describer.OrganizationOrganization(context.Background(), sdkConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	accounts, err := describer.OrganizationAccounts(context.Background(), awsConfig)
+	accounts, err := describer.OrganizationAccounts(context.Background(), sdkConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	awsAccounts := make([]awsAccount, 0)
-	for _, account := range accounts {
-		if account.Id == nil {
-			continue
-		}
-		localAccount := account
-		awsAccounts = append(awsAccounts, awsAccount{
-			AccountID:    *localAccount.Id,
-			AccountName:  localAccount.Name,
-			Organization: org,
-			Account:      &localAccount,
-		})
-	}
-
-	stsClient := sts.NewFromConfig(awsConfig)
-	caller, err := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, err
-	}
+	return org, accounts, nil
+}
+func (h HttpHandler) ExtractCredentialMetadata(accountID string, org *awsOrgTypes.Organization, childAccounts []awsOrgTypes.Account) (*AWSCredentialMetadata, error) {
 	metadata := AWSCredentialMetadata{
-		AccountID: *caller.Account,
+		AccountID:             accountID,
+		IamUserName:           nil,
+		IamApiKeyCreationDate: time.Time{},
+		AttachedPolicies:      nil,
 	}
+
 	if org != nil {
 		metadata.OrganizationID = org.Id
 		metadata.OrganizationMasterAccountEmail = org.MasterAccountEmail
 		metadata.OrganizationMasterAccountId = org.MasterAccountId
-		metadata.OrganizationDiscoveredAccountCount = utils.GetPointer(len(accounts))
+		metadata.OrganizationDiscoveredAccountCount = utils.GetPointer(len(childAccounts))
+	}
+	return &metadata, nil
+}
+
+func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
+	awsConfig, err := h.GetAWSSDKConfig(generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
+	if err != nil {
+		return nil, err
+	}
+
+	org, accounts, err := h.GetOrgAccounts(awsConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := h.ExtractCredentialMetadata(req.AWSConfig.AccountID, org, accounts)
+	if err != nil {
+		return nil, err
 	}
 
 	name := metadata.AccountID
@@ -92,7 +101,7 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*
 		name = *metadata.OrganizationID
 	}
 
-	cred, err := NewAWSCredential(name, &metadata, CredentialTypeManualAwsOrganization, 2)
+	cred, err := NewAWSCredential(name, metadata, CredentialTypeManualAwsOrganization, 2)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +112,11 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*
 		return nil, err
 	}
 	cred.Secret = string(secretBytes)
-
 	if err := h.db.CreateCredential(cred); err != nil {
+		return nil, err
+	}
+	_, err = h.checkCredentialHealth(context.Background(), *cred)
+	if err != nil {
 		return nil, err
 	}
 
@@ -261,82 +273,95 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential Cr
 	return onboardedSources, nil
 }
 
+func (h HttpHandler) checkCredentialHealthV2(cred Credential) (healthy bool, err error) {
+	defer func() {
+		if err != nil {
+			h.logger.Error("credential is not healthy", zap.Error(err))
+		}
+		if !healthy || err != nil {
+			errStr := err.Error()
+			cred.HealthReason = &errStr
+			cred.HealthStatus = source.HealthStatusUnhealthy
+			err = echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
+		} else {
+			cred.HealthStatus = source.HealthStatusHealthy
+			cred.HealthReason = utils.GetPointer("")
+		}
+		cred.LastHealthCheckTime = time.Now()
+		_, dbErr := h.db.UpdateCredential(&cred)
+		if dbErr != nil {
+			err = dbErr
+		}
+	}()
+
+	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return false, err
+	}
+
+	switch cred.ConnectorType {
+	case source.CloudAWS:
+		awsConfig, err := apiv2.AWSCredentialV2ConfigFromMap(config)
+		if err != nil {
+			return false, err
+		}
+		sdkCnf, err := h.GetAWSSDKConfig(generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName), awsConfig.ExternalId)
+		if err != nil {
+			return false, err
+		}
+
+		org, accounts, err := h.GetOrgAccounts(sdkCnf)
+		if err != nil {
+			return false, err
+		}
+
+		metadata, err := h.ExtractCredentialMetadata(awsConfig.AccountID, org, accounts)
+		if err != nil {
+			return false, err
+		}
+		jsonMetadata, err := json.Marshal(metadata)
+		if err != nil {
+			return false, err
+		}
+		cred.Metadata = jsonMetadata
+	default:
+		return false, errors.New("not implemented")
+	}
+	return true, nil
+}
+
 func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred Credential) (bool, error) {
+	if cred.Version == 2 {
+		return h.checkCredentialHealthV2(cred)
+	}
+
 	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	switch cred.ConnectorType {
 	case source.CloudAWS:
-		if cred.Version == 2 {
-			awsConfig, err := apiv2.AWSCredentialV2ConfigFromMap(config)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			sdkCnf, err := kaytuAws.GetConfig(
-				context.Background(),
-				h.masterAccessKey,
-				h.masterSecretKey,
-				"",
-				generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName),
-				awsConfig.ExternalId,
-			)
-			if err != nil {
-				return false, err
-			}
-			if sdkCnf.Region == "" {
-				sdkCnf.Region = "us-east-1"
-			}
-
-			//err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
-			//if err == nil {
-			//	metadata := AWSCredentialMetadata{
-			//		AccountID: *caller.Account,
-			//	}
-			//	if org != nil {
-			//		metadata.OrganizationID = org.Id
-			//		metadata.OrganizationMasterAccountEmail = org.MasterAccountEmail
-			//		metadata.OrganizationMasterAccountId = org.MasterAccountId
-			//		metadata.OrganizationDiscoveredAccountCount = utils.GetPointer(len(accounts))
-			//	}
-			//
-			//	name := metadata.AccountID
-			//	if metadata.OrganizationID != nil {
-			//		name = *metadata.OrganizationID
-			//	}
-			//	metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
-			//	if err != nil {
-			//		return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			//	}
-			//	jsonMetadata, err := json.Marshal(metadata)
-			//	if err != nil {
-			//		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			//	}
-			//	cred.Metadata = jsonMetadata
-			//}
-		} else {
-			var awsConfig describe.AWSAccountConfig
-			awsConfig, err = describe.AWSAccountConfigFromMap(config)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			var sdkCnf aws.Config
-			sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		var awsConfig describe.AWSAccountConfig
+		awsConfig, err = describe.AWSAccountConfigFromMap(config)
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		var sdkCnf aws.Config
+		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
+		if err == nil {
+			metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
-			if err == nil {
-				metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
-				if err != nil {
-					return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
-				}
-				jsonMetadata, err := json.Marshal(metadata)
-				if err != nil {
-					return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
-				cred.Metadata = jsonMetadata
+			jsonMetadata, err := json.Marshal(metadata)
+			if err != nil {
+				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
+			cred.Metadata = jsonMetadata
 		}
 	case source.CloudAzure:
 		var azureConfig describe.AzureSubscriptionConfig
