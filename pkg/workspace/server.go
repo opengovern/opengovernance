@@ -322,7 +322,14 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	})
 }
 
-func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusResponse, error) {
+func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int64) (api.BootstrapStatusResponse, error) {
+	complianceTotal := 0
+	if azureCount > 0 {
+		complianceTotal += 4
+	}
+	if awsCount > 0 {
+		complianceTotal += 4
+	}
 	resp := api.BootstrapStatusResponse{
 		MinRequiredConnections: 3,
 		WorkspaceCreationStatus: api.BootstrapProgress{
@@ -335,7 +342,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusRespo
 			Total: 4,
 		},
 		ComplianceStatus: api.BootstrapProgress{
-			Total: 8,
+			Total: int64(complianceTotal),
 		},
 		InsightsStatus: api.BootstrapProgress{
 			Total: 2,
@@ -394,39 +401,43 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace) (api.BootstrapStatusRespo
 		}
 
 		if ws.ComplianceTriggered {
-			awsComplianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
-			if err != nil {
-				return resp, err
-			}
+			if awsCount > 0 {
+				awsComplianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "aws_cis_v200")
+				if err != nil {
+					return resp, err
+				}
 
-			if awsComplianceJob != nil {
-				switch awsComplianceJob.Status {
-				case api3.ComplianceJobCreated:
-					resp.ComplianceStatus.Done += 1
-				case api3.ComplianceJobRunnersInProgress:
-					resp.ComplianceStatus.Done += 2
-				case api3.ComplianceJobSummarizerInProgress:
-					resp.ComplianceStatus.Done += 3
-				case api3.ComplianceJobSucceeded, api3.ComplianceJobFailed:
-					resp.ComplianceStatus.Done += 4
+				if awsComplianceJob != nil {
+					switch awsComplianceJob.Status {
+					case api3.ComplianceJobCreated:
+						resp.ComplianceStatus.Done += 1
+					case api3.ComplianceJobRunnersInProgress:
+						resp.ComplianceStatus.Done += 2
+					case api3.ComplianceJobSummarizerInProgress:
+						resp.ComplianceStatus.Done += 3
+					case api3.ComplianceJobSucceeded, api3.ComplianceJobFailed:
+						resp.ComplianceStatus.Done += 4
+					}
 				}
 			}
 
-			azureComplianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
-			if err != nil {
-				return resp, err
-			}
+			if azureCount > 0 {
+				azureComplianceJob, err := schedulerClient.GetLatestComplianceJobForBenchmark(hctx, "azure_cis_v200")
+				if err != nil {
+					return resp, err
+				}
 
-			if azureComplianceJob != nil {
-				switch azureComplianceJob.Status {
-				case api3.ComplianceJobCreated:
-					resp.ComplianceStatus.Done += 1
-				case api3.ComplianceJobRunnersInProgress:
-					resp.ComplianceStatus.Done += 2
-				case api3.ComplianceJobSummarizerInProgress:
-					resp.ComplianceStatus.Done += 3
-				case api3.ComplianceJobSucceeded, api3.ComplianceJobFailed:
-					resp.ComplianceStatus.Done += 4
+				if azureComplianceJob != nil {
+					switch azureComplianceJob.Status {
+					case api3.ComplianceJobCreated:
+						resp.ComplianceStatus.Done += 1
+					case api3.ComplianceJobRunnersInProgress:
+						resp.ComplianceStatus.Done += 2
+					case api3.ComplianceJobSummarizerInProgress:
+						resp.ComplianceStatus.Done += 3
+					case api3.ComplianceJobSucceeded, api3.ComplianceJobFailed:
+						resp.ComplianceStatus.Done += 4
+					}
 				}
 			}
 		}
@@ -484,11 +495,6 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.New("workspace not found"))
 	}
 
-	resp, err := s.getBootstrapStatus(ws)
-	if err != nil {
-		return err
-	}
-
 	currentConnectionCount := map[source.Type]int64{}
 	awsCount, err := s.db.CountConnectionsByConnector(ws.ID, source.CloudAWS)
 	if err != nil {
@@ -501,6 +507,11 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return err
 	}
 	currentConnectionCount[source.CloudAzure] = azureCount
+
+	resp, err := s.getBootstrapStatus(ws, azureCount, awsCount)
+	if err != nil {
+		return err
+	}
 
 	limits := api.GetLimitsByTier(ws.Tier)
 
