@@ -260,7 +260,7 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 		} else if user.GlobalAccess != nil {
 			rb.RoleName = *user.GlobalAccess
 		} else {
-			return rb, limits, errors.New("access denied")
+			return rb, limits, fmt.Errorf("access denied: %s", limits.ID)
 		}
 	}
 
