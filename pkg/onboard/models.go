@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"strings"
 	"time"
 
@@ -340,6 +341,81 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 	s.Metadata = jsonMetadata
 
 	return s
+}
+
+func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds Credential, awsConfig aws.Config) (*Source, error) {
+	id := uuid.New()
+
+	name := *account.Id
+	if account.Name != nil {
+		name = *account.Name
+	}
+
+	lifecycleState := ConnectionLifecycleStateDiscovered
+	if creds.AutoOnboardEnabled {
+		lifecycleState = ConnectionLifecycleStateOnboard
+	}
+
+	if account.Status != types.AccountStatusActive {
+		lifecycleState = ConnectionLifecycleStateArchived
+	}
+
+	s := Source{
+		ID:                   id,
+		SourceId:             *account.Id,
+		Name:                 name,
+		Description:          description,
+		Type:                 source.CloudAWS,
+		CredentialID:         creds.ID,
+		Credential:           creds,
+		LifecycleState:       lifecycleState,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		LastHealthCheckTime:  time.Now(),
+		CreationMethod:       creationMethod,
+	}
+	metadata := AWSConnectionMetadata{
+		AccountID:           *account.Id,
+		AccountName:         name,
+		Organization:        nil,
+		OrganizationAccount: &account,
+		OrganizationTags:    nil,
+	}
+	if creds.CredentialType == CredentialTypeAutoAws {
+		metadata.AccountType = AWSAccountTypeStandalone
+	} else {
+		metadata.AccountType = AWSAccountTypeOrganizationMember
+	}
+
+	metadata.Organization = org
+	if org != nil {
+		if org.MasterAccountId != nil &&
+			*metadata.Organization.MasterAccountId == *account.Id {
+			metadata.AccountType = AWSAccountTypeOrganizationManager
+		}
+
+		organizationClient := organizations.NewFromConfig(awsConfig)
+		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+			ResourceId: &metadata.AccountID,
+		})
+		if err != nil {
+			logger.Error("failed to get organization tags", zap.Error(err), zap.String("account_id", metadata.AccountID))
+			return nil, err
+		}
+		metadata.OrganizationTags = make(map[string]string)
+		for _, tag := range tags.Tags {
+			if tag.Key == nil || tag.Value == nil {
+				continue
+			}
+			metadata.OrganizationTags[*tag.Key] = *tag.Value
+		}
+	}
+
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, err
+	}
+	s.Metadata = jsonMetadata
+	return &s, nil
 }
 
 func (s Source) ToSourceResponse() *api.CreateSourceResponse {

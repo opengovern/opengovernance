@@ -1313,20 +1313,39 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			}
 		}
 	case source.CloudAWS:
-		onboardedSources, err = h.autoOnboardAWSAccounts(ctx.Request().Context(), *credential, maxConns)
-		if err != nil {
-			return err
-		}
-
-		for _, onboardedSrc := range onboardedSources {
-			src, err := h.db.GetSource(onboardedSrc.ID)
+		if credential.Version == 2 {
+			onboardedSources, err = h.autoOnboardAWSAccountsV2(ctx.Request().Context(), *credential, maxConns)
 			if err != nil {
 				return err
 			}
 
-			_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
+			for _, onboardedSrc := range onboardedSources {
+				src, err := h.db.GetSource(onboardedSrc.ID)
+				if err != nil {
+					return err
+				}
+
+				_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			onboardedSources, err = h.autoOnboardAWSAccounts(ctx.Request().Context(), *credential, maxConns)
 			if err != nil {
 				return err
+			}
+
+			for _, onboardedSrc := range onboardedSources {
+				src, err := h.db.GetSource(onboardedSrc.ID)
+				if err != nil {
+					return err
+				}
+
+				_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	default:
