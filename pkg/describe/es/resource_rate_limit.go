@@ -1,13 +1,13 @@
 package es
 
 var ResourceRateLimit = map[string]int{
-	"Microsoft.Management/groups":                 3,
+	"Microsoft.Management/groups":                 5,
 	"Microsoft.CostManagement/CostByResourceType": 3,
-	"Microsoft.Storage/tables":                    3,
-	"AWS::Organizations::Account":                 3,
-	"AWS::Shield::ProtectionGroup":                3,
-	"AWS::IAM::Policy":                            3,
-	"AWS::IAM::Role":                              3,
-	"AWS::SES::ConfigurationSet":                  3,
-	"AWS::IAM::CredentialReport":                  3,
+	"Microsoft.Storage/tables":                    5,
+	"AWS::Organizations::Account":                 5,
+	"AWS::Shield::ProtectionGroup":                5,
+	"AWS::IAM::Policy":                            5,
+	"AWS::IAM::Role":                              5,
+	"AWS::SES::ConfigurationSet":                  5,
+	"AWS::IAM::CredentialReport":                  5,
 }
