@@ -13,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
@@ -101,7 +102,7 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*
 		name = *metadata.OrganizationID
 	}
 
-	cred, err := NewAWSCredential(name, metadata, CredentialTypeManualAwsOrganization, 2)
+	cred, err := NewAWSCredential(name, metadata, model.CredentialTypeManualAwsOrganization, 2)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +124,7 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*
 	return &apiv2.CreateCredentialV2Response{ID: cred.ID.String()}, nil
 }
 
-func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential Credential, maxConnections int64) ([]api.Connection, error) {
+func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
 	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
 	if err != nil {
@@ -198,11 +199,11 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential Cr
 						localConn.Name = name
 					}
 					if account.Status != awsOrgTypes.AccountStatusActive {
-						localConn.LifecycleState = ConnectionLifecycleStateArchived
-					} else if localConn.LifecycleState == ConnectionLifecycleStateArchived {
-						localConn.LifecycleState = ConnectionLifecycleStateDiscovered
+						localConn.LifecycleState = model.ConnectionLifecycleStateArchived
+					} else if localConn.LifecycleState == model.ConnectionLifecycleStateArchived {
+						localConn.LifecycleState = model.ConnectionLifecycleStateDiscovered
 						if credential.AutoOnboardEnabled {
-							localConn.LifecycleState = ConnectionLifecycleStateOnboard
+							localConn.LifecycleState = model.ConnectionLifecycleStateOnboard
 						}
 					}
 					if conn.Name != name || account.Status != awsOrgTypes.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
@@ -273,7 +274,7 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential Cr
 	return onboardedSources, nil
 }
 
-func (h HttpHandler) checkCredentialHealthV2(cred Credential) (healthy bool, err error) {
+func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy bool, err error) {
 	defer func() {
 		if err != nil {
 			h.logger.Error("credential is not healthy", zap.Error(err))
@@ -330,7 +331,7 @@ func (h HttpHandler) checkCredentialHealthV2(cred Credential) (healthy bool, err
 	return true, nil
 }
 
-func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred Credential) (bool, error) {
+func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Credential) (bool, error) {
 	if cred.Version == 2 {
 		return h.checkCredentialHealthV2(cred)
 	}

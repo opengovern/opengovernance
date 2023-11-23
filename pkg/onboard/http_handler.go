@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db"
 
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
@@ -17,7 +18,7 @@ import (
 )
 
 type HttpHandler struct {
-	db                               Database
+	db                               db.Database
 	steampipeConn                    *steampipe.Database
 	sourceEventsQueue                queue.Interface
 	kms                              *vault.KMSVaultSourceConfig
@@ -92,8 +93,8 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 
-	db := Database{orm: orm}
-	err = db.Initialize()
+	onboardDB := db.NewDatabase(orm)
+	err = onboardDB.Initialize()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func InitializeHttpHandler(
 	return &HttpHandler{
 		logger:                logger,
 		kms:                   kms,
-		db:                    db,
+		db:                    onboardDB,
 		steampipeConn:         steampipeConn,
 		sourceEventsQueue:     sourceEventsQueue,
 		awsPermissionCheckURL: awsPermissionCheckURL,

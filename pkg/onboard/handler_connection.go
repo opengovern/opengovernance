@@ -9,13 +9,14 @@ import (
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
-func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection Source, updateMetadata bool) (Source, error) {
+func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model.Source, updateMetadata bool) (model.Source, error) {
 	var cnf map[string]any
 	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
 	if err != nil {

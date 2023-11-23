@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -251,7 +252,9 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	))
 	span2.End()
 
-	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
+	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
+		ID: src.ID,
+	})
 }
 
 // PostSourceAzure godoc
@@ -304,7 +307,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	cred, err := createAzureCredential(
 		ctx.Request().Context(),
 		fmt.Sprintf("%s - %s - default credentials", source.CloudAzure, req.Config.SubscriptionId),
-		CredentialTypeAutoAzure,
+		model.CredentialTypeAutoAzure,
 		req.Config,
 	)
 	if err != nil {
@@ -343,10 +346,12 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	))
 	span2.End()
 
-	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
+	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
+		ID: src.ID,
+	})
 }
 
-func createAzureCredential(ctx context.Context, name string, credType CredentialType, config api.AzureCredentialConfig) (*Credential, error) {
+func createAzureCredential(ctx context.Context, name string, credType model.CredentialType, config api.AzureCredentialConfig) (*model.Credential, error) {
 	azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
 	if err != nil {
 		return nil, err
@@ -356,7 +361,7 @@ func createAzureCredential(ctx context.Context, name string, credType Credential
 	if err != nil {
 		return nil, err
 	}
-	if credType == CredentialTypeManualAzureSpn {
+	if credType == model.CredentialTypeManualAzureSpn {
 		name = metadata.SpnName
 	}
 	cred, err := NewAzureCredential(name, credType, metadata)
@@ -377,7 +382,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	cred, err := createAzureCredential(ctx.Request().Context(), "", CredentialTypeManualAzureSpn, config)
+	cred, err := createAzureCredential(ctx.Request().Context(), "", model.CredentialTypeManualAzureSpn, config)
 	if err != nil {
 		return err
 	}
@@ -391,7 +396,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_Transaction And checkCredentialHealth")
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
 		_, span2 := tracer.Start(outputS, "mew_CreateCredential", trace.WithSpanKind(trace.SpanKindServer))
 		span2.SetName("mew_CreateCredential")
@@ -450,7 +455,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		name = *metadata.OrganizationID
 	}
 
-	cred, err := NewAWSCredential(name, metadata, CredentialTypeManualAwsOrganization, 1)
+	cred, err := NewAWSCredential(name, metadata, model.CredentialTypeManualAwsOrganization, 1)
 	if err != nil {
 		return err
 	}
@@ -463,7 +468,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction ", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_Transaction")
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
 		_, span2 := tracer.Start(outputS, "new_CreateCredential", trace.WithSpanKind(trace.SpanKindServer))
 		span2.SetName("new_CreateCredential")
@@ -570,10 +575,10 @@ func (h HttpHandler) CreateCredential(ctx echo.Context) error {
 func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	health, _ := source.ParseHealthStatus(ctx.QueryParam("health"))
-	credentialTypes := ParseCredentialTypes(ctx.QueryParams()["credentialType"])
+	credentialTypes := model.ParseCredentialTypes(ctx.QueryParams()["credentialType"])
 	if len(credentialTypes) == 0 {
 		// Take note if you want the change this, the default is used in the frontend AND the checkup worker
-		credentialTypes = GetManualCredentialTypes()
+		credentialTypes = model.GetManualCredentialTypes()
 	}
 	pageSizeStr := ctx.QueryParam("pageSize")
 	pageNumberStr := ctx.QueryParam("pageNumber")
@@ -609,19 +614,19 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		}
 
 		onboardConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(),
-			[]ConnectionLifecycleState{ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard}, nil)
+			[]model.ConnectionLifecycleState{model.ConnectionLifecycleStateInProgress, model.ConnectionLifecycleStateOnboard}, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateDiscovered}, nil)
+		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDiscovered}, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		disabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateDisabled}, nil)
+		disabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDisabled}, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		archivedConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateArchived}, nil)
+		archivedConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateArchived}, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -710,17 +715,17 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		return err
 	}
 	for _, conn := range connections {
-		apiCredential.Connections = append(apiCredential.Connections, conn.toAPI())
+		apiCredential.Connections = append(apiCredential.Connections, conn.ToAPI())
 		switch conn.LifecycleState {
-		case ConnectionLifecycleStateDiscovered:
+		case model.ConnectionLifecycleStateDiscovered:
 			apiCredential.DiscoveredConnections = utils.PAdd(apiCredential.DiscoveredConnections, utils.GetPointer(1))
-		case ConnectionLifecycleStateInProgress:
+		case model.ConnectionLifecycleStateInProgress:
 			fallthrough
-		case ConnectionLifecycleStateOnboard:
+		case model.ConnectionLifecycleStateOnboard:
 			apiCredential.OnboardConnections = utils.PAdd(apiCredential.OnboardConnections, utils.GetPointer(1))
-		case ConnectionLifecycleStateDisabled:
+		case model.ConnectionLifecycleStateDisabled:
 			apiCredential.DisabledConnections = utils.PAdd(apiCredential.DisabledConnections, utils.GetPointer(1))
-		case ConnectionLifecycleStateArchived:
+		case model.ConnectionLifecycleStateArchived:
 			apiCredential.ArchivedConnections = utils.PAdd(apiCredential.ArchivedConnections, utils.GetPointer(1))
 		}
 		if conn.HealthState == source.HealthStatusUnhealthy {
@@ -774,7 +779,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
-func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credential Credential, maxConnections int64) ([]api.Connection, error) {
+func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
 	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
 	if err != nil {
@@ -835,7 +840,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 						localConn.Name = name
 					}
 					if sub.SubModel.State != nil && *sub.SubModel.State != armsubscription.SubscriptionStateEnabled {
-						localConn.LifecycleState = ConnectionLifecycleStateDisabled
+						localConn.LifecycleState = model.ConnectionLifecycleStateDisabled
 					}
 					if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
 						_, span3 := tracer.Start(outputS2, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
@@ -949,7 +954,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 	return onboardedSources, nil
 }
 
-func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Credential, maxConnections int64) ([]api.Connection, error) {
+func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
 	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
 	if err != nil {
@@ -1005,7 +1010,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 			accountsToOnboard = append(accountsToOnboard, account)
 		} else {
 			for _, conn := range existingConnections {
-				if conn.LifecycleState == ConnectionLifecycleStateArchived {
+				if conn.LifecycleState == model.ConnectionLifecycleStateArchived {
 					h.logger.Info("Archived Connection",
 						zap.String("accountID", conn.SourceId))
 				}
@@ -1026,11 +1031,11 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						localConn.Name = name
 					}
 					if account.Account.Status != awsOrgTypes.AccountStatusActive {
-						localConn.LifecycleState = ConnectionLifecycleStateArchived
-					} else if localConn.LifecycleState == ConnectionLifecycleStateArchived {
-						localConn.LifecycleState = ConnectionLifecycleStateDiscovered
+						localConn.LifecycleState = model.ConnectionLifecycleStateArchived
+					} else if localConn.LifecycleState == model.ConnectionLifecycleStateArchived {
+						localConn.LifecycleState = model.ConnectionLifecycleStateDiscovered
 						if credential.AutoOnboardEnabled {
-							localConn.LifecycleState = ConnectionLifecycleStateOnboard
+							localConn.LifecycleState = model.ConnectionLifecycleStateOnboard
 						}
 					}
 					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
@@ -1105,7 +1110,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		outputS5, span5 := tracer.Start(outputS3, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 		span5.SetName("new_Transaction")
 
-		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 			_, span6 := tracer.Start(outputS5, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
 			span6.SetName("new_CreateSource")
 
@@ -1344,7 +1349,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	outputS1, span1 := tracer.Start(outputS, "new_Transaction")
 	span1.SetName("new_Transaction")
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
 		_, span2 := tracer.Start(outputS1, "new_UpdateCredential")
 		span2.SetName("new_UpdateCredential")
@@ -1465,14 +1470,14 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
 		config.AssumeRoleName != "" && config.ExternalID != nil {
 		cred.Name = metadata.OrganizationID
-		cred.CredentialType = CredentialTypeManualAwsOrganization
+		cred.CredentialType = model.CredentialTypeManualAwsOrganization
 		cred.AutoOnboardEnabled = true
 	}
 	// trace :
 	outputS2, span2 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_Transaction")
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
 		_, span3 := tracer.Start(outputS2, "new_UpdateCredential", trace.WithSpanKind(trace.SpanKindServer))
 		span3.SetName("new_UpdateCredential")
@@ -1585,7 +1590,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 	outputS3, span3 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_Transaction")
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
 		_, span4 := tracer.Start(outputS3, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
 		span4.SetName("new_DeleteCredential")
@@ -1607,7 +1612,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 			// trace :
 			_, span6 := tracer.Start(output5, "new_UpdateSourceLifecycleState", trace.WithSpanKind(trace.SpanKindServer))
 			span6.SetName("new_UpdateSourceLifecycleState")
-			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, model.ConnectionLifecycleStateDisabled); err != nil {
 				span6.RecordError(err)
 				span6.SetStatus(codes.Error, err.Error())
 				return err
@@ -1689,7 +1694,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	}
 }
 
-func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
+func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection model.Source, healthStatus source.HealthStatus, reason *string) (model.Source, error) {
 	connection.HealthState = healthStatus
 	connection.HealthReason = reason
 	connection.LastHealthCheckTime = time.Now()
@@ -1699,7 +1704,7 @@ func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection Sour
 
 	_, err := h.db.UpdateSource(&connection)
 	if err != nil {
-		return Source{}, err
+		return model.Source{}, err
 	}
 	span.AddEvent("information", trace.WithAttributes(
 		attribute.String("source name", connection.Name),
@@ -1774,7 +1779,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			connection, err = h.checkConnectionHealth(ctx.Request().Context(), connection, updateMetadata)
 		}
 	}
-	return ctx.JSON(http.StatusOK, connection.toAPI())
+	return ctx.JSON(http.StatusOK, connection.ToAPI())
 }
 
 func (h HttpHandler) GetSource(ctx echo.Context) error {
@@ -1808,7 +1813,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		}
 	}
 
-	apiRes := src.toAPI()
+	apiRes := src.ToAPI()
 	if httpserver.GetUserRole(ctx) == api3.InternalRole {
 		apiRes.Credential = src.Credential.ToAPI()
 		apiRes.Credential.Config = src.Credential.Secret
@@ -1854,7 +1859,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	output1, span1 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_Transaction")
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
 		outputS2, span2 := tracer.Start(output1, "new_DeleteSource")
 
@@ -1943,7 +1948,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	))
 	span.End()
 
-	reqState := ConnectionLifecycleStateFromApi(req.State)
+	reqState := model.ConnectionLifecycleStateFromApi(req.State)
 	if reqState == connection.LifecycleState {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection already in requested state")
 	}
@@ -1986,7 +1991,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var err error
 	sType := httpserver.QueryArrayParam(ctx, "connector")
-	var sources []Source
+	var sources []model.Source
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
 		// trace :
@@ -2016,7 +2021,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		apiRes := s.toAPI()
+		apiRes := s.ToAPI()
 		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = s.Credential.ToAPI()
 			apiRes.Credential.Config = s.Credential.Secret
@@ -2049,7 +2054,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 
 	var res []api.Connection
 	for _, src := range srcs {
-		apiRes := src.toAPI()
+		apiRes := src.ToAPI()
 		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = src.Credential.ToAPI()
 			apiRes.Credential.Config = src.Credential.Secret
@@ -2140,7 +2145,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 			metrics.UnhealthyConnections++
 		}
 
-		if src.LifecycleState == ConnectionLifecycleStateInProgress {
+		if src.LifecycleState == model.ConnectionLifecycleStateInProgress {
 			metrics.InProgressConnections++
 		}
 	}
@@ -2210,10 +2215,10 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		sortBy != "resource_count" {
 		return ctx.JSON(http.StatusBadRequest, "sortBy is not a valid value")
 	}
-	var lifecycleStateSlice []ConnectionLifecycleState
+	var lifecycleStateSlice []model.ConnectionLifecycleState
 	lifecycleState := ctx.QueryParam("lifecycleState")
 	if lifecycleState != "" {
-		lifecycleStateSlice = append(lifecycleStateSlice, ConnectionLifecycleState(lifecycleState))
+		lifecycleStateSlice = append(lifecycleStateSlice, model.ConnectionLifecycleState(lifecycleState))
 	}
 
 	var healthStateSlice []source.HealthStatus
@@ -2250,7 +2255,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	_, span = tracer.Start(ctx.Request().Context(), "new_FilterConnectionGroups", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_FilterConnectionGroups")
 
-	var connections []Source
+	var connections []model.Source
 	if filterStr != "" && len(connectionIDs) == 0 {
 		result := api.ListConnectionSummaryResponse{
 			ConnectionCount:       len(connections),
@@ -2343,7 +2348,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	for _, connection := range connections {
 		if data, ok := connectionData[connection.ID.String()]; ok {
 			localData := data
-			apiConn := connection.toAPI()
+			apiConn := connection.ToAPI()
 			apiConn.Cost = localData.TotalCost
 			apiConn.DailyCostAtStartTime = localData.DailyCostAtStartTime
 			apiConn.DailyCostAtEndTime = localData.DailyCostAtEndTime
@@ -2364,18 +2369,18 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			if len(resourceCollections) > 0 {
 				continue
 			}
-			result.Connections = append(result.Connections, connection.toAPI())
+			result.Connections = append(result.Connections, connection.ToAPI())
 		}
 		switch connection.LifecycleState {
-		case ConnectionLifecycleStateDiscovered:
+		case model.ConnectionLifecycleStateDiscovered:
 			result.TotalDiscoveredCount++
-		case ConnectionLifecycleStateDisabled:
+		case model.ConnectionLifecycleStateDisabled:
 			result.TotalDisabledCount++
-		case ConnectionLifecycleStateInProgress:
+		case model.ConnectionLifecycleStateInProgress:
 			fallthrough
-		case ConnectionLifecycleStateOnboard:
+		case model.ConnectionLifecycleStateOnboard:
 			result.TotalOnboardedCount++
-		case ConnectionLifecycleStateArchived:
+		case model.ConnectionLifecycleStateArchived:
 			result.TotalArchivedCount++
 		}
 		if connection.HealthState == source.HealthStatusUnhealthy {
@@ -2588,7 +2593,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 
 			apiCg.Connections = make([]api.Connection, 0, len(connections))
 			for _, connection := range connections {
-				apiCg.Connections = append(apiCg.Connections, connection.toAPI())
+				apiCg.Connections = append(apiCg.Connections, connection.ToAPI())
 			}
 		}
 
@@ -2658,7 +2663,7 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 
 		apiCg.Connections = make([]api.Connection, 0, len(connections))
 		for _, connection := range connections {
-			apiCg.Connections = append(apiCg.Connections, connection.toAPI())
+			apiCg.Connections = append(apiCg.Connections, connection.ToAPI())
 		}
 	}
 

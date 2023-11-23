@@ -2,10 +2,10 @@ package onboard
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"strings"
 	"time"
 
@@ -15,102 +15,10 @@ import (
 	"github.com/google/uuid"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 )
-
-type ConnectionLifecycleState string
-
-const (
-	ConnectionLifecycleStateDisabled   ConnectionLifecycleState = "DISABLED"
-	ConnectionLifecycleStateDiscovered ConnectionLifecycleState = "DISCOVERED"
-	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
-	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
-	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
-)
-
-func (c ConnectionLifecycleState) IsEnabled() bool {
-	for _, state := range GetConnectionLifecycleStateEnabledStates() {
-		if c == state {
-			return true
-		}
-	}
-	return false
-}
-
-func GetConnectionLifecycleStateEnabledStates() []ConnectionLifecycleState {
-	return []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress}
-}
-
-func (c ConnectionLifecycleState) ToApi() api.ConnectionLifecycleState {
-	return api.ConnectionLifecycleState(c)
-}
-
-func ConnectionLifecycleStateFromApi(state api.ConnectionLifecycleState) ConnectionLifecycleState {
-	return ConnectionLifecycleState(state)
-}
-
-type Source struct {
-	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
-	SourceId     string    `gorm:"index:idx_source_id,unique"`                      // AWS Account ID, Azure Subscription ID, ...
-	Name         string    `gorm:"not null"`
-	Email        string
-	Type         source.Type `gorm:"not null"`
-	Description  string
-	CredentialID uuid.UUID
-
-	LifecycleState ConnectionLifecycleState `gorm:"not null;default:'enabled'"`
-
-	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
-
-	HealthState         source.HealthStatus
-	LastHealthCheckTime time.Time `gorm:"not null;default:now()"`
-	HealthReason        *string
-
-	Connector  Connector  `gorm:"foreignKey:Type;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Credential Credential `gorm:"foreignKey:CredentialID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
-
-	CreationMethod source.SourceCreationMethod `gorm:"not null;default:'manual'"`
-
-	Metadata datatypes.JSON `gorm:"default:'{}'"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime `gorm:"index"`
-}
-
-func (s Source) toAPI() api.Connection {
-	metadata := make(map[string]any)
-	if s.Metadata.String() != "" {
-		_ = json.Unmarshal(s.Metadata, &metadata)
-	}
-	apiCon := api.Connection{
-		ID:                   s.ID,
-		ConnectionID:         s.SourceId,
-		ConnectionName:       s.Name,
-		Email:                s.Email,
-		Connector:            s.Type,
-		Description:          s.Description,
-		CredentialID:         s.CredentialID.String(),
-		CredentialName:       s.Credential.Name,
-		CredentialType:       s.Credential.CredentialType.ToApi(),
-		OnboardDate:          s.CreatedAt,
-		HealthState:          s.HealthState,
-		LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
-		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
-		LastHealthCheckTime:  s.LastHealthCheckTime,
-		HealthReason:         s.HealthReason,
-		Metadata:             metadata,
-
-		ResourceCount: nil,
-		Cost:          nil,
-		LastInventory: nil,
-	}
-	return apiCon
-}
 
 type AWSAccountType string
 
@@ -129,12 +37,12 @@ type AWSConnectionMetadata struct {
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig, connection Source, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig, connection model.Source, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
 
-	if connection.Credential.CredentialType == CredentialTypeAutoAws {
+	if connection.Credential.CredentialType == model.CredentialTypeAutoAws {
 		metadata.AccountType = AWSAccountTypeStandalone
 	} else {
 		metadata.AccountType = AWSAccountTypeOrganizationMember
@@ -185,17 +93,17 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 	return metadata, nil
 }
 
-func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) Source {
+func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) model.Source {
 	id := uuid.New()
 	provider := source.CloudAWS
 
 	credName := fmt.Sprintf("%s - %s - default credentials", provider, account.AccountID)
-	creds := Credential{
+	creds := model.Credential{
 		ID:             uuid.New(),
 		Name:           &credName,
 		ConnectorType:  provider,
 		Secret:         "",
-		CredentialType: CredentialTypeAutoAws,
+		CredentialType: model.CredentialTypeAutoAws,
 	}
 
 	accountName := account.AccountID
@@ -207,7 +115,7 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 		accountEmail = *account.Account.Email
 	}
 
-	s := Source{
+	s := model.Source{
 		ID:                   id,
 		SourceId:             account.AccountID,
 		Name:                 accountName,
@@ -216,7 +124,7 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 		Description:          description,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		LifecycleState:       ConnectionLifecycleStateInProgress,
+		LifecycleState:       model.ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
@@ -268,7 +176,7 @@ func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
 	return metadata
 }
 
-func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Source {
 	id := uuid.New()
 
 	name := sub.SubscriptionID
@@ -282,7 +190,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 		jsonMetadata = []byte("{}")
 	}
 
-	s := Source{
+	s := model.Source{
 		ID:                   id,
 		SourceId:             sub.SubscriptionID,
 		Name:                 name,
@@ -290,7 +198,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 		Type:                 source.CloudAzure,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		LifecycleState:       ConnectionLifecycleStateInProgress,
+		LifecycleState:       model.ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		CreationMethod:       creationMethod,
 		Metadata:             datatypes.JSON(jsonMetadata),
@@ -299,7 +207,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Source {
 	id := uuid.New()
 
 	name := account.AccountID
@@ -307,16 +215,16 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 		name = *account.AccountName
 	}
 
-	lifecycleState := ConnectionLifecycleStateDiscovered
+	lifecycleState := model.ConnectionLifecycleStateDiscovered
 	if creds.AutoOnboardEnabled {
-		lifecycleState = ConnectionLifecycleStateOnboard
+		lifecycleState = model.ConnectionLifecycleStateOnboard
 	}
 
 	if account.Account.Status != types.AccountStatusActive {
-		lifecycleState = ConnectionLifecycleStateArchived
+		lifecycleState = model.ConnectionLifecycleStateArchived
 	}
 
-	s := Source{
+	s := model.Source{
 		ID:                   id,
 		SourceId:             account.AccountID,
 		Name:                 name,
@@ -343,7 +251,7 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 	return s
 }
 
-func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds Credential, awsConfig aws.Config) (*Source, error) {
+func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig aws.Config) (*model.Source, error) {
 	id := uuid.New()
 
 	name := *account.Id
@@ -351,16 +259,16 @@ func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger
 		name = *account.Name
 	}
 
-	lifecycleState := ConnectionLifecycleStateDiscovered
+	lifecycleState := model.ConnectionLifecycleStateDiscovered
 	if creds.AutoOnboardEnabled {
-		lifecycleState = ConnectionLifecycleStateOnboard
+		lifecycleState = model.ConnectionLifecycleStateOnboard
 	}
 
 	if account.Status != types.AccountStatusActive {
-		lifecycleState = ConnectionLifecycleStateArchived
+		lifecycleState = model.ConnectionLifecycleStateArchived
 	}
 
-	s := Source{
+	s := model.Source{
 		ID:                   id,
 		SourceId:             *account.Id,
 		Name:                 name,
@@ -380,7 +288,7 @@ func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger
 		OrganizationAccount: &account,
 		OrganizationTags:    nil,
 	}
-	if creds.CredentialType == CredentialTypeAutoAws {
+	if creds.CredentialType == model.CredentialTypeAutoAws {
 		metadata.AccountType = AWSAccountTypeStandalone
 	} else {
 		metadata.AccountType = AWSAccountTypeOrganizationMember
@@ -418,152 +326,20 @@ func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger
 	return &s, nil
 }
 
-func (s Source) ToSourceResponse() *api.CreateSourceResponse {
-	return &api.CreateSourceResponse{
-		ID: s.ID,
-	}
-}
+//
+//func (s Source) ToSourceResponse() *api.CreateSourceResponse {
+//	return &api.CreateSourceResponse{
+//		ID: s.ID,
+//	}
+//}
 
-type Connector struct {
-	Name                source.Type `gorm:"primaryKey"`
-	Label               string
-	ShortDescription    string
-	Description         string
-	Direction           source.ConnectorDirectionType `gorm:"default:'ingress'"`
-	Status              source.ConnectorStatus        `gorm:"default:'enabled'"`
-	Logo                string                        `gorm:"default:''"`
-	AutoOnboardSupport  bool                          `gorm:"default:false"`
-	AllowNewConnections bool                          `gorm:"default:true"`
-	MaxConnectionLimit  int                           `gorm:"default:25"`
-	Tags                datatypes.JSON                `gorm:"default:'{}'"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime `gorm:"index"`
-}
-
-type CredentialType string
-
-const (
-	CredentialTypeAutoAzure             CredentialType = "auto-azure"
-	CredentialTypeAutoAws               CredentialType = "auto-aws"
-	CredentialTypeManualAwsOrganization CredentialType = "manual-aws-org"
-	CredentialTypeManualAzureSpn        CredentialType = "manual-azure-spn"
-)
-
-func (c CredentialType) IsManual() bool {
-	for _, t := range GetManualCredentialTypes() {
-		if t == c {
-			return true
-		}
-	}
-	return false
-}
-
-func GetCredentialTypes() []CredentialType {
-	return []CredentialType{
-		CredentialTypeAutoAzure,
-		CredentialTypeAutoAws,
-		CredentialTypeManualAwsOrganization,
-		CredentialTypeManualAzureSpn,
-	}
-}
-
-func GetAutoGeneratedCredentialTypes() []CredentialType {
-	return []CredentialType{
-		CredentialTypeAutoAzure,
-		CredentialTypeAutoAws,
-	}
-}
-
-func GetManualCredentialTypes() []CredentialType {
-	return []CredentialType{
-		CredentialTypeManualAwsOrganization,
-		CredentialTypeManualAzureSpn,
-	}
-}
-
-func (c CredentialType) ToApi() api.CredentialType {
-	return api.CredentialType(c)
-}
-
-func ParseCredentialType(s string) CredentialType {
-	for _, t := range GetCredentialTypes() {
-		if strings.ToLower(string(t)) == strings.ToLower(s) {
-			return t
-		}
-	}
-	return ""
-}
-
-func ParseCredentialTypes(s []string) []CredentialType {
-	var ctypes []CredentialType
-	for _, t := range s {
-		ctypes = append(ctypes, ParseCredentialType(t))
-	}
-	return ctypes
-}
-
-type Credential struct {
-	ID                 uuid.UUID      `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
-	Name               *string        `json:"name,omitempty"`
-	ConnectorType      source.Type    `gorm:"not null" json:"connectorType"`
-	Secret             string         `json:"-"`
-	CredentialType     CredentialType `json:"credentialType"`
-	Enabled            bool           `gorm:"default:true" json:"enabled"`
-	AutoOnboardEnabled bool           `gorm:"default:false" json:"autoOnboardEnabled"`
-
-	LastHealthCheckTime time.Time           `gorm:"not null;default:now()" json:"lastHealthCheckTime"`
-	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
-	HealthReason        *string             `json:"healthReason,omitempty"`
-
-	Metadata datatypes.JSON `json:"metadata,omitempty" gorm:"default:'{}'"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime `gorm:"index"`
-
-	Version int `json:"version"`
-}
-
-func (credential *Credential) ToAPI() api.Credential {
-	metadata := make(map[string]any)
-	if string(credential.Metadata) == "" {
-		credential.Metadata = []byte("{}")
-	}
-	_ = json.Unmarshal(credential.Metadata, &metadata)
-	apiCredential := api.Credential{
-		ID:                  credential.ID.String(),
-		Name:                credential.Name,
-		ConnectorType:       credential.ConnectorType,
-		CredentialType:      credential.CredentialType.ToApi(),
-		Enabled:             credential.Enabled,
-		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
-		OnboardDate:         credential.CreatedAt,
-		LastHealthCheckTime: credential.LastHealthCheckTime,
-		HealthStatus:        credential.HealthStatus,
-		HealthReason:        credential.HealthReason,
-		Metadata:            metadata,
-
-		Config: "",
-
-		Connections:           nil,
-		TotalConnections:      nil,
-		OnboardConnections:    nil,
-		UnhealthyConnections:  nil,
-		DiscoveredConnections: nil,
-	}
-
-	return apiCredential
-}
-
-func NewAzureCredential(name string, credentialType CredentialType, metadata *AzureCredentialMetadata) (*Credential, error) {
+func NewAzureCredential(name string, credentialType model.CredentialType, metadata *AzureCredentialMetadata) (*model.Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
-	crd := &Credential{
+	crd := &model.Credential{
 		ID:             id,
 		Name:           &name,
 		ConnectorType:  source.CloudAzure,
@@ -571,20 +347,20 @@ func NewAzureCredential(name string, credentialType CredentialType, metadata *Az
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
 	}
-	if credentialType == CredentialTypeManualAzureSpn {
+	if credentialType == model.CredentialTypeManualAzureSpn {
 		crd.AutoOnboardEnabled = true
 	}
 
 	return crd, nil
 }
 
-func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialType CredentialType, version int) (*Credential, error) {
+func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialType model.CredentialType, version int) (*model.Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
-	crd := &Credential{
+	crd := &model.Credential{
 		ID:             id,
 		Name:           &name,
 		ConnectorType:  source.CloudAWS,
@@ -593,7 +369,7 @@ func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialTy
 		Metadata:       jsonMetadata,
 		Version:        version,
 	}
-	if credentialType == CredentialTypeManualAwsOrganization {
+	if credentialType == model.CredentialTypeManualAwsOrganization {
 		crd.AutoOnboardEnabled = true
 	}
 
@@ -620,44 +396,4 @@ type AzureCredentialMetadata struct {
 
 func (m AzureCredentialMetadata) GetExpirationDate() time.Time {
 	return m.SecretExpirationDate
-}
-
-type ConnectionGroup struct {
-	Name  string `gorm:"primaryKey" json:"name"`
-	Query string `json:"query"`
-}
-
-func (cg ConnectionGroup) ToAPI(ctx context.Context, steampipe *steampipe.Database) (*api.ConnectionGroup, error) {
-	apiCg := api.ConnectionGroup{
-		Name:  cg.Name,
-		Query: cg.Query,
-	}
-
-	if steampipe == nil || cg.Query == "" {
-		return &apiCg, nil
-	}
-
-	connectionsQueryResult, err := steampipe.QueryAll(ctx, cg.Query)
-	if err != nil {
-		return nil, err
-	}
-
-	var connectionIds []string
-	for i, header := range connectionsQueryResult.Headers {
-		if header != "kaytu_id" {
-			continue
-		}
-		for _, row := range connectionsQueryResult.Data {
-			if len(row) <= i || row[i] == nil {
-				continue
-			}
-			if strRow, ok := row[i].(string); ok {
-				connectionIds = append(connectionIds, strRow)
-			}
-		}
-	}
-
-	apiCg.ConnectionIds = connectionIds
-
-	return &apiCg, nil
 }
