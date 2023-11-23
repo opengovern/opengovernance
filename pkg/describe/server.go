@@ -486,7 +486,7 @@ func (h HttpServer) ListAllPendingConnection(ctx echo.Context) error {
 }
 
 func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
-	count, sum, err := h.DB.CountJobsAndResources()
+	count, _, err := h.DB.CountJobsAndResources()
 	if err != nil {
 		return err
 	}
@@ -495,26 +495,40 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
 	}
 
-	status, err := h.DB.ListAllFirstTryPendingConnection()
+	pendingDiscoveryTypes, err := h.DB.ListAllFirstTryPendingConnection()
 	if err != nil {
 		return err
 	}
 
-	if len(status) > 0 {
-		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsRunning)
+	for _, dt := range pendingDiscoveryTypes {
+		if dt == string(model2.DiscoveryType_Cost) || dt == string(model2.DiscoveryType_Fast) {
+			return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsRunning)
+		}
 	}
 
-	resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es)
+	succeededJobs, err := h.DB.ListAllSuccessfulDescribeJobs()
 	if err != nil {
 		return err
 	}
-	fmt.Println(count, sum, resourceCount)
 
-	var sumValue int64
-	if sum != nil {
-		sumValue = *sum
+	publishedJobs := 0
+	totalJobs := 0
+	for _, job := range succeededJobs {
+		totalJobs++
+
+		if job.DescribedResourceCount > 0 {
+			resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es, job.ResourceType)
+			if err != nil {
+				return err
+			}
+
+			if resourceCount > 0 {
+				publishedJobs++
+			}
+		}
 	}
-	if sumValue == resourceCount {
+
+	if publishedJobs == totalJobs {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
 
@@ -525,7 +539,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 
 	if job != nil &&
 		job.UpdatedAt.Before(time.Now().Add(-1*time.Minute)) &&
-		resourceCount > int64(float64(sumValue)*0.9) {
+		publishedJobs > int(float64(totalJobs)*0.9) {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusResourcesPublished)
 	}
 

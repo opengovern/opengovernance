@@ -391,16 +391,29 @@ func (db Database) ListAllPendingConnection() ([]string, error) {
 }
 
 func (db Database) ListAllFirstTryPendingConnection() ([]string, error) {
-	var connectionIDs []string
+	var discoveryTypes []string
 
-	tx := db.ORM.Raw(`select distinct(connection_id) from describe_connection_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS') and retry_count = 0`).Find(&connectionIDs)
+	tx := db.ORM.Raw(`select distinct(discovery_type) from describe_connection_jobs where (status = 'CREATED' AND retry_count = 0) OR (status in ('QUEDED', 'IN_PROGRESS') and retry_count = 1)`).Find(&discoveryTypes)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, tx.Error
 	}
-	return connectionIDs, nil
+	return discoveryTypes, nil
+}
+
+func (db Database) ListAllSuccessfulDescribeJobs() ([]model.DescribeConnectionJob, error) {
+	var jobs []model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", api.DescribeResourceJobSucceeded).Find(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
 }
 
 func (db Database) GetLastSuccessfulDescribeJob() (*model.DescribeConnectionJob, error) {

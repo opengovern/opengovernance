@@ -115,21 +115,14 @@ type InventoryCountResponse struct {
 	} `json:"hits"`
 }
 
-func GetInventoryCountResponse(client kaytu.Client) (int64, error) {
-	root := map[string]any{}
-	root["size"] = 0
+func GetInventoryCountResponse(client kaytu.Client, resourceType string) (int64, error) {
+	query := fmt.Sprintf(`{"size": 0, "query": {"bool": {"filter": [{"term": {"resource_type": "%s"}}]}}}`, resourceType)
 
-	queryBytes, err := json.Marshal(root)
-	if err != nil {
-		return 0, err
-	}
-
-	fmt.Println("GetInventoryCountResponse, query=", string(queryBytes))
+	fmt.Println("GetInventoryCountResponse, query=", query)
 	var response InventoryCountResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), es.InventorySummaryIndex,
-		string(queryBytes), nil, &response, true)
+	err := client.SearchWithTrackTotalHits(context.Background(), es.InventorySummaryIndex,
+		query, nil, &response, true)
 	if err != nil {
-		fmt.Println("query=", string(queryBytes))
 		return 0, err
 	}
 	fmt.Println("GetInventoryCountResponse, response=", response)
