@@ -468,6 +468,12 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 				resp.InsightsStatus.Done = 2
 			}
 		}
+	} else {
+		resp.WorkspaceCreationStatus.Done = resp.WorkspaceCreationStatus.Total
+		resp.InsightsStatus.Done = resp.InsightsStatus.Total
+		resp.ComplianceStatus.Done = resp.ComplianceStatus.Total
+		resp.DiscoveryStatus.Done = resp.DiscoveryStatus.Total
+		resp.AnalyticsStatus.Done = resp.AnalyticsStatus.Total
 	}
 
 	return resp, nil
