@@ -255,6 +255,8 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 		rb.WorkspaceName = workspaceName
 		rb.WorkspaceID = limits.ID
 
+		fmt.Println(user.WorkspaceAccess)
+		fmt.Println(user.WorkspaceAccess[limits.ID])
 		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
 			rb.RoleName = rl
 		} else if user.GlobalAccess != nil {
