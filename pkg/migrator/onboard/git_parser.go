@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 )
 
 type ConnectionGroup struct {
@@ -17,7 +17,7 @@ type ConnectionGroup struct {
 }
 
 type GitParser struct {
-	connectionGroups []onboard.ConnectionGroup
+	connectionGroups []model.ConnectionGroup
 }
 
 func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
@@ -39,7 +39,7 @@ func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
 				fileName = fileName[:len(fileName)-len(".json")]
 			}
 
-			g.connectionGroups = append(g.connectionGroups, onboard.ConnectionGroup{
+			g.connectionGroups = append(g.connectionGroups, model.ConnectionGroup{
 				Name:  fileName,
 				Query: cg.Query,
 			})

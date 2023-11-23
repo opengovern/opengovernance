@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -27,7 +27,7 @@ func Run(logger *zap.Logger, conf postgres.Config, folder string) error {
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&onboard.ConnectionGroup{}).Where("1 = 1").Unscoped().Delete(&onboard.ConnectionGroup{}).Error
+		err := tx.Model(&model.ConnectionGroup{}).Where("1 = 1").Unscoped().Delete(&model.ConnectionGroup{}).Error
 		if err != nil {
 			logger.Error("failed to delete connection groups", zap.Error(err))
 			return err

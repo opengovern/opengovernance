@@ -3,10 +3,10 @@ package workspace
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm/clause"
 	"os"
@@ -38,7 +38,7 @@ func OnboardMigration(conf postgres.Config, logger *zap.Logger, onboardFilePath 
 		return err
 	}
 
-	var connectors []onboard.Connector
+	var connectors []model.Connector
 	err = json.Unmarshal(content, &connectors)
 	if err != nil {
 		return err
