@@ -189,6 +189,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return err
 	}
 
+	includedResourceTypes := make(map[string]struct{})
 	for _, h := range res {
 		finding := api.Finding{
 			Finding:                h.Source,
@@ -197,6 +198,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			ProviderConnectionName: "",
 
 			SortKey: h.Sort,
+		}
+		if finding.Finding.ResourceType == "" {
+			finding.Finding.ResourceType = "Unknown"
+			finding.ResourceTypeName = "Unknown"
+		} else {
+			includedResourceTypes[finding.Finding.ResourceType] = struct{}{}
 		}
 
 		for _, src := range allSources {
@@ -215,6 +222,24 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
+
+	includedResourceTypesSlice := utils.MapKeysToSlice(includedResourceTypes)
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, includedResourceTypesSlice, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = item
+	}
+	for i := range response.Findings {
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(response.Findings[i].ResourceType)]; ok {
+			response.Findings[i].ResourceTypeName = rtMetadata.ResourceLabel
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -293,7 +318,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
@@ -317,9 +342,17 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		return err
 	}
 	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
-
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
+	if len(severities) == 0 {
+		severities = []kaytuTypes.FindingSeverity{
+			kaytuTypes.FindingSeverityCritical,
+			kaytuTypes.FindingSeverityHigh,
+			kaytuTypes.FindingSeverityMedium,
+			kaytuTypes.FindingSeverityLow,
+			kaytuTypes.FindingSeverityNone,
+		}
+	}
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -455,7 +488,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
@@ -475,8 +508,17 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 
 	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
+	if len(severities) == 0 {
+		severities = []kaytuTypes.FindingSeverity{
+			kaytuTypes.FindingSeverityCritical,
+			kaytuTypes.FindingSeverityHigh,
+			kaytuTypes.FindingSeverityMedium,
+			kaytuTypes.FindingSeverityLow,
+			kaytuTypes.FindingSeverityNone,
+		}
+	}
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")

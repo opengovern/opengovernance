@@ -58,3 +58,11 @@ func Paginate[T any](page, size int64, arr []T) []T {
 	}
 	return arr[start:end]
 }
+
+func MapKeysToSlice[T string](m map[T]struct{}) []T {
+	res := make([]T, 0, len(m))
+	for k := range m {
+		res = append(res, k)
+	}
+	return res
+}

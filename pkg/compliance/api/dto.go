@@ -121,6 +121,7 @@ type GetServicesFindingsSummaryResponse struct {
 
 type Finding struct {
 	types.Finding
+	ResourceTypeName string `json:"resourceTypeName" example:"Virtual Machine"`
 
 	PolicyTitle            string `json:"policyTitle"`
 	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
