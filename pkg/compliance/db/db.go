@@ -45,6 +45,16 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 	return s, nil
 }
 
+func (db Database) ListBenchmarksBare() ([]Benchmark, error) {
+	var s []Benchmark
+	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // ListRootBenchmarks returns all benchmarks that are not children of any other benchmark
 // is it important to note that this function does not return the children of the root benchmarks neither the policies
 func (db Database) ListRootBenchmarks(tags map[string][]string) ([]Benchmark, error) {

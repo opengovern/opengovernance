@@ -176,28 +176,65 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		req.Filters.ResourceCollection, req.Filters.BenchmarkID, req.Filters.PolicyID,
 		req.Filters.Severity, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
+		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
 	}
 
 	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
+		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
+	}
+	allSourcesMap := make(map[string]*onboardApi.Connection)
+	for _, src := range allSources {
+		src := src
+		allSourcesMap[src.ID.String()] = &src
 	}
 
 	policies, err := h.db.ListPolicies()
 	if err != nil {
+		h.logger.Error("failed to get policies", zap.Error(err))
 		return err
+	}
+	policiesMap := make(map[string]*db.Policy)
+	for _, policy := range policies {
+		policy := policy
+		policiesMap[policy.ID] = &policy
+	}
+
+	benchmarks, err := h.db.ListBenchmarksBare()
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarksMap := make(map[string]*db.Benchmark)
+	for _, benchmark := range benchmarks {
+		benchmark := benchmark
+		benchmarksMap[benchmark.ID] = &benchmark
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
 	includedResourceTypes := make(map[string]struct{})
 	for _, h := range res {
 		finding := api.Finding{
 			Finding:                h.Source,
+			ResourceTypeName:       "",
+			ParentBenchmarkNames:   make([]string, 0, len(h.Source.ParentBenchmarks)),
 			PolicyTitle:            "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
-
-			SortKey: h.Sort,
+			SortKey:                h.Sort,
 		}
 		if finding.Finding.ResourceType == "" {
 			finding.Finding.ResourceType = "Unknown"
@@ -206,39 +243,28 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			includedResourceTypes[finding.Finding.ResourceType] = struct{}{}
 		}
 
-		for _, src := range allSources {
-			if src.ID.String() == finding.ConnectionID {
-				finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
-				finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
-				break
+		for _, parentBenchmark := range h.Source.ParentBenchmarks {
+			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
+				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
 			}
 		}
 
-		for _, policy := range policies {
-			if policy.ID == h.Source.PolicyID {
-				finding.PolicyTitle = policy.Title
-			}
+		if src, ok := allSourcesMap[finding.Finding.ConnectionID]; ok {
+			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
+			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
 		}
+
+		if policy, ok := policiesMap[finding.PolicyID]; ok {
+			finding.PolicyTitle = policy.Title
+		}
+
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
+			finding.ResourceTypeName = rtMetadata.ResourceLabel
+		}
+
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
-
-	includedResourceTypesSlice := utils.MapKeysToSlice(includedResourceTypes)
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
-		nil, nil, includedResourceTypesSlice, false, nil, 10000, 1)
-	if err != nil {
-		h.logger.Error("failed to get resource type metadata", zap.Error(err))
-		return err
-	}
-	resourceTypeMetadataMap := make(map[string]inventoryApi.ResourceType)
-	for _, item := range resourceTypeMetadata.ResourceTypes {
-		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = item
-	}
-	for i := range response.Findings {
-		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(response.Findings[i].ResourceType)]; ok {
-			response.Findings[i].ResourceTypeName = rtMetadata.ResourceLabel
-		}
-	}
 
 	return ctx.JSON(http.StatusOK, response)
 }
