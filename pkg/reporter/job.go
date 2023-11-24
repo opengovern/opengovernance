@@ -107,6 +107,13 @@ var ReporterJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of reporter jobs",
 }, []string{"table_name", "status"})
 
+var ESSteampipeHealthCheck = promauto.NewGauge(prometheus.GaugeOpts{
+	Namespace: "kaytu",
+	Subsystem: "reporter",
+	Name:      "es_steampipe_health_check",
+	Help:      "ES Steampipe Health Check",
+})
+
 func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
 	if content, err := os.ReadFile("/queries-aws.json"); err == nil {
 		awsQueriesStr = string(content)
@@ -191,14 +198,24 @@ func (s *Service) Run() {
 	}
 
 	for {
-		//fmt.Println("starting job")
-		if err := s.TriggerRandomJob(); err != nil {
-			s.logger.Error("failed to run job", zap.Error(err))
-			time.Sleep(time.Minute)
-		} else {
-			time.Sleep(time.Duration(s.ScheduleMinutes) * time.Minute)
-		}
+		s.ESLivenessProbe(context.TODO())
+		time.Sleep(time.Duration(s.ScheduleMinutes) * time.Minute)
 	}
+}
+
+func (s *Service) ESLivenessProbe(ctx context.Context) {
+	result, err := s.esSteampipe.QueryAll(ctx, "SELECT * FROM aws_ec2_instance")
+	if err != nil {
+		s.logger.Error("failed to run query", zap.Error(err))
+		ESSteampipeHealthCheck.Set(0)
+		return
+	}
+	if len(result.Data) == 0 {
+		s.logger.Warn("no ec2 instances found")
+		ESSteampipeHealthCheck.Set(0)
+		return
+	}
+	ESSteampipeHealthCheck.Set(1)
 }
 
 func (s *Service) TriggerRandomJob() error {
