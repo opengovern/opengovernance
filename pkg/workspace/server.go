@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -618,27 +619,43 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		err = kaytuAws.CheckGetUserPermission(s.logger, sdkCnf)
+		if sdkCnf.Region == "" {
+			sdkCnf.Region = "us-east-1"
+		}
+
+		stsClient := sts.NewFromConfig(sdkCnf)
+		caller, err := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return err
 		}
 
 		if sdkCnf.Region == "" {
 			sdkCnf.Region = "us-east-1"
 		}
-		accounts, err := describer.OrganizationAccounts(context.Background(), sdkCnf)
+		org, err := describer.OrganizationOrganization(context.Background(), sdkCnf)
 		if err != nil {
 			if !ignoreAwsOrgError(err) {
 				return err
 			}
 		}
-
-		for _, account := range accounts {
-			if account.Id == nil {
-				continue
+		if org != nil && org.MasterAccountId != nil && *org.MasterAccountId == *caller.Account {
+			accounts, err := describer.OrganizationAccounts(context.Background(), sdkCnf)
+			if err != nil {
+				if !ignoreAwsOrgError(err) {
+					return err
+				}
 			}
-			count++
+
+			for _, account := range accounts {
+				if account.Id == nil {
+					continue
+				}
+				count++
+			}
+		} else {
+			count = 1
 		}
+
 	case source.CloudAzure:
 		var azureConfig describe.AzureSubscriptionConfig
 		azureConfig, err = describe.AzureSubscriptionConfigFromMap(request.AzureConfig.AsMap())
