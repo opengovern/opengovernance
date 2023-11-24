@@ -790,6 +790,12 @@ definitions:
       evaluator:
         example: steampipe-v0.5
         type: string
+      parentBenchmarkNames:
+        example:
+        - Azure CIS v1.4.0
+        items:
+          type: string
+        type: array
       parentBenchmarks:
         items:
           type: string
@@ -827,6 +833,9 @@ definitions:
         type: string
       resourceType:
         example: Microsoft.Compute/virtualMachines
+        type: string
+      resourceTypeName:
+        example: Virtual Machine
         type: string
       result:
         allOf:
@@ -3904,7 +3913,7 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Severities to filter by
+        description: Severities to filter by defaults to all severities except passed
         in: query
         items:
           enum:
@@ -3988,7 +3997,7 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Severities to filter by
+        description: Severities to filter by defaults to all severities except passed
         in: query
         items:
           enum:

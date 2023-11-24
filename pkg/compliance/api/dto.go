@@ -122,9 +122,11 @@ type GetServicesFindingsSummaryResponse struct {
 type Finding struct {
 	types.Finding
 
-	PolicyTitle            string `json:"policyTitle"`
-	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
-	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ResourceTypeName       string   `json:"resourceTypeName" example:"Virtual Machine"`
+	ParentBenchmarkNames   []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
+	PolicyTitle            string   `json:"policyTitle"`
+	ProviderConnectionID   string   `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
+	ProviderConnectionName string   `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 
 	SortKey []any `json:"sortKey"`
 }

@@ -1698,7 +1698,7 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Severities to filter by",
+                        "description": "Severities to filter by defaults to all severities except passed",
                         "name": "severities",
                         "in": "query"
                     }
@@ -1818,7 +1818,7 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Severities to filter by",
+                        "description": "Severities to filter by defaults to all severities except passed",
                         "name": "severities",
                         "in": "query"
                     }
@@ -7381,6 +7381,15 @@
                     "type": "string",
                     "example": "steampipe-v0.5"
                 },
+                "parentBenchmarkNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Azure CIS v1.4.0"
+                    ]
+                },
                 "parentBenchmarks": {
                     "type": "array",
                     "items": {
@@ -7431,6 +7440,10 @@
                 "resourceType": {
                     "type": "string",
                     "example": "Microsoft.Compute/virtualMachines"
+                },
+                "resourceTypeName": {
+                    "type": "string",
+                    "example": "Virtual Machine"
                 },
                 "result": {
                     "allOf": [

@@ -176,45 +176,96 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		req.Filters.ResourceCollection, req.Filters.BenchmarkID, req.Filters.PolicyID,
 		req.Filters.Severity, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
+		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
 	}
 
 	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
+		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
+	}
+	allSourcesMap := make(map[string]*onboardApi.Connection)
+	for _, src := range allSources {
+		src := src
+		allSourcesMap[src.ID.String()] = &src
 	}
 
 	policies, err := h.db.ListPolicies()
 	if err != nil {
+		h.logger.Error("failed to get policies", zap.Error(err))
 		return err
 	}
+	policiesMap := make(map[string]*db.Policy)
+	for _, policy := range policies {
+		policy := policy
+		policiesMap[policy.ID] = &policy
+	}
 
+	benchmarks, err := h.db.ListBenchmarksBare()
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarksMap := make(map[string]*db.Benchmark)
+	for _, benchmark := range benchmarks {
+		benchmark := benchmark
+		benchmarksMap[benchmark.ID] = &benchmark
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+	}
+
+	includedResourceTypes := make(map[string]struct{})
 	for _, h := range res {
 		finding := api.Finding{
 			Finding:                h.Source,
+			ResourceTypeName:       "",
+			ParentBenchmarkNames:   make([]string, 0, len(h.Source.ParentBenchmarks)),
 			PolicyTitle:            "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
-
-			SortKey: h.Sort,
+			SortKey:                h.Sort,
+		}
+		if finding.Finding.ResourceType == "" {
+			finding.Finding.ResourceType = "Unknown"
+			finding.ResourceTypeName = "Unknown"
+		} else {
+			includedResourceTypes[finding.Finding.ResourceType] = struct{}{}
 		}
 
-		for _, src := range allSources {
-			if src.ID.String() == finding.ConnectionID {
-				finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
-				finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
-				break
+		for _, parentBenchmark := range h.Source.ParentBenchmarks {
+			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
+				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
 			}
 		}
 
-		for _, policy := range policies {
-			if policy.ID == h.Source.PolicyID {
-				finding.PolicyTitle = policy.Title
-			}
+		if src, ok := allSourcesMap[finding.Finding.ConnectionID]; ok {
+			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
+			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
 		}
+
+		if policy, ok := policiesMap[finding.PolicyID]; ok {
+			finding.PolicyTitle = policy.Title
+		}
+
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
+			finding.ResourceTypeName = rtMetadata.ResourceLabel
+		}
+
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -293,7 +344,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
@@ -317,9 +368,17 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		return err
 	}
 	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
-
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
+	if len(severities) == 0 {
+		severities = []kaytuTypes.FindingSeverity{
+			kaytuTypes.FindingSeverityCritical,
+			kaytuTypes.FindingSeverityHigh,
+			kaytuTypes.FindingSeverityMedium,
+			kaytuTypes.FindingSeverityLow,
+			kaytuTypes.FindingSeverityNone,
+		}
+	}
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -455,7 +514,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
@@ -475,8 +534,17 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 
 	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
+	if len(severities) == 0 {
+		severities = []kaytuTypes.FindingSeverity{
+			kaytuTypes.FindingSeverityCritical,
+			kaytuTypes.FindingSeverityHigh,
+			kaytuTypes.FindingSeverityMedium,
+			kaytuTypes.FindingSeverityLow,
+			kaytuTypes.FindingSeverityNone,
+		}
+	}
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -1006,6 +1074,42 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 			EvaluatedAt:           evaluatedAt,
 		})
 	}
+
+	sort.Slice(policySummary, func(i, j int) bool {
+		if policySummary[i].Policy.Severity != policySummary[j].Policy.Severity {
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityCritical {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityCritical {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityHigh {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityHigh {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityMedium {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityMedium {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityLow {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityLow {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityNone {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityNone {
+				return true
+			}
+		}
+		return policySummary[i].Policy.Title < policySummary[j].Policy.Title
+	})
 
 	return ctx.JSON(http.StatusOK, policySummary)
 }
