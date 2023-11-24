@@ -790,6 +790,12 @@ definitions:
       evaluator:
         example: steampipe-v0.5
         type: string
+      parentBenchmarkNames:
+        example:
+        - Azure CIS v1.4.0
+        items:
+          type: string
+        type: array
       parentBenchmarks:
         items:
           type: string

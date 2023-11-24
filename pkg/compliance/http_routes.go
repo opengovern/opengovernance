@@ -1075,6 +1075,42 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		})
 	}
 
+	sort.Slice(policySummary, func(i, j int) bool {
+		if policySummary[i].Policy.Severity != policySummary[j].Policy.Severity {
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityCritical {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityCritical {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityHigh {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityHigh {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityMedium {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityMedium {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityLow {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityLow {
+				return true
+			}
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityNone {
+				return false
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityNone {
+				return true
+			}
+		}
+		return policySummary[i].Policy.Title < policySummary[j].Policy.Title
+	})
+
 	return ctx.JSON(http.StatusOK, policySummary)
 }
 

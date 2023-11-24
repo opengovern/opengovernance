@@ -7386,6 +7386,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "steampipe-v0.5"
                 },
+                "parentBenchmarkNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Azure CIS v1.4.0"
+                    ]
+                },
                 "parentBenchmarks": {
                     "type": "array",
                     "items": {
