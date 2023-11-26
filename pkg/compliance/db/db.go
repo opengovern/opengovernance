@@ -257,6 +257,19 @@ func (db Database) GetBenchmarkAssignmentsByConnectionId(connectionId string) ([
 	return s, nil
 }
 
+func (db Database) GetBenchmarkAssignmentsByResourceCollectionId(resourceCollectionId string) ([]BenchmarkAssignment, error) {
+	var s []BenchmarkAssignment
+	tx := db.Orm.Model(&BenchmarkAssignment{}).
+		Where(BenchmarkAssignment{ResourceCollection: &resourceCollectionId}).
+		Where("connection_id IS NULL").Scan(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) GetBenchmarkAssignmentsByBenchmarkId(benchmarkId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
 	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Scan(&s)
