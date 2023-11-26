@@ -416,6 +416,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
 		for _, item := range resourceTypeMetadata.ResourceTypes {
+			item := item
 			resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 		}
 		resourceTypeCountMap := make(map[string]int)
