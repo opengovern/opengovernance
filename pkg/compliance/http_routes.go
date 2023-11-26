@@ -1525,7 +1525,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	))
 	span1.End()
 
-	benchmarks, err := h.db.ListBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
@@ -1600,7 +1600,7 @@ func (h *HttpHandler) ListAssignmentsByResourceCollection(ctx echo.Context) erro
 	))
 	span1.End()
 
-	benchmarks, err := h.db.ListBenchmarks()
+	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
