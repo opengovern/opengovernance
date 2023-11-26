@@ -2,11 +2,14 @@ package statemanager
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -280,8 +283,23 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 						return err
 					}
 
+					decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
+					if err != nil {
+						return err
+					}
+
+					result, err := s.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+						CiphertextBlob:      decoded,
+						EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
+						KeyId:               &s.cfg.KMSKeyARN,
+						EncryptionContext:   nil, //TODO-Saleh use workspaceID
+					})
+					if err != nil {
+						return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+					}
+
 					var accessKey types.AccessKey
-					err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
+					err = json.Unmarshal(result.Plaintext, &accessKey)
 					if err != nil {
 						return err
 					}

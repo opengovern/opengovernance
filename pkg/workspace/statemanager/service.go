@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	config2 "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -28,6 +30,7 @@ type Service struct {
 	logger          *zap.Logger
 	db              *db.Database
 	kms             *vault.KMSVaultSourceConfig
+	kmsClient       *kms.Client
 	authClient      authclient.AuthServiceClient
 	kubeClient      k8sclient.Client // the kubernetes client
 	rdb             *redis.Client
@@ -61,7 +64,7 @@ func New(cfg config.Config) (*Service, error) {
 		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
 	})
 
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", cfg.KMSAccountRegion)
+	kmsVault, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", cfg.KMSAccountRegion)
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +94,18 @@ func New(cfg config.Config) (*Service, error) {
 		return nil, err
 	}
 
+	awsCfg, err := config2.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
+	}
+	awsCfg.Region = cfg.KMSAccountRegion
+	kmsClient := kms.NewFromConfig(awsCfg)
+
 	return &Service{
 		logger:          logger,
 		cfg:             cfg,
 		db:              dbs,
-		kms:             kms,
+		kms:             kmsVault,
 		authClient:      authClient,
 		kubeClient:      kubeClient,
 		rdb:             rdb,
@@ -103,6 +113,7 @@ func New(cfg config.Config) (*Service, error) {
 		awsConfig:       awsConfig,
 		awsMasterConfig: awsMasterConfig,
 		policyARN:       cfg.AWSMasterPolicyARN,
+		kmsClient:       kmsClient,
 	}, nil
 }
 
