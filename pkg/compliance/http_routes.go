@@ -1161,6 +1161,12 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 		return err
 	}
 
+	benchmark, err := h.db.GetBenchmarkBare(benchmarkID)
+	if err != nil {
+		h.logger.Error("failed to fetch benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
+
 	policy, err := h.db.GetPolicy(policyID)
 	if err != nil {
 		h.logger.Error("failed to fetch policy", zap.Error(err), zap.String("policyID", policyID), zap.String("benchmarkID", benchmarkID))
@@ -1168,6 +1174,7 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 	}
 
 	apiPolicy := policy.ToApi()
+	apiPolicy.Connector = benchmark.Connector
 	if policy.QueryID != nil {
 		query, err := h.db.GetQuery(*policy.QueryID)
 		if err != nil {
@@ -1218,7 +1225,9 @@ func (h *HttpHandler) populatePoliciesMap(benchmarkID string, basePoliciesMap ma
 
 	for _, policy := range benchmark.Policies {
 		if _, ok := basePoliciesMap[policy.ID]; !ok {
-			basePoliciesMap[policy.ID] = policy.ToApi()
+			v := policy.ToApi()
+			v.Connector = benchmark.Connector
+			basePoliciesMap[policy.ID] = v
 		}
 	}
 
