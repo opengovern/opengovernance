@@ -2302,6 +2302,18 @@ definitions:
         additionalProperties: {}
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateAwsConnectionRequest:
+    properties:
+      awsConfig:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config'
+      name:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateConnectionResponse:
+    properties:
+      id:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest:
     properties:
       config: {}
@@ -5808,6 +5820,28 @@ paths:
       security:
       - BearerToken: []
       summary: Change connection lifecycle state
+      tags:
+      - onboard
+  /onboard/api/v1/connections/aws:
+    post:
+      description: Creating AWS connection
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateAwsConnectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateConnectionResponse'
+      security:
+      - BearerToken: []
+      summary: Create AWS connection
       tags:
       - onboard
   /onboard/api/v1/connections/summary:

@@ -4347,6 +4347,42 @@
                 }
             }
         },
+        "/onboard/api/v1/connections/aws": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Creating AWS connection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Create AWS connection",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateAwsConnectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateConnectionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connections/summary": {
             "get": {
                 "security": [
@@ -9553,6 +9589,25 @@
                 "tags": {
                     "type": "object",
                     "additionalProperties": {}
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateAwsConnectionRequest": {
+            "type": "object",
+            "properties": {
+                "awsConfig": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateConnectionResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
                 }
             }
         },

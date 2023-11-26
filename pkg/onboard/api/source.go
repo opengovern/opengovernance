@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	v2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
@@ -42,6 +43,14 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 	}
 
 	return out
+}
+
+type CreateAwsConnectionRequest struct {
+	Name      string                    `json:"name"`
+	AWSConfig *v2.AWSCredentialV2Config `json:"awsConfig"`
+}
+type CreateConnectionResponse struct {
+	ID uuid.UUID `json:"id"`
 }
 
 type SourceAwsRequest struct {

@@ -81,6 +81,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connections := v1.Group("/connections")
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
 	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
+	connections.POST("/aws", httpserver.AuthorizeHandler(h.PostConnectionAws, api3.EditorRole))
 
 	connectionGroups := v1.Group("/connection-groups")
 	connectionGroups.GET("", httpserver.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
@@ -253,6 +254,66 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	span2.End()
 
 	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
+		ID: src.ID,
+	})
+}
+
+// PostConnectionAws godoc
+//
+//	@Summary		Create AWS connection
+//	@Description	Creating AWS connection
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200		{object}	api.CreateConnectionResponse
+//	@Param			request	body		api.CreateAwsConnectionRequest	true	"Request"
+//	@Router			/onboard/api/v1/connections/aws [post]
+func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
+	var req api.CreateAwsConnectionRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	count, err := h.db.CountSources()
+	if err != nil {
+		return err
+	}
+
+	if count >= httpserver.GetMaxConnections(ctx) {
+		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	}
+
+	sdkCnf, err := h.GetAWSSDKConfig(generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
+	if err != nil {
+		return err
+	}
+
+	acc, err := currentAwsAccount(context.Background(), h.logger, sdkCnf)
+	if err != nil {
+		return err
+	}
+	if req.Name != "" {
+		acc.AccountName = &req.Name
+	}
+	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: h.masterAccessKey, SecretKey: h.masterSecretKey}, *acc, "")
+	secretBytes, err := h.kms.Encrypt(req.AWSConfig.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	src.Credential.Version = 2
+	src.Credential.Secret = string(secretBytes)
+
+	src, err = h.checkConnectionHealth(context.Background(), src, true)
+	if err != nil {
+		return err
+	}
+
+	err = h.db.CreateSource(&src)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.CreateConnectionResponse{
 		ID: src.ID,
 	})
 }
