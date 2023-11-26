@@ -16,7 +16,7 @@ type BenchmarkAssignment struct {
 	AssignedAt           time.Time `json:"assignedAt"`                                                  // Unix timestamp
 }
 
-type ConnectionAssignedBenchmark struct {
+type AssignedBenchmark struct {
 	Benchmark Benchmark `json:"benchmarkId"`
 	Status    bool      `json:"status" example:"true"` // Status
 }

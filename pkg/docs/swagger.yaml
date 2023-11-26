@@ -549,6 +549,15 @@ definitions:
             type: integer
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AssignedBenchmark:
+    properties:
+      benchmarkId:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
+      status:
+        description: Status
+        example: true
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark:
     properties:
       autoAssign:
@@ -759,15 +768,6 @@ definitions:
         description: Time
         example: 1686346668
         type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConnectionAssignedBenchmark:
-    properties:
-      benchmarkId:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
-      status:
-        description: Status
-        example: true
-        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
@@ -3562,11 +3562,37 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConnectionAssignedBenchmark'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AssignedBenchmark'
             type: array
       security:
       - BearerToken: []
       summary: Get list of benchmark assignments for a connection
+      tags:
+      - benchmarks_assignment
+  /compliance/api/v1/assignments/resource_collection/{resource_collection_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving all benchmark assigned to a resource collection with
+        resource collection id
+      parameters:
+      - description: Resource collection ID
+        in: path
+        name: resource_collection_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AssignedBenchmark'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get list of benchmark assignments for a resource collection
       tags:
       - benchmarks_assignment
   /compliance/api/v1/benchmarks/{benchmark_id}/policies:
