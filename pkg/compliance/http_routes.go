@@ -1102,34 +1102,34 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	sort.Slice(policySummary, func(i, j int) bool {
 		if policySummary[i].Policy.Severity != policySummary[j].Policy.Severity {
 			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityCritical {
-				return false
+				return true
 			}
 			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityCritical {
-				return true
+				return false
 			}
 			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityHigh {
-				return false
+				return true
 			}
 			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityHigh {
-				return true
+				return false
 			}
 			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityMedium {
-				return false
+				return true
 			}
 			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityMedium {
-				return true
+				return false
 			}
 			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityLow {
-				return false
+				return true
 			}
 			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityLow {
-				return true
-			}
-			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityNone {
 				return false
 			}
-			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityNone {
+			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityNone {
 				return true
+			}
+			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityNone {
+				return false
 			}
 		}
 		return policySummary[i].Policy.Title < policySummary[j].Policy.Title
