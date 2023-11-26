@@ -404,6 +404,9 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	case "resourcetype":
 		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			if item.Key == "" {
+				continue
+			}
 			resourceTypeList = append(resourceTypeList, item.Key)
 		}
 		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
@@ -417,15 +420,34 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		resourceTypeCountMap := make(map[string]int)
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			if item.Key == "" {
+				item.Key = "Unknown"
+			}
 			resourceTypeCountMap[item.Key] += item.DocCount
 		}
 		resourceTypeCountList := make([]api.TopFieldRecord, 0, len(resourceTypeCountMap))
 		for k, v := range resourceTypeCountMap {
+			rt, ok := resourceTypeMetadataMap[strings.ToLower(k)]
+			if !ok {
+				rt = &inventoryApi.ResourceType{
+					ResourceType:  k,
+					ResourceLabel: k,
+				}
+			}
 			resourceTypeCountList = append(resourceTypeCountList, api.TopFieldRecord{
-				ResourceType: resourceTypeMetadataMap[strings.ToLower(k)],
+				ResourceType: rt,
 				Count:        v,
 			})
 		}
+		sort.Slice(resourceTypeCountList, func(i, j int) bool {
+			return resourceTypeCountList[i].Count > resourceTypeCountList[j].Count
+		})
+		if len(resourceTypeCountList) > count {
+			response.Records = resourceTypeCountList[:count]
+		} else {
+			response.Records = resourceTypeCountList
+		}
+		response.TotalCount = len(resourceTypeCountList)
 	case "service":
 		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
 		for _, item := range res.Aggregations.FieldFilter.Buckets {

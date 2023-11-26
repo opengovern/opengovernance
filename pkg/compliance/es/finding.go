@@ -399,8 +399,6 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 		terms["resourceCollection"] = resourceCollections
 	}
 
-	terms["stateActive"] = []bool{true}
-
 	root := map[string]any{}
 	root["size"] = 0
 
@@ -550,8 +548,6 @@ func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
 		terms["resourceCollection"] = resourceCollections
 	}
 
-	terms["stateActive"] = []bool{true}
-
 	root := map[string]any{}
 	root["size"] = 0
 
@@ -625,10 +621,6 @@ type LiveBenchmarkAggregatedFindingsQueryResponse struct {
 
 func FetchLiveBenchmarkAggregatedFindings(client kaytu.Client, benchmarkID *string, connectionIds []string) (map[string]map[types.ComplianceResult]int, error) {
 	var filters []any
-
-	filters = append(filters, map[string]any{
-		"term": map[string]bool{"stateActive": true},
-	})
 
 	if benchmarkID != nil {
 		filters = append(filters, map[string]any{
