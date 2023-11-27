@@ -910,7 +910,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Enabled:     b.Enabled,
 			Result:      csResult,
 			Checks:      sResult,
-			EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
+			EvaluatedAt: utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		})
 	}
 	span3.End()
@@ -1020,7 +1020,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Enabled:       benchmark.Enabled,
 		Result:        csResult,
 		Checks:        sResult,
-		EvaluatedAt:   time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
+		EvaluatedAt:   utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus: lastJobStatus,
 	}
 

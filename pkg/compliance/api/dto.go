@@ -152,7 +152,7 @@ type BenchmarkEvaluationSummary struct {
 	Enabled       bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
 	Result        types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
 	Checks        types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
-	EvaluatedAt   time.Time                     `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
+	EvaluatedAt   *time.Time                    `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
 	LastJobStatus string                        `json:"lastJobStatus" example:"success"`                                                                                                                                                   // Last job status
 }
 
