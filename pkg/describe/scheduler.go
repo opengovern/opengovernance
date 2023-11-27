@@ -127,9 +127,6 @@ type Scheduler struct {
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
 	checkupJobResultQueue queue.Interface
 
-	// watch the deleted source
-	deletedSources chan string
-
 	describeIntervalHours      int64
 	fullDiscoveryIntervalHours int64
 	describeTimeoutHours       int64
@@ -213,7 +210,6 @@ func InitializeScheduler(
 
 	s = &Scheduler{
 		id:                  id,
-		deletedSources:      make(chan string, ConcurrentDeletedSources),
 		OperationMode:       OperationMode(OperationModeConfig),
 		describeEndpoint:    DescribeDeliverEndpoint,
 		keyARN:              KeyARN,
@@ -495,7 +491,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.RunCheckupJobScheduler()
 		})
 		utils.EnsureRunGoroutin(func() {
-			s.RunDeletedSourceCleanup()
+			s.RunDisabledConnectionCleanup()
 		})
 		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
@@ -529,10 +525,28 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
-func (s *Scheduler) RunDeletedSourceCleanup() {
-	for id := range s.deletedSources {
-		// cleanup describe job for deleted source
-		s.cleanupDescribeJobForDeletedSource(id)
+func (s *Scheduler) RunDisabledConnectionCleanup() {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.InternalRole}, nil)
+		if err != nil {
+			s.logger.Error("Failed to list sources", zap.Error(err))
+			continue
+		}
+		disabledConnectionIds := make([]string, 0)
+		for _, connection := range connections {
+			if connection.IsEnabled() {
+				continue
+			}
+			disabledConnectionIds = append(disabledConnectionIds, connection.ID.String())
+		}
+
+		if len(disabledConnectionIds) > 0 {
+			s.cleanupDescribeResourcesForConnections(disabledConnectionIds)
+		}
+
 	}
 }
 
@@ -553,17 +567,6 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 		if err != nil {
 			s.logger.Error("Failed to cleanup compliance report jobs", zap.Error(err))
 		}
-	}
-}
-
-func (s *Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
-	err := s.cleanupDeletedConnectionResources(sourceId)
-	if err != nil {
-		s.logger.Error("Failed to cleanup deleted connection resources",
-			zap.String("sourceId", sourceId),
-			zap.Error(err),
-		)
-		s.deletedSources <- sourceId
 	}
 }
 
@@ -590,10 +593,6 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 
 		if err := msg.Ack(false); err != nil {
 			s.logger.Error("Failed acking message", zap.Error(err))
-		}
-
-		if event.Action == SourceDelete {
-			s.deletedSources <- event.SourceID
 		}
 	}
 
