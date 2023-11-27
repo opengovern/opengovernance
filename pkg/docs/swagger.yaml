@@ -5598,51 +5598,6 @@ paths:
       summary: Get resource collection landscape
       tags:
       - resource_collection
-  /inventory/api/v2/resources/metric/{resourceType}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving metrics for a specific resource type.
-      parameters:
-      - collectionFormat: csv
-        description: Connection IDs to filter by - mutually exclusive with connectionGroup
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - description: timestamp for resource count in epoch seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: timestamp for resource count change comparison in epoch seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: ResourceType
-        in: path
-        name: resourceType
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
-      security:
-      - BearerToken: []
-      summary: List resource-type metrics
-      tags:
-      - resource
   /metadata/api/v1/filter:
     get:
       produces:

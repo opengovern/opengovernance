@@ -67,7 +67,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, authApi.ViewerRole))
-	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, authApi.ViewerRole))
 
 	analyticsV2 := v2.Group("/analytics")
 	analyticsV2.GET("/metrics/list", httpserver.AuthorizeHandler(h.ListMetrics, authApi.ViewerRole))
@@ -1728,108 +1727,6 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, table)
 }
 
-// GetResourceTypeMetricsHandler godoc
-//
-//	@Summary		List resource-type metrics
-//	@Description	Retrieving metrics for a specific resource type.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			endTime			query		int64		false	"timestamp for resource count in epoch seconds"
-//	@Param			startTime		query		int64		false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param			resourceType	path		string		true	"ResourceType"
-//	@Success		200				{object}	inventoryApi.ResourceType
-//	@Router			/inventory/api/v2/resources/metric/{resourceType} [get]
-func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
-	var err error
-	resourceType := ctx.Param("resourceType")
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
-	if len(connectionIDs) > MaxConns {
-		return ctx.JSON(http.StatusBadRequest, "too many connections")
-	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
-		}
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
-		}
-	}
-	// tracer :
-	outputS1, span := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetBenchmarkTreeIDs")
-
-	apiResourceType, err := h.GetResourceTypeMetric(outputS1, resourceType, connectionIDs, endTime)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return err
-	}
-
-	oldApiResourceType, err := h.GetResourceTypeMetric(outputS1, resourceType, connectionIDs, startTime)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return err
-	}
-
-	span.End()
-	apiResourceType.OldCount = oldApiResourceType.Count
-
-	return ctx.JSON(http.StatusOK, *apiResourceType)
-}
-
-func (h *HttpHandler) GetResourceTypeMetric(ctx context.Context, resourceTypeStr string, connectionIDs []string, timeAt int64) (*inventoryApi.ResourceType, error) {
-	// tracer :
-	_, span := tracer.Start(ctx, "new_GetResourceType", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetResourceType")
-
-	resourceType, err := h.db.GetResourceType(resourceTypeStr)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
-			return nil, echo.NewHTTPError(http.StatusNotFound, "resource type not found")
-		}
-		return nil, err
-	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("service_name", resourceType.ServiceName),
-	))
-	span.End()
-
-	var metricIndexed map[string]int
-	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
-	} else {
-		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	apiResourceType := resourceType.ToApi()
-	if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
-		apiResourceType.Count = &count
-	}
-
-	return &apiResourceType, nil
-}
-
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	performanceStartTime := time.Now()
@@ -2075,25 +1972,7 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
-	timeAt := time.Now()
-	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredResourceTypes", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_ListFilteredResourceTypes")
-
-	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, nil, true)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	span.End()
-
-	resourceTypeNames := make([]string, 0, len(resourceTypes))
-	for _, resourceType := range resourceTypes {
-		resourceTypeNames = append(resourceTypeNames, resourceType.ResourceType)
-	}
-
-	metricsIndexed, err := es.FetchConnectorResourceTypeCountAtTime(h.client, nil, timeAt, resourceTypeNames, EsFetchPageSize)
+	metricsIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
