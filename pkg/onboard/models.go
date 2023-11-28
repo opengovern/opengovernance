@@ -217,7 +217,7 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 
 	lifecycleState := model.ConnectionLifecycleStateDiscovered
 	if creds.AutoOnboardEnabled {
-		lifecycleState = model.ConnectionLifecycleStateOnboard
+		lifecycleState = model.ConnectionLifecycleStateInProgress
 	}
 
 	if account.Account.Status != types.AccountStatusActive {
@@ -261,7 +261,7 @@ func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger
 
 	lifecycleState := model.ConnectionLifecycleStateDiscovered
 	if creds.AutoOnboardEnabled {
-		lifecycleState = model.ConnectionLifecycleStateOnboard
+		lifecycleState = model.ConnectionLifecycleStateInProgress
 	}
 
 	if account.Status != types.AccountStatusActive {
