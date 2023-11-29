@@ -303,12 +303,12 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 	src.Credential.Version = 2
 	src.Credential.Secret = string(secretBytes)
 
-	src, err = h.checkConnectionHealth(context.Background(), src, true)
+	err = h.db.CreateSource(&src)
 	if err != nil {
 		return err
 	}
 
-	err = h.db.CreateSource(&src)
+	src, err = h.checkConnectionHealth(context.Background(), src, true)
 	if err != nil {
 		return err
 	}
