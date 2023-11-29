@@ -26,7 +26,14 @@ func (db Database) DeleteOldRunnerJob(parentJobId *uint) error {
 	} else {
 		tx = tx.Where("created_at < ?", time.Now().Add(-time.Hour*24*2))
 	}
-	tx = tx.Delete(&model.ComplianceRunner{})
+	tx = tx.Unscoped().Delete(&model.ComplianceRunner{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.ORM.Model(&model.ComplianceRunner{}).
+		Where("created_at < ?", time.Now().Add(-time.Hour*24*7)).
+		Unscoped().Delete(&model.ComplianceRunner{})
 	if tx.Error != nil {
 		return tx.Error
 	}
