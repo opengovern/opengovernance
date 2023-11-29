@@ -39,6 +39,7 @@ type OnboardServiceClient interface {
 	GetConnectionGroup(ctx *httpclient.Context, connectionGroupName string) (*api.ConnectionGroup, error)
 	ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error)
 	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error)
+	PostConnectionAws(ctx *httpclient.Context, req api.CreateAwsConnectionRequest) (*api.CreateConnectionResponse, error)
 }
 
 type onboardClient struct {
@@ -54,6 +55,23 @@ func NewOnboardServiceClient(baseURL string, cache *cache.Cache) OnboardServiceC
 	}
 }
 
+func (s *onboardClient) PostConnectionAws(ctx *httpclient.Context, req api.CreateAwsConnectionRequest) (*api.CreateConnectionResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/connections/aws", s.baseURL)
+	var response *api.CreateConnectionResponse
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
 func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
 	if ctx.Ctx == nil {
 		ctx.Ctx = context.Background()

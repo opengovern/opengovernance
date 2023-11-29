@@ -2552,6 +2552,8 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig'
       connectorType:
         $ref: '#/definitions/source.Type'
+      singleConnection:
+        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress:
     properties:

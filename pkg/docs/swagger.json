@@ -9882,6 +9882,9 @@
                 },
                 "connectorType": {
                     "$ref": "#/definitions/source.Type"
+                },
+                "singleConnection": {
+                    "type": "boolean"
                 }
             }
         },

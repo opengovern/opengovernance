@@ -19,9 +19,10 @@ type CreateWorkspaceResponse struct {
 }
 
 type AddCredentialRequest struct {
-	AWSConfig     *apiv2.AWSCredentialV2Config `json:"awsConfig"`
-	AzureConfig   *api.AzureCredentialConfig   `json:"azureConfig"`
-	ConnectorType source.Type                  `json:"connectorType"`
+	SingleConnection bool                         `json:"singleConnection"`
+	AWSConfig        *apiv2.AWSCredentialV2Config `json:"awsConfig"`
+	AzureConfig      *api.AzureCredentialConfig   `json:"azureConfig"`
+	ConnectorType    source.Type                  `json:"connectorType"`
 }
 
 type BootstrapStatus string

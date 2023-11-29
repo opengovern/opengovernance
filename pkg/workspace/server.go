@@ -752,10 +752,11 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 	}
 
 	cred := db2.Credential{
-		ConnectorType:   request.ConnectorType,
-		WorkspaceID:     ws.ID,
-		Metadata:        configStr,
-		ConnectionCount: count,
+		ConnectorType:    request.ConnectorType,
+		WorkspaceID:      ws.ID,
+		Metadata:         configStr,
+		ConnectionCount:  count,
+		SingleConnection: request.SingleConnection,
 	}
 	err = s.db.CreateCredential(&cred)
 	if err != nil {
