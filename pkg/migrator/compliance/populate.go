@@ -28,8 +28,8 @@ func PopulateDatabase(dbc *gorm.DB) error {
 		for _, obj := range p.queries {
 			obj.Policies = nil
 			err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                                                                 // key column
-				DoUpdates: clause.AssignmentColumns([]string{"query_to_execute", "connector", "list_of_tables", "engine", "updated_at"}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "id"}},                                                                                                  // key column
+				DoUpdates: clause.AssignmentColumns([]string{"query_to_execute", "connector", "list_of_tables", "engine", "updated_at", "primary_table"}), // column needed to be updated
 			}).Create(&obj).Error
 			if err != nil {
 				return err
