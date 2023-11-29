@@ -34,5 +34,6 @@ type Query struct {
 	Engine         string
 	QueryToExecute string
 	Connector      string
+	PrimaryTable   *string
 	ListOfTables   []string
 }

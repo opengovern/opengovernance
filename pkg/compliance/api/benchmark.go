@@ -46,6 +46,7 @@ type Query struct {
 	ID             string    `json:"id" example:"azure_ad_manual_control"`
 	QueryToExecute string    `json:"queryToExecute" example:"select\n  -- Required Columns\n  'active_directory' as resource,\n  'info' as status,\n  'Manual verification required.' as reason;\n"`
 	Connector      string    `json:"connector" example:"Azure"`
+	PrimaryTable   *string   `json:"primaryTable" example:"null"`
 	ListOfTables   []string  `json:"listOfTables" example:"null"`
 	Engine         string    `json:"engine" example:"steampipe-v0.5"`
 	CreatedAt      time.Time `json:"createdAt" example:"2023-06-07T14:00:15.677558Z"`

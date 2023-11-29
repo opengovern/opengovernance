@@ -15,18 +15,25 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 	var findings []types.Finding
 
 	queryResourceType := ""
-	if len(query.ListOfTables) == 1 {
+	if query.PrimaryTable != nil || len(query.ListOfTables) == 1 {
+		tableName := ""
+		if query.PrimaryTable != nil {
+			tableName = *query.PrimaryTable
+		} else {
+			tableName = query.ListOfTables[0]
+		}
+
 		switch query.Connector {
 		case source.CloudAWS.String():
-			queryResourceType = awsSteampipe.ExtractResourceType(query.ListOfTables[0])
+			queryResourceType = awsSteampipe.ExtractResourceType(tableName)
 		case source.CloudAzure.String():
-			queryResourceType = azureSteampipe.ExtractResourceType(query.ListOfTables[0])
+			queryResourceType = azureSteampipe.ExtractResourceType(tableName)
 		default:
 			if queryResourceType == "" {
-				queryResourceType = awsSteampipe.ExtractResourceType(query.ListOfTables[0])
+				queryResourceType = awsSteampipe.ExtractResourceType(tableName)
 			}
 			if queryResourceType == "" {
-				queryResourceType = azureSteampipe.ExtractResourceType(query.ListOfTables[0])
+				queryResourceType = azureSteampipe.ExtractResourceType(tableName)
 			}
 		}
 	}

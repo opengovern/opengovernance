@@ -295,6 +295,7 @@ type Query struct {
 	ID             string `gorm:"primaryKey"`
 	QueryToExecute string
 	Connector      string
+	PrimaryTable   *string
 	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
 	Policies       []Policy  `gorm:"foreignKey:QueryID"`
@@ -309,6 +310,7 @@ func (q Query) ToApi() api.Query {
 		QueryToExecute: q.QueryToExecute,
 		Connector:      q.Connector,
 		ListOfTables:   q.ListOfTables,
+		PrimaryTable:   q.PrimaryTable,
 		Engine:         q.Engine,
 		CreatedAt:      q.CreatedAt,
 		UpdatedAt:      q.UpdatedAt,
