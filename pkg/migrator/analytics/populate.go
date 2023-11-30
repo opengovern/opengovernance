@@ -131,10 +131,10 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		}
 		if metricType == analyticsDB.MetricTypeSpend {
 			metric.FinderQuery = fmt.Sprintf(`select * from kaytu_cost where service_name in (%s)`, strings.Join(tarr, ","))
-			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from kaytu_cost where service_name in (%s) and connection_id IN <CONNECTION_ID_LIST>`, strings.Join(tarr, ","), "%s")
+			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from kaytu_cost where service_name in (%s) and connection_id IN (<CONNECTION_ID_LIST>)`, strings.Join(tarr, ","))
 		} else {
 			metric.FinderQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
-			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s) and connection_id IN <CONNECTION_ID_LIST>`, strings.Join(tarr, ","), "%s")
+			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s) and connection_id IN (<CONNECTION_ID_LIST>)`, strings.Join(tarr, ","))
 		}
 	}
 
