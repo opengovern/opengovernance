@@ -28,17 +28,18 @@ const (
 )
 
 type AnalyticMetric struct {
-	ID          string         `gorm:"primaryKey"`
-	Connectors  pq.StringArray `gorm:"type:text[]"`
-	Type        MetricType
-	Name        string
-	Query       string
-	Tables      pq.StringArray `gorm:"type:text[]"`
-	FinderQuery string
-	Visible     bool
-	Status      AnalyticMetricStatus
-	Tags        []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	tagsMap     map[string][]string `gorm:"-:all"`
+	ID                       string         `gorm:"primaryKey"`
+	Connectors               pq.StringArray `gorm:"type:text[]"`
+	Type                     MetricType
+	Name                     string
+	Query                    string
+	Tables                   pq.StringArray `gorm:"type:text[]"`
+	FinderQuery              string
+	FinderPerConnectionQuery string
+	Visible                  bool
+	Status                   AnalyticMetricStatus
+	Tags                     []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	tagsMap                  map[string][]string `gorm:"-:all"`
 }
 
 func (m *AnalyticMetric) GetTagsMap() map[string][]string {

@@ -8407,6 +8407,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/source.Type"
                     }
                 },
+                "finderPerConnectionQuery": {
+                    "type": "string"
+                },
                 "finderQuery": {
                     "type": "string"
                 },
@@ -8487,6 +8490,9 @@ const docTemplate = `{
                     "type": "number",
                     "minimum": 0,
                     "example": 21232.10443638001
+                },
+                "finderPerConnectionQuery": {
+                    "type": "string"
                 },
                 "finderQuery": {
                     "type": "string"
@@ -8656,6 +8662,10 @@ const docTemplate = `{
                     "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer",
                     "example": 100
+                },
+                "finderPerConnectionQuery": {
+                    "type": "string",
+                    "example": "select * from kaytu_resources where resource_type = 'aws::ec2::instance' AND connection_id IN \u003cCONNECTION_ID_LIST\u003e"
                 },
                 "finderQuery": {
                     "type": "string",

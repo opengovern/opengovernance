@@ -20,13 +20,14 @@ type ListServicesCostTrendDatapoint struct {
 }
 
 type CostMetric struct {
-	Connector            []source.Type `json:"connector" example:"Azure"`
-	CostDimensionName    string        `json:"cost_dimension_name" example:"microsoft.compute/disks"`
-	CostDimensionID      string        `json:"cost_dimension_id" example:"microsoft_compute_disks"`
-	TotalCost            *float64      `json:"total_cost,omitempty" example:"621041.2436112489" minimum:"0"`
-	DailyCostAtStartTime *float64      `json:"daily_cost_at_start_time,omitempty" example:"21232.10443638001" minimum:"0"`
-	DailyCostAtEndTime   *float64      `json:"daily_cost_at_end_time,omitempty" example:"14118.815231085681" minimum:"0"`
-	FinderQuery          string        `json:"finderQuery"`
+	Connector                []source.Type `json:"connector" example:"Azure"`
+	CostDimensionName        string        `json:"cost_dimension_name" example:"microsoft.compute/disks"`
+	CostDimensionID          string        `json:"cost_dimension_id" example:"microsoft_compute_disks"`
+	TotalCost                *float64      `json:"total_cost,omitempty" example:"621041.2436112489" minimum:"0"`
+	DailyCostAtStartTime     *float64      `json:"daily_cost_at_start_time,omitempty" example:"21232.10443638001" minimum:"0"`
+	DailyCostAtEndTime       *float64      `json:"daily_cost_at_end_time,omitempty" example:"14118.815231085681" minimum:"0"`
+	FinderQuery              string        `json:"finderQuery"`
+	FinderPerConnectionQuery string        `json:"finderPerConnectionQuery"`
 }
 
 type ListCostMetricsResponse struct {
@@ -36,14 +37,15 @@ type ListCostMetricsResponse struct {
 }
 
 type AnalyticsMetric struct {
-	ID          string              `json:"id"`
-	Connectors  []source.Type       `json:"connectors"`
-	Type        db.MetricType       `json:"type"`
-	Name        string              `json:"name"`
-	Query       string              `json:"query"`
-	Tables      []string            `json:"tables"`
-	FinderQuery string              `json:"finderQuery"`
-	Tags        map[string][]string `json:"tags"`
+	ID                       string              `json:"id"`
+	Connectors               []source.Type       `json:"connectors"`
+	Type                     db.MetricType       `json:"type"`
+	Name                     string              `json:"name"`
+	Query                    string              `json:"query"`
+	Tables                   []string            `json:"tables"`
+	FinderQuery              string              `json:"finderQuery"`
+	FinderPerConnectionQuery string              `json:"finderPerConnectionQuery"`
+	Tags                     map[string][]string `json:"tags"`
 }
 
 type ListCostCompositionResponse struct {
