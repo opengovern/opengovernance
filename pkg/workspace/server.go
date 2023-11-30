@@ -221,10 +221,10 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be kaytu or workspaces")
 	}
 	if !regexp.MustCompile(`^[a-zA-Z0-9\-]*$`).MatchString(request.Name) {
-		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")
+		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid. only characters, numbers and - is allowed")
 	}
-	if len(request.Name) > 150 {
-		return echo.NewHTTPError(http.StatusBadRequest, "name over 150 characters")
+	if len(request.Name) >= 150 {
+		return echo.NewHTTPError(http.StatusBadRequest, "name must be under 150 characters")
 	}
 
 	switch request.Tier {

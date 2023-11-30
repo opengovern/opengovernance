@@ -27,6 +27,18 @@ func (s *Database) GetMasterCredentialByWorkspaceUID(workspaceUID string) (*Mast
 	return &res, nil
 }
 
+func (s *Database) DeleteMasterCredential(workspaceUID string) error {
+	tx := s.Orm.
+		Where("workspace_id = ?", workspaceUID).
+		Unscoped().
+		Delete(&MasterCredential{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (s *Database) ListCredentialsByWorkspaceID(id string) ([]Credential, error) {
 	var creds []Credential
 	err := s.Orm.Model(&Credential{}).

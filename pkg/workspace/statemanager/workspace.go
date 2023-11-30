@@ -155,6 +155,11 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			if err != nil {
 				return err
 			}
+
+			err = s.db.DeleteMasterCredential(*workspace.AWSUniqueId)
+			if err != nil {
+				return err
+			}
 		}
 
 		if err := s.db.DeleteWorkspace(workspace.ID); err != nil {
