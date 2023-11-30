@@ -1158,6 +1158,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
+					FinderQuery:          metricsMap[localHit.MetricID].FinderQuery,
 				}
 			}
 		}
