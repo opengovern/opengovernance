@@ -131,6 +131,8 @@ func (w *Job) Run() error {
 		gitConfig.AnalyticsGitURL = value.GetValue().(string)
 	}
 
+	w.logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
+
 	// run elasticsearch
 	w.logger.Info("Starting elasticsearch migration")
 	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
