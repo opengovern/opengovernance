@@ -2512,6 +2512,14 @@
                     "compliance"
                 ],
                 "summary": "Sync queries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Git URL",
+                        "name": "configzGitURL",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -8042,6 +8050,10 @@
                         "null"
                     ]
                 },
+                "primaryTable": {
+                    "type": "string",
+                    "example": "null"
+                },
                 "queryToExecute": {
                     "type": "string",
                     "example": "select\n  -- Required Columns\n  'active_directory' as resource,\n  'info' as status,\n  'Manual verification required.' as reason;\n"
@@ -8470,6 +8482,9 @@
                     "type": "number",
                     "minimum": 0,
                     "example": 21232.10443638001
+                },
+                "finderQuery": {
+                    "type": "string"
                 },
                 "total_cost": {
                     "type": "number",

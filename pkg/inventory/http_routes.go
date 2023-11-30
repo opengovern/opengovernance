@@ -1067,6 +1067,10 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	for _, m := range metrics {
 		metricIds = append(metricIds, m.ID)
 	}
+	metricsMap := make(map[string]analyticsDB.AnalyticMetric)
+	for _, m := range metrics {
+		metricsMap[m.ID] = m
+	}
 
 	filterStr := ctx.QueryParam("filter")
 	if filterStr != "" {
@@ -1119,6 +1123,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
+					FinderQuery:          metricsMap[localHit.MetricID].FinderQuery,
 				}
 			}
 		}
@@ -1153,6 +1158,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
+					FinderQuery:          metricsMap[localHit.MetricID].FinderQuery,
 				}
 			}
 		}
