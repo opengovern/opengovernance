@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -2045,13 +2047,30 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //
 //	@Security		BearerToken
 //	@Tags			compliance
+//	@Param			configzGitURL	query	string	false	"Git URL"
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
 //	@Router			/compliance/api/v1/queries/sync [get]
 func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
+	configzGitURL := ctx.QueryParam("configzGitURL")
+	if configzGitURL != "" {
+		// validate url
+		_, err := url.ParseRequestURI(configzGitURL)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid url")
+		}
+
+		err = h.metadataClient.SetConfigMetadata(httpclient.FromEchoContext(ctx), models.MetadataKeyAnalyticsGitURL, configzGitURL)
+		if err != nil {
+			h.logger.Error("set config metadata", zap.Error(err))
+			return err
+		}
+	}
+
 	err := h.syncJobsQueue.Publish([]byte{})
 	if err != nil {
+		h.logger.Error("publish sync jobs", zap.Error(err))
 		return err
 	}
 	return ctx.JSON(http.StatusOK, struct{}{})

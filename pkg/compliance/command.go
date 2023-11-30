@@ -28,6 +28,7 @@ type ServerConfig struct {
 	Scheduler  config.KaytuService
 	Onboard    config.KaytuService
 	Inventory  config.KaytuService
+	Metadata   config.KaytuService
 	OpenAI     OpenAI
 	RabbitMq   config.RabbitMQ
 	Http       config.HttpServer

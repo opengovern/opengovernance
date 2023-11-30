@@ -1,7 +1,10 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 
@@ -12,6 +15,7 @@ import (
 
 type MetadataServiceClient interface {
 	GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error)
+	SetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey, value any) error
 }
 
 type metadataClient struct {
@@ -27,7 +31,10 @@ func NewMetadataServiceClient(baseURL string) MetadataServiceClient {
 func (s *metadataClient) GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error) {
 	url := fmt.Sprintf("%s/api/v1/metadata/%s", s.baseURL, string(key))
 	var cnf models.ConfigMetadata
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 
@@ -62,4 +69,27 @@ func (s *metadataClient) GetConfigMetadata(ctx *httpclient.Context, key models.M
 	}
 
 	return nil, fmt.Errorf("unknown config metadata type: %s", cnf.Type)
+}
+
+func (s *metadataClient) SetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey, value any) error {
+	url := fmt.Sprintf("%s/api/v1/metadata", s.baseURL)
+
+	req := api.SetConfigMetadataRequest{
+		Key:   string(key),
+		Value: value,
+	}
+	jsonReq, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	var cnf models.ConfigMetadata
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), jsonReq, &cnf); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+
+	return nil
 }

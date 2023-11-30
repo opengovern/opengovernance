@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"fmt"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/sashabaranov/go-openai"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -32,6 +33,7 @@ type HttpHandler struct {
 	schedulerClient describeClient.SchedulerServiceClient
 	onboardClient   onboardClient.OnboardServiceClient
 	inventoryClient inventoryClient.InventoryServiceClient
+	metadataClient  metadataClient.MetadataServiceClient
 	openAIClient    *openai.Client
 }
 
@@ -113,6 +115,7 @@ func InitializeHttpHandler(
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
 	h.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
+	h.metadataClient = metadataClient.NewMetadataServiceClient(conf.Metadata.BaseURL)
 	h.openAIClient = openai.NewClient(conf.OpenAI.Token)
 
 	return h, nil

@@ -79,8 +79,7 @@ func MetadataMigration(conf postgres.Config, logger *zap.Logger, metadataFilePat
 
 	for _, obj := range metadata {
 		err := dbm.ORM.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "key"}}, // key colume
-			DoUpdates: clause.AssignmentColumns([]string{"type", "value"}),
+			DoNothing: true,
 		}).Create(&obj).Error
 		if err != nil {
 			return err
