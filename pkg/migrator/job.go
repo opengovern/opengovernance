@@ -129,6 +129,8 @@ func (w *Job) Run() error {
 		UserRole: api.AdminRole,
 	}, models.MetadataKeyAnalyticsGitURL); err == nil && len(value.GetValue().(string)) > 0 {
 		gitConfig.AnalyticsGitURL = value.GetValue().(string)
+	} else if err != nil {
+		w.logger.Error("failed to get analytics git url from metadata", zap.Error(err))
 	}
 
 	w.logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
