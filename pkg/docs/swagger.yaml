@@ -1244,6 +1244,9 @@ definitions:
         items:
           type: string
         type: array
+      primaryTable:
+        example: "null"
+        type: string
       queryToExecute:
         example: |
           select
@@ -1552,6 +1555,8 @@ definitions:
         example: 21232.10443638001
         minimum: 0
         type: number
+      finderQuery:
+        type: string
       total_cost:
         example: 621041.2436112489
         minimum: 0
@@ -4586,6 +4591,11 @@ paths:
       consumes:
       - application/json
       description: Syncs queries with the git backend.
+      parameters:
+      - description: Git URL
+        in: query
+        name: configzGitURL
+        type: string
       produces:
       - application/json
       responses:
