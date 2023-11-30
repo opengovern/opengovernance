@@ -1499,6 +1499,8 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
+      finderPerConnectionQuery:
+        type: string
       finderQuery:
         type: string
       id:
@@ -1555,6 +1557,8 @@ definitions:
         example: 21232.10443638001
         minimum: 0
         type: number
+      finderPerConnectionQuery:
+        type: string
       finderQuery:
         type: string
       total_cost:
@@ -1673,6 +1677,10 @@ definitions:
         description: Number of Resources of this Resource Type - Metric
         example: 100
         type: integer
+      finderPerConnectionQuery:
+        example: select * from kaytu_resources where resource_type = 'aws::ec2::instance'
+          AND connection_id IN <CONNECTION_ID_LIST>
+        type: string
       finderQuery:
         example: select * from kaytu_resources where resource_type = 'aws::ec2::instance'
         type: string

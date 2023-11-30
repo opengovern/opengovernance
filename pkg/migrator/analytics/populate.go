@@ -131,21 +131,24 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		}
 		if metricType == analyticsDB.MetricTypeSpend {
 			metric.FinderQuery = fmt.Sprintf(`select * from kaytu_cost where service_name in (%s)`, strings.Join(tarr, ","))
+			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from kaytu_cost where service_name in (%s) and connection_id IN <CONNECTION_ID_LIST>`, strings.Join(tarr, ","), "%s")
 		} else {
 			metric.FinderQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
+			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s) and connection_id IN <CONNECTION_ID_LIST>`, strings.Join(tarr, ","), "%s")
 		}
 	}
 
 	dbMetric := analyticsDB.AnalyticMetric{
-		ID:          id,
-		Connectors:  connectors,
-		Type:        metricType,
-		Name:        metric.Name,
-		Query:       metric.Query,
-		Tables:      metric.Tables,
-		FinderQuery: metric.FinderQuery,
-		Status:      analyticsDB.AnalyticMetricStatus(metric.Status),
-		Tags:        tags,
+		ID:                       id,
+		Connectors:               connectors,
+		Type:                     metricType,
+		Name:                     metric.Name,
+		Query:                    metric.Query,
+		Tables:                   metric.Tables,
+		FinderQuery:              metric.FinderQuery,
+		FinderPerConnectionQuery: metric.FinderPerConnectionQuery,
+		Status:                   analyticsDB.AnalyticMetricStatus(metric.Status),
+		Tags:                     tags,
 	}
 
 	err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{

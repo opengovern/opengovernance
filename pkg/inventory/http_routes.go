@@ -1117,13 +1117,14 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = v
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
-					Connector:            []source.Type{localHit.Connector},
-					CostDimensionName:    localHit.MetricName,
-					CostDimensionID:      localHit.MetricID,
-					TotalCost:            &localHit.TotalCost,
-					DailyCostAtStartTime: &localHit.StartDateCost,
-					DailyCostAtEndTime:   &localHit.EndDateCost,
-					FinderQuery:          metricsMap[localHit.MetricID].FinderQuery,
+					Connector:                []source.Type{localHit.Connector},
+					CostDimensionName:        localHit.MetricName,
+					CostDimensionID:          localHit.MetricID,
+					TotalCost:                &localHit.TotalCost,
+					DailyCostAtStartTime:     &localHit.StartDateCost,
+					DailyCostAtEndTime:       &localHit.EndDateCost,
+					FinderQuery:              metricsMap[localHit.MetricID].FinderQuery,
+					FinderPerConnectionQuery: metricsMap[localHit.MetricID].FinderPerConnectionQuery,
 				}
 			}
 		}
@@ -1152,13 +1153,14 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = v
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
-					Connector:            []source.Type{connector},
-					CostDimensionName:    localHit.MetricName,
-					CostDimensionID:      localHit.MetricID,
-					TotalCost:            &localHit.TotalCost,
-					DailyCostAtStartTime: &localHit.StartDateCost,
-					DailyCostAtEndTime:   &localHit.EndDateCost,
-					FinderQuery:          metricsMap[localHit.MetricID].FinderQuery,
+					Connector:                []source.Type{connector},
+					CostDimensionName:        localHit.MetricName,
+					CostDimensionID:          localHit.MetricID,
+					TotalCost:                &localHit.TotalCost,
+					DailyCostAtStartTime:     &localHit.StartDateCost,
+					DailyCostAtEndTime:       &localHit.EndDateCost,
+					FinderQuery:              metricsMap[localHit.MetricID].FinderQuery,
+					FinderPerConnectionQuery: metricsMap[localHit.MetricID].FinderPerConnectionQuery,
 				}
 			}
 		}
@@ -1283,14 +1285,15 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	var apiMetrics []inventoryApi.AnalyticsMetric
 	for _, metric := range metrics {
 		apiMetric := inventoryApi.AnalyticsMetric{
-			ID:          metric.ID,
-			Connectors:  source.ParseTypes(metric.Connectors),
-			Type:        metric.Type,
-			Name:        metric.Name,
-			Query:       metric.Query,
-			Tables:      metric.Tables,
-			FinderQuery: metric.FinderQuery,
-			Tags:        metric.GetTagsMap(),
+			ID:                       metric.ID,
+			Connectors:               source.ParseTypes(metric.Connectors),
+			Type:                     metric.Type,
+			Name:                     metric.Name,
+			Query:                    metric.Query,
+			Tables:                   metric.Tables,
+			FinderQuery:              metric.FinderQuery,
+			FinderPerConnectionQuery: metric.FinderPerConnectionQuery,
+			Tags:                     metric.GetTagsMap(),
 		}
 
 		apiMetrics = append(apiMetrics, apiMetric)
@@ -1331,14 +1334,15 @@ func (h *HttpHandler) GetMetric(ctx echo.Context) error {
 	span.End()
 
 	apiMetric := inventoryApi.AnalyticsMetric{
-		ID:          metric.ID,
-		Connectors:  source.ParseTypes(metric.Connectors),
-		Type:        metric.Type,
-		Name:        metric.Name,
-		Query:       metric.Query,
-		Tables:      metric.Tables,
-		FinderQuery: metric.FinderQuery,
-		Tags:        metric.GetTagsMap(),
+		ID:                       metric.ID,
+		Connectors:               source.ParseTypes(metric.Connectors),
+		Type:                     metric.Type,
+		Name:                     metric.Name,
+		Query:                    metric.Query,
+		Tables:                   metric.Tables,
+		FinderQuery:              metric.FinderQuery,
+		FinderPerConnectionQuery: metric.FinderPerConnectionQuery,
+		Tags:                     metric.GetTagsMap(),
 	}
 	return ctx.JSON(http.StatusOK, apiMetric)
 }
