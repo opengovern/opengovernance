@@ -350,10 +350,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 			var msgs []*confluent_kafka.Message
 			for _, hit := range esResp.Hits.Hits {
 				searchAfter = hit.Sort
-				esResourceID := hit.Source.ResourceID
 
 				resource := es2.Resource{
-					ID:           esResourceID,
+					ID:           hit.Source.ResourceID,
+					SourceID:     hit.Source.SourceID,
 					ResourceType: strings.ToLower(hit.Source.ResourceType),
 					SourceType:   hit.Source.SourceType,
 				}
@@ -365,7 +365,8 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				msgs = append(msgs, msg)
 
 				lookupResource := es2.LookupResource{
-					ResourceID:   esResourceID,
+					ResourceID:   hit.Source.ResourceID,
+					SourceID:     hit.Source.SourceID,
 					ResourceType: strings.ToLower(hit.Source.ResourceType),
 					SourceType:   hit.Source.SourceType,
 				}
