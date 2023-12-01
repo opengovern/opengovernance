@@ -2,6 +2,7 @@ package onboard
 
 import (
 	"context"
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
@@ -123,25 +124,25 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 		config.ClientSecret,
 		nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create identity: %v", err)
 	}
 
 	tokenProvider, err := authentication.NewAzureIdentityAccessTokenProvider(identity)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create tokenProvider: %v", err)
 	}
 
 	authProvider := absauth.NewBaseBearerTokenAuthenticationProvider(tokenProvider)
 	requestAdaptor, err := msgraphsdk.NewGraphRequestAdapter(authProvider)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create requestAdaptor: %v", err)
 	}
 
 	graphClient := msgraphsdk.NewGraphServiceClient(requestAdaptor)
 	result, err := graphClient.Applications().Get(ctx, nil)
 	//result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Applications: %v", err)
 	}
 
 	metadata := AzureCredentialMetadata{}
