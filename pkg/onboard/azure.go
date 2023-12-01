@@ -118,11 +118,6 @@ func currentAzureSubscription(ctx context.Context, logger *zap.Logger, subId str
 }
 
 func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*AzureCredentialMetadata, error) {
-	metadata := AzureCredentialMetadata{}
-	if config.ObjectID == "" {
-		return &metadata, nil
-	}
-
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -144,6 +139,25 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 	}
 
 	graphClient := msgraphsdk.NewGraphServiceClient(requestAdaptor)
+
+	metadata := AzureCredentialMetadata{}
+	if config.ObjectID == "" {
+		spn, err := graphClient.ServicePrincipalsById(config.ClientID).Get(ctx, nil)
+		if err == nil {
+			metadata.SpnName = *spn.GetDisplayName()
+		} else {
+			fmt.Printf("[1] failed to get spn by id %v\n", err)
+			spn, err := graphClient.ServicePrincipalsById(config.TenantID).Get(ctx, nil)
+			if err == nil {
+				metadata.SpnName = *spn.GetDisplayName()
+			} else {
+				fmt.Printf("[2] failed to get spn by id %v\n", err)
+			}
+		}
+
+		return &metadata, nil
+	}
+
 	result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Applications: %v", err)
