@@ -142,19 +142,6 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 
 	metadata := AzureCredentialMetadata{}
 	if config.ObjectID == "" {
-		spn, err := graphClient.ServicePrincipalsById(config.ClientID).Get(ctx, nil)
-		if err == nil {
-			metadata.SpnName = *spn.GetDisplayName()
-		} else {
-			fmt.Printf("[1] failed to get spn by id %v\n", err)
-			spn, err := graphClient.ServicePrincipalsById(config.TenantID).Get(ctx, nil)
-			if err == nil {
-				metadata.SpnName = *spn.GetDisplayName()
-			} else {
-				fmt.Printf("[2] failed to get spn by id %v\n", err)
-			}
-		}
-
 		return &metadata, nil
 	}
 
@@ -165,6 +152,7 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 
 	metadata.SpnName = *result.GetDisplayName()
 	metadata.ObjectId = *result.GetId()
+	metadata.SecretId = config.SecretID
 	for _, passwd := range result.GetPasswordCredentials() {
 		if passwd.GetKeyId() != nil && *passwd.GetKeyId() == config.SecretID {
 			metadata.SecretId = config.SecretID
