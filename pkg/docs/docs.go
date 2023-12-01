@@ -2756,6 +2756,12 @@ const docTemplate = `{
                         "description": "Metric type, default: assets",
                         "name": "metricType",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "For assets minimum number of resources returned resourcetype must have, default 1",
+                        "name": "minCount",
+                        "in": "query"
                     }
                 ],
                 "responses": {

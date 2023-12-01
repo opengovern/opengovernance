@@ -892,6 +892,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			metricType	query		string	false	"Metric type, default: assets"	Enums(assets, spend)
+//	@Param			minCount	query		int		false	"For assets minimum number of resources returned resourcetype must have, default 1"
 //	@Success		200			{object}	inventoryApi.AnalyticsCategoriesResponse
 //	@Router			/inventory/api/v2/analytics/categories [get]
 func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
@@ -899,6 +900,14 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
+	}
+	minCount := 1
+	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
+		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
+		}
+		minCount = int(minCountVal)
 	}
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListMetrics", trace.WithSpanKind(trace.SpanKindServer))
@@ -926,6 +935,24 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 						metric.Tables...,
 					)
 				}
+			}
+		}
+	}
+
+	resourceTypeCountMap, err := es.GetResourceTypeCounts(h.client, nil, nil, nil, EsFetchPageSize)
+	if err != nil {
+		h.logger.Error("failed to get resource type counts", zap.Error(err))
+		return err
+	}
+
+	for category, resourceTypes := range categoryResourceTypeMap {
+		for i, resourceType := range resourceTypes {
+			if count, _ := resourceTypeCountMap[strings.ToLower(resourceType)]; count < minCount {
+				// delete resource type from category
+				categoryResourceTypeMap[category] = append(
+					categoryResourceTypeMap[category][:i],
+					categoryResourceTypeMap[category][i+1:]...,
+				)
 			}
 		}
 	}

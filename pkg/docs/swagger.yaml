@@ -4750,6 +4750,11 @@ paths:
         in: query
         name: metricType
         type: string
+      - description: For assets minimum number of resources returned resourcetype
+          must have, default 1
+        in: query
+        name: minCount
+        type: integer
       produces:
       - application/json
       responses:
