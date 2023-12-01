@@ -118,6 +118,11 @@ func currentAzureSubscription(ctx context.Context, logger *zap.Logger, subId str
 }
 
 func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*AzureCredentialMetadata, error) {
+	metadata := AzureCredentialMetadata{}
+	if config.ObjectID == "" {
+		return &metadata, nil
+	}
+
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -139,30 +144,17 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 	}
 
 	graphClient := msgraphsdk.NewGraphServiceClient(requestAdaptor)
-	result, err := graphClient.Applications().Get(ctx, nil)
-	//result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
+	result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Applications: %v", err)
 	}
 
-	metadata := AzureCredentialMetadata{}
-
-	for _, res := range result.GetValue() {
-		if res.GetAppId() != nil && *res.GetAppId() == config.ClientID {
-			metadata.SpnName = *res.GetDisplayName()
-			metadata.ObjectId = *res.GetId()
-
-			if len(res.GetPasswordCredentials()) == 1 {
-				metadata.SecretId = *res.GetPasswordCredentials()[0].GetKeyId()
-				metadata.SecretExpirationDate = *res.GetPasswordCredentials()[0].GetEndDateTime()
-			}
-
-			for _, passwd := range res.GetPasswordCredentials() {
-				if passwd.GetKeyId() != nil && *passwd.GetKeyId() == config.SecretID {
-					metadata.SecretId = config.SecretID
-					metadata.SecretExpirationDate = *passwd.GetEndDateTime()
-				}
-			}
+	metadata.SpnName = *result.GetDisplayName()
+	metadata.ObjectId = *result.GetId()
+	for _, passwd := range result.GetPasswordCredentials() {
+		if passwd.GetKeyId() != nil && *passwd.GetKeyId() == config.SecretID {
+			metadata.SecretId = config.SecretID
+			metadata.SecretExpirationDate = *passwd.GetEndDateTime()
 		}
 	}
 	//
