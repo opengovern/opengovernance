@@ -2,8 +2,6 @@ package onboard
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
@@ -140,25 +138,36 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 	}
 
 	graphClient := msgraphsdk.NewGraphServiceClient(requestAdaptor)
-	result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
+	result, err := graphClient.Applications().Get(ctx, nil)
+	//result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	metadata := AzureCredentialMetadata{
-		SpnName:  *result.GetDisplayName(),
-		ObjectId: *result.GetId(),
-	}
-	for _, passwd := range result.GetPasswordCredentials() {
-		if passwd.GetKeyId() != nil && *passwd.GetKeyId() == config.SecretID {
-			metadata.SecretId = config.SecretID
-			metadata.SecretExpirationDate = *passwd.GetEndDateTime()
+	metadata := AzureCredentialMetadata{}
+
+	for _, res := range result.GetValue() {
+		if res.GetAppId() != nil && *res.GetAppId() == config.ClientID {
+			metadata.SpnName = *res.GetDisplayName()
+			metadata.ObjectId = *res.GetId()
+
+			if len(res.GetPasswordCredentials()) == 1 {
+				metadata.SecretId = *res.GetPasswordCredentials()[0].GetKeyId()
+				metadata.SecretExpirationDate = *res.GetPasswordCredentials()[0].GetEndDateTime()
+			}
+
+			for _, passwd := range res.GetPasswordCredentials() {
+				if passwd.GetKeyId() != nil && *passwd.GetKeyId() == config.SecretID {
+					metadata.SecretId = config.SecretID
+					metadata.SecretExpirationDate = *passwd.GetEndDateTime()
+				}
+			}
 		}
 	}
-
-	if metadata.SecretId == "" {
-		return nil, fmt.Errorf("failed to find the secret in application's credential list")
-	}
+	//
+	//if metadata.SecretId == "" {
+	//	return nil, fmt.Errorf("failed to find the secret in application's credential list")
+	//}
 
 	return &metadata, nil
 }

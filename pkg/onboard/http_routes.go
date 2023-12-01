@@ -420,7 +420,7 @@ func createAzureCredential(ctx context.Context, name string, credType model.Cred
 
 	metadata, err := getAzureCredentialsMetadata(ctx, azureCnf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get credential metadata: %v", err)
 	}
 	if credType == model.CredentialTypeManualAzureSpn {
 		name = metadata.SpnName
@@ -457,23 +457,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_Transaction And checkCredentialHealth")
 
-	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-		// trace :
-		_, span2 := tracer.Start(outputS, "mew_CreateCredential", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("mew_CreateCredential")
-
-		if err := h.db.CreateCredential(cred); err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span2.AddEvent("information", trace.WithAttributes(
-			attribute.String("Credential name ", *cred.Name),
-		))
-		span2.End()
-
-		return nil
-	})
+	err = h.db.CreateCredential(cred)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
