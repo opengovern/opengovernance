@@ -26,6 +26,7 @@ import (
 
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -114,6 +115,11 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 
 	var jobs []api.Job
 
+	srcs, err := h.Scheduler.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		return err
+	}
+
 	describeJobs, err := h.DB.ListAllJobs(limit)
 	if err != nil {
 		return err
@@ -134,14 +140,21 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		case "TIMEOUT", "TIMEDOUT":
 			status = api.JobStatus_Timeout
 		}
+
+		var jobSRC onboardapi.Connection
+		for _, src := range srcs {
+			if src.ID.String() == job.ConnectionID {
+				jobSRC = src
+			}
+		}
 		jobs = append(jobs, api.Job{
 			ID:                     job.ID,
 			CreatedAt:              job.CreatedAt,
 			UpdatedAt:              job.UpdatedAt,
 			Type:                   api.JobType(job.JobType),
 			ConnectionID:           job.ConnectionID,
-			ConnectionProviderID:   "",
-			ConnectionProviderName: "",
+			ConnectionProviderID:   jobSRC.ConnectionID,
+			ConnectionProviderName: jobSRC.ConnectionName,
 			Title:                  job.Title,
 			Status:                 status,
 			FailureReason:          job.FailureMessage,
