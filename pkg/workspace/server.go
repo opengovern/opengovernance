@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/smithy-go"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -312,22 +314,22 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return err
 	}
 
-	//result, err := s.kms.Encrypt(context.TODO(), &kms.EncryptInput{
-	//	KeyId:               &s.cfg.KMSKeyARN,
-	//	Plaintext:           js,
-	//	EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-	//	EncryptionContext:   nil, //TODO-Saleh use workspaceID
-	//	GrantTokens:         nil,
-	//})
-	//if err != nil {
-	//	return fmt.Errorf("failed to encrypt ciphertext: %v", err)
-	//}
-	//encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
+	result, err := s.kms.Encrypt(context.TODO(), &kms.EncryptInput{
+		KeyId:               &s.cfg.KMSKeyARN,
+		Plaintext:           js,
+		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
+		EncryptionContext:   nil, //TODO-Saleh use workspaceID
+		GrantTokens:         nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+	}
+	encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
 
 	err = s.db.CreateMasterCredential(&db2.MasterCredential{
 		WorkspaceID:   *workspace.AWSUniqueId,
 		ConnectorType: source.CloudAWS,
-		Credential:    string(js),
+		Credential:    encoded,
 	})
 	if err != nil {
 		return err
@@ -626,24 +628,24 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 
 		var accessKey, secretKey string
 		if masterCred != nil {
-			//decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
-			//if err != nil {
-			//	return err
-			//}
-			//
-			//result, err := s.kms.Decrypt(context.TODO(), &kms.DecryptInput{
-			//	CiphertextBlob:      decoded,
-			//	EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-			//	KeyId:               &s.cfg.KMSKeyARN,
-			//	EncryptionContext:   nil, //TODO-Saleh use workspaceID
-			//})
-			//if err != nil {
-			//	return fmt.Errorf("failed to encrypt ciphertext: %v", err)
-			//}
+			decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
+			if err != nil {
+				return err
+			}
+
+			result, err := s.kms.Decrypt(context.TODO(), &kms.DecryptInput{
+				CiphertextBlob:      decoded,
+				EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
+				KeyId:               &s.cfg.KMSKeyARN,
+				EncryptionContext:   nil, //TODO-Saleh use workspaceID
+			})
+			if err != nil {
+				return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+			}
 
 			var acc types2.AccessKey
-			//err = json.Unmarshal(result.Plaintext, &acc)
-			err = json.Unmarshal([]byte(masterCred.Credential), &acc)
+			err = json.Unmarshal(result.Plaintext, &acc)
+			//err = json.Unmarshal([]byte(masterCred.Credential), &acc)
 			if err != nil {
 				return err
 			}

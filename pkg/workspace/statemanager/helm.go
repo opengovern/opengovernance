@@ -2,10 +2,13 @@ package statemanager
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"time"
@@ -113,24 +116,24 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 			return err
 		}
 
-		//decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
-		//if err != nil {
-		//	return err
-		//}
-		//
-		//result, err := s.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
-		//	CiphertextBlob:      decoded,
-		//	EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-		//	KeyId:               &s.cfg.KMSKeyARN,
-		//	EncryptionContext:   nil,
-		//})
-		//if err != nil {
-		//	return fmt.Errorf("failed to encrypt ciphertext: %v", err)
-		//}
+		decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
+		if err != nil {
+			return err
+		}
+
+		result, err := s.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+			CiphertextBlob:      decoded,
+			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
+			KeyId:               &s.cfg.KMSKeyARN,
+			EncryptionContext:   nil,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+		}
 
 		var accessKey types2.AccessKey
-		//err = json.Unmarshal(result.Plaintext, &accessKey)
-		err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
+		err = json.Unmarshal(result.Plaintext, &accessKey)
+		//err = json.Unmarshal([]byte(masterCred.Credential), &accessKey)
 		if err != nil {
 			return err
 		}
