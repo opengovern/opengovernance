@@ -753,10 +753,22 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
+	result, err := s.kms.Encrypt(context.TODO(), &kms.EncryptInput{
+		KeyId:               &s.cfg.KMSKeyARN,
+		Plaintext:           configStr,
+		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
+		EncryptionContext:   nil, //TODO-Saleh use workspaceID
+		GrantTokens:         nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+	}
+	encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
+
 	cred := db2.Credential{
 		ConnectorType:    request.ConnectorType,
 		WorkspaceID:      ws.ID,
-		Metadata:         configStr,
+		Metadata:         encoded,
 		ConnectionCount:  count,
 		SingleConnection: request.SingleConnection,
 	}

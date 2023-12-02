@@ -423,7 +423,22 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 	onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
 
 	var request api.AddCredentialRequest
-	err := json.Unmarshal(cred.Metadata, &request)
+	decoded, err := base64.StdEncoding.DecodeString(cred.Metadata)
+	if err != nil {
+		return err
+	}
+
+	result, err := s.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+		CiphertextBlob:      decoded,
+		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
+		KeyId:               &s.cfg.KMSKeyARN,
+		EncryptionContext:   nil, //TODO-Saleh use workspaceID
+	})
+	if err != nil {
+		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+	}
+
+	err = json.Unmarshal(result.Plaintext, &request)
 	if err != nil {
 		return err
 	}

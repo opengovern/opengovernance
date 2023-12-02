@@ -71,9 +71,13 @@ func NewKubeClient() (client.Client, error) {
 }
 
 func (s *Service) createInsightBucket(ctx context.Context, workspace *db.Workspace) error {
+	s.awsConfig.Region = "us-east-1"
 	cli := s3.NewFromConfig(s.awsConfig)
 	_, err := cli.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(fmt.Sprintf("insights-%s", workspace.ID)),
+		//CreateBucketConfiguration: &s3Types.CreateBucketConfiguration{
+		//	LocationConstraint: s3Types.BucketLocationConstraintUsGovEast1,
+		//},
 	})
 	var bucketAlreadyExists *s3Types.BucketAlreadyExists
 	if errors.As(err, &bucketAlreadyExists) {
