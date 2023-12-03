@@ -13,6 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.42
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.40
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.5
+	github.com/aws/aws-sdk-go-v2/service/kms v1.24.5
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.39.5
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.20.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
@@ -36,9 +37,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.22.6
+	github.com/kaytu-io/kaytu-aws-describer v0.26.0
 	github.com/kaytu-io/kaytu-azure-describer v0.17.7
-	github.com/kaytu-io/kaytu-util v0.0.0-20231122185039-4dd1d4c3d42c
+	github.com/kaytu-io/kaytu-util v0.0.0-20231201093653-6117b5e04253
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -282,7 +283,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.18.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.18.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/kms v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.28.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/macie2 v1.29.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/mediastore v1.15.0 // indirect
