@@ -3,21 +3,24 @@ package compliance
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
+	"go.uber.org/zap"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func PopulateDatabase(dbc *gorm.DB) error {
+func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	p := GitParser{}
 	if err := p.ExtractQueries(internal.QueriesGitPath); err != nil {
 		return err
 	}
+	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
 
 	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
 		return err
 	}
+	logger.Info("extracted policies and benchmarks", zap.Int("policies", len(p.policies)), zap.Int("benchmarks", len(p.benchmarks)))
 
 	err := dbc.Transaction(func(tx *gorm.DB) error {
 		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
@@ -28,8 +31,15 @@ func PopulateDatabase(dbc *gorm.DB) error {
 		for _, obj := range p.queries {
 			obj.Policies = nil
 			err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                                                                                  // key column
-				DoUpdates: clause.AssignmentColumns([]string{"query_to_execute", "connector", "list_of_tables", "engine", "updated_at", "primary_table"}), // column needed to be updated
+				Columns: []clause.Column{{Name: "id"}}, // key column
+				DoUpdates: clause.AssignmentColumns([]string{
+					"query_to_execute",
+					"connector",
+					"list_of_tables",
+					"engine",
+					"updated_at",
+					"primary_table",
+				}), // column needed to be updated
 			}).Create(&obj).Error
 			if err != nil {
 				return err
