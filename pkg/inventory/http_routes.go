@@ -952,10 +952,14 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 				if len(categoryResourceTypeMap[category]) == 1 {
 					delete(categoryResourceTypeMap, category)
 				} else {
-					categoryResourceTypeMap[category] = append(
-						categoryResourceTypeMap[category][:i],
-						categoryResourceTypeMap[category][i+1:]...,
-					)
+					if i < len(categoryResourceTypeMap[category])-1 {
+						categoryResourceTypeMap[category] = append(
+							categoryResourceTypeMap[category][:i],
+							categoryResourceTypeMap[category][i+1:]...,
+						)
+					} else {
+						categoryResourceTypeMap[category] = categoryResourceTypeMap[category][:i]
+					}
 				}
 			}
 		}
