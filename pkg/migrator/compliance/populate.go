@@ -17,6 +17,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 		return err
 	}
 	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
+	loadedQueries := make(map[string]bool)
 	err := dbc.Transaction(func(tx *gorm.DB) error {
 		for _, obj := range p.queries {
 			obj.Policies = nil
@@ -34,6 +35,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 			if err != nil {
 				return err
 			}
+			loadedQueries[obj.ID] = true
 		}
 		return nil
 	})
@@ -56,6 +58,10 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 
 		for _, obj := range p.policies {
 			obj.Benchmarks = nil
+			if obj.QueryID != nil && !loadedQueries[*obj.QueryID] {
+				logger.Info("query not found", zap.String("query_id", *obj.QueryID))
+				continue
+			}
 			err := tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},                                                                                                          // key column
 				DoUpdates: clause.AssignmentColumns([]string{"title", "description", "document_uri", "severity", "manual_verification", "managed", "updated_at"}), // column needed to be updated
@@ -110,6 +116,10 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 			}
 
 			for _, policy := range obj.Policies {
+				if policy.QueryID != nil && !loadedQueries[*policy.QueryID] {
+					logger.Info("query not found", zap.String("query_id", *policy.QueryID))
+					continue
+				}
 				err := tx.Clauses(clause.OnConflict{
 					DoNothing: true,
 				}).Create(&db.BenchmarkPolicies{
