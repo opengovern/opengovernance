@@ -49,7 +49,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 		return err
 	}
 	logger.Info("extracted policies and benchmarks", zap.Int("policies", len(p.policies)), zap.Int("benchmarks", len(p.benchmarks)))
-
+	missingQueries := make(map[string]bool)
 	err = dbc.Transaction(func(tx *gorm.DB) error {
 		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
 		tx.Model(&db.BenchmarkPolicies{}).Where("1=1").Unscoped().Delete(&db.BenchmarkPolicies{})
@@ -59,6 +59,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 		for _, obj := range p.policies {
 			obj.Benchmarks = nil
 			if obj.QueryID != nil && !loadedQueries[*obj.QueryID] {
+				missingQueries[*obj.QueryID] = true
 				logger.Info("query not found", zap.String("query_id", *obj.QueryID))
 				continue
 			}
@@ -117,7 +118,6 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 
 			for _, policy := range obj.Policies {
 				if policy.QueryID != nil && !loadedQueries[*policy.QueryID] {
-					logger.Info("query not found", zap.String("query_id", *policy.QueryID))
 					continue
 				}
 				err := tx.Clauses(clause.OnConflict{
@@ -131,6 +131,14 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 					return err
 				}
 			}
+		}
+
+		missingQueriesList := make([]string, 0, len(missingQueries))
+		for query := range missingQueries {
+			missingQueriesList = append(missingQueriesList, query)
+		}
+		if len(missingQueriesList) > 0 {
+			logger.Warn("missing queries", zap.Strings("queries", missingQueriesList))
 		}
 		return nil
 	})
