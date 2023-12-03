@@ -52,6 +52,21 @@ type FindingFilters struct {
 	Status             []types.ComplianceResult `json:"status" example:"alarm"`
 }
 
+type FindingFilterWithMetadata struct {
+	Key         string `json:"key" example:"key"`                 // Key
+	DisplayName string `json:"displayName" example:"displayName"` // Display Name
+}
+
+type FindingFiltersWithMetadata struct {
+	Connector          []FindingFilterWithMetadata `json:"connector"`
+	BenchmarkID        []FindingFilterWithMetadata `json:"benchmarkID"`
+	PolicyID           []FindingFilterWithMetadata `json:"policyID"`
+	ResourceTypeID     []FindingFilterWithMetadata `json:"resourceTypeID"`
+	ConnectionID       []FindingFilterWithMetadata `json:"connectionID"`
+	ResourceCollection []FindingFilterWithMetadata `json:"resourceCollection"`
+	Severity           []FindingFilterWithMetadata `json:"severity"`
+}
+
 type GetFindingsRequest struct {
 	Filters      FindingFilters    `json:"filters"`
 	Sort         map[string]string `json:"sort"`

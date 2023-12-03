@@ -543,3 +543,13 @@ func (db Database) ListPolicies() ([]Policy, error) {
 	}
 	return s, nil
 }
+
+func (db Database) ListPoliciesBare() ([]Policy, error) {
+	var s []Policy
+	tx := db.Orm.Model(&Policy{}).Preload("Tags").
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
