@@ -176,7 +176,8 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
-		req.Filters.ResourceCollection, req.Filters.BenchmarkID, req.Filters.PolicyID,
+		req.Filters.ResourceTypeID, req.Filters.ResourceCollection,
+		req.Filters.BenchmarkID, req.Filters.PolicyID,
 		req.Filters.Severity, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
