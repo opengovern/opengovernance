@@ -281,12 +281,68 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		api.FindingFilters	true	"Request Body"
-//	@Success		200		{object}	api.FindingFilters
+//	@Success		200		{object}	api.FindingFiltersWithMetadata
 //	@Router			/compliance/api/v1/findings/filters [post]
 func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	var req api.FindingFilters
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+	}
+
+	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		h.logger.Error("failed to get resource collection metadata", zap.Error(err))
+		return err
+	}
+	resourceCollectionMetadataMap := make(map[string]*inventoryApi.ResourceCollection)
+	for _, item := range resourceCollectionMetadata {
+		item := item
+		resourceCollectionMetadataMap[item.ID] = &item
+	}
+
+	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		h.logger.Error("failed to get connections", zap.Error(err))
+		return err
+	}
+	connectionMetadataMap := make(map[string]*onboardApi.Connection)
+	for _, item := range connectionMetadata {
+		item := item
+		connectionMetadataMap[item.ID.String()] = &item
+	}
+
+	benchmarkMetadata, err := h.db.ListBenchmarksBare()
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarkMetadataMap := make(map[string]*db.Benchmark)
+	for _, item := range benchmarkMetadata {
+		item := item
+		benchmarkMetadataMap[item.ID] = &item
+	}
+
+	policyMetadata, err := h.db.ListPoliciesBare()
+	if err != nil {
+		h.logger.Error("failed to get policies", zap.Error(err))
+		return err
+	}
+	policyMetadataMap := make(map[string]*db.Policy)
+	for _, item := range policyMetadata {
+		item := item
+		policyMetadataMap[item.ID] = &item
 	}
 
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
@@ -297,36 +353,88 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
 	}
-	response := api.FindingFilters{
-		Connector:          req.Connector,
-		ResourceID:         req.ResourceID,
-		ResourceTypeID:     req.ResourceTypeID,
-		ConnectionID:       req.ConnectionID,
-		ResourceCollection: req.ResourceCollection,
-		BenchmarkID:        req.BenchmarkID,
-		PolicyID:           req.PolicyID,
-		Severity:           req.Severity,
+	response := api.FindingFiltersWithMetadata{}
+	for _, item := range possibleFilters.Aggregations.BenchmarkIDFilter.Buckets {
+		if benchmark, ok := benchmarkMetadataMap[item.Key]; ok {
+			response.BenchmarkID = append(response.BenchmarkID, api.FindingFilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: benchmark.Title,
+			})
+		} else {
+			response.BenchmarkID = append(response.BenchmarkID, api.FindingFilterWithMetadata{
+				Key: item.Key,
+			})
+		}
 	}
-	if len(possibleFilters.Aggregations.BenchmarkIDFilter.Buckets) > 0 {
-		response.BenchmarkID = possibleFilters.Aggregations.BenchmarkIDFilter.GetBucketsKeys()
-	}
-	if len(possibleFilters.Aggregations.PolicyIDFilter.Buckets) > 0 {
-		response.PolicyID = possibleFilters.Aggregations.PolicyIDFilter.GetBucketsKeys()
+	for _, item := range possibleFilters.Aggregations.PolicyIDFilter.Buckets {
+		if policy, ok := policyMetadataMap[item.Key]; ok {
+			response.PolicyID = append(response.PolicyID, api.FindingFilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: policy.Title,
+			})
+		} else {
+			response.PolicyID = append(response.PolicyID, api.FindingFilterWithMetadata{
+				Key: item.Key,
+			})
+		}
 	}
 	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
-		response.Connector = source.ParseTypes(possibleFilters.Aggregations.ConnectorFilter.GetBucketsKeys())
+		connectors := source.ParseTypes(possibleFilters.Aggregations.ConnectorFilter.GetBucketsKeys())
+		for _, connector := range connectors {
+			response.Connector = append(response.Connector, api.FindingFilterWithMetadata{
+				Key:         connector.String(),
+				DisplayName: connector.String(),
+			})
+		}
 	}
-	if len(possibleFilters.Aggregations.ResourceTypeFilter.Buckets) > 0 {
-		response.ResourceTypeID = possibleFilters.Aggregations.ResourceTypeFilter.GetBucketsKeys()
+	for _, item := range possibleFilters.Aggregations.ResourceTypeFilter.Buckets {
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(item.Key)]; ok {
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: rtMetadata.ResourceLabel,
+			})
+		} else if item.Key == "" {
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: "Unknown",
+			})
+		} else {
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
+				Key: item.Key,
+			})
+		}
 	}
-	if len(possibleFilters.Aggregations.ConnectionIDFilter.Buckets) > 0 {
-		response.ConnectionID = possibleFilters.Aggregations.ConnectionIDFilter.GetBucketsKeys()
+
+	for _, item := range possibleFilters.Aggregations.ConnectionIDFilter.Buckets {
+		if connection, ok := connectionMetadataMap[item.Key]; ok {
+			response.ConnectionID = append(response.ConnectionID, api.FindingFilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: connection.ConnectionName,
+			})
+		} else {
+			response.ConnectionID = append(response.ConnectionID, api.FindingFilterWithMetadata{
+				Key: item.Key,
+			})
+		}
 	}
-	if len(possibleFilters.Aggregations.ResourceCollectionFilter.Buckets) > 0 {
-		response.ResourceCollection = possibleFilters.Aggregations.ResourceCollectionFilter.GetBucketsKeys()
+
+	for _, item := range possibleFilters.Aggregations.ResourceCollectionFilter.Buckets {
+		if resourceCollection, ok := resourceCollectionMetadataMap[item.Key]; ok {
+			response.ResourceCollection = append(response.ResourceCollection, api.FindingFilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: resourceCollection.Name,
+			})
+		} else {
+			response.ResourceCollection = append(response.ResourceCollection, api.FindingFilterWithMetadata{
+				Key: item.Key,
+			})
+		}
 	}
-	if len(possibleFilters.Aggregations.SeverityFilter.Buckets) > 0 {
-		response.Severity = possibleFilters.Aggregations.SeverityFilter.GetBucketsKeys()
+
+	for _, item := range possibleFilters.Aggregations.SeverityFilter.Buckets {
+		response.Severity = append(response.Severity, api.FindingFilterWithMetadata{
+			Key: item.Key,
+		})
 	}
 
 	return ctx.JSON(http.StatusOK, response)

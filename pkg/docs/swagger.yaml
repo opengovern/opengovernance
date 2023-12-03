@@ -852,6 +852,17 @@ definitions:
         example: true
         type: boolean
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata:
+    properties:
+      displayName:
+        description: Display Name
+        example: displayName
+        type: string
+      key:
+        description: Key
+        example: key
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
       benchmarkID:
@@ -915,6 +926,37 @@ definitions:
         - alarm
         items:
           $ref: '#/definitions/types.ComplianceResult'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
+    properties:
+      benchmarkID:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      connectionID:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      connector:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      policyID:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      resourceCollection:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      resourceTypeID:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      severity:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
@@ -4169,7 +4211,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata'
       security:
       - BearerToken: []
       summary: Get possible values for finding filters
