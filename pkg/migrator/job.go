@@ -170,7 +170,7 @@ func (w *Job) Run() error {
 	}
 
 	w.logger.Info("Starting compliance migration")
-	if err = compliance.PopulateDatabase(logger, w.db.ORM); err != nil {
+	if err = compliance.PopulateDatabase(w.logger, w.db.ORM); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running compliance migration: %v", err))
 	}
 
