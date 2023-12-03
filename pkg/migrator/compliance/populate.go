@@ -13,21 +13,11 @@ import (
 func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	p := GitParser{}
 	if err := p.ExtractQueries(internal.QueriesGitPath); err != nil {
+		logger.Error("failed to extract queries", zap.Error(err))
 		return err
 	}
 	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
-
-	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
-		return err
-	}
-	logger.Info("extracted policies and benchmarks", zap.Int("policies", len(p.policies)), zap.Int("benchmarks", len(p.benchmarks)))
-
 	err := dbc.Transaction(func(tx *gorm.DB) error {
-		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
-		tx.Model(&db.BenchmarkPolicies{}).Where("1=1").Unscoped().Delete(&db.BenchmarkPolicies{})
-		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})
-		tx.Model(&db.Policy{}).Where("1=1").Unscoped().Delete(&db.Policy{})
-
 		for _, obj := range p.queries {
 			obj.Policies = nil
 			err := tx.Clauses(clause.OnConflict{
@@ -45,6 +35,24 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 				return err
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to insert queries", zap.Error(err))
+		return err
+	}
+
+	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
+		logger.Error("failed to extract policies and benchmarks", zap.Error(err))
+		return err
+	}
+	logger.Info("extracted policies and benchmarks", zap.Int("policies", len(p.policies)), zap.Int("benchmarks", len(p.benchmarks)))
+
+	err = dbc.Transaction(func(tx *gorm.DB) error {
+		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
+		tx.Model(&db.BenchmarkPolicies{}).Where("1=1").Unscoped().Delete(&db.BenchmarkPolicies{})
+		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})
+		tx.Model(&db.Policy{}).Where("1=1").Unscoped().Delete(&db.Policy{})
 
 		for _, obj := range p.policies {
 			obj.Benchmarks = nil
@@ -96,6 +104,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 					ChildID:     child.ID,
 				}).Error
 				if err != nil {
+					logger.Error("inserted policies and benchmarks", zap.Error(err))
 					return err
 				}
 			}
@@ -108,6 +117,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 					PolicyID:    policy.ID,
 				}).Error
 				if err != nil {
+					logger.Info("inserted policies and benchmarks", zap.Error(err))
 					return err
 				}
 			}
@@ -116,6 +126,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	})
 
 	if err != nil {
+		logger.Info("inserted policies and benchmarks", zap.Error(err))
 		return err
 	}
 
