@@ -76,7 +76,8 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 }
 
 func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
-	provider []source.Type, connectionID []string, resourceCollections []string,
+	provider []source.Type, connectionID []string,
+	resourceTypes []string, resourceCollections []string,
 	benchmarkID []string, policyID []string, severity []string,
 	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
@@ -111,6 +112,9 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	var filters []kaytu.BoolFilter
 	if len(resourceIDs) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
+	}
+	if len(resourceTypes) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
 	}
 	if len(benchmarkID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
