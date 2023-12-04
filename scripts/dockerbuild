@@ -3,7 +3,7 @@
 set -x
 set -e
 
-SERVICES=$(cat ./services)
+SERVICES=$(cat ./service-list)
 if [[ $SERVICES == *"auth-service"* ]]; then
     docker build -f  docker/AuthServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/auth-service:"$TAG"
     docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/auth-service:"$TAG"
