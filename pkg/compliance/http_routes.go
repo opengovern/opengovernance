@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -29,8 +31,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/internal"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -53,52 +53,53 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	benchmarks := v1.Group("/benchmarks")
 
-	benchmarks.GET("", httpserver.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
-	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, authApi.ViewerRole))
+	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
+	benchmarks.GET("/policies/:policy_id", httpserver2.AuthorizeHandler(h.GetPolicy, authApi.ViewerRole))
 
-	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/policies/:policyId", httpserver.AuthorizeHandler(h.GetBenchmarkPolicy, authApi.ViewerRole))
+	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/trend", httpserver2.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies", httpserver2.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies/:policyId", httpserver2.AuthorizeHandler(h.GetBenchmarkPolicy, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
-	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
-	queries.GET("/sync", httpserver.AuthorizeHandler(h.SyncQueries, authApi.AdminRole))
+	queries.GET("/:query_id", httpserver2.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
+	queries.GET("/sync", httpserver2.AuthorizeHandler(h.SyncQueries, authApi.AdminRole))
 
 	assignments := v1.Group("/assignments")
-	assignments.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, authApi.ViewerRole))
-	assignments.GET("/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
-	assignments.GET("/resource_collection/:resource_collection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByResourceCollection, authApi.ViewerRole))
-	assignments.POST("/:benchmark_id/connection", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
-	assignments.DELETE("/:benchmark_id/connection", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
+	assignments.GET("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByBenchmark, authApi.ViewerRole))
+	assignments.GET("/connection/:connection_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
+	assignments.GET("/resource_collection/:resource_collection_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByResourceCollection, authApi.ViewerRole))
+	assignments.POST("/:benchmark_id/connection", httpserver2.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
+	assignments.DELETE("/:benchmark_id/connection", httpserver2.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
 
 	metadata := v1.Group("/metadata")
-	metadata.GET("/tag/compliance", httpserver.AuthorizeHandler(h.ListComplianceTags, authApi.ViewerRole))
-	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, authApi.ViewerRole))
-	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, authApi.ViewerRole))
-	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, authApi.ViewerRole))
+	metadata.GET("/tag/compliance", httpserver2.AuthorizeHandler(h.ListComplianceTags, authApi.ViewerRole))
+	metadata.GET("/tag/insight", httpserver2.AuthorizeHandler(h.ListInsightTags, authApi.ViewerRole))
+	metadata.GET("/insight", httpserver2.AuthorizeHandler(h.ListInsightsMetadata, authApi.ViewerRole))
+	metadata.GET("/insight/:insightId", httpserver2.AuthorizeHandler(h.GetInsightMetadata, authApi.ViewerRole))
 
 	insights := v1.Group("/insight")
 	insightGroups := insights.Group("/group")
-	insightGroups.GET("", httpserver.AuthorizeHandler(h.ListInsightGroups, authApi.ViewerRole))
-	insightGroups.GET("/:insightGroupId", httpserver.AuthorizeHandler(h.GetInsightGroup, authApi.ViewerRole))
-	insightGroups.GET("/:insightGroupId/trend", httpserver.AuthorizeHandler(h.GetInsightGroupTrend, authApi.ViewerRole))
-	insights.GET("", httpserver.AuthorizeHandler(h.ListInsights, authApi.ViewerRole))
-	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, authApi.ViewerRole))
-	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, authApi.ViewerRole))
+	insightGroups.GET("", httpserver2.AuthorizeHandler(h.ListInsightGroups, authApi.ViewerRole))
+	insightGroups.GET("/:insightGroupId", httpserver2.AuthorizeHandler(h.GetInsightGroup, authApi.ViewerRole))
+	insightGroups.GET("/:insightGroupId/trend", httpserver2.AuthorizeHandler(h.GetInsightGroupTrend, authApi.ViewerRole))
+	insights.GET("", httpserver2.AuthorizeHandler(h.ListInsights, authApi.ViewerRole))
+	insights.GET("/:insightId", httpserver2.AuthorizeHandler(h.GetInsight, authApi.ViewerRole))
+	insights.GET("/:insightId/trend", httpserver2.AuthorizeHandler(h.GetInsightTrend, authApi.ViewerRole))
 
 	findings := v1.Group("/findings")
-	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
-	findings.POST("/filters", httpserver.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/services", httpserver.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
+	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
+	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
+	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
-	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
+	ai.POST("/policy/:policyID/remediation", httpserver2.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -114,8 +115,8 @@ func bindValidate(ctx echo.Context, i any) error {
 }
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
-	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
-	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
+	connectionIds := httpserver2.QueryArrayParam(ctx, ConnectionIdParam)
+	connectionGroup := httpserver2.QueryArrayParam(ctx, ConnectionGroupParam)
 	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
 	}
@@ -271,6 +272,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	response.TotalCount = totalCount
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+func (h *HttpHandler) CountFindings(ctx echo.Context) error {
+	totalCount, err := es.FindingsCount(h.client)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, totalCount)
 }
 
 // GetFindingFilterValues godoc
@@ -479,9 +489,9 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
 	if len(severities) == 0 {
 		severities = []kaytuTypes.FindingSeverity{
 			kaytuTypes.FindingSeverityCritical,
@@ -667,10 +677,10 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 		return err
 	}
 
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
 	if len(severities) == 0 {
 		severities = []kaytuTypes.FindingSeverity{
 			kaytuTypes.FindingSeverityCritical,
@@ -935,7 +945,7 @@ func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
 //	@Success		200					{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -944,8 +954,8 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	timeAt := time.Now()
 	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
@@ -1053,8 +1063,8 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	timeAt := time.Now()
 	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
@@ -1370,8 +1380,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
 		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
@@ -1470,7 +1480,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return err
 	}
 
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	if len(connectionIDs) > 0 && len(resourceCollections) > 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
 	}
@@ -1860,7 +1870,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	if len(connectionIDs) > 0 && len(resourceCollections) > 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
 	}
@@ -2240,7 +2250,7 @@ func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	enabled := true
 	// trace :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightsWithFilters", trace.WithSpanKind(trace.SpanKindServer))
@@ -2317,13 +2327,13 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Success		200					{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -2557,7 +2567,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -2652,7 +2662,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
@@ -2722,13 +2732,13 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //	@Success		200					{object}	[]api.InsightGroup
 //	@Router			/compliance/api/v1/insight/group [get]
 func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -2858,7 +2868,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -2938,7 +2948,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)

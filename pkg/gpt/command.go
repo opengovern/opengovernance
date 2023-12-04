@@ -3,9 +3,8 @@ package gpt
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"os"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

@@ -8,7 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/stretchr/testify/require"
@@ -70,7 +70,7 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 	handler.db.orm.Exec("DELETE FROM rules")
 	handler.db.orm.Exec("DELETE FROM actions")
 
-	e, tp := httpserver.Register(logger, handler)
+	e, tp := httpserver2.Register(logger, handler)
 
 	go e.Start("localhost:8081")
 	time.Sleep(500 * time.Millisecond)
@@ -110,7 +110,7 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
+	req.Header.Add(httpserver2.XKaytuUserRoleHeader, string(api2.AdminRole))
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

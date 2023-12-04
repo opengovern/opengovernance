@@ -2,13 +2,13 @@ package client
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"net/http"
 	url2 "net/url"
 	"strconv"
 	"time"
 
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/labstack/echo/v4"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"

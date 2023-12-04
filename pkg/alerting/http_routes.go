@@ -8,7 +8,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
@@ -35,6 +35,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	trigger := v1.Group("/trigger")
 	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
+	trigger.GET("/bydate", httpserver.AuthorizeHandler(h.CountTriggersByDate, authapi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -133,6 +134,23 @@ func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 		resListTrigger = append(resListTrigger, complianceT)
 	}
 	return ctx.JSON(http.StatusOK, resListTrigger)
+}
+
+func (h *HttpHandler) CountTriggersByDate(ctx echo.Context) error {
+	startDate, err := strconv.ParseInt(ctx.QueryParam("startDate"), 10, 64)
+	if err != nil {
+		return err
+	}
+	endDate, err := strconv.ParseInt(ctx.QueryParam("endDate"), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	count, err := h.db.CountTriggersJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error getting the list of the triggers : %v ", err))
+	}
+	return ctx.JSON(http.StatusOK, count)
 }
 
 // TriggerRuleAPI godoc

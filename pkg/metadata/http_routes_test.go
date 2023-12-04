@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
@@ -110,7 +110,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	logger, err := zap.NewProduction()
 	require.NoError(err, "new logger")
 
-	s.router, _ = httpserver.Register(logger, s.handler)
+	s.router, _ = httpserver2.Register(logger, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {
@@ -144,7 +144,7 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 
 	req := httptest.NewRequest(method, path, r)
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
+	req.Header.Add(httpserver2.XKaytuUserRoleHeader, string(api2.AdminRole))
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

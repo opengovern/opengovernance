@@ -3,7 +3,7 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"os"
 	"strconv"
 	"time"

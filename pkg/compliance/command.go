@@ -3,9 +3,9 @@ package compliance
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"os"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 
 	"github.com/spf13/cobra"

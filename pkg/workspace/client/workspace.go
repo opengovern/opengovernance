@@ -2,9 +2,8 @@ package client
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"net/http"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 )

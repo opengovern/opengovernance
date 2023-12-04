@@ -180,6 +180,35 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	return response.Hits.Hits, response.Hits.Total.Value, err
 }
 
+type FindingsCountResponse struct {
+	Hits  FindingsCountHits `json:"hits"`
+	PitID string            `json:"pit_id"`
+}
+type FindingsCountHits struct {
+	Total kaytu.SearchTotal `json:"total"`
+}
+
+func FindingsCount(client kaytu.Client) (int64, error) {
+	idx := types.FindingsIndex
+
+	query := make(map[string]any)
+	query["query"] = map[string]any{
+		"size": 0,
+	}
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return 0, err
+	}
+
+	var response FindingsCountResponse
+	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	if err != nil {
+		return 0, err
+	}
+
+	return response.Hits.Total.Value, err
+}
+
 type AggregationResult struct {
 	DocCountErrorUpperBound int      `json:"doc_count_error_upper_bound"`
 	SumOtherDocCount        int      `json:"sum_other_doc_count"`

@@ -8,6 +8,19 @@ import (
 	"time"
 )
 
+func (db Database) CountComplianceJobsByDate(start time.Time, end time.Time) (int64, error) {
+	var count int64
+	tx := db.ORM.Model(&model.ComplianceJob{}).
+		Where("status = ? AND updated_at >= ? AND updated_at < ?", model.ComplianceJobSucceeded, start, end).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 func (db Database) CreateComplianceJob(job *model.ComplianceJob) error {
 	tx := db.ORM.
 		Model(&model.ComplianceJob{}).

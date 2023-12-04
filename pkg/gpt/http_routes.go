@@ -3,7 +3,7 @@ package gpt
 import (
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"math/rand"
 	"net/http"

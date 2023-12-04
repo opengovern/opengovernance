@@ -3,7 +3,7 @@ package cost_estimator
 import (
 	"fmt"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )

@@ -5,12 +5,11 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
 	"github.com/golang-jwt/jwt"
 

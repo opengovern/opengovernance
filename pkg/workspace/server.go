@@ -24,6 +24,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api4 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -36,9 +38,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/go-redis/cache/v8"
@@ -92,7 +91,7 @@ func NewServer(cfg config.Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
 	}
-	s.e, _ = httpserver2.Register(logger, s)
+	s.e, _ = httpserver.Register(logger, s)
 
 	dbs, err := db.NewDatabase(cfg, logger)
 	if err != nil {
@@ -157,36 +156,36 @@ func (s *Server) Register(e *echo.Echo) {
 	v1Group := e.Group("/api/v1")
 
 	workspaceGroup := v1Group.Group("/workspace")
-	workspaceGroup.POST("", httpserver2.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
-	workspaceGroup.DELETE("/:workspace_id", httpserver2.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/suspend", httpserver2.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/resume", httpserver2.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
-	workspaceGroup.GET("/current", httpserver2.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
-	workspaceGroup.POST("/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KaytuAdminRole))
-	workspaceGroup.POST("/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KaytuAdminRole))
-	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
+	workspaceGroup.POST("", httpserver.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
+	workspaceGroup.DELETE("/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
+	workspaceGroup.POST("/:workspace_id/suspend", httpserver.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
+	workspaceGroup.POST("/:workspace_id/resume", httpserver.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
+	workspaceGroup.GET("/current", httpserver.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
+	workspaceGroup.POST("/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
+	workspaceGroup.POST("/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.KaytuAdminRole))
+	workspaceGroup.POST("/:workspace_id/tier", httpserver.AuthorizeHandler(s.ChangeTier, authapi.KaytuAdminRole))
+	workspaceGroup.POST("/:workspace_id/organization", httpserver.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
 
 	bootstrapGroup := v1Group.Group("/bootstrap")
-	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
-	bootstrapGroup.POST("/:workspace_name/credential", httpserver2.AuthorizeHandler(s.AddCredential, authapi.EditorRole))
-	bootstrapGroup.POST("/:workspace_name/finish", httpserver2.AuthorizeHandler(s.FinishBootstrap, authapi.EditorRole))
+	bootstrapGroup.GET("/:workspace_name", httpserver.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/credential", httpserver.AuthorizeHandler(s.AddCredential, authapi.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/finish", httpserver.AuthorizeHandler(s.FinishBootstrap, authapi.EditorRole))
 
 	workspacesGroup := v1Group.Group("/workspaces")
-	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
-	workspacesGroup.GET("/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
-	workspacesGroup.GET("/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
-	workspacesGroup.GET("", httpserver2.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
-	workspacesGroup.GET("/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
+	workspacesGroup.GET("/limits/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
+	workspacesGroup.GET("/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
+	workspacesGroup.GET("/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
+	workspacesGroup.GET("", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
+	workspacesGroup.GET("/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
 
 	organizationGroup := v1Group.Group("/organization")
-	organizationGroup.GET("", httpserver2.AuthorizeHandler(s.ListOrganization, authapi.EditorRole))
-	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
-	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
+	organizationGroup.GET("", httpserver.AuthorizeHandler(s.ListOrganization, authapi.EditorRole))
+	organizationGroup.POST("", httpserver.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
+	organizationGroup.DELETE("/:organizationId", httpserver.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 
 	costEstimatorGroup := v1Group.Group("/costestimator")
-	costEstimatorGroup.GET("/aws", httpserver2.AuthorizeHandler(s.GetAwsCost, authapi.ViewerRole))
-	costEstimatorGroup.GET("/azure", httpserver2.AuthorizeHandler(s.GetAzureCost, authapi.ViewerRole))
+	costEstimatorGroup.GET("/aws", httpserver.AuthorizeHandler(s.GetAwsCost, authapi.ViewerRole))
+	costEstimatorGroup.GET("/azure", httpserver.AuthorizeHandler(s.GetAzureCost, authapi.ViewerRole))
 }
 
 func (s *Server) Start() error {
@@ -209,7 +208,7 @@ func (s *Server) Start() error {
 //	@Success		200		{object}	api.CreateWorkspaceResponse
 //	@Router			/workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
-	userID := httpserver2.GetUserID(c)
+	userID := httpserver.GetUserID(c)
 
 	var request api.CreateWorkspaceRequest
 	if err := c.Bind(&request); err != nil {
@@ -792,7 +791,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v1/workspace/{workspace_id} [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
-	userID := httpserver2.GetUserID(c)
+	userID := httpserver.GetUserID(c)
 
 	id := c.Param("workspace_id")
 	if id == "" {
@@ -830,7 +829,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v1/workspaces/{workspace_id} [get]
 func (s *Server) GetWorkspace(c echo.Context) error {
-	userId := httpserver2.GetUserID(c)
+	userId := httpserver.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -975,7 +974,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 //	@Success		200	{array}	api.WorkspaceResponse
 //	@Router			/workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
-	userId := httpserver2.GetUserID(c)
+	userId := httpserver.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -1037,7 +1036,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 //	@Success		200	{object}	api.WorkspaceResponse
 //	@Router			/workspace/api/v1/workspace/current [get]
 func (s *Server) GetCurrentWorkspace(c echo.Context) error {
-	wsName := httpserver2.GetWorkspaceName(c)
+	wsName := httpserver.GetWorkspaceName(c)
 
 	workspace, err := s.db.GetWorkspaceByName(wsName)
 	if err != nil {
@@ -1074,7 +1073,7 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 //	@Success	200
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/owner [post]
 func (s *Server) ChangeOwnership(c echo.Context) error {
-	userID := httpserver2.GetUserID(c)
+	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	var request api.ChangeWorkspaceOwnershipRequest
@@ -1256,7 +1255,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	if ignoreUsage != "true" {
 		ectx := httpclient.FromEchoContext(c)
 		ectx.UserRole = authapi.AdminRole
-		resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, workspaceName, dbWorkspace.ID)
+		resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, dbWorkspace.ID)
 		if err != nil {
 			return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)
 		}

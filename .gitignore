@@ -9,4 +9,3 @@ cache/*
 *.env
 
 *.pem
-services

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +13,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/ory/dockertest/v3"

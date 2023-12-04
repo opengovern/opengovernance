@@ -6,7 +6,21 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"gorm.io/gorm"
+	"time"
 )
+
+func (db Database) ListAnalyticsJobsByDate(start time.Time, end time.Time) (int64, error) {
+	var count int64
+	tx := db.ORM.Model(&model.AnalyticsJob{}).
+		Where("status = ? AND updated_at >= ? AND updated_at < ?", api.JobCompleted, start, end).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
 
 func (db Database) GetAnalyticsJobByID(jobID uint) (*model.AnalyticsJob, error) {
 	var job model.AnalyticsJob

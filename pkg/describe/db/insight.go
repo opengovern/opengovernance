@@ -9,6 +9,19 @@ import (
 	"time"
 )
 
+func (db Database) CountInsightJobsByDate(start time.Time, end time.Time) (int64, error) {
+	var count int64
+	tx := db.ORM.Model(&model.InsightJob{}).
+		Where("status = ? AND updated_at >= ? AND updated_at < ?", insightapi.InsightJobSucceeded, start, end).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 func (db Database) CleanupInsightJobsOlderThan(t time.Time) error {
 	tx := db.ORM.Where("created_at < ?", t).Unscoped().Delete(&model.InsightJob{})
 	if tx.Error != nil {

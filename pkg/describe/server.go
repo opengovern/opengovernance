@@ -7,6 +7,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
@@ -15,8 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/lib/pq"
 	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
@@ -63,33 +63,34 @@ func NewHTTPServer(
 func (h HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
-	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
-	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
-	v1.PUT("/insight/in_progress/:job_id", httpserver.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
-	v1.GET("/insight/job/:job_id", httpserver.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
-	v1.GET("/insight/:insight_id/jobs", httpserver.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
-	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
-	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
-	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
-	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
-	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
-	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
-	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
-	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
+	v1.PUT("/describe/trigger/:connection_id", httpserver2.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
+	v1.PUT("/describe/trigger", httpserver2.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
+	v1.PUT("/insight/trigger/:insight_id", httpserver2.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
+	v1.PUT("/insight/in_progress/:job_id", httpserver2.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
+	v1.GET("/insight/job/:job_id", httpserver2.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
+	v1.GET("/insight/:insight_id/jobs", httpserver2.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
+	v1.PUT("/compliance/trigger/:benchmark_id", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
+	v1.GET("/compliance/status/:benchmark_id", httpserver2.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
+	v1.PUT("/analytics/trigger", httpserver2.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
+	v1.GET("/analytics/job/:job_id", httpserver2.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
+	v1.GET("/describe/status/:resource_type", httpserver2.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/connection/status", httpserver2.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/pending/connections", httpserver2.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
+	v1.GET("/describe/all/jobs/state", httpserver2.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
-	v1.GET("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
+	v1.GET("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
+	v1.GET("/jobs/bydate", httpserver2.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
-	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
-	stacks.GET("/:stackId", httpserver.AuthorizeHandler(h.GetStack, apiAuth.ViewerRole))
-	stacks.POST("/create", httpserver.AuthorizeHandler(h.CreateStack, apiAuth.AdminRole))
-	stacks.DELETE("/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, apiAuth.AdminRole))
-	stacks.POST("/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, apiAuth.ViewerRole))
-	stacks.GET("/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, apiAuth.ViewerRole))
-	stacks.GET("/resource", httpserver.AuthorizeHandler(h.ListResourceStack, apiAuth.ViewerRole))
-	stacks.POST("/describer/trigger", httpserver.AuthorizeHandler(h.TriggerStackDescriber, apiAuth.AdminRole))
-	stacks.GET("/:stackId/insights", httpserver.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
+	stacks.GET("", httpserver2.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
+	stacks.GET("/:stackId", httpserver2.AuthorizeHandler(h.GetStack, apiAuth.ViewerRole))
+	stacks.POST("/create", httpserver2.AuthorizeHandler(h.CreateStack, apiAuth.AdminRole))
+	stacks.DELETE("/:stackId", httpserver2.AuthorizeHandler(h.DeleteStack, apiAuth.AdminRole))
+	stacks.POST("/:stackId/findings", httpserver2.AuthorizeHandler(h.GetStackFindings, apiAuth.ViewerRole))
+	stacks.GET("/:stackId/insight", httpserver2.AuthorizeHandler(h.GetStackInsight, apiAuth.ViewerRole))
+	stacks.GET("/resource", httpserver2.AuthorizeHandler(h.ListResourceStack, apiAuth.ViewerRole))
+	stacks.POST("/describer/trigger", httpserver2.AuthorizeHandler(h.TriggerStackDescriber, apiAuth.AdminRole))
+	stacks.GET("/:stackId/insights", httpserver2.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -162,6 +163,35 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, jobs)
+}
+
+func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
+	startDate, err := strconv.ParseInt(ctx.QueryParam("startDate"), 10, 64)
+	if err != nil {
+		return err
+	}
+	endDate, err := strconv.ParseInt(ctx.QueryParam("endDate"), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	var count int64
+	switch api.JobType(ctx.QueryParam("jobType")) {
+	case api.JobType_Discovery:
+		count, err = h.DB.CountDescribeJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+	case api.JobType_Analytics:
+		count, err = h.DB.CountDescribeJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+	case api.JobType_Compliance:
+		count, err = h.DB.CountComplianceJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+	case api.JobType_Insight:
+		count, err = h.DB.CountInsightJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+	default:
+		return errors.New("invalid job type")
+	}
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, count)
 }
 
 // TriggerPerConnectionDescribeJob godoc
@@ -240,8 +270,8 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 }
 
 func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
-	resourceTypes := httpserver.QueryArrayParam(ctx, "resource_type")
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	resourceTypes := httpserver2.QueryArrayParam(ctx, "resource_type")
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	forceFull := ctx.QueryParam("force_full") == "true"
 
 	err := h.Scheduler.CheckWorkspaceResourceLimit()
@@ -790,8 +820,8 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	accountIds := httpserver.QueryArrayParam(ctx, "accountIds")
+	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
+	accountIds := httpserver2.QueryArrayParam(ctx, "accountIds")
 	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
 	if err != nil {
 		return err
@@ -1003,7 +1033,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 	}
 	connectionId := stackRecord.StackID
 
-	insightIds := httpserver.QueryArrayParam(ctx, "insightIds")
+	insightIds := httpserver2.QueryArrayParam(ctx, "insightIds")
 	if len(insightIds) == 0 {
 		insightIds = []string{}
 		insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{stackRecord.SourceType})

@@ -8,12 +8,12 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"net"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
