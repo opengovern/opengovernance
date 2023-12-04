@@ -10,6 +10,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -19,8 +21,6 @@ import (
 	"time"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"

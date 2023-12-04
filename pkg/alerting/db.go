@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	"gorm.io/gorm"
 	"time"
@@ -44,6 +45,18 @@ func (db Database) ListTriggers() ([]Triggers, error) {
 		return nil, err
 	}
 	return listTriggers, nil
+}
+func (db Database) CountTriggersJobsByDate(start time.Time, end time.Time) (int64, error) {
+	var count int64
+	tx := db.orm.Model(&Triggers{}).
+		Where("triggered_at >= ? AND triggered_at < ?", start, end).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
 }
 
 func (db Database) ListRules() ([]Rule, error) {

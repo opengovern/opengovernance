@@ -3,9 +3,10 @@ package client
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"net/http"
+	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/labstack/echo/v4"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
@@ -28,6 +29,7 @@ type SchedulerServiceClient interface {
 	GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error)
 	GetJobsByInsightID(ctx *httpclient.Context, insightID uint) ([]model.InsightJob, error)
 	InsightJobInProgress(ctx *httpclient.Context, jobID uint) error
+	CountJobsByDate(ctx *httpclient.Context, jobType api.JobType, startDate, endDate time.Time) (int64, error)
 }
 
 type schedulerClient struct {
@@ -192,4 +194,17 @@ func (s *schedulerClient) ListPendingConnections(ctx *httpclient.Context) ([]str
 		return nil, err
 	}
 	return res, nil
+}
+
+func (s *schedulerClient) CountJobsByDate(ctx *httpclient.Context, jobType api.JobType, startDate, endDate time.Time) (int64, error) {
+	url := fmt.Sprintf("%s/api/v1/jobs/bydate?startDate=%d&endDate=%d&jobType=%s", s.baseURL, startDate.UnixMilli(), endDate.UnixMilli(), string(jobType))
+
+	var resp int64
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return 0, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return 0, err
+	}
+	return resp, nil
 }

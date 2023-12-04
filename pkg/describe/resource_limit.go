@@ -3,9 +3,8 @@ package describe
 import (
 	"context"
 	"errors"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"time"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )

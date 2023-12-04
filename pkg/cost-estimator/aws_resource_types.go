@@ -5,7 +5,7 @@ import (
 	"fmt"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"go.uber.org/zap"
 )

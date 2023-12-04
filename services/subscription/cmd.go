@@ -4,6 +4,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api"
 	config2 "github.com/kaytu-io/kaytu-engine/services/subscription/config"
+	"github.com/kaytu-io/kaytu-engine/services/subscription/metering"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -31,6 +32,13 @@ func SubscriptionServiceCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			meteringService, err := metering.New(logger, cnf)
+			if err != nil {
+				return err
+			}
+
+			go meteringService.Run()
 
 			return httpserver.RegisterAndStart(logger, cnf.Http.Address, handler)
 		},

@@ -3,6 +3,7 @@ package describe
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"strings"
 	"time"
 
@@ -11,10 +12,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 
 	"go.uber.org/zap"
 )

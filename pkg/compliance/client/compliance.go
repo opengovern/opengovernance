@@ -3,10 +3,9 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"net/http"
 	"time"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
 	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -24,6 +23,7 @@ type ComplianceServiceClient interface {
 	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
 	ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error)
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
+	CountFindings(ctx *httpclient.Context) (int64, error)
 }
 
 type complianceClient struct {
@@ -107,6 +107,17 @@ func (s *complianceClient) GetFindings(ctx *httpclient.Context, req compliance.G
 	var response compliance.GetFindingsResponse
 	if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		return compliance.GetFindingsResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (s *complianceClient) CountFindings(ctx *httpclient.Context) (int64, error) {
+	url := fmt.Sprintf("%s/api/v1/findings/count", s.baseURL)
+
+	var response int64
+	if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return 0, err
 	}
 
 	return response, nil

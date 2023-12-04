@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"io"
 	"mime/multipart"
 	"net/http"

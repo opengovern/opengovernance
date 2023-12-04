@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -9,7 +10,6 @@ import (
 	"net/http"
 
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/src"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"

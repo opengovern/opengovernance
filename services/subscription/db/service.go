@@ -35,6 +35,7 @@ func NewDatabase(config config.Postgres, logger *zap.Logger) (Database, error) {
 func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
 		&model.Subscription{},
+		&model.Meter{},
 	)
 	if err != nil {
 		return err

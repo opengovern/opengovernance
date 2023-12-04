@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	_ "github.com/labstack/echo/v4"

@@ -1,7 +1,7 @@
 package hopper
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"

@@ -3,12 +3,11 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 )

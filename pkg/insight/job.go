@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
