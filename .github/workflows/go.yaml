@@ -113,16 +113,16 @@ jobs:
       id: build_services
       run: |
         set -x
-        ./scripts/list_services > ./services
-        cat ./services
-        cat ./services | sed 's/\<steampipe\>//g' | sed 's/\<redoc\>//g' | sed 's/\s\+/\n/g' > ./build_services
+        ./scripts/list_services > ./service-list
+        cat ./service-list
+        cat ./service-list | sed 's/\<steampipe\>//g' | sed 's/\<redoc\>//g' | sed 's/\s\+/\n/g' > ./build_services
         cat ./build_services
         mkdir -p ./build
         if [ ! -z "$(cat ./build_services)" ]; then
           cat ./build_services | xargs -P 1 -I{} bash -c "CC=/usr/bin/musl-gcc GOPRIVATE=\"github.com/kaytu-io\" GOOS=linux GOARCH=amd64 go build -v -ldflags \"-linkmode external -extldflags '-static' -s -w\" -tags musl -o ./build/ ./cmd/{}"
           chmod +x ./build/*
         fi
-        for f in $(cat ./services); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
+        for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
     - name: Pack build
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
