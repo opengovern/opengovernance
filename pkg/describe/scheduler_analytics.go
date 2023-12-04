@@ -27,6 +27,24 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+		if err != nil {
+			s.logger.Error("Failed to list sources", zap.Error(err))
+			AnalyticsJobsCount.WithLabelValues("failure").Inc()
+			continue
+		}
+		hasEnabled := false
+		for _, connection := range connections {
+			if connection.IsEnabled() {
+				hasEnabled = true
+				break
+			}
+		}
+		if !hasEnabled {
+			s.logger.Info("No enabled sources found, skipping analytics job scheduling")
+			continue
+		}
+
 		lastJob, err := s.db.FetchLastAnalyticsJobForJobType(model.AnalyticsJobTypeNormal)
 		if err != nil {
 			s.logger.Error("Failed to find the last job to check for AnalyticsJob", zap.Error(err))
