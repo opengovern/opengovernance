@@ -2993,7 +2993,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Minimum number of resources with this tag value, default 1",
+                        "description": "Minimum number of resources with this tag value, default 0",
                         "name": "minCount",
                         "in": "query"
                     },

@@ -38,8 +38,8 @@ func GetTagsMap(r analyticsDB.AnalyticMetric) map[string][]string {
 }
 
 type ListMetricsResponse struct {
-	TotalCount    int      `json:"total_count"`
-	TotalOldCount int      `json:"total_old_count"`
+	TotalCount    *int     `json:"total_count"`
+	TotalOldCount *int     `json:"total_old_count"`
 	TotalMetrics  int      `json:"total_metrics"`
 	Metrics       []Metric `json:"metrics"`
 }

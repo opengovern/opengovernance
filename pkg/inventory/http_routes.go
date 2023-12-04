@@ -201,7 +201,7 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string,
 	connectorTypes []source.Type, connectionIDs []string, resourceCollections []string,
-	minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
+	minCount int, timeAt time.Time) (*int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	// tracer :
 	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
@@ -211,7 +211,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return 0, nil, err
+		return nil, nil, err
 	}
 	span.End()
 
@@ -227,16 +227,16 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, filteredMetricIDs, connectorTypes, resourceCollections, timeAt, EsFetchPageSize)
 	}
 	if err != nil {
-		return 0, nil, err
+		return nil, nil, err
 	}
 
 	apiMetrics := make([]inventoryApi.Metric, 0, len(mts))
-	totalCount := 0
+	var totalCount *int
 	for _, metric := range mts {
 		apiMetric := inventoryApi.MetricToAPI(metric)
 		if count, ok := metricIndexed[metric.ID]; ok && count >= minCount {
 			apiMetric.Count = &count
-			totalCount += count
+			totalCount = utils.PAdd(totalCount, &count)
 		}
 		if (minCount == 0) || (apiMetric.Count != nil && *apiMetric.Count >= minCount) {
 			apiMetrics = append(apiMetrics, apiMetric)
@@ -263,7 +263,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 //	@Param			metricIDs			query		[]string		false	"Metric IDs"
 //	@Param			endTime				query		int64			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime			query		int64			false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param			minCount			query		int				false	"Minimum number of resources with this tag value, default 1"
+//	@Param			minCount			query		int				false	"Minimum number of resources with this tag value, default 0"
 //	@Param			sortBy				query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize			query		int				false	"page size - default is 20"
 //	@Param			pageNumber			query		int				false	"page number - default is 1"
@@ -307,7 +307,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		}
 		startTime = time.Unix(startTimeVal, 0)
 	}
-	minCount := 1
+	minCount := 0
 	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
 		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
 		if err != nil {
