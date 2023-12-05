@@ -44,7 +44,7 @@ type Benchmark struct {
 	tagsMap map[string][]string `gorm:"-:all"`
 
 	Children  []Benchmark `gorm:"many2many:benchmark_children;"`
-	Policies  []Policy    `gorm:"many2many:benchmark_policies;"`
+	Controls  []Control   `gorm:"many2many:benchmark_controls;"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -71,8 +71,8 @@ func (b Benchmark) ToApi() api.Benchmark {
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
 	}
-	for _, policy := range b.Policies {
-		ba.Policies = append(ba.Policies, policy.ID)
+	for _, control := range b.Controls {
+		ba.Controls = append(ba.Controls, control.ID)
 	}
 	return ba
 }
@@ -98,18 +98,18 @@ type BenchmarkTag struct {
 	BenchmarkID string `gorm:"primaryKey"`
 }
 
-type Policy struct {
+type Control struct {
 	ID          string `gorm:"primaryKey"`
 	Title       string
 	Description string
 
-	Tags    []PolicyTag         `gorm:"foreignKey:PolicyID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tags    []ControlTag        `gorm:"foreignKey:ControlID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string `gorm:"-:all"`
 
 	DocumentURI        string
 	Enabled            bool
 	QueryID            *string
-	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
+	Benchmarks         []Benchmark `gorm:"many2many:benchmark_controls;"`
 	Severity           types.FindingSeverity
 	ManualVerification bool
 	Managed            bool
@@ -117,8 +117,8 @@ type Policy struct {
 	UpdatedAt          time.Time
 }
 
-func (p Policy) ToApi() api.Policy {
-	pa := api.Policy{
+func (p Control) ToApi() api.Control {
+	pa := api.Control{
 		ID:                 p.ID,
 		Title:              p.Title,
 		Description:        p.Description,
@@ -137,7 +137,7 @@ func (p Policy) ToApi() api.Policy {
 	return pa
 }
 
-func (p Policy) GetTagsMap() map[string][]string {
+func (p Control) GetTagsMap() map[string][]string {
 	if p.tagsMap == nil {
 		tagLikeArr := make([]model.TagLike, 0, len(p.Tags))
 		for _, tag := range p.Tags {
@@ -148,7 +148,7 @@ func (p Policy) GetTagsMap() map[string][]string {
 	return p.tagsMap
 }
 
-func (p *Policy) PopulateConnector(ctx context.Context, db Database, api *api.Policy) error {
+func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.Control) error {
 	tracer := otel.Tracer("PopulateConnector")
 	if !api.Connector.IsNull() {
 		return nil
@@ -168,7 +168,7 @@ func (p *Policy) PopulateConnector(ctx context.Context, db Database, api *api.Po
 		return err
 	}
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("policy id", p.ID),
+		attribute.String("control id", p.ID),
 	))
 	span1.End()
 
@@ -185,14 +185,14 @@ func (p *Policy) PopulateConnector(ctx context.Context, db Database, api *api.Po
 	return nil
 }
 
-type PolicyTag struct {
+type ControlTag struct {
 	model.Tag
-	PolicyID string `gorm:"primaryKey"`
+	ControlID string `gorm:"primaryKey"`
 }
 
-type BenchmarkPolicies struct {
+type BenchmarkControls struct {
 	BenchmarkID string
-	PolicyID    string
+	ControlID   string
 }
 
 type Insight struct {
@@ -298,7 +298,7 @@ type Query struct {
 	PrimaryTable   *string
 	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
-	Policies       []Policy  `gorm:"foreignKey:QueryID"`
+	Controls       []Control `gorm:"foreignKey:QueryID"`
 	Insights       []Insight `gorm:"foreignKey:QueryID"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time

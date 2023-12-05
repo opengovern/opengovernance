@@ -586,6 +586,14 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
+      controls:
+        description: Benchmark controls
+        example:
+        - '[azure_cis_v140_1_1'
+        - ' azure_cis_v140_1_2]'
+        items:
+          type: string
+        type: array
       createdAt:
         description: Benchmark creation date
         example: "2020-01-01T00:00:00Z"
@@ -615,14 +623,6 @@ definitions:
         description: Whether the benchmark is managed or not
         example: true
         type: boolean
-      policies:
-        description: Benchmark policies
-        example:
-        - '[azure_cis_v140_1_1'
-        - ' azure_cis_v140_1_2]'
-        items:
-          type: string
-        type: array
       tags:
         additionalProperties:
           items:
@@ -769,6 +769,73 @@ definitions:
         example: 1686346668
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control:
+    properties:
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      createdAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+      description:
+        example: Enable multi-factor authentication for all user credentials who have
+          write access to Azure resources. These include roles like 'Service Co-Administrators',
+          'Subscription Owners', 'Contributors'.
+        type: string
+      documentURI:
+        example: benchmarks/azure_cis_v140_1_1.md
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      id:
+        example: azure_cis_v140_1_1
+        type: string
+      managed:
+        example: true
+        type: boolean
+      manualVerification:
+        example: true
+        type: boolean
+      queryID:
+        example: azure_ad_manual_control
+        type: string
+      severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
+        example: low
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        example: 1.1 Ensure that multi-factor authentication status is enabled for
+          all privileged users
+        type: string
+      updatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary:
+    properties:
+      control:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control'
+      evaluatedAt:
+        type: integer
+      failedConnectionCount:
+        type: integer
+      failedResourcesCount:
+        type: integer
+      passed:
+        type: boolean
+      totalConnectionCount:
+        type: integer
+      totalResourcesCount:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
       benchmarkID:
@@ -784,6 +851,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/source.Type'
         example: Azure
+      controlID:
+        example: azure_cis_v140_7_5
+        type: string
+      controlTitle:
+        type: string
       evaluatedAt:
         example: 1589395200
         type: integer
@@ -803,11 +875,6 @@ definitions:
       parentComplianceJobID:
         example: 1
         type: integer
-      policyID:
-        example: azure_cis_v140_7_5
-        type: string
-      policyTitle:
-        type: string
       providerConnectionID:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -886,8 +953,8 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
-      policyID:
-        description: Policy ID
+      controlID:
+        description: Control ID
         example:
         - azure_cis_v140_7_5
         items:
@@ -942,7 +1009,7 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
-      policyID:
+      controlID:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
@@ -1197,73 +1264,6 @@ definitions:
       value:
         description: Resource Count
         example: 1000
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
-    properties:
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
-      createdAt:
-        example: "2020-01-01T00:00:00Z"
-        type: string
-      description:
-        example: Enable multi-factor authentication for all user credentials who have
-          write access to Azure resources. These include roles like 'Service Co-Administrators',
-          'Subscription Owners', 'Contributors'.
-        type: string
-      documentURI:
-        example: benchmarks/azure_cis_v140_1_1.md
-        type: string
-      enabled:
-        example: true
-        type: boolean
-      id:
-        example: azure_cis_v140_1_1
-        type: string
-      managed:
-        example: true
-        type: boolean
-      manualVerification:
-        example: true
-        type: boolean
-      queryID:
-        example: azure_ad_manual_control
-        type: string
-      severity:
-        allOf:
-        - $ref: '#/definitions/types.FindingSeverity'
-        example: low
-      tags:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
-      title:
-        example: 1.1 Ensure that multi-factor authentication status is enabled for
-          all privileged users
-        type: string
-      updatedAt:
-        example: "2020-01-01T00:00:00Z"
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary:
-    properties:
-      evaluatedAt:
-        type: integer
-      failedConnectionCount:
-        type: integer
-      failedResourcesCount:
-        type: integer
-      passed:
-        type: boolean
-      policy:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
-      totalConnectionCount:
-        type: integer
-      totalResourcesCount:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
@@ -3480,14 +3480,14 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
-  /compliance/api/v1/ai/policy/{policyID}/remediation:
+  /compliance/api/v1/ai/control/{controlID}/remediation:
     post:
       consumes:
       - application/json
       parameters:
-      - description: PolicyID
+      - description: ControlID
         in: path
-        name: policyID
+        name: controlID
         required: true
         type: string
       produces:
@@ -3499,7 +3499,7 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation'
       security:
       - BearerToken: []
-      summary: Get policy remediation using AI
+      summary: Get control remediation using AI
       tags:
       - compliance
   /compliance/api/v1/assignments/{benchmark_id}/connection:
@@ -3664,7 +3664,7 @@ paths:
       summary: Get list of benchmark assignments for a resource collection
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmarks/{benchmark_id}/policies:
+  /compliance/api/v1/benchmarks/{benchmark_id}/controls:
     get:
       consumes:
       - application/json
@@ -3695,14 +3695,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
             type: array
       security:
       - BearerToken: []
-      summary: Get benchmark policies
+      summary: Get benchmark controls
       tags:
       - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/policies/{policyId}:
+  /compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId}:
     get:
       consumes:
       - application/json
@@ -3712,9 +3712,9 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Policy ID
+      - description: Control ID
         in: path
-        name: policyId
+        name: controlId
         required: true
         type: string
       - collectionFormat: csv
@@ -3737,10 +3737,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
       security:
       - BearerToken: []
-      summary: Get benchmark policies
+      summary: Get benchmark controls
       tags:
       - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
@@ -3958,7 +3958,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieving the number of findings field count by policies.
+      description: Retrieving the number of findings field count by controls.
       parameters:
       - description: BenchmarkID
         in: path
@@ -4030,7 +4030,7 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
-      summary: Get findings field count by policies
+      summary: Get findings field count by controls
       tags:
       - compliance
   /compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}:

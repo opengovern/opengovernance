@@ -17,8 +17,8 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
 		&Query{},
-		&Policy{},
-		&PolicyTag{},
+		&Control{},
+		&ControlTag{},
 		&Benchmark{},
 		&BenchmarkTag{},
 		&Insight{},
@@ -56,7 +56,7 @@ func (db Database) ListBenchmarksBare() ([]Benchmark, error) {
 }
 
 // ListRootBenchmarks returns all benchmarks that are not children of any other benchmark
-// is it important to note that this function does not return the children of the root benchmarks neither the policies
+// is it important to note that this function does not return the children of the root benchmarks neither the controls
 func (db Database) ListRootBenchmarks(tags map[string][]string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
@@ -145,9 +145,9 @@ func (db Database) GetBenchmarksTitle(ds []string) (map[string]string, error) {
 	return res, nil
 }
 
-func (db Database) GetPoliciesTitle(ds []string) (map[string]string, error) {
-	var bs []Policy
-	tx := db.Orm.Model(&Policy{}).
+func (db Database) GetControlsTitle(ds []string) (map[string]string, error) {
+	var bs []Control
+	tx := db.Orm.Model(&Control{}).
 		Where("id in ?", ds).
 		Select("id, title").
 		Find(&bs)
@@ -163,11 +163,11 @@ func (db Database) GetPoliciesTitle(ds []string) (map[string]string, error) {
 	return res, nil
 }
 
-// =========== Policy ===========
+// =========== Control ===========
 
-func (db Database) GetPolicy(id string) (*Policy, error) {
-	var s Policy
-	tx := db.Orm.Model(&Policy{}).
+func (db Database) GetControl(id string) (*Control, error) {
+	var s Control
+	tx := db.Orm.Model(&Control{}).
 		Preload("Tags").
 		Where("id = ?", id).
 		First(&s)
@@ -182,23 +182,23 @@ func (db Database) GetPolicy(id string) (*Policy, error) {
 	return &s, nil
 }
 
-func (db Database) ListPoliciesByBenchmarkID(benchmarkID string) ([]Policy, error) {
-	var s []Policy
-	tx := db.Orm.Model(&Policy{}).
+func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, error) {
+	var s []Control
+	tx := db.Orm.Model(&Control{}).
 		Preload("Tags").
 		Preload("Benchmarks").
-		Where(Policy{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
+		Where(Control{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return s, nil
 }
 
-func (db Database) GetPolicies(policyIDs []string) ([]Policy, error) {
-	var s []Policy
-	tx := db.Orm.Model(&Policy{}).
+func (db Database) GetControls(controlIDs []string) ([]Control, error) {
+	var s []Control
+	tx := db.Orm.Model(&Control{}).
 		Preload("Tags").
-		Where("id IN ?", policyIDs).
+		Where("id IN ?", controlIDs).
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -534,9 +534,9 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 	return &res, nil
 }
 
-func (db Database) ListPolicies() ([]Policy, error) {
-	var s []Policy
-	tx := db.Orm.Model(&Policy{}).Preload(clause.Associations).
+func (db Database) ListControls() ([]Control, error) {
+	var s []Control
+	tx := db.Orm.Model(&Control{}).Preload(clause.Associations).
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -544,9 +544,9 @@ func (db Database) ListPolicies() ([]Policy, error) {
 	return s, nil
 }
 
-func (db Database) ListPoliciesBare() ([]Policy, error) {
-	var s []Policy
-	tx := db.Orm.Model(&Policy{}).Preload("Tags").
+func (db Database) ListControlsBare() ([]Control, error) {
+	var s []Control
+	tx := db.Orm.Model(&Control{}).Preload("Tags").
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error

@@ -78,7 +78,7 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
 	provider []source.Type, connectionID []string,
 	resourceTypes []string, resourceCollections []string,
-	benchmarkID []string, policyID []string, severity []string,
+	benchmarkID []string, controlID []string, severity []string,
 	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
@@ -86,8 +86,8 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	for sortField, sortDirection := range sorts {
 		key := ""
 		switch sortField {
-		case "policyTitle":
-			key = "policyID"
+		case "controlTitle":
+			key = "controlID"
 		case "providerConnectionID", "providerConnectionName":
 			key = "connectionID"
 		default:
@@ -119,8 +119,8 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	if len(benchmarkID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
-	if len(policyID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("policyID", policyID))
+	if len(controlID) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
 	}
 	if len(severity) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("severity", severity))
@@ -225,7 +225,7 @@ func (a AggregationResult) GetBucketsKeys() []string {
 
 type FindingFiltersAggregationResponse struct {
 	Aggregations struct {
-		PolicyIDFilter           AggregationResult `json:"policy_id_filter"`
+		ControlIDFilter          AggregationResult `json:"control_id_filter"`
 		SeverityFilter           AggregationResult `json:"severity_filter"`
 		ConnectorFilter          AggregationResult `json:"connector_filter"`
 		ConnectionIDFilter       AggregationResult `json:"connection_id_filter"`
@@ -237,7 +237,7 @@ type FindingFiltersAggregationResponse struct {
 
 func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	resourceIDs []string, connector []source.Type, connectionID []string, resourceCollections []string,
-	benchmarkID []string, policyID []string, severity []string,
+	benchmarkID []string, controlID []string, severity []string,
 ) (*FindingFiltersAggregationResponse, error) {
 	idx := types.FindingsIndex
 	terms := make(map[string]any)
@@ -260,8 +260,8 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
-	if len(policyID) > 0 {
-		terms["policyID"] = policyID
+	if len(controlID) > 0 {
+		terms["controlID"] = controlID
 	}
 	if len(severity) > 0 {
 		terms["severity"] = severity
@@ -276,7 +276,7 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 		"connection_id_filter":       map[string]any{"terms": map[string]any{"field": "connectionID", "size": 1000}},
 		"resource_collection_filter": map[string]any{"terms": map[string]any{"field": "resourceCollection", "size": 1000}},
 		"benchmark_id_filter":        map[string]any{"terms": map[string]any{"field": "benchmarkID", "size": 1000}},
-		"policy_id_filter":           map[string]any{"terms": map[string]any{"field": "policyID", "size": 1000}},
+		"control_id_filter":          map[string]any{"terms": map[string]any{"field": "controlID", "size": 1000}},
 		"severity_filter":            map[string]any{"terms": map[string]any{"field": "severity", "size": 1000}},
 	}
 	root["aggs"] = aggs
@@ -374,9 +374,9 @@ type AccountsFindingsBySeverityResponse struct {
 	} `json:"aggregations"`
 }
 
-type FindingsFieldCountByPolicyResponse struct {
+type FindingsFieldCountByControlResponse struct {
 	Aggregations struct {
-		PolicyCount struct {
+		ControlCount struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
 			SumOtherDocCount        int `json:"sum_other_doc_count"`
 			Buckets                 []struct {
@@ -394,21 +394,21 @@ type FindingsFieldCountByPolicyResponse struct {
 					} `json:"buckets"`
 				} `json:"results"`
 			} `json:"buckets"`
-		} `json:"policy_count"`
+		} `json:"control_count"`
 	} `json:"aggregations"`
 }
 
 func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string,
-	benchmarkID []string, policyID []string, severity []types.FindingSeverity, size int) (*FindingsTopFieldResponse, error) {
+	benchmarkID []string, controlID []string, severity []types.FindingSeverity, size int) (*FindingsTopFieldResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
 
-	if len(policyID) > 0 {
-		terms["policyID"] = policyID
+	if len(controlID) > 0 {
+		terms["controlID"] = controlID
 	}
 
 	if len(severity) > 0 {
@@ -548,16 +548,16 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 	return &resp, err
 }
 
-func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string, benchmarkID []string, policyID []string, severity []types.FindingSeverity) (*FindingsFieldCountByPolicyResponse, error) {
+func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity) (*FindingsFieldCountByControlResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
 
-	if len(policyID) > 0 {
-		terms["policyID"] = policyID
+	if len(controlID) > 0 {
+		terms["controlID"] = controlID
 	}
 
 	if len(severity) > 0 {
@@ -585,9 +585,9 @@ func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
 	root["size"] = 0
 
 	root["aggs"] = map[string]any{
-		"policy_count": map[string]any{
+		"control_count": map[string]any{
 			"terms": map[string]any{
-				"field": "policyID",
+				"field": "controlID",
 			},
 			"aggs": map[string]any{
 				"results": map[string]any{
@@ -630,15 +630,15 @@ func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
-	logger.Info("FindingsFieldCountByPolicy", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp FindingsFieldCountByPolicyResponse
+	logger.Info("FindingsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
+	var resp FindingsFieldCountByControlResponse
 	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
 type LiveBenchmarkAggregatedFindingsQueryResponse struct {
 	Aggregations struct {
-		PolicyGroup struct {
+		ControlGroup struct {
 			Buckets []struct {
 				Key         string `json:"key"`
 				ResultGroup struct {
@@ -648,7 +648,7 @@ type LiveBenchmarkAggregatedFindingsQueryResponse struct {
 					} `json:"buckets"`
 				} `json:"result_group"`
 			} `json:"buckets"`
-		} `json:"policy_group"`
+		} `json:"control_group"`
 	} `json:"aggregations"`
 }
 
@@ -675,8 +675,8 @@ func FetchLiveBenchmarkAggregatedFindings(client kaytu.Client, benchmarkID *stri
 		"size": 0,
 	}
 	queryObj["aggs"] = map[string]any{
-		"policy_group": map[string]any{
-			"terms": map[string]string{"field": "policyID"},
+		"control_group": map[string]any{
+			"terms": map[string]string{"field": "controlID"},
 			"aggs": map[string]any{
 				"result_group": map[string]any{
 					"terms": map[string]string{"field": "result"},
@@ -699,10 +699,10 @@ func FetchLiveBenchmarkAggregatedFindings(client kaytu.Client, benchmarkID *stri
 	}
 
 	result := make(map[string]map[types.ComplianceResult]int)
-	for _, policyBucket := range response.Aggregations.PolicyGroup.Buckets {
-		result[policyBucket.Key] = make(map[types.ComplianceResult]int)
-		for _, resultBucket := range policyBucket.ResultGroup.Buckets {
-			result[policyBucket.Key][types.ComplianceResult(resultBucket.Key)] = int(resultBucket.DocCount)
+	for _, controlBucket := range response.Aggregations.ControlGroup.Buckets {
+		result[controlBucket.Key] = make(map[types.ComplianceResult]int)
+		for _, resultBucket := range controlBucket.ResultGroup.Buckets {
+			result[controlBucket.Key][types.ComplianceResult(resultBucket.Key)] = int(resultBucket.DocCount)
 		}
 	}
 	return result, nil

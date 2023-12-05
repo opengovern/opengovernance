@@ -13,7 +13,7 @@ type FullBenchmark struct {
 
 type Finding struct {
 	BenchmarkID           string           `json:"benchmarkID" example:"azure_cis_v140"`
-	PolicyID              string           `json:"policyID" example:"azure_cis_v140_7_5"`
+	ControlID             string           `json:"controlID" example:"azure_cis_v140_7_5"`
 	ConnectionID          string           `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	EvaluatedAt           int64            `json:"evaluatedAt" example:"1589395200"`
 	StateActive           bool             `json:"stateActive" example:"true"`
@@ -38,7 +38,7 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		r.ResourceID,
 		r.ConnectionID,
-		r.PolicyID,
+		r.ControlID,
 	}
 	if r.ResourceCollection != nil {
 		keys = append(keys, *r.ResourceCollection)

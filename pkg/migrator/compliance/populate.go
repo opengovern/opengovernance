@@ -20,7 +20,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	loadedQueries := make(map[string]bool)
 	err := dbc.Transaction(func(tx *gorm.DB) error {
 		for _, obj := range p.queries {
-			obj.Policies = nil
+			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
 				Columns: []clause.Column{{Name: "id"}}, // key column
 				DoUpdates: clause.AssignmentColumns([]string{
@@ -45,18 +45,18 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	}
 
 	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
-		logger.Error("failed to extract policies and benchmarks", zap.Error(err))
+		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
 		return err
 	}
-	logger.Info("extracted policies and benchmarks", zap.Int("policies", len(p.policies)), zap.Int("benchmarks", len(p.benchmarks)))
+	logger.Info("extracted controls and benchmarks", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)))
 	missingQueries := make(map[string]bool)
 	err = dbc.Transaction(func(tx *gorm.DB) error {
 		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
-		tx.Model(&db.BenchmarkPolicies{}).Where("1=1").Unscoped().Delete(&db.BenchmarkPolicies{})
+		tx.Model(&db.BenchmarkControls{}).Where("1=1").Unscoped().Delete(&db.BenchmarkControls{})
 		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})
-		tx.Model(&db.Policy{}).Where("1=1").Unscoped().Delete(&db.Policy{})
+		tx.Model(&db.Control{}).Where("1=1").Unscoped().Delete(&db.Control{})
 
-		for _, obj := range p.policies {
+		for _, obj := range p.controls {
 			obj.Benchmarks = nil
 			if obj.QueryID != nil && !loadedQueries[*obj.QueryID] {
 				missingQueries[*obj.QueryID] = true
@@ -72,18 +72,18 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 			}
 			for _, tag := range obj.Tags {
 				err = tx.Clauses(clause.OnConflict{
-					Columns:   []clause.Column{{Name: "key"}, {Name: "policy_id"}}, // key columns
-					DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),  // column needed to be updated
+					Columns:   []clause.Column{{Name: "key"}, {Name: "control_id"}}, // key columns
+					DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),   // column needed to be updated
 				}).Create(&tag).Error
 				if err != nil {
-					return fmt.Errorf("failure in policy tag insert: %v", err)
+					return fmt.Errorf("failure in control tag insert: %v", err)
 				}
 			}
 		}
 
 		for _, obj := range p.benchmarks {
 			obj.Children = nil
-			obj.Policies = nil
+			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},                                                                                                                                     // key column
 				DoUpdates: clause.AssignmentColumns([]string{"title", "description", "logo_uri", "category", "document_uri", "enabled", "managed", "auto_assign", "baseline", "updated_at"}), // column needed to be updated
@@ -111,23 +111,23 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 					ChildID:     child.ID,
 				}).Error
 				if err != nil {
-					logger.Error("inserted policies and benchmarks", zap.Error(err))
+					logger.Error("inserted controls and benchmarks", zap.Error(err))
 					return err
 				}
 			}
 
-			for _, policy := range obj.Policies {
-				if policy.QueryID != nil && !loadedQueries[*policy.QueryID] {
+			for _, control := range obj.Controls {
+				if control.QueryID != nil && !loadedQueries[*control.QueryID] {
 					continue
 				}
 				err := tx.Clauses(clause.OnConflict{
 					DoNothing: true,
-				}).Create(&db.BenchmarkPolicies{
+				}).Create(&db.BenchmarkControls{
 					BenchmarkID: obj.ID,
-					PolicyID:    policy.ID,
+					ControlID:   control.ID,
 				}).Error
 				if err != nil {
-					logger.Info("inserted policies and benchmarks", zap.Error(err))
+					logger.Info("inserted controls and benchmarks", zap.Error(err))
 					return err
 				}
 			}
@@ -144,7 +144,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	})
 
 	if err != nil {
-		logger.Info("inserted policies and benchmarks", zap.Error(err))
+		logger.Info("inserted controls and benchmarks", zap.Error(err))
 		return err
 	}
 

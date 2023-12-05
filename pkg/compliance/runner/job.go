@@ -23,8 +23,8 @@ import (
 type Caller struct {
 	RootBenchmark      string
 	ParentBenchmarkIDs []string
-	PolicyID           string
-	PolicySeverity     types.FindingSeverity
+	ControlID          string
+	ControlSeverity    types.FindingSeverity
 }
 
 type ExecutionPlan struct {
@@ -137,7 +137,7 @@ func (w *Worker) RunJob(j Job) (int, error) {
 			return 0, err
 		}
 
-		mapKey := fmt.Sprintf("%s---___---%s", caller.RootBenchmark, caller.PolicyID)
+		mapKey := fmt.Sprintf("%s---___---%s", caller.RootBenchmark, caller.ControlID)
 		if _, ok := totalFindingCountMap[mapKey]; !ok {
 			totalFindingCountMap[mapKey] = len(findings)
 		}
@@ -149,13 +149,13 @@ func (w *Worker) RunJob(j Job) (int, error) {
 
 		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
 		if err != nil {
-			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
+			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}
 
-		err = w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.PolicyID)
+		err = w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.ControlID)
 		if err != nil {
-			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("policy_id", caller.PolicyID))
+			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}
 	}
@@ -178,7 +178,7 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 	connectionId *string,
 	resourceCollectionId *string,
 	benchmarkID,
-	policyID string) error {
+	controlID string) error {
 	ctx := context.Background()
 	idx := types.FindingsIndex
 	if resourceCollectionId != nil {
@@ -193,7 +193,7 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 	})
 	mustFilters = append(mustFilters, map[string]any{
 		"term": map[string]any{
-			"policyID": policyID,
+			"controlID": controlID,
 		},
 	})
 	if connectionId != nil {
@@ -250,20 +250,20 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 		es.DeleteByQuery.WithContext(ctx),
 	)
 	if err != nil {
-		w.logger.Error("failed to delete old findings", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("policy_id", policyID))
+		w.logger.Error("failed to delete old findings", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("control_id", controlID))
 		return err
 	}
 	defer kaytu.CloseSafe(res)
 	if err != nil {
 		b, _ := io.ReadAll(res.Body)
-		w.logger.Error("failure while deleting es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("policy_id", policyID), zap.String("response", string(b)))
+		w.logger.Error("failure while deleting es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("control_id", controlID), zap.String("response", string(b)))
 		return err
 	} else if err := kaytu.CheckError(res); err != nil {
 		if kaytu.IsIndexNotFoundErr(err) {
 			return nil
 		}
 		b, _ := io.ReadAll(res.Body)
-		w.logger.Error("failure while querying es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("policy_id", policyID), zap.String("response", string(b)))
+		w.logger.Error("failure while querying es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("control_id", controlID), zap.String("response", string(b)))
 		return err
 	}
 

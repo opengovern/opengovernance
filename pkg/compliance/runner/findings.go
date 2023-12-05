@@ -77,7 +77,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 
 		severity := types.FindingSeverityNone
 		if status == types.ComplianceResultALARM {
-			severity = caller.PolicySeverity
+			severity = caller.ControlSeverity
 			if severity == "" {
 				severity = types.FindingSeverityNone
 			}
@@ -91,7 +91,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 		}
 		findings = append(findings, types.Finding{
 			BenchmarkID:           caller.RootBenchmark,
-			PolicyID:              caller.PolicyID,
+			ControlID:             caller.ControlID,
 			ConnectionID:          connectionID,
 			EvaluatedAt:           w.CreatedAt.UnixMilli(),
 			StateActive:           true,
