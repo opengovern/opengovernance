@@ -655,7 +655,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: needs.build.outputs.subscription-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
