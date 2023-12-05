@@ -39,7 +39,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/kaytu-io/kaytu-aws-describer v0.26.0
 	github.com/kaytu-io/kaytu-azure-describer v0.17.7
-	github.com/kaytu-io/kaytu-util v0.0.0-20231201093653-6117b5e04253
+	github.com/kaytu-io/kaytu-util v0.0.0-20231205180254-22d261dddc3a
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -200,7 +200,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-lambda-go v1.41.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
