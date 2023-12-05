@@ -14,7 +14,7 @@ import (
 type ComplianceServiceClient interface {
 	ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.BenchmarkAssignedEntities, error)
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
-	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
+	GetControl(ctx *httpclient.Context, controlID string) (*compliance.Control, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
 	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
@@ -54,10 +54,10 @@ func (s *complianceClient) GetBenchmark(ctx *httpclient.Context, benchmarkID str
 	return &response, nil
 }
 
-func (s *complianceClient) GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error) {
-	url := fmt.Sprintf("%s/api/v1/benchmarks/policies/%s", s.baseURL, policyID)
+func (s *complianceClient) GetControl(ctx *httpclient.Context, controlID string) (*compliance.Control, error) {
+	url := fmt.Sprintf("%s/api/v1/benchmarks/controls/%s", s.baseURL, controlID)
 
-	var response compliance.Policy
+	var response compliance.Control
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}

@@ -770,7 +770,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/ai/policy/{policyID}/remediation": {
+        "/compliance/api/v1/ai/control/{controlID}/remediation": {
             "post": {
                 "security": [
                     {
@@ -786,12 +786,12 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get policy remediation using AI",
+                "summary": "Get control remediation using AI",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "PolicyID",
-                        "name": "policyID",
+                        "description": "ControlID",
+                        "name": "controlID",
                         "in": "path",
                         "required": true
                     }
@@ -1146,7 +1146,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/policies": {
+        "/compliance/api/v1/benchmarks/{benchmark_id}/controls": {
             "get": {
                 "security": [
                     {
@@ -1162,7 +1162,7 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get benchmark policies",
+                "summary": "Get benchmark controls",
                 "parameters": [
                     {
                         "type": "string",
@@ -1198,14 +1198,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
                             }
                         }
                     }
                 }
             }
         },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/policies/{policyId}": {
+        "/compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId}": {
             "get": {
                 "security": [
                     {
@@ -1221,7 +1221,7 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get benchmark policies",
+                "summary": "Get benchmark controls",
                 "parameters": [
                     {
                         "type": "string",
@@ -1232,8 +1232,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Policy ID",
-                        "name": "policyId",
+                        "description": "Control ID",
+                        "name": "controlId",
                         "in": "path",
                         "required": true
                     },
@@ -1262,7 +1262,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
                         }
                     }
                 }
@@ -1652,7 +1652,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving the number of findings field count by policies.",
+                "description": "Retrieving the number of findings field count by controls.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1662,7 +1662,7 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get findings field count by policies",
+                "summary": "Get findings field count by controls",
                 "parameters": [
                     {
                         "type": "string",
@@ -7125,6 +7125,17 @@ const docTemplate = `{
                         "[azure]"
                     ]
                 },
+                "controls": {
+                    "description": "Benchmark controls",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[azure_cis_v140_1_1",
+                        " azure_cis_v140_1_2]"
+                    ]
+                },
                 "createdAt": {
                     "description": "Benchmark creation date",
                     "type": "string",
@@ -7158,17 +7169,6 @@ const docTemplate = `{
                     "description": "Whether the benchmark is managed or not",
                     "type": "boolean",
                     "example": true
-                },
-                "policies": {
-                    "description": "Benchmark policies",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "[azure_cis_v140_1_1",
-                        " azure_cis_v140_1_2]"
-                    ]
                 },
                 "tags": {
                     "description": "Benchmark tags",
@@ -7376,6 +7376,102 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."
+                },
+                "documentURI": {
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140_1_1.md"
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "id": {
+                    "type": "string",
+                    "example": "azure_cis_v140_1_1"
+                },
+                "managed": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "manualVerification": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "queryID": {
+                    "type": "string",
+                    "example": "azure_ad_manual_control"
+                },
+                "severity": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FindingSeverity"
+                        }
+                    ],
+                    "example": "low"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "title": {
+                    "type": "string",
+                    "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary": {
+            "type": "object",
+            "properties": {
+                "control": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control"
+                },
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "failedConnectionCount": {
+                    "type": "integer"
+                },
+                "failedResourcesCount": {
+                    "type": "integer"
+                },
+                "passed": {
+                    "type": "boolean"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalResourcesCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding": {
             "type": "object",
             "properties": {
@@ -7398,6 +7494,13 @@ const docTemplate = `{
                         }
                     ],
                     "example": "Azure"
+                },
+                "controlID": {
+                    "type": "string",
+                    "example": "azure_cis_v140_7_5"
+                },
+                "controlTitle": {
+                    "type": "string"
                 },
                 "evaluatedAt": {
                     "type": "integer",
@@ -7425,13 +7528,6 @@ const docTemplate = `{
                 "parentComplianceJobID": {
                     "type": "integer",
                     "example": 1
-                },
-                "policyID": {
-                    "type": "string",
-                    "example": "azure_cis_v140_7_5"
-                },
-                "policyTitle": {
-                    "type": "string"
                 },
                 "providerConnectionID": {
                     "description": "Connection ID",
@@ -7545,8 +7641,8 @@ const docTemplate = `{
                         "Azure"
                     ]
                 },
-                "policyID": {
-                    "description": "Policy ID",
+                "controlID": {
+                    "description": "Control ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -7627,7 +7723,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
                     }
                 },
-                "policyID": {
+                "controlID": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
@@ -7996,102 +8092,6 @@ const docTemplate = `{
                     "description": "Resource Count",
                     "type": "integer",
                     "example": 1000
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy": {
-            "type": "object",
-            "properties": {
-                "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "createdAt": {
-                    "type": "string",
-                    "example": "2020-01-01T00:00:00Z"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."
-                },
-                "documentURI": {
-                    "type": "string",
-                    "example": "benchmarks/azure_cis_v140_1_1.md"
-                },
-                "enabled": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "id": {
-                    "type": "string",
-                    "example": "azure_cis_v140_1_1"
-                },
-                "managed": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "manualVerification": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "queryID": {
-                    "type": "string",
-                    "example": "azure_ad_manual_control"
-                },
-                "severity": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.FindingSeverity"
-                        }
-                    ],
-                    "example": "low"
-                },
-                "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "title": {
-                    "type": "string",
-                    "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
-                },
-                "updatedAt": {
-                    "type": "string",
-                    "example": "2020-01-01T00:00:00Z"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary": {
-            "type": "object",
-            "properties": {
-                "evaluatedAt": {
-                    "type": "integer"
-                },
-                "failedConnectionCount": {
-                    "type": "integer"
-                },
-                "failedResourcesCount": {
-                    "type": "integer"
-                },
-                "passed": {
-                    "type": "boolean"
-                },
-                "policy": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
-                },
-                "totalConnectionCount": {
-                    "type": "integer"
-                },
-                "totalResourcesCount": {
-                    "type": "integer"
                 }
             }
         },

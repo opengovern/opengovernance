@@ -47,7 +47,7 @@ type FindingFilters struct {
 	ConnectionID       []string                 `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
 	ResourceCollection []string                 `json:"resourceCollection" example:"example-rc"`                                                                      // Resource Collection ID
 	BenchmarkID        []string                 `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
-	PolicyID           []string                 `json:"policyID" example:"azure_cis_v140_7_5"`                                                                        // Policy ID
+	ControlID          []string                 `json:"controlID" example:"azure_cis_v140_7_5"`                                                                       // Control ID
 	Severity           []string                 `json:"severity" example:"low"`                                                                                       // Severity
 	Status             []types.ComplianceResult `json:"status" example:"alarm"`
 }
@@ -60,7 +60,7 @@ type FindingFilterWithMetadata struct {
 type FindingFiltersWithMetadata struct {
 	Connector          []FindingFilterWithMetadata `json:"connector"`
 	BenchmarkID        []FindingFilterWithMetadata `json:"benchmarkID"`
-	PolicyID           []FindingFilterWithMetadata `json:"policyID"`
+	ControlID          []FindingFilterWithMetadata `json:"controlID"`
 	ResourceTypeID     []FindingFilterWithMetadata `json:"resourceTypeID"`
 	ConnectionID       []FindingFilterWithMetadata `json:"connectionID"`
 	ResourceCollection []FindingFilterWithMetadata `json:"resourceCollection"`
@@ -93,10 +93,10 @@ type GetTopFieldResponse struct {
 }
 
 type GetFieldCountResponse struct {
-	Policies []struct {
-		PolicyName  string           `json:"policyName"`
+	Controls []struct {
+		ControlName string           `json:"controlName"`
 		FieldCounts []TopFieldRecord `json:"fieldCounts"`
-	} `json:"policies"`
+	} `json:"controls"`
 }
 
 type AccountsFindingsSummary struct {
@@ -139,7 +139,7 @@ type Finding struct {
 
 	ResourceTypeName       string   `json:"resourceTypeName" example:"Virtual Machine"`
 	ParentBenchmarkNames   []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
-	PolicyTitle            string   `json:"policyTitle"`
+	ControlTitle           string   `json:"controlTitle"`
 	ProviderConnectionID   string   `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
 	ProviderConnectionName string   `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 
@@ -171,8 +171,8 @@ type BenchmarkEvaluationSummary struct {
 	LastJobStatus string                        `json:"lastJobStatus" example:"success"`                                                                                                                                                   // Last job status
 }
 
-type PolicySummary struct {
-	Policy Policy `json:"policy"`
+type ControlSummary struct {
+	Control Control `json:"control"`
 
 	Passed                bool  `json:"passed"`
 	FailedResourcesCount  int   `json:"failedResourcesCount"`

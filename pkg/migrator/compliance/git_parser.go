@@ -3,20 +3,20 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"io/fs"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 )
 
 type GitParser struct {
 	benchmarks []db.Benchmark
-	policies   []db.Policy
+	controls   []db.Control
 	queries    []db.Query
 }
 
@@ -48,67 +48,62 @@ func (g *GitParser) ExtractQueries(queryPath string) error {
 	})
 }
 
-func (g *GitParser) ExtractPolicies(compliancePath string) error {
-	return filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Base(path) == "policies.json" {
+func (g *GitParser) ExtractControls(complianceControlsPath string) error {
+	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
+		if strings.HasSuffix(path, ".json") {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
 
-			var objs []Policy
+			var objs []Control
 			err = json.Unmarshal(content, &objs)
 			if err != nil {
 				return err
 			}
 			for _, o := range objs {
-				tags := make([]db.PolicyTag, 0, len(o.Tags))
+				tags := make([]db.ControlTag, 0, len(o.Tags))
 				for tagKey, tagValue := range o.Tags {
-					tags = append(tags, db.PolicyTag{
+					tags = append(tags, db.ControlTag{
 						Tag: model.Tag{
 							Key:   tagKey,
 							Value: tagValue,
 						},
-						PolicyID: o.ID,
+						ControlID: o.ID,
 					})
 				}
-				p := db.Policy{
+				p := db.Control{
 					ID:                 o.ID,
 					Title:              o.Title,
 					Description:        o.Description,
 					Tags:               tags,
-					DocumentURI:        o.DocumentURI,
 					Enabled:            true,
-					QueryID:            o.QueryID,
 					Benchmarks:         nil,
 					Severity:           types.ParseFindingSeverity(o.Severity),
 					ManualVerification: o.ManualVerification,
 					Managed:            o.Managed,
 				}
 
-				if p.QueryID != nil {
-					found := false
-					for idx, q := range g.queries {
-						if q.ID == *p.QueryID {
-							found = true
-							q.Policies = append(q.Policies, p)
-							g.queries[idx] = q
-						}
-					}
-					if !found {
-						//fmt.Printf("could not find query with id %s", *p.QueryID)
-					}
+				if o.Query != nil {
+					g.queries = append(g.queries, db.Query{
+						ID:             o.ID,
+						QueryToExecute: o.Query.QueryToExecute,
+						Connector:      o.Query.Connector,
+						PrimaryTable:   o.Query.PrimaryTable,
+						ListOfTables:   o.Query.ListOfTables,
+						Engine:         o.Query.Engine,
+					})
 				}
-				g.policies = append(g.policies, p)
+				g.controls = append(g.controls, p)
 			}
 		}
 		return nil
 	})
 }
 
-func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
+func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var benchmarks []Benchmark
-	err := filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(complianceBenchmarksPath, func(path string, d fs.DirEntry, err error) error {
 		if filepath.Base(path) == "children.json" {
 			content, err := os.ReadFile(path)
 			if err != nil {
@@ -161,24 +156,21 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 			Title:       o.Title,
 			Connector:   connector,
 			Description: o.Description,
-			LogoURI:     o.LogoURI,
-			Category:    o.Category,
-			DocumentURI: o.DocumentURI,
 			Enabled:     o.Enabled,
 			Managed:     o.Managed,
 			AutoAssign:  o.AutoAssign,
 			Baseline:    o.Baseline,
 			Tags:        tags,
 			Children:    nil,
-			Policies:    nil,
+			Controls:    nil,
 		}
-		for _, policy := range g.policies {
-			if contains(o.Policies, policy.ID) {
-				b.Policies = append(b.Policies, policy)
+		for _, controls := range g.controls {
+			if contains(o.Controls, controls.ID) {
+				b.Controls = append(b.Controls, controls)
 			}
 		}
-		if len(o.Policies) != len(b.Policies) {
-			//fmt.Printf("could not find some policies, %d != %d", len(o.Policies), len(b.Policies))
+		if len(o.Controls) != len(b.Controls) {
+			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))
 		}
 		g.benchmarks = append(g.benchmarks, b)
 		children[o.ID] = o.Children
@@ -221,20 +213,20 @@ func (g *GitParser) CheckForDuplicate() error {
 	//}
 
 	//visited = map[string]bool{}
-	//for _, b := range g.policies {
+	//for _, b := range g.controls {
 	//	if _, ok := visited[b.ID]; !ok {
 	//		visited[b.ID] = true
 	//	} else {
-	//		return fmt.Errorf("duplicate policy id: %s", b.ID)
+	//		return fmt.Errorf("duplicate control id: %s", b.ID)
 	//	}
 	//}
 
 	//ivisited = map[uint]bool{}
-	//for _, b := range g.policyTags {
+	//for _, b := range g.controlTags {
 	//	if _, ok := ivisited[b.ID]; !ok {
 	//		ivisited[b.ID] = true
 	//	} else {
-	//		return fmt.Errorf("duplicate policy tag id: %s", b.ID)
+	//		return fmt.Errorf("duplicate control tag id: %s", b.ID)
 	//	}
 	//}
 
@@ -251,10 +243,10 @@ func (g *GitParser) CheckForDuplicate() error {
 }
 
 func (g *GitParser) ExtractCompliance(compliancePath string) error {
-	if err := g.ExtractPolicies(compliancePath); err != nil {
+	if err := g.ExtractControls(path.Join(compliancePath, "controls")); err != nil {
 		return err
 	}
-	if err := g.ExtractBenchmarks(compliancePath); err != nil {
+	if err := g.ExtractBenchmarks(path.Join(compliancePath, "benchmarks")); err != nil {
 		return err
 	}
 	if err := g.CheckForDuplicate(); err != nil {

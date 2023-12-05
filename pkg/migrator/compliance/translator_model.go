@@ -4,25 +4,21 @@ type Benchmark struct {
 	ID          string
 	Title       string
 	Connector   string
-	DocumentURI string
 	Description string
 	Children    []string
 	Tags        map[string][]string
 	Managed     bool
-	LogoURI     string
-	Category    string
 	Enabled     bool
 	AutoAssign  bool
 	Baseline    bool
-	Policies    []string
+	Controls    []string
 }
 
-type Policy struct {
+type Control struct {
 	ID                 string
 	Title              string
 	Description        string
-	QueryID            *string
-	DocumentURI        string
+	Query              *Query
 	ManualVerification bool
 	Severity           string
 	Tags               map[string][]string

@@ -48,7 +48,7 @@ func (w *Worker) RunJob(j Job) error {
 					SecurityScore:  0,
 				},
 				ResourceTypes: map[string]types2.Result{},
-				Policies:      map[string]types2.PolicyResult{},
+				Controls:      map[string]types2.ControlResult{},
 			},
 			Connections: map[string]types2.ResultGroup{},
 		},

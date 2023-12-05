@@ -55,13 +55,13 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
-	benchmarks.GET("/policies/:policy_id", httpserver2.AuthorizeHandler(h.GetPolicy, authApi.ViewerRole))
+	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver2.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/policies", httpserver2.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/policies/:policyId", httpserver2.AuthorizeHandler(h.GetBenchmarkPolicy, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/controls", httpserver2.AuthorizeHandler(h.GetBenchmarkControls, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver2.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -94,12 +94,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByControls, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
-	ai.POST("/policy/:policyID/remediation", httpserver2.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
+	ai.POST("/control/:controlID/remediation", httpserver2.AuthorizeHandler(h.GetControlRemediation, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -178,7 +178,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceTypeID, req.Filters.ResourceCollection,
-		req.Filters.BenchmarkID, req.Filters.PolicyID,
+		req.Filters.BenchmarkID, req.Filters.ControlID,
 		req.Filters.Severity, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
@@ -196,15 +196,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	policies, err := h.db.ListPolicies()
+	controls, err := h.db.ListControls()
 	if err != nil {
-		h.logger.Error("failed to get policies", zap.Error(err))
+		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
 	}
-	policiesMap := make(map[string]*db.Policy)
-	for _, policy := range policies {
-		policy := policy
-		policiesMap[policy.ID] = &policy
+	controlsMap := make(map[string]*db.Control)
+	for _, control := range controls {
+		control := control
+		controlsMap[control.ID] = &control
 	}
 
 	benchmarks, err := h.db.ListBenchmarksBare()
@@ -236,7 +236,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			Finding:                h.Source,
 			ResourceTypeName:       "",
 			ParentBenchmarkNames:   make([]string, 0, len(h.Source.ParentBenchmarks)),
-			PolicyTitle:            "",
+			ControlTitle:           "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
 			SortKey:                h.Sort,
@@ -259,8 +259,8 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
 		}
 
-		if policy, ok := policiesMap[finding.PolicyID]; ok {
-			finding.PolicyTitle = policy.Title
+		if control, ok := controlsMap[finding.ControlID]; ok {
+			finding.ControlTitle = control.Title
 		}
 
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
@@ -345,20 +345,20 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		benchmarkMetadataMap[item.ID] = &item
 	}
 
-	policyMetadata, err := h.db.ListPoliciesBare()
+	controlMetadata, err := h.db.ListControlsBare()
 	if err != nil {
-		h.logger.Error("failed to get policies", zap.Error(err))
+		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
 	}
-	policyMetadataMap := make(map[string]*db.Policy)
-	for _, item := range policyMetadata {
+	controlMetadataMap := make(map[string]*db.Control)
+	for _, item := range controlMetadata {
 		item := item
-		policyMetadataMap[item.ID] = &item
+		controlMetadataMap[item.ID] = &item
 	}
 
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID,
-		req.ResourceCollection, req.BenchmarkID, req.PolicyID,
+		req.ResourceCollection, req.BenchmarkID, req.ControlID,
 		req.Severity)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
@@ -377,14 +377,14 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			})
 		}
 	}
-	for _, item := range possibleFilters.Aggregations.PolicyIDFilter.Buckets {
-		if policy, ok := policyMetadataMap[item.Key]; ok {
-			response.PolicyID = append(response.PolicyID, api.FindingFilterWithMetadata{
+	for _, item := range possibleFilters.Aggregations.ControlIDFilter.Buckets {
+		if control, ok := controlMetadataMap[item.Key]; ok {
+			response.ControlID = append(response.ControlID, api.FindingFilterWithMetadata{
 				Key:         item.Key,
-				DisplayName: policy.Title,
+				DisplayName: control.Title,
 			})
 		} else {
-			response.PolicyID = append(response.PolicyID, api.FindingFilterWithMetadata{
+			response.ControlID = append(response.ControlID, api.FindingFilterWithMetadata{
 				Key: item.Key,
 			})
 		}
@@ -645,10 +645,10 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetFindingsFieldCountByPolicies godoc
+// GetFindingsFieldCountByControls godoc
 //
-//	@Summary		Get findings field count by policies
-//	@Description	Retrieving the number of findings field count by policies.
+//	@Summary		Get findings field count by controls
+//	@Description	Retrieving the number of findings field count by controls.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -662,7 +662,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
-func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
+func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	field := ctx.Param("field")
 	var esField string
@@ -706,20 +706,20 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.FindingsFieldCountByPolicy(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, nil, severities)
+	res, err := es.FindingsFieldCountByControl(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, nil, severities)
 	if err != nil {
 		return err
 	}
-	for _, b := range res.Aggregations.PolicyCount.Buckets {
+	for _, b := range res.Aggregations.ControlCount.Buckets {
 		var fieldCounts []api.TopFieldRecord
 		for _, bucketField := range b.Results.Buckets {
 			bucketField := bucketField
 			fieldCounts = append(fieldCounts, api.TopFieldRecord{Field: &bucketField.Key, Count: bucketField.FieldCount.Value})
 		}
-		response.Policies = append(response.Policies, struct {
-			PolicyName  string               `json:"policyName"`
+		response.Controls = append(response.Controls, struct {
+			ControlName string               `json:"controlName"`
 			FieldCounts []api.TopFieldRecord `json:"fieldCounts"`
-		}{PolicyName: b.Key, FieldCounts: fieldCounts})
+		}{ControlName: b.Key, FieldCounts: fieldCounts})
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -887,20 +887,20 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetPolicyRemediation godoc
+// GetControlRemediation godoc
 //
-//	@Summary	Get policy remediation using AI
+//	@Summary	Get control remediation using AI
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		policyID	path		string	true	"PolicyID"
+//	@Param		controlID	path		string	true	"ControlID"
 //	@Success	200			{object}	api.BenchmarkRemediation
-//	@Router		/compliance/api/v1/ai/policy/{policyID}/remediation [post]
-func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
-	policyID := ctx.Param("policyID")
+//	@Router		/compliance/api/v1/ai/control/{controlID}/remediation [post]
+func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
+	controlID := ctx.Param("controlID")
 
-	policy, err := h.db.GetPolicy(policyID)
+	control, err := h.db.GetControl(controlID)
 	if err != nil {
 		return err
 	}
@@ -917,7 +917,7 @@ func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
 
 	req.Messages = append(req.Messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
-		Content: policy.Title,
+		Content: control.Title,
 	})
 
 	resp, err := h.openAIClient.CreateChatCompletion(context.Background(), req)
@@ -1148,19 +1148,19 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarkPolicies godoc
+// GetBenchmarkControls godoc
 //
-//	@Summary	Get benchmark policies
+//	@Summary	Get benchmark controls
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
 //	@Param		benchmark_id	path		string		true	"Benchmark ID"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "//	@Success	200	{object}	[]api.PolicySummary
-//	@Success	200				{object}	[]api.PolicySummary
-//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
-func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
+//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "//	@Success	200	{object}	[]api.ControlSummary
+//	@Success	200				{object}	[]api.ControlSummary
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls [get]
+func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -1169,23 +1169,23 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		return err
 	}
 
-	policiesMap := make(map[string]api.Policy)
-	err = h.populatePoliciesMap(benchmarkID, policiesMap)
+	controlsMap := make(map[string]api.Control)
+	err = h.populateControlsMap(benchmarkID, controlsMap)
 	if err != nil {
 		return err
 	}
 
-	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID, connectionIDs)
+	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(h.logger, h.client, benchmarkID, connectionIDs)
 	if err != nil {
 		return err
 	}
 
-	queryIDs := make([]string, 0, len(policiesMap))
-	for _, policy := range policiesMap {
-		if policy.QueryID == nil {
+	queryIDs := make([]string, 0, len(controlsMap))
+	for _, control := range controlsMap {
+		if control.QueryID == nil {
 			continue
 		}
-		queryIDs = append(queryIDs, *policy.QueryID)
+		queryIDs = append(queryIDs, *control.QueryID)
 	}
 
 	queries, err := h.db.GetQueriesIdAndConnector(queryIDs)
@@ -1198,19 +1198,19 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		queryMap[query.ID] = query
 	}
 
-	var policySummary []api.PolicySummary
-	for _, policy := range policiesMap {
-		if policy.QueryID != nil {
-			if query, ok := queryMap[*policy.QueryID]; ok {
-				policy.Connector, _ = source.ParseType(query.Connector)
+	var controlSummary []api.ControlSummary
+	for _, control := range controlsMap {
+		if control.QueryID != nil {
+			if query, ok := queryMap[*control.QueryID]; ok {
+				control.Connector, _ = source.ParseType(query.Connector)
 			}
 		}
-		result, ok := policyResult[policy.ID]
+		result, ok := controlResult[control.ID]
 		if !ok {
-			result = types.PolicyResult{Passed: true}
+			result = types.ControlResult{Passed: true}
 		}
-		policySummary = append(policySummary, api.PolicySummary{
-			Policy:                policy,
+		controlSummary = append(controlSummary, api.ControlSummary{
+			Control:               control,
 			Passed:                result.Passed,
 			FailedResourcesCount:  result.FailedResourcesCount,
 			TotalResourcesCount:   result.TotalResourcesCount,
@@ -1220,61 +1220,61 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		})
 	}
 
-	sort.Slice(policySummary, func(i, j int) bool {
-		if policySummary[i].Policy.Severity != policySummary[j].Policy.Severity {
-			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityCritical {
+	sort.Slice(controlSummary, func(i, j int) bool {
+		if controlSummary[i].Control.Severity != controlSummary[j].Control.Severity {
+			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityCritical {
 				return true
 			}
-			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityCritical {
+			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityCritical {
 				return false
 			}
-			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityHigh {
+			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityHigh {
 				return true
 			}
-			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityHigh {
+			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityHigh {
 				return false
 			}
-			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityMedium {
+			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityMedium {
 				return true
 			}
-			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityMedium {
+			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityMedium {
 				return false
 			}
-			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityLow {
+			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityLow {
 				return true
 			}
-			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityLow {
+			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityLow {
 				return false
 			}
-			if policySummary[i].Policy.Severity == kaytuTypes.FindingSeverityNone {
+			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityNone {
 				return true
 			}
-			if policySummary[j].Policy.Severity == kaytuTypes.FindingSeverityNone {
+			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityNone {
 				return false
 			}
 		}
-		return policySummary[i].Policy.Title < policySummary[j].Policy.Title
+		return controlSummary[i].Control.Title < controlSummary[j].Control.Title
 	})
 
-	return ctx.JSON(http.StatusOK, policySummary)
+	return ctx.JSON(http.StatusOK, controlSummary)
 }
 
-// GetBenchmarkPolicy godoc
+// GetBenchmarkControl godoc
 //
-//	@Summary	Get benchmark policies
+//	@Summary	Get benchmark controls
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
 //	@Param		benchmark_id	path		string		true	"Benchmark ID"
-//	@Param		policyId		path		string		true	"Policy ID"
+//	@Param		controlId		path		string		true	"Control ID"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
-//	@Success	200				{object}	api.PolicySummary
-//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies/{policyId} [get]
-func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
+//	@Success	200				{object}	api.ControlSummary
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId} [get]
+func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	policyID := ctx.Param("policyId")
+	controlID := ctx.Param("controlId")
 
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
@@ -1288,34 +1288,34 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 		return err
 	}
 
-	policy, err := h.db.GetPolicy(policyID)
+	control, err := h.db.GetControl(controlID)
 	if err != nil {
-		h.logger.Error("failed to fetch policy", zap.Error(err), zap.String("policyID", policyID), zap.String("benchmarkID", benchmarkID))
+		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID), zap.String("benchmarkID", benchmarkID))
 		return err
 	}
 
-	apiPolicy := policy.ToApi()
-	apiPolicy.Connector = benchmark.Connector
-	if policy.QueryID != nil {
-		query, err := h.db.GetQuery(*policy.QueryID)
+	apiControl := control.ToApi()
+	apiControl.Connector = benchmark.Connector
+	if control.QueryID != nil {
+		query, err := h.db.GetQuery(*control.QueryID)
 		if err != nil {
-			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *policy.QueryID), zap.String("benchmarkID", benchmarkID))
+			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.String("benchmarkID", benchmarkID))
 			return err
 		}
-		apiPolicy.Connector, _ = source.ParseType(query.Connector)
+		apiControl.Connector, _ = source.ParseType(query.Connector)
 	}
 
-	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID, connectionIDs)
+	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(h.logger, h.client, benchmarkID, connectionIDs)
 	if err != nil {
 		return err
 	}
 
-	result, ok := policyResult[policy.ID]
+	result, ok := controlResult[control.ID]
 	if !ok {
-		result = types.PolicyResult{Passed: true}
+		result = types.ControlResult{Passed: true}
 	}
-	policySummary := api.PolicySummary{
-		Policy:                apiPolicy,
+	controlSummary := api.ControlSummary{
+		Control:               apiControl,
 		Passed:                result.Passed,
 		FailedResourcesCount:  result.FailedResourcesCount,
 		TotalResourcesCount:   result.TotalResourcesCount,
@@ -1324,31 +1324,31 @@ func (h *HttpHandler) GetBenchmarkPolicy(ctx echo.Context) error {
 		EvaluatedAt:           evaluatedAt,
 	}
 
-	return ctx.JSON(http.StatusOK, policySummary)
+	return ctx.JSON(http.StatusOK, controlSummary)
 }
 
-func (h *HttpHandler) populatePoliciesMap(benchmarkID string, basePoliciesMap map[string]api.Policy) error {
+func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap map[string]api.Control) error {
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	if basePoliciesMap == nil {
-		return errors.New("basePoliciesMap cannot be nil")
+	if baseControlsMap == nil {
+		return errors.New("baseControlsMap cannot be nil")
 	}
 
 	for _, child := range benchmark.Children {
-		err := h.populatePoliciesMap(child.ID, basePoliciesMap)
+		err := h.populateControlsMap(child.ID, baseControlsMap)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, policy := range benchmark.Policies {
-		if _, ok := basePoliciesMap[policy.ID]; !ok {
-			v := policy.ToApi()
+	for _, control := range benchmark.Controls {
+		if _, ok := baseControlsMap[control.ID]; !ok {
+			v := control.ToApi()
 			v.Connector = benchmark.Connector
-			basePoliciesMap[policy.ID] = v
+			baseControlsMap[control.ID] = v
 		}
 	}
 
@@ -2035,7 +2035,7 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, benchmark.ToApi())
 }
 
-func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID string) ([]db.Policy, error) {
+func (h *HttpHandler) getBenchmarkControls(ctx context.Context, benchmarkID string) ([]db.Control, error) {
 	//trace :
 	outputS, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
@@ -2055,15 +2055,15 @@ func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID stri
 		return nil, echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	var policyIDs []string
-	for _, p := range b.Policies {
-		policyIDs = append(policyIDs, p.ID)
+	var controlIDs []string
+	for _, p := range b.Controls {
+		controlIDs = append(controlIDs, p.ID)
 	}
 	//trace :
-	_, span2 := tracer.Start(outputS, "new_GetPolicies", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_GetPolicies")
+	_, span2 := tracer.Start(outputS, "new_GetControls", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetControls")
 
-	policies, err := h.db.GetPolicies(policyIDs)
+	controls, err := h.db.GetControls(controlIDs)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
@@ -2072,15 +2072,15 @@ func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID stri
 	span2.End()
 
 	//tracer :
-	output3, span3 := tracer.Start(outputS, "new_getBenchmarkPolicies(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span3.SetName("new_getBenchmarkPolicies(loop)")
+	output3, span3 := tracer.Start(outputS, "new_getBenchmarkControls(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span3.SetName("new_getBenchmarkControls(loop)")
 
 	for _, child := range b.Children {
 		// tracer :
-		_, span4 := tracer.Start(output3, "new_getBenchmarkPolicies", trace.WithSpanKind(trace.SpanKindServer))
-		span4.SetName("new_getBenchmarkPolicies")
+		_, span4 := tracer.Start(output3, "new_getBenchmarkControls", trace.WithSpanKind(trace.SpanKindServer))
+		span4.SetName("new_getBenchmarkControls")
 
-		childPolicies, err := h.getBenchmarkPolicies(ctx, child.ID)
+		childControls, err := h.getBenchmarkControls(ctx, child.ID)
 		if err != nil {
 			span4.RecordError(err)
 			span4.SetStatus(codes.Error, err.Error())
@@ -2091,40 +2091,40 @@ func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID stri
 		)
 		span4.End()
 
-		policies = append(policies, childPolicies...)
+		controls = append(controls, childControls...)
 	}
 	span3.End()
 
-	return policies, nil
+	return controls, nil
 }
 
-func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
-	policyId := ctx.Param("policy_id")
+func (h *HttpHandler) GetControl(ctx echo.Context) error {
+	controlId := ctx.Param("control_id")
 	// trace :
-	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetPolicy", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetPolicy")
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetControl", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetControl")
 
-	policy, err := h.db.GetPolicy(policyId)
+	control, err := h.db.GetControl(controlId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("policy ID", policyId),
+		attribute.String("control ID", controlId),
 	))
 	span1.End()
 
-	if policy == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "policy not found")
+	if control == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "control not found")
 	}
 
-	pa := policy.ToApi()
+	pa := control.ToApi()
 	// trace :
 	outputS2, span2 := tracer.Start(outputS, "new_PopulateConnector", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_PopulateConnector")
 
-	err = policy.PopulateConnector(outputS2, h.db, &pa)
+	err = control.PopulateConnector(outputS2, h.db, &pa)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())

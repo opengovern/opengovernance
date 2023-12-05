@@ -21,12 +21,12 @@ type Benchmark struct {
 	Tags        map[string][]string `json:"tags" `                                                                                                                                                                             // Benchmark tags
 	Connectors  []source.Type       `json:"connectors" example:"[azure]"`                                                                                                                                                      // Benchmark connectors
 	Children    []string            `json:"children" example:"[azure_cis_v140_1, azure_cis_v140_2]"`                                                                                                                           // Benchmark children
-	Policies    []string            `json:"policies" example:"[azure_cis_v140_1_1, azure_cis_v140_1_2]"`                                                                                                                       // Benchmark policies
+	Controls    []string            `json:"controls" example:"[azure_cis_v140_1_1, azure_cis_v140_1_2]"`                                                                                                                       // Benchmark controls
 	CreatedAt   time.Time           `json:"createdAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                          // Benchmark creation date
 	UpdatedAt   time.Time           `json:"updatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                          // Benchmark last update date
 }
 
-type Policy struct {
+type Control struct {
 	ID                 string                `json:"id" example:"azure_cis_v140_1_1"`
 	Title              string                `json:"title" example:"1.1 Ensure that multi-factor authentication status is enabled for all privileged users"`
 	Description        string                `json:"description" example:"Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."`

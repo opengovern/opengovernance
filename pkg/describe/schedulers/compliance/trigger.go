@@ -34,26 +34,26 @@ func (s *JobScheduler) buildRunners(
 		runners = append(runners, childRunners...)
 	}
 
-	for _, policyID := range benchmark.Policies {
-		policy, err := s.complianceClient.GetPolicy(ctx, policyID)
+	for _, controlID := range benchmark.Controls {
+		control, err := s.complianceClient.GetControl(ctx, controlID)
 		if err != nil {
 			return nil, err
 		}
 
-		if policy.QueryID == nil {
+		if control.QueryID == nil {
 			continue
 		}
 
 		callers := runner.Caller{
 			RootBenchmark:      rootBenchmarkID,
 			ParentBenchmarkIDs: append(parentBenchmarkIDs, benchmarkID),
-			PolicyID:           policy.ID,
-			PolicySeverity:     policy.Severity,
+			ControlID:          control.ID,
+			ControlSeverity:    control.Severity,
 		}
 
 		runnerJob := model.ComplianceRunner{
 			BenchmarkID:          rootBenchmarkID,
-			QueryID:              *policy.QueryID,
+			QueryID:              *control.QueryID,
 			ConnectionID:         connectionID,
 			ResourceCollectionID: resourceCollectionID,
 			ParentJobID:          parentJobID,

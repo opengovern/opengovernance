@@ -14,10 +14,10 @@ type Result struct {
 type ResultGroup struct {
 	Result        Result
 	ResourceTypes map[string]Result
-	Policies      map[string]PolicyResult
+	Controls      map[string]ControlResult
 }
 
-type PolicyResult struct {
+type ControlResult struct {
 	Passed bool
 
 	FailedResourcesCount int
@@ -64,7 +64,7 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 				SecurityScore:  0,
 			},
 			ResourceTypes: map[string]Result{},
-			Policies:      map[string]PolicyResult{},
+			Controls:      map[string]ControlResult{},
 		}
 	}
 	connection.Result.SeverityResult[f.Severity]++
@@ -95,9 +95,9 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 	connectionResourceType.QueryResult[f.Result]++
 	connection.ResourceTypes[f.ResourceType] = connectionResourceType
 
-	policy, ok := r.BenchmarkResult.Policies[f.PolicyID]
+	control, ok := r.BenchmarkResult.Controls[f.ControlID]
 	if !ok {
-		policy = PolicyResult{
+		control = ControlResult{
 			Passed:            true,
 			allResources:      map[string]any{},
 			failedResources:   map[string]any{},
@@ -107,18 +107,18 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 	}
 
 	if !f.Result.IsPassed() {
-		policy.Passed = false
+		control.Passed = false
 
-		policy.failedResources[f.ResourceID] = struct{}{}
-		policy.failedConnections[f.ConnectionID] = struct{}{}
+		control.failedResources[f.ResourceID] = struct{}{}
+		control.failedConnections[f.ConnectionID] = struct{}{}
 	}
-	policy.allResources[f.ResourceID] = struct{}{}
-	policy.allConnections[f.ConnectionID] = struct{}{}
-	r.BenchmarkResult.Policies[f.PolicyID] = policy
+	control.allResources[f.ResourceID] = struct{}{}
+	control.allConnections[f.ConnectionID] = struct{}{}
+	r.BenchmarkResult.Controls[f.ControlID] = control
 
-	connectionPolicy, ok := connection.Policies[f.PolicyID]
+	connectionControl, ok := connection.Controls[f.ControlID]
 	if !ok {
-		connectionPolicy = PolicyResult{
+		connectionControl = ControlResult{
 			Passed:            true,
 			allResources:      map[string]any{},
 			failedResources:   map[string]any{},
@@ -127,13 +127,13 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 		}
 	}
 	if !f.Result.IsPassed() {
-		connectionPolicy.Passed = false
-		connectionPolicy.failedResources[f.ResourceID] = struct{}{}
-		connectionPolicy.failedConnections[f.ConnectionID] = struct{}{}
+		connectionControl.Passed = false
+		connectionControl.failedResources[f.ResourceID] = struct{}{}
+		connectionControl.failedConnections[f.ConnectionID] = struct{}{}
 	}
-	connectionPolicy.allResources[f.ResourceID] = struct{}{}
-	connectionPolicy.allConnections[f.ConnectionID] = struct{}{}
-	connection.Policies[f.PolicyID] = connectionPolicy
+	connectionControl.allResources[f.ResourceID] = struct{}{}
+	connectionControl.allConnections[f.ConnectionID] = struct{}{}
+	connection.Controls[f.ControlID] = connectionControl
 }
 
 func (b *BenchmarkSummary) AddFinding(f types.Finding) {
@@ -160,7 +160,7 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 						SecurityScore:  0,
 					},
 					ResourceTypes: map[string]Result{},
-					Policies:      map[string]PolicyResult{},
+					Controls:      map[string]ControlResult{},
 				},
 				Connections: map[string]ResultGroup{},
 			}
@@ -173,14 +173,14 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 
 func (r *BenchmarkSummaryResult) summarize() {
 	// update security scores
-	for policyID, summary := range r.BenchmarkResult.Policies {
+	for controlID, summary := range r.BenchmarkResult.Controls {
 		summary.FailedConnectionCount = len(summary.failedConnections)
 		summary.TotalConnectionCount = len(summary.allConnections)
 
 		summary.FailedResourcesCount = len(summary.failedResources)
 		summary.TotalResourcesCount = len(summary.allResources)
 
-		r.BenchmarkResult.Policies[policyID] = summary
+		r.BenchmarkResult.Controls[controlID] = summary
 	}
 
 	for resourceType, summary := range r.BenchmarkResult.ResourceTypes {
@@ -205,14 +205,14 @@ func (r *BenchmarkSummaryResult) summarize() {
 	}
 
 	for connectionID, summary := range r.Connections {
-		for policyID, policySummary := range summary.Policies {
-			policySummary.FailedConnectionCount = len(policySummary.failedConnections)
-			policySummary.TotalConnectionCount = len(policySummary.allConnections)
+		for controlID, controlSummary := range summary.Controls {
+			controlSummary.FailedConnectionCount = len(controlSummary.failedConnections)
+			controlSummary.TotalConnectionCount = len(controlSummary.allConnections)
 
-			policySummary.FailedResourcesCount = len(policySummary.failedResources)
-			policySummary.TotalResourcesCount = len(policySummary.allResources)
+			controlSummary.FailedResourcesCount = len(controlSummary.failedResources)
+			controlSummary.TotalResourcesCount = len(controlSummary.allResources)
 
-			summary.Policies[policyID] = policySummary
+			summary.Controls[controlID] = controlSummary
 		}
 
 		for resourceType, resourceTypeSummary := range summary.ResourceTypes {
