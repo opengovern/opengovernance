@@ -7014,6 +7014,27 @@ paths:
       summary: Get workspace
       tags:
       - workspace
+  /workspace/api/v1/workspaces/byname/{workspace_name}:
+    get:
+      consumes:
+      - application/json
+      description: Get workspace with workspace name
+      parameters:
+      - description: Workspace Name
+        in: path
+        name: workspace_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Get workspace for workspace service
+      tags:
+      - workspace
   /workspace/api/v1/workspaces/limits/{workspace_name}:
     get:
       consumes:

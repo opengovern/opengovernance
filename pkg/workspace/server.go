@@ -177,6 +177,7 @@ func (s *Server) Register(e *echo.Echo) {
 	workspacesGroup.GET("/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
 	workspacesGroup.GET("", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
 	workspacesGroup.GET("/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
+	workspacesGroup.GET("/byname/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceByName, authapi.ViewerRole))
 
 	organizationGroup := v1Group.Group("/organization")
 	organizationGroup.GET("", httpserver.AuthorizeHandler(s.ListOrganization, authapi.EditorRole))
@@ -841,6 +842,70 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 	}
 
 	workspace, err := s.db.GetWorkspace(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
+		}
+		c.Logger().Errorf("find workspace: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
+	}
+
+	hasRoleInWorkspace := false
+	for _, roleBinding := range resp.RoleBindings {
+		if roleBinding.WorkspaceID == workspace.ID {
+			hasRoleInWorkspace = true
+		}
+	}
+	if resp.GlobalRoles != nil {
+		hasRoleInWorkspace = true
+	}
+
+	if *workspace.OwnerId != userId && !hasRoleInWorkspace {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
+	version := "unspecified"
+	var kaytuVersionConfig corev1.ConfigMap
+	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+		Namespace: workspace.ID,
+		Name:      "kaytu-version",
+	}, &kaytuVersionConfig)
+	if err == nil {
+		version = kaytuVersionConfig.Data["version"]
+	} else {
+		fmt.Printf("failed to load version due to %v\n", err)
+	}
+
+	return c.JSON(http.StatusOK, api.WorkspaceResponse{
+		Workspace: workspace.ToAPI(),
+		Version:   version,
+	})
+}
+
+// GetWorkspaceByName godoc
+//
+//	@Summary		Get workspace for workspace service
+//	@Description	Get workspace with workspace name
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			workspace_name	path	string	true	"Workspace Name"
+//	@Success		200
+//	@Router			/workspace/api/v1/workspaces/byname/{workspace_name} [get]
+func (s *Server) GetWorkspaceByName(c echo.Context) error {
+	userId := httpserver.GetUserID(c)
+	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
+	if err != nil {
+		return fmt.Errorf("GetUserRoleBindings: %v", err)
+	}
+
+	name := c.Param("workspace_name")
+	if name == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "workspace name is empty")
+	}
+
+	workspace, err := s.db.GetWorkspaceByName(name)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")

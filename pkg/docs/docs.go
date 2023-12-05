@@ -6158,6 +6158,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspaces/byname/{workspace_name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get workspace with workspace name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get workspace for workspace service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace Name",
+                        "name": "workspace_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspaces/limits/byid/{workspace_id}": {
             "get": {
                 "security": [
