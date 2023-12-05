@@ -17,6 +17,12 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 		return err
 	}
 	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
+	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
+		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
+		return err
+	}
+	logger.Info("extracted controls and benchmarks", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)))
+
 	loadedQueries := make(map[string]bool)
 	err := dbc.Transaction(func(tx *gorm.DB) error {
 		for _, obj := range p.queries {
@@ -44,11 +50,6 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 		return err
 	}
 
-	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
-		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
-		return err
-	}
-	logger.Info("extracted controls and benchmarks", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)))
 	missingQueries := make(map[string]bool)
 	err = dbc.Transaction(func(tx *gorm.DB) error {
 		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
