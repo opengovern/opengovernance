@@ -56,46 +56,44 @@ func (g *GitParser) ExtractControls(complianceControlsPath string) error {
 				return err
 			}
 
-			var objs []Control
-			err = json.Unmarshal(content, &objs)
+			var control Control
+			err = json.Unmarshal(content, &control)
 			if err != nil {
 				return err
 			}
-			for _, o := range objs {
-				tags := make([]db.ControlTag, 0, len(o.Tags))
-				for tagKey, tagValue := range o.Tags {
-					tags = append(tags, db.ControlTag{
-						Tag: model.Tag{
-							Key:   tagKey,
-							Value: tagValue,
-						},
-						ControlID: o.ID,
-					})
-				}
-				p := db.Control{
-					ID:                 o.ID,
-					Title:              o.Title,
-					Description:        o.Description,
-					Tags:               tags,
-					Enabled:            true,
-					Benchmarks:         nil,
-					Severity:           types.ParseFindingSeverity(o.Severity),
-					ManualVerification: o.ManualVerification,
-					Managed:            o.Managed,
-				}
-
-				if o.Query != nil {
-					g.queries = append(g.queries, db.Query{
-						ID:             o.ID,
-						QueryToExecute: o.Query.QueryToExecute,
-						Connector:      o.Query.Connector,
-						PrimaryTable:   o.Query.PrimaryTable,
-						ListOfTables:   o.Query.ListOfTables,
-						Engine:         o.Query.Engine,
-					})
-				}
-				g.controls = append(g.controls, p)
+			tags := make([]db.ControlTag, 0, len(control.Tags))
+			for tagKey, tagValue := range control.Tags {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   tagKey,
+						Value: tagValue,
+					},
+					ControlID: control.ID,
+				})
 			}
+			p := db.Control{
+				ID:                 control.ID,
+				Title:              control.Title,
+				Description:        control.Description,
+				Tags:               tags,
+				Enabled:            true,
+				Benchmarks:         nil,
+				Severity:           types.ParseFindingSeverity(control.Severity),
+				ManualVerification: control.ManualVerification,
+				Managed:            control.Managed,
+			}
+
+			if control.Query != nil {
+				g.queries = append(g.queries, db.Query{
+					ID:             control.ID,
+					QueryToExecute: control.Query.QueryToExecute,
+					Connector:      control.Query.Connector,
+					PrimaryTable:   control.Query.PrimaryTable,
+					ListOfTables:   control.Query.ListOfTables,
+					Engine:         control.Query.Engine,
+				})
+			}
+			g.controls = append(g.controls, p)
 		}
 		return nil
 	})
