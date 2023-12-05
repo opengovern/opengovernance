@@ -92,6 +92,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string) error {
 					ListOfTables:   control.Query.ListOfTables,
 					Engine:         control.Query.Engine,
 				})
+				p.QueryID = &control.ID
 			}
 			g.controls = append(g.controls, p)
 		}
