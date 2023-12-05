@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -47,9 +48,9 @@ func (g *GitParser) ExtractQueries(queryPath string) error {
 	})
 }
 
-func (g *GitParser) ExtractControls(compliancePath string) error {
-	return filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Base(path) == "controls.json" {
+func (g *GitParser) ExtractControls(complianceControlsPath string) error {
+	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
+		if strings.HasSuffix(path, ".json") {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
@@ -100,9 +101,9 @@ func (g *GitParser) ExtractControls(compliancePath string) error {
 	})
 }
 
-func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
+func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var benchmarks []Benchmark
-	err := filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(complianceBenchmarksPath, func(path string, d fs.DirEntry, err error) error {
 		if filepath.Base(path) == "children.json" {
 			content, err := os.ReadFile(path)
 			if err != nil {
@@ -242,10 +243,10 @@ func (g *GitParser) CheckForDuplicate() error {
 }
 
 func (g *GitParser) ExtractCompliance(compliancePath string) error {
-	if err := g.ExtractControls(compliancePath); err != nil {
+	if err := g.ExtractControls(path.Join(compliancePath, "controls")); err != nil {
 		return err
 	}
-	if err := g.ExtractBenchmarks(compliancePath); err != nil {
+	if err := g.ExtractBenchmarks(path.Join(compliancePath, "benchmarks")); err != nil {
 		return err
 	}
 	if err := g.CheckForDuplicate(); err != nil {
