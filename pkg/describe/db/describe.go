@@ -201,19 +201,21 @@ UNION ALL
 func (db Database) GetAllJobSummary(hours int) ([]model.JobSummary, error) {
 	var job []model.JobSummary
 
-	tx := db.ORM.Raw(`
+	rawQuery := fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '%d HOURS' GROUP BY status )
 UNION ALL 
-(SELECT 'insight' AS job_type, status, count(*) AS count FROM insight_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
+(SELECT 'insight' AS job_type, status, count(*) AS count FROM insight_jobs WHERE created_at > now() - interval '%d HOURS' GROUP BY status )
 UNION ALL 
-(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
+(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '%d HOURS' GROUP BY status )
 UNION ALL 
-(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
+(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '%d HOURS' GROUP BY status )
 )
 ) AS t;
-`, hours, hours, hours, hours).Find(&job)
+`, hours, hours, hours, hours)
+
+	tx := db.ORM.Raw(rawQuery).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
