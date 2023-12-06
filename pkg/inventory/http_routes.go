@@ -220,7 +220,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
 	}
 
-	var metricIndexed map[string]int
+	var metricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
 		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, filteredMetricIDs, connectorTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
 	} else {
@@ -234,9 +234,12 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	var totalCount *int
 	for _, metric := range mts {
 		apiMetric := inventoryApi.MetricToAPI(metric)
-		if count, ok := metricIndexed[metric.ID]; ok && count >= minCount {
-			apiMetric.Count = &count
-			totalCount = utils.PAdd(totalCount, &count)
+		if countWithTime, ok := metricIndexed[metric.ID]; ok && countWithTime.Count >= minCount {
+			apiMetric.Count = &countWithTime.Count
+			if apiMetric.LastEvaluated == nil || apiMetric.LastEvaluated.IsZero() || apiMetric.LastEvaluated.Before(countWithTime.Time) {
+				apiMetric.LastEvaluated = &countWithTime.Time
+			}
+			totalCount = utils.PAdd(totalCount, &countWithTime.Count)
 		}
 		if (minCount == 0) || (apiMetric.Count != nil && *apiMetric.Count >= minCount) {
 			apiMetrics = append(apiMetrics, apiMetric)
@@ -505,7 +508,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	span1.End()
 	tags = model.TrimPrivateTags(tags)
 
-	var metricCount map[string]int
+	var metricCount map[string]es.CountWithTime
 	var spend map[string]es.SpendMetricResp
 
 	if metricType == analyticsDB.MetricTypeAssets {
@@ -550,7 +553,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 			fmt.Println("metrics", key, tagValue, metrics)
 			for _, metric := range metrics {
-				if (metric.Type == analyticsDB.MetricTypeAssets && metricCount[metric.ID] >= minCount) ||
+				if (metric.Type == analyticsDB.MetricTypeAssets && metricCount[metric.ID].Count >= minCount) ||
 					(metric.Type == analyticsDB.MetricTypeSpend && spend[metric.ID].CostValue >= minAmount) {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
@@ -806,7 +809,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		metricsIDs = append(metricsIDs, metric.ID)
 	}
 
-	var metricIndexed map[string]int
+	var metricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
 		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 	} else {
@@ -816,7 +819,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		return err
 	}
 
-	var oldMetricIndexed map[string]int
+	var oldMetricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
 		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
 	} else {
@@ -840,10 +843,10 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 				valueCountMap[tagValue] = currentAndOldCount{}
 			}
 			v := valueCountMap[tagValue]
-			v.current += metricIndexed[metric.ID]
-			v.old += oldMetricIndexed[metric.ID]
-			totalCount += metricIndexed[metric.ID]
-			totalOldCount += oldMetricIndexed[metric.ID]
+			v.current += metricIndexed[metric.ID].Count
+			v.old += oldMetricIndexed[metric.ID].Count
+			totalCount += metricIndexed[metric.ID].Count
+			totalOldCount += oldMetricIndexed[metric.ID].Count
 			valueCountMap[tagValue] = v
 			break
 		}
@@ -2032,8 +2035,8 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	totalCount := 0
-	for _, count := range metricsIndexed {
-		totalCount += count
+	for _, countWithTime := range metricsIndexed {
+		totalCount += countWithTime.Count
 	}
 	return ctx.JSON(http.StatusOK, totalCount)
 }
@@ -2387,11 +2390,11 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 			continue
 		}
 		v := res[collectionId]
-		for metricId, count := range metricCount {
-			if count.Count == 0 {
+		for metricId, countWithTime := range metricCount {
+			if countWithTime.Count == 0 {
 				continue
 			}
-			count := count
+			countWithTime := countWithTime
 
 			metric := filteredMetricMap[metricId]
 			for _, connector := range metric.Connectors {
@@ -2406,9 +2409,9 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 					v.Connectors = append(v.Connectors, source.Type(connector))
 				}
 			}
-			v.ResourceCount = utils.PAdd(v.ResourceCount, &count.Count)
-			if v.LastEvaluatedAt == nil || v.LastEvaluatedAt.IsZero() || v.LastEvaluatedAt.Before(count.Time) {
-				v.LastEvaluatedAt = &count.Time
+			v.ResourceCount = utils.PAdd(v.ResourceCount, &countWithTime.Count)
+			if v.LastEvaluatedAt == nil || v.LastEvaluatedAt.IsZero() || v.LastEvaluatedAt.Before(countWithTime.Time) {
+				v.LastEvaluatedAt = &countWithTime.Time
 			}
 		}
 		res[collectionId] = v
@@ -2469,7 +2472,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		if count.Count == 0 {
 			continue
 		}
-		count := count
+		countWithTime := count
 
 		metric := filteredMetricMap[metricId]
 		for _, connector := range metric.Connectors {
@@ -2484,10 +2487,10 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 				result.Connectors = append(result.Connectors, source.Type(connector))
 			}
 		}
-		result.ResourceCount = utils.PAdd(result.ResourceCount, &count.Count)
+		result.ResourceCount = utils.PAdd(result.ResourceCount, &countWithTime.Count)
 		result.MetricCount = utils.PAdd(result.MetricCount, utils.GetPointer(1))
-		if result.LastEvaluatedAt == nil || result.LastEvaluatedAt.IsZero() || result.LastEvaluatedAt.Before(count.Time) {
-			result.LastEvaluatedAt = &count.Time
+		if result.LastEvaluatedAt == nil || result.LastEvaluatedAt.IsZero() || result.LastEvaluatedAt.Before(countWithTime.Time) {
+			result.LastEvaluatedAt = &countWithTime.Time
 		}
 	}
 
@@ -2540,8 +2543,8 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 	}
 
 	includedResourceTypes := make(map[string]describe.ResourceType)
-	for metricID, count := range metricIndexed {
-		if count == 0 {
+	for metricID, countWithTime := range metricIndexed {
+		if countWithTime.Count == 0 {
 			continue
 		}
 		metric := metricsMap[metricID]

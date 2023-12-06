@@ -17,6 +17,11 @@ import (
 
 const timeAtMaxSearchFrame = 5 * 24 * time.Hour // 5 days
 
+type CountWithTime struct {
+	Count int
+	Time  time.Time
+}
+
 type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	Aggregations struct {
 		MetricGroup struct {
@@ -35,7 +40,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 }
 
 func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []string,
-	connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]int, error) {
+	connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -97,7 +102,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []s
 		includeResourceCollectionMap[resourceCollection] = true
 	}
 
-	result := make(map[string]int)
+	result := make(map[string]CountWithTime)
 
 	b, err := json.Marshal(res)
 	if err != nil {
@@ -120,7 +125,12 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []s
 						(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
 						continue
 					}
-					result[hit.Source.MetricID] += connectionResults.ResourceCount
+					v := result[hit.Source.MetricID]
+					v.Count += connectionResults.ResourceCount
+					if v.Time.Before(time.UnixMilli(hit.Source.EvaluatedAt)) {
+						v.Time = time.UnixMilli(hit.Source.EvaluatedAt)
+					}
+					result[hit.Source.MetricID] = v
 				}
 			}
 
@@ -160,7 +170,7 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 }
 
 func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
-	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]int, error) {
+	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -227,7 +237,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 		return nil, err
 	}
 
-	result := make(map[string]int)
+	result := make(map[string]CountWithTime)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
 		for _, hit := range metricBucket.Latest.Hits.Hits {
 			handleConnResults := func(connResults resource.ConnectorMetricTrendSummaryResult) {
@@ -235,7 +245,12 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 					if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
 						continue
 					}
-					result[hit.Source.MetricID] += connectorResults.ResourceCount
+					v := result[hit.Source.MetricID]
+					v.Count += connectorResults.ResourceCount
+					if v.Time.Before(time.UnixMilli(hit.Source.EvaluatedAt)) {
+						v.Time = time.UnixMilli(hit.Source.EvaluatedAt)
+					}
+					result[hit.Source.MetricID] = v
 				}
 			}
 
@@ -254,11 +269,6 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 		}
 	}
 	return result, nil
-}
-
-type CountWithTime struct {
-	Count int
-	Time  time.Time
 }
 
 func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(client kaytu.Client,
