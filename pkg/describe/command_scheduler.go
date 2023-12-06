@@ -107,10 +107,8 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLSSLMode,
 				HttpServerAddress,
 				DescribeTimeoutHours,
-				InsightIntervalHours,
 				CheckupIntervalHours,
 				MustSummarizeIntervalHours,
-				AnalyticsIntervalHours,
 				KaytuHelmChartLocation,
 				FluxSystemNamespace,
 			)

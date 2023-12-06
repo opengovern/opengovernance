@@ -33,7 +33,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
-		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
+		if lastJob == nil || lastJob.CreatedAt.Add(s.analyticsIntervalHours).Before(time.Now()) {
 			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
@@ -46,7 +46,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
-		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
+		if lastJob == nil || lastJob.CreatedAt.Add(s.analyticsIntervalHours).Before(time.Now()) {
 			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))

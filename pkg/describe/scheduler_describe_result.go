@@ -177,7 +177,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 		case <-t.C:
 			awsResources := aws.ListResourceTypes()
 			for _, r := range awsResources {
-				var interval int64
+				var interval time.Duration
 				resourceType, err := aws.GetResourceType(r)
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
@@ -198,7 +198,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			}
 			azureResources := azure.ListResourceTypes()
 			for _, r := range azureResources {
-				var interval int64
+				var interval time.Duration
 				resourceType, err := azure.GetResourceType(r)
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))

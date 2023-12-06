@@ -22,17 +22,10 @@ type JobScheduler struct {
 	db                      db.Database
 	kafkaProducer           *confluent_kafka.Producer
 	esClient                kaytu.Client
-	complianceIntervalHours int64
+	complianceIntervalHours time.Duration
 }
 
-func New(conf config2.SchedulerConfig,
-	logger *zap.Logger,
-	complianceClient client.ComplianceServiceClient,
-	onboardClient onboardClient.OnboardServiceClient,
-	db db.Database,
-	kafkaProducer *confluent_kafka.Producer,
-	esClient kaytu.Client,
-	complianceIntervalHours int64) *JobScheduler {
+func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient client.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, db db.Database, kafkaProducer *confluent_kafka.Producer, esClient kaytu.Client, complianceIntervalHours time.Duration) *JobScheduler {
 	return &JobScheduler{
 		conf:                    conf,
 		logger:                  logger,
