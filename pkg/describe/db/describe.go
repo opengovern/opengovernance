@@ -204,13 +204,13 @@ func (db Database) GetAllJobSummary(hours int) ([]model.JobSummary, error) {
 	tx := db.ORM.Raw(`
 SELECT * FROM (
 (
-(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
 UNION ALL 
-(SELECT 'insight' AS job_type, status, count(*) AS count FROM insight_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+(SELECT 'insight' AS job_type, status, count(*) AS count FROM insight_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
 UNION ALL 
-(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
 UNION ALL 
-(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '? HOURS' GROUP BY status )
 )
 ) AS t;
 `, hours, hours, hours, hours).Find(&job)
