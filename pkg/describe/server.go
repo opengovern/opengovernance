@@ -124,7 +124,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	case api.JobStatus_Timeout:
 		queryStatusFilter = []string{"TIMEOUT", "TIMEDOUT"}
 	default:
-		queryStatusFilter = []string{string(statusFilter)}
+		queryStatusFilter = []string{}
 	}
 
 	hours := 24
