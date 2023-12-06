@@ -53,7 +53,7 @@ func (s *workspaceClient) GetByID(ctx *httpclient.Context, workspaceID string) (
 }
 
 func (s *workspaceClient) ListWorkspaces(ctx *httpclient.Context) ([]api.WorkspaceResponse, error) {
-	url := fmt.Sprintf("%s/workspace/api/v1/workspaces", s.baseURL)
+	url := fmt.Sprintf("%s/api/v1/workspaces", s.baseURL)
 
 	var response []api.WorkspaceResponse
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
