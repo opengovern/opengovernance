@@ -930,10 +930,20 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		for _, tag := range metric.Tags {
 			if tag.Key == "category" {
 				for _, category := range tag.GetValue() {
-					categoryResourceTypeMap[category] = append(
-						categoryResourceTypeMap[category],
-						metric.Tables...,
-					)
+					currentList := categoryResourceTypeMap[category]
+					for _, table := range metric.Tables {
+						found := false
+						for _, current := range currentList {
+							if current == table {
+								found = true
+								break
+							}
+						}
+						if !found {
+							currentList = append(currentList, table)
+						}
+					}
+					categoryResourceTypeMap[category] = currentList
 				}
 			}
 		}
