@@ -102,10 +102,10 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 	if !ok {
 		control = ControlResult{
 			Passed:            true,
-			allResources:      hyperloglog.New16NoSparse(),
-			failedResources:   hyperloglog.New16NoSparse(),
-			allConnections:    hyperloglog.New16NoSparse(),
-			failedConnections: hyperloglog.New16NoSparse(),
+			allResources:      hyperloglog.New16(),
+			failedResources:   hyperloglog.New16(),
+			allConnections:    hyperloglog.New16(),
+			failedConnections: hyperloglog.New16(),
 		}
 	}
 
@@ -123,10 +123,10 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 	if !ok {
 		connectionControl = ControlResult{
 			Passed:            true,
-			allResources:      hyperloglog.New16NoSparse(),
-			failedResources:   hyperloglog.New16NoSparse(),
-			allConnections:    hyperloglog.New16NoSparse(),
-			failedConnections: hyperloglog.New16NoSparse(),
+			allResources:      hyperloglog.New16(),
+			failedResources:   hyperloglog.New16(),
+			allConnections:    hyperloglog.New16(),
+			failedConnections: hyperloglog.New16(),
 		}
 	}
 	if !f.Result.IsPassed() {
