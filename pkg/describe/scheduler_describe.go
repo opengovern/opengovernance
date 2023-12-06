@@ -327,7 +327,7 @@ func (s *Scheduler) retryFailedJobs() error {
 			describeCycle = s.costDiscoveryIntervalHours
 		}
 
-		if failedJob.CreatedAt.Before(time.Now().Add(time.Hour * time.Duration(-1*describeCycle))) {
+		if failedJob.CreatedAt.Before(time.Now().Add(-1 * describeCycle)) {
 			continue
 		}
 
@@ -408,7 +408,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 				}
 			}
 
-			if job.UpdatedAt.After(time.Now().Add(time.Duration(-interval) * time.Hour)) {
+			if job.UpdatedAt.After(time.Now().Add(-interval)) {
 				return nil, nil
 			}
 		}

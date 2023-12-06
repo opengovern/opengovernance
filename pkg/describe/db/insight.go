@@ -154,10 +154,10 @@ func (db Database) GetInsightJobByInsightId(insightID uint) ([]model.InsightJob,
 // UpdateInsightJobsTimedOut updates the status of InsightJobs
 // that have timed out while in the status of 'IN_PROGRESS' for longer
 // than 4 hours.
-func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours int64) error {
+func (db Database) UpdateInsightJobsTimedOut(insightIntervalHours time.Duration) error {
 	tx := db.ORM.
 		Model(&model.InsightJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", insightIntervalHours*2)).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", int(insightIntervalHours.Hours()*2))).
 		Where("status IN ?", []string{string(insightapi.InsightJobCreated)}).
 		Updates(model.InsightJob{Status: insightapi.InsightJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {

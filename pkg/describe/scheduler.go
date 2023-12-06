@@ -127,15 +127,15 @@ type Scheduler struct {
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
 	checkupJobResultQueue queue.Interface
 
-	describeIntervalHours      int64
-	fullDiscoveryIntervalHours int64
-	costDiscoveryIntervalHours int64
+	describeIntervalHours      time.Duration
+	fullDiscoveryIntervalHours time.Duration
+	costDiscoveryIntervalHours time.Duration
 	describeTimeoutHours       int64
-	insightIntervalHours       int64
+	insightIntervalHours       time.Duration
 	checkupIntervalHours       int64
 	mustSummarizeIntervalHours int64
-	analyticsIntervalHours     int64
-	complianceIntervalHours    int64
+	analyticsIntervalHours     time.Duration
+	complianceIntervalHours    time.Duration
 
 	logger              *zap.Logger
 	workspaceClient     workspaceClient.WorkspaceServiceClient
@@ -199,10 +199,8 @@ func InitializeScheduler(
 	postgresSSLMode string,
 	httpServerAddress string,
 	describeTimeoutHours string,
-	insightIntervalHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
-	analyticsIntervalHours string,
 	kaytuHelmChartLocation string,
 	fluxSystemNamespace string,
 ) (s *Scheduler, err error) {
@@ -315,26 +313,35 @@ func InitializeScheduler(
 	}
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s, helmConfig)
 
-	s.describeIntervalHours, err = strconv.ParseInt(DescribeIntervalHours, 10, 64)
+	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	s.fullDiscoveryIntervalHours, err = strconv.ParseInt(FullDiscoveryIntervalHours, 10, 64)
+	s.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
+
+	fullDiscoveryIntervalHours, err := strconv.ParseInt(FullDiscoveryIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	s.costDiscoveryIntervalHours, err = strconv.ParseInt(CostDiscoveryIntervalHours, 10, 64)
+	s.fullDiscoveryIntervalHours = time.Duration(fullDiscoveryIntervalHours) * time.Hour
+
+	costDiscoveryIntervalHours, err := strconv.ParseInt(CostDiscoveryIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
+	s.costDiscoveryIntervalHours = time.Duration(costDiscoveryIntervalHours) * time.Hour
+
 	s.describeTimeoutHours, err = strconv.ParseInt(describeTimeoutHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	s.insightIntervalHours, err = strconv.ParseInt(insightIntervalHours, 10, 64)
+
+	insightIntervalHours, err := strconv.ParseInt(InsightIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
+	s.insightIntervalHours = time.Duration(insightIntervalHours) * time.Hour
+
 	s.checkupIntervalHours, err = strconv.ParseInt(checkupIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -343,11 +350,14 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-	s.analyticsIntervalHours, err = strconv.ParseInt(analyticsIntervalHours, 10, 64)
+
+	analyticsIntervalHours, err := strconv.ParseInt(AnalyticsIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	s.complianceIntervalHours = int64(conf.ComplianceIntervalHours)
+	s.analyticsIntervalHours = time.Duration(analyticsIntervalHours) * time.Hour
+
+	s.complianceIntervalHours = time.Duration(conf.ComplianceIntervalHours) * time.Hour
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
@@ -416,8 +426,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := describeJobIntM.GetValue().(int); ok {
-			s.describeIntervalHours = int64(v * int(time.Hour))
-			s.logger.Info("set describe interval", zap.Int64("interval", s.describeIntervalHours))
+			s.describeIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.describeIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
 		}
@@ -428,8 +438,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := fullDiscoveryJobIntM.GetValue().(int); ok {
-			s.fullDiscoveryIntervalHours = int64(v * int(time.Hour))
-			s.logger.Info("set describe interval", zap.Int64("interval", s.fullDiscoveryIntervalHours))
+			s.fullDiscoveryIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.fullDiscoveryIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(fullDiscoveryJobIntM.GetType())))
 		}
@@ -440,8 +450,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := costDiscoveryJobIntM.GetValue().(int); ok {
-			s.costDiscoveryIntervalHours = int64(v * int(time.Hour))
-			s.logger.Info("set describe interval", zap.Int64("interval", s.costDiscoveryIntervalHours))
+			s.costDiscoveryIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.costDiscoveryIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(costDiscoveryJobIntM.GetType())))
 		}
@@ -452,8 +462,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := insightJobIntM.GetValue().(int); ok {
-			s.insightIntervalHours = int64(v * int(time.Hour))
-			s.logger.Info("set insight interval", zap.Int64("interval", s.insightIntervalHours))
+			s.insightIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set insight interval", zap.Int64("interval", int64(s.insightIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(insightJobIntM.GetType())))
 		}
@@ -464,8 +474,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := analyticsJobIntM.GetValue().(int); ok {
-			s.analyticsIntervalHours = int64(v * int(time.Hour))
-			s.logger.Info("set insight interval", zap.Int64("interval", s.analyticsIntervalHours))
+			s.analyticsIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set insight interval", zap.Int64("interval", int64(s.analyticsIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(analyticsJobIntM.GetType())))
 		}
@@ -476,8 +486,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := complianceJobIntM.GetValue().(int); ok {
-			s.complianceIntervalHours = int64(v * int(time.Hour))
-			s.logger.Info("set insight interval", zap.Int64("interval", s.complianceIntervalHours))
+			s.complianceIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set insight interval", zap.Int64("interval", int64(s.complianceIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(complianceJobIntM.GetType())))
 		}

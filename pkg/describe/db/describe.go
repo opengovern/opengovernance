@@ -274,7 +274,7 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 // UpdateResourceTypeDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than time interval for the specific resource type.
-func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours int64) (int, error) {
+func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours time.Duration) (int, error) {
 	totalCount := 0
 	tx := db.ORM.
 		Model(&model.DescribeConnectionJob{}).
@@ -287,7 +287,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 	}
 	tx = db.ORM.
 		Model(&model.DescribeConnectionJob{}).
-		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", int(describeIntervalHours.Hours()))).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Where("resource_type = ?", resourceType).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run", ErrorCode: "JobTimeOut"})
@@ -297,7 +297,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 	totalCount += int(tx.RowsAffected)
 	tx = db.ORM.
 		Model(&model.DescribeConnectionJob{}).
-		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", int(describeIntervalHours.Hours()))).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
 		Where("resource_type = ?", resourceType).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted", ErrorCode: "JobTimeOut"})
