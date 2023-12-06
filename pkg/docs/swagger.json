@@ -8806,6 +8806,11 @@
                     "type": "string",
                     "example": "vms"
                 },
+                "last_evaluated": {
+                    "description": "Last time the metric was evaluated",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
                 "name": {
                     "description": "Resource Type",
                     "type": "string",

@@ -1749,6 +1749,10 @@ definitions:
       id:
         example: vms
         type: string
+      last_evaluated:
+        description: Last time the metric was evaluated
+        example: "2020-01-01T00:00:00Z"
+        type: string
       name:
         description: Resource Type
         example: VMs
