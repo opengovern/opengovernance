@@ -152,10 +152,28 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) ListAllJobs(limit int) ([]model.Job, error) {
+func (db Database) ListAllJobs(limit int, typeFilter string, statusFilter []string) ([]model.Job, error) {
 	var job []model.Job
 
-	tx := db.ORM.Raw(`
+	whereQuery := ""
+	var values []interface{}
+
+	if len(typeFilter) > 0 || len(statusFilter) > 0 {
+		var queries []string
+		if len(typeFilter) > 0 {
+			queries = append(queries, "type = ?")
+			values = append(values, typeFilter)
+		}
+
+		if len(statusFilter) > 0 {
+			queries = append(queries, "status IN ?")
+			values = append(values, statusFilter)
+		}
+
+		whereQuery = "WHERE " + strings.Join(queries, " AND ")
+	}
+
+	rawQuery := fmt.Sprintf(`
 SELECT * FROM (
 (
 (SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs)
@@ -166,8 +184,36 @@ UNION ALL
 UNION ALL 
 (SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs)
 )
-) AS t ORDER BY updated_at DESC LIMIT ?;
-`, limit).Find(&job)
+) AS t %s ORDER BY updated_at DESC LIMIT ?;
+`, whereQuery)
+
+	values = append(values, limit)
+	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+func (db Database) GetAllJobSummary(hours int) ([]model.JobSummary, error) {
+	var job []model.JobSummary
+
+	tx := db.ORM.Raw(`
+SELECT * FROM (
+(
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+UNION ALL 
+(SELECT 'insight' AS job_type, status, count(*) AS count FROM insight_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+UNION ALL 
+(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+UNION ALL 
+(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs GROUP BY status WHERE created_at > now() - interval '? HOURS')
+)
+) AS t;
+`, hours, hours, hours, hours).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

@@ -14,3 +14,9 @@ type Job struct {
 	FailureMessage string
 	Status         string
 }
+
+type JobSummary struct {
+	JobType string
+	Status  string
+	Count   int64
+}

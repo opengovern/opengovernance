@@ -5139,16 +5139,19 @@
                         "description": "Limit",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Hours",
+                        "name": "hours",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse"
                         }
                     }
                 }
@@ -8303,6 +8306,20 @@
                 "JobStatus_Timeout"
             ]
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType": {
             "type": "string",
             "enum": [
@@ -8317,6 +8334,23 @@
                 "JobType_Compliance",
                 "JobType_Insight"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse": {
+            "type": "object",
+            "properties": {
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job"
+                    }
+                },
+                "summaries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary"
+                    }
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack": {
             "type": "object",
@@ -9276,9 +9310,11 @@
                 "auto_discovery_method",
                 "describe_job_interval",
                 "full_discovery_job_interval",
+                "cost_discovery_job_interval",
                 "health_check_job_interval",
                 "insight_job_interval",
                 "metrics_job_interval",
+                "compliance_job_interval",
                 "data_retention_duration",
                 "analytics_git_url"
             ],
@@ -9305,9 +9341,11 @@
                 "MetadataKeyAutoDiscoveryMethod",
                 "MetadataKeyDescribeJobInterval",
                 "MetadataKeyFullDiscoveryJobInterval",
+                "MetadataKeyCostDiscoveryJobInterval",
                 "MetadataKeyHealthCheckJobInterval",
                 "MetadataKeyInsightJobInterval",
                 "MetadataKeyMetricsJobInterval",
+                "MetadataKeyComplianceJobInterval",
                 "MetadataKeyDataRetention",
                 "MetadataKeyAnalyticsGitURL"
             ]
