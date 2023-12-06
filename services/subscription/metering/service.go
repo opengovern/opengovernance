@@ -56,11 +56,12 @@ func (s *Service) Run() {
 	}
 }
 
-func (s *Service) runChecks() error {
+func (s *Service) runChecks() {
 	// get list of workspaces.
 	workspaces, err := s.workspaceClient.ListWorkspaces(&httpclient.Context{UserRole: api.InternalRole})
 	if err != nil {
-		return err
+		s.logger.Error("failed to list workspaces checks", zap.Error(err))
+		return
 	}
 
 	for _, ws := range workspaces {
@@ -69,16 +70,22 @@ func (s *Service) runChecks() error {
 		for _, meterType := range meterTypes {
 			meter, err := s.pdb.GetMeter(ws.ID, previousHour, meterType)
 			if err != nil {
-				return err
+				s.logger.Error("failed to get meter", zap.Error(err), zap.String("workspaceID", ws.ID), zap.String("meter", string(meterType)))
+				return
 			}
 
 			if meter == nil {
 				err = s.generateMeter(ws.ID, previousHour, meterType)
 				if err != nil {
-					return err
+					s.logger.Error("failed to generate meter",
+						zap.Error(err),
+						zap.String("workspaceID", ws.ID),
+						zap.String("hour", previousHour),
+						zap.String("meter", string(meterType)),
+					)
+					return
 				}
 			}
 		}
 	}
-	return nil
 }
