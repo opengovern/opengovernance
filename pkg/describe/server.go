@@ -121,6 +121,16 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		return err
 	}
 
+	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
+
 	describeJobs, err := h.DB.ListAllJobs(limit)
 	if err != nil {
 		return err
@@ -148,6 +158,22 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 				jobSRC = src
 			}
 		}
+
+		if job.JobType == "insight" {
+			for _, ins := range insights {
+				if fmt.Sprintf("%v", ins.ID) == job.Title {
+					job.Title = ins.ShortTitle
+				}
+			}
+		}
+		if job.JobType == "compliance" {
+			for _, benchmark := range benchmarks {
+				if fmt.Sprintf("%v", benchmark.ID) == job.Title {
+					job.Title = benchmark.Title
+				}
+			}
+		}
+
 		jobs = append(jobs, api.Job{
 			ID:                     job.ID,
 			CreatedAt:              job.CreatedAt,

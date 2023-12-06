@@ -164,7 +164,7 @@ UNION ALL
 UNION ALL 
 (SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, '' AS title, status, failure_message FROM analytics_jobs)
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs)
 )
 ) AS t ORDER BY updated_at DESC LIMIT ?;
 `, limit).Find(&job)
