@@ -37,7 +37,7 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.26.2
+	github.com/kaytu-io/kaytu-aws-describer v0.26.3
 	github.com/kaytu-io/kaytu-azure-describer v0.17.9
 	github.com/kaytu-io/kaytu-util v0.0.0-20231205183915-a4efddf16c6f
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
