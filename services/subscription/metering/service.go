@@ -49,9 +49,7 @@ func (s *Service) Run() {
 	}()
 
 	for {
-		if err := s.runChecks(); err != nil {
-			s.logger.Error("failed to run checks", zap.Error(err))
-		}
+		s.runChecks()
 		time.Sleep(10 * time.Minute)
 	}
 }

@@ -16,17 +16,31 @@ func (t ConfigMetadataType) SerializeValue(value any) (string, error) {
 		}
 		return valueStr, nil
 	case ConfigMetadataTypeInt:
-		valueInt, ok := value.(int)
-		if !ok {
+		switch value.(type) {
+		case int:
+			return strconv.Itoa(value.(int)), nil
+		case string:
+			valueM, err := strconv.ParseInt(value.(string), 10, 64)
+			if err != nil {
+				return "", err
+			}
+			return strconv.Itoa(int(valueM)), nil
+		default:
 			return "", metadataErrors.ErrMetadataValueTypeMismatch
 		}
-		return strconv.Itoa(valueInt), nil
 	case ConfigMetadataTypeBool:
-		valueBool, ok := value.(bool)
-		if !ok {
+		switch value.(type) {
+		case bool:
+			return strconv.FormatBool(value.(bool)), nil
+		case string:
+			valueM, err := strconv.ParseBool(value.(string))
+			if err != nil {
+				return "", err
+			}
+			return strconv.FormatBool(valueM), nil
+		default:
 			return "", metadataErrors.ErrMetadataValueTypeMismatch
 		}
-		return strconv.FormatBool(valueBool), nil
 	case ConfigMetadataTypeJSON:
 		valueJson, err := json.Marshal(value)
 		if err != nil {
