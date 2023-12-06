@@ -50,7 +50,7 @@ func InitializeNewWorker(
 		return nil, err
 	}
 
-	producer, err := newKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
+	producer, err := kafka.NewDefaultKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
 	if err != nil {
 		return nil, err
 	}
