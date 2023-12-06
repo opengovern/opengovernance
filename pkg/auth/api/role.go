@@ -8,6 +8,10 @@ import (
 type Role string
 
 const (
+	GodUserID = "god-kaytu-user"
+)
+
+const (
 	InternalRole   Role = "internal"
 	KaytuAdminRole Role = "kaytu-admin"
 	AdminRole      Role = "admin"
