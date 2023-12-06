@@ -129,11 +129,13 @@ type Scheduler struct {
 
 	describeIntervalHours      int64
 	fullDiscoveryIntervalHours int64
+	costDiscoveryIntervalHours int64
 	describeTimeoutHours       int64
 	insightIntervalHours       int64
 	checkupIntervalHours       int64
 	mustSummarizeIntervalHours int64
 	analyticsIntervalHours     int64
+	complianceIntervalHours    int64
 
 	logger              *zap.Logger
 	workspaceClient     workspaceClient.WorkspaceServiceClient
@@ -321,6 +323,10 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.costDiscoveryIntervalHours, err = strconv.ParseInt(CostDiscoveryIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 	s.describeTimeoutHours, err = strconv.ParseInt(describeTimeoutHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -341,6 +347,7 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.complianceIntervalHours = int64(conf.ComplianceIntervalHours)
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
@@ -390,6 +397,7 @@ func InitializeScheduler(
 		s.db,
 		s.kafkaProducer,
 		s.es,
+		s.complianceIntervalHours,
 	)
 	return s, nil
 }
@@ -408,7 +416,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := describeJobIntM.GetValue().(int); ok {
-			s.describeIntervalHours = int64(v * int(time.Minute) / int(time.Hour))
+			s.describeIntervalHours = int64(v * int(time.Hour))
 			s.logger.Info("set describe interval", zap.Int64("interval", s.describeIntervalHours))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
@@ -420,10 +428,22 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := fullDiscoveryJobIntM.GetValue().(int); ok {
-			s.fullDiscoveryIntervalHours = int64(v * int(time.Minute) / int(time.Hour))
+			s.fullDiscoveryIntervalHours = int64(v * int(time.Hour))
 			s.logger.Info("set describe interval", zap.Int64("interval", s.fullDiscoveryIntervalHours))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(fullDiscoveryJobIntM.GetType())))
+		}
+	}
+
+	costDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyCostDiscoveryJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := costDiscoveryJobIntM.GetValue().(int); ok {
+			s.costDiscoveryIntervalHours = int64(v * int(time.Hour))
+			s.logger.Info("set describe interval", zap.Int64("interval", s.costDiscoveryIntervalHours))
+		} else {
+			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(costDiscoveryJobIntM.GetType())))
 		}
 	}
 
@@ -432,10 +452,34 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := insightJobIntM.GetValue().(int); ok {
-			s.insightIntervalHours = int64(v * int(time.Minute) / int(time.Hour))
+			s.insightIntervalHours = int64(v * int(time.Hour))
 			s.logger.Info("set insight interval", zap.Int64("interval", s.insightIntervalHours))
 		} else {
 			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(insightJobIntM.GetType())))
+		}
+	}
+
+	analyticsJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyMetricsJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := analyticsJobIntM.GetValue().(int); ok {
+			s.analyticsIntervalHours = int64(v * int(time.Hour))
+			s.logger.Info("set insight interval", zap.Int64("interval", s.analyticsIntervalHours))
+		} else {
+			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(analyticsJobIntM.GetType())))
+		}
+	}
+
+	complianceJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyComplianceJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := complianceJobIntM.GetValue().(int); ok {
+			s.complianceIntervalHours = int64(v * int(time.Hour))
+			s.logger.Info("set insight interval", zap.Int64("interval", s.complianceIntervalHours))
+		} else {
+			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(complianceJobIntM.GetType())))
 		}
 	}
 

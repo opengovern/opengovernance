@@ -324,7 +324,7 @@ func (s *Scheduler) retryFailedJobs() error {
 		if isFastDiscovery {
 			describeCycle = s.describeIntervalHours
 		} else if isCostDiscovery {
-			describeCycle = 24
+			describeCycle = s.costDiscoveryIntervalHours
 		}
 
 		if failedJob.CreatedAt.Before(time.Now().Add(time.Hour * time.Duration(-1*describeCycle))) {
@@ -392,7 +392,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 						interval = s.describeIntervalHours
 					} else if rt.CostDiscovery {
 						discoveryType = model.DiscoveryType_Cost
-						interval = 24
+						interval = s.costDiscoveryIntervalHours
 					}
 				}
 			} else if connection.Connector == source.CloudAzure {
@@ -403,7 +403,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 						interval = s.describeIntervalHours
 					} else if rt.CostDiscovery {
 						discoveryType = model.DiscoveryType_Cost
-						interval = 24
+						interval = s.costDiscoveryIntervalHours
 					}
 				}
 			}

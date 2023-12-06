@@ -185,7 +185,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				if resourceType.FastDiscovery {
 					interval = s.describeIntervalHours
 				} else if resourceType.CostDiscovery {
-					interval = 24
+					interval = s.costDiscoveryIntervalHours
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
@@ -206,7 +206,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				if resourceType.FastDiscovery {
 					interval = s.describeIntervalHours
 				} else if resourceType.CostDiscovery {
-					interval = 24
+					interval = s.costDiscoveryIntervalHours
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
