@@ -85,7 +85,7 @@ func (w *Worker) RunJob(j Job) error {
 		if page%10 == 0 {
 			runtime.GC()
 		}
-		w.logger.Info("Next page", zap.Int("page", page))
+		w.logger.Info("ResourceCollections Next page", zap.Int("page", page))
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), "java.io.EOFException") {
