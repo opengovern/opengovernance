@@ -27,9 +27,16 @@ func NewDatabase(config config.Postgres, logger *zap.Logger) (Database, error) {
 		return Database{}, fmt.Errorf("new postgres client: %w", err)
 	}
 
-	return Database{
+	db := Database{
 		Orm: orm,
-	}, nil
+	}
+
+	err = db.Initialize()
+	if err != nil {
+		return Database{}, err
+	}
+
+	return db, nil
 }
 
 func (db Database) Initialize() error {
