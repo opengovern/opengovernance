@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -77,7 +78,10 @@ func (w *Worker) RunJob(j Job) error {
 
 	w.logger.Info("ResourceCollectionsFindingsIndex paginator ready")
 
-	for paginator.HasNext() {
+	for page := 0; paginator.HasNext(); page++ {
+		if page%10 == 0 {
+			runtime.GC()
+		}
 		w.logger.Info("Next page")
 		page, err := paginator.NextPage(ctx)
 		if err != nil {

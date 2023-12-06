@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -132,7 +133,7 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
-
+	runtime.GC()
 	w.logger.Info("running job", zap.String("job", string(msg.Value)))
 	err = w.RunJob(job)
 	if err != nil {
