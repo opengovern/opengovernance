@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"github.com/axiomhq/hyperloglog"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
@@ -23,14 +24,16 @@ type ControlResult struct {
 	FailedResourcesCount int
 	TotalResourcesCount  int
 
-	allResources    map[string]any
-	failedResources map[string]any
+	// these are not exported fields so they are not marshalled
+	allResources    *hyperloglog.Sketch
+	failedResources *hyperloglog.Sketch
 
 	FailedConnectionCount int
 	TotalConnectionCount  int
 
-	allConnections    map[string]any
-	failedConnections map[string]any
+	// these are not exported fields so they are not marshalled
+	allConnections    *hyperloglog.Sketch
+	failedConnections *hyperloglog.Sketch
 }
 
 type BenchmarkSummaryResult struct {
@@ -99,40 +102,40 @@ func (r *BenchmarkSummaryResult) addFinding(f types.Finding) {
 	if !ok {
 		control = ControlResult{
 			Passed:            true,
-			allResources:      map[string]any{},
-			failedResources:   map[string]any{},
-			allConnections:    map[string]any{},
-			failedConnections: map[string]any{},
+			allResources:      hyperloglog.New16NoSparse(),
+			failedResources:   hyperloglog.New16NoSparse(),
+			allConnections:    hyperloglog.New16NoSparse(),
+			failedConnections: hyperloglog.New16NoSparse(),
 		}
 	}
 
 	if !f.Result.IsPassed() {
 		control.Passed = false
 
-		control.failedResources[f.ResourceID] = struct{}{}
-		control.failedConnections[f.ConnectionID] = struct{}{}
+		control.failedResources.Insert([]byte(f.ResourceID))
+		control.failedConnections.Insert([]byte(f.ConnectionID))
 	}
-	control.allResources[f.ResourceID] = struct{}{}
-	control.allConnections[f.ConnectionID] = struct{}{}
+	control.allResources.Insert([]byte(f.ResourceID))
+	control.allConnections.Insert([]byte(f.ConnectionID))
 	r.BenchmarkResult.Controls[f.ControlID] = control
 
 	connectionControl, ok := connection.Controls[f.ControlID]
 	if !ok {
 		connectionControl = ControlResult{
 			Passed:            true,
-			allResources:      map[string]any{},
-			failedResources:   map[string]any{},
-			allConnections:    map[string]any{},
-			failedConnections: map[string]any{},
+			allResources:      hyperloglog.New16NoSparse(),
+			failedResources:   hyperloglog.New16NoSparse(),
+			allConnections:    hyperloglog.New16NoSparse(),
+			failedConnections: hyperloglog.New16NoSparse(),
 		}
 	}
 	if !f.Result.IsPassed() {
 		connectionControl.Passed = false
-		connectionControl.failedResources[f.ResourceID] = struct{}{}
-		connectionControl.failedConnections[f.ConnectionID] = struct{}{}
+		connectionControl.failedResources.Insert([]byte(f.ResourceID))
+		connectionControl.failedConnections.Insert([]byte(f.ConnectionID))
 	}
-	connectionControl.allResources[f.ResourceID] = struct{}{}
-	connectionControl.allConnections[f.ConnectionID] = struct{}{}
+	connectionControl.allResources.Insert([]byte(f.ResourceID))
+	connectionControl.allConnections.Insert([]byte(f.ConnectionID))
 	connection.Controls[f.ControlID] = connectionControl
 }
 
@@ -174,11 +177,11 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 func (r *BenchmarkSummaryResult) summarize() {
 	// update security scores
 	for controlID, summary := range r.BenchmarkResult.Controls {
-		summary.FailedConnectionCount = len(summary.failedConnections)
-		summary.TotalConnectionCount = len(summary.allConnections)
+		summary.FailedConnectionCount = int(summary.failedConnections.Estimate())
+		summary.TotalConnectionCount = int(summary.allConnections.Estimate())
 
-		summary.FailedResourcesCount = len(summary.failedResources)
-		summary.TotalResourcesCount = len(summary.allResources)
+		summary.FailedResourcesCount = int(summary.failedResources.Estimate())
+		summary.TotalResourcesCount = int(summary.allResources.Estimate())
 
 		r.BenchmarkResult.Controls[controlID] = summary
 	}
@@ -206,11 +209,11 @@ func (r *BenchmarkSummaryResult) summarize() {
 
 	for connectionID, summary := range r.Connections {
 		for controlID, controlSummary := range summary.Controls {
-			controlSummary.FailedConnectionCount = len(controlSummary.failedConnections)
-			controlSummary.TotalConnectionCount = len(controlSummary.allConnections)
+			controlSummary.FailedConnectionCount = int(controlSummary.failedConnections.Estimate())
+			controlSummary.TotalConnectionCount = int(controlSummary.allConnections.Estimate())
 
-			controlSummary.FailedResourcesCount = len(controlSummary.failedResources)
-			controlSummary.TotalResourcesCount = len(controlSummary.allResources)
+			controlSummary.FailedResourcesCount = int(controlSummary.failedResources.Estimate())
+			controlSummary.TotalResourcesCount = int(controlSummary.allResources.Estimate())
 
 			summary.Controls[controlID] = controlSummary
 		}
