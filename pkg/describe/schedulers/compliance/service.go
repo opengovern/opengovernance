@@ -15,13 +15,14 @@ import (
 const JobSchedulingInterval = 1 * time.Minute
 
 type JobScheduler struct {
-	conf             config2.SchedulerConfig
-	logger           *zap.Logger
-	complianceClient client.ComplianceServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
-	db               db.Database
-	kafkaProducer    *confluent_kafka.Producer
-	esClient         kaytu.Client
+	conf                    config2.SchedulerConfig
+	logger                  *zap.Logger
+	complianceClient        client.ComplianceServiceClient
+	onboardClient           onboardClient.OnboardServiceClient
+	db                      db.Database
+	kafkaProducer           *confluent_kafka.Producer
+	esClient                kaytu.Client
+	complianceIntervalHours int64
 }
 
 func New(conf config2.SchedulerConfig,
@@ -30,15 +31,17 @@ func New(conf config2.SchedulerConfig,
 	onboardClient onboardClient.OnboardServiceClient,
 	db db.Database,
 	kafkaProducer *confluent_kafka.Producer,
-	esClient kaytu.Client) *JobScheduler {
+	esClient kaytu.Client,
+	complianceIntervalHours int64) *JobScheduler {
 	return &JobScheduler{
-		conf:             conf,
-		logger:           logger,
-		complianceClient: complianceClient,
-		onboardClient:    onboardClient,
-		db:               db,
-		kafkaProducer:    kafkaProducer,
-		esClient:         esClient,
+		conf:                    conf,
+		logger:                  logger,
+		complianceClient:        complianceClient,
+		onboardClient:           onboardClient,
+		db:                      db,
+		kafkaProducer:           kafkaProducer,
+		esClient:                esClient,
+		complianceIntervalHours: complianceIntervalHours,
 	}
 }
 

@@ -43,12 +43,15 @@ const (
 	MetadataKeyDescribeJobInterval MetadataKey = "describe_job_interval"
 	// MetadataKeyFullDiscoveryJobInterval is the interval in minutes for full describe job
 	MetadataKeyFullDiscoveryJobInterval MetadataKey = "full_discovery_job_interval"
+	// MetadataKeyCostDiscoveryJobInterval is the interval in minutes for cost describe job
+	MetadataKeyCostDiscoveryJobInterval MetadataKey = "cost_discovery_job_interval"
 	// MetadataKeyHealthCheckJobInterval is the interval in minutes for health check job
 	MetadataKeyHealthCheckJobInterval MetadataKey = "health_check_job_interval"
 	// MetadataKeyInsightJobInterval is the interval in minutes for insight job
 	MetadataKeyInsightJobInterval MetadataKey = "insight_job_interval"
 	// MetadataKeyMetricsJobInterval is the interval in minutes for metrics job
-	MetadataKeyMetricsJobInterval MetadataKey = "metrics_job_interval"
+	MetadataKeyMetricsJobInterval    MetadataKey = "metrics_job_interval"
+	MetadataKeyComplianceJobInterval MetadataKey = "compliance_job_interval"
 	// MetadataKeyDataRetention retention period in days
 	MetadataKeyDataRetention   MetadataKey = "data_retention_duration"
 	MetadataKeyAnalyticsGitURL MetadataKey = "analytics_git_url"
@@ -77,9 +80,11 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyAutoDiscoveryMethod,
 	MetadataKeyDescribeJobInterval,
 	MetadataKeyFullDiscoveryJobInterval,
+	MetadataKeyCostDiscoveryJobInterval,
 	MetadataKeyHealthCheckJobInterval,
 	MetadataKeyInsightJobInterval,
 	MetadataKeyMetricsJobInterval,
+	MetadataKeyComplianceJobInterval,
 	MetadataKeyDataRetention,
 	MetadataKeyAnalyticsGitURL,
 }
@@ -134,11 +139,15 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeInt
 	case MetadataKeyFullDiscoveryJobInterval:
 		return ConfigMetadataTypeInt
+	case MetadataKeyCostDiscoveryJobInterval:
+		return ConfigMetadataTypeInt
 	case MetadataKeyHealthCheckJobInterval:
 		return ConfigMetadataTypeInt
 	case MetadataKeyInsightJobInterval:
 		return ConfigMetadataTypeInt
 	case MetadataKeyMetricsJobInterval:
+		return ConfigMetadataTypeInt
+	case MetadataKeyComplianceJobInterval:
 		return ConfigMetadataTypeInt
 	case MetadataKeyDataRetention:
 		return ConfigMetadataTypeInt
@@ -191,15 +200,19 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyAutoDiscoveryMethod:
 		return api.KaytuAdminRole
 	case MetadataKeyDescribeJobInterval:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyFullDiscoveryJobInterval:
-		return api.KaytuAdminRole
+		return api.AdminRole
+	case MetadataKeyCostDiscoveryJobInterval:
+		return api.AdminRole
 	case MetadataKeyHealthCheckJobInterval:
 		return api.KaytuAdminRole
 	case MetadataKeyInsightJobInterval:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyMetricsJobInterval:
-		return api.KaytuAdminRole
+		return api.AdminRole
+	case MetadataKeyComplianceJobInterval:
+		return api.AdminRole
 	case MetadataKeyDataRetention:
 		return api.KaytuAdminRole
 	case MetadataKeyAnalyticsGitURL:
