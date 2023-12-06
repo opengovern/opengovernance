@@ -84,3 +84,14 @@ type Job struct {
 	Status                 JobStatus `json:"status"`
 	FailureReason          string    `json:"failureReason"`
 }
+
+type JobSummary struct {
+	Type   JobType   `json:"type"`
+	Status JobStatus `json:"status"`
+	Count  int64     `json:"count"`
+}
+
+type ListJobsResponse struct {
+	Jobs      []Job        `json:"jobs"`
+	Summaries []JobSummary `json:"summaries"`
+}

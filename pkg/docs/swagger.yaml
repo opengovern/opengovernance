@@ -1395,6 +1395,15 @@ definitions:
     - JobStatus_Successful
     - JobStatus_Failure
     - JobStatus_Timeout
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary:
+    properties:
+      count:
+        type: integer
+      status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus'
+      type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType:
     enum:
     - discovery
@@ -1407,6 +1416,17 @@ definitions:
     - JobType_Analytics
     - JobType_Compliance
     - JobType_Insight
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job'
+        type: array
+      summaries:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary'
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:
       accountIds:
@@ -2087,9 +2107,11 @@ definitions:
     - auto_discovery_method
     - describe_job_interval
     - full_discovery_job_interval
+    - cost_discovery_job_interval
     - health_check_job_interval
     - insight_job_interval
     - metrics_job_interval
+    - compliance_job_interval
     - data_retention_duration
     - analytics_git_url
     type: string
@@ -2116,9 +2138,11 @@ definitions:
     - MetadataKeyAutoDiscoveryMethod
     - MetadataKeyDescribeJobInterval
     - MetadataKeyFullDiscoveryJobInterval
+    - MetadataKeyCostDiscoveryJobInterval
     - MetadataKeyHealthCheckJobInterval
     - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
+    - MetadataKeyComplianceJobInterval
     - MetadataKeyDataRetention
     - MetadataKeyAnalyticsGitURL
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
@@ -6355,15 +6379,17 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Hours
+        in: query
+        name: hours
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse'
       security:
       - BearerToken: []
       summary: Lists all jobs
