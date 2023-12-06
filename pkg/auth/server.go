@@ -237,6 +237,10 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 	var limits api2.WorkspaceLimitsUsage
 	var err error
 
+	if user.ExternalUserID == api.GodUserID {
+		return api.RoleBinding{}, api2.WorkspaceLimitsUsage{}, errors.New("claiming to be god is banned")
+	}
+
 	rb = api.RoleBinding{
 		UserID:        user.ExternalUserID,
 		WorkspaceID:   "",
@@ -254,8 +258,6 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 		rb.WorkspaceName = workspaceName
 		rb.WorkspaceID = limits.ID
 
-		fmt.Println(user.WorkspaceAccess)
-		fmt.Println(user.WorkspaceAccess[limits.ID])
 		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
 			rb.RoleName = rl
 		} else if user.GlobalAccess != nil {

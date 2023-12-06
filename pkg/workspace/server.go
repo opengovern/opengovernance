@@ -1039,10 +1039,16 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 //	@Success		200	{array}	api.WorkspaceResponse
 //	@Router			/workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
+	var resp authapi.GetRoleBindingsResponse
+	var err error
+
 	userId := httpserver.GetUserID(c)
-	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
-	if err != nil {
-		return fmt.Errorf("GetUserRoleBindings: %v", err)
+
+	if userId != authapi.GodUserID {
+		resp, err = s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
+		if err != nil {
+			return fmt.Errorf("GetUserRoleBindings: %v", err)
+		}
 	}
 
 	dbWorkspaces, err := s.db.ListWorkspaces()
@@ -1057,12 +1063,17 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		hasRoleInWorkspace := false
-		for _, rb := range resp.RoleBindings {
-			if rb.WorkspaceID == workspace.ID {
+		if userId != authapi.GodUserID {
+			for _, rb := range resp.RoleBindings {
+				if rb.WorkspaceID == workspace.ID {
+					hasRoleInWorkspace = true
+				}
+			}
+			if resp.GlobalRoles != nil {
 				hasRoleInWorkspace = true
 			}
-		}
-		if resp.GlobalRoles != nil {
+		} else {
+			// god has role in everything
 			hasRoleInWorkspace = true
 		}
 

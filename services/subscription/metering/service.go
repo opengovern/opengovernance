@@ -56,7 +56,7 @@ func (s *Service) Run() {
 
 func (s *Service) runChecks() {
 	// get list of workspaces.
-	workspaces, err := s.workspaceClient.ListWorkspaces(&httpclient.Context{UserRole: api.InternalRole})
+	workspaces, err := s.workspaceClient.ListWorkspaces(&httpclient.Context{UserRole: api.InternalRole, UserID: api.GodUserID})
 	if err != nil {
 		s.logger.Error("failed to list workspaces", zap.Error(err))
 		return

@@ -209,6 +209,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 //	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
 //	@Router			/auth/api/v1/workspace/role/bindings [get]
 func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
 	if err != nil {
@@ -216,10 +217,14 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 	}
 
 	var resp api.GetWorkspaceRoleBindingResponse
+	userHasAccess := false
 	for _, u := range users {
 		status := api.InviteStatus_PENDING
 		if u.EmailVerified {
 			status = api.InviteStatus_ACCEPTED
+		}
+		if u.UserId == userID {
+			userHasAccess = true
 		}
 
 		resp = append(resp, api.WorkspaceRoleBinding{
@@ -231,6 +236,11 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 			LastActivity: u.LastLogin,
 			CreatedAt:    u.CreatedAt,
 		})
+	}
+
+	if !userHasAccess && userID != api.GodUserID {
+		//TODO-Saleh
+		r.logger.Error("access denied!!!", zap.String("userID", userID), zap.String("workspaceID", workspaceID))
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
@@ -593,9 +603,20 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 //	@Router			/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
+	userID := httpserver.GetUserID(ctx)
 	// trace :
 	//span := jaegertracing.CreateChildSpan(ctx, "ListApiKeys")
 	//span.SetBaggageItem("auth", "ListAPIKeys")
+
+	if userID != api.GodUserID {
+		usr, err := r.auth0Service.GetUser(userID)
+		if err != nil {
+			return err
+		}
+		if _, ok := usr.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
+			return errors.New("access denied")
+		}
+	}
 
 	keys, err := r.db.ListApiKeys(workspaceID)
 	if err != nil {

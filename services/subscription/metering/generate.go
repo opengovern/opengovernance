@@ -128,7 +128,7 @@ func (s *Service) generateTotalResourceMeter(workspaceId, dateHour string) error
 }
 
 func (s *Service) generateTotalUsersMeter(workspaceId, dateHour string) error {
-	ctx := &httpclient.Context{UserRole: api.InternalRole}
+	ctx := &httpclient.Context{UserRole: api.InternalRole, UserID: api.GodUserID}
 	users, err := s.authClient.GetWorkspaceRoleBindings(ctx, workspaceId)
 	if err != nil {
 		return err
