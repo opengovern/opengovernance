@@ -116,7 +116,7 @@ func (s *complianceClient) CountFindings(ctx *httpclient.Context) (int64, error)
 	url := fmt.Sprintf("%s/api/v1/findings/count", s.baseURL)
 
 	var response int64
-	if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return 0, err
 	}
 
