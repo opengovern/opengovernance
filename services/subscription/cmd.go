@@ -17,6 +17,7 @@ func SubscriptionServiceCommand() *cobra.Command {
 		cnf config2.SubscriptionConfig
 	)
 	config.ReadFromEnv(&cnf, nil)
+	fmt.Println(cnf)
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
