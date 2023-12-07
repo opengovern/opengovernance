@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/config"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/db"
@@ -63,6 +64,14 @@ func (s *Service) runChecks() {
 
 	s.logger.Info("listing workspaces done", zap.Int("count", len(workspaces)))
 	for _, ws := range workspaces {
+		if !ws.IsCreated {
+			continue
+		}
+
+		if ws.Status != api2.StatusProvisioned && ws.Status != api2.StatusBootstrapping {
+			continue
+		}
+
 		previousHour := time.Now().Add(-1 * time.Hour).Format("2006-01-02-15")
 		meterTypes := model.ListAllMeterTypes()
 		for _, meterType := range meterTypes {
