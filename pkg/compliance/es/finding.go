@@ -192,9 +192,7 @@ func FindingsCount(client kaytu.Client) (int64, error) {
 	idx := types.FindingsIndex
 
 	query := make(map[string]any)
-	query["query"] = map[string]any{
-		"size": 0,
-	}
+	query["size"] = 0
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return 0, err
