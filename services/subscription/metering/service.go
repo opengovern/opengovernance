@@ -82,6 +82,8 @@ func (s *Service) runChecks() {
 					)
 					return
 				}
+			} else {
+				s.logger.Info("metrics is already there", zap.Int64("value", meter.Value))
 			}
 		}
 	}
