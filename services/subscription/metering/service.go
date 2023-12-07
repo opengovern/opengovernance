@@ -71,6 +71,7 @@ func (s *Service) runChecks() {
 			}
 
 			if meter == nil {
+				s.logger.Info("generating metric", zap.String("workspaceID", ws.ID), zap.String("meter", string(meterType)))
 				err = s.generateMeter(ws.ID, previousHour, meterType)
 				if err != nil {
 					s.logger.Error("failed to generate meter",
