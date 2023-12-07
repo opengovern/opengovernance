@@ -22,12 +22,7 @@ type Service struct {
 	authClient      client2.AuthServiceClient
 }
 
-func New(logger *zap.Logger, cnf config.SubscriptionConfig) (*Service, error) {
-	pdb, err := db.NewDatabase(cnf.Postgres, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new postgres client: %w", err)
-	}
-
+func New(logger *zap.Logger, cnf config.SubscriptionConfig, pdb db.Database) (*Service, error) {
 	workspaceClient := client.NewWorkspaceClient(cnf.Workspace.BaseURL)
 	authClient := client2.NewAuthServiceClient(cnf.Auth.BaseURL)
 
@@ -49,6 +44,7 @@ func (s *Service) Run() {
 	}()
 
 	for {
+		s.logger.Info("starting checks")
 		s.runChecks()
 		time.Sleep(10 * time.Minute)
 	}
@@ -62,10 +58,12 @@ func (s *Service) runChecks() {
 		return
 	}
 
+	s.logger.Info("listing workspaces done", zap.Int("count", len(workspaces)))
 	for _, ws := range workspaces {
 		previousHour := time.Now().Add(-1 * time.Hour).Format("2006-01-02-15")
 		meterTypes := model.ListAllMeterTypes()
 		for _, meterType := range meterTypes {
+			s.logger.Info("checking meter", zap.String("workspaceID", ws.ID), zap.String("meter", string(meterType)))
 			meter, err := s.pdb.GetMeter(ws.ID, previousHour, meterType)
 			if err != nil {
 				s.logger.Error("failed to get meter", zap.Error(err), zap.String("workspaceID", ws.ID), zap.String("meter", string(meterType)))

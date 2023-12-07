@@ -1,9 +1,11 @@
 package subscription
 
 import (
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api"
 	config2 "github.com/kaytu-io/kaytu-engine/services/subscription/config"
+	"github.com/kaytu-io/kaytu-engine/services/subscription/db"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/metering"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
@@ -25,15 +27,21 @@ func SubscriptionServiceCommand() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
+			pdb, err := db.NewDatabase(cnf.Postgres, logger)
+			if err != nil {
+				return fmt.Errorf("new postgres client: %w", err)
+			}
+
 			handler, err := api.InitializeHttpServer(
 				logger,
 				cnf,
+				pdb,
 			)
 			if err != nil {
 				return err
 			}
 
-			meteringService, err := metering.New(logger, cnf)
+			meteringService, err := metering.New(logger, cnf, pdb)
 			if err != nil {
 				return err
 			}
