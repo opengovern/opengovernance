@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (db Database) ListAnalyticsJobsByDate(start time.Time, end time.Time) (int64, error) {
+func (db Database) CountAnalyticsJobsByDate(start time.Time, end time.Time) (int64, error) {
 	var count int64
 	tx := db.ORM.Model(&model.AnalyticsJob{}).
 		Where("status = ? AND updated_at >= ? AND updated_at < ?", api.JobCompleted, start, end).Count(&count)

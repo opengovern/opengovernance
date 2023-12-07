@@ -52,12 +52,12 @@ func getStartEndByDateHour(dateHour string) (time.Time, time.Time) {
 	return startDate, endDate
 }
 
-func (s *Service) generateSchedulerMeter(workspaceId, dateHour string, jobType api2.JobType, meterType model.MeterType) error {
+func (s *Service) generateSchedulerMeter(workspaceId, dateHour string, jobType api2.JobType, includeCost *bool, meterType model.MeterType) error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	schedulerClient := client5.NewSchedulerServiceClient(strings.ReplaceAll(s.cnf.Scheduler.BaseURL, "%NAMESPACE%", workspaceId))
 	startDate, endDate := getStartEndByDateHour(dateHour)
 
-	count, err := schedulerClient.CountJobsByDate(ctx, jobType, startDate, endDate)
+	count, err := schedulerClient.CountJobsByDate(ctx, includeCost, jobType, startDate, endDate)
 	if err != nil {
 		return err
 	}
@@ -72,23 +72,25 @@ func (s *Service) generateSchedulerMeter(workspaceId, dateHour string, jobType a
 }
 
 func (s *Service) generateInventoryDiscoveryJobCountMeter(workspaceId, dateHour string) error {
-	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Discovery, model.MeterType_InventoryDiscoveryJobCount)
+	v := false
+	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Discovery, &v, model.MeterType_InventoryDiscoveryJobCount)
 }
 
 func (s *Service) generateCostDiscoveryJobCountMeter(workspaceId, dateHour string) error {
-	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Discovery, model.MeterType_CostDiscoveryJobCount)
+	v := true
+	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Discovery, &v, model.MeterType_CostDiscoveryJobCount)
 }
 
 func (s *Service) generateMetricEvaluationCountMeter(workspaceId, dateHour string) error {
-	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Analytics, model.MeterType_MetricEvaluationCount)
+	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Analytics, nil, model.MeterType_MetricEvaluationCount)
 }
 
 func (s *Service) generateInsightEvaluationCountMeter(workspaceId, dateHour string) error {
-	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Insight, model.MeterType_InsightEvaluationCount)
+	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Insight, nil, model.MeterType_InsightEvaluationCount)
 }
 
 func (s *Service) generateBenchmarkEvaluationCountMeter(workspaceId, dateHour string) error {
-	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Compliance, model.MeterType_BenchmarkEvaluationCount)
+	return s.generateSchedulerMeter(workspaceId, dateHour, api2.JobType_Compliance, nil, model.MeterType_BenchmarkEvaluationCount)
 }
 
 func (s *Service) generateTotalFindingsMeter(workspaceId, dateHour string) error {

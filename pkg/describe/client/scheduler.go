@@ -29,7 +29,7 @@ type SchedulerServiceClient interface {
 	GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error)
 	GetJobsByInsightID(ctx *httpclient.Context, insightID uint) ([]model.InsightJob, error)
 	InsightJobInProgress(ctx *httpclient.Context, jobID uint) error
-	CountJobsByDate(ctx *httpclient.Context, jobType api.JobType, startDate, endDate time.Time) (int64, error)
+	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
 }
 
 type schedulerClient struct {
@@ -196,8 +196,11 @@ func (s *schedulerClient) ListPendingConnections(ctx *httpclient.Context) ([]str
 	return res, nil
 }
 
-func (s *schedulerClient) CountJobsByDate(ctx *httpclient.Context, jobType api.JobType, startDate, endDate time.Time) (int64, error) {
+func (s *schedulerClient) CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error) {
 	url := fmt.Sprintf("%s/api/v1/jobs/bydate?startDate=%d&endDate=%d&jobType=%s", s.baseURL, startDate.UnixMilli(), endDate.UnixMilli(), string(jobType))
+	if includeCost != nil {
+		url += fmt.Sprintf("&include_cost=%v", *includeCost)
+	}
 
 	var resp int64
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
