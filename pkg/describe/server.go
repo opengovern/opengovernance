@@ -264,13 +264,23 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	includeCostStr := ctx.QueryParam("include_cost")
 
 	var count int64
 	switch api.JobType(ctx.QueryParam("jobType")) {
 	case api.JobType_Discovery:
-		count, err = h.DB.CountDescribeJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+		var includeCost *bool
+		if len(includeCostStr) > 0 {
+			v, err := strconv.ParseBool(includeCostStr)
+			if err != nil {
+				return err
+			}
+
+			includeCost = &v
+		}
+		count, err = h.DB.CountDescribeJobsByDate(includeCost, time.UnixMilli(startDate), time.UnixMilli(endDate))
 	case api.JobType_Analytics:
-		count, err = h.DB.CountDescribeJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+		count, err = h.DB.CountAnalyticsJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
 	case api.JobType_Compliance:
 		count, err = h.DB.CountComplianceJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
 	case api.JobType_Insight:

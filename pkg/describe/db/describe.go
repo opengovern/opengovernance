@@ -15,10 +15,18 @@ import (
 	"time"
 )
 
-func (db Database) CountDescribeJobsByDate(start time.Time, end time.Time) (int64, error) {
+func (db Database) CountDescribeJobsByDate(includeCost *bool, start time.Time, end time.Time) (int64, error) {
 	var count int64
+	costStmt := ""
+	if includeCost != nil {
+		if *includeCost {
+			costStmt = "resource_type like '%Cost%' AND "
+		} else {
+			costStmt = "NOT(resource_type like '%Cost%') AND "
+		}
+	}
 	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
-		Where("status = ? AND updated_at >= ? AND updated_at < ?", api.DescribeResourceJobSucceeded, start, end).Count(&count)
+		Where(costStmt+"status = ? AND updated_at >= ? AND updated_at < ?", api.DescribeResourceJobSucceeded, start, end).Count(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return 0, nil
