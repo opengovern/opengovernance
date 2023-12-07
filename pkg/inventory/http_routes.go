@@ -978,6 +978,19 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		}
 	}
 
+	// remove duplicates
+	for category, resourceTypes := range categoryResourceTypeMap {
+		resourceTypeMap := map[string]bool{}
+		for _, resourceType := range resourceTypes {
+			resourceTypeMap[resourceType] = true
+		}
+		resourceTypes = make([]string, 0, len(resourceTypeMap))
+		for resourceType := range resourceTypeMap {
+			resourceTypes = append(resourceTypes, resourceType)
+		}
+		categoryResourceTypeMap[category] = resourceTypes
+	}
+
 	return ctx.JSON(http.StatusOK, inventoryApi.AnalyticsCategoriesResponse{
 		CategoryResourceType: categoryResourceTypeMap,
 	})
