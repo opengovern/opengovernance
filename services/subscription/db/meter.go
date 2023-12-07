@@ -12,16 +12,16 @@ func (db Database) CreateMeter(meter *model.Meter) error {
 
 func (db Database) GetMeter(workspaceId, dateHour string, meterType model.MeterType) (*model.Meter, error) {
 	var meter model.Meter
-	err := db.Orm.Model(&model.Meter{}).
+	tx := db.Orm.Model(&model.Meter{}).
 		Where("workspace_id = ?", workspaceId).
 		Where("date_hour = ?", dateHour).
 		Where("meter_type = ?", meterType).
-		Find(&meter).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		Find(&meter)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, tx.Error
 	}
 	return &meter, nil
 }
