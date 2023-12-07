@@ -145,7 +145,7 @@ func (s *Service) generateTotalUsersMeter(workspaceId, dateHour string) error {
 }
 
 func (s *Service) generateTotalApiKeysMeter(workspaceId, dateHour string) error {
-	ctx := &httpclient.Context{UserRole: api.InternalRole}
+	ctx := &httpclient.Context{UserRole: api.InternalRole, UserID: api.GodUserID}
 	apiKeys, err := s.authClient.ListAPIKeys(ctx, workspaceId)
 	if err != nil {
 		return err
