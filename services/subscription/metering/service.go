@@ -43,6 +43,8 @@ func (s *Service) Run() {
 		}
 	}()
 
+	fmt.Println(s.cnf)
+
 	for {
 		s.logger.Info("starting checks")
 		s.runChecks()
