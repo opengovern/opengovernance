@@ -29,6 +29,7 @@ func New(logger *zap.Logger, cnf config.SubscriptionConfig, pdb db.Database) (*S
 	return &Service{
 		logger:          logger,
 		pdb:             pdb,
+		cnf:             cnf,
 		workspaceClient: workspaceClient,
 		authClient:      authClient,
 	}, nil
