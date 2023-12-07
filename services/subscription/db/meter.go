@@ -22,6 +22,8 @@ func (db Database) GetMeter(workspaceId, dateHour string, meterType model.MeterT
 			return nil, nil
 		}
 		return nil, tx.Error
+	} else if tx.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &meter, nil
 }
