@@ -54,7 +54,7 @@ func getStartEndByDateHour(dateHour string) (time.Time, time.Time) {
 
 func (s *Service) generateSchedulerMeter(workspaceId, dateHour string, jobType api2.JobType, meterType model.MeterType) error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
-	schedulerClient := client5.NewSchedulerServiceClient(strings.ReplaceAll(s.cnf.Scheduler.BaseURL, "{NAMESPACE}", workspaceId))
+	schedulerClient := client5.NewSchedulerServiceClient(strings.ReplaceAll(s.cnf.Scheduler.BaseURL, "%NAMESPACE%", workspaceId))
 	startDate, endDate := getStartEndByDateHour(dateHour)
 
 	count, err := schedulerClient.CountJobsByDate(ctx, jobType, startDate, endDate)
@@ -93,7 +93,7 @@ func (s *Service) generateBenchmarkEvaluationCountMeter(workspaceId, dateHour st
 
 func (s *Service) generateTotalFindingsMeter(workspaceId, dateHour string) error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
-	complianceClient := client4.NewComplianceClient(strings.ReplaceAll(s.cnf.Compliance.BaseURL, "{NAMESPACE}", workspaceId))
+	complianceClient := client4.NewComplianceClient(strings.ReplaceAll(s.cnf.Compliance.BaseURL, "%NAMESPACE%", workspaceId))
 
 	count, err := complianceClient.CountFindings(ctx)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Service) generateTotalFindingsMeter(workspaceId, dateHour string) error
 
 func (s *Service) generateTotalResourceMeter(workspaceId, dateHour string) error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
-	inventoryClient := client2.NewInventoryServiceClient(strings.ReplaceAll(s.cnf.Inventory.BaseURL, "{NAMESPACE}", workspaceId))
+	inventoryClient := client2.NewInventoryServiceClient(strings.ReplaceAll(s.cnf.Inventory.BaseURL, "%NAMESPACE%", workspaceId))
 
 	count, err := inventoryClient.CountResources(ctx)
 	if err != nil {
@@ -163,7 +163,7 @@ func (s *Service) generateTotalApiKeysMeter(workspaceId, dateHour string) error 
 
 func (s *Service) generateTotalRulesMeter(workspaceId, dateHour string) error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
-	alertingClient := client.NewAlertingServiceClient(strings.ReplaceAll(s.cnf.Alerting.BaseURL, "{NAMESPACE}", workspaceId))
+	alertingClient := client.NewAlertingServiceClient(strings.ReplaceAll(s.cnf.Alerting.BaseURL, "%NAMESPACE%", workspaceId))
 	rules, err := alertingClient.ListRules(ctx)
 	if err != nil {
 		return err
@@ -181,7 +181,7 @@ func (s *Service) generateTotalRulesMeter(workspaceId, dateHour string) error {
 
 func (s *Service) generateAlertCountMeter(workspaceId, dateHour string) error {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
-	alertingClient := client.NewAlertingServiceClient(strings.ReplaceAll(s.cnf.Alerting.BaseURL, "{NAMESPACE}", workspaceId))
+	alertingClient := client.NewAlertingServiceClient(strings.ReplaceAll(s.cnf.Alerting.BaseURL, "%NAMESPACE%", workspaceId))
 	startDate, endDate := getStartEndByDateHour(dateHour)
 	count, err := alertingClient.CountTriggersByDate(ctx, startDate, endDate)
 	if err != nil {
