@@ -11,6 +11,21 @@ import (
 	"go.uber.org/zap"
 )
 
+func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
+	switch queryConnector {
+	case source.CloudAWS:
+		return awsSteampipe.ExtractResourceType(tableName)
+	case source.CloudAzure:
+		return azureSteampipe.ExtractResourceType(tableName)
+	default:
+		resourceType := awsSteampipe.ExtractResourceType(tableName)
+		if resourceType == "" {
+			resourceType = azureSteampipe.ExtractResourceType(tableName)
+		}
+		return resourceType
+	}
+}
+
 func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
 
@@ -22,19 +37,8 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 		} else {
 			tableName = query.ListOfTables[0]
 		}
-
-		switch query.Connector {
-		case source.CloudAWS.String():
-			queryResourceType = awsSteampipe.ExtractResourceType(tableName)
-		case source.CloudAzure.String():
-			queryResourceType = azureSteampipe.ExtractResourceType(tableName)
-		default:
-			if queryResourceType == "" {
-				queryResourceType = awsSteampipe.ExtractResourceType(tableName)
-			}
-			if queryResourceType == "" {
-				queryResourceType = azureSteampipe.ExtractResourceType(tableName)
-			}
+		if tableName != "" {
+			queryResourceType = getResourceTypeFromTableName(tableName, w.ExecutionPlan.QueryConnector)
 		}
 	}
 
@@ -49,18 +53,21 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 		}
 		resourceType := queryResourceType
 
-		var resourceID, resourceName, resourceLocation, reason string
+		var kaytuResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
 		var status types.ComplianceResult
-		if v, ok := recordValue["resource"].(string); ok {
+		if v, ok := recordValue["kaytu_resource_id"].(string); ok {
+			kaytuResourceId = v
+		}
+		if v, ok := recordValue["kaytu_account_id"].(string); ok {
+			connectionId = v
+		}
+		if v, ok := recordValue["kaytu_table_name"].(string); ok && resourceType == "" {
+			resourceType = getResourceTypeFromTableName(v, w.ExecutionPlan.QueryConnector)
+		}
+		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
 			resourceID = v
-			//
-			//lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
-			//if err != nil {
-			//	return nil, err
-			//}
-			//if len(lookupResource.Hits.Hits) > 0 {
-			//	resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
-			//}
+		} else {
+			continue
 		}
 		if v, ok := recordValue["name"].(string); ok {
 			resourceName = v
@@ -85,20 +92,20 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			severity = types.FindingSeverityPassed
 		}
 
-		connectionID := "all"
-		if w.ExecutionPlan.ConnectionID != nil {
-			connectionID = *w.ExecutionPlan.ConnectionID
+		if (connectionId == "" || connectionId == "null") && w.ExecutionPlan.ConnectionID != nil {
+			connectionId = *w.ExecutionPlan.ConnectionID
 		}
 		findings = append(findings, types.Finding{
 			BenchmarkID:           caller.RootBenchmark,
 			ControlID:             caller.ControlID,
-			ConnectionID:          connectionID,
+			ConnectionID:          connectionId,
 			EvaluatedAt:           w.CreatedAt.UnixMilli(),
 			StateActive:           true,
 			Result:                status,
 			Severity:              severity,
 			Evaluator:             w.ExecutionPlan.QueryEngine,
 			Connector:             w.ExecutionPlan.QueryConnector,
+			KaytuResourceID:       kaytuResourceId,
 			ResourceID:            resourceID,
 			ResourceName:          resourceName,
 			ResourceLocation:      resourceLocation,

@@ -21,6 +21,7 @@ type Finding struct {
 	Severity              FindingSeverity  `json:"severity" example:"low"`
 	Evaluator             string           `json:"evaluator" example:"steampipe-v0.5"`
 	Connector             source.Type      `json:"connector" example:"Azure"`
+	KaytuResourceID       string           `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID            string           `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceName          string           `json:"resourceName" example:"vm-1"`
 	ResourceLocation      string           `json:"resourceLocation" example:"eastus"`
