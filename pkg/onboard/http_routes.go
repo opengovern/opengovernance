@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
@@ -1753,10 +1754,12 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	}
 }
 
-func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection model.Source, healthStatus source.HealthStatus, reason *string) (model.Source, error) {
+func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection model.Source, healthStatus source.HealthStatus, reason *string, spendDiscovery, assetDiscovery *bool) (model.Source, error) {
 	connection.HealthState = healthStatus
 	connection.HealthReason = reason
 	connection.LastHealthCheckTime = time.Now()
+	connection.SpendDiscovery = spendDiscovery
+	connection.AssetDiscovery = assetDiscovery
 	// tracer :
 	_, span := tracer.Start(ctx, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_UpdateSource")
@@ -1810,7 +1813,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 	span.End()
 
 	if !connection.LifecycleState.IsEnabled() {
-		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusNil, utils.GetPointer("Connection is not enabled"))
+		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusNil, utils.GetPointer("Connection is not enabled"), aws.Bool(false), aws.Bool(false))
 		if err != nil {
 			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return err
@@ -1829,7 +1832,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			}
 		}
 		if !isHealthy {
-			connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
+			connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"), aws.Bool(false), aws.Bool(false))
 			if err != nil {
 				h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return err

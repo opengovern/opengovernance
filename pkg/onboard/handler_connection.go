@@ -24,7 +24,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 		return connection, err
 	}
 
-	var isAttached bool
+	var isAttached, assetDiscoveryAttached, spendAttached bool
 	switch connection.Type {
 	case source.CloudAWS:
 		if connection.Credential.Version == 2 {
@@ -67,6 +67,12 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 					"SecurityAudit",
 				}
 			}
+
+			securityAuditAttached := utils.Includes(policyNames, "SecurityAudit")
+			readOnlyAttached := utils.Includes(policyNames, "ReadOnlyAccess")
+			assetDiscoveryAttached = securityAuditAttached && readOnlyAttached
+			spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
+
 			for _, policyName := range awsCnf.HealthCheckPolicies {
 				if !utils.Includes(policyNames, policyName) {
 					h.logger.Error("policy is not there", zap.String("policyName", policyName), zap.Strings("attachedPolicies", policyNames))
@@ -139,6 +145,13 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			Password:            azureCnf.Password,
 		}
 		isAttached, err = kaytuAzure.CheckRole(authCnf, connection.SourceId, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
+		billingIsAttached, err2 := kaytuAzure.CheckRole(authCnf, connection.SourceId, kaytuAzure.DefaultBillingReaderRoleDefinitionIDTemplate)
+		if err2 == nil && billingIsAttached {
+			spendAttached = true
+		}
+		if err == nil && isAttached {
+			assetDiscoveryAttached = true
+		}
 
 		if err == nil && isAttached && updateMetadata {
 			var azSub *azureSubscription
@@ -171,13 +184,13 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 		} else {
 			healthMessage = err.Error()
 		}
-		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, &healthMessage)
+		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, &healthMessage, aws.Bool(false), aws.Bool(false))
 		if err != nil {
 			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err
 		}
 	} else {
-		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusHealthy, utils.GetPointer(""))
+		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusHealthy, utils.GetPointer(""), &spendAttached, &assetDiscoveryAttached)
 		if err != nil {
 			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err

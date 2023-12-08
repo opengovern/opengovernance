@@ -52,6 +52,8 @@ type Connection struct {
 	HealthState         source.HealthStatus `json:"healthState" example:"healthy"`
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
+	AssetDiscovery      *bool               `json:"assetDiscovery,omitempty"`
+	SpendDiscovery      *bool               `json:"spendDiscovery,omitempty"`
 
 	LastInventory        *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
 	Cost                 *float64   `json:"cost" example:"1000.00" minimum:"0" maximum:"10000000"`

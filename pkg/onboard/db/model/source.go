@@ -27,6 +27,8 @@ type Source struct {
 	HealthState         source.HealthStatus
 	LastHealthCheckTime time.Time `gorm:"not null;default:now()"`
 	HealthReason        *string
+	AssetDiscovery      *bool
+	SpendDiscovery      *bool
 
 	Connector  Connector  `gorm:"foreignKey:Type;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Credential Credential `gorm:"foreignKey:CredentialID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
@@ -70,6 +72,8 @@ func (s Source) ToAPI() api.Connection {
 		LastHealthCheckTime:  s.LastHealthCheckTime,
 		HealthReason:         s.HealthReason,
 		Metadata:             metadata,
+		AssetDiscovery:       s.AssetDiscovery,
+		SpendDiscovery:       s.SpendDiscovery,
 
 		ResourceCount: nil,
 		Cost:          nil,
