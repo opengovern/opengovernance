@@ -81,6 +81,11 @@ func (s *Service) handleWorkspace(workspace *db.Workspace) error {
 			}
 		}
 
+		err = s.deleteInsightBucket(ctx, workspace)
+		if err != nil {
+			return fmt.Errorf("deleting insight bucket: %w", err)
+		}
+
 		helmRelease, err := s.FindHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)

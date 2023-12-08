@@ -86,6 +86,39 @@ func (s *Service) createInsightBucket(ctx context.Context, workspace *db.Workspa
 	return err
 }
 
+func (s *Service) deleteInsightBucket(ctx context.Context, workspace *db.Workspace) error {
+	bucketName := fmt.Sprintf("insights-%s", workspace.ID)
+	s.awsConfig.Region = "us-east-1"
+	cli := s3.NewFromConfig(s.awsConfig)
+	objects, err := cli.ListObjects(ctx, &s3.ListObjectsInput{
+		Bucket: aws.String(bucketName),
+	})
+	if err != nil {
+		return err
+	}
+
+	var objs []s3Types.ObjectIdentifier
+	for _, obj := range objects.Contents {
+		objs = append(objs, s3Types.ObjectIdentifier{
+			Key: obj.Key,
+		})
+	}
+	_, err = cli.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+		Bucket: aws.String(bucketName),
+		Delete: &s3Types.Delete{
+			Objects: objs,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = cli.DeleteBucket(ctx, &s3.DeleteBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+	return err
+}
+
 func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace) error {
 	id := workspace.ID
 
