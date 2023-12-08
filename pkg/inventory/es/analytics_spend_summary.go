@@ -662,10 +662,16 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
 		for _, v := range metricBucket.HitSelect.Hits.Hits {
 			if len(connectionIDs) == 0 && len(connectors) == 0 {
-				resp[metricBucket.Key] = SpendMetricResp{
-					MetricName: v.Source.MetricName,
-					CostValue:  v.Source.TotalCostValue,
+				metricResp, ok := resp[metricBucket.Key]
+				if !ok {
+					resp[metricBucket.Key] = SpendMetricResp{
+						MetricName: v.Source.MetricName,
+						CostValue:  v.Source.TotalCostValue,
+					}
+				} else {
+					metricResp.CostValue += v.Source.TotalCostValue
 				}
+				resp[metricBucket.Key] = metricResp
 				continue
 			}
 			for _, connectionResult := range v.Source.Connections {
