@@ -673,12 +673,8 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 					(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
 					continue
 				}
-				metricResp, ok := resp[metricBucket.Key]
-				if !ok {
-					metricResp = SpendMetricResp{
-						MetricName: v.Source.MetricName,
-					}
-				}
+				metricResp := resp[metricBucket.Key]
+				metricResp.MetricName = v.Source.MetricName
 				metricResp.CostValue += connectionResult.CostValue
 				resp[metricBucket.Key] = metricResp
 			}
