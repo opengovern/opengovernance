@@ -22,6 +22,7 @@ type Credential struct {
 	LastHealthCheckTime time.Time           `gorm:"not null;default:now()" json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
+	SpendDiscovery      *bool
 
 	Metadata datatypes.JSON `json:"metadata,omitempty" gorm:"default:'{}'"`
 
@@ -51,6 +52,7 @@ func (credential *Credential) ToAPI() api.Credential {
 		HealthReason:        credential.HealthReason,
 		Metadata:            metadata,
 		Version:             credential.Version,
+		SpendDiscovery:      credential.SpendDiscovery,
 
 		Config: "",
 

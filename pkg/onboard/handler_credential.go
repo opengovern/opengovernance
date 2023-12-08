@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	awsOrgTypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
@@ -325,6 +326,25 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 			return false, err
 		}
 		cred.Metadata = jsonMetadata
+
+		ctx := context.Background()
+		iamClient := iam.NewFromConfig(sdkCnf)
+		paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
+			RoleName: &awsConfig.AssumeRoleName,
+		})
+		var policyNames []string
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				return false, err
+			}
+			for _, policy := range page.AttachedPolicies {
+				policyNames = append(policyNames, *policy.PolicyName)
+			}
+		}
+
+		spendAttached := utils.Includes(policyNames, "AWSBillingReadOnlyAccess")
+		cred.SpendDiscovery = &spendAttached
 	default:
 		return false, errors.New("not implemented")
 	}

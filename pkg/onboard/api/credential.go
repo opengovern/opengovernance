@@ -50,6 +50,7 @@ type Credential struct {
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" format:"date-time" example:"2023-06-03T12:21:33.406928Z"`
 	HealthStatus        source.HealthStatus `json:"healthStatus" example:"healthy"`
 	HealthReason        *string             `json:"healthReason,omitempty" example:""`
+	SpendDiscovery      *bool               `json:"spendDiscovery"`
 
 	Metadata map[string]any `json:"metadata,omitempty"`
 
