@@ -94,6 +94,10 @@ func (s *Service) deleteInsightBucket(ctx context.Context, workspace *db.Workspa
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
+		var noSuchBucket *s3Types.NoSuchBucket
+		if errors.As(err, &noSuchBucket) {
+			return nil
+		}
 		return err
 	}
 
