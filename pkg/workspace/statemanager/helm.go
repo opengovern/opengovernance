@@ -103,14 +103,16 @@ func (s *Service) deleteInsightBucket(ctx context.Context, workspace *db.Workspa
 			Key: obj.Key,
 		})
 	}
-	_, err = cli.DeleteObjects(ctx, &s3.DeleteObjectsInput{
-		Bucket: aws.String(bucketName),
-		Delete: &s3Types.Delete{
-			Objects: objs,
-		},
-	})
-	if err != nil {
-		return err
+	if len(objs) > 0 {
+		_, err = cli.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(bucketName),
+			Delete: &s3Types.Delete{
+				Objects: objs,
+			},
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = cli.DeleteBucket(ctx, &s3.DeleteBucketInput{
