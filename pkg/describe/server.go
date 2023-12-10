@@ -282,30 +282,35 @@ func getResourceTypeFromTableName(tableName string, queryConnector source.Type) 
 	}
 }
 
-func extractResourceTypes(query string) []string {
+func extractResourceTypes(query string, connector source.Type) []string {
 	var result []string
 
-	awsTables := awsResourceTypeReg.FindAllString(query, -1)
-	azureTables := azureResourceTypeReg.FindAllString(query, -1)
-	result = append(result, awsTables...)
-	result = append(result, azureTables...)
+	if connector == source.CloudAWS {
+		awsTables := awsResourceTypeReg.FindAllString(query, -1)
+		result = append(result, awsTables...)
 
-	awsTables = awsTableReg.FindAllString(query, -1)
-	for _, table := range awsTables {
-		resourceType := getResourceTypeFromTableName(table, source.CloudAWS)
-		if resourceType == "" {
-			resourceType = table
+		awsTables = awsTableReg.FindAllString(query, -1)
+		for _, table := range awsTables {
+			resourceType := getResourceTypeFromTableName(table, source.CloudAWS)
+			if resourceType == "" {
+				resourceType = table
+			}
+			result = append(result, resourceType)
 		}
-		result = append(result, resourceType)
 	}
 
-	azureTables = azureTableReg.FindAllString(query, -1)
-	for _, table := range azureTables {
-		resourceType := getResourceTypeFromTableName(table, source.CloudAzure)
-		if resourceType == "" {
-			resourceType = table
+	if connector == source.CloudAzure {
+		azureTables := azureTableReg.FindAllString(query, -1)
+		for _, table := range azureTables {
+			resourceType := getResourceTypeFromTableName(table, source.CloudAzure)
+			if resourceType == "" {
+				resourceType = table
+			}
+			result = append(result, resourceType)
 		}
-		result = append(result, resourceType)
+
+		azureTables = azureResourceTypeReg.FindAllString(query, -1)
+		result = append(result, azureTables...)
 	}
 
 	return result
@@ -353,7 +358,7 @@ func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, bench
 			return nil, err
 		}
 
-		response = append(response, extractResourceTypes(query.QueryToExecute)...)
+		response = append(response, extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))...)
 	}
 
 	return response, nil
@@ -390,12 +395,14 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 
 	var resourceTypes []string
 	for _, metric := range append(assetMetrics, spendMetrics...) {
-		rts := extractResourceTypes(metric.Query)
-		resourceTypes = append(resourceTypes, rts...)
+		for _, connector := range metric.Connectors {
+			rts := extractResourceTypes(metric.Query, connector)
+			resourceTypes = append(resourceTypes, rts...)
+		}
 	}
 
 	for _, ins := range insights {
-		rts := extractResourceTypes(ins.Query.QueryToExecute)
+		rts := extractResourceTypes(ins.Query.QueryToExecute, ins.Connector)
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
