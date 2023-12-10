@@ -62,7 +62,7 @@ func (s *JobScheduler) runScheduler() error {
 		if complianceJob == nil ||
 			complianceJob.CreatedAt.Before(timeAt) {
 
-			_, err := s.CreateComplianceReportJobs(benchmark.ID, complianceJob)
+			_, err := s.CreateComplianceReportJobs(benchmark.ID)
 			if err != nil {
 				return err
 			}

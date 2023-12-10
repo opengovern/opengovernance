@@ -101,7 +101,7 @@ func (s *JobScheduler) buildRunners(
 	return jobs, nil
 }
 
-func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string, lastJob *model.ComplianceJob) (uint, error) {
+func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, error) {
 	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
 	if err != nil {
 		return 0, err
@@ -134,14 +134,15 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string, lastJob *m
 		allRunners = append(allRunners, runners...)
 	}
 
-	for _, it := range assignments.ResourceCollections {
-		resourceCollection := it
-		runners, err := s.buildRunners(job.ID, nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
-		if err != nil {
-			return 0, err
-		}
-		allRunners = append(allRunners, runners...)
-	}
+	// We don't need to create runners for resource collections anymore because we are handling it in the summarizer
+	//for _, it := range assignments.ResourceCollections {
+	//	resourceCollection := it
+	//	runners, err := s.buildRunners(job.ID, nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//	allRunners = append(allRunners, runners...)
+	//}
 
 	err = s.db.CreateRunnerJobs(allRunners)
 	if err != nil {
