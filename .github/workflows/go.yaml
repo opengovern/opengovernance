@@ -126,13 +126,13 @@ jobs:
     - name: Pack build
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
-        tar -cvf build.tar build
+        tar -czvf build.tar.gz build
     - name: Upload artifact
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v3
       with:
         name: build
-        path: build.tar
+        path: build.tar.gz
         retention-days: 1
   deploy-steampipe:
     runs-on: ubuntu-latest
@@ -154,7 +154,7 @@ jobs:
         path: .
     - name: Unpack artifact
       run: |
-        tar -xvf build.tar
+        tar -xvf build.tar.gz
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -192,7 +192,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -228,7 +228,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -264,7 +264,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -302,7 +302,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -340,7 +340,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -376,7 +376,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -412,7 +412,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -448,7 +448,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -484,7 +484,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -522,7 +522,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -558,7 +558,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -594,7 +594,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -630,7 +630,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -666,7 +666,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -702,7 +702,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -745,7 +745,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -781,7 +781,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -819,7 +819,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -855,7 +855,7 @@ jobs:
           path: .
       - name: Unpack artifact
         run: |
-          tar -xvf build.tar
+          tar -xvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -891,7 +891,7 @@ jobs:
 #          path: .
 #      - name: Unpack artifact
 #        run: |
-#          tar -xvf build.tar
+#          tar -xvf build.tar.gz
 #      - name: Configure AWS credentials
 #        uses: aws-actions/configure-aws-credentials@v2
 #        with:
