@@ -90,3 +90,36 @@ func FetchLookupsByResourceIDWildcard(client kaytu.Client, resourceID string) (L
 
 	return response, nil
 }
+
+func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) (LookupQueryResponse, error) {
+	request := make(map[string]any)
+	request["size"] = 1
+	request["sort"] = []map[string]any{
+		{
+			"_id": "desc",
+		},
+	}
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": map[string]any{
+				"terms": map[string]any{
+					"resource_id": resourceID,
+				},
+			},
+		},
+	}
+	b, err := json.Marshal(request)
+	if err != nil {
+		return LookupQueryResponse{}, err
+	}
+
+	fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
+
+	var response LookupQueryResponse
+	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
+	if err != nil {
+		return LookupQueryResponse{}, err
+	}
+
+	return response, nil
+}

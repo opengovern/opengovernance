@@ -724,7 +724,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 	}
 
-	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob)
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
