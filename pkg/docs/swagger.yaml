@@ -862,6 +862,9 @@ definitions:
       evaluator:
         example: steampipe-v0.5
         type: string
+      kaytuResourceID:
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
       parentBenchmarkNames:
         example:
         - Azure CIS v1.4.0
@@ -1416,6 +1419,17 @@ definitions:
     - JobType_Analytics
     - JobType_Compliance
     - JobType_Insight
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes:
+    properties:
+      awsResourceTypes:
+        items:
+          type: string
+        type: array
+      azureResourceTypes:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse:
     properties:
       jobs:
@@ -2224,6 +2238,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection:
     properties:
+      assetDiscovery:
+        type: boolean
       assetDiscoveryMethod:
         allOf:
         - $ref: '#/definitions/source.AssetDiscoveryMethodType'
@@ -2307,6 +2323,8 @@ definitions:
         maximum: 1000000
         minimum: 0
         type: integer
+      spendDiscovery:
+        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup:
     properties:
@@ -2480,6 +2498,8 @@ definitions:
         example: "2023-06-03T12:21:33.406928Z"
         format: date-time
         type: string
+      spendDiscovery:
+        type: boolean
       total_connections:
         example: 300
         maximum: 1000
@@ -4736,6 +4756,35 @@ paths:
       summary: Get Azure cost
       tags:
       - cost-estimator
+  /discovery/resourcetypes/{resource_type}/accounts:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse'
+      security:
+      - BearerToken: []
+      summary: List all cloud accounts which will have the resource type enabled in
+        discovery
+      tags:
+      - scheduler
+  /discovery/resourcetypes/list:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes'
+      security:
+      - BearerToken: []
+      summary: List all resource types that will be discovered
+      tags:
+      - scheduler
   /inventory/api/v1/query:
     get:
       description: Retrieving list of smart queries by specified filters

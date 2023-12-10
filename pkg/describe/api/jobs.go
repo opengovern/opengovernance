@@ -95,3 +95,8 @@ type ListJobsResponse struct {
 	Jobs      []Job        `json:"jobs"`
 	Summaries []JobSummary `json:"summaries"`
 }
+
+type ListDiscoveryResourceTypes struct {
+	AWSResourceTypes   []string `json:"awsResourceTypes"`
+	AzureResourceTypes []string `json:"azureResourceTypes"`
+}

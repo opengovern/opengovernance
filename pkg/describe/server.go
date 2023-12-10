@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
@@ -13,6 +14,7 @@ import (
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -78,6 +80,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/pending/connections", httpserver2.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
 	v1.GET("/describe/all/jobs/state", httpserver2.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
+	v1.GET("/discovery/resourcetypes/list", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
+	v1.GET("/discovery/resourcetypes/:resource_type/accounts", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeAccounts, apiAuth.ViewerRole))
 	v1.GET("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver2.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
@@ -253,6 +257,113 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		Jobs:      jobs,
 		Summaries: jobSummaries,
 	})
+}
+
+var awsReg, _ = regexp.Compile("aws::[a-z0-9-_/]+::[a-z0-9-_/]+")
+var azureReg, _ = regexp.Compile("microsoft.[a-z0-9-_/]+")
+
+func extractResourceTypes(query string) []string {
+	var result []string
+	awsTables := awsReg.FindAllString(query, -1)
+	azureTables := azureReg.FindAllString(query, -1)
+	result = append(result, awsTables...)
+	result = append(result, azureTables...)
+	return result
+}
+
+// GetDiscoveryResourceTypeList godoc
+//
+//	@Summary	List all resource types that will be discovered
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Produce	json
+//	@Success	200	{object}	api.ListDiscoveryResourceTypes
+//	@Router		/discovery/resourcetypes/list [get]
+func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
+	// asset
+	// spend
+	// insight
+	// compliance
+	assetMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeAssets)
+	if err != nil {
+		return nil
+	}
+
+	spendMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeSpend)
+	if err != nil {
+		return nil
+	}
+
+	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return nil
+	}
+
+	//compliance, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	//if err != nil {
+	//	return nil
+	//}
+
+	var resourceTypes []string
+	for _, metric := range append(assetMetrics, spendMetrics...) {
+		rts := extractResourceTypes(metric.Query)
+		resourceTypes = append(resourceTypes, rts...)
+	}
+
+	for _, ins := range insights {
+		rts := extractResourceTypes(ins.Query.QueryToExecute)
+		resourceTypes = append(resourceTypes, rts...)
+	}
+
+	//for _, bench := range compliance {
+	//	bench.AutoAssign
+	//}
+
+	var result api.ListDiscoveryResourceTypes
+	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
+	for _, resourceType := range resourceTypes {
+		found := false
+		resourceType = strings.ToLower(resourceType)
+		if strings.HasPrefix(resourceType, "aws") {
+			for _, awsResourceType := range awsResourceTypes {
+				if strings.ToLower(awsResourceType) == resourceType {
+					found = true
+					resourceType = awsResourceType
+					break
+				}
+			}
+			result.AWSResourceTypes = append(result.AWSResourceTypes, resourceType)
+		} else if strings.HasPrefix(resourceType, "microsoft") {
+			for _, azureResourceType := range azureResourceTypes {
+				if strings.ToLower(azureResourceType) == resourceType {
+					found = true
+					resourceType = azureResourceType
+					break
+				}
+			}
+			result.AzureResourceTypes = append(result.AzureResourceTypes, resourceType)
+		} else {
+			return errors.New("invalid resource type:" + resourceType)
+		}
+
+		if !found {
+			h.Scheduler.logger.Error("resource type " + resourceType + " not found!")
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetDiscoveryResourceTypeAccounts godoc
+//
+//	@Summary	List all cloud accounts which will have the resource type enabled in discovery
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Produce	json
+//	@Success	200	{object}	api.ListJobsResponse
+//	@Router		/discovery/resourcetypes/{resource_type}/accounts [get]
+func (h HttpServer) GetDiscoveryResourceTypeAccounts(ctx echo.Context) error {
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
