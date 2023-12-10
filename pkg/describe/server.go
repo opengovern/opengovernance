@@ -331,7 +331,11 @@ func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, bench
 
 	var response []string
 	for _, child := range benchmark.Children {
-		response = append(response, extractResourceTypes(child)...)
+		rts, err := h.extractBenchmarkResourceTypes(ctx, child)
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, rts...)
 	}
 
 	for _, controlID := range benchmark.Controls {
@@ -364,10 +368,6 @@ func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, bench
 //	@Success	200	{object}	api.ListDiscoveryResourceTypes
 //	@Router		/schedule/api/v1/discovery/resourcetypes/list [get]
 func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
-	// asset
-	// spend
-	// insight
-	// compliance
 	assetMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeAssets)
 	if err != nil {
 		return err
@@ -405,6 +405,7 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 			return err
 		}
 
+		rts = UniqueArray(rts)
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
