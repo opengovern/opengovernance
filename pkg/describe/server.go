@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
@@ -259,15 +261,53 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	})
 }
 
-var awsReg, _ = regexp.Compile("aws::[a-z0-9-_/]+::[a-z0-9-_/]+")
-var azureReg, _ = regexp.Compile("microsoft.[a-z0-9-_/]+")
+var awsResourceTypeReg, _ = regexp.Compile("aws::[a-z0-9-_/]+::[a-z0-9-_/]+")
+var azureResourceTypeReg, _ = regexp.Compile("microsoft.[a-z0-9-_/]+")
+
+var awsTableReg, _ = regexp.Compile("aws_[a-z0-9_]+")
+var azureTableReg, _ = regexp.Compile("azure_[a-z0-9_]+")
+
+func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
+	switch queryConnector {
+	case source.CloudAWS:
+		return awsSteampipe.ExtractResourceType(tableName)
+	case source.CloudAzure:
+		return azureSteampipe.ExtractResourceType(tableName)
+	default:
+		resourceType := awsSteampipe.ExtractResourceType(tableName)
+		if resourceType == "" {
+			resourceType = azureSteampipe.ExtractResourceType(tableName)
+		}
+		return resourceType
+	}
+}
 
 func extractResourceTypes(query string) []string {
 	var result []string
-	awsTables := awsReg.FindAllString(query, -1)
-	azureTables := azureReg.FindAllString(query, -1)
+
+	awsTables := awsTableReg.FindAllString(query, -1)
+	azureTables := azureTableReg.FindAllString(query, -1)
 	result = append(result, awsTables...)
 	result = append(result, azureTables...)
+
+	awsTables = awsResourceTypeReg.FindAllString(query, -1)
+	for _, table := range awsTables {
+		resourceType := getResourceTypeFromTableName(table, source.CloudAWS)
+		if resourceType == "" {
+			resourceType = table
+		}
+		result = append(result, resourceType)
+	}
+
+	azureTables = azureResourceTypeReg.FindAllString(query, -1)
+	for _, table := range azureTables {
+		resourceType := getResourceTypeFromTableName(table, source.CloudAzure)
+		if resourceType == "" {
+			resourceType = table
+		}
+		result = append(result, resourceType)
+	}
+
 	return result
 }
 
@@ -281,6 +321,38 @@ func UniqueArray(arr []string) []string {
 		resp = append(resp, k)
 	}
 	return resp
+}
+
+func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, benchmarkID string) ([]string, error) {
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(ctx, benchmarkID)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []string
+	for _, child := range benchmark.Children {
+		response = append(response, extractResourceTypes(child)...)
+	}
+
+	for _, controlID := range benchmark.Controls {
+		control, err := h.Scheduler.complianceClient.GetControl(ctx, controlID)
+		if err != nil {
+			return nil, err
+		}
+
+		if control.ManualVerification || control.QueryID == nil {
+			continue
+		}
+
+		query, err := h.Scheduler.complianceClient.GetQuery(ctx, *control.QueryID)
+		if err != nil {
+			return nil, err
+		}
+
+		response = append(response, extractResourceTypes(query.QueryToExecute)...)
+	}
+
+	return response, nil
 }
 
 // GetDiscoveryResourceTypeList godoc
@@ -298,23 +370,23 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 	// compliance
 	assetMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeAssets)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	spendMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeSpend)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
 	if err != nil {
-		return nil
+		return err
 	}
 
-	//benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
-	//if err != nil {
-	//	return nil
-	//}
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
 
 	var resourceTypes []string
 	for _, metric := range append(assetMetrics, spendMetrics...) {
@@ -327,9 +399,14 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
-	//for _, bench := range benchmarks {
-	//	bench.Children
-	//}
+	for _, bench := range benchmarks {
+		rts, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
+		if err != nil {
+			return err
+		}
+
+		resourceTypes = append(resourceTypes, rts...)
+	}
 
 	var result api.ListDiscoveryResourceTypes
 	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
@@ -353,6 +430,8 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 					break
 				}
 			}
+			result.AzureResourceTypes = append(result.AzureResourceTypes, resourceType)
+		} else if strings.HasPrefix(resourceType, "azure") {
 			result.AzureResourceTypes = append(result.AzureResourceTypes, resourceType)
 		} else {
 			return errors.New("invalid resource type:" + resourceType)
