@@ -285,12 +285,12 @@ func getResourceTypeFromTableName(tableName string, queryConnector source.Type) 
 func extractResourceTypes(query string) []string {
 	var result []string
 
-	awsTables := awsTableReg.FindAllString(query, -1)
-	azureTables := azureTableReg.FindAllString(query, -1)
+	awsTables := awsResourceTypeReg.FindAllString(query, -1)
+	azureTables := azureResourceTypeReg.FindAllString(query, -1)
 	result = append(result, awsTables...)
 	result = append(result, azureTables...)
 
-	awsTables = awsResourceTypeReg.FindAllString(query, -1)
+	awsTables = awsTableReg.FindAllString(query, -1)
 	for _, table := range awsTables {
 		resourceType := getResourceTypeFromTableName(table, source.CloudAWS)
 		if resourceType == "" {
@@ -299,7 +299,7 @@ func extractResourceTypes(query string) []string {
 		result = append(result, resourceType)
 	}
 
-	azureTables = azureResourceTypeReg.FindAllString(query, -1)
+	azureTables = azureTableReg.FindAllString(query, -1)
 	for _, table := range azureTables {
 		resourceType := getResourceTypeFromTableName(table, source.CloudAzure)
 		if resourceType == "" {
