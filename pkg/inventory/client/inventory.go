@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"net/http"
 	url2 "net/url"
@@ -25,6 +26,7 @@ type InventoryServiceClient interface {
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
+	ListAnalyticsMetrics(ctx *httpclient.Context, metricType analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
 }
 
 type inventoryClient struct {
@@ -46,6 +48,19 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 		return 0, err
 	}
 	return count, nil
+}
+
+func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricType analyticsDB.MetricType) ([]api.AnalyticsMetric, error) {
+	url := fmt.Sprintf("%s/api/v2/analytics/metrics/list?metricType=%s", s.baseURL, string(metricType))
+
+	var resp []api.AnalyticsMetric
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error) {
