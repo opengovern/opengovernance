@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -26,6 +28,8 @@ type Config struct {
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
 	PrometheusPushAddress string
+	Inventory             config.KaytuService
+	Onboard               config.KaytuService
 }
 
 type Worker struct {
@@ -33,6 +37,9 @@ type Worker struct {
 	logger        *zap.Logger
 	esClient      kaytu.Client
 	kafkaProducer *kafka2.Producer
+
+	inventoryClient inventoryClient.InventoryServiceClient
+	onboardClient   onboardClient.OnboardServiceClient
 }
 
 func InitializeNewWorker(
@@ -57,10 +64,11 @@ func InitializeNewWorker(
 	}
 
 	w := &Worker{
-		config:        config,
-		logger:        logger,
-		esClient:      esClient,
-		kafkaProducer: producer,
+		config:          config,
+		logger:          logger,
+		esClient:        esClient,
+		kafkaProducer:   producer,
+		inventoryClient: inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 	}
 
 	return w, nil
