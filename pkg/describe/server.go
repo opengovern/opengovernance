@@ -271,6 +271,18 @@ func extractResourceTypes(query string) []string {
 	return result
 }
 
+func UniqueArray(arr []string) []string {
+	m := map[string]interface{}{}
+	for _, item := range arr {
+		m[item] = struct{}{}
+	}
+	var resp []string
+	for k, _ := range m {
+		resp = append(resp, k)
+	}
+	return resp
+}
+
 // GetDiscoveryResourceTypeList godoc
 //
 //	@Summary	List all resource types that will be discovered
@@ -278,7 +290,7 @@ func extractResourceTypes(query string) []string {
 //	@Tags		scheduler
 //	@Produce	json
 //	@Success	200	{object}	api.ListDiscoveryResourceTypes
-//	@Router		/discovery/resourcetypes/list [get]
+//	@Router		/schedule/api/v1/discovery/resourcetypes/list [get]
 func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 	// asset
 	// spend
@@ -299,7 +311,7 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 		return nil
 	}
 
-	//compliance, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	//benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
 	//if err != nil {
 	//	return nil
 	//}
@@ -315,8 +327,8 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
-	//for _, bench := range compliance {
-	//	bench.AutoAssign
+	//for _, bench := range benchmarks {
+	//	bench.Children
 	//}
 
 	var result api.ListDiscoveryResourceTypes
@@ -350,6 +362,11 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 			h.Scheduler.logger.Error("resource type " + resourceType + " not found!")
 		}
 	}
+	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
+	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
+
+	result.AWSResourceTypes = UniqueArray(result.AWSResourceTypes)
+	result.AzureResourceTypes = UniqueArray(result.AzureResourceTypes)
 
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -361,7 +378,7 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 //	@Tags		scheduler
 //	@Produce	json
 //	@Success	200	{object}	api.ListJobsResponse
-//	@Router		/discovery/resourcetypes/{resource_type}/accounts [get]
+//	@Router		/schedule/api/v1/discovery/resourcetypes/{resource_type}/accounts [get]
 func (h HttpServer) GetDiscoveryResourceTypeAccounts(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }

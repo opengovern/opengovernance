@@ -2615,54 +2615,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/discovery/resourcetypes/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "scheduler"
-                ],
-                "summary": "List all resource types that will be discovered",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes"
-                        }
-                    }
-                }
-            }
-        },
-        "/discovery/resourcetypes/{resource_type}/accounts": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "scheduler"
-                ],
-                "summary": "List all cloud accounts which will have the resource type enabled in discovery",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/query": {
             "get": {
                 "security": [
@@ -5132,6 +5084,54 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/discovery/resourcetypes/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "List all resource types that will be discovered",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/discovery/resourcetypes/{resource_type}/accounts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "List all cloud accounts which will have the resource type enabled in discovery",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse"
+                        }
                     }
                 }
             }
