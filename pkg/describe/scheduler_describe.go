@@ -278,6 +278,15 @@ func (s *Scheduler) scheduleDescribeJob() {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
 			}
 		}
+
+		if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
+			_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
+				UserRole: apiAuth.EditorRole,
+			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
+			if err != nil {
+				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			}
+		}
 	}
 
 	err = s.retryFailedJobs()
@@ -464,15 +473,6 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return nil, err
 	}
 	DescribeSourceJobsCount.WithLabelValues("successful").Inc()
-
-	if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
-		_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
-			UserRole: apiAuth.EditorRole,
-		}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
-		if err != nil {
-			s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-		}
-	}
 
 	return &daj, nil
 }
