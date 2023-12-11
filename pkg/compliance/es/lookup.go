@@ -93,7 +93,7 @@ func FetchLookupsByResourceIDWildcard(client kaytu.Client, resourceID string) (L
 
 func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) (LookupQueryResponse, error) {
 	request := make(map[string]any)
-	request["size"] = 10000
+	request["size"] = len(resourceID)
 	request["sort"] = []map[string]any{
 		{
 			"_id": "desc",
