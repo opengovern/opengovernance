@@ -44,6 +44,11 @@ func InitializeJob(
 	w.db = db.Database{ORM: orm}
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
 
+	err = w.db.Initialize()
+	if err != nil {
+		return nil, fmt.Errorf("failure while initializing database: %w", err)
+	}
+
 	w.commit, err = GitClone(conf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failure while running git clone: %w", err)
