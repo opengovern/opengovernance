@@ -14,6 +14,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"strings"
 )
 
 func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model.Source, updateMetadata bool) (model.Source, error) {
@@ -24,7 +25,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 		return connection, err
 	}
 
-	var isAttached, assetDiscoveryAttached, spendAttached bool
+	var assetDiscoveryAttached, spendAttached bool
 	switch connection.Type {
 	case source.CloudAWS:
 		if connection.Credential.Version == 2 {
@@ -44,41 +45,27 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
 				RoleName: &awsCnf.AssumeRoleName,
 			})
-			var policyNames []string
+			var policyARNs []string
 			for paginator.HasMorePages() {
 				page, err := paginator.NextPage(ctx)
 				if err != nil {
 					return connection, err
 				}
 				for _, policy := range page.AttachedPolicies {
-					policyNames = append(policyNames, *policy.PolicyName)
+					policyARNs = append(policyARNs, *policy.PolicyArn)
 				}
 			}
 
-			isAttached = true
-			if len(awsCnf.HealthCheckPolicies) == 0 {
-				awsCnf.HealthCheckPolicies = []string{
-					"AWSAccountActivityAccess",
-					"AWSBillingReadOnlyAccess",
-					"AWSBudgetsReadOnlyAccess",
-					"AWSOrganizationsReadOnlyAccess",
-					"KaytuAdditionalResourceReadOnly",
-					"ReadOnlyAccess",
-					"SecurityAudit",
+			assetDiscoveryAttached = true
+			for _, policyARN := range h.assetDiscoveryAwsPolicyARNs {
+				policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
+				if !utils.Includes(policyARNs, policyARN) {
+					h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
+					assetDiscoveryAttached = false
 				}
 			}
 
-			securityAuditAttached := utils.Includes(policyNames, "SecurityAudit")
-			readOnlyAttached := utils.Includes(policyNames, "ReadOnlyAccess")
-			assetDiscoveryAttached = securityAuditAttached && readOnlyAttached
 			spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
-
-			for _, policyName := range awsCnf.HealthCheckPolicies {
-				if !utils.Includes(policyNames, policyName) {
-					h.logger.Error("policy is not there", zap.String("policyName", policyName), zap.Strings("attachedPolicies", policyNames))
-					isAttached = false
-				}
-			}
 
 			//TODO
 
@@ -101,11 +88,12 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 				return connection, err
 			}
 			if awsCnf.AccountID != connection.SourceId {
-				isAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
+				assetDiscoveryAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
 			} else {
-				isAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, "", kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
+				assetDiscoveryAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, "", kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
 			}
-			if err == nil && isAttached && updateMetadata {
+			spendAttached = assetDiscoveryAttached // backward compatibility
+			if err == nil && assetDiscoveryAttached && updateMetadata {
 				if sdkCnf.Region == "" {
 					sdkCnf.Region = "us-east-1"
 				}
@@ -144,16 +132,33 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			Username:            azureCnf.Username,
 			Password:            azureCnf.Password,
 		}
-		isAttached, err = kaytuAzure.CheckRole(authCnf, connection.SourceId, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
-		billingIsAttached, err2 := kaytuAzure.CheckRole(authCnf, connection.SourceId, kaytuAzure.DefaultBillingReaderRoleDefinitionIDTemplate)
-		if err2 == nil && billingIsAttached {
-			spendAttached = true
-		}
-		if err == nil && isAttached {
-			assetDiscoveryAttached = true
+		assetDiscoveryAttached = true
+		for _, ruleID := range h.assetDiscoveryAzureRoleIDs {
+			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
+			if err != nil {
+				return connection, err
+			}
+
+			if !isAttached {
+				h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+				assetDiscoveryAttached = false
+			}
 		}
 
-		if err == nil && isAttached && updateMetadata {
+		spendAttached = true
+		for _, ruleID := range h.spendDiscoveryAzureRoleIDs {
+			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
+			if err != nil {
+				return connection, err
+			}
+
+			if !isAttached {
+				h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+				spendAttached = false
+			}
+		}
+
+		if (assetDiscoveryAttached || spendAttached) && updateMetadata {
 			var azSub *azureSubscription
 			azSub, err = currentAzureSubscription(ctx, h.logger, connection.SourceId, authCnf)
 			if err != nil {
@@ -177,7 +182,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 	outputS, span := tracer.Start(ctx, "new_CreateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_CreateSource(loop)")
 
-	if !isAttached {
+	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
 		if err == nil {
 			healthMessage = "Failed to find read permission"

@@ -43,6 +43,7 @@ var (
 	HttpAddress     = os.Getenv("HTTP_ADDRESS")
 	MasterAccessKey = os.Getenv("MASTER_ACCESS_KEY")
 	MasterSecretKey = os.Getenv("MASTER_SECRET_KEY")
+	MetadataBaseUrl = os.Getenv("METADATA_BASE_URL")
 )
 
 func Command() *cobra.Command {
