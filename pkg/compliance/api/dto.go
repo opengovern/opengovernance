@@ -3,6 +3,7 @@ package api
 import (
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -72,6 +73,19 @@ type GetFindingsRequest struct {
 	Sort         map[string]string `json:"sort"`
 	Limit        int               `json:"limit" example:"100"`
 	AfterSortKey []any             `json:"afterSortKey"`
+}
+
+type GetSingleFindingRequest struct {
+	BenchmarkID     string `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID       string `json:"controlID" example:"azure_cis_v140_7_5"`
+	ConnectionID    string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	KaytuResourceID string `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID      string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+}
+
+type GetSingleResourceFindingResponse struct {
+	Resource        es.Resource
+	ControlFindings []Finding `json:"controls"`
 }
 
 type TopFieldRecord struct {

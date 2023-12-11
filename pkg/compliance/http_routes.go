@@ -5,25 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
-	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/labstack/echo/v4"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
-	"io"
-	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -31,17 +12,35 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/labstack/echo/v4"
 	openai "github.com/sashabaranov/go-openai"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"io"
+	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -92,6 +91,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
+	findings.POST("/resource/:kaytu_resource_id", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
@@ -231,7 +231,6 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	includedResourceTypes := make(map[string]struct{})
 	for _, h := range res {
 		finding := api.Finding{
 			Finding:                h.Source,
@@ -246,8 +245,6 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		if finding.Finding.ResourceType == "" {
 			finding.Finding.ResourceType = "Unknown"
 			finding.ResourceTypeName = "Unknown"
-		} else {
-			includedResourceTypes[finding.Finding.ResourceType] = struct{}{}
 		}
 
 		for _, parentBenchmark := range h.Source.ParentBenchmarks {
@@ -306,6 +303,140 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		if findingCount, ok := findingCountPerKaytuResourceIds[finding.KaytuResourceID]; ok {
 			response.Findings[i].NoOfOccurrences = findingCount
 		}
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetSingleResourceFinding godoc
+//
+//	@Summary		Get finding
+//	@Description	Retrieving a single finding
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.GetSingleResourceFindingResponse
+//	@Router			/compliance/api/v1/findings/resource/{kaytu_resource_id} [get]
+func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
+	kaytuResourceID := ctx.Param("kaytu_resource_id")
+	if kaytuResourceID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "kaytu_resource_id is required")
+	}
+
+	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(h.client, []string{kaytuResourceID})
+	if err != nil {
+		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
+		return err
+	}
+	if len(lookupResourceRes.Hits.Hits) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
+	}
+
+	lookupResource := lookupResourceRes.Hits.Hits[0].Source
+
+	resource, err := es.FetchResourceByResourceIdAndType(h.client, lookupResource.ResourceID, lookupResource.ResourceType)
+	if err != nil {
+		h.logger.Error("failed to fetch resource", zap.Error(err))
+		return err
+	}
+	if resource == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
+	}
+
+	response := api.GetSingleResourceFindingResponse{
+		Resource: *resource,
+	}
+
+	controlFindings, err := es.FetchFindingsPerControlForResourceId(h.logger, h.client, lookupResource.ResourceID)
+	if err != nil {
+		h.logger.Error("failed to fetch control findings", zap.Error(err))
+		return err
+	}
+
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		h.logger.Error("failed to get sources", zap.Error(err))
+		return err
+	}
+	allSourcesMap := make(map[string]*onboardApi.Connection)
+	for _, src := range allSources {
+		src := src
+		allSourcesMap[src.ID.String()] = &src
+	}
+
+	controls, err := h.db.ListControls()
+	if err != nil {
+		h.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	controlsMap := make(map[string]*db.Control)
+	for _, control := range controls {
+		control := control
+		controlsMap[control.ID] = &control
+	}
+
+	benchmarks, err := h.db.ListBenchmarksBare()
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarksMap := make(map[string]*db.Benchmark)
+	for _, benchmark := range benchmarks {
+		benchmark := benchmark
+		benchmarksMap[benchmark.ID] = &benchmark
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+	}
+
+	for _, controlFinding := range controlFindings {
+		controlFinding := controlFinding
+		controlFinding.ResourceName = lookupResource.Name
+		controlFinding.ResourceLocation = lookupResource.Location
+		finding := api.Finding{
+			Finding:                controlFinding,
+			ResourceTypeName:       "",
+			ParentBenchmarkNames:   nil,
+			ControlTitle:           "",
+			ProviderConnectionID:   "",
+			ProviderConnectionName: "",
+			NoOfOccurrences:        len(controlFindings),
+		}
+		if finding.Finding.ResourceType == "" {
+			finding.Finding.ResourceType = "Unknown"
+			finding.ResourceTypeName = "Unknown"
+		}
+
+		for _, parentBenchmark := range finding.ParentBenchmarks {
+			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
+				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
+			}
+		}
+
+		if src, ok := allSourcesMap[finding.Finding.ConnectionID]; ok {
+			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
+			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
+		}
+
+		if control, ok := controlsMap[finding.ControlID]; ok {
+			finding.ControlTitle = control.Title
+		}
+
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
+			finding.ResourceTypeName = rtMetadata.ResourceLabel
+		}
+
+		response.ControlFindings = append(response.ControlFindings, finding)
 	}
 
 	return ctx.JSON(http.StatusOK, response)
