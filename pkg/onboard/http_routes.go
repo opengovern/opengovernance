@@ -217,20 +217,20 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		acc.AccountName = &req.Name
 	}
 	// trace :
-	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_CountSources")
+	//outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
+	//span1.SetName("new_CountSources")
 
-	count, err := h.db.CountSources()
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span1.End()
+	//count, err := h.db.CountSources()
+	//if err != nil {
+	//	span1.RecordError(err)
+	//	span1.SetStatus(codes.Error, err.Error())
+	//	return err
+	//}
+	//span1.End()
 
-	if count >= httpserver2.GetMaxConnections(ctx) {
-		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	}
+	//if count >= httpserver2.GetMaxConnections(ctx) {
+	//	return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	//}
 
 	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
@@ -239,20 +239,10 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 	src.Credential.Secret = string(secretBytes)
 
-	// trace :
-	_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_CreateSource")
-
 	err = h.db.CreateSource(&src)
 	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span2.AddEvent("information", trace.WithAttributes(
-		attribute.String("source name", src.Name),
-	))
-	span2.End()
 
 	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
 		ID: src.ID,
@@ -275,14 +265,14 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	count, err := h.db.CountSources()
-	if err != nil {
-		return err
-	}
-
-	if count >= httpserver2.GetMaxConnections(ctx) {
-		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	}
+	//count, err := h.db.CountSources()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if count >= httpserver2.GetMaxConnections(ctx) {
+	//	return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	//}
 
 	sdkCnf, err := h.GetAWSSDKConfig(generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
 	if err != nil {
@@ -336,20 +326,20 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_CountSources")
+	//outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
+	//span1.SetName("new_CountSources")
 
-	count, err := h.db.CountSources()
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span1.End()
-
-	if count >= httpserver2.GetMaxConnections(ctx) {
-		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	}
+	//count, err := h.db.CountSources()
+	//if err != nil {
+	//	span1.RecordError(err)
+	//	span1.SetStatus(codes.Error, err.Error())
+	//	return err
+	//}
+	//span1.End()
+	//
+	//if count >= httpserver2.GetMaxConnections(ctx) {
+	//	return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	//}
 
 	isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
@@ -394,19 +384,19 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 	src.Credential.Secret = string(secretBytes)
 	// trace :
-	_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_CreateSource")
+	//_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
+	//span2.SetName("new_CreateSource")
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
+		//span2.RecordError(err)
+		//span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span2.AddEvent("information", trace.WithAttributes(
-		attribute.String("source name ", src.Name),
-	))
-	span2.End()
+	//span2.AddEvent("information", trace.WithAttributes(
+	//	attribute.String("source name ", src.Name),
+	//))
+	//span2.End()
 
 	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
 		ID: src.ID,
@@ -1259,7 +1249,8 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	))
 	span.End()
 
-	maxConns := httpserver2.GetMaxConnections(ctx)
+	//maxConns := httpserver2.GetMaxConnections(ctx)
+	maxConns := int64(9999)
 
 	onboardedSources := make([]api.Connection, 0)
 	switch credential.ConnectorType {
