@@ -865,6 +865,9 @@ definitions:
       kaytuResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
+      noOfOccurrences:
+        example: 1
+        type: integer
       parentBenchmarkNames:
         example:
         - Azure CIS v1.4.0
@@ -2132,6 +2135,10 @@ definitions:
     - compliance_job_interval
     - data_retention_duration
     - analytics_git_url
+    - asset_discovery_aws_policy_arns
+    - spend_discovery_aws_policy_arns
+    - asset_discovery_azure_role_ids
+    - spend_discovery_azure_role_ids
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -2163,6 +2170,10 @@ definitions:
     - MetadataKeyComplianceJobInterval
     - MetadataKeyDataRetention
     - MetadataKeyAnalyticsGitURL
+    - MetadataKeyAssetDiscoveryAWSPolicyARNs
+    - MetadataKeySpendDiscoveryAWSPolicyARNs
+    - MetadataKeyAssetDiscoveryAzureRoleIDs
+    - MetadataKeySpendDiscoveryAzureRoleIDs
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
     properties:
       accessKey:

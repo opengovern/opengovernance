@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -239,6 +240,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			ControlTitle:           "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
+			NoOfOccurrences:        1,
 			SortKey:                h.Sort,
 		}
 		if finding.Finding.ResourceType == "" {
@@ -270,6 +272,41 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
+
+	kaytuResourceIds := make([]string, 0, len(response.Findings))
+	for _, finding := range response.Findings {
+		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
+	}
+
+	lookupResources, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
+	if err != nil {
+		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
+		return err
+	}
+
+	lookupResourcesMap := make(map[string]*es2.LookupResource)
+	for _, r := range lookupResources.Hits.Hits {
+		r := r
+		lookupResourcesMap[r.Source.ResourceID] = &r.Source
+	}
+
+	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds)
+
+	for i, finding := range response.Findings {
+		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {
+			response.Findings[i].ResourceName = lookupResource.Name
+			response.Findings[i].ResourceLocation = lookupResource.Location
+		} else {
+			h.logger.Warn("lookup resource not found",
+				zap.String("kaytu_resource_id", finding.KaytuResourceID),
+				zap.String("resource_id", finding.ResourceID),
+				zap.String("controlId", finding.ControlID),
+			)
+		}
+		if findingCount, ok := findingCountPerKaytuResourceIds[finding.KaytuResourceID]; ok {
+			response.Findings[i].NoOfOccurrences = findingCount
+		}
+	}
 
 	return ctx.JSON(http.StatusOK, response)
 }

@@ -3,7 +3,6 @@ package es
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"go.uber.org/zap"
 	"sort"
@@ -634,37 +633,39 @@ func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
 	return &resp, err
 }
 
-type LiveBenchmarkAggregatedFindingsQueryResponse struct {
+type FindingCountPerKaytuResourceIdsResponse struct {
 	Aggregations struct {
-		ControlGroup struct {
+		KaytuResourceIDGroup struct {
 			Buckets []struct {
-				Key         string `json:"key"`
-				ResultGroup struct {
-					Buckets []struct {
-						Key      string `json:"key"`
-						DocCount int64  `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"result_group"`
+				Key      string `json:"key"`
+				DocCount int    `json:"doc_count"`
 			} `json:"buckets"`
-		} `json:"control_group"`
+		} `json:"kaytu_resource_id_group"`
 	} `json:"aggregations"`
 }
 
-func FetchLiveBenchmarkAggregatedFindings(client kaytu.Client, benchmarkID *string, connectionIds []string) (map[string]map[types.ComplianceResult]int, error) {
-	var filters []any
+func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Client, kaytuResourceIds []string) (map[string]int, error) {
+	var filters []map[string]any
 
-	if benchmarkID != nil {
-		filters = append(filters, map[string]any{
-			"term": map[string]string{"benchmarkID": *benchmarkID},
-		})
-	}
-	if len(connectionIds) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connectionID": connectionIds},
-		})
+	if len(kaytuResourceIds) == 0 {
+		return map[string]int{}, nil
 	}
 
-	queryObj := map[string]any{
+	filters = append(filters, map[string]any{
+		"terms": map[string]any{
+			"kaytuResourceID": kaytuResourceIds,
+		},
+	})
+
+	request := map[string]any{
+		"aggs": map[string]any{
+			"kaytu_resource_id_group": map[string]any{
+				"terms": map[string]any{
+					"field": "kaytuResourceID",
+					"size":  len(kaytuResourceIds),
+				},
+			},
+		},
 		"query": map[string]any{
 			"bool": map[string]any{
 				"filter": filters,
@@ -672,36 +673,23 @@ func FetchLiveBenchmarkAggregatedFindings(client kaytu.Client, benchmarkID *stri
 		},
 		"size": 0,
 	}
-	queryObj["aggs"] = map[string]any{
-		"control_group": map[string]any{
-			"terms": map[string]string{"field": "controlID"},
-			"aggs": map[string]any{
-				"result_group": map[string]any{
-					"terms": map[string]string{"field": "result"},
-				},
-			},
-		},
-	}
 
-	query, err := json.Marshal(queryObj)
+	queryBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("query=", string(query), "index=", types.FindingsIndex)
-
-	var response LiveBenchmarkAggregatedFindingsQueryResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(query), &response)
+	logger.Info("FetchFindingCountPerKaytuResourceIds", zap.String("query", string(queryBytes)))
+	var resp FindingCountPerKaytuResourceIdsResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make(map[string]map[types.ComplianceResult]int)
-	for _, controlBucket := range response.Aggregations.ControlGroup.Buckets {
-		result[controlBucket.Key] = make(map[types.ComplianceResult]int)
-		for _, resultBucket := range controlBucket.ResultGroup.Buckets {
-			result[controlBucket.Key][types.ComplianceResult(resultBucket.Key)] = int(resultBucket.DocCount)
-		}
+	result := make(map[string]int)
+	for _, bucket := range resp.Aggregations.KaytuResourceIDGroup.Buckets {
+		result[bucket.Key] = bucket.DocCount
 	}
+
 	return result, nil
 }
