@@ -41,7 +41,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		Port:    conf.PostgreSQL.Port,
 		User:    conf.PostgreSQL.Username,
 		Passwd:  conf.PostgreSQL.Password,
-		DB:      "onboard",
+		DB:      "inventory",
 		SSLMode: conf.PostgreSQL.SSLMode,
 	}, logger)
 	if err != nil {

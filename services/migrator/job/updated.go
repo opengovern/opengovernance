@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -59,7 +60,7 @@ func (w *Job) UpdateMigration(name string, mig types.Migration) error {
 func (w *Job) FindFilesHashes(mig types.Migration) (string, error) {
 	var fileHashes []types.FileHash
 	err := filepath.Walk(mig.AttachmentFolderPath(), func(path string, info fs.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
+		if info == nil || info.IsDir() || strings.HasPrefix(info.Name(), ".") {
 			return nil
 		}
 
