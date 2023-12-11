@@ -164,7 +164,13 @@ func (b *BenchmarkSummary) AddFinding(logger *zap.Logger,
 
 	if resource == nil {
 		logger.Warn("no resource found ignoring resource collection population for this finding",
-			zap.String("kaytuResourceId", finding.KaytuResourceID))
+			zap.String("kaytuResourceId", finding.KaytuResourceID),
+			zap.String("resourceId", finding.ResourceID),
+			zap.String("resourceType", finding.ResourceType),
+			zap.String("connectionId", finding.ConnectionID),
+			zap.String("benchmarkId", finding.BenchmarkID),
+			zap.String("controlId", finding.ControlID),
+		)
 		return
 	}
 
