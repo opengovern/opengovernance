@@ -2,8 +2,9 @@ package onboard
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/db"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
@@ -11,17 +12,32 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func Run(logger *zap.Logger, conf postgres.Config, folder string) error {
-	conf.DB = "onboard"
-	orm, err := postgres.NewClient(&conf, logger)
+type Migration struct {
+}
+
+func (m Migration) IsGitBased() bool {
+	return true
+}
+func (m Migration) AttachmentFolderPath() string {
+	return config.ConnectionGroupGitPath
+}
+
+func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	orm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "onboard",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
 	if err != nil {
-		logger.Error("failed to create postgres client", zap.Error(err))
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 	dbm := db.Database{ORM: orm}
 
 	parser := GitParser{}
-	err = parser.ExtractConnectionGroups(folder)
+	err = parser.ExtractConnectionGroups(m.AttachmentFolderPath())
 	if err != nil {
 		return err
 	}

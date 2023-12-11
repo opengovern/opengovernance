@@ -1,4 +1,4 @@
-package inventory
+package resource_collection
 
 import (
 	"encoding/json"

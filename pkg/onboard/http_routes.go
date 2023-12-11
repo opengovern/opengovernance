@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"go.opentelemetry.io/otel"
@@ -170,6 +171,22 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+func (h HttpHandler) CheckMaxConnections(additionCount int64) error {
+	count, err := h.db.CountSources()
+	if err != nil {
+		return err
+	}
+	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.InternalRole}, models.MetadataKeyConnectionLimit)
+	if err != nil {
+		return err
+	}
+	maxConnections := cnf.GetValue().(int64)
+	if count+additionCount > maxConnections {
+		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+	}
+	return nil
+}
+
 // PostSourceAws godoc
 //
 //	@Summary		Create AWS source
@@ -216,21 +233,11 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if req.Name != "" {
 		acc.AccountName = &req.Name
 	}
-	// trace :
-	//outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
-	//span1.SetName("new_CountSources")
 
-	//count, err := h.db.CountSources()
-	//if err != nil {
-	//	span1.RecordError(err)
-	//	span1.SetStatus(codes.Error, err.Error())
-	//	return err
-	//}
-	//span1.End()
-
-	//if count >= httpserver2.GetMaxConnections(ctx) {
-	//	return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	//}
+	err = h.CheckMaxConnections(1)
+	if err != nil {
+		return err
+	}
 
 	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
@@ -265,14 +272,10 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	//count, err := h.db.CountSources()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if count >= httpserver2.GetMaxConnections(ctx) {
-	//	return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	//}
+	err := h.CheckMaxConnections(1)
+	if err != nil {
+		return err
+	}
 
 	sdkCnf, err := h.GetAWSSDKConfig(generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
 	if err != nil {
@@ -325,21 +328,11 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	// trace :
-	//outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
-	//span1.SetName("new_CountSources")
 
-	//count, err := h.db.CountSources()
-	//if err != nil {
-	//	span1.RecordError(err)
-	//	span1.SetStatus(codes.Error, err.Error())
-	//	return err
-	//}
-	//span1.End()
-	//
-	//if count >= httpserver2.GetMaxConnections(ctx) {
-	//	return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-	//}
+	err := h.CheckMaxConnections(1)
+	if err != nil {
+		return err
+	}
 
 	isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
@@ -1249,13 +1242,16 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	))
 	span.End()
 
-	//maxConns := httpserver2.GetMaxConnections(ctx)
-	maxConns := int64(9999)
+	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.InternalRole}, models.MetadataKeyConnectionLimit)
+	if err != nil {
+		return err
+	}
+	maxConnections := cnf.GetValue().(int64)
 
 	onboardedSources := make([]api.Connection, 0)
 	switch credential.ConnectorType {
 	case source.CloudAzure:
-		onboardedSources, err = h.autoOnboardAzureSubscriptions(ctx.Request().Context(), *credential, maxConns)
+		onboardedSources, err = h.autoOnboardAzureSubscriptions(ctx.Request().Context(), *credential, maxConnections)
 		if err != nil {
 			return err
 		}
@@ -1273,7 +1269,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		}
 	case source.CloudAWS:
 		if credential.Version == 2 {
-			onboardedSources, err = h.autoOnboardAWSAccountsV2(ctx.Request().Context(), *credential, maxConns)
+			onboardedSources, err = h.autoOnboardAWSAccountsV2(ctx.Request().Context(), *credential, maxConnections)
 			if err != nil {
 				return err
 			}
@@ -1290,7 +1286,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				}
 			}
 		} else {
-			onboardedSources, err = h.autoOnboardAWSAccounts(ctx.Request().Context(), *credential, maxConns)
+			onboardedSources, err = h.autoOnboardAWSAccounts(ctx.Request().Context(), *credential, maxConnections)
 			if err != nil {
 				return err
 			}

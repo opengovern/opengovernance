@@ -1,4 +1,4 @@
-package internal
+package config
 
 const (
 	AnalyticsGitPath          = "/tmp/loader-analytics-git"
@@ -6,6 +6,7 @@ const (
 	QueriesGitPath            = AnalyticsGitPath + "/cloud-infrastructure-queries"
 	InsightsGitPath           = AnalyticsGitPath + "/insights"
 	ResourceCollectionGitPath = AnalyticsGitPath + "/resource-collections"
+	ConnectionGroupGitPath    = AnalyticsGitPath + "/connection_groups"
 )
 
 const (

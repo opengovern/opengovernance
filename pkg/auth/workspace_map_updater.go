@@ -17,10 +17,10 @@ func (s *Server) WorkspaceMapUpdater() {
 	}()
 
 	for {
-		time.Sleep(5 * time.Minute)
 		if err := s.updateWorkspaceMap(); err != nil {
 			s.logger.Error("failure while updating workspace map", zap.Error(err))
 		}
+		time.Sleep(5 * time.Minute)
 	}
 }
 

@@ -4,30 +4,45 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/db"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm/clause"
 	"os"
 )
 
-func Run(conf postgres.Config, logger *zap.Logger, wsFolder string) error {
-	if err := OnboardMigration(conf, logger, wsFolder+"/onboard.json"); err != nil {
+type Migration struct {
+}
+
+func (m Migration) AttachmentFolderPath() string {
+	return "/workspace-migration"
+}
+
+func (m Migration) IsGitBased() bool {
+	return false
+}
+
+func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	if err := OnboardMigration(conf, logger, m.AttachmentFolderPath()+"/onboard.json"); err != nil {
 		return err
 	}
-	if err := MetadataMigration(conf, logger, wsFolder+"/metadata.json"); err != nil {
-		return err
-	}
-	if err := InventoryMigration(conf, logger, wsFolder+"/inventory.json"); err != nil {
+	if err := MetadataMigration(conf, logger, m.AttachmentFolderPath()+"/metadata.json"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func OnboardMigration(conf postgres.Config, logger *zap.Logger, onboardFilePath string) error {
-	conf.DB = "onboard"
-	orm, err := postgres.NewClient(&conf, logger)
+func OnboardMigration(conf config.MigratorConfig, logger *zap.Logger, onboardFilePath string) error {
+	orm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "onboard",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
 	if err != nil {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
@@ -58,9 +73,15 @@ func OnboardMigration(conf postgres.Config, logger *zap.Logger, onboardFilePath 
 	return nil
 }
 
-func MetadataMigration(conf postgres.Config, logger *zap.Logger, metadataFilePath string) error {
-	conf.DB = "metadata"
-	orm, err := postgres.NewClient(&conf, logger)
+func MetadataMigration(conf config.MigratorConfig, logger *zap.Logger, metadataFilePath string) error {
+	orm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "metadata",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
 	if err != nil {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
@@ -85,9 +106,5 @@ func MetadataMigration(conf postgres.Config, logger *zap.Logger, metadataFilePat
 			return err
 		}
 	}
-	return nil
-}
-
-func InventoryMigration(conf postgres.Config, logger *zap.Logger, onboardFilePath string) error {
 	return nil
 }
