@@ -15,6 +15,7 @@ type AuthServiceClient interface {
 	GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceID string) (api.GetWorkspaceRoleBindingResponse, error)
 	GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBindingsResponse, error)
 	ListAPIKeys(ctx *httpclient.Context, workspaceID string) ([]api.WorkspaceApiKey, error)
+	UpdateWorkspaceMap(ctx *httpclient.Context) error
 }
 
 type authClient struct {
@@ -37,13 +38,10 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 	}
 
 	headers := map[string]string{
-		httpserver.XKaytuUserIDHeader:         ctx.UserID,
-		httpserver.XKaytuUserRoleHeader:       string(ctx.UserRole),
-		httpserver.XKaytuWorkspaceNameHeader:  ctx.WorkspaceName,
-		httpserver.XKaytuWorkspaceIDHeader:    ctx.WorkspaceID,
-		httpserver.XKaytuMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
-		httpserver.XKaytuMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
-		httpserver.XKaytuMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
+		httpserver.XKaytuUserIDHeader:        ctx.UserID,
+		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
+		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
 	}
 	_, res := httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
 	return res
@@ -56,10 +54,6 @@ func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspace
 		httpserver.XKaytuUserIDHeader:      ctx.UserID,
 		httpserver.XKaytuUserRoleHeader:    string(ctx.UserRole),
 		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
-
-		httpserver.XKaytuMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
-		httpserver.XKaytuMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
-		httpserver.XKaytuMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response api.GetWorkspaceRoleBindingResponse
 	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
@@ -73,10 +67,6 @@ func (c *authClient) ListAPIKeys(ctx *httpclient.Context, workspaceID string) ([
 		httpserver.XKaytuUserIDHeader:      ctx.UserID,
 		httpserver.XKaytuUserRoleHeader:    string(ctx.UserRole),
 		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
-
-		httpserver.XKaytuMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
-		httpserver.XKaytuMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
-		httpserver.XKaytuMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response []api.WorkspaceApiKey
 	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
@@ -91,12 +81,21 @@ func (c *authClient) GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBi
 		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
 		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
-
-		httpserver.XKaytuMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
-		httpserver.XKaytuMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
-		httpserver.XKaytuMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response api.GetRoleBindingsResponse
 	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
 	return response, err
+}
+
+func (c *authClient) UpdateWorkspaceMap(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/api/v1/workspace-map/update", c.baseURL)
+
+	headers := map[string]string{
+		httpserver.XKaytuUserIDHeader:        ctx.UserID,
+		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
+		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
+	}
+	_, err := httpclient.DoRequest(http.MethodPost, url, headers, nil, nil)
+	return err
 }

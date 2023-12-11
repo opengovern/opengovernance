@@ -3,7 +3,6 @@ package httpserver
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -15,10 +14,6 @@ const (
 	XKaytuWorkspaceNameHeader = "X-Kaytu-WorkspaceName"
 	XKaytuUserIDHeader        = "X-Kaytu-UserId"
 	XKaytuUserRoleHeader      = "X-Kaytu-UserRole"
-
-	XKaytuMaxUsersHeader       = "X-Kaytu-MaxUsers"
-	XKaytuMaxConnectionsHeader = "X-Kaytu-MaxConnections"
-	XKaytuMaxResourcesHeader   = "X-Kaytu-MaxResources"
 )
 
 func AuthorizeHandler(h echo.HandlerFunc, minRole api.Role) echo.HandlerFunc {
@@ -75,45 +70,6 @@ func GetUserID(ctx echo.Context) string {
 	}
 
 	return id
-}
-
-func GetMaxUsers(ctx echo.Context) int64 {
-	max := ctx.Request().Header.Get(XKaytuMaxUsersHeader)
-	if strings.TrimSpace(max) == "" {
-		panic(fmt.Errorf("header %s is missing", XKaytuMaxUsersHeader))
-	}
-
-	c, err := strconv.ParseInt(max, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return c
-}
-
-func GetMaxConnections(ctx echo.Context) int64 {
-	max := ctx.Request().Header.Get(XKaytuMaxConnectionsHeader)
-	if strings.TrimSpace(max) == "" {
-		panic(fmt.Errorf("header %s is missing", XKaytuMaxConnectionsHeader))
-	}
-
-	c, err := strconv.ParseInt(max, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return c
-}
-
-func GetMaxResources(ctx echo.Context) int64 {
-	max := ctx.Request().Header.Get(XKaytuMaxResourcesHeader)
-	if strings.TrimSpace(max) == "" {
-		panic(fmt.Errorf("header %s is missing", XKaytuMaxResourcesHeader))
-	}
-
-	c, err := strconv.ParseInt(max, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return c
 }
 
 func roleToPriority(role api.Role) int {

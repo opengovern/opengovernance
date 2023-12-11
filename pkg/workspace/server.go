@@ -343,6 +343,11 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
+	err = s.authClient.UpdateWorkspaceMap(&httpclient.Context{UserRole: authapi.InternalRole})
+	if err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusOK, api.CreateWorkspaceResponse{
 		ID: workspace.ID,
 	})

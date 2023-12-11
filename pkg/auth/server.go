@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -40,9 +41,20 @@ type Server struct {
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
 	cache           *cache.Cache
+
+	workspaceIDNameMap map[string]string
+	mapLock            sync.RWMutex
 }
 
-func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
+func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, bool) {
+	s.mapLock.RLock()
+	defer s.mapLock.RUnlock()
+
+	v, ok := s.workspaceIDNameMap[workspaceName]
+	return v, ok
+}
+
+func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
 	unAuth := &envoyauth.CheckResponse{
 		Status: &status.Status{
 			Code: int32(rpc.UNAUTHENTICATED),
@@ -87,7 +99,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		workspaceName = headerWorkspace
 	}
 
-	rb, limits, err := s.GetWorkspaceByName(workspaceName, user)
+	rb, err := s.GetWorkspaceByName(workspaceName, user)
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
 			zap.String("reqId", httpRequest.Id),
@@ -130,31 +142,13 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 							Value: string(rb.RoleName),
 						},
 					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuMaxUsersHeader,
-							Value: fmt.Sprintf("%d", limits.MaxUsers),
-						},
-					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuMaxConnectionsHeader,
-							Value: fmt.Sprintf("%d", limits.MaxConnections),
-						},
-					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuMaxResourcesHeader,
-							Value: fmt.Sprintf("%d", limits.MaxResources),
-						},
-					},
 				},
 			},
 		},
 	}, nil
 }
 
-func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string, ignoreUsage bool) (api2.WorkspaceLimitsUsage, error) {
+func (s *Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string, ignoreUsage bool) (api2.WorkspaceLimitsUsage, error) {
 	key := "cache-limits-" + workspaceName
 
 	var res api2.WorkspaceLimitsUsage
@@ -193,7 +187,7 @@ func (u userClaim) Valid() error {
 	return nil
 }
 
-func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error) {
+func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, error) {
 	if !strings.HasPrefix(authToken, "Bearer ") {
 		return nil, errors.New("invalid authorization token")
 	}
@@ -232,13 +226,12 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 	return nil, err
 }
 
-func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.RoleBinding, api2.WorkspaceLimitsUsage, error) {
+func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.RoleBinding, error) {
 	var rb api.RoleBinding
 	var limits api2.WorkspaceLimitsUsage
-	var err error
 
 	if user.ExternalUserID == api.GodUserID {
-		return api.RoleBinding{}, api2.WorkspaceLimitsUsage{}, errors.New("claiming to be god is banned")
+		return api.RoleBinding{}, errors.New("claiming to be god is banned")
 	}
 
 	rb = api.RoleBinding{
@@ -249,25 +242,25 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 	}
 
 	if workspaceName != "kaytu" {
-		limits, err = s.GetWorkspaceLimits(rb, workspaceName, true)
-		if err != nil {
-			return rb, limits, err
+		workspaceID, ok := s.GetWorkspaceIDByName(workspaceName)
+		if !ok {
+			return rb, fmt.Errorf("workspace does not exists: %s", workspaceName)
 		}
 
 		rb.UserID = user.ExternalUserID
 		rb.WorkspaceName = workspaceName
-		rb.WorkspaceID = limits.ID
+		rb.WorkspaceID = workspaceID
 
-		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
+		if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
 			rb.RoleName = rl
 		} else if user.GlobalAccess != nil {
 			rb.RoleName = *user.GlobalAccess
 		} else {
-			return rb, limits, fmt.Errorf("access denied: %s", limits.ID)
+			return rb, fmt.Errorf("access denied: %s", limits.ID)
 		}
 	}
 
-	return rb, limits, nil
+	return rb, nil
 }
 
 func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*oidc.IDTokenVerifier, error) {

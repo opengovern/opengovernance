@@ -146,14 +146,17 @@ func start(ctx context.Context) error {
 		panic(err)
 	}
 
-	authServer := Server{
-		host:            kaytuHost,
-		kaytuPublicKey:  pub.(*rsa.PublicKey),
-		verifier:        verifier,
-		verifierNative:  verifierNative,
-		logger:          logger,
-		workspaceClient: workspaceClient,
+	authServer := &Server{
+		host:               kaytuHost,
+		kaytuPublicKey:     pub.(*rsa.PublicKey),
+		verifier:           verifier,
+		verifierNative:     verifierNative,
+		logger:             logger,
+		workspaceClient:    workspaceClient,
+		workspaceIDNameMap: map[string]string{},
 	}
+	go authServer.WorkspaceMapUpdater()
+
 	authServer.cache = cache.New(&cache.Options{
 		Redis:      rdb,
 		LocalCache: cache.NewTinyLFU(10000, 5*time.Minute),
@@ -211,6 +214,7 @@ func start(ctx context.Context) error {
 			auth0Service:    auth0Service,
 			kaytuPrivateKey: pri.(*rsa.PrivateKey),
 			db:              adb,
+			authServer:      authServer,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
