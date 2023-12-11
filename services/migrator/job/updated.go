@@ -3,17 +3,32 @@ package job
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/job/types"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 )
 
 func (w *Job) CheckIfUpdateIsNeeded(name string, mig types.Migration) (bool, error) {
 	m, err := w.db.GetMigration(name)
 	if err != nil {
 		return false, err
+	}
+
+	if m == nil {
+		m = &model.Migration{
+			ID:             name,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			AdditionalInfo: "",
+		}
+		err = w.db.CreateMigration(m)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	if mig.IsGitBased() {

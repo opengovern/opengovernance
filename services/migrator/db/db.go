@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/db/model"
 	"gorm.io/gorm"
 )
@@ -24,6 +25,9 @@ func (db Database) GetMigration(id string) (*model.Migration, error) {
 	var mig model.Migration
 	tx := db.ORM.Model(&model.Migration{}).Where("id = ?", id).First(&mig)
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	}
 	if tx.RowsAffected == 0 {
@@ -34,6 +38,14 @@ func (db Database) GetMigration(id string) (*model.Migration, error) {
 
 func (db Database) UpdateMigrationAdditionalInfo(id string, additionalInfo string) error {
 	tx := db.ORM.Model(&model.Migration{}).Where("id = ?", id).Update("additional_info", additionalInfo)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) CreateMigration(m *model.Migration) error {
+	tx := db.ORM.Model(&model.Migration{}).Create(m)
 	if tx.Error != nil {
 		return tx.Error
 	}
