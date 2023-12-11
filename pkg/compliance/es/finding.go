@@ -693,3 +693,74 @@ func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Clien
 
 	return result, nil
 }
+
+type FindingsPerControlForResourceIdResponse struct {
+	Aggregations struct {
+		ControlIDGroup struct {
+			Buckets []struct {
+				Key       string `json:"key"`
+				HitSelect struct {
+					Hits struct {
+						Hits []struct {
+							Source types.Finding `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"hit_select"`
+			} `json:"buckets"`
+		} `json:"control_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchFindingsPerControlForResourceId(logger *zap.Logger, client kaytu.Client, kaytuResourceId string) ([]types.Finding, error) {
+	request := map[string]any{
+		"aggs": map[string]any{
+			"control_id_group": map[string]any{
+				"terms": map[string]any{
+					"field": "controlID",
+					"size":  10000,
+				},
+				"aggs": map[string]any{
+					"hit_select": map[string]any{
+						"top_hits": map[string]any{
+							"sort": map[string]any{
+								"parentComplianceJobID": "desc",
+							},
+							"size": 1,
+						},
+					},
+				},
+			},
+		},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": map[string]any{
+					"term": map[string]any{
+						"kaytuResourceID": kaytuResourceId,
+					},
+				},
+			},
+		},
+		"size": 0,
+	}
+
+	queryBytes, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("FetchFindingsPerControlForResourceId", zap.String("query", string(queryBytes)))
+	var resp FindingsPerControlForResourceIdResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var findings []types.Finding
+	for _, bucket := range resp.Aggregations.ControlIDGroup.Buckets {
+		for _, hit := range bucket.HitSelect.Hits.Hits {
+			findings = append(findings, hit.Source)
+		}
+	}
+
+	return findings, nil
+}

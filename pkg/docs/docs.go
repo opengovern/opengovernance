@@ -1531,6 +1531,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/findings/resource/{kaytu_resource_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving a single finding",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get finding",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings/{benchmarkId}/accounts": {
             "get": {
                 "security": [
@@ -6363,6 +6391,97 @@ const docTemplate = `{
                 "message": {}
             }
         },
+        "es.Resource": {
+            "type": "object",
+            "properties": {
+                "arn": {
+                    "description": "ID is the globally unique ID of the resource.",
+                    "type": "string"
+                },
+                "canonical_tags": {
+                    "description": "Tags is the list of tags associated with the resource",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/es.Tag"
+                    }
+                },
+                "created_at": {
+                    "description": "CreatedAt is when the DescribeSourceJob is created",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "Description is the description of the resource based on the describe call."
+                },
+                "es_id": {
+                    "type": "string"
+                },
+                "es_index": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the globally unique ID of the resource.",
+                    "type": "string"
+                },
+                "location": {
+                    "description": "Location is location/region of the resource",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "Metadata is arbitrary data associated with each resource",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "Name is the name of the resource.",
+                    "type": "string"
+                },
+                "resource_group": {
+                    "description": "ResourceGroup is the group of resource (Azure only)",
+                    "type": "string"
+                },
+                "resource_job_id": {
+                    "description": "ResourceJobID is the DescribeResourceJob ID that described this resource",
+                    "type": "integer"
+                },
+                "resource_type": {
+                    "description": "ResourceType is the type of the resource.",
+                    "type": "string"
+                },
+                "schedule_job_id": {
+                    "description": "ScheduleJobID",
+                    "type": "integer"
+                },
+                "source_id": {
+                    "description": "SourceID is the Source ID that the resource belongs to",
+                    "type": "string"
+                },
+                "source_job_id": {
+                    "description": "SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for",
+                    "type": "integer"
+                },
+                "source_type": {
+                    "description": "SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
+                }
+            }
+        },
+        "es.Tag": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action": {
             "type": "object",
             "properties": {
@@ -7915,6 +8034,20 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary"
                     }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse": {
+            "type": "object",
+            "properties": {
+                "controls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding"
+                    }
+                },
+                "resource": {
+                    "$ref": "#/definitions/es.Resource"
                 }
             }
         },
