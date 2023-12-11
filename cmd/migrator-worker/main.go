@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/migrator"
 	"os"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator"
 )
 
 func main() {
-	if err := migrator.WorkerCommand().Execute(); err != nil {
+	if err := migrator.Command().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

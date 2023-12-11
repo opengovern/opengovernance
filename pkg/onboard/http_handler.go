@@ -30,6 +30,7 @@ type HttpHandler struct {
 	awsPermissionCheckURL            string
 	inventoryClient                  inventory.InventoryServiceClient
 	describeClient                   describeClient.SchedulerServiceClient
+	metadataClient                   metadataClient.MetadataServiceClient
 	validator                        *validator.Validate
 	keyARN                           string
 	logger                           *zap.Logger
@@ -150,5 +151,6 @@ func InitializeHttpHandler(
 		spendDiscoveryAwsPolicyARNs: strings.Split(awsSpendDiscovery.GetValue().(string), ","),
 		assetDiscoveryAzureRoleIDs:  strings.Split(azureAssetDiscovery.GetValue().(string), ","),
 		spendDiscoveryAzureRoleIDs:  strings.Split(azureSpendDiscovery.GetValue().(string), ","),
+		metadataClient:              meta,
 	}, nil
 }

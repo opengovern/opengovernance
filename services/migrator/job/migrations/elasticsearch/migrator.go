@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 	"io/fs"
@@ -11,9 +12,31 @@ import (
 	"time"
 )
 
-func Run(es kaytu.Client, logger *zap.Logger, esFolder string) error {
+type Migration struct {
+}
+
+func (m Migration) IsGitBased() bool {
+	return false
+}
+
+func (m Migration) AttachmentFolderPath() string {
+	return "/elasticsearch-index-config"
+}
+
+func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	elastic, err := kaytu.NewClient(kaytu.ClientConfig{
+		Addresses:    []string{conf.ElasticSearch.Address},
+		Username:     &conf.ElasticSearch.Username,
+		Password:     &conf.ElasticSearch.Password,
+		IsOpenSearch: &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:    &conf.ElasticSearch.AwsRegion,
+	})
+	if err != nil {
+		return err
+	}
+
 	for {
-		err := es.Healthcheck(context.TODO())
+		err := elastic.Healthcheck(context.TODO())
 		if err != nil {
 			if err.Error() == "unhealthy" {
 				logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
@@ -27,7 +50,7 @@ func Run(es kaytu.Client, logger *zap.Logger, esFolder string) error {
 	logger.Warn("Starting es migration")
 
 	var files []string
-	err := filepath.Walk(esFolder, func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(m.AttachmentFolderPath(), func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(info.Name(), ".json") {
 			files = append(files, path)
 		}
@@ -38,7 +61,7 @@ func Run(es kaytu.Client, logger *zap.Logger, esFolder string) error {
 	}
 
 	for _, fp := range files {
-		err = CreateTemplate(es, logger, fp)
+		err = CreateTemplate(elastic, logger, fp)
 		if err != nil {
 			logger.Error("failed to create template", zap.Error(err), zap.String("filepath", fp))
 		}

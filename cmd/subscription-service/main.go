@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	if err := subscription.SubscriptionServiceCommand().Execute(); err != nil {
+	if err := subscription.Command().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

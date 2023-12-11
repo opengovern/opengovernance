@@ -2,29 +2,54 @@ package compliance
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
+type Migration struct {
+}
+
+func (m Migration) IsGitBased() bool {
+	return true
+}
+
+func (m Migration) AttachmentFolderPath() string {
+	return ""
+}
+
+func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	orm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "compliance",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+	dbm := db.Database{Orm: orm}
+
 	p := GitParser{}
-	if err := p.ExtractQueries(internal.QueriesGitPath); err != nil {
+	if err := p.ExtractQueries(config.QueriesGitPath); err != nil {
 		logger.Error("failed to extract queries", zap.Error(err))
 		return err
 	}
 	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
-	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
+	if err := p.ExtractCompliance(config.ComplianceGitPath); err != nil {
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
 		return err
 	}
 	logger.Info("extracted controls and benchmarks", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)))
 
 	loadedQueries := make(map[string]bool)
-	err := dbc.Transaction(func(tx *gorm.DB) error {
+	err = dbm.Orm.Transaction(func(tx *gorm.DB) error {
 		for _, obj := range p.queries {
 			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
@@ -51,7 +76,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	}
 
 	missingQueries := make(map[string]bool)
-	err = dbc.Transaction(func(tx *gorm.DB) error {
+	err = dbm.Orm.Transaction(func(tx *gorm.DB) error {
 		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
 		tx.Model(&db.BenchmarkControls{}).Where("1=1").Unscoped().Delete(&db.BenchmarkControls{})
 		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})

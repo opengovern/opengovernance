@@ -6,7 +6,7 @@ import (
 	"fmt"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
@@ -19,17 +19,33 @@ import (
 	"strings"
 )
 
-func PopulateDatabase(logger *zap.Logger, conf postgres.Config) error {
-	conf.DB = "inventory"
-	orm, err := postgres.NewClient(&conf, logger)
+type Migration struct {
+}
+
+func (m Migration) IsGitBased() bool {
+	return true
+}
+
+func (m Migration) AttachmentFolderPath() string {
+	return ""
+}
+
+func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	orm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "inventory",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
 	if err != nil {
-		logger.Error("failed to create postgres client", zap.Error(err))
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	err = filepath.Walk(internal.AnalyticsGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.AnalyticsGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateItem(logger, orm, path, info, true)
+			return populateItem(logger, orm, path, info, true)
 		}
 		return nil
 	})
@@ -37,9 +53,9 @@ func PopulateDatabase(logger *zap.Logger, conf postgres.Config) error {
 		return err
 	}
 
-	err = filepath.Walk(internal.AnalyticsGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.AnalyticsGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateItem(logger, orm, path, info, false)
+			return populateItem(logger, orm, path, info, false)
 		}
 		return nil
 	})
@@ -47,9 +63,9 @@ func PopulateDatabase(logger *zap.Logger, conf postgres.Config) error {
 		return err
 	}
 
-	err = filepath.Walk(internal.AnalyticsGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.AnalyticsGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateFinderItem(logger, orm, path, info, true)
+			return populateFinderItem(logger, orm, path, info, true)
 		}
 		return nil
 	})
@@ -57,9 +73,9 @@ func PopulateDatabase(logger *zap.Logger, conf postgres.Config) error {
 		return err
 	}
 
-	err = filepath.Walk(internal.AnalyticsGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.AnalyticsGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateFinderItem(logger, orm, path, info, false)
+			return populateFinderItem(logger, orm, path, info, false)
 		}
 		return nil
 	})
@@ -70,7 +86,7 @@ func PopulateDatabase(logger *zap.Logger, conf postgres.Config) error {
 	return nil
 }
 
-func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isAsset bool) error {
+func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isAsset bool) error {
 	id := strings.TrimSuffix(info.Name(), ".json")
 	if !isAsset {
 		id = "spend_" + id
@@ -171,7 +187,7 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	return nil
 }
 
-func PopulateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
+func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
 
 	context.Background()
 	id := strings.TrimSuffix(info.Name(), ".json")

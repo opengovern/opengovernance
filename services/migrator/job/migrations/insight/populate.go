@@ -2,25 +2,50 @@ package insight
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"path"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
+type Migration struct {
+}
+
+func (m Migration) IsGitBased() bool {
+	return true
+}
+
+func (m Migration) AttachmentFolderPath() string {
+	return config.InsightsGitPath
+}
+
+func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	orm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "compliance",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+	dbm := db.Database{Orm: orm}
+
 	p := GitParser{}
-	if err := p.ExtractInsights(path.Join(internal.InsightsGitPath, internal.InsightsSubPath)); err != nil {
+	if err := p.ExtractInsights(path.Join(m.AttachmentFolderPath(), config.InsightsSubPath)); err != nil {
 		return err
 	}
-	if err := p.ExtractInsightGroups(path.Join(internal.InsightsGitPath, internal.InsightGroupsSubPath)); err != nil {
+	if err := p.ExtractInsightGroups(path.Join(m.AttachmentFolderPath(), config.InsightGroupsSubPath)); err != nil {
 		return err
 	}
 
-	err := dbc.Transaction(func(tx *gorm.DB) error {
+	err = dbm.Orm.Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&db.InsightGroupInsight{}).Where("1=1").Unscoped().Delete(&db.InsightGroupInsight{}).Error
 		if err != nil {
 			logger.Error("failure in delete", zap.Error(err))
