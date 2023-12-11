@@ -53,8 +53,12 @@ const (
 	MetadataKeyMetricsJobInterval    MetadataKey = "metrics_job_interval"
 	MetadataKeyComplianceJobInterval MetadataKey = "compliance_job_interval"
 	// MetadataKeyDataRetention retention period in days
-	MetadataKeyDataRetention   MetadataKey = "data_retention_duration"
-	MetadataKeyAnalyticsGitURL MetadataKey = "analytics_git_url"
+	MetadataKeyDataRetention               MetadataKey = "data_retention_duration"
+	MetadataKeyAnalyticsGitURL             MetadataKey = "analytics_git_url"
+	MetadataKeyAssetDiscoveryAWSPolicyARNs MetadataKey = "asset_discovery_aws_policy_arns"
+	MetadataKeySpendDiscoveryAWSPolicyARNs MetadataKey = "spend_discovery_aws_policy_arns"
+	MetadataKeyAssetDiscoveryAzureRoleIDs  MetadataKey = "asset_discovery_azure_role_ids"
+	MetadataKeySpendDiscoveryAzureRoleIDs  MetadataKey = "spend_discovery_azure_role_ids"
 )
 
 var MetadataKeys = []MetadataKey{
@@ -87,6 +91,10 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyComplianceJobInterval,
 	MetadataKeyDataRetention,
 	MetadataKeyAnalyticsGitURL,
+	MetadataKeyAssetDiscoveryAWSPolicyARNs,
+	MetadataKeySpendDiscoveryAWSPolicyARNs,
+	MetadataKeyAssetDiscoveryAzureRoleIDs,
+	MetadataKeySpendDiscoveryAzureRoleIDs,
 }
 
 func (k MetadataKey) String() string {
@@ -153,6 +161,14 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeInt
 	case MetadataKeyAnalyticsGitURL:
 		return ConfigMetadataTypeString
+	case MetadataKeyAssetDiscoveryAWSPolicyARNs:
+		return ConfigMetadataTypeString
+	case MetadataKeySpendDiscoveryAWSPolicyARNs:
+		return ConfigMetadataTypeString
+	case MetadataKeyAssetDiscoveryAzureRoleIDs:
+		return ConfigMetadataTypeString
+	case MetadataKeySpendDiscoveryAzureRoleIDs:
+		return ConfigMetadataTypeString
 	}
 	return ""
 }
@@ -217,6 +233,14 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 		return api.KaytuAdminRole
 	case MetadataKeyAnalyticsGitURL:
 		return api.AdminRole
+	case MetadataKeyAssetDiscoveryAWSPolicyARNs:
+		return api.KaytuAdminRole
+	case MetadataKeySpendDiscoveryAWSPolicyARNs:
+		return api.KaytuAdminRole
+	case MetadataKeyAssetDiscoveryAzureRoleIDs:
+		return api.KaytuAdminRole
+	case MetadataKeySpendDiscoveryAzureRoleIDs:
+		return api.KaytuAdminRole
 	}
 	return ""
 }

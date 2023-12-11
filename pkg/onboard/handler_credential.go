@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -332,18 +333,25 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 		paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
 			RoleName: &awsConfig.AssumeRoleName,
 		})
-		var policyNames []string
+		var policyARNs []string
 		for paginator.HasMorePages() {
 			page, err := paginator.NextPage(ctx)
 			if err != nil {
 				return false, err
 			}
 			for _, policy := range page.AttachedPolicies {
-				policyNames = append(policyNames, *policy.PolicyName)
+				policyARNs = append(policyARNs, *policy.PolicyArn)
 			}
 		}
 
-		spendAttached := utils.Includes(policyNames, "AWSBillingReadOnlyAccess")
+		spendAttached := true
+		for _, policyARN := range h.spendDiscoveryAwsPolicyARNs {
+			policyARN = strings.ReplaceAll(policyARN, "${accountID}", awsConfig.AccountID)
+			if !utils.Includes(policyARNs, policyARN) {
+				h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
+				spendAttached = false
+			}
+		}
 		cred.SpendDiscovery = &spendAttached
 	default:
 		return false, errors.New("not implemented")
