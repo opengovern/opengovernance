@@ -252,15 +252,11 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 					return err
 				}
 
-				limits := api.GetLimitsByTier(workspace.Tier)
 				authCtx := &httpclient.Context{
-					UserID:         *workspace.OwnerId,
-					UserRole:       authapi.AdminRole,
-					WorkspaceName:  workspace.Name,
-					WorkspaceID:    workspace.ID,
-					MaxUsers:       limits.MaxUsers,
-					MaxConnections: limits.MaxConnections,
-					MaxResources:   limits.MaxResources,
+					UserID:        *workspace.OwnerId,
+					UserRole:      authapi.AdminRole,
+					WorkspaceName: workspace.Name,
+					WorkspaceID:   workspace.ID,
 				}
 
 				if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
@@ -368,16 +364,12 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	// check the status of helm release
 	if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 		// when the helm release installed successfully, set the rolebinding
-		limits := api.GetLimitsByTier(workspace.Tier)
 		if workspace.OwnerId != nil {
 			authCtx := &httpclient.Context{
-				UserID:         *workspace.OwnerId,
-				UserRole:       authapi.AdminRole,
-				WorkspaceName:  workspace.Name,
-				WorkspaceID:    workspace.ID,
-				MaxUsers:       limits.MaxUsers,
-				MaxConnections: limits.MaxConnections,
-				MaxResources:   limits.MaxResources,
+				UserID:        *workspace.OwnerId,
+				UserRole:      authapi.AdminRole,
+				WorkspaceName: workspace.Name,
+				WorkspaceID:   workspace.ID,
 			}
 
 			if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
@@ -448,10 +440,9 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 		return err
 	}
 
-	limits := api.GetLimitsByTier(workspace.Tier)
 	if cred.ConnectorType == source.CloudAWS {
 		if cred.SingleConnection {
-			_, err := onboardClient.PostConnectionAws(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, api2.CreateAwsConnectionRequest{
+			_, err := onboardClient.PostConnectionAws(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateAwsConnectionRequest{
 				Name:      "",
 				AWSConfig: request.AWSConfig,
 			})
@@ -459,7 +450,7 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 				return err
 			}
 		} else {
-			credential, err := onboardClient.CreateCredentialV2(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, apiv2.CreateCredentialV2Request{
+			credential, err := onboardClient.CreateCredentialV2(&httpclient.Context{UserRole: authapi.InternalRole}, apiv2.CreateCredentialV2Request{
 				Connector: cred.ConnectorType,
 				AWSConfig: request.AWSConfig,
 			})
@@ -467,13 +458,13 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 				return err
 			}
 
-			_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
+			_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole}, credential.ID)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, api2.CreateCredentialRequest{
+		credential, err := onboardClient.PostCredentials(&httpclient.Context{UserRole: authapi.InternalRole}, api2.CreateCredentialRequest{
 			SourceType: cred.ConnectorType,
 			Config:     request.AzureConfig,
 		})
@@ -481,7 +472,7 @@ func (s *Service) addCredentialToWorkspace(workspace *db.Workspace, cred db.Cred
 			return err
 		}
 
-		_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole, MaxConnections: limits.MaxConnections}, credential.ID)
+		_, err = onboardClient.AutoOnboard(&httpclient.Context{UserRole: authapi.InternalRole}, credential.ID)
 		if err != nil {
 			return err
 		}

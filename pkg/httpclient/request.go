@@ -11,7 +11,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	url2 "net/url"
-	"strconv"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -28,10 +27,6 @@ type Context struct {
 	UserID        string
 	WorkspaceName string
 	WorkspaceID   string
-
-	MaxUsers       int64
-	MaxConnections int64
-	MaxResources   int64
 }
 
 func (ctx *Context) Request() *http.Request {
@@ -311,13 +306,10 @@ func (ctx *Context) Reset(r *http.Request, w http.ResponseWriter) {
 
 func (ctx *Context) ToHeaders() map[string]string {
 	return map[string]string{
-		httpserver.XKaytuUserIDHeader:         ctx.UserID,
-		httpserver.XKaytuUserRoleHeader:       string(ctx.UserRole),
-		httpserver.XKaytuWorkspaceIDHeader:    ctx.WorkspaceID,
-		httpserver.XKaytuWorkspaceNameHeader:  ctx.WorkspaceName,
-		httpserver.XKaytuMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
-		httpserver.XKaytuMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
-		httpserver.XKaytuMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
+		httpserver.XKaytuUserIDHeader:        ctx.UserID,
+		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
+		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
 	}
 }
 
@@ -334,17 +326,11 @@ func FromEchoContext(c echo.Context) *Context {
 	name := c.Request().Header.Get(httpserver.XKaytuWorkspaceNameHeader)
 	role := c.Request().Header.Get(httpserver.XKaytuUserRoleHeader)
 	id := c.Request().Header.Get(httpserver.XKaytuUserIDHeader)
-	maxUsers, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKaytuMaxUsersHeader), 10, 64)
-	maxConnections, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKaytuMaxConnectionsHeader), 10, 64)
-	maxResources, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKaytuMaxResourcesHeader), 10, 64)
 	return &Context{
-		WorkspaceName:  name,
-		WorkspaceID:    wsID,
-		UserRole:       api.Role(role),
-		UserID:         id,
-		MaxUsers:       maxUsers,
-		MaxResources:   maxResources,
-		MaxConnections: maxConnections,
+		WorkspaceName: name,
+		WorkspaceID:   wsID,
+		UserRole:      api.Role(role),
+		UserID:        id,
 	}
 }
 
