@@ -46,6 +46,7 @@ type httpRoutes struct {
 	metadataBaseUrl string
 	kaytuPrivateKey *rsa.PrivateKey
 	db              db.Database
+	authServer      *Server
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -62,6 +63,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
 	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
+
+	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api.InternalRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -86,7 +89,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Param			request	body		api.PutRoleBindingRequest	true	"Request Body"
 //	@Success		200		{object}	nil
 //	@Router			/auth/api/v1/user/role/binding [put]
-func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
+func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	var req api.PutRoleBindingRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -143,7 +146,7 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 //	@Param			userId	query		string	true	"User ID"
 //	@Success		200		{object}	nil
 //	@Router			/auth/api/v1/user/role/binding [delete]
-func (r httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
+func (r *httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
 	// The WorkspaceManager service will call this API to set the AdminRole
 	// for the admin user on behalf of him. Allow for the Admin to only set its
@@ -638,4 +641,12 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
+}
+
+func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
+	err := r.authServer.updateWorkspaceMap()
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
 }
