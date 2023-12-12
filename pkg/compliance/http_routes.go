@@ -1738,7 +1738,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	if benchmarkID != nil {
 		controlResult, evAt, err := es.BenchmarkControlSummary(h.logger, h.client, *benchmarkID, connectionIDs)
 		if err != nil {
-			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.String("benchmarkID", benchmarkID))
+			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 			return nil, err
 		}
 		var ok bool
@@ -1759,7 +1759,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 		}
 		controlResult, evaluatedAts, err := es.BenchmarksControlSummary(h.logger, h.client, benchmarkIds, connectionIDs)
 		if err != nil {
-			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.String("benchmarkID", benchmarkID))
+			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 		}
 		var ok bool
 		result, ok = controlResult[control.ID]
