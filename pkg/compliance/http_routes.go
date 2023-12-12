@@ -1728,7 +1728,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	if control.QueryID != nil {
 		query, err := h.db.GetQuery(*control.QueryID)
 		if err != nil {
-			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.String("benchmarkID", benchmarkID))
+			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.Stringp("benchmarkID", benchmarkID))
 			return nil, err
 		}
 		apiControl.Connector, _ = source.ParseType(query.Connector)
