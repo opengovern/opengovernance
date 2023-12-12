@@ -2,8 +2,14 @@ package compliance
 
 import (
 	"fmt"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/sashabaranov/go-openai"
+	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -35,6 +41,25 @@ type HttpHandler struct {
 	inventoryClient inventoryClient.InventoryServiceClient
 	metadataClient  metadataClient.MetadataServiceClient
 	openAIClient    *openai.Client
+	kubeClient      client.Client
+}
+
+func NewKubeClient() (client.Client, error) {
+	scheme := runtime.NewScheme()
+	if err := helmv2.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	kubeClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient, nil
 }
 
 func InitializeHttpHandler(
@@ -117,6 +142,12 @@ func InitializeHttpHandler(
 	h.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 	h.metadataClient = metadataClient.NewMetadataServiceClient(conf.Metadata.BaseURL)
 	h.openAIClient = openai.NewClient(conf.OpenAI.Token)
+
+	kubeClient, err := NewKubeClient()
+	if err != nil {
+		return nil, fmt.Errorf("new kube client: %w", err)
+	}
+	h.kubeClient = kubeClient
 
 	return h, nil
 }

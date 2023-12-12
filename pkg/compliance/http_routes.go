@@ -35,8 +35,12 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"io"
+	v1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
+	"os"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sort"
 	"strconv"
 	"strings"
@@ -2340,6 +2344,16 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/compliance/api/v1/queries/sync [get]
 func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
+	enabled, err := h.metadataClient.GetConfigMetadata(httpclient.FromEchoContext(ctx), models.MetadataKeyCustomizationEnabled)
+	if err != nil {
+		h.logger.Error("get config metadata", zap.Error(err))
+		return err
+	}
+
+	if !enabled.GetValue().(bool) {
+		return echo.NewHTTPError(http.StatusForbidden, "customization is not allowed")
+	}
+
 	configzGitURL := ctx.QueryParam("configzGitURL")
 	if configzGitURL != "" {
 		// validate url
@@ -2355,11 +2369,47 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		}
 	}
 
-	err := h.syncJobsQueue.Publish([]byte{})
+	currentNamespace, ok := os.LookupEnv("CURRENT_NAMESPACE")
+	if !ok {
+		return errors.New("current namespace lookup failed")
+	}
+
+	var migratorJob v1.Job
+	err = h.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+		Namespace: currentNamespace,
+		Name:      "migrator-job",
+	}, &migratorJob)
 	if err != nil {
-		h.logger.Error("publish sync jobs", zap.Error(err))
 		return err
 	}
+
+	err = h.kubeClient.Delete(context.Background(), &migratorJob)
+	if err != nil {
+		return err
+	}
+
+	migratorJob.ObjectMeta = metav1.ObjectMeta{
+		Name:      "migrator-job",
+		Namespace: currentNamespace,
+		Annotations: map[string]string{
+			"helm.sh/hook":        "post-install,post-upgrade",
+			"helm.sh/hook-weight": "0",
+		},
+	}
+	migratorJob.Spec.Selector = nil
+	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
+	migratorJob.Status = v1.JobStatus{}
+
+	err = h.kubeClient.Create(context.Background(), &migratorJob)
+	if err != nil {
+		return err
+	}
+
+	//err := h.syncJobsQueue.Publish([]byte{})
+	//if err != nil {
+	//	h.logger.Error("publish sync jobs", zap.Error(err))
+	//	return err
+	//}
 	return ctx.JSON(http.StatusOK, struct{}{})
 }
 

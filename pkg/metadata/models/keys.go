@@ -59,6 +59,7 @@ const (
 	MetadataKeySpendDiscoveryAWSPolicyARNs MetadataKey = "spend_discovery_aws_policy_arns"
 	MetadataKeyAssetDiscoveryAzureRoleIDs  MetadataKey = "asset_discovery_azure_role_ids"
 	MetadataKeySpendDiscoveryAzureRoleIDs  MetadataKey = "spend_discovery_azure_role_ids"
+	MetadataKeyCustomizationEnabled        MetadataKey = "customization_enabled"
 )
 
 var MetadataKeys = []MetadataKey{
@@ -95,6 +96,7 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeySpendDiscoveryAWSPolicyARNs,
 	MetadataKeyAssetDiscoveryAzureRoleIDs,
 	MetadataKeySpendDiscoveryAzureRoleIDs,
+	MetadataKeyCustomizationEnabled,
 }
 
 func (k MetadataKey) String() string {
@@ -169,6 +171,8 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeString
 	case MetadataKeySpendDiscoveryAzureRoleIDs:
 		return ConfigMetadataTypeString
+	case MetadataKeyCustomizationEnabled:
+		return ConfigMetadataTypeBool
 	}
 	return ""
 }
@@ -240,6 +244,8 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyAssetDiscoveryAzureRoleIDs:
 		return api.KaytuAdminRole
 	case MetadataKeySpendDiscoveryAzureRoleIDs:
+		return api.KaytuAdminRole
+	case MetadataKeyCustomizationEnabled:
 		return api.KaytuAdminRole
 	}
 	return ""
