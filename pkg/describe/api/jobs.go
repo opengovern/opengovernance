@@ -97,6 +97,11 @@ type ListJobsResponse struct {
 }
 
 type ListDiscoveryResourceTypes struct {
+	MetricsTook    int64 `json:"metricsTook"`
+	BenchmarksTook int64 `json:"benchmarksTook"`
+	InsightsTook   int64 `json:"insightsTook"`
+	ProcessTook    int64 `json:"processTook"`
+
 	AWSResourceTypes   []string `json:"awsResourceTypes"`
 	AzureResourceTypes []string `json:"azureResourceTypes"`
 }
