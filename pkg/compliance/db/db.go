@@ -111,6 +111,21 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
+func (db Database) ListDistinctBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
+	var s []Benchmark
+	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+		Joins("JOIN benchmark_controls AS bc ON bc.benchmark_id = benchmarks.id").
+		Where("bc.control_id IN ?", controlIds).
+		Group("benchmarks.id").
+		Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) GetQuery(queryID string) (*Query, error) {
 	var s Query
 	tx := db.Orm.Model(&Query{}).
@@ -197,10 +212,11 @@ func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, err
 func (db Database) GetControls(controlIDs []string) ([]Control, error) {
 	var s []Control
 	tx := db.Orm.Model(&Control{}).
-		Preload("Tags").
-		Where("id IN ?", controlIDs).
-		Find(&s)
-	if tx.Error != nil {
+		Preload("Tags")
+	if len(controlIDs) > 0 {
+		tx = tx.Where("id IN ?", controlIDs)
+	}
+	if tx.Find(&s).Error != nil {
 		return nil, tx.Error
 	}
 	return s, nil

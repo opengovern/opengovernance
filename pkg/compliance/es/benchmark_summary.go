@@ -419,7 +419,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	return benchmarkSummaries, nil
 }
 
-type BenchmarkConnectionSummaryResponse struct {
+type BenchmarkSummaryResponse struct {
 	Aggregations struct {
 		LastResult struct {
 			Hits struct {
@@ -472,7 +472,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 	}
 
 	logger.Info("BenchmarkConnectionSummary", zap.String("query", string(queryBytes)))
-	var resp BenchmarkConnectionSummaryResponse
+	var resp BenchmarkSummaryResponse
 	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
 	if err != nil {
 		return nil, -1, err
@@ -534,7 +534,7 @@ func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkI
 	}
 
 	logger.Info("BenchmarkControlSummary", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
-	var resp BenchmarkConnectionSummaryResponse
+	var resp BenchmarkSummaryResponse
 	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex,
 		string(queryBytes), pathFilters, &resp)
 	if err != nil {
@@ -566,6 +566,136 @@ func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkI
 			result = res.Source.Connections.BenchmarkResult.Controls
 			evAt = res.Source.EvaluatedAtEpoch
 			break
+		}
+	}
+	return result, evAt, nil
+}
+
+type BenchmarksControlSummaryResponse struct {
+	Aggregations struct {
+		BenchmarkIDGroup struct {
+			Buckets []struct {
+				Key          string `json:"key"`
+				LatestResult any    `json:"latest_result"`
+				LastResult   struct {
+					Hits struct {
+						Hits []struct {
+							Source types2.BenchmarkSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"last_result"`
+			}
+		}
+	}
+}
+
+func BenchmarksControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
+	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
+	if len(connectionIDs) > 0 {
+		includes = append(includes, "Connections.Connections")
+	}
+
+	pathFilters := make([]string, 0, len(connectionIDs)+2)
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
+	for _, connectionID := range connectionIDs {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+	}
+
+	request := map[string]any{
+		"aggs": map[string]any{
+			"benchmark_id_group": map[string]any{
+				"terms": map[string]any{
+					"field": "BenchmarkID",
+					"size":  10000,
+				},
+				"aggs": map[string]any{
+					"last_result": map[string]any{
+						"top_hits": map[string]any{
+							"sort": []map[string]any{
+								{
+									"JobID": "desc",
+								},
+							},
+							"_source": map[string]any{
+								"includes": includes,
+							},
+							"size": 1,
+						},
+					},
+				},
+			},
+		},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": []map[string]any{
+					{
+						"terms": map[string][]string{
+							"BenchmarkID": benchmarkIDs,
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+	}
+
+	queryBytes, err := json.Marshal(request)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	logger.Info("BenchmarksControlSummary", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	var resp BenchmarksControlSummaryResponse
+	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
+	if err != nil {
+		logger.Error("BenchmarksControlSummary", zap.Error(err))
+		return nil, nil, err
+	}
+
+	perBenchmarkEvAt := make(map[string]int64)
+	perBenchmarkResult := make(map[string]map[string]types2.ControlResult)
+	for _, bucket := range resp.Aggregations.BenchmarkIDGroup.Buckets {
+		benchmarkID := bucket.Key
+		perBenchmarkEvAt[benchmarkID] = int64(0)
+		perBenchmarkResult[benchmarkID] = make(map[string]types2.ControlResult)
+		for _, res := range bucket.LastResult.Hits.Hits {
+			if len(connectionIDs) > 0 {
+				for _, connectionID := range connectionIDs {
+					if connection, ok := res.Source.Connections.Connections[connectionID]; ok {
+						for key, controlRes := range connection.Controls {
+							if v, ok := perBenchmarkResult[benchmarkID][key]; !ok {
+								perBenchmarkResult[benchmarkID][key] = controlRes
+							} else {
+								v.FailedResourcesCount += controlRes.FailedResourcesCount
+								v.FailedConnectionCount += controlRes.FailedConnectionCount
+								v.TotalResourcesCount += controlRes.TotalResourcesCount
+								v.TotalConnectionCount += controlRes.TotalConnectionCount
+								v.Passed = v.Passed && controlRes.Passed
+								perBenchmarkResult[benchmarkID][key] = v
+							}
+						}
+						perBenchmarkEvAt[benchmarkID] = res.Source.EvaluatedAtEpoch
+					}
+				}
+			} else {
+				perBenchmarkResult[benchmarkID] = res.Source.Connections.BenchmarkResult.Controls
+				perBenchmarkEvAt[benchmarkID] = res.Source.EvaluatedAtEpoch
+				break
+			}
+		}
+	}
+
+	evAt := make(map[string]int64)
+	result := make(map[string]types2.ControlResult)
+	for benchmarkID, controlResults := range perBenchmarkResult {
+		for key, controlRes := range controlResults {
+			if _, ok := result[key]; !ok || evAt[key] < perBenchmarkEvAt[benchmarkID] {
+				result[key] = controlRes
+				evAt[key] = perBenchmarkEvAt[benchmarkID]
+			}
 		}
 	}
 	return result, evAt, nil
