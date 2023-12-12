@@ -1149,6 +1149,12 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary'
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingRequest:
+    properties:
+      kaytuResourceId:
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse:
     properties:
       controls:
@@ -2215,6 +2221,7 @@ definitions:
     - spend_discovery_aws_policy_arns
     - asset_discovery_azure_role_ids
     - spend_discovery_azure_role_ids
+    - customization_enabled
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -2250,6 +2257,7 @@ definitions:
     - MetadataKeySpendDiscoveryAWSPolicyARNs
     - MetadataKeyAssetDiscoveryAzureRoleIDs
     - MetadataKeySpendDiscoveryAzureRoleIDs
+    - MetadataKeyCustomizationEnabled
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
     properties:
       accessKey:
@@ -4352,11 +4360,18 @@ paths:
       summary: Get possible values for finding filters
       tags:
       - compliance
-  /compliance/api/v1/findings/resource/{kaytu_resource_id}:
-    get:
+  /compliance/api/v1/findings/resource:
+    post:
       consumes:
       - application/json
       description: Retrieving a single finding
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingRequest'
       produces:
       - application/json
       responses:

@@ -83,6 +83,10 @@ type GetSingleFindingRequest struct {
 	ResourceID      string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 }
 
+type GetSingleResourceFindingRequest struct {
+	KaytuResourceId string `json:"kaytuResourceId" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+}
+
 type GetSingleResourceFindingResponse struct {
 	Resource        es.Resource
 	ControlFindings []Finding `json:"controls"`

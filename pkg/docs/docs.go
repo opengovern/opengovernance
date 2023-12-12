@@ -1531,8 +1531,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/findings/resource/{kaytu_resource_id}": {
-            "get": {
+        "/compliance/api/v1/findings/resource": {
+            "post": {
                 "security": [
                     {
                         "BearerToken": []
@@ -1549,6 +1549,17 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get finding",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -8037,6 +8048,15 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingRequest": {
+            "type": "object",
+            "properties": {
+                "kaytuResourceId": {
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse": {
             "type": "object",
             "properties": {
@@ -9536,7 +9556,8 @@ const docTemplate = `{
                 "asset_discovery_aws_policy_arns",
                 "spend_discovery_aws_policy_arns",
                 "asset_discovery_azure_role_ids",
-                "spend_discovery_azure_role_ids"
+                "spend_discovery_azure_role_ids",
+                "customization_enabled"
             ],
             "x-enum-varnames": [
                 "MetadataKeyWorkspaceOwnership",
@@ -9571,7 +9592,8 @@ const docTemplate = `{
                 "MetadataKeyAssetDiscoveryAWSPolicyARNs",
                 "MetadataKeySpendDiscoveryAWSPolicyARNs",
                 "MetadataKeyAssetDiscoveryAzureRoleIDs",
-                "MetadataKeySpendDiscoveryAzureRoleIDs"
+                "MetadataKeySpendDiscoveryAzureRoleIDs",
+                "MetadataKeyCustomizationEnabled"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig": {

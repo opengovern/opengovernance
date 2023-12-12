@@ -95,7 +95,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
-	findings.GET("/resource/:kaytu_resource_id", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
+	findings.POST("/resource/:kaytu_resource_id", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
@@ -238,7 +238,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	for _, h := range res {
 		finding := api.Finding{
 			Finding:                h.Source,
-			ResourceTypeName:       "",
+			ResourceTypeName:       h.Source.ResourceID,
 			ParentBenchmarkNames:   make([]string, 0, len(h.Source.ParentBenchmarks)),
 			ControlTitle:           "",
 			ProviderConnectionID:   "",
@@ -320,13 +320,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	api.GetSingleResourceFindingResponse
-//	@Router			/compliance/api/v1/findings/resource/{kaytu_resource_id} [get]
+//	@Param			request	body		api.GetSingleResourceFindingRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetSingleResourceFindingResponse
+//	@Router			/compliance/api/v1/findings/resource [post]
 func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
-	kaytuResourceID := ctx.Param("kaytu_resource_id")
-	if kaytuResourceID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "kaytu_resource_id is required")
+	var req api.GetSingleResourceFindingRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	kaytuResourceID := req.KaytuResourceId
 
 	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(h.client, []string{kaytuResourceID})
 	if err != nil {
