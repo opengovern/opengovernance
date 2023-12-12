@@ -168,7 +168,7 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 }
 
 func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
-	var s map[string]Benchmark
+	s := make(map[string]Benchmark)
 
 	findControls := make(map[string]struct{})
 	for _, controlId := range controlIds {
@@ -181,7 +181,7 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	}
 
 	for _, b := range rootBenchmarksWithControls {
-		if len(b.Controls) == 0 {
+		if len(controlIds) == 0 {
 			s[b.ID] = b
 			continue
 		}
