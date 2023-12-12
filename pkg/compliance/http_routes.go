@@ -1679,6 +1679,16 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		results = append(results, controlSummary)
 	}
 
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].EvaluatedAt == -1 {
+			return false
+		}
+		if results[j].EvaluatedAt == -1 {
+			return true
+		}
+		return results[i].FailedResourcesCount > results[j].FailedResourcesCount
+	})
+
 	return ctx.JSON(http.StatusOK, results)
 }
 
