@@ -111,10 +111,11 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
-func (db Database) ListDistinctBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
+func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
 	var s []Benchmark
 	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
 		Joins("JOIN benchmark_controls AS bc ON bc.benchmark_id = benchmarks.id").
+		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)").
 		Where("bc.control_id IN ?", controlIds).
 		Group("benchmarks.id").
 		Find(&s)

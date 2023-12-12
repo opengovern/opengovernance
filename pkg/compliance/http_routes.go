@@ -1630,7 +1630,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		return err
 	}
 
-	benchmarks, err := h.db.ListDistinctBenchmarksFromControlIds(controlIds)
+	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds(controlIds)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
 		return err
@@ -1758,7 +1758,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 		}
 		evaluatedAt = evAt
 	} else {
-		benchmarks, err := h.db.ListDistinctBenchmarksFromControlIds([]string{controlID})
+		benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
 		if err != nil {
 			h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
 			return nil, err
