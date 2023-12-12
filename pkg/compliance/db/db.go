@@ -1,10 +1,7 @@
 package db
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
@@ -182,11 +179,12 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("ListDistinctRootBenchmarksFromControlIds - controlIds", controlIds)
-	jsonRootBenchmarksWithControls, _ := json.Marshal(rootBenchmarksWithControls)
-	fmt.Println("ListDistinctRootBenchmarksFromControlIds - rootBenchmarksWithControls", string(jsonRootBenchmarksWithControls))
 
 	for _, b := range rootBenchmarksWithControls {
+		if len(b.Controls) == 0 {
+			s[b.ID] = b
+			continue
+		}
 		for _, c := range b.Controls {
 			if _, ok := findControls[c.ID]; ok {
 				s[b.ID] = b
