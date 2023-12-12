@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -181,8 +182,9 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("ListDistinctRootBenchmarksFromControlIds - controlIds", rootBenchmarksWithControls)
-	fmt.Println("ListDistinctRootBenchmarksFromControlIds - rootBenchmarksWithControls", rootBenchmarksWithControls)
+	fmt.Println("ListDistinctRootBenchmarksFromControlIds - controlIds", controlIds)
+	jsonRootBenchmarksWithControls, _ := json.Marshal(rootBenchmarksWithControls)
+	fmt.Println("ListDistinctRootBenchmarksFromControlIds - rootBenchmarksWithControls", jsonRootBenchmarksWithControls)
 
 	for _, b := range rootBenchmarksWithControls {
 		for _, c := range b.Controls {
