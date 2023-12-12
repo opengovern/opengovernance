@@ -122,7 +122,10 @@ func (p Control) ToApi() api.Control {
 		ID:                 p.ID,
 		Title:              p.Title,
 		Description:        p.Description,
-		Tags:               p.GetTagsMap(),
+		Tags:               model.TrimPrivateTags(p.GetTagsMap()),
+		Explanation:        "",
+		NonComplianceCost:  "",
+		UsefulExample:      "",
 		Connector:          "",
 		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
@@ -132,6 +135,16 @@ func (p Control) ToApi() api.Control {
 		Managed:            p.Managed,
 		CreatedAt:          p.CreatedAt,
 		UpdatedAt:          p.UpdatedAt,
+	}
+
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"explanation"]; ok && len(v) > 0 {
+		pa.Explanation = v[0]
+	}
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"noncompliance-cost"]; ok && len(v) > 0 {
+		pa.NonComplianceCost = v[0]
+	}
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"usefulness-example"]; ok && len(v) > 0 {
+		pa.UsefulExample = v[0]
 	}
 
 	return pa

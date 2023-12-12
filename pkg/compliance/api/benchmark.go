@@ -27,10 +27,15 @@ type Benchmark struct {
 }
 
 type Control struct {
-	ID                 string                `json:"id" example:"azure_cis_v140_1_1"`
-	Title              string                `json:"title" example:"1.1 Ensure that multi-factor authentication status is enabled for all privileged users"`
-	Description        string                `json:"description" example:"Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."`
-	Tags               map[string][]string   `json:"tags" `
+	ID          string              `json:"id" example:"azure_cis_v140_1_1"`
+	Title       string              `json:"title" example:"1.1 Ensure that multi-factor authentication status is enabled for all privileged users"`
+	Description string              `json:"description" example:"Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."`
+	Tags        map[string][]string `json:"tags"`
+
+	Explanation       string `json:"explanation" example:"Multi-factor authentication adds an additional layer of security by requiring users to enter a code from a mobile device or phone in addition to their username and password when signing into Azure."`
+	NonComplianceCost string `json:"nonComplianceCost" example:"Non-compliance to this control could result in several costs including..."`
+	UsefulExample     string `json:"usefulExample" example:"Access to resources must be closely controlled to prevent malicious activity like data theft..."`
+
 	Connector          source.Type           `json:"connector" example:"Azure"`
 	Enabled            bool                  `json:"enabled" example:"true"`
 	DocumentURI        string                `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`

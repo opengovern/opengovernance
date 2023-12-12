@@ -1453,6 +1453,124 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/controls/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "List controls summaries",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Control IDs to filter by",
+                        "name": "controlId",
+                        "in": "path"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/controls/{controlId}/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get control summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Control ID",
+                        "name": "controlId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings": {
             "post": {
                 "security": [
@@ -7618,6 +7736,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "explanation": {
+                    "type": "string",
+                    "example": "Multi-factor authentication adds an additional layer of security by requiring users to enter a code from a mobile device or phone in addition to their username and password when signing into Azure."
+                },
                 "id": {
                     "type": "string",
                     "example": "azure_cis_v140_1_1"
@@ -7629,6 +7751,10 @@ const docTemplate = `{
                 "manualVerification": {
                     "type": "boolean",
                     "example": true
+                },
+                "nonComplianceCost": {
+                    "type": "string",
+                    "example": "Non-compliance to this control could result in several costs including..."
                 },
                 "queryID": {
                     "type": "string",
@@ -7658,6 +7784,10 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
+                },
+                "usefulExample": {
+                    "type": "string",
+                    "example": "Access to resources must be closely controlled to prevent malicious activity like data theft..."
                 }
             }
         },

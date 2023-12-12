@@ -67,6 +67,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/controls", httpserver2.AuthorizeHandler(h.GetBenchmarkControls, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
+	controls := v1.Group("/controls")
+	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
+	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
+
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver2.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
 	queries.GET("/sync", httpserver2.AuthorizeHandler(h.SyncQueries, authApi.AdminRole))
@@ -95,7 +99,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
-	findings.POST("/resource/:kaytu_resource_id", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
+	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
@@ -1448,7 +1452,13 @@ func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId} [get]
 func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
+	if benchmarkID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "benchmarkID cannot be empty")
+	}
 	controlID := ctx.Param("controlId")
+	if controlID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "controlID cannot be empty")
+	}
 
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
@@ -1456,47 +1466,7 @@ func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
 		return err
 	}
 
-	benchmark, err := h.db.GetBenchmarkBare(benchmarkID)
-	if err != nil {
-		h.logger.Error("failed to fetch benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
-		return err
-	}
-
-	control, err := h.db.GetControl(controlID)
-	if err != nil {
-		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID), zap.String("benchmarkID", benchmarkID))
-		return err
-	}
-
-	apiControl := control.ToApi()
-	apiControl.Connector = benchmark.Connector
-	if control.QueryID != nil {
-		query, err := h.db.GetQuery(*control.QueryID)
-		if err != nil {
-			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.String("benchmarkID", benchmarkID))
-			return err
-		}
-		apiControl.Connector, _ = source.ParseType(query.Connector)
-	}
-
-	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(h.logger, h.client, benchmarkID, connectionIDs)
-	if err != nil {
-		return err
-	}
-
-	result, ok := controlResult[control.ID]
-	if !ok {
-		result = types.ControlResult{Passed: true}
-	}
-	controlSummary := api.ControlSummary{
-		Control:               apiControl,
-		Passed:                result.Passed,
-		FailedResourcesCount:  result.FailedResourcesCount,
-		TotalResourcesCount:   result.TotalResourcesCount,
-		FailedConnectionCount: result.FailedConnectionCount,
-		TotalConnectionCount:  result.TotalConnectionCount,
-		EvaluatedAt:           evaluatedAt,
-	}
+	controlSummary, err := h.getControlSummary(controlID, &benchmarkID, connectionIDs)
 
 	return ctx.JSON(http.StatusOK, controlSummary)
 }
@@ -1632,6 +1602,187 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	})
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListControlsSummary godoc
+//
+//	@Summary	List controls summaries
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		controlId		path		[]string	false	"Control IDs to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Success	200				{object}	[]api.ControlSummary
+//	@Router		/compliance/api/v1/controls/summary [get]
+func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		h.logger.Error("failed to get connection IDs", zap.Error(err))
+		return err
+	}
+
+	controlIds := httpserver2.QueryArrayParam(ctx, "controlId")
+	controls, err := h.db.GetControls(controlIds)
+	if err != nil {
+		h.logger.Error("failed to fetch controls", zap.Error(err))
+		return err
+	}
+
+	benchmarks, err := h.db.ListDistinctBenchmarksFromControlIds(controlIds)
+	if err != nil {
+		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarkIds := make([]string, 0, len(benchmarks))
+	for _, benchmark := range benchmarks {
+		benchmarkIds = append(benchmarkIds, benchmark.ID)
+	}
+
+	controlResults, evaluatedAts, err := es.BenchmarksControlSummary(h.logger, h.client, benchmarkIds, connectionIDs)
+	if err != nil {
+		h.logger.Error("failed to fetch control results", zap.Error(err))
+		return err
+	}
+
+	results := make([]api.ControlSummary, 0, len(controls))
+	for _, control := range controls {
+		apiControl := control.ToApi()
+		if control.QueryID != nil {
+			query, err := h.db.GetQuery(*control.QueryID)
+			if err != nil {
+				h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.String("controlID", control.ID))
+				return err
+			}
+			apiControl.Connector, _ = source.ParseType(query.Connector)
+		}
+
+		result, ok := controlResults[control.ID]
+		if !ok {
+			result = types.ControlResult{Passed: true}
+		}
+		evaluatedAt, ok := evaluatedAts[control.ID]
+		if !ok {
+			evaluatedAt = -1
+		}
+
+		controlSummary := api.ControlSummary{
+			Control:               apiControl,
+			Passed:                result.Passed,
+			FailedResourcesCount:  result.FailedResourcesCount,
+			TotalResourcesCount:   result.TotalResourcesCount,
+			FailedConnectionCount: result.FailedConnectionCount,
+			TotalConnectionCount:  result.TotalConnectionCount,
+			EvaluatedAt:           evaluatedAt,
+		}
+		results = append(results, controlSummary)
+	}
+
+	return ctx.JSON(http.StatusOK, results)
+}
+
+// GetControlSummary godoc
+//
+//	@Summary	Get control summary
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		controlId		path		string		true	"Control ID"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Success	200				{object}	api.ControlSummary
+//	@Router		/compliance/api/v1/controls/{controlId}/summary [get]
+func (h *HttpHandler) GetControlSummary(ctx echo.Context) error {
+	controlID := ctx.Param("controlId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	controlSummary, err := h.getControlSummary(controlID, nil, connectionIDs)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, controlSummary)
+}
+
+func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, connectionIDs []string) (*api.ControlSummary, error) {
+	control, err := h.db.GetControl(controlID)
+	if err != nil {
+		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
+		return nil, err
+	}
+	apiControl := control.ToApi()
+	if benchmarkID != nil {
+		benchmark, err := h.db.GetBenchmarkBare(*benchmarkID)
+		if err != nil {
+			h.logger.Error("failed to fetch benchmark", zap.Error(err), zap.Stringp("benchmarkID", benchmarkID))
+			return nil, err
+		}
+		apiControl.Connector = benchmark.Connector
+	}
+
+	if control.QueryID != nil {
+		query, err := h.db.GetQuery(*control.QueryID)
+		if err != nil {
+			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.Stringp("benchmarkID", benchmarkID))
+			return nil, err
+		}
+		apiControl.Connector, _ = source.ParseType(query.Connector)
+	}
+	var evaluatedAt int64
+	var result types.ControlResult
+	if benchmarkID != nil {
+		controlResult, evAt, err := es.BenchmarkControlSummary(h.logger, h.client, *benchmarkID, connectionIDs)
+		if err != nil {
+			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.String("benchmarkID", benchmarkID))
+			return nil, err
+		}
+		var ok bool
+		result, ok = controlResult[control.ID]
+		if !ok {
+			result = types.ControlResult{Passed: true}
+		}
+		evaluatedAt = evAt
+	} else {
+		benchmarks, err := h.db.ListDistinctBenchmarksFromControlIds([]string{controlID})
+		if err != nil {
+			h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
+			return nil, err
+		}
+		benchmarkIds := make([]string, 0, len(benchmarks))
+		for _, benchmark := range benchmarks {
+			benchmarkIds = append(benchmarkIds, benchmark.ID)
+		}
+		controlResult, evaluatedAts, err := es.BenchmarksControlSummary(h.logger, h.client, benchmarkIds, connectionIDs)
+		if err != nil {
+			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.String("benchmarkID", benchmarkID))
+		}
+		var ok bool
+		result, ok = controlResult[control.ID]
+		if !ok {
+			result = types.ControlResult{Passed: true}
+		}
+		evaluatedAt, ok = evaluatedAts[control.ID]
+		if !ok {
+			evaluatedAt = -1
+		}
+	}
+
+	controlSummary := api.ControlSummary{
+		Control:               apiControl,
+		Passed:                result.Passed,
+		FailedResourcesCount:  result.FailedResourcesCount,
+		TotalResourcesCount:   result.TotalResourcesCount,
+		FailedConnectionCount: result.FailedConnectionCount,
+		TotalConnectionCount:  result.TotalConnectionCount,
+		EvaluatedAt:           evaluatedAt,
+	}
+
+	return &controlSummary, nil
 }
 
 // CreateBenchmarkAssignment godoc
