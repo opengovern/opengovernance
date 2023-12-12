@@ -95,7 +95,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
-	findings.POST("/resource/:kaytu_resource_id", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
+	findings.GET("/resource/:kaytu_resource_id", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
