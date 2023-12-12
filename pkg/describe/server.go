@@ -373,39 +373,42 @@ func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, bench
 //	@Success	200	{object}	api.ListDiscoveryResourceTypes
 //	@Router		/schedule/api/v1/discovery/resourcetypes/list [get]
 func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
+	var result api.ListDiscoveryResourceTypes
+	start := time.Now().UnixMilli()
+
+	var resourceTypes []string
 	assetMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeAssets)
 	if err != nil {
 		return err
 	}
-
 	spendMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeSpend)
 	if err != nil {
 		return err
 	}
-
-	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-
-	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-
-	var resourceTypes []string
 	for _, metric := range append(assetMetrics, spendMetrics...) {
 		for _, connector := range metric.Connectors {
 			rts := extractResourceTypes(metric.Query, connector)
 			resourceTypes = append(resourceTypes, rts...)
 		}
 	}
+	result.MetricsTook = time.Now().UnixMilli() - start
+	start = time.Now().UnixMilli()
 
+	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
 	for _, ins := range insights {
 		rts := extractResourceTypes(ins.Query.QueryToExecute, ins.Connector)
 		resourceTypes = append(resourceTypes, rts...)
 	}
+	result.InsightsTook = time.Now().UnixMilli() - start
+	start = time.Now().UnixMilli()
 
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
+	}
 	for _, bench := range benchmarks {
 		rts, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
 		if err != nil {
@@ -415,8 +418,9 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 		rts = UniqueArray(rts)
 		resourceTypes = append(resourceTypes, rts...)
 	}
+	result.BenchmarksTook = time.Now().UnixMilli() - start
+	start = time.Now().UnixMilli()
 
-	var result api.ListDiscoveryResourceTypes
 	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
 	for _, resourceType := range resourceTypes {
 		found := false
@@ -455,6 +459,7 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 	result.AWSResourceTypes = UniqueArray(result.AWSResourceTypes)
 	result.AzureResourceTypes = UniqueArray(result.AzureResourceTypes)
 
+	result.ProcessTook = time.Now().UnixMilli() - start
 	return ctx.JSON(http.StatusOK, result)
 }
 
