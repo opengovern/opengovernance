@@ -1629,6 +1629,10 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		h.logger.Error("failed to fetch controls", zap.Error(err))
 		return err
 	}
+	controlIds = make([]string, 0, len(controls))
+	for _, control := range controls {
+		controlIds = append(controlIds, control.ID)
+	}
 
 	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds(controlIds)
 	if err != nil {

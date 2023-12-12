@@ -181,10 +181,6 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	}
 
 	for _, b := range rootBenchmarksWithControls {
-		if len(controlIds) == 0 {
-			s[b.ID] = b
-			continue
-		}
 		for _, c := range b.Controls {
 			if _, ok := findControls[c.ID]; ok {
 				s[b.ID] = b
