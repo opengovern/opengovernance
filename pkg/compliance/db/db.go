@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -180,6 +181,8 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("ListDistinctRootBenchmarksFromControlIds - controlIds", rootBenchmarksWithControls)
+	fmt.Println("ListDistinctRootBenchmarksFromControlIds - rootBenchmarksWithControls", rootBenchmarksWithControls)
 
 	for _, b := range rootBenchmarksWithControls {
 		for _, c := range b.Controls {
