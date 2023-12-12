@@ -79,6 +79,63 @@ func (db Database) ListRootBenchmarks(tags map[string][]string) ([]Benchmark, er
 	return benchmarks, nil
 }
 
+func (db Database) ListRootBenchmarksWithSubtreeControls(tags map[string][]string) ([]Benchmark, error) {
+	var benchmarks []Benchmark
+
+	allBenchmarks, err := db.ListBenchmarks()
+	if err != nil {
+		return nil, err
+	}
+	allBenchmarksMap := make(map[string]Benchmark)
+	for _, b := range allBenchmarks {
+		allBenchmarksMap[b.ID] = b
+	}
+
+	var populateControls func(benchmark *Benchmark) error
+	populateControls = func(benchmark *Benchmark) error {
+		if benchmark == nil {
+			return nil
+		}
+		if len(benchmark.Children) > 0 {
+			for _, child := range benchmark.Children {
+				child := allBenchmarksMap[child.ID]
+				err := populateControls(&child)
+				if err != nil {
+					return err
+				}
+				for _, control := range child.Controls {
+					found := false
+					for _, c := range benchmark.Controls {
+						if c.ID == control.ID {
+							found = true
+							break
+						}
+					}
+					if !found {
+						benchmark.Controls = append(benchmark.Controls, control)
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	rootBenchmarks, err := db.ListRootBenchmarks(tags)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, b := range rootBenchmarks {
+		err := populateControls(&b)
+		if err != nil {
+			return nil, err
+		}
+		benchmarks = append(benchmarks, b)
+	}
+
+	return benchmarks, nil
+}
+
 func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
 	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
@@ -112,19 +169,33 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 }
 
 func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
-	var s []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
-		Joins("JOIN benchmark_controls AS bc ON bc.benchmark_id = benchmarks.id").
-		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)").
-		Where("bc.control_id IN ?", controlIds).
-		Group("benchmarks.id").
-		Find(&s)
+	var s map[string]Benchmark
 
-	if tx.Error != nil {
-		return nil, tx.Error
+	findControls := make(map[string]struct{})
+	for _, controlId := range controlIds {
+		findControls[controlId] = struct{}{}
 	}
 
-	return s, nil
+	rootBenchmarksWithControls, err := db.ListRootBenchmarksWithSubtreeControls(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, b := range rootBenchmarksWithControls {
+		for _, c := range b.Controls {
+			if _, ok := findControls[c.ID]; ok {
+				s[b.ID] = b
+				break
+			}
+		}
+	}
+
+	var res []Benchmark
+	for _, b := range s {
+		res = append(res, b)
+	}
+
+	return res, nil
 }
 
 func (db Database) GetQuery(queryID string) (*Query, error) {
