@@ -184,7 +184,7 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	}
 	fmt.Println("ListDistinctRootBenchmarksFromControlIds - controlIds", controlIds)
 	jsonRootBenchmarksWithControls, _ := json.Marshal(rootBenchmarksWithControls)
-	fmt.Println("ListDistinctRootBenchmarksFromControlIds - rootBenchmarksWithControls", jsonRootBenchmarksWithControls)
+	fmt.Println("ListDistinctRootBenchmarksFromControlIds - rootBenchmarksWithControls", string(jsonRootBenchmarksWithControls))
 
 	for _, b := range rootBenchmarksWithControls {
 		for _, c := range b.Controls {
