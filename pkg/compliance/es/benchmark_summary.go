@@ -687,6 +687,8 @@ func BenchmarksControlSummary(logger *zap.Logger, client kaytu.Client, benchmark
 			}
 		}
 	}
+	jsonPerBenchmarkResult, _ := json.Marshal(perBenchmarkResult)
+	logger.Info("BenchmarksControlSummary", zap.String("perBenchmarkResult", string(jsonPerBenchmarkResult)))
 
 	evAt := make(map[string]int64)
 	result := make(map[string]types2.ControlResult)
@@ -698,5 +700,9 @@ func BenchmarksControlSummary(logger *zap.Logger, client kaytu.Client, benchmark
 			}
 		}
 	}
+
+	jsonResult, _ := json.Marshal(result)
+	logger.Info("BenchmarksControlSummary", zap.String("result", string(jsonResult)))
+
 	return result, evAt, nil
 }
