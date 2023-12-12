@@ -2383,11 +2383,26 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		return err
 	}
 
-	//err = h.kubeClient.Delete(context.Background(), &migratorJob)
-	//if err != nil {
-	//	return err
-	//}
-	//
+	err = h.kubeClient.Delete(context.Background(), &migratorJob)
+	if err != nil {
+		return err
+	}
+
+	for {
+		err = h.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+			Namespace: currentNamespace,
+			Name:      "migrator-job",
+		}, &migratorJob)
+		if err != nil {
+			if k8sclient.IgnoreNotFound(err) == nil {
+				break
+			}
+			return err
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
 	migratorJob.ObjectMeta = metav1.ObjectMeta{
 		Name:      "migrator-job",
 		Namespace: currentNamespace,
@@ -2400,7 +2415,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	migratorJob.Status = v1.JobStatus{}
 
-	err = h.kubeClient.Update(context.Background(), &migratorJob)
+	err = h.kubeClient.Create(context.Background(), &migratorJob)
 	if err != nil {
 		return err
 	}
