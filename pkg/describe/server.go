@@ -328,40 +328,52 @@ func UniqueArray(arr []string) []string {
 	return resp
 }
 
-func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, benchmarkID string) ([]string, error) {
+func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, benchmarkID string) ([]string, int64, int64, error) {
+	var waitingForAPITime, processTime int64
+
+	start := time.Now().UnixMilli()
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
+	waitingForAPITime += time.Now().UnixMilli() - start
 
 	var response []string
 	for _, child := range benchmark.Children {
-		rts, err := h.extractBenchmarkResourceTypes(ctx, child)
+		rts, waitingForAPI, process, err := h.extractBenchmarkResourceTypes(ctx, child)
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
+		waitingForAPITime += waitingForAPI
+		processTime += process
 		response = append(response, rts...)
 	}
 
 	for _, controlID := range benchmark.Controls {
+		start := time.Now().UnixMilli()
 		control, err := h.Scheduler.complianceClient.GetControl(ctx, controlID)
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
+		waitingForAPITime += time.Now().UnixMilli() - start
 
 		if control.ManualVerification || control.QueryID == nil {
 			continue
 		}
 
+		start = time.Now().UnixMilli()
 		query, err := h.Scheduler.complianceClient.GetQuery(ctx, *control.QueryID)
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
+		waitingForAPITime += time.Now().UnixMilli() - start
 
+		start = time.Now().UnixMilli()
 		response = append(response, extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))...)
+		processTime += time.Now().UnixMilli() - start
 	}
 
-	return response, nil
+	return response, waitingForAPITime, processTime, nil
 }
 
 // GetDiscoveryResourceTypeList godoc
@@ -409,16 +421,22 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	waitingForAPITook := int64(0)
+	processTook := int64(0)
 	for _, bench := range benchmarks {
-		rts, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
+		rts, waitingForAPITime, processTime, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
 		if err != nil {
 			return err
 		}
+		waitingForAPITook += waitingForAPITime
+		processTook += processTime
 
 		rts = UniqueArray(rts)
 		resourceTypes = append(resourceTypes, rts...)
 	}
 	result.BenchmarksTook = time.Now().UnixMilli() - start
+	result.BenchmarksApiTook = waitingForAPITook
+	result.BenchmarksProcessTook = processTook
 	start = time.Now().UnixMilli()
 
 	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
