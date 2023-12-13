@@ -24,6 +24,8 @@ type ComplianceServiceClient interface {
 	ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error)
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
 	CountFindings(ctx *httpclient.Context) (int64, error)
+	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
+	ListControl(ctx *httpclient.Context) ([]compliance.Control, error)
 }
 
 type complianceClient struct {
@@ -62,6 +64,26 @@ func (s *complianceClient) GetControl(ctx *httpclient.Context, controlID string)
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (s *complianceClient) ListControl(ctx *httpclient.Context) ([]compliance.Control, error) {
+	url := fmt.Sprintf("%s/api/v1/benchmarks/controls", s.baseURL)
+
+	var response []compliance.Control
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *complianceClient) ListQueries(ctx *httpclient.Context) ([]compliance.Query, error) {
+	url := fmt.Sprintf("%s/api/v1/benchmarks/queries", s.baseURL)
+
+	var response []compliance.Query
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 func (s *complianceClient) GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error) {

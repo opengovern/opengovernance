@@ -249,13 +249,13 @@ func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
 }
 
 func (s *Scheduler) scheduleDescribeJob() {
-	err := s.CheckWorkspaceResourceLimit()
-	if err != nil {
-		s.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
+	//err := s.CheckWorkspaceResourceLimit()
+	//if err != nil {
+	//	s.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
+	//	DescribeJobsCount.WithLabelValues("failure").Inc()
+	//	return
+	//}
+	//
 	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, nil)
 	if err != nil {
 		s.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))

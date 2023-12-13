@@ -411,26 +411,45 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
-	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	queries, err := h.Scheduler.complianceClient.ListQueries(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return err
 	}
-	var benchmarksApi1Took, benchmarksApi2Took, benchmarksApi3Took int64
-	for _, bench := range benchmarks {
-		rts, benchmarksApi1time, benchmarksApi2time, benchmarksApi3time, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
-		if err != nil {
-			return err
-		}
-		benchmarksApi1Took += benchmarksApi1time
-		benchmarksApi2Took += benchmarksApi2time
-		benchmarksApi3Took += benchmarksApi3time
-
-		rts = UniqueArray(rts)
-		resourceTypes = append(resourceTypes, rts...)
+	controls, err := h.Scheduler.complianceClient.ListControl(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		return err
 	}
-	result.BenchmarksApi1Took = benchmarksApi1Took
-	result.BenchmarksApi2Took = benchmarksApi2Took
-	result.BenchmarksApi3Took = benchmarksApi3Took
+	for _, control := range controls {
+		if !control.ManualVerification && control.QueryID != nil {
+			for _, query := range queries {
+				if *control.QueryID == query.ID {
+					rts := extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))
+					resourceTypes = append(resourceTypes, rts...)
+					break
+				}
+			}
+		}
+	}
+	//benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	//if err != nil {
+	//	return err
+	//}
+	//var benchmarksApi1Took, benchmarksApi2Took, benchmarksApi3Took int64
+	//for _, bench := range benchmarks {
+	//	rts, benchmarksApi1time, benchmarksApi2time, benchmarksApi3time, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	benchmarksApi1Took += benchmarksApi1time
+	//	benchmarksApi2Took += benchmarksApi2time
+	//	benchmarksApi3Took += benchmarksApi3time
+	//
+	//	rts = UniqueArray(rts)
+	//	resourceTypes = append(resourceTypes, rts...)
+	//}
+	//result.BenchmarksApi1Took = benchmarksApi1Took
+	//result.BenchmarksApi2Took = benchmarksApi2Took
+	//result.BenchmarksApi3Took = benchmarksApi3Took
 
 	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
 	for _, resourceType := range resourceTypes {
@@ -604,16 +623,16 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	forceFull := ctx.QueryParam("force_full") == "true"
 
-	err := h.Scheduler.CheckWorkspaceResourceLimit()
-	if err != nil {
-		h.Scheduler.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		if err == ErrMaxResourceCountExceeded {
-			return ctx.JSON(http.StatusNotAcceptable, api.ErrorResponse{Message: err.Error()})
-		}
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-	}
-
+	//err := h.Scheduler.CheckWorkspaceResourceLimit()
+	//if err != nil {
+	//	h.Scheduler.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
+	//	DescribeJobsCount.WithLabelValues("failure").Inc()
+	//	if err == ErrMaxResourceCountExceeded {
+	//		return ctx.JSON(http.StatusNotAcceptable, api.ErrorResponse{Message: err.Error()})
+	//	}
+	//	return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+	//}
+	//
 	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectors)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
