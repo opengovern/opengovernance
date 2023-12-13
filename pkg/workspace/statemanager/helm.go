@@ -40,7 +40,8 @@ type KaytuConfig struct {
 	OpenSearch   OpenSearchConfig `json:"opensearch"`
 }
 type OpenSearchConfig struct {
-	Enabled bool `json:"enabled"`
+	Enabled bool   `json:"enabled"`
+	ARN     string `json:"arn"`
 }
 type InsightsConfig struct {
 	S3 S3Config `json:"s3"`
@@ -137,7 +138,7 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 		return err
 	}
 
-	processing, err := s.isOpenSearchCreationFinished(workspace)
+	processing, arn, err := s.isOpenSearchCreationFinished(workspace)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			if err := s.createOpenSearch(workspace); err != nil {
@@ -173,6 +174,7 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 			},
 			OpenSearch: OpenSearchConfig{
 				Enabled: true,
+				ARN:     arn,
 			},
 		},
 	}
