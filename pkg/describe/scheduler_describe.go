@@ -263,13 +263,32 @@ func (s *Scheduler) scheduleDescribeJob() {
 		return
 	}
 
+	rts, err := s.ListDiscoveryResourceTypes()
+	if err != nil {
+		s.logger.Error("failed to get list of resource types", zap.String("spot", "ListDiscoveryResourceTypes"), zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
 	for _, connection := range connections {
 		var resourceTypes []string
 		switch connection.Connector {
 		case source.CloudAWS:
-			resourceTypes = aws.ListResourceTypes()
+			for _, rt := range aws.ListResourceTypes() {
+				for _, rt2 := range rts.AWSResourceTypes {
+					if rt2 == rt {
+						resourceTypes = append(resourceTypes, rt)
+					}
+				}
+			}
 		case source.CloudAzure:
-			resourceTypes = azure.ListResourceTypes()
+			for _, rt := range azure.ListResourceTypes() {
+				for _, rt2 := range rts.AzureResourceTypes {
+					if rt2 == rt {
+						resourceTypes = append(resourceTypes, rt)
+					}
+				}
+			}
 		}
 
 		for _, resourceType := range resourceTypes {
