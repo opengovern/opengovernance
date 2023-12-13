@@ -60,6 +60,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
+	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
+	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -2304,6 +2306,34 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 	}
 	span2.End()
 	return ctx.JSON(http.StatusOK, pa)
+}
+
+func (h *HttpHandler) ListControls(ctx echo.Context) error {
+	controls, err := h.db.ListControls()
+	if err != nil {
+		return err
+	}
+
+	var resp []api.Control
+	for _, control := range controls {
+		pa := control.ToApi()
+		resp = append(resp, pa)
+	}
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+func (h *HttpHandler) ListQueries(ctx echo.Context) error {
+	queries, err := h.db.ListQueries()
+	if err != nil {
+		return err
+	}
+
+	var resp []api.Query
+	for _, query := range queries {
+		pa := query.ToApi()
+		resp = append(resp, pa)
+	}
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {

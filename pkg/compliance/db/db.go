@@ -544,6 +544,16 @@ func (db Database) ListControls() ([]Control, error) {
 	return s, nil
 }
 
+func (db Database) ListQueries() ([]Query, error) {
+	var s []Query
+	tx := db.Orm.Model(&Query{}).Preload(clause.Associations).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 func (db Database) ListControlsBare() ([]Control, error) {
 	var s []Control
 	tx := db.Orm.Model(&Control{}).Preload("Tags").
