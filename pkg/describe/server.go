@@ -411,11 +411,11 @@ func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
-	queries, err := h.Scheduler.complianceClient.ListQueries(httpclient.FromEchoContext(ctx))
+	queries, err := h.Scheduler.complianceClient.ListQueries(&httpclient.Context{UserRole: apiAuth.InternalRole})
 	if err != nil {
 		return err
 	}
-	controls, err := h.Scheduler.complianceClient.ListControl(httpclient.FromEchoContext(ctx))
+	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole})
 	if err != nil {
 		return err
 	}
