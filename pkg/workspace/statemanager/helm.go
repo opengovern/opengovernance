@@ -33,10 +33,14 @@ type KaytuWorkspaceSettings struct {
 	Kaytu KaytuConfig `json:"kaytu"`
 }
 type KaytuConfig struct {
-	ReplicaCount int             `json:"replicaCount"`
-	Workspace    WorkspaceConfig `json:"workspace"`
-	Docker       DockerConfig    `json:"docker"`
-	Insights     InsightsConfig  `json:"insights"`
+	ReplicaCount int              `json:"replicaCount"`
+	Workspace    WorkspaceConfig  `json:"workspace"`
+	Docker       DockerConfig     `json:"docker"`
+	Insights     InsightsConfig   `json:"insights"`
+	OpenSearch   OpenSearchConfig `json:"opensearch"`
+}
+type OpenSearchConfig struct {
+	Enabled bool `json:"enabled"`
 }
 type InsightsConfig struct {
 	S3 S3Config `json:"s3"`
@@ -166,6 +170,9 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 					AccessKey: s.cfg.S3AccessKey,
 					SecretKey: s.cfg.S3SecretKey,
 				},
+			},
+			OpenSearch: OpenSearchConfig{
+				Enabled: true,
 			},
 		},
 	}
