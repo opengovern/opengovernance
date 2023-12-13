@@ -11,6 +11,7 @@ import (
 	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -130,6 +131,21 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 
 	if err := s.createInsightBucket(ctx, workspace); err != nil {
 		return err
+	}
+
+	processing, err := s.isOpenSearchCreationFinished(workspace)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			if err := s.createOpenSearch(workspace); err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	if processing {
+		return nil
 	}
 
 	var userARN string

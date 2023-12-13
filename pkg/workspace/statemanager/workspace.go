@@ -229,6 +229,7 @@ func (s *Service) createWorkspace(workspace *db.Workspace) error {
 	if err != nil {
 		return fmt.Errorf("find helm release: %w", err)
 	}
+
 	if helmRelease == nil {
 		if workspace.OwnerId != nil {
 			rs, err := s.db.GetReservedWorkspace()
