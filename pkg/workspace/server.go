@@ -1087,15 +1087,18 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		version := "unspecified"
-		var kaytuVersionConfig corev1.ConfigMap
-		err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
-			Namespace: workspace.ID,
-			Name:      "kaytu-version",
-		}, &kaytuVersionConfig)
-		if err == nil {
-			version = kaytuVersionConfig.Data["version"]
-		} else {
-			fmt.Printf("failed to load version due to %v\n", err)
+
+		if workspace.IsCreated {
+			var kaytuVersionConfig corev1.ConfigMap
+			err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+				Namespace: workspace.ID,
+				Name:      "kaytu-version",
+			}, &kaytuVersionConfig)
+			if err == nil {
+				version = kaytuVersionConfig.Data["version"]
+			} else {
+				fmt.Printf("failed to load version due to %v\n", err)
+			}
 		}
 
 		workspaces = append(workspaces, &api.WorkspaceResponse{
