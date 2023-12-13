@@ -6,7 +6,6 @@ import (
 	"fmt"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
@@ -83,7 +82,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/all/jobs/state", httpserver2.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
 	v1.GET("/discovery/resourcetypes/list", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
-	v1.GET("/discovery/resourcetypes/:resource_type/accounts", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeAccounts, apiAuth.ViewerRole))
 	v1.GET("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver2.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
@@ -384,124 +382,11 @@ func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, bench
 //	@Success	200	{object}	api.ListDiscoveryResourceTypes
 //	@Router		/schedule/api/v1/discovery/resourcetypes/list [get]
 func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
-	var result api.ListDiscoveryResourceTypes
-
-	var resourceTypes []string
-	assetMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeAssets)
+	result, err := h.Scheduler.ListDiscoveryResourceTypes()
 	if err != nil {
 		return err
 	}
-	spendMetrics, err := h.Scheduler.inventoryClient.ListAnalyticsMetrics(httpclient.FromEchoContext(ctx), analyticsDb.MetricTypeSpend)
-	if err != nil {
-		return err
-	}
-	for _, metric := range append(assetMetrics, spendMetrics...) {
-		for _, connector := range metric.Connectors {
-			rts := extractResourceTypes(metric.Query, connector)
-			resourceTypes = append(resourceTypes, rts...)
-		}
-	}
-
-	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-	for _, ins := range insights {
-		rts := extractResourceTypes(ins.Query.QueryToExecute, ins.Connector)
-		resourceTypes = append(resourceTypes, rts...)
-	}
-
-	queries, err := h.Scheduler.complianceClient.ListQueries(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-	controls, err := h.Scheduler.complianceClient.ListControl(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-	for _, control := range controls {
-		if !control.ManualVerification && control.QueryID != nil {
-			for _, query := range queries {
-				if *control.QueryID == query.ID {
-					rts := extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))
-					resourceTypes = append(resourceTypes, rts...)
-					break
-				}
-			}
-		}
-	}
-	//benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
-	//if err != nil {
-	//	return err
-	//}
-	//var benchmarksApi1Took, benchmarksApi2Took, benchmarksApi3Took int64
-	//for _, bench := range benchmarks {
-	//	rts, benchmarksApi1time, benchmarksApi2time, benchmarksApi3time, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	benchmarksApi1Took += benchmarksApi1time
-	//	benchmarksApi2Took += benchmarksApi2time
-	//	benchmarksApi3Took += benchmarksApi3time
-	//
-	//	rts = UniqueArray(rts)
-	//	resourceTypes = append(resourceTypes, rts...)
-	//}
-	//result.BenchmarksApi1Took = benchmarksApi1Took
-	//result.BenchmarksApi2Took = benchmarksApi2Took
-	//result.BenchmarksApi3Took = benchmarksApi3Took
-
-	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
-	for _, resourceType := range resourceTypes {
-		found := false
-		resourceType = strings.ToLower(resourceType)
-		if strings.HasPrefix(resourceType, "aws") {
-			for _, awsResourceType := range awsResourceTypes {
-				if strings.ToLower(awsResourceType) == resourceType {
-					found = true
-					resourceType = awsResourceType
-					break
-				}
-			}
-			result.AWSResourceTypes = append(result.AWSResourceTypes, resourceType)
-		} else if strings.HasPrefix(resourceType, "microsoft") {
-			for _, azureResourceType := range azureResourceTypes {
-				if strings.ToLower(azureResourceType) == resourceType {
-					found = true
-					resourceType = azureResourceType
-					break
-				}
-			}
-			result.AzureResourceTypes = append(result.AzureResourceTypes, resourceType)
-		} else if strings.HasPrefix(resourceType, "azure") {
-			result.AzureResourceTypes = append(result.AzureResourceTypes, resourceType)
-		} else {
-			return errors.New("invalid resource type:" + resourceType)
-		}
-
-		if !found {
-			h.Scheduler.logger.Error("resource type " + resourceType + " not found!")
-		}
-	}
-	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
-	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
-
-	result.AWSResourceTypes = UniqueArray(result.AWSResourceTypes)
-	result.AzureResourceTypes = UniqueArray(result.AzureResourceTypes)
-
 	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetDiscoveryResourceTypeAccounts godoc
-//
-//	@Summary	List all cloud accounts which will have the resource type enabled in discovery
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Produce	json
-//	@Success	200	{object}	api.ListJobsResponse
-//	@Router		/schedule/api/v1/discovery/resourcetypes/{resource_type}/accounts [get]
-func (h HttpServer) GetDiscoveryResourceTypeAccounts(ctx echo.Context) error {
-	return ctx.NoContent(http.StatusOK)
 }
 
 func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
