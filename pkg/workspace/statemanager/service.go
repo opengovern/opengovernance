@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	config2 "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
+	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -38,6 +40,8 @@ type Service struct {
 	awsConfig       aws.Config
 	awsMasterConfig aws.Config
 	policyARN       string
+	opensearch      *opensearch.Client
+	iam             *iam.Client
 }
 
 func New(cfg config.Config) (*Service, error) {
@@ -101,6 +105,10 @@ func New(cfg config.Config) (*Service, error) {
 	awsCfg.Region = cfg.KMSAccountRegion
 	kmsClient := kms.NewFromConfig(awsCfg)
 
+	awsCfg.Region = cfg.OpenSearchRegion
+	iamClient := iam.NewFromConfig(awsCfg)
+	openSearchClient := opensearch.NewFromConfig(awsCfg)
+
 	return &Service{
 		logger:          logger,
 		cfg:             cfg,
@@ -114,6 +122,8 @@ func New(cfg config.Config) (*Service, error) {
 		awsMasterConfig: awsMasterConfig,
 		policyARN:       cfg.AWSMasterPolicyARN,
 		kmsClient:       kmsClient,
+		iam:             iamClient,
+		opensearch:      openSearchClient,
 	}, nil
 }
 
