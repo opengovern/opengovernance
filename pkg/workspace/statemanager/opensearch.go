@@ -8,21 +8,21 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
-func (s *Service) isOpenSearchCreationFinished(workspace *db.Workspace) (bool, error) {
+func (s *Service) isOpenSearchCreationFinished(workspace *db.Workspace) (bool, string, error) {
 	domainName := workspace.ID
 
 	domain, err := s.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{
 		DomainName: aws.String(domainName),
 	})
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	processing := true
 	if domain.DomainStatus.Processing != nil {
 		processing = *domain.DomainStatus.Processing
 	}
-	return processing, nil
+	return processing, *domain.DomainStatus.ARN, nil
 }
 
 func (s *Service) createOpenSearch(workspace *db.Workspace) error {
