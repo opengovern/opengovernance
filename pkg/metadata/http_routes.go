@@ -1,11 +1,13 @@
 package metadata
 
 import (
+	"errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"gorm.io/gorm"
 	_ "gorm.io/gorm"
 	"net/http"
 
@@ -58,6 +60,10 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "config not found")
+		}
 		return err
 	}
 	span.AddEvent("information", trace.WithAttributes(
