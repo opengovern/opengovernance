@@ -15,11 +15,11 @@ var (
 	KafkaService = os.Getenv("KAFKA_SERVICE")
 	KafkaTopic   = os.Getenv("KAFKA_TOPIC")
 
-	ElasticSearchAddress         = os.Getenv("ES_ADDRESS")
-	ElasticSearchUsername        = os.Getenv("ES_USERNAME")
-	ElasticSearchPassword        = os.Getenv("ES_PASSWORD")
-	ElasticSearchIsOpenSearchStr = os.Getenv("ES_ISOPENSEARCH")
-	ElasticSearchAwsRegion       = os.Getenv("ES_AWS_REGION")
+	ElasticSearchAddress         = os.Getenv("ELASTICSEARCH_ADDRESS")
+	ElasticSearchUsername        = os.Getenv("ELASTICSEARCH_USERNAME")
+	ElasticSearchPassword        = os.Getenv("ELASTICSEARCH_PASSWORD")
+	ElasticSearchIsOpenSearchStr = os.Getenv("ELASTICSEARCH_ISOPENSEARCH")
+	ElasticSearchAwsRegion       = os.Getenv("ELASTICSEARCH_AWS_REGION")
 
 	WorkspaceClientURL = os.Getenv("WORKSPACE_BASE_URL")
 

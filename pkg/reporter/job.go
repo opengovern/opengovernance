@@ -111,7 +111,7 @@ var ESSteampipeHealthCheck = promauto.NewGauge(prometheus.GaugeOpts{
 	Namespace: "kaytu",
 	Subsystem: "reporter",
 	Name:      "es_steampipe_health_check",
-	Help:      "ES Steampipe Health Check",
+	Help:      "ElasticSearch Steampipe Health Check",
 })
 
 func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
