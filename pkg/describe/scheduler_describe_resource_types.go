@@ -109,7 +109,7 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		}
 
 		if !found {
-			s.logger.Error("resource type " + resourceType + " not found!")
+			//s.logger.Error("resource type " + resourceType + " not found!")
 		}
 	}
 	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
