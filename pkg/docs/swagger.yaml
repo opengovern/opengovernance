@@ -6580,21 +6580,6 @@ paths:
       summary: Triggers describer
       tags:
       - describe
-  /schedule/api/v1/discovery/resourcetypes/{resource_type}/accounts:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse'
-      security:
-      - BearerToken: []
-      summary: List all cloud accounts which will have the resource type enabled in
-        discovery
-      tags:
-      - scheduler
   /schedule/api/v1/discovery/resourcetypes/list:
     get:
       produces:

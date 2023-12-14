@@ -151,6 +151,7 @@ type FetchConnectionDailySpendHistoryQueryResponse struct {
 	Hits struct {
 		Hits []struct {
 			Source spend.ConnectionMetricTrendSummary `json:"_source"`
+			Sort   []any                              `json:"sort"`
 		} `json:"hits"`
 	} `json:"hits"`
 }
@@ -190,43 +191,57 @@ func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []strin
 		includeConnectorMap[connector] = true
 	}
 
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-	fmt.Println("FetchConnectionDailySpendHistory =", query)
-	var response FetchConnectionDailySpendHistoryQueryResponse
-	err = client.Search(context.TODO(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
 	hitsMap := make(map[string]ConnectionDailySpendHistory)
-	for _, v := range response.Hits.Hits {
-		for _, connectionResult := range v.Source.Connections {
-			if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.ConnectionID]) ||
-				(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
-				continue
-			}
-			connHit, ok := hitsMap[connectionResult.ConnectionID]
-			if !ok {
-				connHit = ConnectionDailySpendHistory{
-					ConnectionID: connectionResult.ConnectionID,
+	var searchAfter []any
+	res["sort"] = map[string]string{
+		"date_epoch": "desc",
+		"_id":        "asc",
+	}
+	for {
+		if len(searchAfter) > 0 {
+			res["search_after"] = searchAfter
+		}
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+
+		query := string(b)
+		fmt.Println("FetchConnectionDailySpendHistory =", query)
+		var response FetchConnectionDailySpendHistoryQueryResponse
+		err = client.Search(context.TODO(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, v := range response.Hits.Hits {
+			for _, connectionResult := range v.Source.Connections {
+				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.ConnectionID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
+					continue
 				}
+				connHit, ok := hitsMap[connectionResult.ConnectionID]
+				if !ok {
+					connHit = ConnectionDailySpendHistory{
+						ConnectionID: connectionResult.ConnectionID,
+					}
+				}
+				connHit.TotalCost += connectionResult.CostValue
+				if v.Source.Date == startTime.Format("2006-01-02") {
+					connHit.StartDateCost += connectionResult.CostValue
+				}
+				if v.Source.Date == endTime.Format("2006-01-02") {
+					connHit.EndDateCost += connectionResult.CostValue
+				}
+				hitsMap[connectionResult.ConnectionID] = connHit
 			}
-			connHit.TotalCost += connectionResult.CostValue
-			if v.Source.Date == startTime.Format("2006-01-02") {
-				connHit.StartDateCost += connectionResult.CostValue
-			}
-			if v.Source.Date == endTime.Format("2006-01-02") {
-				connHit.EndDateCost += connectionResult.CostValue
-			}
-			hitsMap[connectionResult.ConnectionID] = connHit
+			searchAfter = v.Sort
 		}
 	}
-
 	hits := make([]ConnectionDailySpendHistory, 0, len(hitsMap))
 	for _, v := range hitsMap {
 		hits = append(hits, v)

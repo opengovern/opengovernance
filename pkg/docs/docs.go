@@ -5268,30 +5268,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/discovery/resourcetypes/{resource_type}/accounts": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "scheduler"
-                ],
-                "summary": "List all cloud accounts which will have the resource type enabled in discovery",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/insight/trigger/{insight_id}": {
             "put": {
                 "security": [
