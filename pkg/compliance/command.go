@@ -23,15 +23,15 @@ type OpenAI struct {
 }
 
 type ServerConfig struct {
-	ES         config.ElasticSearch
-	PostgreSQL config.Postgres
-	Scheduler  config.KaytuService
-	Onboard    config.KaytuService
-	Inventory  config.KaytuService
-	Metadata   config.KaytuService
-	OpenAI     OpenAI
-	RabbitMq   config.RabbitMQ
-	Http       config.HttpServer
+	ElasticSearch config.ElasticSearch
+	PostgreSQL    config.Postgres
+	Scheduler     config.KaytuService
+	Onboard       config.KaytuService
+	Inventory     config.KaytuService
+	Metadata      config.KaytuService
+	OpenAI        OpenAI
+	RabbitMq      config.RabbitMQ
+	Http          config.HttpServer
 
 	MigratorJobQueueName string `yaml:"migrator_job_queue_name"`
 }
