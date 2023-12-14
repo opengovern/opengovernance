@@ -297,7 +297,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		lookupResourcesMap[r.Source.ResourceID] = &r.Source
 	}
 
-	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds)
+	severities := []kaytuTypes.FindingSeverity{
+		kaytuTypes.FindingSeverityCritical,
+		kaytuTypes.FindingSeverityHigh,
+		kaytuTypes.FindingSeverityMedium,
+		kaytuTypes.FindingSeverityLow,
+		kaytuTypes.FindingSeverityNone,
+	}
+
+	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds, severities)
 
 	for i, finding := range response.Findings {
 		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {

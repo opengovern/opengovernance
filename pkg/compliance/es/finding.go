@@ -644,7 +644,7 @@ type FindingCountPerKaytuResourceIdsResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Client, kaytuResourceIds []string) (map[string]int, error) {
+func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Client, kaytuResourceIds []string, severities []types.FindingSeverity) (map[string]int, error) {
 	var filters []map[string]any
 
 	if len(kaytuResourceIds) == 0 {
@@ -656,6 +656,13 @@ func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Clien
 			"kaytuResourceID": kaytuResourceIds,
 		},
 	})
+	if len(severities) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"severity": severities,
+			},
+		})
+	}
 
 	request := map[string]any{
 		"aggs": map[string]any{
