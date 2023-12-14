@@ -24,6 +24,8 @@ func (m Migration) AttachmentFolderPath() string {
 }
 
 func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+	logger.Info("running", zap.String("es_address", conf.ElasticSearch.Address))
+
 	elastic, err := kaytu.NewClient(kaytu.ClientConfig{
 		Addresses:    []string{conf.ElasticSearch.Address},
 		Username:     &conf.ElasticSearch.Username,
