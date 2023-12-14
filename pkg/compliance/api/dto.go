@@ -95,6 +95,7 @@ type GetSingleResourceFindingResponse struct {
 type TopFieldRecord struct {
 	Connection   *onboardApi.Connection
 	ResourceType *inventoryApi.ResourceType
+	Control      *Control
 	Service      *string
 
 	Field *string `json:"field"`
