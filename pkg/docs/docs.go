@@ -1946,7 +1946,8 @@ const docTemplate = `{
                             "resourceType",
                             "connectionID",
                             "resourceID",
-                            "service"
+                            "service",
+                            "controlID"
                         ],
                         "type": "string",
                         "description": "Field",
@@ -8531,6 +8532,9 @@ const docTemplate = `{
             "properties": {
                 "connection": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
+                },
+                "control": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control"
                 },
                 "count": {
                     "type": "integer"

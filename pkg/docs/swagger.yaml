@@ -1429,6 +1429,8 @@ definitions:
     properties:
       connection:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
+      control:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control'
       count:
         type: integer
       field:
@@ -4281,6 +4283,7 @@ paths:
         - connectionID
         - resourceID
         - service
+        - controlID
         in: path
         name: field
         required: true

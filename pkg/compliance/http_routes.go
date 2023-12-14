@@ -640,7 +640,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId			path		string							true	"BenchmarkID"
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
 //	@Param			count				path		int								true	"Count"
 //	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
@@ -811,6 +811,23 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			})
 		}
 		response.TotalCount = res.Aggregations.BucketCount.Value
+	case "controlid":
+		controls, err := h.db.ListControls()
+		if err != nil {
+			h.logger.Error("failed to get controls", zap.Error(err))
+			return err
+		}
+		controlsMap := make(map[string]*db.Control)
+		for _, control := range controls {
+			control := control
+			controlsMap[control.ID] = &control
+		}
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			response.Records = append(response.Records, api.TopFieldRecord{
+				Control: utils.GetPointer(controlsMap[item.Key].ToApi()),
+				Count:   item.DocCount,
+			})
+		}
 	default:
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
 			item := item
