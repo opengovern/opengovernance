@@ -22,7 +22,7 @@ func (s *Service) isOpenSearchCreationFinished(workspace *db.Workspace) (bool, s
 	if domain.DomainStatus.Processing != nil {
 		processing = *domain.DomainStatus.Processing
 	}
-	return processing, *domain.DomainStatus.ARN, nil
+	return processing, *domain.DomainStatus.Endpoint, nil
 }
 
 func (s *Service) createOpenSearch(workspace *db.Workspace) error {
