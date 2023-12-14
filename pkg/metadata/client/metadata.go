@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 )
+
+var ErrConfigNotFound = errors.New("config not found")
 
 type MetadataServiceClient interface {
 	GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error)
@@ -31,6 +34,9 @@ func (s *metadataClient) GetConfigMetadata(ctx *httpclient.Context, key models.M
 	url := fmt.Sprintf("%s/api/v1/metadata/%s", s.baseURL, string(key))
 	var cnf models.ConfigMetadata
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
+		if statusCode == 404 {
+			return nil, ErrConfigNotFound
+		}
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

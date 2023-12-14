@@ -11,7 +11,10 @@ import (
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
@@ -345,7 +348,13 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 		}
 
 		spendAttached := true
-		for _, policyARN := range h.spendDiscoveryAwsPolicyARNs {
+		awsSpendDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api2.InternalRole}, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
+		if err != nil {
+			if err != nil {
+				return false, err
+			}
+		}
+		for _, policyARN := range strings.Split(awsSpendDiscovery.GetValue().(string), ",") {
 			policyARN = strings.ReplaceAll(policyARN, "${accountID}", awsConfig.AccountID)
 			if !utils.Includes(policyARNs, policyARN) {
 				h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
