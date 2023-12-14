@@ -2333,8 +2333,12 @@ github.com/kaytu-io/kaytu-util v0.0.0-20231205183915-a4efddf16c6f h1:A+VP6K44qRz
 github.com/kaytu-io/kaytu-util v0.0.0-20231205183915-a4efddf16c6f/go.mod h1:DASdPC1NLGUE82wMYrzn2XPTebHy58R1hmwd1fWR+lE=
 github.com/kaytu-io/kaytu-util v0.0.0-20231214093510-226424846838 h1:IOJZRU8MfShOun5blRifgnJppuGBJ4E/NdWxYHTaSlo=
 github.com/kaytu-io/kaytu-util v0.0.0-20231214093510-226424846838/go.mod h1:DASdPC1NLGUE82wMYrzn2XPTebHy58R1hmwd1fWR+lE=
+github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20231214114544-992abc7adbaf h1:Z5uXqdhcQi6CkalynesW2bFViMazz5kyHLuEHJpjTNk=
+github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20231214114544-992abc7adbaf/go.mod h1:Y3MXAul32wkgnjKby4BVFGS2IVkUy/9CuGLjeX1peHo=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9/go.mod h1:EGCIxB3DvH/TAf9abPZH0JUFYdROVQguY8SQLMzsiS0=
+github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
+github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762/go.mod h1:EPUNW7l/wmL4bCCJgUmViGr5mS7cLmo+y/DPEb3azaU=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=

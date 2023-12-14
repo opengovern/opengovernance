@@ -41,7 +41,7 @@ require (
 	github.com/kaytu-io/kaytu-aws-describer v0.26.4
 	github.com/kaytu-io/kaytu-azure-describer v0.17.12
 	github.com/kaytu-io/kaytu-util v0.0.0-20231214093510-226424846838
-	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
+	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
 	github.com/lib/pq v1.10.3
@@ -439,6 +439,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20231214114544-992abc7adbaf // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
