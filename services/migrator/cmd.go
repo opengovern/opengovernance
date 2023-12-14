@@ -14,13 +14,15 @@ func Command() *cobra.Command {
 		cnf config2.MigratorConfig
 	)
 	config.ReadFromEnv(&cnf, nil)
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Info("running", zap.String("es_address", cnf.ElasticSearch.Address))
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := zap.NewProduction()
-			if err != nil {
-				return err
-			}
 
 			cmd.SilenceUsage = true
 

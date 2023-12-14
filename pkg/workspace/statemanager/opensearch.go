@@ -22,7 +22,16 @@ func (s *Service) isOpenSearchCreationFinished(workspace *db.Workspace) (bool, s
 	if domain.DomainStatus.Processing != nil {
 		processing = *domain.DomainStatus.Processing
 	}
-	return processing, *domain.DomainStatus.Endpoint, nil
+
+	var endpoint string
+	for k, v := range domain.DomainStatus.Endpoints {
+		if k == "vpc" {
+			endpoint = "https://" + v
+		} else {
+			endpoint = v
+		}
+	}
+	return processing, endpoint, nil
 }
 
 func (s *Service) createOpenSearch(workspace *db.Workspace) error {
