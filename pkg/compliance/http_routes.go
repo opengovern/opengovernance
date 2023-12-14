@@ -836,6 +836,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 				Count:   item.DocCount,
 			})
 		}
+		response.TotalCount = res.Aggregations.BucketCount.Value
 	default:
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
 			item := item
