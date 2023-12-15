@@ -33,7 +33,7 @@ func NewDatabase(settings config.Config, logger *zap.Logger) (*Database, error) 
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
-	if err := orm.AutoMigrate(&Organization{}, &Workspace{}, &Credential{}, &MasterCredential{}); err != nil {
+	if err := orm.AutoMigrate(&Organization{}, &Workspace{}, &Credential{}, &MasterCredential{}, &WorkspaceTransaction{}); err != nil {
 		return nil, fmt.Errorf("gorm migrate: %w", err)
 	}
 	return &Database{Orm: orm}, nil
