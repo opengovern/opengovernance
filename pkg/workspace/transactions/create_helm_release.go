@@ -13,6 +13,7 @@ import (
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -58,7 +59,7 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 	}
 
 	if helmRelease == nil {
-		if !types3.StateID(workspace.Status).IsReserve() {
+		if !state.StateID(workspace.Status).IsReserve() {
 			rs, err := t.db.GetReservedWorkspace()
 			if err != nil {
 				return err

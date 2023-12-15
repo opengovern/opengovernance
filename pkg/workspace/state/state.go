@@ -1,7 +1,6 @@
-package types
+package state
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 )
 
@@ -27,7 +26,7 @@ type State interface {
 }
 
 var AllStates = []State{
-	state.Bootstrapping{},
-	state.Deleting{},
-	state.Reserved{},
+	Bootstrapping{},
+	Deleting{},
+	Reserved{},
 }
