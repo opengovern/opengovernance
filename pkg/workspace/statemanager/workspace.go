@@ -43,7 +43,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	for _, stateRequirement := range currentState.Requirements() {
 		alreadyDone := false
 		for _, tn := range currentTransactions {
-			if tn.TransactionID == stateRequirement {
+			if transactions.TransactionID(tn.TransactionID) == stateRequirement {
 				alreadyDone = true
 			}
 		}
@@ -61,7 +61,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		for _, transactionRequirement := range transaction.Requirements() {
 			found := false
 			for _, tn := range currentTransactions {
-				if tn.TransactionID == transactionRequirement {
+				if transactions.TransactionID(tn.TransactionID) == transactionRequirement {
 					found = true
 				}
 			}
@@ -81,7 +81,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			return err
 		}
 
-		wt := db.WorkspaceTransaction{WorkspaceID: workspace.ID, TransactionID: stateRequirement}
+		wt := db.WorkspaceTransaction{WorkspaceID: workspace.ID, TransactionID: string(stateRequirement)}
 		err = s.db.CreateWorkspaceTransaction(&wt)
 		if err != nil {
 			return err
@@ -98,7 +98,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 	for _, transactionID := range currentTransactions {
 		isRequirement := false
 		for _, requirement := range currentState.Requirements() {
-			if requirement == transactionID.TransactionID {
+			if requirement == transactions.TransactionID(transactionID.TransactionID) {
 				isRequirement = true
 			}
 		}
@@ -107,7 +107,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(transactionID.TransactionID)
+		transaction := s.getTransactionByTransactionID(transactions.TransactionID(transactionID.TransactionID))
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
@@ -117,7 +117,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			return err
 		}
 
-		err = s.db.DeleteWorkspaceTransaction(workspace.ID, transactionID.TransactionID)
+		err = s.db.DeleteWorkspaceTransaction(workspace.ID, transactions.TransactionID(transactionID.TransactionID))
 		if err != nil {
 			return err
 		}

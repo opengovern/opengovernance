@@ -209,7 +209,7 @@ func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 		TagList:               nil,
 		VPCOptions: &types3.VPCOptions{
 			SecurityGroupIds: []string{t.securityGroupID},
-			SubnetIds:        t.subnetIDs,
+			SubnetIds:        []string{t.subnetID},
 		},
 	})
 	if err != nil {
