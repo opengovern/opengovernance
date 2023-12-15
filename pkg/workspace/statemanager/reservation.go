@@ -28,7 +28,7 @@ func (s *Service) handleReservation() error {
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           "",
 		OwnerId:        nil,
-		Status:         types.StateID_Reserving,
+		Status:         string(types.StateID_Reserving),
 		Size:           api.SizeXS,
 		Tier:           api.Tier_Teams,
 		OrganizationID: nil,

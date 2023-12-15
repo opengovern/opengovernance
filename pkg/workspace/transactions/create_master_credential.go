@@ -11,7 +11,6 @@ import (
 	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -36,7 +35,7 @@ func NewCreateMasterCredential(
 	}
 }
 
-func (t *CreateMasterCredential) Requirements() []types.TransactionID {
+func (t *CreateMasterCredential) Requirements() []TransactionID {
 	return nil
 }
 

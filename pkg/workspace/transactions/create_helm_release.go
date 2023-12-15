@@ -47,8 +47,8 @@ func NewCreateHelmRelease(
 	}
 }
 
-func (t *CreateHelmRelease) Requirements() []types3.TransactionID {
-	return []types3.TransactionID{types3.Transaction_CreateInsightBucket, types3.Transaction_CreateOpenSearch, types3.Transaction_CreateServiceAccountRoles}
+func (t *CreateHelmRelease) Requirements() []TransactionID {
+	return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles}
 }
 
 func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
@@ -58,7 +58,7 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 	}
 
 	if helmRelease == nil {
-		if !workspace.Status.IsReserve() {
+		if !types3.StateID(workspace.Status).IsReserve() {
 			rs, err := t.db.GetReservedWorkspace()
 			if err != nil {
 				return err
@@ -80,7 +80,7 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 					return err
 				}
 
-				return types3.ErrTransactionNeedsTime
+				return ErrTransactionNeedsTime
 			}
 		}
 
@@ -88,7 +88,7 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 		if err != nil {
 			return fmt.Errorf("createHelmRelease: %w", err)
 		}
-		return types3.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	err = t.ensureSettingsSynced(workspace, helmRelease)
@@ -113,10 +113,10 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 				return fmt.Errorf("suspend helmrelease: %v", err)
 			}
 		}
-		return types3.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
-	return types3.ErrTransactionNeedsTime
+	return ErrTransactionNeedsTime
 }
 
 func (t *CreateHelmRelease) Rollback(workspace db.Workspace) error {
@@ -129,7 +129,7 @@ func (t *CreateHelmRelease) Rollback(workspace db.Workspace) error {
 		if err := t.deleteHelmRelease(context.Background(), workspace); err != nil {
 			return fmt.Errorf("delete helm release: %w", err)
 		}
-		return types3.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	namespace, err := t.findTargetNamespace(context.Background(), workspace.ID)
@@ -140,7 +140,7 @@ func (t *CreateHelmRelease) Rollback(workspace db.Workspace) error {
 		if err := t.deleteTargetNamespace(context.Background(), workspace.ID); err != nil {
 			return fmt.Errorf("delete target namespace: %w", err)
 		}
-		return types3.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	return nil

@@ -7,7 +7,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"strings"
 )
 
@@ -23,8 +22,8 @@ func NewEnsureDiscoveryFinished(
 	}
 }
 
-func (t *EnsureDiscoveryFinished) Requirements() []types.TransactionID {
-	return []types.TransactionID{types.Transaction_EnsureBootstrapInputFinished}
+func (t *EnsureDiscoveryFinished) Requirements() []TransactionID {
+	return []TransactionID{Transaction_EnsureBootstrapInputFinished}
 }
 
 func (t *EnsureDiscoveryFinished) Apply(workspace db.Workspace) error {
@@ -39,7 +38,7 @@ func (t *EnsureDiscoveryFinished) Apply(workspace db.Workspace) error {
 
 	// waiting for all connections to finish
 	if status == nil || *status != api.DescribeAllJobsStatusResourcesPublished {
-		return types.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	return nil

@@ -1,14 +1,15 @@
 package state
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
 type Deleting struct {
 }
 
-func (s Deleting) Requirements() []types.TransactionID {
-	return []types.TransactionID{}
+func (s Deleting) Requirements() []transactions.TransactionID {
+	return []transactions.TransactionID{}
 }
 
 func (s Deleting) ProcessingStateID() types.StateID {

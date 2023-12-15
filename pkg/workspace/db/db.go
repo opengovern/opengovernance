@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"strconv"
 	"strings"
 
@@ -62,7 +61,7 @@ func (s *Database) UpdateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", m.ID).Updates(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(id string, status types.StateID) error {
+func (s *Database) UpdateWorkspaceStatus(id string, status string) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status).Error
 }
 

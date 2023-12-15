@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
 type CreateInsightBucket struct {
@@ -23,7 +22,7 @@ func NewCreateInsightBucket(
 	}
 }
 
-func (t *CreateInsightBucket) Requirements() []types.TransactionID {
+func (t *CreateInsightBucket) Requirements() []TransactionID {
 	return nil
 }
 
