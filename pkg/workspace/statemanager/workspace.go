@@ -117,7 +117,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			return err
 		}
 
-		err = s.db.DeleteWorkspaceTransaction(workspace.ID, transactions.TransactionID(transactionID.TransactionID))
+		err = s.db.DeleteWorkspaceTransaction(workspace.ID, transactionID.TransactionID)
 		if err != nil {
 			return err
 		}

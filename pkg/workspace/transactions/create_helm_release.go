@@ -13,7 +13,7 @@ import (
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
+	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -58,7 +58,7 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 	}
 
 	if helmRelease == nil {
-		if workspace.Status != state.StateID_Reserving && workspace.Status != state.StateID_Reserved {
+		if !workspace.Status.IsReserve() {
 			rs, err := t.db.GetReservedWorkspace()
 			if err != nil {
 				return err
@@ -228,21 +228,21 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 		userARN = *workspace.AWSUserARN
 	}
 
-	settings := state.KaytuWorkspaceSettings{
-		Kaytu: state.KaytuConfig{
+	settings := types3.KaytuWorkspaceSettings{
+		Kaytu: types3.KaytuConfig{
 			ReplicaCount: 1,
-			Workspace: state.WorkspaceConfig{
+			Workspace: types3.WorkspaceConfig{
 				Name:    workspace.Name,
 				Size:    workspace.Size,
 				UserARN: userARN,
 			},
-			Insights: state.InsightsConfig{
-				S3: state.S3Config{
+			Insights: types3.InsightsConfig{
+				S3: types3.S3Config{
 					AccessKey: t.cfg.S3AccessKey,
 					SecretKey: t.cfg.S3SecretKey,
 				},
 			},
-			OpenSearch: state.OpenSearchConfig{
+			OpenSearch: types3.OpenSearchConfig{
 				Enabled:  true,
 				Endpoint: workspace.OpenSearchEndpoint,
 			},
@@ -376,7 +376,7 @@ func (t *CreateHelmRelease) deleteHelmRelease(ctx context.Context, workspace db.
 	return t.kubeClient.Delete(ctx, &helmRelease)
 }
 
-func (t *CreateHelmRelease) UpdateWorkspaceSettings(helmRelease *v2beta1.HelmRelease, settings state.KaytuWorkspaceSettings) error {
+func (t *CreateHelmRelease) UpdateWorkspaceSettings(helmRelease *v2beta1.HelmRelease, settings types3.KaytuWorkspaceSettings) error {
 	ctx := context.Background()
 	b, err := json.Marshal(settings)
 	if err != nil {
@@ -390,8 +390,8 @@ func (t *CreateHelmRelease) UpdateWorkspaceSettings(helmRelease *v2beta1.HelmRel
 	return nil
 }
 
-func GetWorkspaceHelmValues(helmRelease *v2beta1.HelmRelease) (state.KaytuWorkspaceSettings, error) {
-	var settings state.KaytuWorkspaceSettings
+func GetWorkspaceHelmValues(helmRelease *v2beta1.HelmRelease) (types3.KaytuWorkspaceSettings, error) {
+	var settings types3.KaytuWorkspaceSettings
 
 	values := helmRelease.GetValues()
 	valuesJSON, err := json.Marshal(values)
