@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"strings"
 )
 
@@ -40,7 +41,7 @@ func NewCreateOpenSearch(
 	}
 }
 
-func (t *CreateOpenSearch) Requirements() []TransactionID {
+func (t *CreateOpenSearch) Requirements() []types.TransactionID {
 	return nil
 }
 
@@ -57,11 +58,11 @@ func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {
 	}
 
 	if processing {
-		return ErrTransactionNeedsTime
+		return types.ErrTransactionNeedsTime
 	}
 
 	if endpoint == "" {
-		return ErrTransactionNeedsTime
+		return types.ErrTransactionNeedsTime
 	}
 
 	err = t.db.UpdateWorkspaceOpenSearchEndpoint(workspace.ID, endpoint)
@@ -102,12 +103,12 @@ func (t *CreateOpenSearch) Rollback(workspace db.Workspace) error {
 		}
 
 		if processing {
-			return ErrTransactionNeedsTime
+			return types.ErrTransactionNeedsTime
 		}
 		return nil
 	}
 
-	return ErrTransactionNeedsTime
+	return types.ErrTransactionNeedsTime
 }
 
 func (t *CreateOpenSearch) isOpenSearchCreationFinished(workspace db.Workspace) (bool, string, error) {

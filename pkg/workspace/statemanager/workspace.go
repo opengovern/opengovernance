@@ -5,45 +5,45 @@ import (
 	"fmt"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
-func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) transactions.Transaction {
-	var transaction transactions.Transaction
+func (s *Service) getTransactionByTransactionID(tid types.TransactionID) types.Transaction {
+	var transaction types.Transaction
 	switch tid {
-	case transactions.Transaction_CreateHelmRelease:
+	case types.Transaction_CreateHelmRelease:
 		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db)
-	case transactions.Transaction_CreateInsightBucket:
+	case types.Transaction_CreateInsightBucket:
 		transaction = transactions.NewCreateInsightBucket(s.s3Client)
-	case transactions.Transaction_CreateMasterCredential:
+	case types.Transaction_CreateMasterCredential:
 		transaction = transactions.NewCreateMasterCredential(s.iamMaster, s.kmsClient, s.cfg, s.db)
-	case transactions.Transaction_CreateOpenSearch:
+	case types.Transaction_CreateOpenSearch:
 		transaction = transactions.NewCreateOpenSearch(s.cfg.MasterRoleARN, s.cfg.SecurityGroupID, s.cfg.SubnetID, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.opensearch)
-	case transactions.Transaction_CreateRoleBinding:
+	case types.Transaction_CreateRoleBinding:
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
-	case transactions.Transaction_CreateServiceAccountRoles:
+	case types.Transaction_CreateServiceAccountRoles:
 		transaction = transactions.NewCreateServiceAccountRoles(s.iam, s.cfg.AWSAccountID, s.cfg.OIDCProvider)
-	case transactions.Transaction_EnsureBootstrapInputFinished:
+	case types.Transaction_EnsureBootstrapInputFinished:
 		transaction = transactions.NewEnsureBootstrapInputFinished()
-	case transactions.Transaction_EnsureCredentialOnboarded:
+	case types.Transaction_EnsureCredentialOnboarded:
 		transaction = transactions.NewEnsureCredentialOnboarded(s.kmsClient, s.cfg, s.db)
-	case transactions.Transaction_EnsureDiscoveryFinished:
+	case types.Transaction_EnsureDiscoveryFinished:
 		transaction = transactions.NewEnsureDiscoveryFinished(s.cfg)
-	case transactions.Transaction_EnsureJobsFinished:
+	case types.Transaction_EnsureJobsFinished:
 		transaction = transactions.NewEnsureJobsFinished(s.cfg)
-	case transactions.Transaction_EnsureJobsRunning:
+	case types.Transaction_EnsureJobsRunning:
 		transaction = transactions.NewEnsureJobsRunning(s.cfg, s.db)
 	}
 	return transaction
 }
 
-func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
+func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentState types.State, currentTransactions []db.WorkspaceTransaction) error {
 	allStateTransactionsMet := true
 	for _, stateRequirement := range currentState.Requirements() {
 		alreadyDone := false
 		for _, tn := range currentTransactions {
-			if transactions.TransactionID(tn.TransactionID) == stateRequirement {
+			if types.TransactionID(tn.TransactionID) == stateRequirement {
 				alreadyDone = true
 			}
 		}
@@ -61,7 +61,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		for _, transactionRequirement := range transaction.Requirements() {
 			found := false
 			for _, tn := range currentTransactions {
-				if transactions.TransactionID(tn.TransactionID) == transactionRequirement {
+				if types.TransactionID(tn.TransactionID) == transactionRequirement {
 					found = true
 				}
 			}
@@ -89,16 +89,16 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	}
 
 	if !allStateTransactionsMet {
-		return transactions.ErrTransactionNeedsTime
+		return types.ErrTransactionNeedsTime
 	}
 	return nil
 }
 
-func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
+func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentState types.State, currentTransactions []db.WorkspaceTransaction) error {
 	for _, transactionID := range currentTransactions {
 		isRequirement := false
 		for _, requirement := range currentState.Requirements() {
-			if requirement == transactions.TransactionID(transactionID.TransactionID) {
+			if requirement == types.TransactionID(transactionID.TransactionID) {
 				isRequirement = true
 			}
 		}
@@ -107,7 +107,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(transactions.TransactionID(transactionID.TransactionID))
+		transaction := s.getTransactionByTransactionID(types.TransactionID(transactionID.TransactionID))
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
@@ -126,8 +126,8 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 }
 
 func (s *Service) handleTransition(workspace *db.Workspace) error {
-	var currentState state.State
-	for _, v := range state.AllStates {
+	var currentState types.State
+	for _, v := range types.AllStates {
 		if v.ProcessingStateID() == workspace.Status {
 			currentState = v
 		}
@@ -145,7 +145,7 @@ func (s *Service) handleTransition(workspace *db.Workspace) error {
 
 	err = s.handleTransitionRequirements(workspace, currentState, tns)
 	if err != nil {
-		if errors.Is(err, transactions.ErrTransactionNeedsTime) {
+		if errors.Is(err, types.ErrTransactionNeedsTime) {
 			return nil
 		}
 		return err
@@ -153,7 +153,7 @@ func (s *Service) handleTransition(workspace *db.Workspace) error {
 
 	err = s.handleTransitionRollbacks(workspace, currentState, tns)
 	if err != nil {
-		if errors.Is(err, transactions.ErrTransactionNeedsTime) {
+		if errors.Is(err, types.ErrTransactionNeedsTime) {
 			return nil
 		}
 		return err
