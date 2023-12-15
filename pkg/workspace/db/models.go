@@ -3,7 +3,6 @@ package db
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	"gorm.io/gorm"
 	"time"
 )
@@ -82,7 +81,7 @@ func (o *Organization) ToAPI() api.Organization {
 }
 
 type WorkspaceTransaction struct {
-	WorkspaceID   string                     `gorm:"primarykey"`
-	TransactionID transactions.TransactionID `gorm:"primarykey"`
+	WorkspaceID   string `gorm:"primarykey"`
+	TransactionID string `gorm:"primarykey"`
 	CreatedAt     time.Time
 }
