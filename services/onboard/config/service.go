@@ -9,4 +9,7 @@ type OnboardConfig struct {
 	Metadata  config.KaytuService
 	Inventory config.KaytuService
 	Describe  config.KaytuService
+
+	MasterAccessKey string `yaml:"master_access_key"`
+	MasterSecretKey string `yaml:"master_secret_key"`
 }
