@@ -12,7 +12,7 @@ import (
 type CreateOpenSearch struct {
 	masterRoleARN   string
 	securityGroupID string
-	subnetIDs       []string
+	subnetID        string
 	vmType          types3.OpenSearchPartitionInstanceType
 	instanceCount   int32
 	db              *db.Database
@@ -23,7 +23,7 @@ type CreateOpenSearch struct {
 func NewCreateOpenSearch(
 	masterRoleARN string,
 	securityGroupID string,
-	subnetIDs []string,
+	subnetID string,
 	vmType types3.OpenSearchPartitionInstanceType,
 	instanceCount int32,
 	db *db.Database,
@@ -32,7 +32,7 @@ func NewCreateOpenSearch(
 	return &CreateOpenSearch{
 		masterRoleARN:   masterRoleARN,
 		securityGroupID: securityGroupID,
-		subnetIDs:       subnetIDs,
+		subnetID:        subnetID,
 		vmType:          vmType,
 		instanceCount:   instanceCount,
 		db:              db,

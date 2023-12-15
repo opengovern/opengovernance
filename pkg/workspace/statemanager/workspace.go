@@ -19,7 +19,7 @@ func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) 
 	case transactions.Transaction_CreateMasterCredential:
 		transaction = transactions.NewCreateMasterCredential(s.iamMaster, s.kmsClient, s.cfg, s.db)
 	case transactions.Transaction_CreateOpenSearch:
-		transaction = transactions.NewCreateOpenSearch(s.cfg.MasterRoleARN, s.cfg.SecurityGroupID, s.cfg.SubnetIDs, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.opensearch)
+		transaction = transactions.NewCreateOpenSearch(s.cfg.MasterRoleARN, s.cfg.SecurityGroupID, s.cfg.SubnetID, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.opensearch)
 	case transactions.Transaction_CreateRoleBinding:
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
 	case transactions.Transaction_CreateServiceAccountRoles:
