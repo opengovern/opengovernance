@@ -34,6 +34,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		AwsRegion:    &conf.ElasticSearch.AwsRegion,
 	})
 	if err != nil {
+		logger.Error("failed to create es client due to", zap.Error(err))
 		return err
 	}
 
@@ -45,6 +46,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 				time.Sleep(10 * time.Second)
 				continue
 			}
+			logger.Error("failed to check es healthcheck due to", zap.Error(err))
 			return err
 		}
 		break
@@ -59,6 +61,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return nil
 	})
 	if err != nil {
+		logger.Error("failed to get files", zap.Error(err))
 		return err
 	}
 
