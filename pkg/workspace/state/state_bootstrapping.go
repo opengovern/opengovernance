@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
 type Bootstrapping struct {
@@ -24,10 +23,10 @@ func (s Bootstrapping) Requirements() []transactions.TransactionID {
 	}
 }
 
-func (s Bootstrapping) ProcessingStateID() types.StateID {
-	return types.StateID_Bootstrapping
+func (s Bootstrapping) ProcessingStateID() StateID {
+	return StateID_Bootstrapping
 }
 
-func (s Bootstrapping) FinishedStateID() types.StateID {
-	return types.StateID_Provisioned
+func (s Bootstrapping) FinishedStateID() StateID {
+	return StateID_Provisioned
 }

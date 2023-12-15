@@ -5,8 +5,8 @@ import (
 	"fmt"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
 func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) transactions.Transaction {
@@ -38,7 +38,7 @@ func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) 
 	return transaction
 }
 
-func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentState types.State, currentTransactions []db.WorkspaceTransaction) error {
+func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
 	allStateTransactionsMet := true
 	for _, stateRequirement := range currentState.Requirements() {
 		alreadyDone := false
@@ -94,7 +94,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	return nil
 }
 
-func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentState types.State, currentTransactions []db.WorkspaceTransaction) error {
+func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
 	for _, transactionID := range currentTransactions {
 		isRequirement := false
 		for _, requirement := range currentState.Requirements() {
@@ -126,9 +126,9 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 }
 
 func (s *Service) handleTransition(workspace *db.Workspace) error {
-	var currentState types.State
-	for _, v := range types.AllStates {
-		if v.ProcessingStateID() == types.StateID(workspace.Status) {
+	var currentState state.State
+	for _, v := range state.AllStates {
+		if v.ProcessingStateID() == state.StateID(workspace.Status) {
 			currentState = v
 		}
 	}
