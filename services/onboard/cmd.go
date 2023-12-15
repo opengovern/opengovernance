@@ -9,7 +9,7 @@ import (
 )
 
 func Command() *cobra.Command {
-	var cnf config2.OnboradConfig
+	var cnf config2.OnboardConfig
 	config.ReadFromEnv(&cnf, nil)
 
 	cmd := &cobra.Command{
