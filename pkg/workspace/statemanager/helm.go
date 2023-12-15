@@ -157,6 +157,11 @@ func (s *Service) createHelmRelease(ctx context.Context, workspace *db.Workspace
 		return errors.New("endpoint is not available")
 	}
 
+	err = s.createRoles(workspace)
+	if err != nil {
+		return err
+	}
+
 	var userARN string
 	if workspace.AWSUserARN != nil {
 		userARN = *workspace.AWSUserARN

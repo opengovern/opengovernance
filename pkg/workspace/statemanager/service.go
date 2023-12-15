@@ -42,6 +42,9 @@ type Service struct {
 	policyARN       string
 	opensearch      *opensearch.Client
 	iam             *iam.Client
+
+	kaytuAWSAccountID string
+	kaytuOIDCProvider string
 }
 
 func New(cfg config.Config) (*Service, error) {
