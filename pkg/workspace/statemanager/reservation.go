@@ -2,6 +2,7 @@ package statemanager
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
@@ -24,9 +25,15 @@ func (s *Service) handleReservation() error {
 		return err
 	}
 
+	awsUID, err := sf.NextID()
+	if err != nil {
+		return err
+	}
+
 	workspace := &db.Workspace{
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           "",
+		AWSUniqueId:    aws.String(fmt.Sprintf("aws-uid-%d", awsUID)),
 		OwnerId:        nil,
 		Status:         string(state.StateID_Reserving),
 		Size:           api.SizeXS,
