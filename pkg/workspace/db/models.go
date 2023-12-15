@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"gorm.io/gorm"
 	"time"
 )
@@ -15,7 +15,7 @@ type Workspace struct {
 	AWSUniqueId              *string           `json:"aws_unique_id"`
 	AWSUserARN               *string           `json:"aws_user_arn"`
 	OwnerId                  *string           `json:"owner_id"`
-	Status                   state.StateID     `json:"status"`
+	Status                   types.StateID     `json:"status"`
 	Size                     api.WorkspaceSize `json:"workspace_size"`
 	Tier                     api.Tier          `json:"tier"`
 	OrganizationID           *int              `json:"organization_id"`
