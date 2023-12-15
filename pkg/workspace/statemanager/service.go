@@ -88,6 +88,8 @@ func New(cfg config.Config) (*Service, error) {
 	openSearchClient := opensearch.NewFromConfig(awsCfg)
 
 	iamClient := iam.NewFromConfig(awsCfg)
+
+	awsCfg.Region = "us-east-1"
 	s3Client := s3.NewFromConfig(awsCfg)
 
 	return &Service{
