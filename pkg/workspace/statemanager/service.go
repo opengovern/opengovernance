@@ -89,8 +89,12 @@ func New(cfg config.Config) (*Service, error) {
 
 	iamClient := iam.NewFromConfig(awsCfg)
 
-	awsCfg.Region = "us-east-1"
-	s3Client := s3.NewFromConfig(awsCfg)
+	awsConfig, err := aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+	awsConfig.Region = "us-east-1"
+	s3Client := s3.NewFromConfig(awsConfig)
 
 	return &Service{
 		logger:     logger,
