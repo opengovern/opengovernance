@@ -1,7 +1,6 @@
 package state
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 )
 
@@ -16,6 +15,10 @@ const (
 	StateID_Deleted       StateID = "DELETED"
 )
 
+func (s StateID) IsReserve() bool {
+	return s == StateID_Reserving || s == StateID_Reserved
+}
+
 type State interface {
 	Requirements() []transactions.TransactionID
 	ProcessingStateID() StateID
@@ -26,36 +29,4 @@ var AllStates = []State{
 	Bootstrapping{},
 	Deleting{},
 	Reserved{},
-}
-
-type KaytuWorkspaceSettings struct {
-	Kaytu KaytuConfig `json:"kaytu"`
-}
-type KaytuConfig struct {
-	ReplicaCount int              `json:"replicaCount"`
-	Workspace    WorkspaceConfig  `json:"workspace"`
-	Docker       DockerConfig     `json:"docker"`
-	Insights     InsightsConfig   `json:"insights"`
-	OpenSearch   OpenSearchConfig `json:"opensearch"`
-}
-type OpenSearchConfig struct {
-	Enabled  bool   `json:"enabled"`
-	Endpoint string `json:"endpoint"`
-}
-type InsightsConfig struct {
-	S3 S3Config `json:"s3"`
-}
-type S3Config struct {
-	AccessKey string `json:"accessKey"`
-	SecretKey string `json:"secretKey"`
-}
-type DockerConfig struct {
-	Config string `json:"config"`
-}
-type WorkspaceConfig struct {
-	Name            string            `json:"name"`
-	Size            api.WorkspaceSize `json:"size"`
-	UserARN         string            `json:"userARN"`
-	MasterAccessKey string            `json:"masterAccessKey"`
-	MasterSecretKey string            `json:"masterSecretKey"`
 }
