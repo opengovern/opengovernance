@@ -91,8 +91,11 @@ func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceNa
 }`, t.kaytuAWSAccountID, t.kaytuOIDCProvider, workspace.ID, serviceName)),
 		RoleName: aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName)),
 	})
-	if strings.Contains(err.Error(), "EntityAlreadyExists") {
-		return nil
+	if err != nil {
+		if strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return nil
+		}
+		return err
 	}
-	return err
+	return nil
 }
