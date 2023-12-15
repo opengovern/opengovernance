@@ -22,7 +22,7 @@ func New(config config.Postgres, logger *zap.Logger) (Database, error) {
 		DB:      config.DB,
 		SSLMode: config.SSLMode,
 	}
-	gorm, err := postgres.NewClient(&cfg, logger)
+	gorm, err := postgres.NewClient(&cfg, logger.Named("postgres"))
 	if err != nil {
 		return Database{}, fmt.Errorf("new postgres client: %w", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/api"
 	config2 "github.com/kaytu-io/kaytu-engine/services/onboard/config"
+	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/spf13/cobra"
@@ -21,6 +22,8 @@ func Command() *cobra.Command {
 				return err
 			}
 
+			logger = logger.Named("onboard")
+
 			// setup source events queue
 			var qCfg queue.Config
 			qCfg.Server.Username = cnf.RabbitMQ.Username
@@ -34,6 +37,8 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			db.New(cnf.Postgres, logger)
 
 			api.New(logger, q)
 
