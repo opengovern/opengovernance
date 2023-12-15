@@ -7,6 +7,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
+	"go.uber.org/zap"
+	"reflect"
 )
 
 func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) transactions.Transaction {
@@ -76,6 +78,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			continue
 		}
 
+		s.logger.Info("applying transaction", zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Apply(*workspace)
 		if err != nil {
 			return err
@@ -112,6 +115,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
 
+		s.logger.Info("rolling back transaction", zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Rollback(*workspace)
 		if err != nil {
 			return err
