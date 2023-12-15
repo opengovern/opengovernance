@@ -9,30 +9,30 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
-func (s *Service) getTransactionByTransactionID(tid types.TransactionID) types.Transaction {
-	var transaction types.Transaction
+func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) transactions.Transaction {
+	var transaction transactions.Transaction
 	switch tid {
-	case types.Transaction_CreateHelmRelease:
+	case transactions.Transaction_CreateHelmRelease:
 		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db)
-	case types.Transaction_CreateInsightBucket:
+	case transactions.Transaction_CreateInsightBucket:
 		transaction = transactions.NewCreateInsightBucket(s.s3Client)
-	case types.Transaction_CreateMasterCredential:
+	case transactions.Transaction_CreateMasterCredential:
 		transaction = transactions.NewCreateMasterCredential(s.iamMaster, s.kmsClient, s.cfg, s.db)
-	case types.Transaction_CreateOpenSearch:
+	case transactions.Transaction_CreateOpenSearch:
 		transaction = transactions.NewCreateOpenSearch(s.cfg.MasterRoleARN, s.cfg.SecurityGroupID, s.cfg.SubnetID, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.opensearch)
-	case types.Transaction_CreateRoleBinding:
+	case transactions.Transaction_CreateRoleBinding:
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
-	case types.Transaction_CreateServiceAccountRoles:
+	case transactions.Transaction_CreateServiceAccountRoles:
 		transaction = transactions.NewCreateServiceAccountRoles(s.iam, s.cfg.AWSAccountID, s.cfg.OIDCProvider)
-	case types.Transaction_EnsureBootstrapInputFinished:
+	case transactions.Transaction_EnsureBootstrapInputFinished:
 		transaction = transactions.NewEnsureBootstrapInputFinished()
-	case types.Transaction_EnsureCredentialOnboarded:
+	case transactions.Transaction_EnsureCredentialOnboarded:
 		transaction = transactions.NewEnsureCredentialOnboarded(s.kmsClient, s.cfg, s.db)
-	case types.Transaction_EnsureDiscoveryFinished:
+	case transactions.Transaction_EnsureDiscoveryFinished:
 		transaction = transactions.NewEnsureDiscoveryFinished(s.cfg)
-	case types.Transaction_EnsureJobsFinished:
+	case transactions.Transaction_EnsureJobsFinished:
 		transaction = transactions.NewEnsureJobsFinished(s.cfg)
-	case types.Transaction_EnsureJobsRunning:
+	case transactions.Transaction_EnsureJobsRunning:
 		transaction = transactions.NewEnsureJobsRunning(s.cfg, s.db)
 	}
 	return transaction
@@ -43,7 +43,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	for _, stateRequirement := range currentState.Requirements() {
 		alreadyDone := false
 		for _, tn := range currentTransactions {
-			if types.TransactionID(tn.TransactionID) == stateRequirement {
+			if transactions.TransactionID(tn.TransactionID) == stateRequirement {
 				alreadyDone = true
 			}
 		}
@@ -61,7 +61,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		for _, transactionRequirement := range transaction.Requirements() {
 			found := false
 			for _, tn := range currentTransactions {
-				if types.TransactionID(tn.TransactionID) == transactionRequirement {
+				if transactions.TransactionID(tn.TransactionID) == transactionRequirement {
 					found = true
 				}
 			}
@@ -89,7 +89,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	}
 
 	if !allStateTransactionsMet {
-		return types.ErrTransactionNeedsTime
+		return transactions.ErrTransactionNeedsTime
 	}
 	return nil
 }
@@ -98,7 +98,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 	for _, transactionID := range currentTransactions {
 		isRequirement := false
 		for _, requirement := range currentState.Requirements() {
-			if requirement == types.TransactionID(transactionID.TransactionID) {
+			if requirement == transactions.TransactionID(transactionID.TransactionID) {
 				isRequirement = true
 			}
 		}
@@ -107,7 +107,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(types.TransactionID(transactionID.TransactionID))
+		transaction := s.getTransactionByTransactionID(transactions.TransactionID(transactionID.TransactionID))
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
@@ -128,7 +128,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 func (s *Service) handleTransition(workspace *db.Workspace) error {
 	var currentState types.State
 	for _, v := range types.AllStates {
-		if v.ProcessingStateID() == workspace.Status {
+		if v.ProcessingStateID() == types.StateID(workspace.Status) {
 			currentState = v
 		}
 	}
@@ -145,7 +145,7 @@ func (s *Service) handleTransition(workspace *db.Workspace) error {
 
 	err = s.handleTransitionRequirements(workspace, currentState, tns)
 	if err != nil {
-		if errors.Is(err, types.ErrTransactionNeedsTime) {
+		if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 			return nil
 		}
 		return err
@@ -153,13 +153,13 @@ func (s *Service) handleTransition(workspace *db.Workspace) error {
 
 	err = s.handleTransitionRollbacks(workspace, currentState, tns)
 	if err != nil {
-		if errors.Is(err, types.ErrTransactionNeedsTime) {
+		if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 			return nil
 		}
 		return err
 	}
 
-	err = s.db.UpdateWorkspaceStatus(workspace.ID, currentState.FinishedStateID())
+	err = s.db.UpdateWorkspaceStatus(workspace.ID, string(currentState.FinishedStateID()))
 	if err != nil {
 		return err
 	}

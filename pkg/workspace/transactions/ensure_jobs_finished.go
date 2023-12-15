@@ -11,7 +11,6 @@ import (
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
 	"strings"
@@ -29,8 +28,8 @@ func NewEnsureJobsFinished(
 	}
 }
 
-func (t *EnsureJobsFinished) Requirements() []types.TransactionID {
-	return []types.TransactionID{types.Transaction_EnsureJobsRunning}
+func (t *EnsureJobsFinished) Requirements() []TransactionID {
+	return []TransactionID{Transaction_EnsureJobsRunning}
 }
 
 func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
@@ -45,11 +44,11 @@ func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
 		return fmt.Errorf("getting analytics job failed: %v", err)
 	}
 	if job == nil {
-		return types.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
-		return types.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	isInProgress := false
@@ -64,7 +63,7 @@ func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
 			return err
 		}
 		if job == nil {
-			return types.ErrTransactionNeedsTime
+			return ErrTransactionNeedsTime
 		}
 
 		if job.Status == api3.InsightJobSucceeded {
@@ -78,7 +77,7 @@ func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
 	}
 
 	if isInProgress {
-		return types.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	awsSrcs, err := onboardClient.ListSources(hctx, []source.Type{source.CloudAWS})
@@ -92,7 +91,7 @@ func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
 		}
 
 		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
-			return types.ErrTransactionNeedsTime
+			return ErrTransactionNeedsTime
 		}
 	}
 
@@ -107,7 +106,7 @@ func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
 		}
 
 		if complianceJob.Status != api.ComplianceJobSucceeded && complianceJob.Status != api.ComplianceJobFailed {
-			return types.ErrTransactionNeedsTime
+			return ErrTransactionNeedsTime
 		}
 	}
 

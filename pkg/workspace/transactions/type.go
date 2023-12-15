@@ -1,4 +1,4 @@
-package types
+package transactions
 
 import (
 	"errors"

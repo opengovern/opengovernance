@@ -6,7 +6,6 @@ import (
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 )
 
 type CreateRoleBinding struct {
@@ -21,12 +20,12 @@ func NewCreateRoleBinding(
 	}
 }
 
-func (t *CreateRoleBinding) ID() types.TransactionID {
-	return types.Transaction_CreateRoleBinding
+func (t *CreateRoleBinding) ID() TransactionID {
+	return Transaction_CreateRoleBinding
 }
 
-func (t *CreateRoleBinding) Requirements() []types.TransactionID {
-	return []types.TransactionID{types.Transaction_CreateHelmRelease}
+func (t *CreateRoleBinding) Requirements() []TransactionID {
+	return []TransactionID{Transaction_CreateHelmRelease}
 }
 
 func (t *CreateRoleBinding) Apply(workspace db.Workspace) error {

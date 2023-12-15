@@ -15,7 +15,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 )
@@ -38,7 +37,7 @@ func NewEnsureCredentialOnboarded(
 	}
 }
 
-func (t *EnsureCredentialOnboarded) Requirements() []types.TransactionID {
+func (t *EnsureCredentialOnboarded) Requirements() []TransactionID {
 	return nil
 }
 
@@ -49,7 +48,7 @@ func (t *EnsureCredentialOnboarded) Apply(workspace db.Workspace) error {
 	}
 
 	if len(creds) == 0 {
-		return types.ErrTransactionNeedsTime
+		return ErrTransactionNeedsTime
 	}
 
 	for _, cred := range creds {

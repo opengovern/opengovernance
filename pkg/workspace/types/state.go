@@ -1,6 +1,9 @@
 package types
 
-import "github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
+import (
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
+)
 
 type StateID string
 
@@ -18,7 +21,7 @@ func (s StateID) IsReserve() bool {
 }
 
 type State interface {
-	Requirements() []TransactionID
+	Requirements() []transactions.TransactionID
 	ProcessingStateID() StateID
 	FinishedStateID() StateID
 }

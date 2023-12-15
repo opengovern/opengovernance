@@ -9,7 +9,6 @@ import (
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 )
@@ -29,12 +28,12 @@ func NewEnsureJobsRunning(
 	}
 }
 
-func (t *EnsureJobsRunning) ID() types.TransactionID {
-	return types.Transaction_EnsureJobsRunning
+func (t *EnsureJobsRunning) ID() TransactionID {
+	return Transaction_EnsureJobsRunning
 }
 
-func (t *EnsureJobsRunning) Requirements() []types.TransactionID {
-	return []types.TransactionID{types.Transaction_EnsureDiscoveryFinished}
+func (t *EnsureJobsRunning) Requirements() []TransactionID {
+	return []TransactionID{Transaction_EnsureDiscoveryFinished}
 }
 
 func (t *EnsureJobsRunning) Apply(workspace db.Workspace) error {

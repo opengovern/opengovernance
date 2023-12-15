@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"strings"
 )
 
@@ -45,7 +44,7 @@ func NewCreateServiceAccountRoles(
 	}
 }
 
-func (t *CreateServiceAccountRoles) Requirements() []types.TransactionID {
+func (t *CreateServiceAccountRoles) Requirements() []TransactionID {
 	return nil
 }
 
