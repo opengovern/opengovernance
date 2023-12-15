@@ -8,12 +8,33 @@ import (
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 )
 
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {
 	var result api.ListDiscoveryResourceTypes
+
+	azureDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAzureDiscoveryRequiredOnly)
+	if err != nil {
+		return result, err
+	}
+
+	awsDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAWSDiscoveryRequiredOnly)
+	if err != nil {
+		return result, err
+	}
+
+	azureRequiredOnly := azureDiscoveryType.GetValue().(bool)
+	awsRequiredOnly := awsDiscoveryType.GetValue().(bool)
+
+	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
+	if !azureRequiredOnly && !awsRequiredOnly {
+		result.AzureResourceTypes = azureResourceTypes
+		result.AWSResourceTypes = awsResourceTypes
+		return result, nil
+	}
 
 	var resourceTypes []string
 	assetMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, analyticsDb.MetricTypeAssets)
@@ -30,6 +51,8 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 			resourceTypes = append(resourceTypes, rts...)
 		}
 	}
+	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
+	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
 
 	insights, err := s.complianceClient.ListInsights(&httpclient.Context{UserRole: apiAuth.InternalRole})
 	if err != nil {
@@ -59,28 +82,7 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 			}
 		}
 	}
-	//benchmarks, err := s.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
-	//if err != nil {
-	//	return err
-	//}
-	//var benchmarksApi1Took, benchmarksApi2Took, benchmarksApi3Took int64
-	//for _, bench := range benchmarks {
-	//	rts, benchmarksApi1time, benchmarksApi2time, benchmarksApi3time, err := h.extractBenchmarkResourceTypes(httpclient.FromEchoContext(ctx), bench.ID)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	benchmarksApi1Took += benchmarksApi1time
-	//	benchmarksApi2Took += benchmarksApi2time
-	//	benchmarksApi3Took += benchmarksApi3time
-	//
-	//	rts = UniqueArray(rts)
-	//	resourceTypes = append(resourceTypes, rts...)
-	//}
-	//result.BenchmarksApi1Took = benchmarksApi1Took
-	//result.BenchmarksApi2Took = benchmarksApi2Took
-	//result.BenchmarksApi3Took = benchmarksApi3Took
 
-	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
 	for _, resourceType := range resourceTypes {
 		found := false
 		resourceType = strings.ToLower(resourceType)
@@ -112,11 +114,16 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 			//s.logger.Error("resource type " + resourceType + " not found!")
 		}
 	}
-	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
-	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
 
 	result.AWSResourceTypes = UniqueArray(result.AWSResourceTypes)
 	result.AzureResourceTypes = UniqueArray(result.AzureResourceTypes)
+
+	if !azureRequiredOnly {
+		result.AzureResourceTypes = azureResourceTypes
+	}
+	if !awsRequiredOnly {
+		result.AWSResourceTypes = awsResourceTypes
+	}
 
 	return result, nil
 }

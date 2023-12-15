@@ -39,7 +39,7 @@ func (s *Service) createOpenSearch(workspace *db.Workspace) error {
 	masterRoleARN := "arn:aws:iam::435670955331:role/KaytuOpenSearchAdmin"
 	vmType := types3.OpenSearchPartitionInstanceTypeT3SmallSearch
 	instanceCount := int32(1)
-	securityGroupID := "sg-07c5a6f32dcd14e26"
+	securityGroupID := "sg-0d3059e62ca2a406f"
 	subnetIDs := []string{"subnet-099c1b7e69b8d4a3f"}
 
 	_, err := s.opensearch.CreateDomain(context.Background(), &opensearch.CreateDomainInput{
