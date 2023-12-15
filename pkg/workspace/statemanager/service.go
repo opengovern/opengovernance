@@ -3,22 +3,24 @@ package statemanager
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	config2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
-	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"runtime/debug"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
@@ -28,23 +30,16 @@ const (
 )
 
 type Service struct {
-	cfg             config.Config
-	logger          *zap.Logger
-	db              *db.Database
-	kms             *vault.KMSVaultSourceConfig
-	kmsClient       *kms.Client
-	authClient      authclient.AuthServiceClient
-	kubeClient      k8sclient.Client // the kubernetes client
-	rdb             *redis.Client
-	cache           *cache.Cache
-	awsConfig       aws.Config
-	awsMasterConfig aws.Config
-	policyARN       string
-	opensearch      *opensearch.Client
-	iam             *iam.Client
-
-	kaytuAWSAccountID string
-	kaytuOIDCProvider string
+	cfg        config.Config
+	logger     *zap.Logger
+	db         *db.Database
+	kmsClient  *kms.Client
+	authClient authclient.AuthServiceClient
+	kubeClient k8sclient.Client // the kubernetes client
+	opensearch *opensearch.Client
+	iam        *iam.Client
+	iamMaster  *iam.Client
+	s3Client   *s3.Client
 }
 
 func New(cfg config.Config) (*Service, error) {
@@ -59,22 +54,6 @@ func New(cfg config.Config) (*Service, error) {
 	}
 
 	authClient := authclient.NewAuthServiceClient(cfg.Auth.BaseURL)
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Address,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	cache := cache.New(&cache.Options{
-		Redis:      rdb,
-		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
-	})
-
-	kmsVault, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", cfg.KMSAccountRegion)
-	if err != nil {
-		return nil, err
-	}
 
 	kubeClient, err := NewKubeClient()
 	if err != nil {
@@ -91,42 +70,37 @@ func New(cfg config.Config) (*Service, error) {
 		return nil, fmt.Errorf("add v1 to scheme: %w", err)
 	}
 
-	awsConfig, err := aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	awsConfigMaster, err := aws2.GetConfig(context.Background(), cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
-
-	awsMasterConfig, err := aws2.GetConfig(context.Background(), cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
-	if err != nil {
-		return nil, err
-	}
+	iamClientMaster := iam.NewFromConfig(awsConfigMaster)
 
 	awsCfg, err := config2.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
+
 	awsCfg.Region = cfg.KMSAccountRegion
 	kmsClient := kms.NewFromConfig(awsCfg)
 
 	awsCfg.Region = cfg.OpenSearchRegion
-	iamClient := iam.NewFromConfig(awsCfg)
 	openSearchClient := opensearch.NewFromConfig(awsCfg)
 
+	iamClient := iam.NewFromConfig(awsCfg)
+	s3Client := s3.NewFromConfig(awsCfg)
+
 	return &Service{
-		logger:          logger,
-		cfg:             cfg,
-		db:              dbs,
-		kms:             kmsVault,
-		authClient:      authClient,
-		kubeClient:      kubeClient,
-		rdb:             rdb,
-		cache:           cache,
-		awsConfig:       awsConfig,
-		awsMasterConfig: awsMasterConfig,
-		policyARN:       cfg.AWSMasterPolicyARN,
-		kmsClient:       kmsClient,
-		iam:             iamClient,
-		opensearch:      openSearchClient,
+		logger:     logger,
+		cfg:        cfg,
+		db:         dbs,
+		authClient: authClient,
+		kubeClient: kubeClient,
+		kmsClient:  kmsClient,
+		iam:        iamClient,
+		iamMaster:  iamClientMaster,
+		s3Client:   s3Client,
+		opensearch: openSearchClient,
 	}, nil
 }
 
@@ -150,12 +124,8 @@ func (s *Service) StartReconciler() {
 			s.logger.Error(fmt.Sprintf("list workspaces: %v", err))
 		} else {
 			for _, workspace := range workspaces {
-				if err := s.handleWorkspace(workspace); err != nil {
+				if err := s.handleTransition(workspace); err != nil {
 					s.logger.Error(fmt.Sprintf("handle workspace %s: %v", workspace.ID, err))
-				}
-
-				if err := s.handleAutoSuspend(workspace); err != nil {
-					s.logger.Error(fmt.Sprintf("handleAutoSuspend: %v", err))
 				}
 			}
 
@@ -171,4 +141,19 @@ func (s *Service) StartReconciler() {
 		// reset the time ticker
 		ticker.Reset(reconcilerInterval)
 	}
+}
+
+func NewKubeClient() (client.Client, error) {
+	scheme := runtime.NewScheme()
+	if err := helmv2.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	kubeClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient, nil
 }

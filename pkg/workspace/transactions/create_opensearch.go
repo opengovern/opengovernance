@@ -1,4 +1,4 @@
-package statemanager
+package transactions
 
 import (
 	"context"
@@ -6,12 +6,114 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"strings"
 )
 
-func (s *Service) isOpenSearchCreationFinished(workspace *db.Workspace) (bool, string, error) {
+type CreateOpenSearch struct {
+	masterRoleARN   string
+	securityGroupID string
+	subnetID        string
+	vmType          types3.OpenSearchPartitionInstanceType
+	instanceCount   int32
+	db              *db.Database
+
+	opensearch *opensearch.Client
+}
+
+func NewCreateOpenSearch(
+	masterRoleARN string,
+	securityGroupID string,
+	subnetID string,
+	vmType types3.OpenSearchPartitionInstanceType,
+	instanceCount int32,
+	db *db.Database,
+	opensearch *opensearch.Client,
+) *CreateOpenSearch {
+	return &CreateOpenSearch{
+		masterRoleARN:   masterRoleARN,
+		securityGroupID: securityGroupID,
+		subnetID:        subnetID,
+		vmType:          vmType,
+		instanceCount:   instanceCount,
+		db:              db,
+		opensearch:      opensearch,
+	}
+}
+
+func (t *CreateOpenSearch) Requirements() []TransactionID {
+	return nil
+}
+
+func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {
+	processing, endpoint, err := t.isOpenSearchCreationFinished(workspace)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			if err := t.createOpenSearch(workspace); err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	if processing {
+		return ErrTransactionNeedsTime
+	}
+
+	if endpoint == "" {
+		return ErrTransactionNeedsTime
+	}
+
+	err = t.db.UpdateWorkspaceOpenSearchEndpoint(workspace.ID, endpoint)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *CreateOpenSearch) Rollback(workspace db.Workspace) error {
 	domainName := workspace.ID
 
-	domain, err := s.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{
+	domain, err := t.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{
+		DomainName: aws.String(domainName),
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "ResourceNotFoundException") {
+			return nil
+		}
+		return err
+	}
+
+	deleted := false
+	if domain.DomainStatus.Deleted != nil {
+		deleted = *domain.DomainStatus.Deleted
+	}
+
+	if !deleted {
+		_, err := t.opensearch.DeleteDomain(context.Background(), &opensearch.DeleteDomainInput{DomainName: aws.String(domainName)})
+		if err != nil {
+			return err
+		}
+	} else {
+		processing := false
+		if domain.DomainStatus.Processing != nil {
+			processing = *domain.DomainStatus.Processing
+		}
+
+		if processing {
+			return ErrTransactionNeedsTime
+		}
+		return nil
+	}
+
+	return ErrTransactionNeedsTime
+}
+
+func (t *CreateOpenSearch) isOpenSearchCreationFinished(workspace db.Workspace) (bool, string, error) {
+	domainName := workspace.ID
+
+	domain, err := t.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{
 		DomainName: aws.String(domainName),
 	})
 	if err != nil {
@@ -34,15 +136,10 @@ func (s *Service) isOpenSearchCreationFinished(workspace *db.Workspace) (bool, s
 	return processing, endpoint, nil
 }
 
-func (s *Service) createOpenSearch(workspace *db.Workspace) error {
+func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 	domainName := workspace.ID
-	masterRoleARN := "arn:aws:iam::435670955331:role/KaytuOpenSearchAdmin"
-	vmType := types3.OpenSearchPartitionInstanceTypeT3SmallSearch
-	instanceCount := int32(1)
-	securityGroupID := "sg-0d3059e62ca2a406f"
-	subnetIDs := []string{"subnet-099c1b7e69b8d4a3f"}
 
-	_, err := s.opensearch.CreateDomain(context.Background(), &opensearch.CreateDomainInput{
+	_, err := t.opensearch.CreateDomain(context.Background(), &opensearch.CreateDomainInput{
 		DomainName:     aws.String(domainName),
 		AccessPolicies: nil,
 		AdvancedOptions: map[string]string{
@@ -56,7 +153,7 @@ func (s *Service) createOpenSearch(workspace *db.Workspace) error {
 			Enabled:                     aws.Bool(true),
 			InternalUserDatabaseEnabled: nil,
 			MasterUserOptions: &types3.MasterUserOptions{
-				MasterUserARN:      aws.String(masterRoleARN),
+				MasterUserARN:      aws.String(t.masterRoleARN),
 				MasterUserName:     nil,
 				MasterUserPassword: nil,
 			},
@@ -68,8 +165,8 @@ func (s *Service) createOpenSearch(workspace *db.Workspace) error {
 			DedicatedMasterCount:      nil,
 			DedicatedMasterEnabled:    aws.Bool(false),
 			DedicatedMasterType:       "",
-			InstanceCount:             aws.Int32(instanceCount),
-			InstanceType:              vmType,
+			InstanceCount:             aws.Int32(t.instanceCount),
+			InstanceType:              t.vmType,
 			MultiAZWithStandbyEnabled: aws.Bool(false),
 			WarmCount:                 nil,
 			WarmEnabled:               aws.Bool(false),
@@ -94,7 +191,7 @@ func (s *Service) createOpenSearch(workspace *db.Workspace) error {
 		},
 		EncryptionAtRestOptions: &types3.EncryptionAtRestOptions{
 			Enabled:  aws.Bool(true),
-			KmsKeyId: nil, //TODO-Saleh KMS
+			KmsKeyId: nil,
 		},
 		EngineVersion:               aws.String("OpenSearch_2.11"),
 		LogPublishingOptions:        nil,
@@ -111,8 +208,8 @@ func (s *Service) createOpenSearch(workspace *db.Workspace) error {
 		SoftwareUpdateOptions: nil,
 		TagList:               nil,
 		VPCOptions: &types3.VPCOptions{
-			SecurityGroupIds: []string{securityGroupID},
-			SubnetIds:        subnetIDs,
+			SecurityGroupIds: []string{t.securityGroupID},
+			SubnetIds:        t.subnetIDs,
 		},
 	})
 	if err != nil {

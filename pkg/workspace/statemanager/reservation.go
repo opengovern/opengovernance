@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/sony/sonyflake"
 )
 
@@ -27,9 +28,7 @@ func (s *Service) handleReservation() error {
 		ID:             fmt.Sprintf("ws-%d", id),
 		Name:           "",
 		OwnerId:        nil,
-		URI:            "",
-		Status:         api.StatusReserved,
-		Description:    "",
+		Status:         state.StateID_Reserving,
 		Size:           api.SizeXS,
 		Tier:           api.Tier_Teams,
 		OrganizationID: nil,
