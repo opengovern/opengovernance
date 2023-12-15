@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/config"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
+	"github.com/kaytu-io/kaytu-engine/services/onboard/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ func Command() *cobra.Command {
 			}
 
 			db.New(cnf.Postgres, logger)
-
+			steampipe.New(cnf.Steampipe)
 			api.New(logger, q)
 
 			cmd.SilenceUsage = true
