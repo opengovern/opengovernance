@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -13,7 +13,7 @@ type Database struct {
 	DB *gorm.DB
 }
 
-func New(config config.Postgres, logger *zap.Logger) (Database, error) {
+func New(config koanf.Postgres, logger *zap.Logger) (Database, error) {
 	cfg := postgres.Config{
 		Host:    config.Host,
 		Port:    config.Port,
@@ -36,10 +36,10 @@ func New(config config.Postgres, logger *zap.Logger) (Database, error) {
 		return Database{}, err
 	}
 
-	sqlDB.SetMaxIdleConns(0)
-	sqlDB.SetMaxOpenConns(0)
-	sqlDB.SetConnMaxIdleTime(0)
-	sqlDB.SetConnMaxLifetime(0)
+	sqlDB.SetMaxIdleConns(config.MaxIdelConns)
+	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
+	sqlDB.SetConnMaxIdleTime(config.ConnMaxIdleTime)
+	sqlDB.SetConnMaxLifetime(config.ConnMaxLifetime)
 
 	if err := db.Initialize(); err != nil {
 		return Database{}, err
