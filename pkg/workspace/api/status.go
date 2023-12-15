@@ -7,15 +7,12 @@ func (ws WorkspaceStatus) String() string {
 }
 
 const (
-	StatusProvisioned        WorkspaceStatus = "PROVISIONED"
-	StatusBootstrapping      WorkspaceStatus = "BOOTSTRAPPING"
-	StatusReserved           WorkspaceStatus = "RESERVED"
-	StatusProvisioning       WorkspaceStatus = "PROVISIONING"
-	StatusProvisioningFailed WorkspaceStatus = "PROVISIONING_FAILED"
-	StatusDeleting           WorkspaceStatus = "DELETING"
-	StatusDeleted            WorkspaceStatus = "DELETED"
-	StatusSuspending         WorkspaceStatus = "SUSPENDING"
-	StatusSuspended          WorkspaceStatus = "SUSPENDED"
+	StatusReserving     WorkspaceStatus = "RESERVING"
+	StatusReserved      WorkspaceStatus = "RESERVED"
+	StatusBootstrapping WorkspaceStatus = "BOOTSTRAPPING"
+	StatusProvisioned   WorkspaceStatus = "PROVISIONED"
+	StatusDeleting      WorkspaceStatus = "DELETING"
+	StatusDeleted       WorkspaceStatus = "DELETED"
 )
 
 type WorkspaceSize string

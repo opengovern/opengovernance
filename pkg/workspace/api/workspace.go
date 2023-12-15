@@ -9,7 +9,6 @@ import (
 
 type CreateWorkspaceRequest struct {
 	Name           string `json:"name"`
-	Description    string `json:"description"`
 	Tier           string `json:"tier"`
 	OrganizationID int    `json:"organization_id"`
 }
@@ -75,9 +74,7 @@ type Workspace struct {
 	AWSUserARN               *string         `json:"aws_user_arn" example:"kaytu"`
 	AWSUniqueId              *string         `json:"aws_unique_id" example:"kaytu"`
 	OwnerId                  *string         `json:"ownerId" example:"google-oauth2|204590896945502695694"`
-	URI                      string          `json:"uri" example:"https://app.kaytu.dev/kaytu"`
 	Status                   WorkspaceStatus `json:"status" example:"PROVISIONED"`
-	Description              string          `json:"description" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
 	Tier                     Tier            `json:"tier" example:"ENTERPRISE"`
 	Organization             *Organization   `json:"organization,omitempty"`
 	Size                     WorkspaceSize   `json:"size" example:"sm"`
