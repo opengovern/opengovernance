@@ -44,14 +44,21 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			db.New(cnf.Postgres, logger)
+			db, err := db.New(cnf.Postgres, logger)
+			if err != nil {
+				return err
+			}
+
 			s, err := steampipe.New(cnf.Steampipe, logger)
 			if err != nil {
 				return err
 			}
 
 			// TODO (parham) why access-key and secret-key are empty?
-			vault.NewKMSVaultSourceConfig(context.Background(), "", "", cnf.KMS.Region)
+			kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", cnf.KMS.Region)
+			if err != nil {
+				return err
+			}
 
 			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
 			d := describe.NewSchedulerServiceClient(cnf.Describe.BaseURL)
@@ -60,7 +67,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			api.New(logger, q, d, i, m, s)
+			api.New(logger, q, d, i, m, s, db, kms)
 
 			cmd.SilenceUsage = true
 
