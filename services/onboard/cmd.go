@@ -1,13 +1,19 @@
 package onboard
 
 import (
+	"context"
+
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/config"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
+	"github.com/kaytu-io/kaytu-engine/services/onboard/meta"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -39,7 +45,14 @@ func Command() *cobra.Command {
 			}
 
 			db.New(cnf.Postgres, logger)
-			steampipe.New(cnf.Steampipe)
+			steampipe.New(cnf.Steampipe, logger)
+
+			// TODO (parham) why access-key and secret-key are empty?
+			vault.NewKMSVaultSourceConfig(context.Background(), "", "", cnf.KMS.Region)
+
+			inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
+			describe.NewSchedulerServiceClient(cnf.Describe.BaseURL)
+			meta.New(cnf.Metadata)
 			api.New(logger, q)
 
 			cmd.SilenceUsage = true

@@ -7,6 +7,7 @@ type OnboardConfig struct {
 	Steampipe koanf.Postgres
 	Http      koanf.HttpServer
 	RabbitMQ  koanf.RabbitMQ
+	KMS       koanf.KMS
 	Metadata  koanf.KaytuService
 	Inventory koanf.KaytuService
 	Describe  koanf.KaytuService
