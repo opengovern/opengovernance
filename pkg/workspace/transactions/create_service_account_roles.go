@@ -68,7 +68,9 @@ func (t *CreateServiceAccountRoles) Rollback(workspace db.Workspace) error {
 			RoleName: aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName)),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
 		}
 	}
 	return nil
