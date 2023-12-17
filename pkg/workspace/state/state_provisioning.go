@@ -16,7 +16,6 @@ func (s Provisioning) Requirements() []transactions.TransactionID {
 		transactions.Transaction_CreateHelmRelease,
 		transactions.Transaction_CreateRoleBinding,
 		transactions.Transaction_EnsureCredentialOnboarded,
-		transactions.Transaction_EnsureBootstrapInputFinished,
 		transactions.Transaction_EnsureDiscoveryFinished,
 		transactions.Transaction_EnsureJobsRunning,
 		transactions.Transaction_EnsureJobsFinished,

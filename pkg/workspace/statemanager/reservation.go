@@ -6,8 +6,43 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	"github.com/sony/sonyflake"
 )
+
+func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
+	rs, err := s.db.GetReservedWorkspace()
+	if err != nil {
+		return err
+	}
+
+	if rs == nil {
+		return nil
+	}
+
+	err = s.db.DeleteWorkspace(workspace.ID)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.UpdateCredentialWSID(workspace.ID, rs.ID)
+	if err != nil {
+		return err
+	}
+
+	workspace.ID = rs.ID
+	err = s.db.UpdateWorkspace(&workspace)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.DeleteWorkspaceTransaction(workspace.ID, string(transactions.Transaction_CreateHelmRelease))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (s *Service) handleReservation() error {
 	rs, err := s.db.GetReservedWorkspace()
@@ -16,32 +51,6 @@ func (s *Service) handleReservation() error {
 	}
 
 	if rs != nil {
-		//if workspace.Status != "RESERVING" && workspace.Status != "RESERVED" {
-		//	rs, err := t.db.GetReservedWorkspace()
-		//	if err != nil {
-		//		return err
-		//	}
-		//
-		//	if rs != nil {
-		//		err = t.db.DeleteWorkspace(workspace.ID)
-		//		if err != nil {
-		//			return err
-		//		}
-		//
-		//		err = t.db.UpdateCredentialWSID(workspace.ID, rs.ID)
-		//		if err != nil {
-		//			return err
-		//		}
-		//
-		//		workspace.ID = rs.ID
-		//		if err := t.db.UpdateWorkspace(&workspace); err != nil {
-		//			return err
-		//		}
-		//
-		//		return ErrTransactionNeedsTime
-		//	}
-		//}
-
 		return nil
 	}
 
