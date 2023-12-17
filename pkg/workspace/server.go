@@ -8,15 +8,14 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	config2 "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/smithy-go"
-	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -30,17 +29,14 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	"github.com/go-redis/cache/v8"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
@@ -51,7 +47,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/go-redis/redis/v8"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
@@ -75,8 +70,6 @@ type Server struct {
 	db           *db.Database
 	authClient   authclient.AuthServiceClient
 	kubeClient   k8sclient.Client // the kubernetes client
-	rdb          *redis.Client
-	cache        *cache.Cache
 	StateManager *statemanager.Service
 	awsMasterCnf aws.Config
 	kms          *kms.Client
@@ -117,30 +110,12 @@ func NewServer(cfg config.Config) (*Server, error) {
 
 	s.authClient = authclient.NewAuthServiceClient(cfg.Auth.BaseURL)
 
-	s.rdb = redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Address,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	s.cache = cache.New(&cache.Options{
-		Redis:      s.rdb,
-		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
-	})
-
 	s.logger = logger
 
 	s.StateManager, err = statemanager.New(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	awsConfig, err := aws2.GetConfig(context.Background(), cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	s.awsMasterCnf = awsConfig
 
 	awsCfg, err := config2.LoadDefaultConfig(context.Background())
 	if err != nil {
@@ -158,8 +133,6 @@ func (s *Server) Register(e *echo.Echo) {
 	workspaceGroup := v1Group.Group("/workspace")
 	workspaceGroup.POST("", httpserver.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
 	workspaceGroup.DELETE("/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/suspend", httpserver.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/resume", httpserver.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
 	workspaceGroup.GET("/current", httpserver.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
 	workspaceGroup.POST("/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
 	workspaceGroup.POST("/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.KaytuAdminRole))
@@ -234,7 +207,6 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid Tier")
 	}
-	uri := strings.ToLower("https://" + s.cfg.DomainSuffix + "/" + request.Name)
 	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
 	id, err := sf.NextID()
 	if err != nil {
@@ -256,9 +228,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Name:                     strings.ToLower(request.Name),
 		AWSUniqueId:              aws.String(fmt.Sprintf("aws-uid-%d", awsUID)),
 		OwnerId:                  &userID,
-		URI:                      uri,
-		Status:                   api.StatusBootstrapping,
-		Description:              request.Description,
+		Status:                   string(state.StateID_Bootstrapping),
 		Size:                     api.SizeXS,
 		Tier:                     api.Tier(request.Tier),
 		OrganizationID:           organizationID,
@@ -267,72 +237,6 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		AnalyticsJobID:           0,
 		InsightJobsID:            "",
 		ComplianceTriggered:      false,
-	}
-	userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
-
-	iamClient := iam.NewFromConfig(s.awsMasterCnf)
-	iamUser, err := iamClient.CreateUser(context.Background(), &iam.CreateUserInput{
-		UserName:            aws.String(userName),
-		Path:                nil,
-		PermissionsBoundary: nil,
-		Tags:                nil,
-	})
-	if err != nil {
-		return err
-	}
-	workspace.AWSUserARN = iamUser.User.Arn
-
-	policy, err := iamClient.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
-		PolicyDocument: aws.String(`{
-	"Version": "2012-10-17",
-	"Statement": {
-		"Effect": "Allow",
-		"Action": "sts:AssumeRole",
-		"Resource": "*"
-	}
-}`),
-		PolicyName: aws.String(userName + "-assume-role"),
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = iamClient.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
-		PolicyArn: policy.Policy.Arn,
-		UserName:  aws.String(userName),
-	})
-
-	key, err := iamClient.CreateAccessKey(context.Background(), &iam.CreateAccessKeyInput{
-		UserName: aws.String(userName),
-	})
-	if err != nil {
-		return err
-	}
-
-	js, err := json.Marshal(key.AccessKey)
-	if err != nil {
-		return err
-	}
-
-	result, err := s.kms.Encrypt(context.TODO(), &kms.EncryptInput{
-		KeyId:               &s.cfg.KMSKeyARN,
-		Plaintext:           js,
-		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-		EncryptionContext:   nil, //TODO-Saleh use workspaceID
-		GrantTokens:         nil,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
-	}
-	encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
-
-	err = s.db.CreateMasterCredential(&db2.MasterCredential{
-		WorkspaceID:   *workspace.AWSUniqueId,
-		ConnectorType: source.CloudAWS,
-		Credential:    encoded,
-	})
-	if err != nil {
-		return err
 	}
 
 	if err := s.db.CreateWorkspace(workspace); err != nil {
@@ -384,7 +288,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
 	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
 
-	if ws.Status == api.StatusBootstrapping {
+	if state.StateID(ws.Status) == state.StateID_Bootstrapping {
 		if !ws.IsBootstrapInputFinished {
 			return resp, nil
 		}
@@ -816,7 +720,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	if err := s.db.UpdateWorkspaceStatus(id, api.StatusDeleting); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(id, string(state.StateID_Deleting)); err != nil {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
@@ -951,88 +855,6 @@ func (s *Server) GetWorkspaceByName(c echo.Context) error {
 	})
 }
 
-// ResumeWorkspace godoc
-//
-//	@Summary	Resume workspace
-//	@Tags		workspace
-//	@Security	BearerToken
-//	@Accept		json
-//	@Produce	json
-//	@Param		workspace_id	path	string	true	"Workspace ID"
-//	@Success	200
-//	@Router		/workspace/api/v1/workspace/{workspace_id}/resume [post]
-func (s *Server) ResumeWorkspace(c echo.Context) error {
-	id := c.Param("workspace_id")
-	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-
-	workspace, err := s.db.GetWorkspace(id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
-		}
-		c.Logger().Errorf("find workspace: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
-	}
-
-	if workspace.Status != api.StatusSuspended {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace is not suspended")
-	}
-
-	err = s.rdb.SetEX(context.Background(), "last_access_"+workspace.Name, time.Now().UnixMilli(),
-		30*24*time.Hour).Err()
-	if err != nil {
-		return err
-	}
-
-	if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioning); err != nil {
-		return fmt.Errorf("update workspace status: %w", err)
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
-}
-
-// SuspendWorkspace godoc
-//
-//	@Summary	Suspend workspace
-//	@Tags		workspace
-//	@Security	BearerToken
-//	@Accept		json
-//	@Produce	json
-//	@Param		workspace_id	path	string	true	"Workspace ID"
-//	@Success	200
-//	@Router		/workspace/api/v1/workspace/{workspace_id}/suspend [post]
-func (s *Server) SuspendWorkspace(c echo.Context) error {
-	id := c.Param("workspace_id")
-	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-
-	workspace, err := s.db.GetWorkspace(id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
-		}
-		c.Logger().Errorf("find workspace: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
-	}
-
-	if workspace.Status != api.StatusProvisioned {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace is not provisioned")
-	}
-
-	err = s.rdb.Del(context.Background(), "last_access_"+workspace.Name).Err()
-	if err != nil {
-		return err
-	}
-	if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspending); err != nil {
-		return fmt.Errorf("update workspace status: %w", err)
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
-}
-
 // ListWorkspaces godoc
 //
 //	@Summary		List all workspaces with owner id
@@ -1063,7 +885,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 
 	workspaces := make([]*api.WorkspaceResponse, 0)
 	for _, workspace := range dbWorkspaces {
-		if workspace.Status == api.StatusDeleted {
+		if state.StateID(workspace.Status) == state.StateID_Deleted {
 			continue
 		}
 
@@ -1351,7 +1173,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		response.CurrentResources = resourceCount
 
 		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", dbWorkspace.ID)
-		onboardClient := client.NewOnboardServiceClient(onboardURL, s.cache)
+		onboardClient := client.NewOnboardServiceClient(onboardURL, nil)
 		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 		response.CurrentConnections = count
 	}

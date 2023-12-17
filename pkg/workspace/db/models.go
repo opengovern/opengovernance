@@ -3,28 +3,28 @@ package db
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"gorm.io/gorm"
+	"time"
 )
 
 type Workspace struct {
 	gorm.Model
 
-	ID                       string              `json:"id"`
-	Name                     string              `gorm:"uniqueIndex" json:"name"`
-	AWSUniqueId              *string             `json:"aws_unique_id"`
-	AWSUserARN               *string             `json:"aws_user_arn"`
-	OwnerId                  *string             `json:"owner_id"`
-	URI                      string              `json:"uri"`
-	Status                   api.WorkspaceStatus `json:"status"`
-	Description              string              `json:"description"`
-	Size                     api.WorkspaceSize   `json:"workspace_size"`
-	Tier                     api.Tier            `json:"tier"`
-	OrganizationID           *int                `json:"organization_id"`
-	Organization             *Organization       `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
-	IsCreated                bool                `json:"is_created"`
-	IsBootstrapInputFinished bool                `json:"is_bootstrap_input_finished"`
-	AnalyticsJobID           uint                `json:"analytics_job_id"`
-	InsightJobsID            string              `json:"insight_jobs_id"`
-	ComplianceTriggered      bool                `json:"complianceTriggered"`
+	ID                       string            `json:"id"`
+	Name                     string            `gorm:"uniqueIndex" json:"name"`
+	AWSUniqueId              *string           `json:"aws_unique_id"`
+	AWSUserARN               *string           `json:"aws_user_arn"`
+	OwnerId                  *string           `json:"owner_id"`
+	Status                   string            `json:"status"`
+	Size                     api.WorkspaceSize `json:"workspace_size"`
+	Tier                     api.Tier          `json:"tier"`
+	OrganizationID           *int              `json:"organization_id"`
+	Organization             *Organization     `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	IsCreated                bool              `json:"is_created"`
+	IsBootstrapInputFinished bool              `json:"is_bootstrap_input_finished"`
+	AnalyticsJobID           uint              `json:"analytics_job_id"`
+	InsightJobsID            string            `json:"insight_jobs_id"`
+	ComplianceTriggered      bool              `json:"complianceTriggered"`
+	OpenSearchEndpoint       string            `json:"open_search_endpoint"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {
@@ -40,9 +40,7 @@ func (w *Workspace) ToAPI() api.Workspace {
 		AWSUserARN:               w.AWSUserARN,
 		AWSUniqueId:              w.AWSUniqueId,
 		OwnerId:                  w.OwnerId,
-		URI:                      w.URI,
-		Status:                   w.Status,
-		Description:              w.Description,
+		Status:                   api.WorkspaceStatus(w.Status),
 		Tier:                     w.Tier,
 		Organization:             org,
 		Size:                     w.Size,
@@ -79,4 +77,10 @@ func (o *Organization) ToAPI() api.Organization {
 		ContactEmail: o.ContactEmail,
 		ContactName:  o.ContactName,
 	}
+}
+
+type WorkspaceTransaction struct {
+	WorkspaceID   string `gorm:"primarykey"`
+	TransactionID string `gorm:"primarykey"`
+	CreatedAt     time.Time
 }

@@ -6,7 +6,6 @@ import (
 
 type Config struct {
 	Postgres   config.Postgres
-	Redis      config.Redis
 	Http       config.HttpServer
 	Auth       config.KaytuService
 	Onboard    config.KaytuService
@@ -26,6 +25,11 @@ type Config struct {
 	AWSMasterAccessKey         string `yaml:"aws_master_access_key"`
 	AWSMasterSecretKey         string `yaml:"aws_master_secret_key"`
 	AWSMasterPolicyARN         string `yaml:"aws_master_policy_arn"`
+	AWSAccountID               string `yaml:"aws_account_id"`
+	OIDCProvider               string `yaml:"oidc_provider"`
+	MasterRoleARN              string `yaml:"master_role_arn"`
+	SecurityGroupID            string `yaml:"security_group_id"`
+	SubnetID                   string `yaml:"subnet_id"`
 
 	OpenSearchRegion string `yaml:"open_search_region"`
 }

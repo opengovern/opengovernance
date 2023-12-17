@@ -15,6 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.5
 	github.com/aws/aws-sdk-go-v2/service/kms v1.24.5
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.39.5
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.19.6
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.20.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.22.0
@@ -201,7 +202,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-lambda-go v1.41.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
@@ -295,7 +295,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.22.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/networkfirewall v1.30.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/oam v1.3.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/opensearch v1.19.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.5.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.17.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.22.6 // indirect
@@ -439,7 +438,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20231214114544-992abc7adbaf // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect

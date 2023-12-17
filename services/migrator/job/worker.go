@@ -86,7 +86,7 @@ func (w *Job) Run() error {
 		if !updateFailed {
 			err = w.UpdateMigration(name, mig)
 			if err != nil {
-				w.logger.Error("failed to run migration", zap.Error(err), zap.String("migrationName", name))
+				w.logger.Error("failed to update migration", zap.Error(err), zap.String("migrationName", name))
 			}
 		}
 	}

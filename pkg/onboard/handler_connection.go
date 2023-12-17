@@ -7,7 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -57,7 +60,12 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			}
 
 			assetDiscoveryAttached = true
-			for _, policyARN := range h.assetDiscoveryAwsPolicyARNs {
+			awsAssetDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
+			if err != nil {
+				return connection, err
+			}
+
+			for _, policyARN := range strings.Split(awsAssetDiscovery.GetValue().(string), ",") {
 				policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
 				if !utils.Includes(policyARNs, policyARN) {
 					h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
@@ -132,8 +140,14 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			Username:            azureCnf.Username,
 			Password:            azureCnf.Password,
 		}
+
+		azureAssetDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
+		if err != nil {
+			return connection, err
+		}
+
 		assetDiscoveryAttached = true
-		for _, ruleID := range h.assetDiscoveryAzureRoleIDs {
+		for _, ruleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
 			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
 			if err != nil {
 				return connection, err
@@ -145,8 +159,12 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			}
 		}
 
+		azureSpendDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
+		if err != nil {
+			return connection, err
+		}
 		spendAttached = true
-		for _, ruleID := range h.spendDiscoveryAzureRoleIDs {
+		for _, ruleID := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
 			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
 			if err != nil {
 				return connection, err

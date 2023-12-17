@@ -3,14 +3,9 @@ package onboard
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db"
-	"strings"
-
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -35,10 +30,6 @@ type HttpHandler struct {
 	keyARN                           string
 	logger                           *zap.Logger
 	masterAccessKey, masterSecretKey string
-	assetDiscoveryAwsPolicyARNs,
-	spendDiscoveryAwsPolicyARNs,
-	assetDiscoveryAzureRoleIDs,
-	spendDiscoveryAzureRoleIDs []string
 }
 
 func InitializeHttpHandler(
@@ -114,43 +105,20 @@ func InitializeHttpHandler(
 	describeCli := describeClient.NewSchedulerServiceClient(describeBaseURL)
 
 	meta := metadataClient.NewMetadataServiceClient(MetadataBaseUrl)
-	ctx := &httpclient.Context{
-		UserRole: api.InternalRole,
-	}
-	awsAssetDiscovery, err := meta.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
-	if err != nil {
-		return nil, err
-	}
-	awsSpendDiscovery, err := meta.GetConfigMetadata(ctx, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
-	if err != nil {
-		return nil, err
-	}
-	azureAssetDiscovery, err := meta.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
-	if err != nil {
-		return nil, err
-	}
-	azureSpendDiscovery, err := meta.GetConfigMetadata(ctx, models.MetadataKeySpendDiscoveryAzureRoleIDs)
-	if err != nil {
-		return nil, err
-	}
 
 	return &HttpHandler{
-		db:                          onboardDB,
-		steampipeConn:               steampipeConn,
-		sourceEventsQueue:           sourceEventsQueue,
-		kms:                         kms,
-		awsPermissionCheckURL:       awsPermissionCheckURL,
-		inventoryClient:             inventoryClient,
-		describeClient:              describeCli,
-		validator:                   validator.New(),
-		keyARN:                      keyARN,
-		logger:                      logger,
-		masterAccessKey:             masterAccessKey,
-		masterSecretKey:             masterSecretKey,
-		assetDiscoveryAwsPolicyARNs: strings.Split(awsAssetDiscovery.GetValue().(string), ","),
-		spendDiscoveryAwsPolicyARNs: strings.Split(awsSpendDiscovery.GetValue().(string), ","),
-		assetDiscoveryAzureRoleIDs:  strings.Split(azureAssetDiscovery.GetValue().(string), ","),
-		spendDiscoveryAzureRoleIDs:  strings.Split(azureSpendDiscovery.GetValue().(string), ","),
-		metadataClient:              meta,
+		db:                    onboardDB,
+		steampipeConn:         steampipeConn,
+		sourceEventsQueue:     sourceEventsQueue,
+		kms:                   kms,
+		awsPermissionCheckURL: awsPermissionCheckURL,
+		inventoryClient:       inventoryClient,
+		describeClient:        describeCli,
+		validator:             validator.New(),
+		keyARN:                keyARN,
+		logger:                logger,
+		masterAccessKey:       masterAccessKey,
+		masterSecretKey:       masterSecretKey,
+		metadataClient:        meta,
 	}, nil
 }

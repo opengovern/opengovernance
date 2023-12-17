@@ -297,7 +297,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		lookupResourcesMap[r.Source.ResourceID] = &r.Source
 	}
 
-	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds)
+	severities := []kaytuTypes.FindingSeverity{
+		kaytuTypes.FindingSeverityCritical,
+		kaytuTypes.FindingSeverityHigh,
+		kaytuTypes.FindingSeverityMedium,
+		kaytuTypes.FindingSeverityLow,
+		kaytuTypes.FindingSeverityNone,
+	}
+
+	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds, severities)
 
 	for i, finding := range response.Findings {
 		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {
@@ -640,7 +648,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId			path		string							true	"BenchmarkID"
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
 //	@Param			count				path		int								true	"Count"
 //	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
@@ -808,6 +816,24 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			response.Records = append(response.Records, api.TopFieldRecord{
 				Connection: connectionMap[item.Key],
 				Count:      item.DocCount,
+			})
+		}
+		response.TotalCount = res.Aggregations.BucketCount.Value
+	case "controlid":
+		controls, err := h.db.ListControls()
+		if err != nil {
+			h.logger.Error("failed to get controls", zap.Error(err))
+			return err
+		}
+		controlsMap := make(map[string]*db.Control)
+		for _, control := range controls {
+			control := control
+			controlsMap[control.ID] = &control
+		}
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			response.Records = append(response.Records, api.TopFieldRecord{
+				Control: utils.GetPointer(controlsMap[item.Key].ToApi()),
+				Count:   item.DocCount,
 			})
 		}
 		response.TotalCount = res.Aggregations.BucketCount.Value

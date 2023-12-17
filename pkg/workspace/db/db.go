@@ -33,7 +33,7 @@ func NewDatabase(settings config.Config, logger *zap.Logger) (*Database, error) 
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
-	if err := orm.AutoMigrate(&Organization{}, &Workspace{}, &Credential{}, &MasterCredential{}); err != nil {
+	if err := orm.AutoMigrate(&Organization{}, &Workspace{}, &Credential{}, &MasterCredential{}, &WorkspaceTransaction{}); err != nil {
 		return nil, fmt.Errorf("gorm migrate: %w", err)
 	}
 	return &Database{Orm: orm}, nil
@@ -46,7 +46,7 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 func (s *Database) GetReservedWorkspace() (*Workspace, error) {
 	var workspace Workspace
 	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).
-		Where("status = ?", api.StatusReserved).
+		Where("status = ? OR status = ?", api.StatusReserved, api.StatusReserving).
 		First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -61,8 +61,12 @@ func (s *Database) UpdateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", m.ID).Updates(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(id string, status api.WorkspaceStatus) error {
-	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
+func (s *Database) UpdateWorkspaceStatus(id string, status string) error {
+	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status).Error
+}
+
+func (s *Database) UpdateWorkspaceOpenSearchEndpoint(id string, openSearchEndpoint string) error {
+	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("open_search_endpoint", openSearchEndpoint).Error
 }
 
 func (s *Database) SetWorkspaceCreated(id string) error {
@@ -104,14 +108,6 @@ func (s *Database) ListWorkspacesByOwner(ownerId string) ([]*Workspace, error) {
 func (s *Database) ListWorkspaces() ([]*Workspace, error) {
 	var workspaces []*Workspace
 	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).Find(&workspaces).Error; err != nil {
-		return nil, err
-	}
-	return workspaces, nil
-}
-
-func (s *Database) ListWorkspacesByStatus(status api.WorkspaceStatus) ([]*Workspace, error) {
-	var workspaces []*Workspace
-	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).Where(Workspace{Status: status}).Find(&workspaces).Error; err != nil {
 		return nil, err
 	}
 	return workspaces, nil
@@ -180,4 +176,9 @@ func (s *Database) UpdateOrganization(newOrganization Organization) error {
 
 func (s *Database) UpdateCredentialWSID(prevId string, newID string) error {
 	return s.Orm.Model(&Credential{}).Where("workspace_id = ?", prevId).Update("workspace_id", newID).Error
+}
+
+func (s *Database) UpdateWorkspaceAWSUser(workspaceID string, arn *string) error {
+	return s.Orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("aws_user_arn", arn).Error
+
 }
