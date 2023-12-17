@@ -11,11 +11,11 @@ import (
 	"reflect"
 )
 
-func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) transactions.Transaction {
+func (s *Service) getTransactionByTransactionID(currentState state.State, tid transactions.TransactionID) transactions.Transaction {
 	var transaction transactions.Transaction
 	switch tid {
 	case transactions.Transaction_CreateHelmRelease:
-		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db)
+		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db, currentState.ProcessingStateID() == state.StateID_Reserving)
 	case transactions.Transaction_CreateInsightBucket:
 		transaction = transactions.NewCreateInsightBucket(s.s3Client)
 	case transactions.Transaction_CreateMasterCredential:
@@ -54,7 +54,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(stateRequirement)
+		transaction := s.getTransactionByTransactionID(currentState, stateRequirement)
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", stateRequirement)
 		}
@@ -110,7 +110,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(transactions.TransactionID(transactionID.TransactionID))
+		transaction := s.getTransactionByTransactionID(currentState, transactions.TransactionID(transactionID.TransactionID))
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
