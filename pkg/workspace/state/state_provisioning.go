@@ -4,10 +4,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 )
 
-type Bootstrapping struct {
+type Provisioning struct {
 }
 
-func (s Bootstrapping) Requirements() []transactions.TransactionID {
+func (s Provisioning) Requirements() []transactions.TransactionID {
 	return []transactions.TransactionID{
 		transactions.Transaction_CreateInsightBucket,
 		transactions.Transaction_CreateMasterCredential,
@@ -23,10 +23,10 @@ func (s Bootstrapping) Requirements() []transactions.TransactionID {
 	}
 }
 
-func (s Bootstrapping) ProcessingStateID() StateID {
-	return StateID_Bootstrapping
+func (s Provisioning) ProcessingStateID() StateID {
+	return StateID_Provisioning
 }
 
-func (s Bootstrapping) FinishedStateID() StateID {
+func (s Provisioning) FinishedStateID() StateID {
 	return StateID_Provisioned
 }
