@@ -65,32 +65,6 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 	}
 
 	if helmRelease == nil {
-		if workspace.Status != "RESERVING" && workspace.Status != "RESERVED" {
-			rs, err := t.db.GetReservedWorkspace()
-			if err != nil {
-				return err
-			}
-
-			if rs != nil {
-				err = t.db.DeleteWorkspace(workspace.ID)
-				if err != nil {
-					return err
-				}
-
-				err = t.db.UpdateCredentialWSID(workspace.ID, rs.ID)
-				if err != nil {
-					return err
-				}
-
-				workspace.ID = rs.ID
-				if err := t.db.UpdateWorkspace(&workspace); err != nil {
-					return err
-				}
-
-				return ErrTransactionNeedsTime
-			}
-		}
-
 		err := t.createHelmRelease(workspace)
 		if err != nil {
 			return fmt.Errorf("createHelmRelease: %w", err)
