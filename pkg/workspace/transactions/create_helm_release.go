@@ -11,6 +11,7 @@ import (
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
@@ -48,8 +49,8 @@ func NewCreateHelmRelease(
 	}
 }
 
-func (t *CreateHelmRelease) Requirements() []TransactionID {
-	return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles}
+func (t *CreateHelmRelease) Requirements() []api.TransactionID {
+	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateServiceAccountRoles}
 }
 
 func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {

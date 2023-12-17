@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -28,12 +29,8 @@ func NewEnsureJobsRunning(
 	}
 }
 
-func (t *EnsureJobsRunning) ID() TransactionID {
-	return Transaction_EnsureJobsRunning
-}
-
-func (t *EnsureJobsRunning) Requirements() []TransactionID {
-	return []TransactionID{Transaction_EnsureDiscoveryFinished}
+func (t *EnsureJobsRunning) Requirements() []api.TransactionID {
+	return []api.TransactionID{api.Transaction_EnsureDiscoveryFinished}
 }
 
 func (t *EnsureJobsRunning) Apply(workspace db.Workspace) error {

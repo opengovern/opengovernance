@@ -46,7 +46,7 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 func (s *Database) GetReservedWorkspace() (*Workspace, error) {
 	var workspace Workspace
 	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).
-		Where("status = ? OR status = ?", api.StatusReserved, api.StatusReserving).
+		Where("status = ? OR status = ?", api.StateID_Reserved, api.StateID_Reserving).
 		First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -61,7 +61,7 @@ func (s *Database) UpdateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", m.ID).Updates(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(id string, status string) error {
+func (s *Database) UpdateWorkspaceStatus(id string, status api.StateID) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status).Error
 }
 
@@ -184,5 +184,5 @@ func (s *Database) UpdateWorkspaceAWSUser(workspaceID string, arn *string) error
 }
 
 func (s *Database) HandleDeletedWorkspaces() error {
-	return s.Orm.Where("status = 'DELETED'").Unscoped().Delete(&Workspace{}).Error
+	return s.Orm.Where("status = ?", api.StateID_Deleted).Unscoped().Delete(&Workspace{}).Error
 }

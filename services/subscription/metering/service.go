@@ -68,7 +68,9 @@ func (s *Service) runChecks() {
 			continue
 		}
 
-		if ws.Status != api2.StatusProvisioned && ws.Status != api2.StatusBootstrapping {
+		if ws.Status != api2.StateID_Provisioned &&
+			ws.Status != api2.StateID_Provisioning &&
+			ws.Status != api2.StateID_Bootstrapping {
 			continue
 		}
 

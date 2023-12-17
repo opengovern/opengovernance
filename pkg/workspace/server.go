@@ -29,7 +29,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"net/http"
@@ -228,7 +227,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Name:                     strings.ToLower(request.Name),
 		AWSUniqueId:              aws.String(fmt.Sprintf("aws-uid-%d", awsUID)),
 		OwnerId:                  &userID,
-		Status:                   string(state.StateID_Bootstrapping),
+		Status:                   api.StateID_Bootstrapping,
 		Size:                     api.SizeXS,
 		Tier:                     api.Tier(request.Tier),
 		OrganizationID:           organizationID,
@@ -288,7 +287,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
 	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
 
-	if state.StateID(ws.Status) == state.StateID_Bootstrapping || state.StateID(ws.Status) == state.StateID_Provisioning {
+	if ws.Status == api.StateID_Bootstrapping || ws.Status == api.StateID_Provisioning {
 		if !ws.IsBootstrapInputFinished {
 			return resp, nil
 		}
@@ -730,7 +729,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	if err := s.db.UpdateWorkspaceStatus(id, string(state.StateID_Deleting)); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(id, api.StateID_Deleting); err != nil {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
@@ -895,7 +894,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 
 	workspaces := make([]*api.WorkspaceResponse, 0)
 	for _, workspace := range dbWorkspaces {
-		if state.StateID(workspace.Status) == state.StateID_Deleted {
+		if workspace.Status == api.StateID_Deleted {
 			continue
 		}
 

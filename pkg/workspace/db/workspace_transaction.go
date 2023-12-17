@@ -1,5 +1,7 @@
 package db
 
+import "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+
 func (s *Database) CreateWorkspaceTransaction(m *WorkspaceTransaction) error {
 	return s.Orm.Model(&WorkspaceTransaction{}).Create(m).Error
 }
@@ -14,7 +16,7 @@ func (s *Database) GetTransactionsByWorkspace(workspaceID string) ([]WorkspaceTr
 
 }
 
-func (s *Database) DeleteWorkspaceTransaction(workspaceID string, transactionID string) error {
+func (s *Database) DeleteWorkspaceTransaction(workspaceID string, transactionID api.TransactionID) error {
 	return s.Orm.Unscoped().Model(&WorkspaceTransaction{}).
 		Where("workspace_id = ? AND transaction_id = ?", workspaceID, transactionID).
 		Delete(&WorkspaceTransaction{}).

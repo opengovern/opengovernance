@@ -1,31 +1,31 @@
 package state
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 )
 
 type Provisioning struct {
 }
 
-func (s Provisioning) Requirements() []transactions.TransactionID {
-	return []transactions.TransactionID{
-		transactions.Transaction_CreateInsightBucket,
-		transactions.Transaction_CreateMasterCredential,
-		transactions.Transaction_CreateServiceAccountRoles,
-		transactions.Transaction_CreateOpenSearch,
-		transactions.Transaction_CreateHelmRelease,
-		transactions.Transaction_CreateRoleBinding,
-		transactions.Transaction_EnsureCredentialOnboarded,
-		transactions.Transaction_EnsureDiscoveryFinished,
-		transactions.Transaction_EnsureJobsRunning,
-		transactions.Transaction_EnsureJobsFinished,
+func (s Provisioning) Requirements() []api.TransactionID {
+	return []api.TransactionID{
+		api.Transaction_CreateInsightBucket,
+		api.Transaction_CreateMasterCredential,
+		api.Transaction_CreateServiceAccountRoles,
+		api.Transaction_CreateOpenSearch,
+		api.Transaction_CreateHelmRelease,
+		api.Transaction_CreateRoleBinding,
+		api.Transaction_EnsureCredentialOnboarded,
+		api.Transaction_EnsureDiscoveryFinished,
+		api.Transaction_EnsureJobsRunning,
+		api.Transaction_EnsureJobsFinished,
 	}
 }
 
-func (s Provisioning) ProcessingStateID() StateID {
-	return StateID_Provisioning
+func (s Provisioning) ProcessingStateID() api.StateID {
+	return api.StateID_Provisioning
 }
 
-func (s Provisioning) FinishedStateID() StateID {
-	return StateID_Provisioned
+func (s Provisioning) FinishedStateID() api.StateID {
+	return api.StateID_Provisioned
 }

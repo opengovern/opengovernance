@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
@@ -22,7 +23,7 @@ func NewCreateInsightBucket(
 	}
 }
 
-func (t *CreateInsightBucket) Requirements() []TransactionID {
+func (t *CreateInsightBucket) Requirements() []api.TransactionID {
 	return nil
 }
 
