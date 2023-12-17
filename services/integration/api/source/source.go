@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -21,6 +22,17 @@ type Source struct {
 	tracer          trace.Tracer
 	masterAccessKey string
 	masterSecretKey string
+}
+
+func New(keyARN string, kms *vault.KMSVaultSourceConfig, repo repository.Source, masterAccessKey, masterSecretKey string) Source {
+	return Source{
+		keyARN:          keyARN,
+		kms:             kms,
+		repo:            repo,
+		tracer:          otel.GetTracerProvider().Tracer("integration.http.sources"),
+		masterAccessKey: masterAccessKey,
+		masterSecretKey: masterSecretKey,
+	}
 }
 
 func (h Source) CredentialV2ToV1(newCred string) (string, error) {
@@ -62,12 +74,12 @@ func (h Source) List(c echo.Context) error {
 		err     error
 	)
 
-	_, span := h.tracer.Start(ctx, "integration.http.list_sources", trace.WithSpanKind(trace.SpanKindServer))
+	_, span := h.tracer.Start(ctx, "list", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
-		span.SetName("new_GetSourcesOfTypes")
+		span.SetName("list.with-types")
 
 		sources, err = h.repo.GetSourcesOfTypes(st)
 		if err != nil {
@@ -77,7 +89,7 @@ func (h Source) List(c echo.Context) error {
 		}
 		span.End()
 	} else {
-		span.SetName("new_ListSources")
+		span.SetName("list.without-types")
 
 		sources, err = h.repo.ListSources()
 		if err != nil {

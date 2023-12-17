@@ -8,6 +8,14 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
+type InvalidConnectionLifecycleStateError struct {
+	c ConnectionLifecycleState
+}
+
+func (err InvalidConnectionLifecycleStateError) Error() string {
+	return fmt.Sprintf("invalid connection lifecycle state: %s", err.c)
+}
+
 type ConnectionLifecycleState string
 
 const (
@@ -23,7 +31,7 @@ func (c ConnectionLifecycleState) Validate() error {
 	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateDisabled:
 		return nil
 	default:
-		return fmt.Errorf("invalid connection lifecycle state: %s", c)
+		return InvalidConnectionLifecycleStateError{c}
 	}
 }
 

@@ -8,7 +8,13 @@ import (
 )
 
 type Source struct {
-	db *db.Database
+	db db.Database
+}
+
+func NewSource(db db.Database) Source {
+	return Source{
+		db: db,
+	}
 }
 
 // ListSources gets list of all source

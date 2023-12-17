@@ -52,7 +52,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			api.New(logger, d, i, m, s, db, kms)
+			api.New(logger, d, i, m, s, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey)
 
 			cmd.SilenceUsage = true
 
