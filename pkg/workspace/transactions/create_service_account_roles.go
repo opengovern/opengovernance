@@ -98,10 +98,9 @@ func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceNa
 		RoleName: roleName,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "EntityAlreadyExists") {
-			return nil
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
 		}
-		return err
 	}
 
 	if v, ok := rolePolicies[serviceName]; ok && len(v) > 0 {
