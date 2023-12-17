@@ -15,6 +15,8 @@ import (
 func (s *Service) getTransactionByTransactionID(currentState state.State, tid api.TransactionID) transactions.Transaction {
 	var transaction transactions.Transaction
 	switch tid {
+	case api.Transaction_EnsureCredentialExists:
+		transaction = transactions.NewEnsureCredentialExists(s.db)
 	case api.Transaction_CreateHelmRelease:
 		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db)
 	case api.Transaction_CreateInsightBucket:

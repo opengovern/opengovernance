@@ -70,7 +70,7 @@ func (s *Service) runChecks() {
 
 		if ws.Status != api2.StateID_Provisioned &&
 			ws.Status != api2.StateID_Provisioning &&
-			ws.Status != api2.StateID_Bootstrapping {
+			ws.Status != api2.StateID_WaitingForCredential {
 			continue
 		}
 

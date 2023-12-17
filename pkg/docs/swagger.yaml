@@ -2876,6 +2876,24 @@ definitions:
       url:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID:
+    enum:
+    - RESERVING
+    - RESERVED
+    - WAITING_FOR_CREDENTIAL
+    - PROVISIONING
+    - PROVISIONED
+    - DELETING
+    - DELETED
+    type: string
+    x-enum-varnames:
+    - StateID_Reserving
+    - StateID_Reserved
+    - StateID_WaitingForCredential
+    - StateID_Provisioning
+    - StateID_Provisioned
+    - StateID_Deleting
+    - StateID_Deleted
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier:
     enum:
     - FREE
@@ -2918,7 +2936,7 @@ definitions:
         example: sm
       status:
         allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID'
         example: PROVISIONED
       tier:
         allOf:
@@ -2993,7 +3011,7 @@ definitions:
         example: sm
       status:
         allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID'
         example: PROVISIONED
       tier:
         allOf:
@@ -3015,22 +3033,6 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
-    enum:
-    - RESERVING
-    - RESERVED
-    - BOOTSTRAPPING
-    - PROVISIONED
-    - DELETING
-    - DELETED
-    type: string
-    x-enum-varnames:
-    - StatusReserving
-    - StatusReserved
-    - StatusBootstrapping
-    - StatusProvisioned
-    - StatusDeleting
-    - StatusDeleted
   kaytu.ResourceCollectionFilter:
     properties:
       account_ids:
