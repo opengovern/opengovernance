@@ -53,7 +53,7 @@ func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {
 			if err := t.createOpenSearch(workspace); err != nil {
 				return err
 			}
-			return nil
+			return ErrTransactionNeedsTime
 		}
 		return err
 	}
