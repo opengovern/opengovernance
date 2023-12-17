@@ -10613,6 +10613,27 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID": {
+            "type": "string",
+            "enum": [
+                "RESERVING",
+                "RESERVED",
+                "WAITING_FOR_CREDENTIAL",
+                "PROVISIONING",
+                "PROVISIONED",
+                "DELETING",
+                "DELETED"
+            ],
+            "x-enum-varnames": [
+                "StateID_Reserving",
+                "StateID_Reserved",
+                "StateID_WaitingForCredential",
+                "StateID_Provisioning",
+                "StateID_Provisioned",
+                "StateID_Deleting",
+                "StateID_Deleted"
+            ]
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier": {
             "type": "string",
             "enum": [
@@ -10673,7 +10694,7 @@ const docTemplate = `{
                 "status": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID"
                         }
                     ],
                     "example": "PROVISIONED"
@@ -10786,7 +10807,7 @@ const docTemplate = `{
                 "status": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID"
                         }
                     ],
                     "example": "PROVISIONED"
@@ -10818,25 +10839,6 @@ const docTemplate = `{
                 "SizeSM",
                 "SizeMD",
                 "SizeLG"
-            ]
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
-            "type": "string",
-            "enum": [
-                "RESERVING",
-                "RESERVED",
-                "BOOTSTRAPPING",
-                "PROVISIONED",
-                "DELETING",
-                "DELETED"
-            ],
-            "x-enum-varnames": [
-                "StatusReserving",
-                "StatusReserved",
-                "StatusBootstrapping",
-                "StatusProvisioned",
-                "StatusDeleting",
-                "StatusDeleted"
             ]
         },
         "kaytu.ResourceCollectionFilter": {

@@ -13,4 +13,5 @@ const (
 	Transaction_EnsureDiscoveryFinished   TransactionID = "EnsureDiscoveryFinished"
 	Transaction_EnsureJobsRunning         TransactionID = "EnsureJobsRunning"
 	Transaction_EnsureJobsFinished        TransactionID = "EnsureJobsFinished"
+	Transaction_EnsureCredentialExists    TransactionID = "EnsureCredentialExists"
 )

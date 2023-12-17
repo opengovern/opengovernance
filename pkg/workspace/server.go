@@ -227,7 +227,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Name:                     strings.ToLower(request.Name),
 		AWSUniqueId:              aws.String(fmt.Sprintf("aws-uid-%d", awsUID)),
 		OwnerId:                  &userID,
-		Status:                   api.StateID_Bootstrapping,
+		Status:                   api.StateID_WaitingForCredential,
 		Size:                     api.SizeXS,
 		Tier:                     api.Tier(request.Tier),
 		OrganizationID:           organizationID,
@@ -287,7 +287,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
 	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
 
-	if ws.Status == api.StateID_Bootstrapping || ws.Status == api.StateID_Provisioning {
+	if ws.Status == api.StateID_WaitingForCredential || ws.Status == api.StateID_Provisioning {
 		if !ws.IsBootstrapInputFinished {
 			return resp, nil
 		}
