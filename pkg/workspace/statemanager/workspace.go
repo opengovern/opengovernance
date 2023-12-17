@@ -78,7 +78,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			continue
 		}
 
-		s.logger.Info("applying transaction", zap.String("type", reflect.TypeOf(transaction).String()))
+		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Apply(*workspace)
 		if err != nil {
 			return err
@@ -115,7 +115,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
 
-		s.logger.Info("rolling back transaction", zap.String("type", reflect.TypeOf(transaction).String()))
+		s.logger.Info("rolling back transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Rollback(*workspace)
 		if err != nil {
 			return err
