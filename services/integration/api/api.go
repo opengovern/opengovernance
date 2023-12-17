@@ -3,9 +3,9 @@ package api
 import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/api/healthz"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/meta"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/healthz"
+	"github.com/kaytu-io/kaytu-engine/services/integration/db"
+	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/labstack/echo/v4"

@@ -2,12 +2,11 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
+	"time"
+
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/datatypes"
-	"time"
 )
 
 type Credential struct {
@@ -31,37 +30,4 @@ type Credential struct {
 	DeletedAt sql.NullTime `gorm:"index"`
 
 	Version int `json:"version"`
-}
-
-func (credential *Credential) ToAPI() api.Credential {
-	metadata := make(map[string]any)
-	if string(credential.Metadata) == "" {
-		credential.Metadata = []byte("{}")
-	}
-	_ = json.Unmarshal(credential.Metadata, &metadata)
-	apiCredential := api.Credential{
-		ID:                  credential.ID.String(),
-		Name:                credential.Name,
-		ConnectorType:       credential.ConnectorType,
-		CredentialType:      credential.CredentialType.ToApi(),
-		Enabled:             credential.Enabled,
-		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
-		OnboardDate:         credential.CreatedAt,
-		LastHealthCheckTime: credential.LastHealthCheckTime,
-		HealthStatus:        credential.HealthStatus,
-		HealthReason:        credential.HealthReason,
-		Metadata:            metadata,
-		Version:             credential.Version,
-		SpendDiscovery:      credential.SpendDiscovery,
-
-		Config: "",
-
-		Connections:           nil,
-		TotalConnections:      nil,
-		OnboardConnections:    nil,
-		UnhealthyConnections:  nil,
-		DiscoveredConnections: nil,
-	}
-
-	return apiCredential
 }

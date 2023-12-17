@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"strings"
 )
 
@@ -44,10 +43,6 @@ func GetManualCredentialTypes() []CredentialType {
 		CredentialTypeManualAwsOrganization,
 		CredentialTypeManualAzureSpn,
 	}
-}
-
-func (c CredentialType) ToApi() api.CredentialType {
-	return api.CredentialType(c)
 }
 
 func ParseCredentialType(s string) CredentialType {

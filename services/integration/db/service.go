@@ -36,7 +36,7 @@ func New(config koanf.Postgres, logger *zap.Logger) (Database, error) {
 		return Database{}, err
 	}
 
-	sqlDB.SetMaxIdleConns(config.MaxIdelConns)
+	sqlDB.SetMaxIdleConns(config.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
 	sqlDB.SetConnMaxIdleTime(config.ConnMaxIdleTime)
 	sqlDB.SetConnMaxLifetime(config.ConnMaxLifetime)

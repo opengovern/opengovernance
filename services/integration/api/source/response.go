@@ -3,6 +3,7 @@ package source
 import (
 	"encoding/json"
 
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/google/uuid"
@@ -206,4 +207,73 @@ func AWSCredentialV2ConfigFromMap(cnf map[string]any) (*AWSCredentialV2Config, e
 	}
 
 	return &out, nil
+}
+
+func SourceToAPI(s model.Source) Connection {
+	metadata := make(map[string]any)
+	if s.Metadata.String() != "" {
+		_ = json.Unmarshal(s.Metadata, &metadata)
+	}
+	apiCon := Connection{
+		ID:                   s.ID,
+		ConnectionID:         s.SourceId,
+		ConnectionName:       s.Name,
+		Email:                s.Email,
+		Connector:            s.Type,
+		Description:          s.Description,
+		CredentialID:         s.CredentialID.String(),
+		CredentialName:       s.Credential.Name,
+		CredentialType:       CredentialTypeToAPI(s.Credential.CredentialType),
+		OnboardDate:          s.CreatedAt,
+		HealthState:          s.HealthState,
+		LifecycleState:       ConnectionLifecycleState(s.LifecycleState),
+		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
+		LastHealthCheckTime:  s.LastHealthCheckTime,
+		HealthReason:         s.HealthReason,
+		Metadata:             metadata,
+		AssetDiscovery:       s.AssetDiscovery,
+		SpendDiscovery:       s.SpendDiscovery,
+
+		ResourceCount: nil,
+		Cost:          nil,
+		LastInventory: nil,
+	}
+	return apiCon
+}
+
+func CredentialToAPI(credential model.Credential) Credential {
+	metadata := make(map[string]any)
+	if string(credential.Metadata) == "" {
+		credential.Metadata = []byte("{}")
+	}
+	_ = json.Unmarshal(credential.Metadata, &metadata)
+	apiCredential := Credential{
+		ID:                  credential.ID.String(),
+		Name:                credential.Name,
+		ConnectorType:       credential.ConnectorType,
+		CredentialType:      CredentialTypeToAPI(credential.CredentialType),
+		Enabled:             credential.Enabled,
+		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
+		OnboardDate:         credential.CreatedAt,
+		LastHealthCheckTime: credential.LastHealthCheckTime,
+		HealthStatus:        credential.HealthStatus,
+		HealthReason:        credential.HealthReason,
+		Metadata:            metadata,
+		Version:             credential.Version,
+		SpendDiscovery:      credential.SpendDiscovery,
+
+		Config: "",
+
+		Connections:           nil,
+		TotalConnections:      nil,
+		OnboardConnections:    nil,
+		UnhealthyConnections:  nil,
+		DiscoveredConnections: nil,
+	}
+
+	return apiCredential
+}
+
+func CredentialTypeToAPI(c model.CredentialType) CredentialType {
+	return CredentialType(c)
 }

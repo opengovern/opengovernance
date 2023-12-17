@@ -1,4 +1,4 @@
-package onboard
+package integration
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/api"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/config"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/meta"
-	"github.com/kaytu-io/kaytu-engine/services/onboard/steampipe"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api"
+	"github.com/kaytu-io/kaytu-engine/services/integration/config"
+	"github.com/kaytu-io/kaytu-engine/services/integration/db"
+	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
+	"github.com/kaytu-io/kaytu-engine/services/integration/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/spf13/cobra"
@@ -18,7 +18,7 @@ import (
 )
 
 func Command() *cobra.Command {
-	cnf := koanf.Provide("onboard", config.OnboardConfig{})
+	cnf := koanf.Provide("", config.OnboardConfig{})
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {
