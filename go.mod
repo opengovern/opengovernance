@@ -501,7 +501,6 @@ require (
 	github.com/stevenle/topsort v0.2.0 // indirect
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/swaggo/files v0.0.0-20210815190702-a29dd2bc99b2 // indirect
-	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tkrajina/go-reflector v0.5.6 // indirect
 	github.com/tombuildsstuff/giovanni v0.18.0 // indirect
 	github.com/trivago/tgo v1.0.7 // indirect
