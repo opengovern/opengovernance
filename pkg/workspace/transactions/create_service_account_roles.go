@@ -24,6 +24,11 @@ var serviceNames = []string{
 	"onboard",
 	"reporter",
 	"scheduler",
+	"steampipe",
+}
+
+var rolePolicies = map[string][]string{
+	"scheduler": {"arn:aws:iam::${accountID}:policy/lambda-invoke-policy"},
 }
 
 type CreateServiceAccountRoles struct {
@@ -70,6 +75,7 @@ func (t *CreateServiceAccountRoles) Rollback(workspace db.Workspace) error {
 }
 
 func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceName string) error {
+	roleName := aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName))
 	_, err := t.iam.CreateRole(context.Background(), &iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(fmt.Sprintf(`{
     "Version": "2012-10-17",
@@ -89,13 +95,26 @@ func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceNa
         }
     ]
 }`, t.kaytuAWSAccountID, t.kaytuOIDCProvider, workspace.ID, serviceName)),
-		RoleName: aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName)),
+		RoleName: roleName,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "EntityAlreadyExists") {
-			return nil
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
 		}
-		return err
+	}
+
+	if v, ok := rolePolicies[serviceName]; ok && len(v) > 0 {
+		for _, policyARN := range v {
+			policyARN = strings.ReplaceAll(policyARN, "${accountID}", t.kaytuAWSAccountID)
+
+			_, err = t.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
+				PolicyArn: aws.String(policyARN),
+				RoleName:  roleName,
+			})
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
