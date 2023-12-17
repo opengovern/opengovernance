@@ -356,12 +356,12 @@ func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, bench
 		}
 		waitingForAPI2Time += time.Now().UnixMilli() - start
 
-		if control.ManualVerification || control.QueryID == nil {
+		if control.ManualVerification || control.Query == nil {
 			continue
 		}
 
 		start = time.Now().UnixMilli()
-		query, err := h.Scheduler.complianceClient.GetQuery(ctx, *control.QueryID)
+		query, err := h.Scheduler.complianceClient.GetQuery(ctx, control.Query.ID)
 		if err != nil {
 			return nil, 0, 0, 0, err
 		}

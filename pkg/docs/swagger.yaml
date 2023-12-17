@@ -873,9 +873,8 @@ definitions:
       nonComplianceCost:
         example: Non-compliance to this control could result in several costs including...
         type: string
-      queryID:
-        example: azure_ad_manual_control
-        type: string
+      query:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query'
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
@@ -900,6 +899,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary:
     properties:
+      benchmarks:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
+        type: array
       control:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control'
       evaluatedAt:
@@ -910,6 +913,21 @@ definitions:
         type: integer
       passed:
         type: boolean
+      totalConnectionCount:
+        type: integer
+      totalResourcesCount:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTrendDatapoint:
+    properties:
+      failedConnectionCount:
+        type: integer
+      failedResourcesCount:
+        type: integer
+      timestamp:
+        description: Time
+        example: 1686346668
+        type: integer
       totalConnectionCount:
         type: integer
       totalResourcesCount:
@@ -2236,6 +2254,8 @@ definitions:
     - asset_discovery_azure_role_ids
     - spend_discovery_azure_role_ids
     - customization_enabled
+    - aws_discovery_required_only
+    - azure_discovery_required_only
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -2272,6 +2292,8 @@ definitions:
     - MetadataKeyAssetDiscoveryAzureRoleIDs
     - MetadataKeySpendDiscoveryAzureRoleIDs
     - MetadataKeyCustomizationEnabled
+    - MetadataKeyAWSDiscoveryRequiredOnly
+    - MetadataKeyAzureDiscoveryRequiredOnly
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
     properties:
       accessKey:
@@ -4123,6 +4145,52 @@ paths:
       summary: Get control summary
       tags:
       - compliance
+  /compliance/api/v1/controls/{controlId}/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Control ID
+        in: path
+        name: controlId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - description: timestamp for start of the chart in epoch seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: timestamp for end of the chart in epoch seconds
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get control trend
+      tags:
+      - compliance
   /compliance/api/v1/controls/summary:
     get:
       consumes:
@@ -4266,91 +4334,6 @@ paths:
       summary: Get findings field count by controls
       tags:
       - compliance
-  /compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving the top field by finding count.
-      parameters:
-      - description: BenchmarkID
-        in: path
-        name: benchmarkId
-        required: true
-        type: string
-      - description: Field
-        enum:
-        - resourceType
-        - connectionID
-        - resourceID
-        - service
-        - controlID
-        in: path
-        name: field
-        required: true
-        type: string
-      - description: Count
-        in: path
-        name: count
-        required: true
-        type: integer
-      - collectionFormat: csv
-        description: Connection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: 'Connection groups to filter by '
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Severities to filter by defaults to all severities except passed
-        in: query
-        items:
-          enum:
-          - none
-          - passed
-          - low
-          - medium
-          - high
-          - critical
-          type: string
-        name: severities
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
-      security:
-      - BearerToken: []
-      summary: Get top field by finding count
-      tags:
-      - compliance
   /compliance/api/v1/findings/{benchmarkId}/accounts:
     get:
       consumes:
@@ -4473,6 +4456,100 @@ paths:
       security:
       - BearerToken: []
       summary: Get finding
+      tags:
+      - compliance
+  /compliance/api/v1/findings/top/{field}/{count}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the top field by finding count.
+      parameters:
+      - description: Field
+        enum:
+        - resourceType
+        - connectionID
+        - resourceID
+        - service
+        - controlID
+        in: path
+        name: field
+        required: true
+        type: string
+      - description: Count
+        in: path
+        name: count
+        required: true
+        type: integer
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: BenchmarkID
+        in: query
+        items:
+          type: string
+        name: benchmarkId
+        type: array
+      - collectionFormat: csv
+        description: ControlID
+        in: query
+        items:
+          type: string
+        name: controlId
+        type: array
+      - collectionFormat: csv
+        description: Severities to filter by defaults to all severities except passed
+        in: query
+        items:
+          enum:
+          - none
+          - passed
+          - low
+          - medium
+          - high
+          - critical
+          type: string
+        name: severities
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get top field by finding count
       tags:
       - compliance
   /compliance/api/v1/insight:
