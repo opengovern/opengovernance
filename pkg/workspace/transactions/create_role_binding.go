@@ -5,6 +5,7 @@ import (
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
@@ -20,12 +21,8 @@ func NewCreateRoleBinding(
 	}
 }
 
-func (t *CreateRoleBinding) ID() TransactionID {
-	return Transaction_CreateRoleBinding
-}
-
-func (t *CreateRoleBinding) Requirements() []TransactionID {
-	return []TransactionID{Transaction_CreateHelmRelease}
+func (t *CreateRoleBinding) Requirements() []api.TransactionID {
+	return []api.TransactionID{api.Transaction_CreateHelmRelease}
 }
 
 func (t *CreateRoleBinding) Apply(workspace db.Workspace) error {

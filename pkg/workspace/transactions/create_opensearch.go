@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"strings"
 )
@@ -42,8 +43,8 @@ func NewCreateOpenSearch(
 	}
 }
 
-func (t *CreateOpenSearch) Requirements() []TransactionID {
-	return []TransactionID{Transaction_CreateServiceAccountRoles}
+func (t *CreateOpenSearch) Requirements() []api.TransactionID {
+	return []api.TransactionID{api.Transaction_CreateServiceAccountRoles}
 }
 
 func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {

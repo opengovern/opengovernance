@@ -5,8 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	"github.com/sony/sonyflake"
 )
 
@@ -36,7 +34,7 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 		return err
 	}
 
-	err = s.db.DeleteWorkspaceTransaction(workspace.ID, string(transactions.Transaction_CreateHelmRelease))
+	err = s.db.DeleteWorkspaceTransaction(workspace.ID, api.Transaction_CreateHelmRelease)
 	if err != nil {
 		return err
 	}
@@ -70,7 +68,7 @@ func (s *Service) handleReservation() error {
 		Name:           "",
 		AWSUniqueId:    aws.String(fmt.Sprintf("aws-uid-%d", awsUID)),
 		OwnerId:        nil,
-		Status:         string(state.StateID_Reserving),
+		Status:         api.StateID_Reserving,
 		Size:           api.SizeXS,
 		Tier:           api.Tier_Teams,
 		OrganizationID: nil,

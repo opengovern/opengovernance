@@ -1,8 +1,4 @@
-package state
-
-import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
-)
+package api
 
 type StateID string
 
@@ -18,16 +14,4 @@ const (
 
 func (s StateID) IsReserve() bool {
 	return s == StateID_Reserving || s == StateID_Reserved
-}
-
-type State interface {
-	Requirements() []transactions.TransactionID
-	ProcessingStateID() StateID
-	FinishedStateID() StateID
-}
-
-var AllStates = []State{
-	Provisioning{},
-	Deleting{},
-	Reserved{},
 }
