@@ -146,9 +146,21 @@ func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
     "Statement": [
         {
             "Effect": "Allow",
-            "Principal": {
-                "AWS": "arn:aws:iam::435670955331:role/kaytu-service-%s-migrator"
-            },
+			"Principal": {
+				"AWS": [
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-migrator",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-compliance",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-compliance-report-worker",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-compliance-summarizer",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-cost-estimator",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-insight-worker",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-inventory",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-reporter",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-scheduler",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-steampipe",
+					"arn:aws:iam::435670955331:role/kaytu-service-%[1]s-analytics-worker"
+				]
+			},
             "Action": [
 				"sts:AssumeRole",
 				"sts:TagSession"
