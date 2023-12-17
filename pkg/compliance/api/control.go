@@ -1,6 +1,7 @@
 package api
 
 import (
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"time"
@@ -39,7 +40,8 @@ type Control struct {
 }
 
 type ControlSummary struct {
-	Control Control `json:"control"`
+	Control      Control                    `json:"control"`
+	ResourceType *inventoryApi.ResourceType `json:"resourceType"`
 
 	Benchmarks []Benchmark `json:"benchmarks"`
 

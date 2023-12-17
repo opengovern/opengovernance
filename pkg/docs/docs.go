@@ -6252,72 +6252,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/{workspace_id}/resume": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Resume workspace",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workspace ID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/suspend": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Suspend workspace",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workspace ID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/workspace/api/v1/workspace/{workspace_id}/tier": {
             "post": {
                 "security": [
@@ -7874,6 +7808,9 @@ const docTemplate = `{
                 },
                 "passed": {
                     "type": "boolean"
+                },
+                "resourceType": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"
                 },
                 "totalConnectionCount": {
                     "type": "integer"
@@ -10611,9 +10548,6 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -10696,10 +10630,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-05-17T14:39:02.707659Z"
                 },
-                "description": {
-                    "type": "string",
-                    "example": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-                },
                 "id": {
                     "type": "string",
                     "example": "ws-698542025141040315"
@@ -10744,10 +10674,6 @@ const docTemplate = `{
                         }
                     ],
                     "example": "ENTERPRISE"
-                },
-                "uri": {
-                    "type": "string",
-                    "example": "https://app.kaytu.dev/kaytu"
                 }
             }
         },
@@ -10817,10 +10743,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-05-17T14:39:02.707659Z"
                 },
-                "description": {
-                    "type": "string",
-                    "example": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-                },
                 "id": {
                     "type": "string",
                     "example": "ws-698542025141040315"
@@ -10866,10 +10788,6 @@ const docTemplate = `{
                     ],
                     "example": "ENTERPRISE"
                 },
-                "uri": {
-                    "type": "string",
-                    "example": "https://app.kaytu.dev/kaytu"
-                },
                 "version": {
                     "type": "string",
                     "example": "v0.45.4"
@@ -10894,26 +10812,20 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
             "type": "string",
             "enum": [
-                "PROVISIONED",
-                "BOOTSTRAPPING",
+                "RESERVING",
                 "RESERVED",
-                "PROVISIONING",
-                "PROVISIONING_FAILED",
+                "BOOTSTRAPPING",
+                "PROVISIONED",
                 "DELETING",
-                "DELETED",
-                "SUSPENDING",
-                "SUSPENDED"
+                "DELETED"
             ],
             "x-enum-varnames": [
-                "StatusProvisioned",
-                "StatusBootstrapping",
+                "StatusReserving",
                 "StatusReserved",
-                "StatusProvisioning",
-                "StatusProvisioningFailed",
+                "StatusBootstrapping",
+                "StatusProvisioned",
                 "StatusDeleting",
-                "StatusDeleted",
-                "StatusSuspending",
-                "StatusSuspended"
+                "StatusDeleted"
             ]
         },
         "kaytu.ResourceCollectionFilter": {

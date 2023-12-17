@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -1667,9 +1668,22 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		return err
 	}
 
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource types metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMap := make(map[string]*inventoryApi.ResourceType)
+	for _, rt := range resourceTypes.ResourceTypes {
+		rt := rt
+		resourceTypeMap[strings.ToLower(rt.ResourceType)] = &rt
+	}
+
 	results := make([]api.ControlSummary, 0, len(controls))
 	for _, control := range controls {
 		apiControl := control.ToApi()
+		var resourceType *inventoryApi.ResourceType
 		if control.QueryID != nil {
 			query, err := h.db.GetQuery(*control.QueryID)
 			if err != nil {
@@ -1678,6 +1692,10 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 			}
 			apiControl.Connector, _ = source.ParseType(query.Connector)
 			apiControl.Query = utils.GetPointer(query.ToApi())
+			if query.PrimaryTable != nil {
+				rtName := runner.GetResourceTypeFromTableName(*query.PrimaryTable, source.Type(query.Connector))
+				resourceType = resourceTypeMap[strings.ToLower(rtName)]
+			}
 		}
 
 		result, ok := controlResults[control.ID]
@@ -1691,6 +1709,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 
 		controlSummary := api.ControlSummary{
 			Control:               apiControl,
+			ResourceType:          resourceType,
 			Passed:                result.Passed,
 			FailedResourcesCount:  result.FailedResourcesCount,
 			TotalResourcesCount:   result.TotalResourcesCount,
@@ -1757,6 +1776,19 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 		apiControl.Connector = benchmark.Connector
 	}
 
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource types metadata", zap.Error(err))
+		return nil, err
+	}
+	resourceTypeMap := make(map[string]*inventoryApi.ResourceType)
+	for _, rt := range resourceTypes.ResourceTypes {
+		rt := rt
+		resourceTypeMap[strings.ToLower(rt.ResourceType)] = &rt
+	}
+
+	var resourceType *inventoryApi.ResourceType
 	if control.QueryID != nil {
 		query, err := h.db.GetQuery(*control.QueryID)
 		if err != nil {
@@ -1765,6 +1797,10 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 		}
 		apiControl.Connector, _ = source.ParseType(query.Connector)
 		apiControl.Query = utils.GetPointer(query.ToApi())
+		if query.PrimaryTable != nil {
+			rtName := runner.GetResourceTypeFromTableName(*query.PrimaryTable, source.Type(query.Connector))
+			resourceType = resourceTypeMap[strings.ToLower(rtName)]
+		}
 	}
 
 	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
@@ -1811,6 +1847,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 
 	controlSummary := api.ControlSummary{
 		Control:               apiControl,
+		ResourceType:          resourceType,
 		Benchmarks:            apiBenchmarks,
 		Passed:                result.Passed,
 		FailedResourcesCount:  result.FailedResourcesCount,

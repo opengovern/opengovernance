@@ -913,6 +913,8 @@ definitions:
         type: integer
       passed:
         type: boolean
+      resourceType:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
       totalConnectionCount:
         type: integer
       totalResourcesCount:
@@ -2839,8 +2841,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest:
     properties:
-      description:
-        type: string
       name:
         type: string
       organization_id:
@@ -2897,9 +2897,6 @@ definitions:
       createdAt:
         example: "2023-05-17T14:39:02.707659Z"
         type: string
-      description:
-        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        type: string
       id:
         example: ws-698542025141040315
         type: string
@@ -2927,9 +2924,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
         example: ENTERPRISE
-      uri:
-        example: https://app.kaytu.dev/kaytu
-        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimits:
     properties:
@@ -2978,9 +2972,6 @@ definitions:
       createdAt:
         example: "2023-05-17T14:39:02.707659Z"
         type: string
-      description:
-        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        type: string
       id:
         example: ws-698542025141040315
         type: string
@@ -3008,9 +2999,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
         example: ENTERPRISE
-      uri:
-        example: https://app.kaytu.dev/kaytu
-        type: string
       version:
         example: v0.45.4
         type: string
@@ -3029,26 +3017,20 @@ definitions:
     - SizeLG
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
     enum:
-    - PROVISIONED
-    - BOOTSTRAPPING
+    - RESERVING
     - RESERVED
-    - PROVISIONING
-    - PROVISIONING_FAILED
+    - BOOTSTRAPPING
+    - PROVISIONED
     - DELETING
     - DELETED
-    - SUSPENDING
-    - SUSPENDED
     type: string
     x-enum-varnames:
-    - StatusProvisioned
-    - StatusBootstrapping
+    - StatusReserving
     - StatusReserved
-    - StatusProvisioning
-    - StatusProvisioningFailed
+    - StatusBootstrapping
+    - StatusProvisioned
     - StatusDeleting
     - StatusDeleted
-    - StatusSuspending
-    - StatusSuspended
   kaytu.ResourceCollectionFilter:
     properties:
       account_ids:
@@ -7218,46 +7200,6 @@ paths:
       security:
       - BearerToken: []
       summary: Change ownership of workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/resume:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Workspace ID
-        in: path
-        name: workspace_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Resume workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/suspend:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Workspace ID
-        in: path
-        name: workspace_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Suspend workspace
       tags:
       - workspace
   /workspace/api/v1/workspace/{workspace_id}/tier:
