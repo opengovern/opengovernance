@@ -310,7 +310,7 @@ func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client, benchma
 }
 
 func FetchBenchmarkSummaryTrendByConnectionIDPerControl(logger *zap.Logger, client kaytu.Client,
-	benchmarkIDs []string, controlIDs []string, connectionIDs []string, from, to time.Time) (map[string][]ControlTrendDatapoint, error) {
+	benchmarkIDs []string, controlIDs []string, connectionIDs []string, from, to time.Time, stepDuration time.Duration) (map[string][]ControlTrendDatapoint, error) {
 	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
@@ -343,9 +343,9 @@ func FetchBenchmarkSummaryTrendByConnectionIDPerControl(logger *zap.Logger, clie
 
 	query := make(map[string]any)
 
-	startTimeUnix := from.Truncate(24 * time.Hour).Unix()
-	endTimeUnix := to.Truncate(24 * time.Hour).Add(24 * time.Hour).Unix()
-	step := int64((time.Hour * 24).Seconds())
+	startTimeUnix := from.Truncate(stepDuration).Unix()
+	endTimeUnix := to.Truncate(stepDuration).Add(stepDuration).Unix()
+	step := int64(stepDuration.Seconds())
 	ranges := make([]map[string]any, 0, (endTimeUnix-startTimeUnix)/int64(step))
 	for i := int64(0); i*step < endTimeUnix-startTimeUnix; i++ {
 		ranges = append(ranges, map[string]any{

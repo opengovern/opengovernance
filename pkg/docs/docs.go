@@ -1627,6 +1627,17 @@ const docTemplate = `{
                         "description": "timestamp for end of the chart in epoch seconds",
                         "name": "endTime",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "daily",
+                            "monthly"
+                        ],
+                        "type": "string",
+                        "default": "daily",
+                        "description": "granularity of the chart",
+                        "name": "granularity",
+                        "in": "query"
                     }
                 ],
                 "responses": {

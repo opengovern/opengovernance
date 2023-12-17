@@ -4159,6 +4159,14 @@ paths:
         in: query
         name: endTime
         type: integer
+      - default: daily
+        description: granularity of the chart
+        enum:
+        - daily
+        - monthly
+        in: query
+        name: granularity
+        type: string
       produces:
       - application/json
       responses:

@@ -1872,6 +1872,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Param		startTime		query		int			false	"timestamp for start of the chart in epoch seconds"
 //	@Param		endTime			query		int			false	"timestamp for end of the chart in epoch seconds"
+//	@Param		granularity		query		string		false	"granularity of the chart" Enums(daily,monthly) Default(daily)
 //	@Success	200				{object}	[]api.ControlTrendDatapoint
 //	@Router		/compliance/api/v1/controls/{controlId}/trend [get]
 func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
@@ -1915,7 +1916,13 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 		benchmarkIds = append(benchmarkIds, benchmark.ID)
 	}
 
-	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(h.logger, h.client, benchmarkIds, []string{controlID}, connectionIDs, startTime, endTime)
+	stepDuration := 24 * time.Hour
+	if granularity := ctx.QueryParam("granularity"); granularity == "monthly" {
+		stepDuration = 30 * 24 * time.Hour
+	}
+
+	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(h.logger, h.client,
+		benchmarkIds, []string{controlID}, connectionIDs, startTime, endTime, stepDuration)
 	if err != nil {
 		h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID))
 		return err
