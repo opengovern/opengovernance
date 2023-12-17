@@ -3,6 +3,7 @@ package api
 import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/services/onboard/api/healthz"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/meta"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
@@ -46,4 +47,7 @@ func New(
 }
 
 func (*API) Register(e *echo.Echo) {
+	var healthz healthz.Healthz
+
+	healthz.Register(e.Group("/healthz"))
 }
