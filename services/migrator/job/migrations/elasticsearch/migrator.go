@@ -27,11 +27,13 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	logger.Info("running", zap.String("es_address", conf.ElasticSearch.Address))
 
 	elastic, err := kaytu.NewClient(kaytu.ClientConfig{
-		Addresses:    []string{conf.ElasticSearch.Address},
-		Username:     &conf.ElasticSearch.Username,
-		Password:     &conf.ElasticSearch.Password,
-		IsOpenSearch: &conf.ElasticSearch.IsOpenSearch,
-		AwsRegion:    &conf.ElasticSearch.AwsRegion,
+		Addresses:     []string{conf.ElasticSearch.Address},
+		Username:      &conf.ElasticSearch.Username,
+		Password:      &conf.ElasticSearch.Password,
+		IsOpenSearch:  &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:     &conf.ElasticSearch.AwsRegion,
+		AssumeRoleArn: &conf.ElasticSearch.AssumeRoleArn,
+		ExternalID:    &conf.ElasticSearch.ExternalID,
 	})
 	if err != nil {
 		logger.Error("failed to create es client due to", zap.Error(err))
