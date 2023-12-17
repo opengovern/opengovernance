@@ -27,7 +27,6 @@ type Config struct {
 	AWSMasterPolicyARN         string `yaml:"aws_master_policy_arn"`
 	AWSAccountID               string `yaml:"aws_account_id"`
 	OIDCProvider               string `yaml:"oidc_provider"`
-	MasterRoleARN              string `yaml:"master_role_arn"`
 	SecurityGroupID            string `yaml:"security_group_id"`
 	SubnetID                   string `yaml:"subnet_id"`
 
