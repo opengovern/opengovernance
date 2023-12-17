@@ -19,6 +19,14 @@ type TrendDatapoint struct {
 	Score     float64
 }
 
+type ControlTrendDatapoint struct {
+	DateEpoch             int64
+	FailedResourcesCount  int
+	TotalResourcesCount   int
+	FailedConnectionCount int
+	TotalConnectionCount  int
+}
+
 type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 	Aggregations struct {
 		BenchmarkIDGroup struct {
@@ -299,6 +307,174 @@ func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client, benchma
 		return FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger, client, benchmarkIDs, connectionIDs, resourceCollections, from, to)
 	}
 	return FetchBenchmarkSummaryTrendByConnectionID(logger, client, benchmarkIDs, connectionIDs, from, to)
+}
+
+func FetchBenchmarkSummaryTrendByConnectionIDPerControl(logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string, controlIDs []string, connectionIDs []string, from, to time.Time, stepDuration time.Duration) (map[string][]ControlTrendDatapoint, error) {
+	pathFilters := make([]string, 0, len(connectionIDs)+4)
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
+	if len(connectionIDs) > 0 {
+		if len(controlIDs) > 0 {
+			for _, connectionID := range connectionIDs {
+				for _, controlID := range controlIDs {
+					pathFilters = append(pathFilters,
+						fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls.%s", connectionID, controlID))
+				}
+			}
+		} else {
+			for _, connectionID := range connectionIDs {
+				pathFilters = append(pathFilters,
+					fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+			}
+		}
+	} else {
+		if len(controlIDs) > 0 {
+			for _, controlID := range controlIDs {
+				pathFilters = append(pathFilters,
+					fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.*.Controls.%s", controlID))
+			}
+		} else {
+			pathFilters = append(pathFilters,
+				"aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.*.Controls")
+		}
+	}
+
+	query := make(map[string]any)
+
+	startTimeUnix := from.Truncate(stepDuration).Unix()
+	endTimeUnix := to.Truncate(stepDuration).Add(stepDuration).Unix()
+	step := int64(stepDuration.Seconds())
+	ranges := make([]map[string]any, 0, (endTimeUnix-startTimeUnix)/int64(step))
+	for i := int64(0); i*step < endTimeUnix-startTimeUnix; i++ {
+		ranges = append(ranges, map[string]any{
+			"from": startTimeUnix + i*step,
+			"to":   startTimeUnix + (i+1)*step,
+		})
+	}
+
+	filters := make([]any, 0)
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"EvaluatedAtEpoch": map[string]any{
+				"lte": to.Unix(),
+				"gte": from.Unix(),
+			},
+		},
+	})
+	if len(benchmarkIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"BenchmarkID": benchmarkIDs,
+			},
+		})
+	}
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["size"] = 0
+
+	query["aggs"] = map[string]any{
+		"benchmark_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "BenchmarkID",
+				"size":  10000,
+			},
+			"aggs": map[string]any{
+				"evaluated_at_range_group": map[string]any{
+					"range": map[string]any{
+						"field":  "EvaluatedAtEpoch",
+						"ranges": ranges,
+					},
+					"aggs": map[string]any{
+						"hit_select": map[string]any{
+							"top_hits": map[string]any{
+								"sort": map[string]any{
+									"EvaluatedAtEpoch": "desc",
+								},
+								"size": 1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.Error(err))
+		return nil, err
+	}
+
+	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	var response FetchBenchmarkSummaryTrendAggregatedResponse
+	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
+	if err != nil {
+		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.Error(err), zap.String("query", string(queryBytes)))
+		return nil, err
+	}
+
+	trendMap := make(map[string]map[int64]ControlTrendDatapoint)
+	currentTimes := make(map[string]map[int64]int64)
+	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
+		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
+			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
+				controlData := make(map[string][]ControlTrendDatapoint)
+				for _, connection := range hit.Source.Connections.Connections {
+					for controlId, control := range connection.Controls {
+						trendDataPoint := ControlTrendDatapoint{}
+						trendDataPoint.DateEpoch = int64(rangeBucket.To)
+						trendDataPoint.FailedResourcesCount = control.FailedResourcesCount
+						trendDataPoint.TotalResourcesCount = control.TotalResourcesCount
+						trendDataPoint.FailedConnectionCount = control.FailedConnectionCount
+						trendDataPoint.TotalConnectionCount = control.TotalConnectionCount
+						controlData[controlId] = append(controlData[controlId], trendDataPoint)
+					}
+				}
+
+				for controlId, controlTrendDataPoints := range controlData {
+					if _, ok := trendMap[controlId]; !ok {
+						trendMap[controlId] = make(map[int64]ControlTrendDatapoint)
+						currentTimes[controlId] = make(map[int64]int64)
+					}
+					if _, ok := trendMap[controlId][int64(rangeBucket.To)]; !ok || currentTimes[controlId][int64(rangeBucket.To)] < hit.Source.EvaluatedAtEpoch {
+						trendMap[controlId][int64(rangeBucket.To)] = ControlTrendDatapoint{
+							DateEpoch:             int64(rangeBucket.To),
+							FailedResourcesCount:  0,
+							TotalResourcesCount:   0,
+							FailedConnectionCount: 0,
+							TotalConnectionCount:  0,
+						}
+						currentTimes[controlId][int64(rangeBucket.To)] = hit.Source.EvaluatedAtEpoch
+						for _, controlTrendDataPoint := range controlTrendDataPoints {
+							v := trendMap[controlId][int64(rangeBucket.To)]
+							v.FailedResourcesCount += controlTrendDataPoint.FailedResourcesCount
+							v.TotalResourcesCount += controlTrendDataPoint.TotalResourcesCount
+							v.FailedConnectionCount += controlTrendDataPoint.FailedConnectionCount
+							v.TotalConnectionCount += controlTrendDataPoint.TotalConnectionCount
+							trendMap[controlId][int64(rangeBucket.To)] = v
+						}
+					}
+				}
+			}
+		}
+	}
+
+	trend := make(map[string][]ControlTrendDatapoint)
+	for controlId, trendMap := range trendMap {
+		for _, trendDataPoint := range trendMap {
+			trend[controlId] = append(trend[controlId], trendDataPoint)
+		}
+		sort.Slice(trend[controlId], func(i, j int) bool {
+			return trend[controlId][i].DateEpoch < trend[controlId][j].DateEpoch
+		})
+	}
+
+	return trend, nil
 }
 
 type ListBenchmarkSummariesAtTimeResponse struct {

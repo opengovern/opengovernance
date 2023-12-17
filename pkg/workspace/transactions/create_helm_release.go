@@ -31,6 +31,7 @@ type CreateHelmRelease struct {
 	kmsClient  *kms.Client
 	cfg        config.Config
 	db         *db.Database
+	reserving  bool
 }
 
 func NewCreateHelmRelease(
@@ -38,17 +39,23 @@ func NewCreateHelmRelease(
 	kmsClient *kms.Client,
 	cfg config.Config,
 	db *db.Database,
+	reserving bool,
 ) *CreateHelmRelease {
 	return &CreateHelmRelease{
 		kubeClient: kubeClient,
 		kmsClient:  kmsClient,
 		cfg:        cfg,
 		db:         db,
+		reserving:  reserving,
 	}
 }
 
 func (t *CreateHelmRelease) Requirements() []TransactionID {
-	return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles}
+	if t.reserving {
+		return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles}
+	}
+
+	return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles, Transaction_EnsureCredentialOnboarded}
 }
 
 func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {

@@ -11,17 +11,17 @@ import (
 	"reflect"
 )
 
-func (s *Service) getTransactionByTransactionID(tid transactions.TransactionID) transactions.Transaction {
+func (s *Service) getTransactionByTransactionID(currentState state.State, tid transactions.TransactionID) transactions.Transaction {
 	var transaction transactions.Transaction
 	switch tid {
 	case transactions.Transaction_CreateHelmRelease:
-		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db)
+		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db, currentState.ProcessingStateID() == state.StateID_Reserving)
 	case transactions.Transaction_CreateInsightBucket:
 		transaction = transactions.NewCreateInsightBucket(s.s3Client)
 	case transactions.Transaction_CreateMasterCredential:
 		transaction = transactions.NewCreateMasterCredential(s.iamMaster, s.kmsClient, s.cfg, s.db)
 	case transactions.Transaction_CreateOpenSearch:
-		transaction = transactions.NewCreateOpenSearch(s.cfg.MasterRoleARN, s.cfg.SecurityGroupID, s.cfg.SubnetID, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.opensearch)
+		transaction = transactions.NewCreateOpenSearch(s.cfg.SecurityGroupID, s.cfg.SubnetID, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.iam, s.opensearch)
 	case transactions.Transaction_CreateRoleBinding:
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
 	case transactions.Transaction_CreateServiceAccountRoles:
@@ -54,7 +54,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(stateRequirement)
+		transaction := s.getTransactionByTransactionID(currentState, stateRequirement)
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", stateRequirement)
 		}
@@ -78,7 +78,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			continue
 		}
 
-		s.logger.Info("applying transaction", zap.String("type", reflect.TypeOf(transaction).String()))
+		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Apply(*workspace)
 		if err != nil {
 			return err
@@ -110,12 +110,12 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 			continue
 		}
 
-		transaction := s.getTransactionByTransactionID(transactions.TransactionID(transactionID.TransactionID))
+		transaction := s.getTransactionByTransactionID(currentState, transactions.TransactionID(transactionID.TransactionID))
 		if transaction == nil {
 			return fmt.Errorf("failed to find transaction %v", transactionID.TransactionID)
 		}
 
-		s.logger.Info("rolling back transaction", zap.String("type", reflect.TypeOf(transaction).String()))
+		s.logger.Info("rolling back transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Rollback(*workspace)
 		if err != nil {
 			return err

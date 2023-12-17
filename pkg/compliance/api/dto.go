@@ -190,14 +190,3 @@ type BenchmarkEvaluationSummary struct {
 	EvaluatedAt   *time.Time                    `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
 	LastJobStatus string                        `json:"lastJobStatus" example:"success"`                                                                                                                                                   // Last job status
 }
-
-type ControlSummary struct {
-	Control Control `json:"control"`
-
-	Passed                bool  `json:"passed"`
-	FailedResourcesCount  int   `json:"failedResourcesCount"`
-	TotalResourcesCount   int   `json:"totalResourcesCount"`
-	FailedConnectionCount int   `json:"failedConnectionCount"`
-	TotalConnectionCount  int   `json:"totalConnectionCount"`
-	EvaluatedAt           int64 `json:"evaluatedAt"`
-}

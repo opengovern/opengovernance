@@ -40,7 +40,7 @@ func (s *JobScheduler) buildRunners(
 			return nil, err
 		}
 
-		if control.QueryID == nil {
+		if control.Query == nil {
 			continue
 		}
 
@@ -53,7 +53,7 @@ func (s *JobScheduler) buildRunners(
 
 		runnerJob := model.ComplianceRunner{
 			BenchmarkID:          rootBenchmarkID,
-			QueryID:              *control.QueryID,
+			QueryID:              control.Query.ID,
 			ConnectionID:         connectionID,
 			ResourceCollectionID: resourceCollectionID,
 			ParentJobID:          parentJobID,

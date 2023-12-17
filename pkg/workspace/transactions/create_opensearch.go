@@ -2,7 +2,9 @@ package transactions
 
 import (
 	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -10,32 +12,32 @@ import (
 )
 
 type CreateOpenSearch struct {
-	masterRoleARN   string
 	securityGroupID string
 	subnetID        string
 	vmType          types3.OpenSearchPartitionInstanceType
 	instanceCount   int32
 	db              *db.Database
 
+	iam        *iam.Client
 	opensearch *opensearch.Client
 }
 
 func NewCreateOpenSearch(
-	masterRoleARN string,
 	securityGroupID string,
 	subnetID string,
 	vmType types3.OpenSearchPartitionInstanceType,
 	instanceCount int32,
 	db *db.Database,
+	iam *iam.Client,
 	opensearch *opensearch.Client,
 ) *CreateOpenSearch {
 	return &CreateOpenSearch{
-		masterRoleARN:   masterRoleARN,
 		securityGroupID: securityGroupID,
 		subnetID:        subnetID,
 		vmType:          vmType,
 		instanceCount:   instanceCount,
 		db:              db,
+		iam:             iam,
 		opensearch:      opensearch,
 	}
 }
@@ -51,7 +53,7 @@ func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {
 			if err := t.createOpenSearch(workspace); err != nil {
 				return err
 			}
-			return nil
+			return ErrTransactionNeedsTime
 		}
 		return err
 	}
@@ -138,8 +140,34 @@ func (t *CreateOpenSearch) isOpenSearchCreationFinished(workspace db.Workspace) 
 
 func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 	domainName := workspace.ID
+	out, err := t.iam.CreateRole(context.Background(), &iam.CreateRoleInput{
+		AssumeRolePolicyDocument: aws.String(fmt.Sprintf(`{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::435670955331:role/kaytu-service-%s-migrator"
+            },
+            "Action": [
+				"sts:AssumeRole",
+				"sts:TagSession"
+			]
+        }
+    ]
+}`, workspace.ID)),
+		RoleName:            aws.String(fmt.Sprintf("kaytu-opensearch-master-%s", workspace.ID)),
+		Description:         nil,
+		MaxSessionDuration:  nil,
+		Path:                nil,
+		PermissionsBoundary: nil,
+		Tags:                nil,
+	})
+	if err != nil {
+		return err
+	}
 
-	_, err := t.opensearch.CreateDomain(context.Background(), &opensearch.CreateDomainInput{
+	_, err = t.opensearch.CreateDomain(context.Background(), &opensearch.CreateDomainInput{
 		DomainName:     aws.String(domainName),
 		AccessPolicies: nil,
 		AdvancedOptions: map[string]string{
@@ -153,7 +181,7 @@ func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 			Enabled:                     aws.Bool(true),
 			InternalUserDatabaseEnabled: nil,
 			MasterUserOptions: &types3.MasterUserOptions{
-				MasterUserARN:      aws.String(t.masterRoleARN),
+				MasterUserARN:      out.Role.Arn,
 				MasterUserName:     nil,
 				MasterUserPassword: nil,
 			},

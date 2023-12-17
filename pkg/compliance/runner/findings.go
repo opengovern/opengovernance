@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
+func GetResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
 	switch queryConnector {
 	case source.CloudAWS:
 		return awsSteampipe.ExtractResourceType(tableName)
@@ -38,7 +38,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			tableName = query.ListOfTables[0]
 		}
 		if tableName != "" {
-			queryResourceType = getResourceTypeFromTableName(tableName, w.ExecutionPlan.QueryConnector)
+			queryResourceType = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.QueryConnector)
 		}
 	}
 
@@ -62,7 +62,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			connectionId = v
 		}
 		if v, ok := recordValue["kaytu_table_name"].(string); ok && resourceType == "" {
-			resourceType = getResourceTypeFromTableName(v, w.ExecutionPlan.QueryConnector)
+			resourceType = GetResourceTypeFromTableName(v, w.ExecutionPlan.QueryConnector)
 		}
 		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
 			resourceID = v

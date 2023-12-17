@@ -19,7 +19,7 @@ func Command() *cobra.Command {
 		panic(err)
 	}
 
-	logger.Info("running", zap.String("es_address", cnf.ElasticSearch.Address))
+	logger.Info("running", zap.String("es_address", cnf.ElasticSearch.Address), zap.String("es_arn", cnf.ElasticSearch.AssumeRoleArn))
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
