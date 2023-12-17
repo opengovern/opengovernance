@@ -72,9 +72,9 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		return result, err
 	}
 	for _, control := range controls {
-		if !control.ManualVerification && control.QueryID != nil {
+		if !control.ManualVerification && control.Query != nil {
 			for _, query := range queries {
-				if *control.QueryID == query.ID {
+				if control.Query.ID == query.ID {
 					rts := extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))
 					resourceTypes = append(resourceTypes, rts...)
 					break
