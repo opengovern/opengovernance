@@ -64,8 +64,25 @@ func (t *CreateServiceAccountRoles) Apply(workspace db.Workspace) error {
 
 func (t *CreateServiceAccountRoles) Rollback(workspace db.Workspace) error {
 	for _, serviceName := range serviceNames {
-		_, err := t.iam.DeleteRole(context.Background(), &iam.DeleteRoleInput{
-			RoleName: aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName)),
+		roleName := aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName))
+
+		out, err := t.iam.ListAttachedRolePolicies(context.Background(), &iam.ListAttachedRolePoliciesInput{
+			RoleName: roleName,
+		})
+		if err == nil && out != nil {
+			for _, attachedPolicy := range out.AttachedPolicies {
+				_, err := t.iam.DetachRolePolicy(context.Background(), &iam.DetachRolePolicyInput{
+					PolicyArn: attachedPolicy.PolicyArn,
+					RoleName:  roleName,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		_, err = t.iam.DeleteRole(context.Background(), &iam.DeleteRoleInput{
+			RoleName: roleName,
 		})
 		if err != nil {
 			if !strings.Contains(err.Error(), "NoSuchEntity") {
