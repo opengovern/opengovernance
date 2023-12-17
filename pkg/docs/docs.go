@@ -1571,6 +1571,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/controls/{controlId}/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get control trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Control ID",
+                        "name": "controlId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for start of the chart in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for end of the chart in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings": {
             "post": {
                 "security": [
@@ -1683,6 +1754,140 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings/top/{field}/{count}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the top field by finding count.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get top field by finding count",
+                "parameters": [
+                    {
+                        "enum": [
+                            "resourceType",
+                            "connectionID",
+                            "resourceID",
+                            "service",
+                            "controlID"
+                        ],
+                        "type": "string",
+                        "description": "Field",
+                        "name": "field",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Count",
+                        "name": "count",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection IDs to filter by",
+                        "name": "resourceCollection",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ControlID",
+                        "name": "controlId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "none",
+                                "passed",
+                                "low",
+                                "medium",
+                                "high",
+                                "critical"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Severities to filter by defaults to all severities except passed",
+                        "name": "severities",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
                         }
                     }
                 }
@@ -1838,127 +2043,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Field",
                         "name": "field",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection groups to filter by ",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "none",
-                                "passed",
-                                "low",
-                                "medium",
-                                "high",
-                                "critical"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Severities to filter by defaults to all severities except passed",
-                        "name": "severities",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving the top field by finding count.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get top field by finding count",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "BenchmarkID",
-                        "name": "benchmarkId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "resourceType",
-                            "connectionID",
-                            "resourceID",
-                            "service",
-                            "controlID"
-                        ],
-                        "type": "string",
-                        "description": "Field",
-                        "name": "field",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Count",
-                        "name": "count",
                         "in": "path",
                         "required": true
                     },
@@ -7733,9 +7817,8 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Non-compliance to this control could result in several costs including..."
                 },
-                "queryID": {
-                    "type": "string",
-                    "example": "azure_ad_manual_control"
+                "query": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query"
                 },
                 "severity": {
                     "allOf": [
@@ -7771,6 +7854,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary": {
             "type": "object",
             "properties": {
+                "benchmarks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
+                    }
+                },
                 "control": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control"
                 },
@@ -7785,6 +7874,28 @@ const docTemplate = `{
                 },
                 "passed": {
                     "type": "boolean"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalResourcesCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTrendDatapoint": {
+            "type": "object",
+            "properties": {
+                "failedConnectionCount": {
+                    "type": "integer"
+                },
+                "failedResourcesCount": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "description": "Time",
+                    "type": "integer",
+                    "example": 1686346668
                 },
                 "totalConnectionCount": {
                     "type": "integer"
@@ -9667,7 +9778,9 @@ const docTemplate = `{
                 "spend_discovery_aws_policy_arns",
                 "asset_discovery_azure_role_ids",
                 "spend_discovery_azure_role_ids",
-                "customization_enabled"
+                "customization_enabled",
+                "aws_discovery_required_only",
+                "azure_discovery_required_only"
             ],
             "x-enum-varnames": [
                 "MetadataKeyWorkspaceOwnership",
@@ -9703,7 +9816,9 @@ const docTemplate = `{
                 "MetadataKeySpendDiscoveryAWSPolicyARNs",
                 "MetadataKeyAssetDiscoveryAzureRoleIDs",
                 "MetadataKeySpendDiscoveryAzureRoleIDs",
-                "MetadataKeyCustomizationEnabled"
+                "MetadataKeyCustomizationEnabled",
+                "MetadataKeyAWSDiscoveryRequiredOnly",
+                "MetadataKeyAzureDiscoveryRequiredOnly"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig": {

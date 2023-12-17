@@ -129,12 +129,17 @@ func (p Control) ToApi() api.Control {
 		Connector:          "",
 		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
-		QueryID:            p.QueryID,
 		Severity:           p.Severity,
 		ManualVerification: p.ManualVerification,
 		Managed:            p.Managed,
 		CreatedAt:          p.CreatedAt,
 		UpdatedAt:          p.UpdatedAt,
+	}
+
+	if p.QueryID != nil {
+		pa.Query = &api.Query{
+			ID: *p.QueryID,
+		}
 	}
 
 	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"explanation"]; ok && len(v) > 0 {

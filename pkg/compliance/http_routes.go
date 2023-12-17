@@ -72,6 +72,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	controls := v1.Group("/controls")
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
+	controls.GET("/:controlId/trend", httpserver2.AuthorizeHandler(h.GetControlTrend, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver2.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -104,7 +105,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/:field/top/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
+	findings.GET("/top/:field/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByControls, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
@@ -647,18 +648,18 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId			path		string							true	"BenchmarkID"
 //	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
 //	@Param			count				path		int								true	"Count"
 //	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
+//	@Param			controlId			query		[]string						false	"ControlID"
 //	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
-//	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
+//	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
 	field := ctx.Param("field")
 	esField := field
 	countStr := ctx.Param("count")
@@ -689,23 +690,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			kaytuTypes.FindingSeverityNone,
 		}
 	}
-	//tracer :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmarkTreeIDs")
-
-	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("benchmark id", benchmarkID),
-	))
-	span1.End()
+	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmarkId")
+	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
 
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, nil, severities, esCount)
+	res, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, controlIDs, severities, esCount)
 	if err != nil {
 		return err
 	}
@@ -1388,10 +1377,10 @@ func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 
 	queryIDs := make([]string, 0, len(controlsMap))
 	for _, control := range controlsMap {
-		if control.QueryID == nil {
+		if control.Query == nil {
 			continue
 		}
-		queryIDs = append(queryIDs, *control.QueryID)
+		queryIDs = append(queryIDs, control.Query.ID)
 	}
 
 	queries, err := h.db.GetQueriesIdAndConnector(queryIDs)
@@ -1406,8 +1395,8 @@ func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 
 	var controlSummary []api.ControlSummary
 	for _, control := range controlsMap {
-		if control.QueryID != nil {
-			if query, ok := queryMap[*control.QueryID]; ok {
+		if control.Query != nil {
+			if query, ok := queryMap[control.Query.ID]; ok {
 				control.Connector, _ = source.ParseType(query.Connector)
 			}
 		}
@@ -1688,6 +1677,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 				return err
 			}
 			apiControl.Connector, _ = source.ParseType(query.Connector)
+			apiControl.Query = utils.GetPointer(query.ToApi())
 		}
 
 		result, ok := controlResults[control.ID]
@@ -1774,7 +1764,21 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 			return nil, err
 		}
 		apiControl.Connector, _ = source.ParseType(query.Connector)
+		apiControl.Query = utils.GetPointer(query.ToApi())
 	}
+
+	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
+	if err != nil {
+		h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
+		return nil, err
+	}
+	benchmarkIds := make([]string, 0, len(benchmarks))
+	apiBenchmarks := make([]api.Benchmark, 0, len(benchmarks))
+	for _, benchmark := range benchmarks {
+		benchmarkIds = append(benchmarkIds, benchmark.ID)
+		apiBenchmarks = append(apiBenchmarks, benchmark.ToApi())
+	}
+
 	var evaluatedAt int64
 	var result types.ControlResult
 	if benchmarkID != nil {
@@ -1790,15 +1794,6 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 		}
 		evaluatedAt = evAt
 	} else {
-		benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
-		if err != nil {
-			h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
-			return nil, err
-		}
-		benchmarkIds := make([]string, 0, len(benchmarks))
-		for _, benchmark := range benchmarks {
-			benchmarkIds = append(benchmarkIds, benchmark.ID)
-		}
 		controlResult, evaluatedAts, err := es.BenchmarksControlSummary(h.logger, h.client, benchmarkIds, connectionIDs)
 		if err != nil {
 			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
@@ -1816,6 +1811,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 
 	controlSummary := api.ControlSummary{
 		Control:               apiControl,
+		Benchmarks:            apiBenchmarks,
 		Passed:                result.Passed,
 		FailedResourcesCount:  result.FailedResourcesCount,
 		TotalResourcesCount:   result.TotalResourcesCount,
@@ -1825,6 +1821,85 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	}
 
 	return &controlSummary, nil
+}
+
+// GetControlTrend godoc
+//
+//	@Summary	Get control trend
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		controlId		path		string		true	"Control ID"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param		startTime		query		int			false	"timestamp for start of the chart in epoch seconds"
+//	@Param		endTime			query		int			false	"timestamp for end of the chart in epoch seconds"
+//	@Success	200				{object}	[]api.ControlTrendDatapoint
+//	@Router		/compliance/api/v1/controls/{controlId}/trend [get]
+func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
+		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		endTime = time.Unix(endTimeInt, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		startTime = time.Unix(startTimeInt, 0)
+	}
+
+	controlID := ctx.Param("controlId")
+	control, err := h.db.GetControl(controlID)
+	if err != nil {
+		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID))
+		return err
+	}
+	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
+	if err != nil {
+		h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
+		return err
+	}
+	benchmarkIds := make([]string, 0, len(benchmarks))
+	for _, benchmark := range benchmarks {
+		benchmarkIds = append(benchmarkIds, benchmark.ID)
+	}
+
+	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(h.logger, h.client, benchmarkIds, []string{controlID}, connectionIDs, startTime, endTime)
+	if err != nil {
+		h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID))
+		return err
+	}
+
+	var response []api.ControlTrendDatapoint
+	for _, datapoint := range dataPoints[control.ID] {
+		response = append(response, api.ControlTrendDatapoint{
+			Timestamp:             int(datapoint.DateEpoch),
+			FailedResourcesCount:  datapoint.FailedResourcesCount,
+			TotalResourcesCount:   datapoint.TotalResourcesCount,
+			FailedConnectionCount: datapoint.FailedConnectionCount,
+			TotalConnectionCount:  datapoint.TotalConnectionCount,
+		})
+	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Timestamp < response[j].Timestamp
+	})
+
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // CreateBenchmarkAssignment godoc
