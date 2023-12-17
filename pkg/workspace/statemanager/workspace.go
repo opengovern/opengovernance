@@ -15,7 +15,7 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid tr
 	var transaction transactions.Transaction
 	switch tid {
 	case transactions.Transaction_CreateHelmRelease:
-		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db, currentState.ProcessingStateID() == state.StateID_Reserving)
+		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.kmsClient, s.cfg, s.db)
 	case transactions.Transaction_CreateInsightBucket:
 		transaction = transactions.NewCreateInsightBucket(s.s3Client)
 	case transactions.Transaction_CreateMasterCredential:
@@ -26,8 +26,6 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid tr
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
 	case transactions.Transaction_CreateServiceAccountRoles:
 		transaction = transactions.NewCreateServiceAccountRoles(s.iam, s.cfg.AWSAccountID, s.cfg.OIDCProvider)
-	case transactions.Transaction_EnsureBootstrapInputFinished:
-		transaction = transactions.NewEnsureBootstrapInputFinished()
 	case transactions.Transaction_EnsureCredentialOnboarded:
 		transaction = transactions.NewEnsureCredentialOnboarded(s.kmsClient, s.cfg, s.db)
 	case transactions.Transaction_EnsureDiscoveryFinished:

@@ -490,6 +490,11 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 		return err
 	}
 
+	err = s.StateManager.UseReservationIfPossible(*ws)
+	if err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusOK, "")
 }
 
@@ -682,6 +687,11 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		SingleConnection: request.SingleConnection,
 	}
 	err = s.db.CreateCredential(&cred)
+	if err != nil {
+		return err
+	}
+
+	err = s.StateManager.UseReservationIfPossible(*ws)
 	if err != nil {
 		return err
 	}

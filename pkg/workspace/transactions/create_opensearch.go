@@ -43,7 +43,7 @@ func NewCreateOpenSearch(
 }
 
 func (t *CreateOpenSearch) Requirements() []TransactionID {
-	return nil
+	return []TransactionID{Transaction_CreateServiceAccountRoles}
 }
 
 func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {

@@ -14,17 +14,16 @@ type Transaction interface {
 type TransactionID string
 
 const (
-	Transaction_CreateServiceAccountRoles    TransactionID = "CreateServiceAccountRoles"
-	Transaction_CreateOpenSearch             TransactionID = "CreateOpenSearch"
-	Transaction_CreateInsightBucket          TransactionID = "CreateInsightBucket"
-	Transaction_CreateRoleBinding            TransactionID = "CreateRoleBinding"
-	Transaction_CreateMasterCredential       TransactionID = "CreateMasterCredential"
-	Transaction_CreateHelmRelease            TransactionID = "CreateHelmRelease"
-	Transaction_EnsureCredentialOnboarded    TransactionID = "EnsureCredentialOnboarded"
-	Transaction_EnsureDiscoveryFinished      TransactionID = "EnsureDiscoveryFinished"
-	Transaction_EnsureBootstrapInputFinished TransactionID = "EnsureBootstrapInputFinished"
-	Transaction_EnsureJobsRunning            TransactionID = "EnsureJobsRunning"
-	Transaction_EnsureJobsFinished           TransactionID = "EnsureJobsFinished"
+	Transaction_CreateServiceAccountRoles TransactionID = "CreateServiceAccountRoles"
+	Transaction_CreateOpenSearch          TransactionID = "CreateOpenSearch"
+	Transaction_CreateInsightBucket       TransactionID = "CreateInsightBucket"
+	Transaction_CreateRoleBinding         TransactionID = "CreateRoleBinding"
+	Transaction_CreateMasterCredential    TransactionID = "CreateMasterCredential"
+	Transaction_CreateHelmRelease         TransactionID = "CreateHelmRelease"
+	Transaction_EnsureCredentialOnboarded TransactionID = "EnsureCredentialOnboarded"
+	Transaction_EnsureDiscoveryFinished   TransactionID = "EnsureDiscoveryFinished"
+	Transaction_EnsureJobsRunning         TransactionID = "EnsureJobsRunning"
+	Transaction_EnsureJobsFinished        TransactionID = "EnsureJobsFinished"
 )
 
 var ErrTransactionNeedsTime = errors.New("transaction needs time")

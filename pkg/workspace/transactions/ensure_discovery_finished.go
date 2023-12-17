@@ -23,7 +23,7 @@ func NewEnsureDiscoveryFinished(
 }
 
 func (t *EnsureDiscoveryFinished) Requirements() []TransactionID {
-	return []TransactionID{Transaction_EnsureBootstrapInputFinished}
+	return []TransactionID{Transaction_EnsureCredentialOnboarded, Transaction_CreateHelmRelease}
 }
 
 func (t *EnsureDiscoveryFinished) Apply(workspace db.Workspace) error {
