@@ -6,7 +6,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/onboard/api/healthz"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/db"
 	"github.com/kaytu-io/kaytu-engine/services/onboard/meta"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/labstack/echo/v4"
@@ -14,7 +13,6 @@ import (
 )
 
 type API struct {
-	queue     queue.Interface
 	logger    *zap.Logger
 	describe  describe.SchedulerServiceClient
 	inventory inventory.InventoryServiceClient
@@ -26,7 +24,6 @@ type API struct {
 
 func New(
 	logger *zap.Logger,
-	q queue.Interface,
 	d describe.SchedulerServiceClient,
 	i inventory.InventoryServiceClient,
 	m *meta.Meta,
@@ -36,7 +33,6 @@ func New(
 ) *API {
 	return &API{
 		logger:    logger.Named("api"),
-		queue:     q,
 		describe:  d,
 		inventory: i,
 		meta:      m,
