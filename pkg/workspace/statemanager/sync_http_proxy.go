@@ -19,8 +19,9 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 	var httpIncludes []contourv1.Include
 	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
-		if !(state.StateID(w.Status) == state.StateID_Provisioned ||
-			(state.StateID(w.Status) == state.StateID_Bootstrapping && w.IsCreated)) {
+		stateID := state.StateID(w.Status)
+		if !(stateID == state.StateID_Provisioned ||
+			((stateID == state.StateID_Bootstrapping || stateID == state.StateID_Provisioning) && w.IsCreated)) {
 			continue
 		}
 		httpIncludes = append(httpIncludes, contourv1.Include{

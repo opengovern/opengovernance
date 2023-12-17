@@ -38,7 +38,7 @@ func NewEnsureCredentialOnboarded(
 }
 
 func (t *EnsureCredentialOnboarded) Requirements() []TransactionID {
-	return nil
+	return []TransactionID{Transaction_CreateMasterCredential}
 }
 
 func (t *EnsureCredentialOnboarded) Apply(workspace db.Workspace) error {

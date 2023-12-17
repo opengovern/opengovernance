@@ -10,6 +10,7 @@ const (
 	StateID_Reserving     StateID = "RESERVING"
 	StateID_Reserved      StateID = "RESERVED"
 	StateID_Bootstrapping StateID = "BOOTSTRAPPING"
+	StateID_Provisioning  StateID = "PROVISIONING"
 	StateID_Provisioned   StateID = "PROVISIONED"
 	StateID_Deleting      StateID = "DELETING"
 	StateID_Deleted       StateID = "DELETED"
@@ -26,7 +27,7 @@ type State interface {
 }
 
 var AllStates = []State{
-	Bootstrapping{},
+	Provisioning{},
 	Deleting{},
 	Reserved{},
 }

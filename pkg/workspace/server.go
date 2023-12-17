@@ -288,7 +288,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
 	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
 
-	if state.StateID(ws.Status) == state.StateID_Bootstrapping {
+	if state.StateID(ws.Status) == state.StateID_Bootstrapping || state.StateID(ws.Status) == state.StateID_Provisioning {
 		if !ws.IsBootstrapInputFinished {
 			return resp, nil
 		}
