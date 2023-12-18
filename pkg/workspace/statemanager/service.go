@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
+	"github.com/aws/aws-sdk-go-v2/service/osis"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -39,6 +40,7 @@ type Service struct {
 	authClient authclient.AuthServiceClient
 	kubeClient k8sclient.Client // the kubernetes client
 	opensearch *opensearch.Client
+	osis       *osis.Client
 	iam        *iam.Client
 	iamMaster  *iam.Client
 	s3Client   *s3.Client
@@ -88,6 +90,7 @@ func New(cfg config.Config) (*Service, error) {
 
 	awsCfg.Region = cfg.OpenSearchRegion
 	openSearchClient := opensearch.NewFromConfig(awsCfg)
+	osisClient := osis.NewFromConfig(awsCfg)
 
 	iamClient := iam.NewFromConfig(awsCfg)
 
@@ -109,6 +112,7 @@ func New(cfg config.Config) (*Service, error) {
 		iamMaster:  iamClientMaster,
 		s3Client:   s3Client,
 		opensearch: openSearchClient,
+		osis:       osisClient,
 	}, nil
 }
 

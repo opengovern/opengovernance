@@ -14,6 +14,7 @@ func (s Provisioning) Requirements(workspace db.Workspace) []api.TransactionID {
 		api.Transaction_CreateMasterCredential,
 		api.Transaction_CreateServiceAccountRoles,
 		api.Transaction_CreateOpenSearch,
+		api.Transaction_CreateIngestionPipeline,
 		api.Transaction_CreateHelmRelease,
 		api.Transaction_CreateRoleBinding,
 		api.Transaction_EnsureCredentialOnboarded,
