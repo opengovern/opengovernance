@@ -126,10 +126,6 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			return nil, err
 		}
 
-		if strings.ToLower(resource.Job.ResourceType) == "aws::costexplorer::byservicedaily" {
-			fmt.Println("===================================================== Cost", resource.UniqueId, "\n", resource.DescriptionJson)
-		}
-
 		var tags []es2.Tag
 		for k, v := range resource.Tags {
 			tags = append(tags, es2.Tag{
