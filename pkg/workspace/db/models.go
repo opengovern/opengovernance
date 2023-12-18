@@ -25,6 +25,7 @@ type Workspace struct {
 	InsightJobsID            string            `json:"insight_jobs_id"`
 	ComplianceTriggered      bool              `json:"complianceTriggered"`
 	OpenSearchEndpoint       string            `json:"open_search_endpoint"`
+	PipelineEndpoint         string            `json:"pipeline_endpoint"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {

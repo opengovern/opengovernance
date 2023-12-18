@@ -29,6 +29,7 @@ func (s WaitingForCredential) Requirements(workspace db.Workspace) []api.Transac
 		api.Transaction_CreateMasterCredential,
 		api.Transaction_CreateServiceAccountRoles,
 		api.Transaction_CreateOpenSearch,
+		api.Transaction_CreateIngestionPipeline,
 		api.Transaction_CreateHelmRelease,
 		api.Transaction_EnsureCredentialExists,
 	}

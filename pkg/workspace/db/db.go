@@ -69,6 +69,10 @@ func (s *Database) UpdateWorkspaceOpenSearchEndpoint(id string, openSearchEndpoi
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("open_search_endpoint", openSearchEndpoint).Error
 }
 
+func (s *Database) UpdateWorkspacePipelineEndpoint(id string, endpoint string) error {
+	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("pipeline_endpoint", endpoint).Error
+}
+
 func (s *Database) SetWorkspaceCreated(id string) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("is_created", true).Error
 }
