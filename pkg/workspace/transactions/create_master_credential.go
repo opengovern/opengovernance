@@ -53,6 +53,13 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
 			return err
 		}
+		u, err := t.iam.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
+		if err != nil {
+			return err
+		}
+		iamUser = &iam.CreateUserOutput{
+			User: u.User,
+		}
 	}
 	policy, err := t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
 		PolicyDocument: aws.String(`{
