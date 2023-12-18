@@ -180,7 +180,13 @@ func (h HttpHandler) CheckMaxConnections(additionCount int64) error {
 	if err != nil {
 		return err
 	}
-	maxConnections := cnf.GetValue().(int64)
+
+	var maxConnections int64
+	if v, ok := cnf.GetValue().(int64); ok {
+		maxConnections = v
+	} else if v, ok := cnf.GetValue().(int); ok {
+		maxConnections = int64(v)
+	}
 	if count+additionCount > maxConnections {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
@@ -1246,7 +1252,14 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	maxConnections := cnf.GetValue().(int64)
+
+	var maxConnections int64
+
+	if v, ok := cnf.GetValue().(int64); ok {
+		maxConnections = v
+	} else if v, ok := cnf.GetValue().(int); ok {
+		maxConnections = int64(v)
+	}
 
 	onboardedSources := make([]api.Connection, 0)
 	switch credential.ConnectorType {
