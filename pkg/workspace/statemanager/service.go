@@ -2,6 +2,7 @@ package statemanager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	config2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -13,6 +14,7 @@ import (
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -131,7 +133,9 @@ func (s *Service) StartReconciler() {
 		} else {
 			for _, workspace := range workspaces {
 				if err := s.handleTransition(workspace); err != nil {
-					s.logger.Error(fmt.Sprintf("handle workspace %s: %v", workspace.ID, err))
+					if !errors.Is(err, transactions.ErrTransactionNeedsTime) {
+						s.logger.Error(fmt.Sprintf("handle workspace %s: %v", workspace.ID, err))
+					}
 				}
 			}
 

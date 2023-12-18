@@ -80,6 +80,27 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		UserName: aws.String(userName),
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "LimitExceeded") {
+			accessKeys, err := t.iam.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
+				UserName: aws.String(userName),
+			})
+			if err != nil {
+				if !strings.Contains(err.Error(), "NoSuchEntity") {
+					return err
+				}
+				accessKeys = &iam.ListAccessKeysOutput{}
+			}
+			for _, accessKey := range accessKeys.AccessKeyMetadata {
+				_, err := t.iam.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
+					UserName:    aws.String(userName),
+					AccessKeyId: accessKey.AccessKeyId,
+				})
+				if err != nil {
+					return err
+				}
+			}
+			return ErrTransactionNeedsTime
+		}
 		return err
 	}
 

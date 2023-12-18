@@ -82,6 +82,9 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
 		err := transaction.Apply(*workspace)
 		if err != nil {
+			if errors.Is(err, transactions.ErrTransactionNeedsTime) {
+				return err
+			}
 			s.logger.Error("failure while applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()), zap.Error(err))
 			return err
 		}
