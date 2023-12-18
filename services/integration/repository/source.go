@@ -4,7 +4,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gorm.io/gorm/clause"
 )
 
 type Source struct {
@@ -18,10 +17,10 @@ func NewSource(db db.Database) Source {
 }
 
 // ListSources gets list of all source
-func (s Source) ListSources() ([]model.Source, error) {
+func (s Source) List() ([]model.Source, error) {
 	var sources []model.Source
 
-	tx := s.db.DB.Model(model.Source{}).Preload(clause.Associations).Find(&sources)
+	tx := s.db.DB.Model(model.Source{}).Joins("Connector").Joins("Credential").Find(&sources)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -30,21 +29,14 @@ func (s Source) ListSources() ([]model.Source, error) {
 }
 
 // GetSourcesOfType gets list of sources with matching type
-func (s Source) GetSourcesOfType(rType source.Type) ([]model.Source, error) {
-	var sources []model.Source
-
-	tx := s.db.DB.Preload(clause.Associations).Find(&sources, "type = ?", rType)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return sources, nil
+func (s Source) ListOfType(t source.Type) ([]model.Source, error) {
+	return s.ListOfTypes([]source.Type{t})
 }
 
 // GetSourcesOfTypes gets list of sources with matching types
-func (s Source) GetSourcesOfTypes(rTypes []source.Type) ([]model.Source, error) {
+func (s Source) ListOfTypes(types []source.Type) ([]model.Source, error) {
 	var sources []model.Source
-	tx := s.db.DB.Preload(clause.Associations).Find(&sources, "type IN ?", rTypes)
+	tx := s.db.DB.Joins("Connector").Joins("Credential").Find(&sources, "type IN ?", types)
 
 	if tx.Error != nil {
 		return nil, tx.Error
