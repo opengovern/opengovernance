@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/sony/sonyflake"
+	"math/rand"
 )
 
 func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
@@ -27,26 +28,20 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 		return nil
 	}
 
-	err = s.db.UpdateWorkspaceName(workspace.ID, workspace.Name+"-deleting")
-	if err != nil {
-		return err
-	}
-	err = s.db.UpdateWorkspaceOwner(workspace.ID, "")
-	if err != nil {
-		return err
-	}
-	err = s.db.UpdateWorkspaceStatus(workspace.ID, api.StateID_Deleting)
-	if err != nil {
-		return err
-	}
+	workspace.ID, rs.ID = rs.ID, workspace.ID
+	rs.Name = fmt.Sprintf("rs-deleting-%d", rand.Int())
+	rs.Status = api.StateID_Deleting
 
 	err = s.db.UpdateCredentialWSID(workspace.ID, rs.ID)
 	if err != nil {
 		return err
 	}
 
-	workspace.ID = rs.ID
 	err = s.db.UpdateWorkspace(&workspace)
+	if err != nil {
+		return err
+	}
+	err = s.db.UpdateWorkspace(rs)
 	if err != nil {
 		return err
 	}
