@@ -27,7 +27,15 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 		return nil
 	}
 
-	err = s.db.DeleteWorkspace(workspace.ID)
+	err = s.db.UpdateWorkspaceName(workspace.ID, workspace.Name+"-deleting")
+	if err != nil {
+		return err
+	}
+	err = s.db.UpdateWorkspaceOwner(workspace.ID, "")
+	if err != nil {
+		return err
+	}
+	err = s.db.UpdateWorkspaceStatus(workspace.ID, api.StateID_Deleting)
 	if err != nil {
 		return err
 	}

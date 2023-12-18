@@ -11,6 +11,7 @@ type State interface {
 }
 
 var AllStates = []State{
+	WaitingForCredential{},
 	Provisioning{},
 	Deleting{},
 	Reserved{},
