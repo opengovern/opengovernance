@@ -1479,7 +1479,7 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Control IDs to filter by",
                         "name": "controlId",
-                        "in": "path"
+                        "in": "query"
                     },
                     {
                         "type": "array",

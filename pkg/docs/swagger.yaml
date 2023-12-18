@@ -4190,7 +4190,7 @@ paths:
       parameters:
       - collectionFormat: csv
         description: Control IDs to filter by
-        in: path
+        in: query
         items:
           type: string
         name: controlId
