@@ -49,7 +49,7 @@ func NewCreateHelmRelease(
 }
 
 func (t *CreateHelmRelease) Requirements() []api.TransactionID {
-	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateServiceAccountRoles}
+	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateIngestionPipeline, api.Transaction_CreateServiceAccountRoles}
 }
 
 func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
@@ -218,8 +218,9 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 				},
 			},
 			OpenSearch: types3.OpenSearchConfig{
-				Enabled:  true,
-				Endpoint: workspace.OpenSearchEndpoint,
+				Enabled:                   true,
+				Endpoint:                  workspace.OpenSearchEndpoint,
+				IngestionPipelineEndpoint: workspace.PipelineEndpoint,
 			},
 		},
 	}
