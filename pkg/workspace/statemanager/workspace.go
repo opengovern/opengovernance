@@ -43,7 +43,7 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid ap
 
 func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
 	allStateTransactionsMet := true
-	for _, stateRequirement := range currentState.Requirements() {
+	for _, stateRequirement := range currentState.Requirements(*workspace) {
 		alreadyDone := false
 		for _, tn := range currentTransactions {
 			if tn.TransactionID == stateRequirement {
@@ -102,7 +102,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
 	for _, transactionID := range currentTransactions {
 		isRequirement := false
-		for _, requirement := range currentState.Requirements() {
+		for _, requirement := range currentState.Requirements(*workspace) {
 			if requirement == transactionID.TransactionID {
 				isRequirement = true
 			}
@@ -133,7 +133,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 
 func (s *Service) handleTransition(workspace *db.Workspace) error {
 	var currentState state.State
-	for _, v := range state.AllStates {
+	for _, v := range state.AllStates(s.db, s.logger) {
 		if v.ProcessingStateID() == workspace.Status {
 			currentState = v
 		}

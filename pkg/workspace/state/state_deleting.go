@@ -2,12 +2,13 @@ package state
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
 type Deleting struct {
 }
 
-func (s Deleting) Requirements() []api.TransactionID {
+func (s Deleting) Requirements(workspace db.Workspace) []api.TransactionID {
 	return []api.TransactionID{}
 }
 
