@@ -10,16 +10,16 @@ require (
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/aws/aws-sdk-go v1.45.19
 	github.com/aws/aws-sdk-go-v2 v1.24.0
-	github.com/aws/aws-sdk-go-v2/config v1.18.42
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.40
+	github.com/aws/aws-sdk-go-v2/config v1.26.1
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.12
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.5
-	github.com/aws/aws-sdk-go-v2/service/kms v1.24.5
+	github.com/aws/aws-sdk-go-v2/service/kms v1.27.6
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.39.5
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.19.6
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.20.6
 	github.com/aws/aws-sdk-go-v2/service/osis v1.6.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.22.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.26.5
 	github.com/aws/smithy-go v1.19.0
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
 	github.com/brpaz/echozap v1.1.3
@@ -42,7 +42,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/kaytu-io/kaytu-aws-describer v0.26.4
 	github.com/kaytu-io/kaytu-azure-describer v0.17.12
-	github.com/kaytu-io/kaytu-util v0.0.0-20231218102740-ff0aea807cf0
+	github.com/kaytu-io/kaytu-util v0.0.0-20231218124743-54aba651af28
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -204,10 +204,10 @@ require (
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.10 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.43 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.21.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/account v1.11.5 // indirect
@@ -276,10 +276,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector v1.15.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector2 v1.16.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.14 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.36 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.22.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.4.5 // indirect
@@ -328,9 +328,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.22.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.38.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.14.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.18.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.18.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/storagegateway v1.20.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/support v1.16.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.19.0 // indirect
