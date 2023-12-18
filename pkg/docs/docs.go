@@ -1134,6 +1134,13 @@ const docTemplate = `{
                         "description": "timestamp for values in epoch seconds",
                         "name": "timeAt",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Top account count",
+                        "name": "topAccountCount",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1340,6 +1347,13 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "timestamp for values in epoch seconds",
                         "name": "timeAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Top account count",
+                        "name": "topAccountCount",
                         "in": "query"
                     }
                 ],
@@ -7708,6 +7722,13 @@ const docTemplate = `{
                     "description": "Benchmark title",
                     "type": "string",
                     "example": "Azure CIS v1.4.0"
+                },
+                "topConnections": {
+                    "description": "Top connections",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
+                    }
                 }
             }
         },
