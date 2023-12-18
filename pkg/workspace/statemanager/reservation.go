@@ -19,7 +19,7 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 		return nil
 	}
 
-	rs, err := s.db.GetReservedWorkspace()
+	rs, err := s.db.GetReservedWorkspace(false)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 }
 
 func (s *Service) handleReservation() error {
-	rs, err := s.db.GetReservedWorkspace()
+	rs, err := s.db.GetReservedWorkspace(true)
 	if err != nil {
 		return err
 	}
