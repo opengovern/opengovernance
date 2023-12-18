@@ -4,22 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	config3 "github.com/kaytu-io/kaytu-engine/pkg/inventory/config"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"os"
-	"strconv"
-
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"os"
 )
 
 var (
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
-
-	ElasticSearchAddress         = os.Getenv("ELASTICSEARCH_ADDRESS")
-	ElasticSearchUsername        = os.Getenv("ELASTICSEARCH_USERNAME")
-	ElasticSearchPassword        = os.Getenv("ELASTICSEARCH_PASSWORD")
-	ElasticSearchIsOpenSearchStr = os.Getenv("ELASTICSEARCH_ISOPENSEARCH")
-	ElasticSearchAwsRegion       = os.Getenv("ELASTICSEARCH_AWS_REGION")
 
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
@@ -46,28 +39,24 @@ var (
 func Command() *cobra.Command {
 	return &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return start(cmd.Context())
+			var (
+				cnf config3.InventoryConfig
+			)
+			config.ReadFromEnv(&cnf, nil)
+
+			return start(cmd.Context(), cnf)
 		},
 	}
 }
 
-func start(ctx context.Context) error {
+func start(ctx context.Context, cnf config3.InventoryConfig) error {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
-	elasticSearchIsOpenSearch, _ := strconv.ParseBool(ElasticSearchIsOpenSearchStr)
-	esConf := config.ElasticSearch{
-		Address:      ElasticSearchAddress,
-		Username:     ElasticSearchUsername,
-		Password:     ElasticSearchPassword,
-		IsOpenSearch: elasticSearchIsOpenSearch,
-		AwsRegion:    ElasticSearchAwsRegion,
-	}
-
 	handler, err := InitializeHttpHandler(
-		esConf,
+		cnf.ElasticSearch,
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
 		KafkaService,
