@@ -28,6 +28,11 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 		return nil
 	}
 
+	err = s.db.DeleteWorkspace(workspace.ID)
+	if err != nil {
+		return err
+	}
+
 	workspace.ID, rs.ID = rs.ID, workspace.ID
 	rs.Name = fmt.Sprintf("rs-deleting-%d", rand.Int())
 	rs.Status = api.StateID_Deleting
@@ -41,7 +46,8 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 	if err != nil {
 		return err
 	}
-	err = s.db.UpdateWorkspace(rs)
+
+	err = s.db.CreateWorkspace(rs)
 	if err != nil {
 		return err
 	}
