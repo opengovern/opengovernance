@@ -50,7 +50,9 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		Tags:                nil,
 	})
 	if err != nil {
-		return err
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
+		}
 	}
 	policy, err := t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
 		PolicyDocument: aws.String(`{
@@ -64,7 +66,9 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		PolicyName: aws.String(userName + "-assume-role"),
 	})
 	if err != nil {
-		return err
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
+		}
 	}
 
 	_, err = t.iam.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
