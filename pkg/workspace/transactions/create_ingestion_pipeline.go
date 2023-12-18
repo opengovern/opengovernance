@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/osis"
 	"github.com/aws/aws-sdk-go-v2/service/osis/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
@@ -18,6 +20,7 @@ type CreateIngestionPipeline struct {
 	db              *db.Database
 	cfg             config.Config
 	osis            *osis.Client
+	iam             *iam.Client
 }
 
 func NewCreateIngestionPipeline(
@@ -25,6 +28,7 @@ func NewCreateIngestionPipeline(
 	subnetID string,
 	db *db.Database,
 	osis *osis.Client,
+	iam *iam.Client,
 	cfg config.Config,
 ) *CreateIngestionPipeline {
 	return &CreateIngestionPipeline{
@@ -32,6 +36,7 @@ func NewCreateIngestionPipeline(
 		subnetID:        subnetID,
 		db:              db,
 		osis:            osis,
+		iam:             iam,
 		cfg:             cfg,
 	}
 }
@@ -113,7 +118,40 @@ func (t *CreateIngestionPipeline) isPipelineCreationFinished(workspace db.Worksp
 
 func (t *CreateIngestionPipeline) createPipeline(workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
-	_, err := t.osis.CreatePipeline(context.Background(), &osis.CreatePipelineInput{
+	roleName := fmt.Sprintf("kaytu-ingestion-%s", workspace.ID)
+	out, err := t.iam.CreateRole(context.Background(), &iam.CreateRoleInput{
+		AssumeRolePolicyDocument: aws.String(`{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "osis-pipelines.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}`),
+		RoleName: aws.String(roleName),
+	})
+	if err != nil {
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
+		}
+		out = &iam.CreateRoleOutput{
+			Role: &types2.Role{Arn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/%s", t.cfg.AWSAccountID, roleName))},
+		}
+	}
+
+	_, err = t.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess"),
+		RoleName:  aws.String(roleName),
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = t.osis.CreatePipeline(context.Background(), &osis.CreatePipelineInput{
 		MaxUnits: aws.Int32(1),
 		MinUnits: aws.Int32(1),
 		PipelineConfigurationBody: aws.String(fmt.Sprintf(`version: "2"
@@ -152,14 +190,14 @@ resource-sink:
             # region: "us-east-1"
             # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
             # sts_role_arn: "arn:aws:iam::123456789012:role/Example-Role"
-`, workspace.OpenSearchEndpoint, fmt.Sprintf("arn:aws:iam::%s:role/kaytu-opensearch-master-%s", t.cfg.AWSAccountID, workspace.ID))),
+`, workspace.OpenSearchEndpoint, *out.Role.Arn)),
 		PipelineName: aws.String(pipelineName),
 		BufferOptions: &types.BufferOptions{
-			PersistentBufferEnabled: aws.Bool(true),
+			PersistentBufferEnabled: aws.Bool(false),
 		},
-		EncryptionAtRestOptions: &types.EncryptionAtRestOptions{KmsKeyArn: nil},
-		LogPublishingOptions:    &types.LogPublishingOptions{IsLoggingEnabled: aws.Bool(false)},
-		Tags:                    nil,
+		//EncryptionAtRestOptions: &types.EncryptionAtRestOptions{KmsKeyArn: nil},
+		LogPublishingOptions: &types.LogPublishingOptions{IsLoggingEnabled: aws.Bool(false)},
+		Tags:                 nil,
 		VpcOptions: &types.VpcOptions{
 			SubnetIds:        []string{t.subnetID},
 			SecurityGroupIds: []string{t.securityGroupID},
