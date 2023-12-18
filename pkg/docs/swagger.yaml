@@ -771,6 +771,19 @@ definitions:
         example: example-rc
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary:
+    properties:
+      benchmark:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
+      children:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary'
+        type: array
+      control:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
     properties:
       checks:
@@ -3857,9 +3870,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary'
       security:
       - BearerToken: []
       summary: Get benchmark controls

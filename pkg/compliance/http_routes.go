@@ -67,7 +67,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver2.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/controls", httpserver2.AuthorizeHandler(h.GetBenchmarkControls, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/controls", httpserver2.AuthorizeHandler(h.GetBenchmarkControlsTree, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
 	controls := v1.Group("/controls")
@@ -1344,7 +1344,76 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarkControls godoc
+func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*db.Benchmark, controlSummaryMap map[string]api.ControlSummary, benchmarkId string) (*api.BenchmarkControlSummary, error) {
+	benchmark, ok := benchmarkMap[benchmarkId]
+	if !ok {
+		return nil, errors.New("benchmark not found")
+	}
+
+	result := api.BenchmarkControlSummary{
+		Benchmark: benchmark.ToApi(),
+	}
+
+	for _, control := range benchmark.Controls {
+		controlSummary, ok := controlSummaryMap[control.ID]
+		if !ok {
+			continue
+		}
+		result.Controls = append(result.Controls, controlSummary)
+	}
+
+	for _, child := range benchmark.Children {
+		childResult, err := h.populateBenchmarkControlSummary(benchmarkMap, controlSummaryMap, child.ID)
+		if err != nil {
+			return nil, err
+		}
+		result.Children = append(result.Children, *childResult)
+	}
+
+	sort.Slice(result.Controls, func(i, j int) bool {
+		if result.Controls[i].Control.Severity != result.Controls[j].Control.Severity {
+			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityCritical {
+				return true
+			}
+			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityCritical {
+				return false
+			}
+			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityHigh {
+				return true
+			}
+			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityHigh {
+				return false
+			}
+			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityMedium {
+				return true
+			}
+			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityMedium {
+				return false
+			}
+			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityLow {
+				return true
+			}
+			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityLow {
+				return false
+			}
+			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityNone {
+				return true
+			}
+			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityNone {
+				return false
+			}
+		}
+		return result.Controls[i].Control.Title < result.Controls[j].Control.Title
+	})
+
+	sort.Slice(result.Children, func(i, j int) bool {
+		return result.Children[i].Benchmark.Title < result.Children[j].Benchmark.Title
+	})
+
+	return &result, nil
+}
+
+// GetBenchmarkControlsTree godoc
 //
 //	@Summary	Get benchmark controls
 //	@Security	BearerToken
@@ -1354,9 +1423,9 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 //	@Param		benchmark_id	path		string		true	"Benchmark ID"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "//	@Success	200	{object}	[]api.ControlSummary
-//	@Success	200				{object}	[]api.ControlSummary
+//	@Success	200				{object}	api.BenchmarkControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls [get]
-func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
+func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -1394,7 +1463,7 @@ func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 		queryMap[query.ID] = query
 	}
 
-	var controlSummary []api.ControlSummary
+	controlSummaryMap := make(map[string]api.ControlSummary)
 	for _, control := range controlsMap {
 		if control.Query != nil {
 			if query, ok := queryMap[control.Query.ID]; ok {
@@ -1405,7 +1474,7 @@ func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 		if !ok {
 			result = types.ControlResult{Passed: true}
 		}
-		controlSummary = append(controlSummary, api.ControlSummary{
+		controlSummaryMap[control.ID] = api.ControlSummary{
 			Control:               control,
 			Passed:                result.Passed,
 			FailedResourcesCount:  result.FailedResourcesCount,
@@ -1413,46 +1482,27 @@ func (h *HttpHandler) GetBenchmarkControls(ctx echo.Context) error {
 			FailedConnectionCount: result.FailedConnectionCount,
 			TotalConnectionCount:  result.TotalConnectionCount,
 			EvaluatedAt:           evaluatedAt,
-		})
+		}
 	}
 
-	sort.Slice(controlSummary, func(i, j int) bool {
-		if controlSummary[i].Control.Severity != controlSummary[j].Control.Severity {
-			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityCritical {
-				return true
-			}
-			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityCritical {
-				return false
-			}
-			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityHigh {
-				return true
-			}
-			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityHigh {
-				return false
-			}
-			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityMedium {
-				return true
-			}
-			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityMedium {
-				return false
-			}
-			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityLow {
-				return true
-			}
-			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityLow {
-				return false
-			}
-			if controlSummary[i].Control.Severity == kaytuTypes.FindingSeverityNone {
-				return true
-			}
-			if controlSummary[j].Control.Severity == kaytuTypes.FindingSeverityNone {
-				return false
-			}
-		}
-		return controlSummary[i].Control.Title < controlSummary[j].Control.Title
-	})
+	allBenchmarks, err := h.db.ListBenchmarks()
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	allBenchmarksMap := make(map[string]*db.Benchmark)
+	for _, b := range allBenchmarks {
+		b := b
+		allBenchmarksMap[b.ID] = &b
+	}
 
-	return ctx.JSON(http.StatusOK, controlSummary)
+	benchmarkControlSummary, err := h.populateBenchmarkControlSummary(allBenchmarksMap, controlSummaryMap, benchmarkID)
+	if err != nil {
+		h.logger.Error("failed to populate benchmark control summary", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, benchmarkControlSummary)
 }
 
 // GetBenchmarkControl godoc

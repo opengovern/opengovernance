@@ -1196,10 +1196,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary"
                         }
                     }
                 }
@@ -7620,6 +7617,26 @@ const docTemplate = `{
                     "description": "Resource Collection ID",
                     "type": "string",
                     "example": "example-rc"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary": {
+            "type": "object",
+            "properties": {
+                "benchmark": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary"
+                    }
+                },
+                "control": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
+                    }
                 }
             }
         },
