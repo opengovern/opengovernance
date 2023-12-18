@@ -43,7 +43,7 @@ func (t *CreateIngestionPipeline) Requirements() []api.TransactionID {
 func (t *CreateIngestionPipeline) Apply(workspace db.Workspace) error {
 	processing, endpoint, err := t.isPipelineCreationFinished(workspace)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if strings.Contains(err.Error(), "ResourceNotFoundException") {
 			if err := t.createPipeline(workspace); err != nil {
 				return err
 			}
