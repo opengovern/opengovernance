@@ -1629,7 +1629,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		controlId		path		[]string	false	"Control IDs to filter by"
+//	@Param		controlId		query		[]string	false	"Control IDs to filter by"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success	200				{object}	[]api.ControlSummary

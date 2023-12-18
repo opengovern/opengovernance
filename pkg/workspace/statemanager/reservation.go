@@ -9,6 +9,15 @@ import (
 )
 
 func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
+	creds, err := s.db.ListCredentialsByWorkspaceID(workspace.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(creds) == 0 {
+		return nil
+	}
+
 	rs, err := s.db.GetReservedWorkspace()
 	if err != nil {
 		return err
