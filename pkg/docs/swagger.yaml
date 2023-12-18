@@ -834,6 +834,11 @@ definitions:
         description: Benchmark title
         example: Azure CIS v1.4.0
         type: string
+      topConnections:
+        description: Top connections
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation:
     properties:
@@ -3965,6 +3970,11 @@ paths:
         in: query
         name: timeAt
         type: integer
+      - default: 3
+        description: Top account count
+        in: query
+        name: topAccountCount
+        type: integer
       produces:
       - application/json
       responses:
@@ -4091,6 +4101,11 @@ paths:
       - description: timestamp for values in epoch seconds
         in: query
         name: timeAt
+        type: integer
+      - default: 3
+        description: Top account count
+        in: query
+        name: topAccountCount
         type: integer
       produces:
       - application/json

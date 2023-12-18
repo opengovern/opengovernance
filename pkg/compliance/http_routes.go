@@ -1138,6 +1138,7 @@ func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
 //	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
+//	@Param			topAccountCount		query		int				false	"Top account count" default(3)
 //	@Success		200					{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
@@ -1160,6 +1161,15 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 		timeAt = time.Unix(timeAtInt, 0)
 	}
+	topAccountCount := 3
+	if topAccountCountStr := ctx.QueryParam("topAccountCount"); topAccountCountStr != "" {
+		count, err := strconv.ParseInt(topAccountCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid topAccountCount")
+		}
+		topAccountCount = int(count)
+	}
+
 	var response api.GetBenchmarksSummaryResponse
 
 	// tracer :
@@ -1218,16 +1228,53 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 		}
 
+		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
+		if topAccountCount > 0 {
+			res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{b.ID}, nil, []kaytuTypes.FindingSeverity{
+				kaytuTypes.FindingSeverityCritical,
+				kaytuTypes.FindingSeverityHigh,
+				kaytuTypes.FindingSeverityMedium,
+				kaytuTypes.FindingSeverityLow,
+				kaytuTypes.FindingSeverityNone,
+			}, topAccountCount)
+			if err != nil {
+				h.logger.Error("failed to fetch findings top field", zap.Error(err))
+				return err
+			}
+			resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+			for _, item := range res.Aggregations.FieldFilter.Buckets {
+				resConnectionIDs = append(resConnectionIDs, item.Key)
+			}
+			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+			if err != nil {
+				h.logger.Error("failed to get connections", zap.Error(err))
+				return err
+			}
+			connectionMap := make(map[string]*onboardApi.Connection)
+			for _, connection := range connections {
+				connection := connection
+				connectionMap[connection.ID.String()] = &connection
+			}
+
+			for _, item := range res.Aggregations.FieldFilter.Buckets {
+				topConnections = append(topConnections, api.TopFieldRecord{
+					Connection: connectionMap[item.Key],
+					Count:      item.DocCount,
+				})
+			}
+		}
+
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
-			ID:          b.ID,
-			Title:       b.Title,
-			Description: b.Description,
-			Connectors:  be.Connectors,
-			Tags:        be.Tags,
-			Enabled:     b.Enabled,
-			Result:      csResult,
-			Checks:      sResult,
-			EvaluatedAt: utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			ID:             b.ID,
+			Title:          b.Title,
+			Description:    b.Description,
+			Connectors:     be.Connectors,
+			Tags:           be.Tags,
+			Enabled:        b.Enabled,
+			Result:         csResult,
+			Checks:         sResult,
+			EvaluatedAt:    utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			TopConnections: topConnections,
 		})
 	}
 	span3.End()
@@ -1248,6 +1295,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
+//	@Param			topAccountCount		query		int				false	"Top account count" default(3)
 //	@Success		200					{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
@@ -1257,6 +1305,14 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
+	topAccountCount := 3
+	if topAccountCountStr := ctx.QueryParam("topAccountCount"); topAccountCountStr != "" {
+		count, err := strconv.ParseInt(topAccountCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid topAccountCount")
+		}
+		topAccountCount = int(count)
 	}
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
@@ -1328,6 +1384,43 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	if lastJob != nil {
 		lastJobStatus = string(lastJob.Status)
 	}
+
+	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
+	if topAccountCount > 0 {
+		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{benchmark.ID}, nil, []kaytuTypes.FindingSeverity{
+			kaytuTypes.FindingSeverityCritical,
+			kaytuTypes.FindingSeverityHigh,
+			kaytuTypes.FindingSeverityMedium,
+			kaytuTypes.FindingSeverityLow,
+			kaytuTypes.FindingSeverityNone,
+		}, topAccountCount)
+		if err != nil {
+			h.logger.Error("failed to fetch findings top field", zap.Error(err))
+			return err
+		}
+		resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			resConnectionIDs = append(resConnectionIDs, item.Key)
+		}
+		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+		if err != nil {
+			h.logger.Error("failed to get connections", zap.Error(err))
+			return err
+		}
+		connectionMap := make(map[string]*onboardApi.Connection)
+		for _, connection := range connections {
+			connection := connection
+			connectionMap[connection.ID.String()] = &connection
+		}
+
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			topConnections = append(topConnections, api.TopFieldRecord{
+				Connection: connectionMap[item.Key],
+				Count:      item.DocCount,
+			})
+		}
+	}
+
 	response := api.BenchmarkEvaluationSummary{
 		ID:            benchmark.ID,
 		Title:         benchmark.Title,
