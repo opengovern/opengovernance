@@ -69,12 +69,12 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
 			return err
 		}
+	} else {
+		_, err = t.iam.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
+			PolicyArn: policy.Policy.Arn,
+			UserName:  aws.String(userName),
+		})
 	}
-
-	_, err = t.iam.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
-		PolicyArn: policy.Policy.Arn,
-		UserName:  aws.String(userName),
-	})
 
 	key, err := t.iam.CreateAccessKey(context.Background(), &iam.CreateAccessKeyInput{
 		UserName: aws.String(userName),
