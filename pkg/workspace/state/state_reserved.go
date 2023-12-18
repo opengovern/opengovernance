@@ -2,12 +2,13 @@ package state
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 )
 
 type Reserved struct {
 }
 
-func (s Reserved) Requirements() []api.TransactionID {
+func (s Reserved) Requirements(workspace db.Workspace) []api.TransactionID {
 	return []api.TransactionID{
 		api.Transaction_CreateInsightBucket,
 		api.Transaction_CreateMasterCredential,
