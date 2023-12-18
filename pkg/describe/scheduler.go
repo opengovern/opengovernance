@@ -164,6 +164,7 @@ type Scheduler struct {
 	LambdaClient *lambda.Client
 
 	complianceScheduler *compliance.JobScheduler
+	conf                config2.SchedulerConfig
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -225,6 +226,7 @@ func InitializeScheduler(
 	lambdaCfg, err := config.LoadDefaultConfig(context.Background())
 	lambdaCfg.Region = KeyRegion
 
+	s.conf = conf
 	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
@@ -282,13 +284,12 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = db.Database{ORM: orm}
 
-	ElasticSearchIsOpenSearch, _ := strconv.ParseBool(ElasticSearchIsOpenSearchStr)
 	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses:    []string{ElasticSearchAddress},
-		Username:     &ElasticSearchUsername,
-		Password:     &ElasticSearchPassword,
-		IsOpenSearch: &ElasticSearchIsOpenSearch,
-		AwsRegion:    &ElasticSearchAwsRegion,
+		Addresses:    []string{conf.ElasticSearch.Address},
+		Username:     &conf.ElasticSearch.Username,
+		Password:     &conf.ElasticSearch.Password,
+		IsOpenSearch: &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:    &conf.ElasticSearch.AwsRegion,
 	})
 	if err != nil {
 		return nil, err

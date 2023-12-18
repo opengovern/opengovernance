@@ -31,12 +31,6 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
-	ElasticSearchAddress         = os.Getenv("ELASTICSEARCH_ADDRESS")
-	ElasticSearchUsername        = os.Getenv("ELASTICSEARCH_USERNAME")
-	ElasticSearchPassword        = os.Getenv("ELASTICSEARCH_PASSWORD")
-	ElasticSearchIsOpenSearchStr = os.Getenv("ELASTICSEARCH_ISOPENSEARCH")
-	ElasticSearchAwsRegion       = os.Getenv("ELASTICSEARCH_AWS_REGION")
-
 	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
 	GRPCServerAddress = os.Getenv("GRPC_ADDRESS")
 

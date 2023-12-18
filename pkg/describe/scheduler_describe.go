@@ -519,12 +519,14 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	)
 
 	input := LambdaDescribeWorkerInput{
-		WorkspaceId:      CurrentWorkspaceID,
-		WorkspaceName:    workspaceName,
-		DescribeEndpoint: s.describeEndpoint,
-		KeyARN:           s.keyARN,
-		KeyRegion:        s.keyRegion,
-		KafkaTopic:       kafkaTopic,
+		WorkspaceId:               CurrentWorkspaceID,
+		WorkspaceName:             workspaceName,
+		DescribeEndpoint:          s.describeEndpoint,
+		IngestionPipelineEndpoint: s.conf.ElasticSearch.IngestionEndpoint,
+		UseOpenSearch:             s.conf.ElasticSearch.IsOpenSearch,
+		KeyARN:                    s.keyARN,
+		KeyRegion:                 s.keyRegion,
+		KafkaTopic:                kafkaTopic,
 		DescribeJob: DescribeJob{
 			JobID:        dc.ID,
 			ResourceType: dc.ResourceType,
