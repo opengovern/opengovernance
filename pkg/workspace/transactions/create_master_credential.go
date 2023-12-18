@@ -13,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"strings"
 )
 
 type CreateMasterCredential struct {
@@ -119,7 +120,10 @@ func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
 			UserName: aws.String(userName),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
+			accessKeys = &iam.ListAccessKeysOutput{}
 		}
 		for _, accessKey := range accessKeys.AccessKeyMetadata {
 			_, err := t.iam.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
@@ -135,7 +139,10 @@ func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
 			UserName: aws.String(userName),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
+			policies = &iam.ListAttachedUserPoliciesOutput{}
 		}
 
 		for _, policy := range policies.AttachedPolicies {
@@ -160,7 +167,9 @@ func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
 			UserName: aws.String(userName),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
 		}
 
 		err = t.db.DeleteMasterCredential(*workspace.AWSUniqueId)

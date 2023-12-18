@@ -9,6 +9,7 @@ type WaitingForCredential struct {
 
 func (s WaitingForCredential) Requirements() []api.TransactionID {
 	return []api.TransactionID{
+		api.Transaction_CreateMasterCredential,
 		api.Transaction_EnsureCredentialExists,
 	}
 }
