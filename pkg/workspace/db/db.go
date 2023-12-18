@@ -43,10 +43,14 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Create(m).Error
 }
 
-func (s *Database) GetReservedWorkspace() (*Workspace, error) {
+func (s *Database) GetReservedWorkspace(includeReserving bool) (*Workspace, error) {
 	var workspace Workspace
+	statuses := []api.StateID{api.StateID_Reserved}
+	if includeReserving {
+		statuses = append(statuses, api.StateID_Reserving)
+	}
 	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).
-		Where("status = ?", api.StateID_Reserved).
+		Where("status IN ?", statuses).
 		First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
