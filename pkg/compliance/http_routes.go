@@ -1245,22 +1245,24 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			for _, item := range res.Aggregations.FieldFilter.Buckets {
 				resConnectionIDs = append(resConnectionIDs, item.Key)
 			}
-			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
-			if err != nil {
-				h.logger.Error("failed to get connections", zap.Error(err))
-				return err
-			}
-			connectionMap := make(map[string]*onboardApi.Connection)
-			for _, connection := range connections {
-				connection := connection
-				connectionMap[connection.ID.String()] = &connection
-			}
+			if len(resConnectionIDs) > 0 {
+				connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+				if err != nil {
+					h.logger.Error("failed to get connections", zap.Error(err))
+					return err
+				}
+				connectionMap := make(map[string]*onboardApi.Connection)
+				for _, connection := range connections {
+					connection := connection
+					connectionMap[connection.ID.String()] = &connection
+				}
 
-			for _, item := range res.Aggregations.FieldFilter.Buckets {
-				topConnections = append(topConnections, api.TopFieldRecord{
-					Connection: connectionMap[item.Key],
-					Count:      item.DocCount,
-				})
+				for _, item := range res.Aggregations.FieldFilter.Buckets {
+					topConnections = append(topConnections, api.TopFieldRecord{
+						Connection: connectionMap[item.Key],
+						Count:      item.DocCount,
+					})
+				}
 			}
 		}
 
@@ -1402,22 +1404,24 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
-		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
-		if err != nil {
-			h.logger.Error("failed to get connections", zap.Error(err))
-			return err
-		}
-		connectionMap := make(map[string]*onboardApi.Connection)
-		for _, connection := range connections {
-			connection := connection
-			connectionMap[connection.ID.String()] = &connection
-		}
+		if len(resConnectionIDs) > 0 {
+			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+			if err != nil {
+				h.logger.Error("failed to get connections", zap.Error(err))
+				return err
+			}
+			connectionMap := make(map[string]*onboardApi.Connection)
+			for _, connection := range connections {
+				connection := connection
+				connectionMap[connection.ID.String()] = &connection
+			}
 
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
-			topConnections = append(topConnections, api.TopFieldRecord{
-				Connection: connectionMap[item.Key],
-				Count:      item.DocCount,
-			})
+			for _, item := range res.Aggregations.FieldFilter.Buckets {
+				topConnections = append(topConnections, api.TopFieldRecord{
+					Connection: connectionMap[item.Key],
+					Count:      item.DocCount,
+				})
+			}
 		}
 	}
 
