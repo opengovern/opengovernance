@@ -32,7 +32,6 @@ type CreateHelmRelease struct {
 	kmsClient  *kms.Client
 	cfg        config.Config
 	db         *db.Database
-	reserving  bool
 }
 
 func NewCreateHelmRelease(

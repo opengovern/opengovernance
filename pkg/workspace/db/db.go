@@ -46,7 +46,7 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 func (s *Database) GetReservedWorkspace() (*Workspace, error) {
 	var workspace Workspace
 	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).
-		Where("status = ? OR status = ?", api.StateID_Reserved, api.StateID_Reserving).
+		Where("status = ? OR status = ?", api.StateID_Reserved).
 		First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

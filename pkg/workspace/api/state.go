@@ -11,7 +11,3 @@ const (
 	StateID_Deleting             StateID = "DELETING"
 	StateID_Deleted              StateID = "DELETED"
 )
-
-func (s StateID) IsReserve() bool {
-	return s == StateID_Reserving || s == StateID_Reserved
-}
