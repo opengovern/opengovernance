@@ -69,7 +69,7 @@ func (t *CreateIngestionPipeline) Apply(workspace db.Workspace) error {
 }
 
 func (t *CreateIngestionPipeline) Rollback(workspace db.Workspace) error {
-	pipelineName := fmt.Sprintf("kaytu-ingestion-pipeline-%s", workspace.ID)
+	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 
 	pipe, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{
 		PipelineName: aws.String(pipelineName),
@@ -94,8 +94,9 @@ func (t *CreateIngestionPipeline) Rollback(workspace db.Workspace) error {
 }
 
 func (t *CreateIngestionPipeline) isPipelineCreationFinished(workspace db.Workspace) (bool, string, error) {
+	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 	pipe, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{
-		PipelineName: aws.String(fmt.Sprintf("kaytu-ingestion-pipeline-%s", workspace.ID)),
+		PipelineName: aws.String(pipelineName),
 	})
 	if err != nil {
 		return false, "", err
@@ -111,6 +112,7 @@ func (t *CreateIngestionPipeline) isPipelineCreationFinished(workspace db.Worksp
 }
 
 func (t *CreateIngestionPipeline) createPipeline(workspace db.Workspace) error {
+	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 	_, err := t.osis.CreatePipeline(context.Background(), &osis.CreatePipelineInput{
 		MaxUnits: aws.Int32(1),
 		MinUnits: aws.Int32(1),
@@ -151,7 +153,7 @@ resource-sink:
             # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
             # sts_role_arn: "arn:aws:iam::123456789012:role/Example-Role"
 `, workspace.OpenSearchEndpoint, fmt.Sprintf("arn:aws:iam::%s:role/kaytu-opensearch-master-%s", t.cfg.AWSAccountID, workspace.ID))),
-		PipelineName: aws.String(fmt.Sprintf("kaytu-ingestion-pipeline-%s", workspace.ID)),
+		PipelineName: aws.String(pipelineName),
 		BufferOptions: &types.BufferOptions{
 			PersistentBufferEnabled: aws.Bool(true),
 		},
