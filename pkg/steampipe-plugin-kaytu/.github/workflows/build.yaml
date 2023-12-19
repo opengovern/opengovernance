@@ -1,0 +1,82 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    environment:
+      name: ${{ github.ref_name }}
+    env:
+      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install musl cc
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: musl-tools musl-dev musl
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
+          cache: false
+      - name: Go Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/kaytu-io.insteadOf https://github.com/kaytu-io
+      - name: Build app
+        run: make build
+      - name: Pack build
+        run: |
+          tar -cvf build.tar build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: steampipe-plugin-kaytu
+          path: build.tar
+          retention-days: 1
+  deploy:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment:
+      name: ${{ github.ref_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: steampipe-plugin-kaytu
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4.1.1
+        with:
+          push: true
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
+            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1-${{ github.run_id }}
+          file: docker/Dockerfile
+          context: .
