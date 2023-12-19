@@ -1,41 +1,48 @@
-package source
+package connection
 
 import (
 	"net/http"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
-	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
+	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
-type Source struct {
+type API struct {
 	keyARN          string
 	kms             *vault.KMSVaultSourceConfig
-	repo            repository.Source
+	svc             service.Connection
 	tracer          trace.Tracer
+	logger          *zap.Logger
 	masterAccessKey string
 	masterSecretKey string
 }
 
-func New(keyARN string, kms *vault.KMSVaultSourceConfig, repo repository.Source, masterAccessKey, masterSecretKey string) Source {
-	return Source{
+func New(
+	keyARN string,
+	kms *vault.KMSVaultSourceConfig,
+	svc service.Connection,
+	logger *zap.Logger,
+	masterAccessKey, masterSecretKey string,
+) API {
+	return API{
 		keyARN:          keyARN,
 		kms:             kms,
-		repo:            repo,
+		svc:             svc,
 		tracer:          otel.GetTracerProvider().Tracer("integration.http.sources"),
+		logger:          logger.Named("source"),
 		masterAccessKey: masterAccessKey,
 		masterSecretKey: masterSecretKey,
 	}
 }
 
-func (h Source) CredentialV2ToV1(newCred string) (string, error) {
+func (h API) CredentialV2ToV1(newCred string) (string, error) {
 	cnf, err := h.kms.Decrypt(newCred, h.keyARN)
 	if err != nil {
 		return "", err
@@ -64,46 +71,23 @@ func (h Source) CredentialV2ToV1(newCred string) (string, error) {
 	return string(newSecret), nil
 }
 
-func (h Source) List(c echo.Context) error {
+func (h API) List(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	sType := httpserver.QueryArrayParam(c, "connector")
+	types := httpserver.QueryArrayParam(c, "connector")
 
-	var (
-		sources []model.Source
-		err     error
-	)
+	sources, err := h.svc.List(ctx, source.ParseTypes(types))
+	if err != nil {
+		h.logger.Error("failed to read sources from the service", zap.Error(err))
 
-	_, span := h.tracer.Start(ctx, "list", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	if len(sType) > 0 {
-		st := source.ParseTypes(sType)
-		span.SetName("list.with-types")
-
-		sources, err = h.repo.GetSourcesOfTypes(st)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span.End()
-	} else {
-		span.SetName("list.without-types")
-
-		sources, err = h.repo.ListSources()
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return err
-		}
+		return echo.ErrInternalServerError
 	}
 
-	resp := GetSourcesResponse{}
+	var resp ListConnectionsResponse
 	for _, s := range sources {
-		apiRes := SourceToAPI(s)
+		apiRes := NewConnection(s)
 		if httpserver.GetUserRole(c) == api.InternalRole {
-			apiRes.Credential = CredentialToAPI(s.Credential)
+			apiRes.Credential = NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 			if apiRes.Credential.Version == 2 {
 				apiRes.Credential.Config, err = h.CredentialV2ToV1(s.Credential.Secret)
@@ -118,16 +102,16 @@ func (h Source) List(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (s Source) Get(c echo.Context) error {
+func (s API) Get(c echo.Context) error {
 	return nil
 }
 
-func (s Source) Count(c echo.Context) error {
+func (s API) Count(c echo.Context) error {
 	return nil
 }
 
-func (s Source) Register(g *echo.Group) {
-	g.GET("/sources", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
-	g.POST("/sources", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
-	g.GET("/sources/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
+func (s API) Register(g *echo.Group) {
+	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
+	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
+	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 }

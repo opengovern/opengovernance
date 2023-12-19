@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Source struct {
+type Connection struct {
 	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
 	SourceId     string    `gorm:"index:idx_source_id,unique"`                      // AWS Account ID, Azure Subscription ID, ...
 	Name         string    `gorm:"not null"`
@@ -42,8 +42,8 @@ type Source struct {
 }
 
 // DeleteSource deletes an existing source
-func (s *Source) BeforeDelete(tx *gorm.DB) error {
-	t := tx.Model(&Source{}).
+func (s *Connection) BeforeDelete(tx *gorm.DB) error {
+	t := tx.Model(new(Connection)).
 		Where("id = ?", s.ID.String()).
 		Update("lifecycle_state", ConnectionLifecycleStateArchived)
 	return t.Error

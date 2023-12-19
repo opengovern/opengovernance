@@ -1,8 +1,10 @@
-package source
+package connection
 
 import (
+	"encoding/json"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -63,4 +65,37 @@ type Credential struct {
 	OnboardConnections    *int `json:"onboard_connections" example:"250" minimum:"0" maximum:"1000"`
 	DisabledConnections   *int `json:"disabled_connections" example:"0" minimum:"0" maximum:"1000"`
 	ArchivedConnections   *int `json:"archived_connections" example:"0" minimum:"0" maximum:"1000"`
+}
+
+func NewCredential(credential model.Credential) Credential {
+	metadata := make(map[string]any)
+	if string(credential.Metadata) == "" {
+		credential.Metadata = []byte("{}")
+	}
+	_ = json.Unmarshal(credential.Metadata, &metadata)
+	apiCredential := Credential{
+		ID:                  credential.ID.String(),
+		Name:                credential.Name,
+		ConnectorType:       credential.ConnectorType,
+		CredentialType:      CredentialTypeToAPI(credential.CredentialType),
+		Enabled:             credential.Enabled,
+		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
+		OnboardDate:         credential.CreatedAt,
+		LastHealthCheckTime: credential.LastHealthCheckTime,
+		HealthStatus:        credential.HealthStatus,
+		HealthReason:        credential.HealthReason,
+		Metadata:            metadata,
+		Version:             credential.Version,
+		SpendDiscovery:      credential.SpendDiscovery,
+
+		Config: "",
+
+		Connections:           nil,
+		TotalConnections:      nil,
+		OnboardConnections:    nil,
+		UnhealthyConnections:  nil,
+		DiscoveredConnections: nil,
+	}
+
+	return apiCredential
 }

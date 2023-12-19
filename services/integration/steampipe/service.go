@@ -7,7 +7,7 @@ import (
 )
 
 func New(config koanf.Postgres, logger *zap.Logger) (*steampipe.Database, error) {
-	logger = logger.Named("streampipe")
+	logger = logger.Named("steampipe")
 
 	db, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: config.Host,

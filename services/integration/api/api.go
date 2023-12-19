@@ -3,11 +3,12 @@ package api
 import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/connection"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/healthz"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/source"
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
 	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
+	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/labstack/echo/v4"
@@ -56,8 +57,15 @@ func New(
 
 func (api *API) Register(e *echo.Echo) {
 	var healthz healthz.Healthz
-	source := source.New("", api.kms, repository.NewSource(api.database), api.masterAccessKey, api.masterSecretKey)
+	connection := connection.New(
+		api.arn,
+		api.kms,
+		service.NewConnection(repository.NewConnectionSQL(api.database)),
+		api.logger,
+		api.masterAccessKey,
+		api.masterSecretKey,
+	)
 
 	healthz.Register(e.Group("/healthz"))
-	source.Register(e.Group("/sources"))
+	connection.Register(e.Group("/connections"))
 }

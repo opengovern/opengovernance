@@ -6,18 +6,26 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
-type Source struct {
+type Connection struct {
 	tracer trace.Tracer
-	repo   repository.Source
+	repo   repository.Connection
 }
 
-func (h Source) List(ctx context.Context, types []source.Type) ([]model.Source, error) {
+func NewConnection(repo repository.Connection) Connection {
+	return Connection{
+		tracer: otel.GetTracerProvider().Tracer("integration.service.sources"),
+		repo:   repo,
+	}
+}
+
+func (h Connection) List(ctx context.Context, types []source.Type) ([]model.Connection, error) {
 	var (
-		sources []model.Source
+		sources []model.Connection
 		err     error
 	)
 
@@ -33,8 +41,6 @@ func (h Source) List(ctx context.Context, types []source.Type) ([]model.Source, 
 		}
 		span.End()
 	} else {
-		span.SetName("list.without-types")
-
 		sources, err = h.repo.List()
 		if err != nil {
 			span.RecordError(err)

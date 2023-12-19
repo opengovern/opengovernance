@@ -1,4 +1,4 @@
-package source
+package connection
 
 import (
 	"encoding/json"
@@ -7,12 +7,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/google/uuid"
-)
-
-type SourceAction string
-
-const (
-	SourceDeleted SourceAction = "DELETE"
 )
 
 const (
@@ -45,15 +39,12 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 	return out
 }
 
-type CreateAwsConnectionRequest struct {
+type CreateAWSConnectionRequest struct {
 	Name      string                `json:"name"`
 	AWSConfig AWSCredentialV2Config `json:"awsConfig"`
 }
-type CreateConnectionResponse struct {
-	ID uuid.UUID `json:"id"`
-}
 
-type SourceAwsRequest struct {
+type ConnectionAWSRequest struct {
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
 	Email       string               `json:"email"`
@@ -83,17 +74,10 @@ func (s AzureCredentialConfig) AsMap() map[string]any {
 	return out
 }
 
-type SourceAzureRequest struct {
+type CreateAzureConnectionRequest struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description"`
 	Config      AzureCredentialConfig `json:"config"`
-}
-
-type SourceAzureSPNRequest struct {
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	SubscriptionId string    `json:"subscriptionId" validate:"required,uuid_rfc4122"`
-	SPNId          uuid.UUID `json:"spnId"`
 }
 
 type AWSMetadataResponse struct {
@@ -106,15 +90,9 @@ type AWSMetadataResponse struct {
 	SupportTier    string  `json:"support_tier"`
 }
 
-type CreateSourceResponse struct {
-	ID uuid.UUID `json:"id"`
-}
-
-type GetSourcesRequest struct {
+type GetConnectionsRequest struct {
 	SourceIDs []string `json:"source_ids"`
 }
-
-type GetSourcesResponse []Connection
 
 type DiscoverAWSAccountsRequest struct {
 	AccessKey string `json:"accessKey" validate:"required"`
@@ -141,14 +119,6 @@ type DiscoverAzureSubscriptionsResponse struct {
 	ID             string `json:"id"`
 	SubscriptionID string `json:"subscriptionId"`
 	Name           string `json:"name"`
-}
-
-type SourceEvent struct {
-	Action     SourceAction
-	SourceID   uuid.UUID
-	AccountID  string
-	SourceType source.Type
-	Secret     string
 }
 
 type CreateCredentialV2Request struct {
@@ -207,71 +177,6 @@ func AWSCredentialV2ConfigFromMap(cnf map[string]any) (*AWSCredentialV2Config, e
 	}
 
 	return &out, nil
-}
-
-func SourceToAPI(s model.Source) Connection {
-	metadata := make(map[string]any)
-	if s.Metadata.String() != "" {
-		_ = json.Unmarshal(s.Metadata, &metadata)
-	}
-	apiCon := Connection{
-		ID:                   s.ID,
-		ConnectionID:         s.SourceId,
-		ConnectionName:       s.Name,
-		Email:                s.Email,
-		Connector:            s.Type,
-		Description:          s.Description,
-		CredentialID:         s.CredentialID.String(),
-		CredentialName:       s.Credential.Name,
-		CredentialType:       CredentialTypeToAPI(s.Credential.CredentialType),
-		OnboardDate:          s.CreatedAt,
-		HealthState:          s.HealthState,
-		LifecycleState:       ConnectionLifecycleState(s.LifecycleState),
-		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
-		LastHealthCheckTime:  s.LastHealthCheckTime,
-		HealthReason:         s.HealthReason,
-		Metadata:             metadata,
-		AssetDiscovery:       s.AssetDiscovery,
-		SpendDiscovery:       s.SpendDiscovery,
-
-		ResourceCount: nil,
-		Cost:          nil,
-		LastInventory: nil,
-	}
-	return apiCon
-}
-
-func CredentialToAPI(credential model.Credential) Credential {
-	metadata := make(map[string]any)
-	if string(credential.Metadata) == "" {
-		credential.Metadata = []byte("{}")
-	}
-	_ = json.Unmarshal(credential.Metadata, &metadata)
-	apiCredential := Credential{
-		ID:                  credential.ID.String(),
-		Name:                credential.Name,
-		ConnectorType:       credential.ConnectorType,
-		CredentialType:      CredentialTypeToAPI(credential.CredentialType),
-		Enabled:             credential.Enabled,
-		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
-		OnboardDate:         credential.CreatedAt,
-		LastHealthCheckTime: credential.LastHealthCheckTime,
-		HealthStatus:        credential.HealthStatus,
-		HealthReason:        credential.HealthReason,
-		Metadata:            metadata,
-		Version:             credential.Version,
-		SpendDiscovery:      credential.SpendDiscovery,
-
-		Config: "",
-
-		Connections:           nil,
-		TotalConnections:      nil,
-		OnboardConnections:    nil,
-		UnhealthyConnections:  nil,
-		DiscoveredConnections: nil,
-	}
-
-	return apiCredential
 }
 
 func CredentialTypeToAPI(c model.CredentialType) CredentialType {

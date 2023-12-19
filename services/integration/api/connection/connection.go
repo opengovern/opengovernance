@@ -1,10 +1,12 @@
-package source
+package connection
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -90,7 +92,9 @@ type ChangeConnectionLifecycleStateRequest struct {
 	State ConnectionLifecycleState `json:"state"`
 }
 
-type ListConnectionSummaryResponse struct {
+type ListConnectionsResponse []Connection
+
+type ListConnectionsSummaryResponse struct {
 	ConnectionCount       int     `json:"connectionCount" example:"10" minimum:"0" maximum:"1000"`
 	TotalCost             float64 `json:"totalCost" example:"1000.00" minimum:"0" maximum:"10000000"`
 	TotalResourceCount    int     `json:"totalResourceCount" example:"100" minimum:"0" maximum:"1000000"`
@@ -108,4 +112,41 @@ type ChangeConnectionRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Email       string `json:"email"`
+}
+
+type CreateConnectionResponse struct {
+	ID uuid.UUID `json:"id"`
+}
+
+func NewConnection(s model.Connection) Connection {
+	metadata := make(map[string]any)
+	if len(metadata) > 0 {
+		_ = json.Unmarshal(s.Metadata, &metadata)
+	}
+
+	conn := Connection{
+		ID:                   s.ID,
+		ConnectionID:         s.SourceId,
+		ConnectionName:       s.Name,
+		Email:                s.Email,
+		Connector:            s.Type,
+		Description:          s.Description,
+		CredentialID:         s.CredentialID.String(),
+		CredentialName:       s.Credential.Name,
+		CredentialType:       CredentialTypeToAPI(s.Credential.CredentialType),
+		OnboardDate:          s.CreatedAt,
+		HealthState:          s.HealthState,
+		LifecycleState:       ConnectionLifecycleState(s.LifecycleState),
+		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
+		LastHealthCheckTime:  s.LastHealthCheckTime,
+		HealthReason:         s.HealthReason,
+		Metadata:             metadata,
+		AssetDiscovery:       s.AssetDiscovery,
+		SpendDiscovery:       s.SpendDiscovery,
+
+		ResourceCount: nil,
+		Cost:          nil,
+		LastInventory: nil,
+	}
+	return conn
 }
