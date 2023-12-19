@@ -12,7 +12,11 @@ type Connection interface {
 	List(context.Context) ([]model.Connection, error)
 	ListOfType(context.Context, source.Type) ([]model.Connection, error)
 	ListOfTypes(context.Context, []source.Type) ([]model.Connection, error)
+
 	Get(context.Context, []string) ([]model.Connection, error)
+
+	Count(context.Context) (int64, error)
+	CountOfType(context.Context, source.Type) (int64, error)
 }
 
 type ConnectionSQL struct {
@@ -63,4 +67,26 @@ func (s ConnectionSQL) Get(ctx context.Context, ids []string) ([]model.Connectio
 	}
 
 	return connections, nil
+}
+
+func (s ConnectionSQL) Count(ctx context.Context) (int64, error) {
+	var c int64
+
+	tx := s.db.DB.WithContext(ctx).Model(new(model.Connection)).Count(&c)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return c, nil
+}
+
+func (s ConnectionSQL) CountOfType(ctx context.Context, t source.Type) (int64, error) {
+	var c int64
+
+	tx := s.db.DB.WithContext(ctx).Model(new(model.Connection)).Where("type = ?", t.String()).Count(&c)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return c, nil
 }

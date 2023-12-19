@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -32,7 +33,10 @@ func New(
 }
 
 func (h API) List(c echo.Context) error {
-	ctx := c.Request().Context()
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "list")
+	defer span.End()
 
 	types := httpserver.QueryArrayParam(c, "connector")
 
@@ -65,9 +69,12 @@ func (h API) List(c echo.Context) error {
 }
 
 func (h API) Get(c echo.Context) error {
-	var req entity.GetConnectionsRequest
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	ctx := c.Request().Context()
+	ctx, span := h.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var req entity.GetConnectionsRequest
 
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -104,8 +111,32 @@ func (h API) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (s API) Count(c echo.Context) error {
-	return nil
+func (h API) Count(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "count")
+	defer span.End()
+
+	sType := c.QueryParam("connector")
+
+	var st *source.Type
+
+	if sType != "" {
+		t, err := source.ParseType(sType)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		st = &t
+	}
+
+	count, err := h.svc.Count(ctx, st)
+	if err != nil {
+		h.logger.Error("failed to read connections from the service", zap.Error(err))
+
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, count)
 }
 
 func (s API) Register(g *echo.Group) {

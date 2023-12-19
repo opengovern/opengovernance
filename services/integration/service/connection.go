@@ -111,3 +111,33 @@ func (h Connection) Get(ctx context.Context, ids []string) ([]model.Connection, 
 
 	return connections, nil
 }
+
+func (h Connection) Count(ctx context.Context, t *source.Type) (int64, error) {
+	_, span := h.tracer.Start(ctx, "count", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	var (
+		count int64
+		err   error
+	)
+
+	if t == nil {
+		count, err = h.repo.Count(ctx)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+
+			return 0, err
+		}
+	} else {
+		count, err = h.repo.CountOfType(ctx, *t)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+
+			return 0, err
+		}
+	}
+
+	return count, nil
+}
