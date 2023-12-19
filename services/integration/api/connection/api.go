@@ -5,6 +5,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -15,13 +16,9 @@ import (
 )
 
 type API struct {
-	keyARN          string
-	kms             *vault.KMSVaultSourceConfig
-	svc             service.Connection
-	tracer          trace.Tracer
-	logger          *zap.Logger
-	masterAccessKey string
-	masterSecretKey string
+	svc    service.Connection
+	tracer trace.Tracer
+	logger *zap.Logger
 }
 
 func New(
@@ -29,46 +26,12 @@ func New(
 	kms *vault.KMSVaultSourceConfig,
 	svc service.Connection,
 	logger *zap.Logger,
-	masterAccessKey, masterSecretKey string,
 ) API {
 	return API{
-		keyARN:          keyARN,
-		kms:             kms,
-		svc:             svc,
-		tracer:          otel.GetTracerProvider().Tracer("integration.http.sources"),
-		logger:          logger.Named("source"),
-		masterAccessKey: masterAccessKey,
-		masterSecretKey: masterSecretKey,
+		svc:    svc,
+		tracer: otel.GetTracerProvider().Tracer("integration.http.sources"),
+		logger: logger.Named("source"),
 	}
-}
-
-func (h API) CredentialV2ToV1(newCred string) (string, error) {
-	cnf, err := h.kms.Decrypt(newCred, h.keyARN)
-	if err != nil {
-		return "", err
-	}
-
-	awsCnf, err := AWSCredentialV2ConfigFromMap(cnf)
-	if err != nil {
-		return "", err
-	}
-
-	newConf := AWSCredentialConfig{
-		AccountId:            awsCnf.AccountID,
-		Regions:              nil,
-		AccessKey:            h.masterAccessKey,
-		SecretKey:            h.masterSecretKey,
-		AssumeRoleName:       awsCnf.AssumeRoleName,
-		AssumeAdminRoleName:  awsCnf.AssumeRoleName,
-		AssumeRolePolicyName: "",
-		ExternalId:           awsCnf.ExternalId,
-	}
-	newSecret, err := h.kms.Encrypt(newConf.AsMap(), h.keyARN)
-	if err != nil {
-		return "", err
-	}
-
-	return string(newSecret), nil
 }
 
 func (h API) List(c echo.Context) error {
@@ -83,14 +46,14 @@ func (h API) List(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	var resp ListConnectionsResponse
+	var resp entity.ListConnectionsResponse
 	for _, s := range sources {
-		apiRes := NewConnection(s)
+		apiRes := entity.NewConnection(s)
 		if httpserver.GetUserRole(c) == api.InternalRole {
-			apiRes.Credential = NewCredential(s.Credential)
+			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.CredentialV2ToV1(s.Credential.Secret)
+				apiRes.Credential.Config, err = h.svc.CredentialV2ToV1(s.Credential.Secret)
 				if err != nil {
 					return err
 				}

@@ -1,4 +1,4 @@
-package connection
+package entity
 
 import (
 	"encoding/json"
