@@ -887,9 +887,21 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.steampipe-plugin-kaytu == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: (needs.build.outputs.steampipe-plugin-kaytu == 'true' ||
+      needs.build.outputs.steampipe == 'true' ||
+      needs.build.outputs.compliance-report-worker == 'true' ||
+      needs.build.outputs.insight-worker == 'true') && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
+      - name: Check if we need to actually push
+        id: check_if_push
+        run: |
+          if [[ -z "${{ needs.build.outputs.steampipe-plugin-kaytu }}" ]]; then
+            echo "do_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "do_build=true" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout code
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/checkout@v3
       - name: Download artifact
         uses: actions/download-artifact@v3
@@ -897,17 +909,22 @@ jobs:
           name: build
           path: .
       - name: Unpack artifact
+        if: steps.check_if_push.outputs.do_build == 'true'
         run: |
           tar -xvf build.tar.gz
       - name: Configure AWS credentials
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
+      - name: Login to Docker
+        if: steps.check_if_push.outputs.do_build == 'true'
+        uses: docker/login-action@v2
         with:
           registry: ${{ vars.DOCKER_REGISTRY }}
       - name: Build and push Docker images
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v4
         with:
           push: true
