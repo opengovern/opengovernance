@@ -285,11 +285,12 @@ func InitializeScheduler(
 	s.db = db.Database{ORM: orm}
 
 	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses:    []string{conf.ElasticSearch.Address},
-		Username:     &conf.ElasticSearch.Username,
-		Password:     &conf.ElasticSearch.Password,
-		IsOpenSearch: &conf.ElasticSearch.IsOpenSearch,
-		AwsRegion:    &conf.ElasticSearch.AwsRegion,
+		Addresses:     []string{conf.ElasticSearch.Address},
+		Username:      &conf.ElasticSearch.Username,
+		Password:      &conf.ElasticSearch.Password,
+		IsOpenSearch:  &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:     &conf.ElasticSearch.AwsRegion,
+		AssumeRoleArn: &conf.ElasticSearch.AssumeRoleArn,
 	})
 	if err != nil {
 		return nil, err

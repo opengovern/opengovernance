@@ -48,11 +48,12 @@ func InitializeNewWorker(
 	prometheusPushAddress string,
 ) (*Worker, error) {
 	esClient, err := kaytu.NewClient(kaytu.ClientConfig{
-		Addresses:    []string{config.ElasticSearch.Address},
-		Username:     &config.ElasticSearch.Username,
-		Password:     &config.ElasticSearch.Password,
-		IsOpenSearch: &config.ElasticSearch.IsOpenSearch,
-		AwsRegion:    &config.ElasticSearch.AwsRegion,
+		Addresses:     []string{config.ElasticSearch.Address},
+		Username:      &config.ElasticSearch.Username,
+		Password:      &config.ElasticSearch.Password,
+		IsOpenSearch:  &config.ElasticSearch.IsOpenSearch,
+		AwsRegion:     &config.ElasticSearch.AwsRegion,
+		AssumeRoleArn: &config.ElasticSearch.AssumeRoleArn,
 	})
 	if err != nil {
 		return nil, err

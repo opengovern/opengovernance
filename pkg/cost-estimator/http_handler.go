@@ -33,11 +33,12 @@ func InitializeHttpHandler(
 	h.logger.Info("Initializing http handler")
 
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses:    []string{esConf.Address},
-		Username:     &esConf.Username,
-		Password:     &esConf.Password,
-		IsOpenSearch: &esConf.IsOpenSearch,
-		AwsRegion:    &esConf.AwsRegion,
+		Addresses:     []string{esConf.Address},
+		Username:      &esConf.Username,
+		Password:      &esConf.Password,
+		IsOpenSearch:  &esConf.IsOpenSearch,
+		AwsRegion:     &esConf.AwsRegion,
+		AssumeRoleArn: &esConf.AssumeRoleArn,
 	})
 	if err != nil {
 		return nil, err
