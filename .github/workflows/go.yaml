@@ -116,7 +116,7 @@ jobs:
         set -x
         ./scripts/list_services > ./service-list
         cat ./service-list
-        cat ./service-list | sed 's/\<steampipe\>//g' | sed 's/\<redoc\>//g' | sed 's/\s\+/\n/g' > ./build_services
+        cat ./service-list | sed 's/^\<steampipe\>$//g' | sed 's/^\<redoc\>$//g' | sed 's/\s\+/\n/g' > ./build_services
         cat ./build_services
         mkdir -p ./build
         if [ ! -z "$(cat ./build_services)" ]; then
