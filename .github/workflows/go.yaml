@@ -905,6 +905,7 @@ jobs:
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/checkout@v3
       - name: Download artifact
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/download-artifact@v3
         with:
           name: build
