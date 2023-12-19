@@ -58,12 +58,14 @@ func New(
 func (api *API) Register(e *echo.Echo) {
 	var healthz healthz.Healthz
 	connection := connection.New(
-		api.arn,
-		api.kms,
-		service.NewConnection(repository.NewConnectionSQL(api.database)),
+		service.NewConnection(
+			repository.NewConnectionSQL(api.database),
+			api.kms,
+			api.arn,
+			api.masterAccessKey,
+			api.masterSecretKey,
+		),
 		api.logger,
-		api.masterAccessKey,
-		api.masterSecretKey,
 	)
 
 	healthz.Register(e.Group("/healthz"))

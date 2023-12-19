@@ -8,7 +8,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -22,8 +21,6 @@ type API struct {
 }
 
 func New(
-	keyARN string,
-	kms *vault.KMSVaultSourceConfig,
 	svc service.Connection,
 	logger *zap.Logger,
 ) API {
