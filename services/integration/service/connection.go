@@ -70,15 +70,15 @@ func (h Connection) CredentialV2ToV1(newCred string) (string, error) {
 
 func (h Connection) List(ctx context.Context, types []source.Type) ([]model.Connection, error) {
 	var (
-		sources []model.Connection
-		err     error
+		connections []model.Connection
+		err         error
 	)
 
 	_, span := h.tracer.Start(ctx, "list", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	if len(types) > 0 {
-		sources, err = h.repo.ListOfTypes(types)
+		connections, err = h.repo.ListOfTypes(ctx, types)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -86,7 +86,7 @@ func (h Connection) List(ctx context.Context, types []source.Type) ([]model.Conn
 		}
 		span.End()
 	} else {
-		sources, err = h.repo.List()
+		connections, err = h.repo.List(ctx)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -94,5 +94,20 @@ func (h Connection) List(ctx context.Context, types []source.Type) ([]model.Conn
 		}
 	}
 
-	return sources, nil
+	return connections, nil
+}
+
+func (h Connection) Get(ctx context.Context, ids []string) ([]model.Connection, error) {
+	_, span := h.tracer.Start(ctx, "get", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	connections, err := h.repo.Get(ctx, ids)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return nil, err
+	}
+
+	return connections, nil
 }
