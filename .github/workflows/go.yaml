@@ -253,6 +253,7 @@ jobs:
     needs:
       - build
       - tag
+      - deploy-steampipe-plugin-kaytu
     permissions:
       id-token: write
       contents: read
@@ -473,6 +474,7 @@ jobs:
     needs:
       - build
       - tag
+      - deploy-steampipe-plugin-kaytu
     permissions:
       id-token: write
       contents: read
@@ -770,6 +772,7 @@ jobs:
     needs:
       - build
       - tag
+      - deploy-steampipe-plugin-kaytu
     permissions:
       id-token: write
       contents: read
