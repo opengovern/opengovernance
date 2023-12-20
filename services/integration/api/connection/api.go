@@ -14,9 +14,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-engine/service/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
@@ -288,7 +289,7 @@ func (h API) Summaries(c echo.Context) error {
 		needResourceCount = false
 	}
 
-	connectionData := map[string]entity.ConnectionData{}
+	connectionData := map[string]inventoryAPI.ConnectionData{}
 	if needResourceCount || needCost {
 		connectionData, err = h.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
