@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 		return err
 	}
 	msgs := consumer.Consume(ctx, s.logger, 100)
-	t := time.NewTicker(JobTimeoutCheckInterval)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {
@@ -74,7 +75,7 @@ func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
 		return err
 	}
 	msgs := consumer.Consume(ctx, s.logger, 100)
-	t := time.NewTicker(JobTimeoutCheckInterval)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
 	"time"
 )
@@ -11,7 +12,7 @@ import (
 func (s *Scheduler) RunJobSequencer() {
 	s.logger.Info("Scheduling job sequencer")
 
-	t := time.NewTicker(JobSequencerInterval)
+	t := ticker.NewTicker(JobSequencerInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {

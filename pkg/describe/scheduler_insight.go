@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"strings"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 func (s *Scheduler) RunInsightJobScheduler() {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
-	t := time.NewTicker(JobSchedulingInterval)
+	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {

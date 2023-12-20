@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"strings"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 func (s *Scheduler) UpdateDescribedResourceCountScheduler() error {
 	s.logger.Info("DescribedResourceCount update scheduler started")
 
-	t := time.NewTicker(1 * time.Minute)
+	t := ticker.NewTicker(1*time.Minute, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -86,7 +87,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	//	return err
 	//}
 
-	t := time.NewTicker(JobTimeoutCheckInterval)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {
