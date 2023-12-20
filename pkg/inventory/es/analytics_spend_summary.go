@@ -777,7 +777,7 @@ func FetchSpendByMetricConnector(client kaytu.Client, connectors []source.Type, 
 	query := string(b)
 	fmt.Println("FetchSpendByMetricConnector =", query)
 	var response FetchSpendByMetricConnectorQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
