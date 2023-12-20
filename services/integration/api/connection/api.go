@@ -21,7 +21,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -184,7 +183,6 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(c, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(c, "connectionId")
-	connectionGroups := httpserver.QueryArrayParam(c, "connectionGroups")
 	resourceCollections := httpserver.QueryArrayParam(c, "resourceCollection")
 
 	endTimeStr := c.QueryParam("endTime")
@@ -252,15 +250,13 @@ func (h API) Summaries(c echo.Context) error {
 		h.logger.Warn("Filtered Connections", zap.Strings("connection-ids", connectionIDs))
 	}
 
-	tmpConnections, err := h.svc.ListWithFilter(ctx, connectors, connectionIDs, lifecycleStates, healthStates)
+	connections, err := h.svc.ListWithFilter(ctx, connectors, connectionIDs, lifecycleStates, healthStates)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span.End()
 
-	var connections []model.Connection
 	if filterStr != "" && len(connectionIDs) == 0 {
 		result := entity.ListConnectionsSummaryResponse{
 			ConnectionCount:       len(connections),
@@ -275,41 +271,9 @@ func (h API) Summaries(c echo.Context) error {
 			TotalArchivedCount:   0,
 			Connections:          make([]entity.Connection, 0, len(connections)),
 		}
+
 		return c.JSON(http.StatusOK, result)
-	} else if len(connectionGroups) > 0 && filterStr == "" {
-		var validConnections []string
-		for _, group := range connectionGroups {
-			connectionGroup, err := h.db.GetConnectionGroupByName(group)
-			if err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
-				h.logger.Error("error getting connection group", zap.Error(err))
-				return err
-			}
-
-			span.AddEvent("information", trace.WithAttributes(
-				attribute.String("connectionGroup name", connectionGroup.Name),
-			))
-			apiCg, err := connectionGroup.ToAPI(ctx, h.steampipeConn)
-			if err != nil {
-				h.logger.Error("error populating connection group", zap.Error(err))
-				return err
-			}
-			validConnections = append(validConnections, apiCg.ConnectionIds...)
-		}
-		for _, c := range tmpConnections {
-			for _, vc := range validConnections {
-				if c.ID.String() == vc {
-					connections = append(connections, c)
-					break
-				}
-			}
-		}
-	} else {
-		connections = tmpConnections
 	}
-
-	span.End()
 
 	needCostStr := c.QueryParam("needCost")
 	needCost := true
