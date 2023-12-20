@@ -12,6 +12,13 @@ type Connection interface {
 	List(context.Context) ([]model.Connection, error)
 	ListOfType(context.Context, source.Type) ([]model.Connection, error)
 	ListOfTypes(context.Context, []source.Type) ([]model.Connection, error)
+	ListWithFilters(
+		context.Context,
+		[]source.Type,
+		[]string,
+		[]model.ConnectionLifecycleState,
+		[]source.HealthStatus,
+	) ([]model.Connection, error)
 
 	Get(context.Context, []string) ([]model.Connection, error)
 
@@ -56,6 +63,43 @@ func (s ConnectionSQL) ListOfTypes(ctx context.Context, types []source.Type) ([]
 	}
 
 	return connections, nil
+}
+
+// ListWithFilters gets list of all source with specified filters.
+func (s ConnectionSQL) ListWithFilters(
+	ctx context.Context,
+	types []source.Type,
+	ids []string,
+	lifecycleState []model.ConnectionLifecycleState,
+	healthState []source.HealthStatus,
+) ([]model.Connection, error) {
+	var c []model.Connection
+
+	tx := s.db.DB.WithContext(ctx).Joins("Connector").Joins("Credential")
+
+	if len(types) > 0 {
+		tx = tx.Where("type IN ?", types)
+	}
+
+	if len(ids) > 0 {
+		tx = tx.Where("id IN ?", ids)
+	}
+
+	if len(lifecycleState) > 0 {
+		tx = tx.Where("lifecycle_state IN ?", lifecycleState)
+	}
+
+	if len(healthState) > 0 {
+		tx = tx.Where("health_state IN ?", healthState)
+	}
+
+	tx.Find(&c)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return c, nil
 }
 
 func (s ConnectionSQL) Get(ctx context.Context, ids []string) ([]model.Connection, error) {

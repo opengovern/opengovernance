@@ -141,3 +141,18 @@ func (h Connection) Count(ctx context.Context, t *source.Type) (int64, error) {
 
 	return count, nil
 }
+
+func (h Connection) ListWithFilter(
+	ctx context.Context,
+	types []source.Type,
+	ids []string,
+	lifecycleState []model.ConnectionLifecycleState,
+	healthStates []source.HealthStatus,
+) ([]model.Connection, error) {
+	_, span := h.tracer.Start(ctx, "count", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	h.repo.ListWithFilters(ctx, types, ids, lifecycleState, healthStates)
+
+	return nil, nil
+}
