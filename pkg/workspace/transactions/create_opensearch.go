@@ -141,6 +141,7 @@ func (t *CreateOpenSearch) isOpenSearchCreationFinished(workspace db.Workspace) 
 
 func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 	domainName := workspace.ID
+
 	out, err := t.iam.CreateRole(context.Background(), &iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(fmt.Sprintf(`{
     "Version": "2012-10-17",
@@ -166,6 +167,13 @@ func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 				"sts:AssumeRole",
 				"sts:TagSession"
 			]
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "osis-pipelines.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
         }
     ]
 }`, workspace.ID)),
@@ -175,6 +183,44 @@ func (t *CreateOpenSearch) createOpenSearch(workspace db.Workspace) error {
 		Path:                nil,
 		PermissionsBoundary: nil,
 		Tags:                nil,
+	})
+	if err != nil {
+		return err
+	}
+
+	bucketName := fmt.Sprintf("dlq-%s", workspace.ID)
+	policy, err := t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
+		PolicyDocument: aws.String(fmt.Sprintf(`{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteToS3DLQ",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::%s/*"
+    }
+  ]
+}`, bucketName)),
+		PolicyName:  aws.String(fmt.Sprintf("kaytu-dlq-policy-%s", workspace.ID)),
+		Description: nil,
+		Path:        nil,
+		Tags:        nil,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = t.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
+		PolicyArn: policy.Policy.Arn,
+		RoleName:  out.Role.RoleName,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = t.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess"),
+		RoleName:  out.Role.RoleName,
 	})
 	if err != nil {
 		return err

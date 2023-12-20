@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	config2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
@@ -27,21 +28,10 @@ const (
 	consumerGroup       = "analytics-worker"
 )
 
-type WorkerConfig struct {
-	RabbitMQ      config.RabbitMQ
-	Kafka         config.Kafka
-	PostgreSQL    config.Postgres
-	ElasticSearch config.ElasticSearch
-	Steampipe     config.Postgres
-	Onboard       config.KaytuService
-	Scheduler     config.KaytuService
-	Inventory     config.KaytuService
-}
-
 func WorkerCommand() *cobra.Command {
 	var (
 		id  string
-		cnf WorkerConfig
+		cnf config2.WorkerConfig
 	)
 	config.ReadFromEnv(&cnf, nil)
 
@@ -86,7 +76,7 @@ type Worker struct {
 	id              string
 	jobQueue        *kafka.TopicConsumer
 	kfkProducer     *confluent_kafka.Producer
-	config          WorkerConfig
+	config          config2.WorkerConfig
 	logger          *zap.Logger
 	db              db.Database
 	onboardClient   onboardClient.OnboardServiceClient
@@ -96,7 +86,7 @@ type Worker struct {
 
 func InitializeWorker(
 	id string,
-	conf WorkerConfig,
+	conf config2.WorkerConfig,
 	logger *zap.Logger,
 ) (w *Worker, err error) {
 	if id == "" {
@@ -212,7 +202,7 @@ func (w *Worker) Run() error {
 
 		w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-		result := job.Do(w.db, steampipeConn, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger)
+		result := job.Do(w.db, steampipeConn, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger, w.config)
 
 		w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
