@@ -43,6 +43,7 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.ResourceID,
 		r.ConnectionID,
 		r.ControlID,
+		r.BenchmarkID,
 	}
 	if r.ResourceCollection != nil {
 		keys = append(keys, *r.ResourceCollection)
