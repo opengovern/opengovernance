@@ -588,7 +588,7 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Tabl
 	return result, nil
 }
 
-type FetchSpendByMetricQueryResponse struct {
+type FetchSpendByMetricConnectionQueryResponse struct {
 	Aggregations struct {
 		MetricIDGroup struct {
 			Buckets []struct {
@@ -611,6 +611,14 @@ type SpendMetricResp struct {
 }
 
 func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+	if len(connectionIDs) > 0 {
+		return FetchSpendByMetricConnection(client, connectionIDs, connectors, metricIDs, startTime, endTime, size)
+	} else {
+		return FetchSpendByMetricConnector(client, connectors, metricIDs, startTime, endTime, size)
+	}
+}
+
+func FetchSpendByMetricConnection(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -666,8 +674,8 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 	}
 
 	query := string(b)
-	fmt.Println("FetchSpendByMetric =", query)
-	var response FetchSpendByMetricQueryResponse
+	fmt.Println("FetchSpendByMetricConnection =", query)
+	var response FetchSpendByMetricConnectionQueryResponse
 	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
@@ -691,6 +699,106 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 				metricResp := resp[metricBucket.Key]
 				metricResp.MetricName = v.Source.MetricName
 				metricResp.CostValue += connectionResult.CostValue
+				resp[metricBucket.Key] = metricResp
+			}
+		}
+	}
+	return resp, nil
+}
+
+type FetchSpendByMetricConnectorQueryResponse struct {
+	Aggregations struct {
+		MetricIDGroup struct {
+			Buckets []struct {
+				Key       string `json:"key"`
+				HitSelect struct {
+					Hits struct {
+						Hits []struct {
+							Source spend.ConnectorMetricTrendSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"hit_select"`
+			} `json:"buckets"`
+		} `json:"metric_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchSpendByMetricConnector(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+	res := make(map[string]any)
+	var filters []any
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
+
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"date_epoch": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"metric_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "metric_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"hit_select": map[string]any{
+					"top_hits": map[string]any{
+						"size": size,
+					},
+				},
+			},
+		},
+	}
+
+	includeConnectorMap := make(map[source.Type]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector] = true
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("FetchSpendByMetricConnector =", query)
+	var response FetchSpendByMetricConnectorQueryResponse
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := map[string]SpendMetricResp{}
+	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
+		for _, v := range metricBucket.HitSelect.Hits.Hits {
+			if len(connectors) == 0 {
+				metricResp := resp[metricBucket.Key]
+				metricResp.MetricName = v.Source.MetricName
+				metricResp.CostValue += v.Source.TotalCostValue
+				resp[metricBucket.Key] = metricResp
+				continue
+			}
+			for _, connectorResult := range v.Source.Connectors {
+				if len(connectors) > 0 && !includeConnectorMap[connectorResult.Connector] {
+					continue
+				}
+				metricResp := resp[metricBucket.Key]
+				metricResp.MetricName = v.Source.MetricName
+				metricResp.CostValue += connectorResult.CostValue
 				resp[metricBucket.Key] = metricResp
 			}
 		}
