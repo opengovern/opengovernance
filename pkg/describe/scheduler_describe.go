@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"math/rand"
@@ -53,7 +54,7 @@ type CloudNativeCall struct {
 func (s *Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
-	t := time.NewTicker(30 * time.Second)
+	t := ticker.NewTicker(30*time.Second, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -64,7 +65,7 @@ func (s *Scheduler) RunDescribeJobScheduler() {
 func (s *Scheduler) RunStackScheduler() {
 	s.logger.Info("Scheduling stack jobs on a timer")
 
-	t := time.NewTicker(1 * time.Minute)
+	t := ticker.NewTicker(1*time.Minute, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -238,13 +239,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
-	t := time.NewTicker(time.Second * 30)
+	t := ticker.NewTicker(time.Second*30, time.Second*10)
 	defer t.Stop()
 	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
 			s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
 		}
-		t.Reset(time.Second * 30)
+		t.Reset(time.Second*30, time.Second*10)
 	}
 }
 

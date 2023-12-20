@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"time"
 
 	"go.uber.org/zap"
@@ -20,7 +21,7 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 		return err
 	}
 
-	t := time.NewTicker(JobTimeoutCheckInterval)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {
