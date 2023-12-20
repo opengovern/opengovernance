@@ -124,6 +124,10 @@ func (w *Worker) RunJob(j Job) error {
 	w.logger.Info("Summarize done", zap.Any("summary", bs))
 
 	if w.config.ElasticSearch.IsOpenSearch {
+		keys, idx := bs.KeysAndIndex()
+		bs.EsID = kafka.HashOf(keys...)
+		bs.EsIndex = idx
+
 		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, []kafka.Doc{bs}); err != nil {
 			return err
 		}
