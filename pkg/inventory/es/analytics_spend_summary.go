@@ -157,6 +157,12 @@ type FetchConnectionDailySpendHistoryQueryResponse struct {
 }
 
 func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistory, error) {
+	filterPaths := make([]string, 0)
+	filterPaths = append(filterPaths, "hits.hits.sort")
+	filterPaths = append(filterPaths, "hits.hits._source.connections.connection_id")
+	filterPaths = append(filterPaths, "hits.hits._source.connections.connector")
+	filterPaths = append(filterPaths, "hits.hits._source.connections.cost_value")
+
 	res := make(map[string]any)
 	var filters []any
 
@@ -209,7 +215,7 @@ func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []strin
 		query := string(b)
 		fmt.Println("FetchConnectionDailySpendHistory =", query)
 		var response FetchConnectionDailySpendHistoryQueryResponse
-		err = client.Search(context.TODO(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+		err = client.SearchWithFilterPath(context.TODO(), spend.AnalyticsSpendConnectionSummaryIndex, query, filterPaths, &response)
 		if err != nil {
 			return nil, err
 		}
