@@ -291,13 +291,13 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectionData := map[string]inventoryAPI.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.svc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}
 	}
 
-	pendingDescribeConnections, err := h.describeClient.ListPendingConnections(&httpclient.Context{UserRole: api3.InternalRole})
+	pendingDescribeConnections, err := h.svc.Pending(&httpclient.Context{UserRole: api.InternalRole})
 	if err != nil {
 		return err
 	}
@@ -536,36 +536,6 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 					for _, c := range allConnections {
 						if contains(providers, c.Connector.Name.String()) {
 							connections = append(connections, c.ID.String())
-						}
-					}
-				} else if dimKey == "ConnectionGroup" {
-					allGroups, err := h.db.ListConnectionGroups()
-					if err != nil {
-						return nil, err
-					}
-					allGroupsMap := make(map[string][]string)
-					var allGroupsStr []string
-					for _, group := range allGroups {
-						g, err := group.ToAPI(ctx, h.steampipeConn)
-						if err != nil {
-							return nil, err
-						}
-						allGroupsMap[g.Name] = make([]string, 0, len(g.ConnectionIds))
-						for _, cid := range g.ConnectionIds {
-							allGroupsMap[g.Name] = append(allGroupsMap[g.Name], cid)
-							allGroupsStr = append(allGroupsStr, cid)
-						}
-					}
-					groups, err := dimFilterFunction(dimFilter, allGroupsStr)
-					if err != nil {
-						return nil, err
-					}
-					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, groups))
-					for _, g := range groups {
-						for _, conn := range allGroupsMap[g] {
-							if !arrayContains(connections, conn) {
-								connections = append(connections, conn)
-							}
 						}
 					}
 				} else if dimKey == "ConnectionName" {

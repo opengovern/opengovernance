@@ -2,7 +2,12 @@ package service
 
 import (
 	"context"
+	"time"
 
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
@@ -18,6 +23,8 @@ type Connection struct {
 	kms             *vault.KMSVaultSourceConfig
 	tracer          trace.Tracer
 	repo            repository.Connection
+	describe        describe.SchedulerServiceClient
+	inventory       inventory.InventoryServiceClient
 	masterAccessKey string
 	masterSecretKey string
 }
@@ -26,6 +33,8 @@ func NewConnection(
 	repo repository.Connection,
 	kms *vault.KMSVaultSourceConfig,
 	keyARN string,
+	describe describe.SchedulerServiceClient,
+	inventory inventory.InventoryServiceClient,
 	masterAccessKey string,
 	masterSecretKey string,
 ) Connection {
@@ -34,6 +43,8 @@ func NewConnection(
 		repo:            repo,
 		keyARN:          keyARN,
 		kms:             kms,
+		inventory:       inventory,
+		describe:        describe,
 		masterAccessKey: masterAccessKey,
 		masterSecretKey: masterSecretKey,
 	}
@@ -66,6 +77,30 @@ func (h Connection) CredentialV2ToV1(newCred string) (string, error) {
 	}
 
 	return string(newSecret), nil
+}
+
+func (h Connection) Data(
+	ctx *httpclient.Context,
+	ids []string,
+	resourceCollections []string,
+	startTime, endTime *time.Time,
+	needCost, needResourceCount bool,
+) (map[string]inventoryAPI.ConnectionData, error) {
+	connectionData, err := h.inventory.ListConnectionsData(ctx, nil, resourceCollections, startTime, endTime, needCost, needResourceCount)
+	if err != nil {
+		return nil, err
+	}
+
+	return connectionData, nil
+}
+
+func (h Connection) Pending(ctx *httpclient.Context) ([]string, error) {
+	pending, err := h.describe.ListPendingConnections(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return pending, nil
 }
 
 func (h Connection) List(ctx context.Context, types []source.Type) ([]model.Connection, error) {
