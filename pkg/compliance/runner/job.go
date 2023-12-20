@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"io"
 	"time"
 
@@ -147,10 +148,17 @@ func (w *Worker) RunJob(j Job) (int, error) {
 			docs = append(docs, f)
 		}
 
-		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
-		if err != nil {
-			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
-			return 0, err
+		if w.config.ElasticSearch.IsOpenSearch {
+			if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+				w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
+				return 0, err
+			}
+		} else {
+			err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
+			if err != nil {
+				w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
+				return 0, err
+			}
 		}
 
 		err = w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, j.ExecutionPlan.ResourceCollectionID, caller.RootBenchmark, caller.ControlID)
