@@ -12,6 +12,9 @@ type FullBenchmark struct {
 }
 
 type Finding struct {
+	EsID    string `json:"es_id"`
+	EsIndex string `json:"es_index"`
+
 	BenchmarkID           string           `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID             string           `json:"controlID" example:"azure_cis_v140_7_5"`
 	ConnectionID          string           `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`

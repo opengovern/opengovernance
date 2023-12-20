@@ -22,6 +22,9 @@ type ConnectorMetricTrendSummaryResult struct {
 }
 
 type ConnectorMetricTrendSummary struct {
+	EsID    string `json:"es_id"`
+	EsIndex string `json:"es_index"`
+
 	EvaluatedAt int64  `json:"evaluated_at"`
 	Date        string `json:"date"`
 	Month       string `json:"month"`

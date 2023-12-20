@@ -367,6 +367,14 @@ func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceColl
 		connectorMetricTrendSummary.Connectors = perConnector
 	}
 
+	keys, idx := connectionMetricTrendSummary.KeysAndIndex()
+	connectionMetricTrendSummary.EsID = kafka.HashOf(keys...)
+	connectionMetricTrendSummary.EsIndex = idx
+
+	keys, idx = connectorMetricTrendSummary.KeysAndIndex()
+	connectorMetricTrendSummary.EsID = kafka.HashOf(keys...)
+	connectorMetricTrendSummary.EsIndex = idx
+
 	var msgs = []kafka.Doc{
 		connectionMetricTrendSummary,
 		connectorMetricTrendSummary,
@@ -551,18 +559,25 @@ func (j *Job) DoSpendMetric(steampipeDB *steampipe.Database, kfkProducer *conflu
 			connectorResultMap[date] = vn
 		}
 	}
-
 	var msgs []kafka.Doc
 	for _, item := range connectionResultMap {
 		for _, v := range item.ConnectionsMap {
 			item.Connections = append(item.Connections, v)
 		}
+		keys, idx := item.KeysAndIndex()
+		item.EsID = kafka.HashOf(keys...)
+		item.EsIndex = idx
+
 		msgs = append(msgs, item)
 	}
 	for _, item := range connectorResultMap {
 		for _, v := range item.ConnectorsMap {
 			item.Connectors = append(item.Connectors, v)
 		}
+		keys, idx := item.KeysAndIndex()
+		item.EsID = kafka.HashOf(keys...)
+		item.EsIndex = idx
+
 		msgs = append(msgs, item)
 	}
 

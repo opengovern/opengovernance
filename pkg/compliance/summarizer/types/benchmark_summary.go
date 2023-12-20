@@ -47,6 +47,9 @@ type BenchmarkSummaryResult struct {
 }
 
 type BenchmarkSummary struct {
+	EsID    string `json:"es_id"`
+	EsIndex string `json:"es_index"`
+
 	BenchmarkID      string
 	JobID            uint
 	EvaluatedAtEpoch int64

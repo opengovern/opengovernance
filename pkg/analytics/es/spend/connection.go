@@ -18,6 +18,9 @@ type PerConnectionMetricTrendSummary struct {
 }
 
 type ConnectionMetricTrendSummary struct {
+	EsID    string `json:"es_id"`
+	EsIndex string `json:"es_index"`
+
 	MetricName     string  `json:"metric_name"`
 	MetricID       string  `json:"metric_id"`
 	TotalCostValue float64 `json:"total_cost_value"`

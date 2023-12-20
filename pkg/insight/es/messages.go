@@ -26,6 +26,9 @@ type InsightConnection struct {
 }
 
 type InsightResource struct {
+	EsID    string `json:"es_id"`
+	EsIndex string `json:"es_index"`
+
 	// JobID is the ID of the job which produced this resource
 	JobID uint `json:"job_id"`
 	// InsightID is the ID of insight which has been executed

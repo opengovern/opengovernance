@@ -145,6 +145,10 @@ func (w *Worker) RunJob(j Job) (int, error) {
 
 		var docs []kafka.Doc
 		for _, f := range findings {
+			keys, idx := f.KeysAndIndex()
+			f.EsID = kafka.HashOf(keys...)
+			f.EsIndex = idx
+
 			docs = append(docs, f)
 		}
 
