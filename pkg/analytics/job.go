@@ -303,6 +303,8 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 	for _, v := range perConnector {
 		perConnectorArray = append(perConnectorArray, v)
 	}
+	logger.Info("assets ==== ", zap.String("metric_id", metric.ID), zap.Int("totalCount", totalCount))
+
 	return &resource.ConnectionMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
 			Connections:        perConnectionArray,
