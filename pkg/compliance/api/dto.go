@@ -88,8 +88,8 @@ type GetSingleResourceFindingRequest struct {
 }
 
 type GetSingleResourceFindingResponse struct {
-	Resource        es.Resource
-	ControlFindings []Finding `json:"controls"`
+	Resource        es.Resource `json:"resource"`
+	ControlFindings []Finding   `json:"controls"`
 }
 
 type TopFieldRecord struct {
