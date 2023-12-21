@@ -212,6 +212,8 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 	if err != nil {
 		return nil, nil, err
 	}
+	logger.Info("assets ==== ", zap.Int("count", len(res.Data)))
+
 	totalCount := 0
 	perConnection := make(map[string]resource.PerConnectionMetricTrendSummary)
 	perConnector := make(map[string]resource.PerConnectorMetricTrendSummary)
