@@ -33,7 +33,7 @@ func (w *Job) CheckIfUpdateIsNeeded(name string, mig types.Migration) (bool, err
 	}
 
 	if mig.IsGitBased() {
-		return m.AdditionalInfo != w.commit, nil
+		return m.AdditionalInfo != w.commitRefs, nil
 	} else {
 		hashes, err := w.FindFilesHashes(mig)
 		if err != nil {
@@ -46,7 +46,7 @@ func (w *Job) CheckIfUpdateIsNeeded(name string, mig types.Migration) (bool, err
 
 func (w *Job) UpdateMigration(name string, mig types.Migration) error {
 	if mig.IsGitBased() {
-		return w.db.UpdateMigrationAdditionalInfo(name, w.commit)
+		return w.db.UpdateMigrationAdditionalInfo(name, w.commitRefs)
 	} else {
 		hashes, err := w.FindFilesHashes(mig)
 		if err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.uber.org/zap"
 	"io/fs"
 	"os"
 	"path"
@@ -15,6 +16,7 @@ import (
 )
 
 type GitParser struct {
+	logger     *zap.Logger
 	benchmarks []db.Benchmark
 	controls   []db.Control
 	queries    []db.Query
@@ -48,7 +50,41 @@ func (g *GitParser) ExtractQueries(queryPath string) error {
 	})
 }
 
-func (g *GitParser) ExtractControls(complianceControlsPath string) error {
+func populateMdMapFromPath(path string) (map[string]string, error) {
+	result := make(map[string]string)
+	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		if !strings.HasSuffix(path, ".md") {
+			return nil
+		}
+		id := strings.ToLower(strings.TrimSuffix(filepath.Base(path), ".md"))
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		result[id] = string(content)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrichmentBasePath string) error {
+	manualRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "manual"))
+	if err != nil {
+		g.logger.Warn("failed to load manual remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
+	}
+
+	cliRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "cli"))
+	if err != nil {
+		g.logger.Warn("failed to load cli remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+	}
+
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".json") {
 			content, err := os.ReadFile(path)
@@ -71,6 +107,25 @@ func (g *GitParser) ExtractControls(complianceControlsPath string) error {
 					ControlID: control.ID,
 				})
 			}
+			if v, ok := manualRemediationMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-manual-remediation",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+			if v, ok := cliRemediationMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-cli-remediation",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+
 			p := db.Control{
 				ID:                 control.ID,
 				Title:              control.Title,
@@ -242,8 +297,8 @@ func (g *GitParser) CheckForDuplicate() error {
 	return nil
 }
 
-func (g *GitParser) ExtractCompliance(compliancePath string) error {
-	if err := g.ExtractControls(path.Join(compliancePath, "controls")); err != nil {
+func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBasePath string) error {
+	if err := g.ExtractControls(path.Join(compliancePath, "controls"), controlEnrichmentBasePath); err != nil {
 		return err
 	}
 	if err := g.ExtractBenchmarks(path.Join(compliancePath, "benchmarks")); err != nil {

@@ -856,6 +856,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control:
     properties:
+      cliRemediation:
+        example: To enable multi-factor authentication for a user, run the following
+          command...
+        type: string
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
@@ -885,6 +889,10 @@ definitions:
       managed:
         example: true
         type: boolean
+      manualRemediation:
+        example: To enable multi-factor authentication for a user, run the following
+          command...
+        type: string
       manualVerification:
         example: true
         type: boolean

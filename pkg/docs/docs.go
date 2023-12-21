@@ -7756,6 +7756,10 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control": {
             "type": "object",
             "properties": {
+                "cliRemediation": {
+                    "type": "string",
+                    "example": "To enable multi-factor authentication for a user, run the following command..."
+                },
                 "connector": {
                     "allOf": [
                         {
@@ -7791,6 +7795,10 @@ const docTemplate = `{
                 "managed": {
                     "type": "boolean",
                     "example": true
+                },
+                "manualRemediation": {
+                    "type": "string",
+                    "example": "To enable multi-factor authentication for a user, run the following command..."
                 },
                 "manualVerification": {
                     "type": "boolean",

@@ -9,15 +9,16 @@ import (
 )
 
 type GitConfig struct {
-	AnalyticsGitURL string
-	githubToken     string
+	AnalyticsGitURL         string
+	ControlEnrichmentGitURL string
+	githubToken             string
 }
 
 type Job struct {
-	db     db.Database
-	logger *zap.Logger
-	conf   config.MigratorConfig
-	commit string
+	db         db.Database
+	logger     *zap.Logger
+	conf       config.MigratorConfig
+	commitRefs string
 }
 
 func InitializeJob(
@@ -49,7 +50,7 @@ func InitializeJob(
 		return nil, fmt.Errorf("failure while initializing database: %w", err)
 	}
 
-	w.commit, err = GitClone(conf, logger)
+	w.commitRefs, err = GitClone(conf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failure while running git clone: %w", err)
 	}
