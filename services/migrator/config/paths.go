@@ -1,6 +1,8 @@
 package config
 
 const (
+	ControlEnrichmentGitPath = "/tmp/loader-control-enrichment-git"
+
 	AnalyticsGitPath          = "/tmp/loader-analytics-git"
 	ComplianceGitPath         = AnalyticsGitPath + "/compliance"
 	QueriesGitPath            = AnalyticsGitPath + "/cloud-infrastructure-queries"

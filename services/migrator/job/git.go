@@ -1,6 +1,7 @@
 package job
 
 import (
+	"encoding/json"
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -14,8 +15,9 @@ import (
 
 func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	gitConfig := GitConfig{
-		AnalyticsGitURL: conf.AnalyticsGitURL,
-		githubToken:     conf.GithubToken,
+		AnalyticsGitURL:         conf.AnalyticsGitURL,
+		ControlEnrichmentGitURL: conf.ControlEnrichmentGitURL,
+		githubToken:             conf.GithubToken,
 	}
 
 	metadataClient := client.NewMetadataServiceClient(conf.Metadata.BaseURL)
@@ -31,25 +33,51 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
 
+	refs := make([]string, 0, 2)
+
+	gitAuth := githttp.BasicAuth{
+		Username: "abc123",
+		Password: gitConfig.githubToken,
+	}
 	os.RemoveAll(config.AnalyticsGitPath)
 	res, err := git.PlainClone(config.AnalyticsGitPath, false, &git.CloneOptions{
-		Auth: &githttp.BasicAuth{
-			Username: "abc123",
-			Password: gitConfig.githubToken,
-		},
+		Auth:     &gitAuth,
 		URL:      gitConfig.AnalyticsGitURL,
 		Progress: os.Stdout,
 	})
 	if err != nil {
-		logger.Error("Failure while running analytics migration", zap.Error(err))
+		logger.Error("Failure while cloning analytics repo", zap.Error(err))
 		return "", err
 	}
-
 	ref, err := res.Head()
 	if err != nil {
 		logger.Error("failed to get head", zap.Error(err))
 		return "", err
 	}
+	refs = append(refs, ref.Hash().String())
 
-	return ref.Hash().String(), nil
+	os.RemoveAll(config.ControlEnrichmentGitPath)
+	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &git.CloneOptions{
+		Auth:     &gitAuth,
+		URL:      gitConfig.ControlEnrichmentGitURL,
+		Progress: os.Stdout,
+	})
+	if err != nil {
+		logger.Error("Failure while cloning control enrichment repo", zap.Error(err))
+		return "", err
+	}
+	ref, err = res.Head()
+	if err != nil {
+		logger.Error("failed to get head", zap.Error(err))
+		return "", err
+	}
+	refs = append(refs, ref.Hash().String())
+
+	refsJson, err := json.Marshal(refs)
+	if err != nil {
+		logger.Error("failed to marshal refs", zap.Error(err))
+		return "", err
+	}
+
+	return string(refsJson), nil
 }

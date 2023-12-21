@@ -152,6 +152,12 @@ func (p Control) ToApi() api.Control {
 	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"usefulness-example"]; ok && len(v) > 0 {
 		pa.UsefulExample = v[0]
 	}
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"manual-remediation"]; ok && len(v) > 0 {
+		pa.ManualRemediation = v[0]
+	}
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"cli-remediation"]; ok && len(v) > 0 {
+		pa.CliRemediation = v[0]
+	}
 
 	return pa
 }
