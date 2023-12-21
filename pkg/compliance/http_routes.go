@@ -695,15 +695,21 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
 
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, controlIDs, severities, esCount)
+	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, controlIDs, severities, esCount)
 	if err != nil {
+		h.logger.Error("failed to get top field", zap.Error(err))
+		return err
+	}
+	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, controlIDs, nil, esCount)
+	if err != nil {
+		h.logger.Error("failed to get top field total", zap.Error(err))
 		return err
 	}
 
 	switch strings.ToLower(field) {
 	case "resourcetype":
-		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		resourceTypeList := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			if item.Key == "" {
 				continue
 			}
@@ -720,11 +726,18 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 		}
 		resourceTypeCountMap := make(map[string]int)
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			if item.Key == "" {
 				item.Key = "Unknown"
 			}
 			resourceTypeCountMap[item.Key] += item.DocCount
+		}
+		resourceTypeTotalCountMap := make(map[string]int)
+		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+			if item.Key == "" {
+				item.Key = "Unknown"
+			}
+			resourceTypeTotalCountMap[item.Key] += item.DocCount
 		}
 		resourceTypeCountList := make([]api.TopFieldRecord, 0, len(resourceTypeCountMap))
 		for k, v := range resourceTypeCountMap {
@@ -738,6 +751,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			resourceTypeCountList = append(resourceTypeCountList, api.TopFieldRecord{
 				ResourceType: rt,
 				Count:        v,
+				TotalCount:   resourceTypeTotalCountMap[k],
 			})
 		}
 		sort.Slice(resourceTypeCountList, func(i, j int) bool {
@@ -750,8 +764,8 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		response.TotalCount = len(resourceTypeCountList)
 	case "service":
-		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		resourceTypeList := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			resourceTypeList = append(resourceTypeList, item.Key)
 		}
 		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
@@ -764,17 +778,24 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = item
 		}
 		serviceCountMap := make(map[string]int)
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(item.Key)]; ok {
 				serviceCountMap[rtMetadata.ServiceName] += item.DocCount
+			}
+		}
+		serviceTotalCountMap := make(map[string]int)
+		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+			if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(item.Key)]; ok {
+				serviceTotalCountMap[rtMetadata.ServiceName] += item.DocCount
 			}
 		}
 		serviceCountList := make([]api.TopFieldRecord, 0, len(serviceCountMap))
 		for k, v := range serviceCountMap {
 			k := k
 			serviceCountList = append(serviceCountList, api.TopFieldRecord{
-				Service: &k,
-				Count:   v,
+				Service:    &k,
+				Count:      v,
+				TotalCount: serviceTotalCountMap[k],
 			})
 		}
 		sort.Slice(serviceCountList, func(i, j int) bool {
@@ -787,8 +808,8 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		response.TotalCount = len(serviceCountList)
 	case "connectionid":
-		resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		resConnectionIDs := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
 		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
@@ -802,13 +823,19 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			connectionMap[connection.ID.String()] = &connection
 		}
 
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		totalCountMap := make(map[string]int)
+		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+			totalCountMap[item.Key] += item.DocCount
+		}
+
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			response.Records = append(response.Records, api.TopFieldRecord{
 				Connection: connectionMap[item.Key],
 				Count:      item.DocCount,
+				TotalCount: totalCountMap[item.Key],
 			})
 		}
-		response.TotalCount = res.Aggregations.BucketCount.Value
+		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	case "controlid":
 		controls, err := h.db.ListControls()
 		if err != nil {
@@ -820,22 +847,35 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			control := control
 			controlsMap[control.ID] = &control
 		}
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+
+		totalCountMap := make(map[string]int)
+		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+			totalCountMap[item.Key] += item.DocCount
+		}
+
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			response.Records = append(response.Records, api.TopFieldRecord{
-				Control: utils.GetPointer(controlsMap[item.Key].ToApi()),
-				Count:   item.DocCount,
+				Control:    utils.GetPointer(controlsMap[item.Key].ToApi()),
+				Count:      item.DocCount,
+				TotalCount: totalCountMap[item.Key],
 			})
 		}
-		response.TotalCount = res.Aggregations.BucketCount.Value
+		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	default:
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
+		totalCountMap := make(map[string]int)
+		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+			totalCountMap[item.Key] += item.DocCount
+		}
+
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			item := item
 			response.Records = append(response.Records, api.TopFieldRecord{
-				Field: &item.Key,
-				Count: item.DocCount,
+				Field:      &item.Key,
+				Count:      item.DocCount,
+				TotalCount: totalCountMap[item.Key],
 			})
 		}
-		response.TotalCount = res.Aggregations.BucketCount.Value
+		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -1230,7 +1270,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 {
-			res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{b.ID}, nil, []kaytuTypes.FindingSeverity{
+			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{b.ID}, nil, []kaytuTypes.FindingSeverity{
 				kaytuTypes.FindingSeverityCritical,
 				kaytuTypes.FindingSeverityHigh,
 				kaytuTypes.FindingSeverityMedium,
@@ -1241,8 +1281,18 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
-			resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
-			for _, item := range res.Aggregations.FieldFilter.Buckets {
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{b.ID}, nil, nil, topAccountCount)
+			if err != nil {
+				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+				return err
+			}
+			totalCountMap := make(map[string]int)
+			for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+				totalCountMap[item.Key] += item.DocCount
+			}
+
+			resConnectionIDs := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+			for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 				resConnectionIDs = append(resConnectionIDs, item.Key)
 			}
 			if len(resConnectionIDs) > 0 {
@@ -1257,10 +1307,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 					connectionMap[connection.ID.String()] = &connection
 				}
 
-				for _, item := range res.Aggregations.FieldFilter.Buckets {
+				for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 					topConnections = append(topConnections, api.TopFieldRecord{
 						Connection: connectionMap[item.Key],
 						Count:      item.DocCount,
+						TotalCount: totalCountMap[item.Key],
 					})
 				}
 			}
@@ -1400,6 +1451,17 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
 		}
+
+		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{benchmark.ID}, nil, nil, topAccountCount)
+		if err != nil {
+			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+			return err
+		}
+		totalCountMap := make(map[string]int)
+		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+			totalCountMap[item.Key] += item.DocCount
+		}
+
 		resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
@@ -1420,6 +1482,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 				topConnections = append(topConnections, api.TopFieldRecord{
 					Connection: connectionMap[item.Key],
 					Count:      item.DocCount,
+					TotalCount: totalCountMap[item.Key],
 				})
 			}
 		}

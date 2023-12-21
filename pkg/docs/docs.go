@@ -7921,6 +7921,12 @@ const docTemplate = `{
                 "controlTitle": {
                     "type": "string"
                 },
+                "es_id": {
+                    "type": "string"
+                },
+                "es_index": {
+                    "type": "string"
+                },
                 "evaluatedAt": {
                     "type": "integer",
                     "example": 1589395200
@@ -8644,6 +8650,9 @@ const docTemplate = `{
                 },
                 "service": {
                     "type": "string"
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
