@@ -1468,38 +1468,6 @@ func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*d
 	}
 
 	sort.Slice(result.Controls, func(i, j int) bool {
-		if result.Controls[i].Control.Severity != result.Controls[j].Control.Severity {
-			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityCritical {
-				return true
-			}
-			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityCritical {
-				return false
-			}
-			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityHigh {
-				return true
-			}
-			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityHigh {
-				return false
-			}
-			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityMedium {
-				return true
-			}
-			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityMedium {
-				return false
-			}
-			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityLow {
-				return true
-			}
-			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityLow {
-				return false
-			}
-			if result.Controls[i].Control.Severity == kaytuTypes.FindingSeverityNone {
-				return true
-			}
-			if result.Controls[j].Control.Severity == kaytuTypes.FindingSeverityNone {
-				return false
-			}
-		}
 		return result.Controls[i].Control.Title < result.Controls[j].Control.Title
 	})
 
