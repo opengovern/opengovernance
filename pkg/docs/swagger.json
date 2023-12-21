@@ -7916,6 +7916,12 @@
                 "controlTitle": {
                     "type": "string"
                 },
+                "es_id": {
+                    "type": "string"
+                },
+                "es_index": {
+                    "type": "string"
+                },
                 "evaluatedAt": {
                     "type": "integer",
                     "example": 1589395200
@@ -8639,6 +8645,9 @@
                 },
                 "service": {
                     "type": "string"
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },

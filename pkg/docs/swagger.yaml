@@ -973,6 +973,10 @@ definitions:
         type: string
       controlTitle:
         type: string
+      es_id:
+        type: string
+      es_index:
+        type: string
       evaluatedAt:
         example: 1589395200
         type: integer
@@ -1477,6 +1481,8 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
       service:
         type: string
+      totalCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType:
     enum:

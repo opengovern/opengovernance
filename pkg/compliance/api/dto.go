@@ -98,8 +98,9 @@ type TopFieldRecord struct {
 	Control      *Control
 	Service      *string
 
-	Field *string `json:"field"`
-	Count int     `json:"count"`
+	Field      *string `json:"field"`
+	Count      int     `json:"count"`
+	TotalCount int     `json:"totalCount"`
 }
 
 type BenchmarkRemediation struct {
