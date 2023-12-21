@@ -7491,6 +7491,11 @@
                     "type": "string",
                     "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
+                "displayCode": {
+                    "description": "Benchmark display code",
+                    "type": "string",
+                    "example": "CIS 1.4.0"
+                },
                 "documentURI": {
                     "description": "Benchmark document URI",
                     "type": "string",

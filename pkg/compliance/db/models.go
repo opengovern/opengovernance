@@ -54,6 +54,7 @@ func (b Benchmark) ToApi() api.Benchmark {
 	ba := api.Benchmark{
 		ID:          b.ID,
 		Title:       b.Title,
+		DisplayCode: b.DisplayCode,
 		Description: b.Description,
 		LogoURI:     b.LogoURI,
 		Category:    b.Category,

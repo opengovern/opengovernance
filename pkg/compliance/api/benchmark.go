@@ -10,6 +10,7 @@ import (
 type Benchmark struct {
 	ID          string              `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
 	Title       string              `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
+	DisplayCode string              `json:"displayCode" example:"CIS 1.4.0"`                                                                                                                                                   // Benchmark display code
 	Description string              `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
 	LogoURI     string              `json:"logoURI"`                                                                                                                                                                           // Benchmark logo URI
 	Category    string              `json:"category"`                                                                                                                                                                          // Benchmark category
