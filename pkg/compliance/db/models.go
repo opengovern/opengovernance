@@ -30,6 +30,7 @@ type BenchmarkAssignment struct {
 type Benchmark struct {
 	ID          string `gorm:"primarykey"`
 	Title       string
+	DisplayCode string
 	Connector   source.Type
 	Description string
 	LogoURI     string

@@ -111,8 +111,20 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 			obj.Children = nil
 			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                                                                                                                     // key column
-				DoUpdates: clause.AssignmentColumns([]string{"title", "description", "logo_uri", "category", "document_uri", "enabled", "managed", "auto_assign", "baseline", "updated_at"}), // column needed to be updated
+				Columns: []clause.Column{{Name: "id"}}, // key column
+				DoUpdates: clause.AssignmentColumns([]string{
+					"title",
+					"display_code",
+					"description",
+					"logo_uri",
+					"category",
+					"document_uri",
+					"enabled",
+					"managed",
+					"auto_assign",
+					"baseline",
+					"updated_at",
+				}), // column needed to be updated
 			}).Create(&obj).Error
 			if err != nil {
 				return err
