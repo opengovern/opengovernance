@@ -103,9 +103,9 @@ func (w *Worker) RunJob(j Job) error {
 			return err
 		}
 		lookupResourcesMap := make(map[string]*es2.LookupResource)
-		for _, r := range lookupResources.Hits.Hits {
+		for _, r := range lookupResources {
 			r := r
-			lookupResourcesMap[r.Source.ResourceID] = &r.Source
+			lookupResourcesMap[r.ResourceID] = &r
 		}
 
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))

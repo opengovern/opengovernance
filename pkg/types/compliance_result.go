@@ -3,15 +3,15 @@ package types
 type ConformanceStatus string
 
 const (
-	ComplianceResultOK    ConformanceStatus = "ok"
-	ComplianceResultALARM ConformanceStatus = "alarm"
-	ComplianceResultINFO  ConformanceStatus = "info"
-	ComplianceResultSKIP  ConformanceStatus = "skip"
-	ComplianceResultERROR ConformanceStatus = "error"
+	ConformanceStatusOK    ConformanceStatus = "ok"
+	ConformanceStatusALARM ConformanceStatus = "alarm"
+	ConformanceStatusINFO  ConformanceStatus = "info"
+	ConformanceStatusSKIP  ConformanceStatus = "skip"
+	ConformanceStatusERROR ConformanceStatus = "error"
 )
 
 func (r ConformanceStatus) IsPassed() bool {
-	return r == ComplianceResultOK
+	return r == ConformanceStatusOK
 }
 
 type ConformanceStatusSummary struct {
@@ -31,11 +31,11 @@ func (c *ConformanceStatusSummary) AddConformanceStatusSummary(summary Conforman
 }
 
 func (c *ConformanceStatusSummary) AddConformanceStatusMap(summary map[ConformanceStatus]int) {
-	c.OkCount += summary[ComplianceResultOK]
-	c.AlarmCount += summary[ComplianceResultALARM]
-	c.InfoCount += summary[ComplianceResultINFO]
-	c.SkipCount += summary[ComplianceResultSKIP]
-	c.ErrorCount += summary[ComplianceResultERROR]
+	c.OkCount += summary[ConformanceStatusOK]
+	c.AlarmCount += summary[ConformanceStatusALARM]
+	c.InfoCount += summary[ConformanceStatusINFO]
+	c.SkipCount += summary[ConformanceStatusSKIP]
+	c.ErrorCount += summary[ConformanceStatusERROR]
 }
 
 type ComplianceResultShortSummary struct {

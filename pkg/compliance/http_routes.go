@@ -294,20 +294,17 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	}
 
 	lookupResourcesMap := make(map[string]*es2.LookupResource)
-	for _, r := range lookupResources.Hits.Hits {
+	for _, r := range lookupResources {
 		r := r
-		lookupResourcesMap[r.Source.ResourceID] = &r.Source
+		lookupResourcesMap[r.ResourceID] = &r
 	}
 
-	severities := []kaytuTypes.FindingSeverity{
-		kaytuTypes.FindingSeverityCritical,
-		kaytuTypes.FindingSeverityHigh,
-		kaytuTypes.FindingSeverityMedium,
-		kaytuTypes.FindingSeverityLow,
-		kaytuTypes.FindingSeverityNone,
-	}
-
-	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds, severities)
+	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds, nil, []kaytuTypes.ConformanceStatus{
+		kaytuTypes.ConformanceStatusALARM,
+		kaytuTypes.ConformanceStatusERROR,
+		kaytuTypes.ConformanceStatusINFO,
+		kaytuTypes.ConformanceStatusSKIP,
+	})
 
 	for i, finding := range response.Findings {
 		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {
@@ -351,11 +348,11 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
 	}
-	if len(lookupResourceRes.Hits.Hits) == 0 {
+	if len(lookupResourceRes) == 0 {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
 
-	lookupResource := lookupResourceRes.Hits.Hits[0].Source
+	lookupResource := lookupResourceRes[0]
 
 	resource, err := es.FetchResourceByResourceIdAndType(h.client, lookupResource.ResourceID, lookupResource.ResourceType)
 	if err != nil {
@@ -693,10 +690,10 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
 
 	failedResults := []kaytuTypes.ConformanceStatus{
-		kaytuTypes.ComplianceResultALARM,
-		kaytuTypes.ComplianceResultERROR,
-		kaytuTypes.ComplianceResultINFO,
-		kaytuTypes.ComplianceResultSKIP,
+		kaytuTypes.ConformanceStatusALARM,
+		kaytuTypes.ConformanceStatusERROR,
+		kaytuTypes.ConformanceStatusINFO,
+		kaytuTypes.ConformanceStatusSKIP,
 	}
 
 	var response api.GetTopFieldResponse
@@ -1041,11 +1038,11 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 				Info   int `json:"info"`
 				Skip   int `json:"skip"`
 			}{
-				Passed: summary.Result.QueryResult[kaytuTypes.ComplianceResultOK],
-				Failed: summary.Result.QueryResult[kaytuTypes.ComplianceResultALARM],
-				Error:  summary.Result.QueryResult[kaytuTypes.ComplianceResultERROR],
-				Info:   summary.Result.QueryResult[kaytuTypes.ComplianceResultINFO],
-				Skip:   summary.Result.QueryResult[kaytuTypes.ComplianceResultSKIP],
+				Passed: summary.Result.QueryResult[kaytuTypes.ConformanceStatusOK],
+				Failed: summary.Result.QueryResult[kaytuTypes.ConformanceStatusALARM],
+				Error:  summary.Result.QueryResult[kaytuTypes.ConformanceStatusERROR],
+				Info:   summary.Result.QueryResult[kaytuTypes.ConformanceStatusINFO],
+				Skip:   summary.Result.QueryResult[kaytuTypes.ConformanceStatusSKIP],
 			},
 			LastCheckTime: time.Unix(evaluatedAt, 0),
 		}
@@ -1109,7 +1106,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 			resMap[controlResult.Key] = controlResult.DocCount
 		}
 
-		securityScore := float64(resMap[string(kaytuTypes.ComplianceResultOK)]) / float64(resourceType.DocCount) * 100.0
+		securityScore := float64(resMap[string(kaytuTypes.ConformanceStatusOK)]) / float64(resourceType.DocCount) * 100.0
 
 		resourceTypeMetadata := resourceTypeMap[strings.ToLower(resourceType.Key)]
 		if resourceTypeMetadata.ResourceType == "" {
@@ -1146,11 +1143,11 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 				Info   int `json:"info"`
 				Skip   int `json:"skip"`
 			}{
-				Passed: resMap[string(kaytuTypes.ComplianceResultOK)],
-				Failed: resMap[string(kaytuTypes.ComplianceResultALARM)],
-				Error:  resMap[string(kaytuTypes.ComplianceResultERROR)],
-				Info:   resMap[string(kaytuTypes.ComplianceResultINFO)],
-				Skip:   resMap[string(kaytuTypes.ComplianceResultSKIP)],
+				Passed: resMap[string(kaytuTypes.ConformanceStatusOK)],
+				Failed: resMap[string(kaytuTypes.ConformanceStatusALARM)],
+				Error:  resMap[string(kaytuTypes.ConformanceStatusERROR)],
+				Info:   resMap[string(kaytuTypes.ConformanceStatusINFO)],
+				Skip:   resMap[string(kaytuTypes.ConformanceStatusSKIP)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -1307,20 +1304,20 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 {
 			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-				kaytuTypes.ComplianceResultALARM,
-				kaytuTypes.ComplianceResultERROR,
-				kaytuTypes.ComplianceResultINFO,
-				kaytuTypes.ComplianceResultSKIP,
+				kaytuTypes.ConformanceStatusALARM,
+				kaytuTypes.ConformanceStatusERROR,
+				kaytuTypes.ConformanceStatusINFO,
+				kaytuTypes.ConformanceStatusSKIP,
 			}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
 			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-				kaytuTypes.ComplianceResultALARM,
-				kaytuTypes.ComplianceResultERROR,
-				kaytuTypes.ComplianceResultINFO,
-				kaytuTypes.ComplianceResultSKIP,
+				kaytuTypes.ConformanceStatusALARM,
+				kaytuTypes.ConformanceStatusERROR,
+				kaytuTypes.ConformanceStatusINFO,
+				kaytuTypes.ConformanceStatusSKIP,
 			}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
@@ -1481,10 +1478,10 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
 		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ComplianceResultALARM,
-			kaytuTypes.ComplianceResultERROR,
-			kaytuTypes.ComplianceResultINFO,
-			kaytuTypes.ComplianceResultSKIP,
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
 		}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
@@ -1492,10 +1489,10 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		}
 
 		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ComplianceResultALARM,
-			kaytuTypes.ComplianceResultERROR,
-			kaytuTypes.ComplianceResultINFO,
-			kaytuTypes.ComplianceResultSKIP,
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
 		}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))

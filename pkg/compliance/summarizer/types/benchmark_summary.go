@@ -67,7 +67,7 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 }
 
 func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
-	if finding.ConformanceStatus != types.ComplianceResultOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK {
 		r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
 	}
 	r.BenchmarkResult.Result.QueryResult[finding.ConformanceStatus]++
@@ -84,7 +84,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			Controls:      map[string]ControlResult{},
 		}
 	}
-	if finding.ConformanceStatus != types.ComplianceResultOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK {
 		connection.Result.SeverityResult[finding.Severity]++
 	}
 	connection.Result.QueryResult[finding.ConformanceStatus]++
@@ -98,7 +98,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			SecurityScore:  0,
 		}
 	}
-	if finding.ConformanceStatus != types.ComplianceResultOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK {
 		resourceType.SeverityResult[finding.Severity]++
 	}
 	resourceType.QueryResult[finding.ConformanceStatus]++
@@ -112,7 +112,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			SecurityScore:  0,
 		}
 	}
-	if finding.ConformanceStatus != types.ComplianceResultOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK {
 		connectionResourceType.SeverityResult[finding.Severity]++
 	}
 	connectionResourceType.QueryResult[finding.ConformanceStatus]++
@@ -165,7 +165,7 @@ func (b *BenchmarkSummary) AddFinding(logger *zap.Logger,
 		finding.Severity = types.FindingSeverityNone
 	}
 	if finding.ConformanceStatus == "" {
-		finding.ConformanceStatus = types.ComplianceResultERROR
+		finding.ConformanceStatus = types.ConformanceStatusERROR
 	}
 	if finding.ResourceType == "" {
 		finding.ResourceType = "-"
@@ -307,7 +307,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 		}
 
 		if total > 0 {
-			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
+			summary.SecurityScore = float64(summary.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
 		}
 
 		r.BenchmarkResult.ResourceTypes[resourceType] = summary
@@ -318,7 +318,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 		total += count
 	}
 	if total > 0 {
-		r.BenchmarkResult.Result.SecurityScore = float64(r.BenchmarkResult.Result.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
+		r.BenchmarkResult.Result.SecurityScore = float64(r.BenchmarkResult.Result.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
 	}
 
 	for connectionID, summary := range r.Connections {
@@ -339,7 +339,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 			}
 
 			if total > 0 {
-				resourceTypeSummary.SecurityScore = float64(resourceTypeSummary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
+				resourceTypeSummary.SecurityScore = float64(resourceTypeSummary.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
 			}
 
 			summary.ResourceTypes[resourceType] = resourceTypeSummary
@@ -351,7 +351,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 		}
 
 		if total > 0 {
-			summary.Result.SecurityScore = float64(summary.Result.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
+			summary.Result.SecurityScore = float64(summary.Result.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
 		}
 
 		r.Connections[connectionID] = summary
