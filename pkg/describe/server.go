@@ -899,8 +899,8 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 
 			h.Scheduler.logger.Info("migration: piping data", zap.String("index", indexToMigrate), zap.Int("count", len(items)))
 
-			for startPageIdx := 0; startPageIdx < len(items); startPageIdx += 1000 {
-				msgsToSend := items[startPageIdx:min(startPageIdx+1000, len(items))]
+			for startPageIdx := 0; startPageIdx < len(items); startPageIdx += 100 {
+				msgsToSend := items[startPageIdx:min(startPageIdx+100, len(items))]
 				err := pipeline.SendToPipeline(h.Scheduler.conf.ElasticSearch.IngestionEndpoint, msgsToSend)
 				if err != nil {
 					return err
