@@ -335,7 +335,9 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 				taskKeys, taskIdx := task.KeysAndIndex()
 				task.EsID = kafka.HashOf(taskKeys...)
 				task.EsIndex = taskIdx
-				err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []kafka.Doc{task})
+				if len(task.DeletingResources) > 0 {
+					err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []kafka.Doc{task})
+				}
 			} else {
 				_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
 			}
