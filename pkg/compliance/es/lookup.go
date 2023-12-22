@@ -32,7 +32,7 @@ type LookupQueryResponse struct {
 
 func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) ([]es.LookupResource, error) {
 	request := make(map[string]any)
-	request["size"] = len(resourceID)
+	request["size"] = 0
 	request["sort"] = []map[string]any{
 		{
 			"_id": "desc",
