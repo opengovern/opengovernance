@@ -116,10 +116,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			)
 
 			if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
-				err = s.db.UpdateDescribeConnectionJobToDeletionOfOldResources(result.JobID)
-				if err != nil {
-					s.logger.Error("failed to update job status to deletion of old resources due to", zap.Error(err))
-				}
+				result.Status = api.DescribeResourceJobOldResourceDeletion
 
 				if err := s.cleanupOldResources(result); err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
