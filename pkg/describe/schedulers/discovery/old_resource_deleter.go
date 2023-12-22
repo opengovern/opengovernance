@@ -45,7 +45,7 @@ func (s *Scheduler) runDeleter() error {
 					}
 				}
 
-				err = s.esClient.Delete(task.Source.EsID, es.DeleteTasksIndex)
+				err = s.esClient.Delete(task.ID, es.DeleteTasksIndex)
 				if err != nil {
 					return err
 				}
