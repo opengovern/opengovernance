@@ -115,12 +115,14 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				zap.String("status", string(result.Status)),
 			)
 
+			var deletedCount int64
 			if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
 				if s.conf.ElasticSearch.IsOpenSearch {
 					result.Status = api.DescribeResourceJobOldResourceDeletion
 				}
 
-				if err := s.cleanupOldResources(result); err != nil {
+				deletedCount, err = s.cleanupOldResources(result)
+				if err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
 					kmsg := kafka.Msg(string(msg.Key), msg.Value, "", "kaytu-describe-results-queue", confluent_kafka.PartitionAny)
@@ -150,7 +152,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 			}
 			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
-			err = s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
+			err = s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount)
 			if err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
@@ -226,7 +228,7 @@ func (s *Scheduler) handleTimedoutDiscoveryJobs() {
 	}
 }
 
-func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
+func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 	var searchAfter []any
 
 	isCostResourceType := false
@@ -260,7 +262,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			CleanupJobCount.WithLabelValues("failure").Inc()
 			s.logger.Error("CleanJob failed",
 				zap.Error(err))
-			return err
+			return 0, err
 		}
 
 		if len(esResp.Hits.Hits) == 0 {
@@ -268,9 +270,10 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		}
 		var msgs []*confluent_kafka.Message
 		task := es.DeleteTask{
-			ConnectionID: res.DescribeJob.SourceID,
-			ResourceType: res.DescribeJob.ResourceType,
-			Connector:    res.DescribeJob.SourceType,
+			DiscoveryJobID: res.JobID,
+			ConnectionID:   res.DescribeJob.SourceID,
+			ResourceType:   res.DescribeJob.ResourceType,
+			Connector:      res.DescribeJob.SourceType,
 		}
 
 		for _, hit := range esResp.Hits.Hits {
@@ -321,7 +324,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 					CleanupJobCount.WithLabelValues("failure").Inc()
 					s.logger.Error("CleanJob failed",
 						zap.Error(err))
-					return err
+					return 0, err
 				}
 			}
 		}
@@ -345,7 +348,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 					zap.Error(err))
 				if i > 10 {
 					CleanupJobCount.WithLabelValues("failure").Inc()
-					return err
+					return 0, err
 				}
 				i++
 				continue
@@ -362,7 +365,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		zap.Int("deleted_count", deletedCount))
 
 	CleanupJobCount.WithLabelValues("successful").Inc()
-	return nil
+	return int64(deletedCount), nil
 }
 
 func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []string) {
