@@ -116,7 +116,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			)
 
 			if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
-				result.Status = api.DescribeResourceJobOldResourceDeletion
+				if s.conf.ElasticSearch.IsOpenSearch {
+					result.Status = api.DescribeResourceJobOldResourceDeletion
+				}
 
 				if err := s.cleanupOldResources(result); err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
