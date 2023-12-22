@@ -882,6 +882,7 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 				break
 			}
 
+			h.Scheduler.logger.Info("migration: next page", zap.String("index", indexToMigrate))
 			var res MigratorResponse
 			err = paginator.SearchWithLog(ctx, &res, true)
 			if err != nil {
@@ -896,6 +897,7 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 				items = append(items, hit.Source)
 			}
 
+			h.Scheduler.logger.Info("migration: piping data", zap.String("index", indexToMigrate), zap.Int("count", len(items)))
 			err := pipeline.SendToPipeline(h.Scheduler.conf.ElasticSearch.IngestionEndpoint, items)
 			if err != nil {
 				return err
