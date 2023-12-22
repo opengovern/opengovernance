@@ -35,22 +35,22 @@ type BenchmarkTrendDatapoint struct {
 type GetBenchmarksSummaryResponse struct {
 	BenchmarkSummary []BenchmarkEvaluationSummary `json:"benchmarkSummary"`
 
-	TotalResult types.ComplianceResultSummary `json:"totalResult"`
-	TotalChecks types.SeverityResult          `json:"totalChecks"`
+	TotalConformanceStatusSummary types.ConformanceStatusSummary `json:"totalConformanceStatusSummary"`
+	TotalChecks                   types.SeverityResult           `json:"totalChecks"`
 }
 
 type BenchmarkEvaluationSummary struct {
-	ID             string                        `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
-	Title          string                        `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
-	Description    string                        `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
-	Connectors     []source.Type                 `json:"connectors" example:"[Azure]"`                                                                                                                                                      // Cloud providers
-	Tags           map[string][]string           `json:"tags" `                                                                                                                                                                             // Tags
-	Enabled        bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
-	Result         types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
-	Checks         types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
-	EvaluatedAt    *time.Time                    `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
-	LastJobStatus  string                        `json:"lastJobStatus" example:"success"`                                                                                                                                                   // Last job status
-	TopConnections []TopFieldRecord              `json:"topConnections"`                                                                                                                                                                    // Top connections
+	ID                       string                         `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
+	Title                    string                         `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
+	Description              string                         `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
+	Connectors               []source.Type                  `json:"connectors" example:"[Azure]"`                                                                                                                                                      // Cloud providers
+	Tags                     map[string][]string            `json:"tags" `                                                                                                                                                                             // Tags
+	Enabled                  bool                           `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
+	ConformanceStatusSummary types.ConformanceStatusSummary `json:"conformanceStatusSummary"`                                                                                                                                                          // Compliance result summary
+	Checks                   types.SeverityResult           `json:"checks"`                                                                                                                                                                            // Checks summary
+	EvaluatedAt              *time.Time                     `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
+	LastJobStatus            string                         `json:"lastJobStatus" example:"success"`                                                                                                                                                   // Last job status
+	TopConnections           []TopFieldRecord               `json:"topConnections"`                                                                                                                                                                    // Top connections
 }
 
 type BenchmarkControlSummary struct {

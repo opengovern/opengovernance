@@ -42,15 +42,15 @@ type BenchmarkAssignedEntities struct {
 }
 
 type FindingFilters struct {
-	Connector          []source.Type            `json:"connector" example:"Azure"`                                                                                    // Clout Provider
-	ResourceID         []string                 `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"` // Resource unique identifier
-	ResourceTypeID     []string                 `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`  // Resource type
-	ConnectionID       []string                 `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
-	ResourceCollection []string                 `json:"resourceCollection" example:"example-rc"`                                                                      // Resource Collection ID
-	BenchmarkID        []string                 `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
-	ControlID          []string                 `json:"controlID" example:"azure_cis_v140_7_5"`                                                                       // Control ID
-	Severity           []string                 `json:"severity" example:"low"`                                                                                       // Severity
-	Status             []types.ComplianceResult `json:"status" example:"alarm"`
+	Connector          []source.Type             `json:"connector" example:"Azure"`                                                                                    // Clout Provider
+	ResourceID         []string                  `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"` // Resource unique identifier
+	ResourceTypeID     []string                  `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`  // Resource type
+	ConnectionID       []string                  `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
+	ResourceCollection []string                  `json:"resourceCollection" example:"example-rc"`                                                                      // Resource Collection ID
+	BenchmarkID        []string                  `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
+	ControlID          []string                  `json:"controlID" example:"azure_cis_v140_7_5"`                                                                       // Control ID
+	Severity           []string                  `json:"severity" example:"low"`                                                                                       // Severity
+	ConformanceStatus  []types.ConformanceStatus `json:"conformanceStatus" example:"alarm"`
 }
 
 type FindingFilterWithMetadata struct {
@@ -126,9 +126,17 @@ type AccountsFindingsSummary struct {
 	SeveritiesCount struct {
 		Critical int `json:"critical"`
 		High     int `json:"high"`
-		Low      int `json:"low"`
 		Medium   int `json:"medium"`
+		Low      int `json:"low"`
+		None     int `json:"none"`
 	} `json:"severitiesCount"`
+	ConformanceStatusesCount struct {
+		Passed int `json:"passed"`
+		Failed int `json:"failed"`
+		Error  int `json:"error"`
+		Info   int `json:"info"`
+		Skip   int `json:"skip"`
+	} `json:"conformanceStatusesCount"`
 	LastCheckTime time.Time `json:"lastCheckTime"`
 }
 
@@ -145,9 +153,15 @@ type ServiceFindingsSummary struct {
 		High     int `json:"high"`
 		Medium   int `json:"medium"`
 		Low      int `json:"low"`
-		Passed   int `json:"passed"`
 		None     int `json:"none"`
 	} `json:"severitiesCount"`
+	ConformanceStatusesCount struct {
+		Passed int `json:"passed"`
+		Failed int `json:"failed"`
+		Error  int `json:"error"`
+		Info   int `json:"info"`
+		Skip   int `json:"skip"`
+	} `json:"conformanceStatusesCount"`
 }
 
 type GetServicesFindingsSummaryResponse struct {

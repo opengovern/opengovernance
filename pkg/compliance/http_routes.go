@@ -192,7 +192,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceTypeID, req.Filters.ResourceCollection,
 		req.Filters.BenchmarkID, req.Filters.ControlID,
-		req.Filters.Severity, req.Sort, req.Limit, req.AfterSortKey)
+		req.Filters.Severity, req.Filters.ConformanceStatus, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
@@ -549,7 +549,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID,
 		req.ResourceCollection, req.BenchmarkID, req.ControlID,
-		req.Severity)
+		req.Severity, req.ConformanceStatus)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
@@ -649,16 +649,15 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
-//	@Param			count				path		int								true	"Count"
-//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
-//	@Param			controlId			query		[]string						false	"ControlID"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Success		200					{object}	api.GetTopFieldResponse
+//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
+//	@Param			count			path		int								true	"Count"
+//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId		query		[]string						false	"BenchmarkID"
+//	@Param			controlId		query		[]string						false	"ControlID"
+//	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Success		200				{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	field := ctx.Param("field")
@@ -679,7 +678,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
 	if len(severities) == 0 {
@@ -694,13 +692,20 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
 
+	failedResults := []kaytuTypes.ConformanceStatus{
+		kaytuTypes.ComplianceResultALARM,
+		kaytuTypes.ComplianceResultERROR,
+		kaytuTypes.ComplianceResultINFO,
+		kaytuTypes.ComplianceResultSKIP,
+	}
+
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, controlIDs, severities, esCount)
+	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, failedResults, esCount)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, controlIDs, nil, esCount)
+	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, nil, esCount)
 	if err != nil {
 		h.logger.Error("failed to get top field total", zap.Error(err))
 		return err
@@ -1009,6 +1014,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 		summary, ok := res[src.ID.String()]
 		if !ok {
 			summary.Result.SeverityResult = map[kaytuTypes.FindingSeverity]int{}
+			summary.Result.QueryResult = map[kaytuTypes.ConformanceStatus]int{}
 		}
 
 		account := api.AccountsFindingsSummary{
@@ -1018,13 +1024,28 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
-				Low      int `json:"low"`
 				Medium   int `json:"medium"`
+				Low      int `json:"low"`
+				None     int `json:"none"`
 			}{
 				Critical: summary.Result.SeverityResult[kaytuTypes.FindingSeverityCritical],
 				High:     summary.Result.SeverityResult[kaytuTypes.FindingSeverityHigh],
-				Low:      summary.Result.SeverityResult[kaytuTypes.FindingSeverityLow],
 				Medium:   summary.Result.SeverityResult[kaytuTypes.FindingSeverityMedium],
+				Low:      summary.Result.SeverityResult[kaytuTypes.FindingSeverityLow],
+				None:     summary.Result.SeverityResult[kaytuTypes.FindingSeverityNone],
+			},
+			ConformanceStatusesCount: struct {
+				Passed int `json:"passed"`
+				Failed int `json:"failed"`
+				Error  int `json:"error"`
+				Info   int `json:"info"`
+				Skip   int `json:"skip"`
+			}{
+				Passed: summary.Result.QueryResult[kaytuTypes.ComplianceResultOK],
+				Failed: summary.Result.QueryResult[kaytuTypes.ComplianceResultALARM],
+				Error:  summary.Result.QueryResult[kaytuTypes.ComplianceResultERROR],
+				Info:   summary.Result.QueryResult[kaytuTypes.ComplianceResultINFO],
+				Skip:   summary.Result.QueryResult[kaytuTypes.ComplianceResultSKIP],
 			},
 			LastCheckTime: time.Unix(evaluatedAt, 0),
 		}
@@ -1079,12 +1100,16 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	}
 
 	for _, resourceType := range resp.Aggregations.Summaries.Buckets {
-		s := map[string]int{}
+		sevMap := make(map[string]int)
 		for _, severity := range resourceType.Severity.Buckets {
-			s[severity.Key] = severity.DocCount
+			sevMap[severity.Key] = severity.DocCount
+		}
+		resMap := make(map[string]int)
+		for _, controlResult := range resourceType.ControlResult.Buckets {
+			resMap[controlResult.Key] = controlResult.DocCount
 		}
 
-		securityScore := float64(s[string(kaytuTypes.FindingSeverityPassed)]) / float64(resourceType.DocCount) * 100.0
+		securityScore := float64(resMap[string(kaytuTypes.ComplianceResultOK)]) / float64(resourceType.DocCount) * 100.0
 
 		resourceTypeMetadata := resourceTypeMap[strings.ToLower(resourceType.Key)]
 		if resourceTypeMetadata.ResourceType == "" {
@@ -1106,15 +1131,26 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 				High     int `json:"high"`
 				Medium   int `json:"medium"`
 				Low      int `json:"low"`
-				Passed   int `json:"passed"`
 				None     int `json:"none"`
 			}{
-				Critical: s[string(kaytuTypes.FindingSeverityCritical)],
-				High:     s[string(kaytuTypes.FindingSeverityHigh)],
-				Medium:   s[string(kaytuTypes.FindingSeverityMedium)],
-				Low:      s[string(kaytuTypes.FindingSeverityLow)],
-				Passed:   s[string(kaytuTypes.FindingSeverityPassed)],
-				None:     s[string(kaytuTypes.FindingSeverityNone)],
+				Critical: sevMap[string(kaytuTypes.FindingSeverityCritical)],
+				High:     sevMap[string(kaytuTypes.FindingSeverityHigh)],
+				Medium:   sevMap[string(kaytuTypes.FindingSeverityMedium)],
+				Low:      sevMap[string(kaytuTypes.FindingSeverityLow)],
+				None:     sevMap[string(kaytuTypes.FindingSeverityNone)],
+			},
+			ConformanceStatusesCount: struct {
+				Passed int `json:"passed"`
+				Failed int `json:"failed"`
+				Error  int `json:"error"`
+				Info   int `json:"info"`
+				Skip   int `json:"skip"`
+			}{
+				Passed: resMap[string(kaytuTypes.ComplianceResultOK)],
+				Failed: resMap[string(kaytuTypes.ComplianceResultALARM)],
+				Error:  resMap[string(kaytuTypes.ComplianceResultERROR)],
+				Info:   resMap[string(kaytuTypes.ComplianceResultINFO)],
+				Skip:   resMap[string(kaytuTypes.ComplianceResultSKIP)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -1178,7 +1214,7 @@ func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
 //	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
-//	@Param			topAccountCount		query		int				false	"Top account count" default(3)
+//	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
 //	@Success		200					{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
@@ -1245,43 +1281,47 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		summaryAtTime := summariesAtTime[b.ID]
-		csResult := kaytuTypes.ComplianceResultSummary{}
+		csResult := kaytuTypes.ConformanceStatusSummary{}
 		sResult := kaytuTypes.SeverityResult{}
 		if len(connectionIDs) > 0 {
 			for _, connectionID := range connectionIDs {
-				csResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+				csResult.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 				sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
-				response.TotalResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+				response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 				response.TotalChecks.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 			}
 		} else if len(resourceCollections) > 0 {
 			for _, resourceCollection := range resourceCollections {
-				csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+				csResult.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
-				response.TotalResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+				response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 			}
 		} else {
-			csResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+			csResult.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
-			response.TotalResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+			response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 		}
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 {
-			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{b.ID}, nil, []kaytuTypes.FindingSeverity{
-				kaytuTypes.FindingSeverityCritical,
-				kaytuTypes.FindingSeverityHigh,
-				kaytuTypes.FindingSeverityMedium,
-				kaytuTypes.FindingSeverityLow,
-				kaytuTypes.FindingSeverityNone,
+			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
+				kaytuTypes.ComplianceResultALARM,
+				kaytuTypes.ComplianceResultERROR,
+				kaytuTypes.ComplianceResultINFO,
+				kaytuTypes.ComplianceResultSKIP,
 			}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{b.ID}, nil, nil, topAccountCount)
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
+				kaytuTypes.ComplianceResultALARM,
+				kaytuTypes.ComplianceResultERROR,
+				kaytuTypes.ComplianceResultINFO,
+				kaytuTypes.ComplianceResultSKIP,
+			}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -1318,16 +1358,16 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
-			ID:             b.ID,
-			Title:          b.Title,
-			Description:    b.Description,
-			Connectors:     be.Connectors,
-			Tags:           be.Tags,
-			Enabled:        b.Enabled,
-			Result:         csResult,
-			Checks:         sResult,
-			EvaluatedAt:    utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
-			TopConnections: topConnections,
+			ID:                       b.ID,
+			Title:                    b.Title,
+			Description:              b.Description,
+			Connectors:               be.Connectors,
+			Tags:                     be.Tags,
+			Enabled:                  b.Enabled,
+			ConformanceStatusSummary: csResult,
+			Checks:                   sResult,
+			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			TopConnections:           topConnections,
 		})
 	}
 	span3.End()
@@ -1348,7 +1388,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
-//	@Param			topAccountCount		query		int				false	"Top account count" default(3)
+//	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
 //	@Success		200					{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
@@ -1410,20 +1450,20 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	summaryAtTime := summariesAtTime[benchmarkID]
 
-	csResult := kaytuTypes.ComplianceResultSummary{}
+	csResult := kaytuTypes.ConformanceStatusSummary{}
 	sResult := kaytuTypes.SeverityResult{}
 	if len(connectionIDs) > 0 {
 		for _, connectionID := range connectionIDs {
-			csResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+			csResult.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 		}
 	} else if len(resourceCollections) > 0 {
 		for _, resourceCollection := range resourceCollections {
-			csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+			csResult.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 		}
 	} else {
-		csResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+		csResult.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 	}
 
@@ -1440,19 +1480,23 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{benchmark.ID}, nil, []kaytuTypes.FindingSeverity{
-			kaytuTypes.FindingSeverityCritical,
-			kaytuTypes.FindingSeverityHigh,
-			kaytuTypes.FindingSeverityMedium,
-			kaytuTypes.FindingSeverityLow,
-			kaytuTypes.FindingSeverityNone,
+		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
+			kaytuTypes.ComplianceResultALARM,
+			kaytuTypes.ComplianceResultERROR,
+			kaytuTypes.ComplianceResultINFO,
+			kaytuTypes.ComplianceResultSKIP,
 		}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, resourceCollections, []string{benchmark.ID}, nil, nil, topAccountCount)
+		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
+			kaytuTypes.ComplianceResultALARM,
+			kaytuTypes.ComplianceResultERROR,
+			kaytuTypes.ComplianceResultINFO,
+			kaytuTypes.ComplianceResultSKIP,
+		}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
@@ -1489,16 +1533,16 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 
 	response := api.BenchmarkEvaluationSummary{
-		ID:            benchmark.ID,
-		Title:         benchmark.Title,
-		Description:   benchmark.Description,
-		Connectors:    be.Connectors,
-		Tags:          be.Tags,
-		Enabled:       benchmark.Enabled,
-		Result:        csResult,
-		Checks:        sResult,
-		EvaluatedAt:   utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
-		LastJobStatus: lastJobStatus,
+		ID:                       benchmark.ID,
+		Title:                    benchmark.Title,
+		Description:              benchmark.Description,
+		Connectors:               be.Connectors,
+		Tags:                     be.Tags,
+		Enabled:                  benchmark.Enabled,
+		ConformanceStatusSummary: csResult,
+		Checks:                   sResult,
+		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+		LastJobStatus:            lastJobStatus,
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -1780,8 +1824,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 
 	var response []api.BenchmarkTrendDatapoint
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
-		////totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
-		////	datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
+		////totalResultCount := datapoint.ConformanceStatusSummary.OkCount + datapoint.ConformanceStatusSummary.ErrorCount +
+		////	datapoint.ConformanceStatusSummary.AlarmCount + datapoint.ConformanceStatusSummary.InfoCount + datapoint.ConformanceStatusSummary.SkipCount
 		////totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
 		////	datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
 		////	datapoint.SeverityResult.PassedCount

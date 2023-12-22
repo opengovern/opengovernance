@@ -1,20 +1,20 @@
 package types
 
-type ComplianceResult string
+type ConformanceStatus string
 
 const (
-	ComplianceResultOK    ComplianceResult = "ok"
-	ComplianceResultALARM ComplianceResult = "alarm"
-	ComplianceResultINFO  ComplianceResult = "info"
-	ComplianceResultSKIP  ComplianceResult = "skip"
-	ComplianceResultERROR ComplianceResult = "error"
+	ComplianceResultOK    ConformanceStatus = "ok"
+	ComplianceResultALARM ConformanceStatus = "alarm"
+	ComplianceResultINFO  ConformanceStatus = "info"
+	ComplianceResultSKIP  ConformanceStatus = "skip"
+	ComplianceResultERROR ConformanceStatus = "error"
 )
 
-func (r ComplianceResult) IsPassed() bool {
+func (r ConformanceStatus) IsPassed() bool {
 	return r == ComplianceResultOK
 }
 
-type ComplianceResultSummary struct {
+type ConformanceStatusSummary struct {
 	OkCount    int `json:"okCount" example:"1"`
 	AlarmCount int `json:"alarmCount" example:"1"`
 	InfoCount  int `json:"infoCount" example:"1"`
@@ -22,7 +22,7 @@ type ComplianceResultSummary struct {
 	ErrorCount int `json:"errorCount" example:"1"`
 }
 
-func (c *ComplianceResultSummary) AddComplianceResultSummary(summary ComplianceResultSummary) {
+func (c *ConformanceStatusSummary) AddConformanceStatusSummary(summary ConformanceStatusSummary) {
 	c.OkCount += summary.OkCount
 	c.AlarmCount += summary.AlarmCount
 	c.InfoCount += summary.InfoCount
@@ -30,7 +30,7 @@ func (c *ComplianceResultSummary) AddComplianceResultSummary(summary ComplianceR
 	c.ErrorCount += summary.ErrorCount
 }
 
-func (c *ComplianceResultSummary) AddResultMap(summary map[ComplianceResult]int) {
+func (c *ConformanceStatusSummary) AddConformanceStatusMap(summary map[ConformanceStatus]int) {
 	c.OkCount += summary[ComplianceResultOK]
 	c.AlarmCount += summary[ComplianceResultALARM]
 	c.InfoCount += summary[ComplianceResultINFO]

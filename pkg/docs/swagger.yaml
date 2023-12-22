@@ -600,6 +600,19 @@ definitions:
         type: string
       accountName:
         type: string
+      conformanceStatusesCount:
+        properties:
+          error:
+            type: integer
+          failed:
+            type: integer
+          info:
+            type: integer
+          passed:
+            type: integer
+          skip:
+            type: integer
+        type: object
       lastCheckTime:
         type: string
       securityScore:
@@ -613,6 +626,8 @@ definitions:
           low:
             type: integer
           medium:
+            type: integer
+          none:
             type: integer
         type: object
     type: object
@@ -794,6 +809,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/types.SeverityResult'
         description: Checks summary
+      conformanceStatusSummary:
+        allOf:
+        - $ref: '#/definitions/types.ConformanceStatusSummary'
+        description: Compliance result summary
       connectors:
         description: Cloud providers
         example:
@@ -823,10 +842,6 @@ definitions:
         description: Last job status
         example: success
         type: string
-      result:
-        allOf:
-        - $ref: '#/definitions/types.ComplianceResultSummary'
-        description: Compliance result summary
       tags:
         additionalProperties:
           items:
@@ -973,6 +988,10 @@ definitions:
       complianceJobID:
         example: 1
         type: integer
+      conformanceStatus:
+        allOf:
+        - $ref: '#/definitions/types.ConformanceStatus'
+        example: alarm
       connectionID:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
@@ -1043,10 +1062,6 @@ definitions:
       resourceTypeName:
         example: Virtual Machine
         type: string
-      result:
-        allOf:
-        - $ref: '#/definitions/types.ComplianceResult'
-        example: alarm
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
@@ -1077,6 +1092,12 @@ definitions:
         - azure_cis_v140
         items:
           type: string
+        type: array
+      conformanceStatus:
+        example:
+        - alarm
+        items:
+          $ref: '#/definitions/types.ConformanceStatus'
         type: array
       connectionID:
         description: Connection ID
@@ -1127,12 +1148,6 @@ definitions:
         items:
           type: string
         type: array
-      status:
-        example:
-        - alarm
-        items:
-          $ref: '#/definitions/types.ComplianceResult'
-        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
     properties:
@@ -1180,8 +1195,8 @@ definitions:
         type: array
       totalChecks:
         $ref: '#/definitions/types.SeverityResult'
-      totalResult:
-        $ref: '#/definitions/types.ComplianceResultSummary'
+      totalConformanceStatusSummary:
+        $ref: '#/definitions/types.ConformanceStatusSummary'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
@@ -1457,6 +1472,19 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary:
     properties:
+      conformanceStatusesCount:
+        properties:
+          error:
+            type: integer
+          failed:
+            type: integer
+          info:
+            type: integer
+          passed:
+            type: integer
+          skip:
+            type: integer
+        type: object
       securityScore:
         type: number
       serviceLabel:
@@ -1474,8 +1502,6 @@ definitions:
           medium:
             type: integer
           none:
-            type: integer
-          passed:
             type: integer
         type: object
     type: object
@@ -3138,7 +3164,7 @@ definitions:
     - Nil
     - CloudAWS
     - CloudAzure
-  types.ComplianceResult:
+  types.ConformanceStatus:
     enum:
     - ok
     - alarm
@@ -3152,7 +3178,7 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
-  types.ComplianceResultSummary:
+  types.ConformanceStatusSummary:
     properties:
       alarmCount:
         example: 1
@@ -3173,7 +3199,6 @@ definitions:
   types.FindingSeverity:
     enum:
     - none
-    - passed
     - low
     - medium
     - high
@@ -3181,7 +3206,6 @@ definitions:
     type: string
     x-enum-varnames:
     - FindingSeverityNone
-    - FindingSeverityPassed
     - FindingSeverityLow
     - FindingSeverityMedium
     - FindingSeverityHigh
@@ -3198,9 +3222,6 @@ definitions:
         example: 1
         type: integer
       mediumCount:
-        example: 1
-        type: integer
-      passedCount:
         example: 1
         type: integer
       unknownCount:
@@ -4350,7 +4371,6 @@ paths:
         items:
           enum:
           - none
-          - passed
           - low
           - medium
           - high
@@ -4531,13 +4551,6 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -4568,7 +4581,6 @@ paths:
         items:
           enum:
           - none
-          - passed
           - low
           - medium
           - high

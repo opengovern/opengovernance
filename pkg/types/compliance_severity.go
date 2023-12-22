@@ -8,7 +8,6 @@ type FindingSeverity string
 
 const (
 	FindingSeverityNone     FindingSeverity = "none"
-	FindingSeverityPassed   FindingSeverity = "passed"
 	FindingSeverityLow      FindingSeverity = "low"
 	FindingSeverityMedium   FindingSeverity = "medium"
 	FindingSeverityHigh     FindingSeverity = "high"
@@ -47,7 +46,6 @@ func ParseFindingSeverities(list []string) []FindingSeverity {
 
 type SeverityResult struct {
 	UnknownCount  int `json:"unknownCount" example:"1"`
-	PassedCount   int `json:"passedCount" example:"1"`
 	LowCount      int `json:"lowCount" example:"1"`
 	MediumCount   int `json:"mediumCount" example:"1"`
 	HighCount     int `json:"highCount" example:"1"`
@@ -56,7 +54,6 @@ type SeverityResult struct {
 
 func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.UnknownCount += severity.UnknownCount
-	r.PassedCount += severity.PassedCount
 	r.LowCount += severity.LowCount
 	r.MediumCount += severity.MediumCount
 	r.HighCount += severity.HighCount
@@ -65,7 +62,6 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 
 func (r *SeverityResult) AddResultMap(result map[FindingSeverity]int) {
 	r.UnknownCount += result[FindingSeverityNone]
-	r.PassedCount += result[FindingSeverityPassed]
 	r.LowCount += result[FindingSeverityLow]
 	r.MediumCount += result[FindingSeverityMedium]
 	r.HighCount += result[FindingSeverityHigh]

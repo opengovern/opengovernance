@@ -48,7 +48,7 @@ func (w *Worker) RunJob(j Job) error {
 		Connections: types2.BenchmarkSummaryResult{
 			BenchmarkResult: types2.ResultGroup{
 				Result: types2.Result{
-					QueryResult:    map[types.ComplianceResult]int{},
+					QueryResult:    map[types.ConformanceStatus]int{},
 					SeverityResult: map[types.FindingSeverity]int{},
 					SecurityScore:  0,
 				},

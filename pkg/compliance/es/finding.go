@@ -77,7 +77,7 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
 	provider []source.Type, connectionID []string,
 	resourceTypes []string, resourceCollections []string,
-	benchmarkID []string, controlID []string, severity []string,
+	benchmarkID []string, controlID []string, severity []string, conformanceStatuses []types.ConformanceStatus,
 	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
@@ -123,6 +123,13 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	}
 	if len(severity) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("severity", severity))
+	}
+	if len(conformanceStatuses) > 0 {
+		strControlResult := make([]string, 0)
+		for _, cr := range conformanceStatuses {
+			strControlResult = append(strControlResult, string(cr))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("result", strControlResult))
 	}
 	if len(connectionID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
@@ -234,7 +241,7 @@ type FindingFiltersAggregationResponse struct {
 
 func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	resourceIDs []string, connector []source.Type, connectionID []string, resourceCollections []string,
-	benchmarkID []string, controlID []string, severity []string,
+	benchmarkID []string, controlID []string, severity []string, conformanceStatuses []types.ConformanceStatus,
 ) (*FindingFiltersAggregationResponse, error) {
 	idx := types.FindingsIndex
 	terms := make(map[string]any)
@@ -262,6 +269,13 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(severity) > 0 {
 		terms["severity"] = severity
+	}
+	if len(conformanceStatuses) > 0 {
+		strControlResult := make([]string, 0)
+		for _, cr := range conformanceStatuses {
+			strControlResult = append(strControlResult, string(cr))
+		}
+		terms["result"] = strControlResult
 	}
 
 	root := map[string]any{}
@@ -396,8 +410,8 @@ type FindingsFieldCountByControlResponse struct {
 }
 
 func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity, size int) (*FindingsTopFieldResponse, error) {
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
+	benchmarkID []string, controlID []string, severity []types.FindingSeverity, controlResult []types.ConformanceStatus, size int) (*FindingsTopFieldResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
@@ -406,6 +420,10 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 
 	if len(controlID) > 0 {
 		terms["controlID"] = controlID
+	}
+
+	if len(controlResult) > 0 {
+		terms["result"] = controlResult
 	}
 
 	if len(severity) > 0 {
@@ -422,11 +440,6 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
-	}
-
-	if len(resourceCollections) > 0 {
-		idx = types.ResourceCollectionsFindingsIndex
-		terms["resourceCollection"] = resourceCollections
 	}
 
 	root := map[string]any{}
@@ -488,6 +501,12 @@ type ResourceTypesFindingsSummaryResponse struct {
 						DocCount int    `json:"doc_count"`
 					} `json:"buckets"`
 				} `json:"severity"`
+				ControlResult struct {
+					Buckets []struct {
+						Key      string `json:"key"`
+						DocCount int    `json:"doc_count"`
+					} `json:"buckets"`
+				} `json:"controlResult"`
 			} `json:"buckets"`
 		} `json:"summaries"`
 	} `json:"aggregations"`
@@ -521,6 +540,13 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 					"severity": map[string]any{
 						"terms": map[string]any{
 							"field": "severity",
+							"size":  1000,
+						},
+					},
+					"controlResult": map[string]any{
+						"terms": map[string]any{
+							"field": "result",
+							"size":  1000,
 						},
 					},
 				},

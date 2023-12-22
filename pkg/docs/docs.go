@@ -1844,16 +1844,6 @@ const docTemplate = `{
                     {
                         "type": "array",
                         "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
                             "enum": [
                                 "",
                                 "AWS",
@@ -1891,7 +1881,6 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "none",
-                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -2118,7 +2107,6 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "none",
-                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -7399,6 +7387,26 @@ const docTemplate = `{
                 "accountName": {
                     "type": "string"
                 },
+                "conformanceStatusesCount": {
+                    "type": "object",
+                    "properties": {
+                        "error": {
+                            "type": "integer"
+                        },
+                        "failed": {
+                            "type": "integer"
+                        },
+                        "info": {
+                            "type": "integer"
+                        },
+                        "passed": {
+                            "type": "integer"
+                        },
+                        "skip": {
+                            "type": "integer"
+                        }
+                    }
+                },
                 "lastCheckTime": {
                     "type": "string"
                 },
@@ -7418,6 +7426,9 @@ const docTemplate = `{
                             "type": "integer"
                         },
                         "medium": {
+                            "type": "integer"
+                        },
+                        "none": {
                             "type": "integer"
                         }
                     }
@@ -7670,6 +7681,14 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "conformanceStatusSummary": {
+                    "description": "Compliance result summary",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.ConformanceStatusSummary"
+                        }
+                    ]
+                },
                 "connectors": {
                     "description": "Cloud providers",
                     "type": "array",
@@ -7704,14 +7723,6 @@ const docTemplate = `{
                     "description": "Last job status",
                     "type": "string",
                     "example": "success"
-                },
-                "result": {
-                    "description": "Compliance result summary",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.ComplianceResultSummary"
-                        }
-                    ]
                 },
                 "tags": {
                     "description": "Tags",
@@ -7915,6 +7926,14 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "conformanceStatus": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.ConformanceStatus"
+                        }
+                    ],
+                    "example": "alarm"
+                },
                 "connectionID": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -8013,14 +8032,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Virtual Machine"
                 },
-                "result": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.ComplianceResult"
-                        }
-                    ],
-                    "example": "alarm"
-                },
                 "severity": {
                     "allOf": [
                         {
@@ -8065,6 +8076,15 @@ const docTemplate = `{
                     },
                     "example": [
                         "azure_cis_v140"
+                    ]
+                },
+                "conformanceStatus": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ConformanceStatus"
+                    },
+                    "example": [
+                        "alarm"
                     ]
                 },
                 "connectionID": {
@@ -8135,15 +8155,6 @@ const docTemplate = `{
                     },
                     "example": [
                         "low"
-                    ]
-                },
-                "status": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.ComplianceResult"
-                    },
-                    "example": [
-                        "alarm"
                     ]
                 }
             }
@@ -8218,8 +8229,8 @@ const docTemplate = `{
                 "totalChecks": {
                     "$ref": "#/definitions/types.SeverityResult"
                 },
-                "totalResult": {
-                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                "totalConformanceStatusSummary": {
+                    "$ref": "#/definitions/types.ConformanceStatusSummary"
                 }
             }
         },
@@ -8609,6 +8620,26 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary": {
             "type": "object",
             "properties": {
+                "conformanceStatusesCount": {
+                    "type": "object",
+                    "properties": {
+                        "error": {
+                            "type": "integer"
+                        },
+                        "failed": {
+                            "type": "integer"
+                        },
+                        "info": {
+                            "type": "integer"
+                        },
+                        "passed": {
+                            "type": "integer"
+                        },
+                        "skip": {
+                            "type": "integer"
+                        }
+                    }
+                },
                 "securityScore": {
                     "type": "number"
                 },
@@ -8634,9 +8665,6 @@ const docTemplate = `{
                             "type": "integer"
                         },
                         "none": {
-                            "type": "integer"
-                        },
-                        "passed": {
                             "type": "integer"
                         }
                     }
@@ -10997,7 +11025,7 @@ const docTemplate = `{
                 "CloudAzure"
             ]
         },
-        "types.ComplianceResult": {
+        "types.ConformanceStatus": {
             "type": "string",
             "enum": [
                 "ok",
@@ -11014,7 +11042,7 @@ const docTemplate = `{
                 "ComplianceResultERROR"
             ]
         },
-        "types.ComplianceResultSummary": {
+        "types.ConformanceStatusSummary": {
             "type": "object",
             "properties": {
                 "alarmCount": {
@@ -11043,7 +11071,6 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "none",
-                "passed",
                 "low",
                 "medium",
                 "high",
@@ -11051,7 +11078,6 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "FindingSeverityNone",
-                "FindingSeverityPassed",
                 "FindingSeverityLow",
                 "FindingSeverityMedium",
                 "FindingSeverityHigh",
@@ -11074,10 +11100,6 @@ const docTemplate = `{
                     "example": 1
                 },
                 "mediumCount": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "passedCount": {
                     "type": "integer",
                     "example": 1
                 },
