@@ -54,7 +54,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 		resourceType := queryResourceType
 
 		var kaytuResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
-		var status types.ComplianceResult
+		var status types.ConformanceStatus
 		if v, ok := recordValue["kaytu_resource_id"].(string); ok {
 			kaytuResourceId = v
 		}
@@ -79,17 +79,12 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			reason = v
 		}
 		if v, ok := recordValue["status"].(string); ok {
-			status = types.ComplianceResult(v)
+			status = types.ConformanceStatus(v)
 		}
 
-		severity := types.FindingSeverityNone
-		if status == types.ComplianceResultALARM {
-			severity = caller.ControlSeverity
-			if severity == "" {
-				severity = types.FindingSeverityNone
-			}
-		} else if status == types.ComplianceResultOK {
-			severity = types.FindingSeverityPassed
+		severity := caller.ControlSeverity
+		if severity == "" {
+			severity = types.FindingSeverityNone
 		}
 
 		if (connectionId == "" || connectionId == "null") && w.ExecutionPlan.ConnectionID != nil {
@@ -101,7 +96,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			ConnectionID:          connectionId,
 			EvaluatedAt:           w.CreatedAt.UnixMilli(),
 			StateActive:           true,
-			Result:                status,
+			ConformanceStatus:     status,
 			Severity:              severity,
 			Evaluator:             w.ExecutionPlan.QueryEngine,
 			Connector:             w.ExecutionPlan.QueryConnector,

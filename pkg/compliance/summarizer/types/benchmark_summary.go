@@ -12,7 +12,7 @@ import (
 )
 
 type Result struct {
-	QueryResult    map[types.ComplianceResult]int
+	QueryResult    map[types.ConformanceStatus]int
 	SeverityResult map[types.FindingSeverity]int
 	SecurityScore  float64
 }
@@ -67,14 +67,16 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 }
 
 func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
-	r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
-	r.BenchmarkResult.Result.QueryResult[finding.Result]++
+	if finding.ConformanceStatus != types.ComplianceResultOK {
+		r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
+	}
+	r.BenchmarkResult.Result.QueryResult[finding.ConformanceStatus]++
 
 	connection, ok := r.Connections[finding.ConnectionID]
 	if !ok {
 		connection = ResultGroup{
 			Result: Result{
-				QueryResult:    map[types.ComplianceResult]int{},
+				QueryResult:    map[types.ConformanceStatus]int{},
 				SeverityResult: map[types.FindingSeverity]int{},
 				SecurityScore:  0,
 			},
@@ -82,32 +84,38 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			Controls:      map[string]ControlResult{},
 		}
 	}
-	connection.Result.SeverityResult[finding.Severity]++
-	connection.Result.QueryResult[finding.Result]++
+	if finding.ConformanceStatus != types.ComplianceResultOK {
+		connection.Result.SeverityResult[finding.Severity]++
+	}
+	connection.Result.QueryResult[finding.ConformanceStatus]++
 	r.Connections[finding.ConnectionID] = connection
 
 	resourceType, ok := r.BenchmarkResult.ResourceTypes[finding.ResourceType]
 	if !ok {
 		resourceType = Result{
-			QueryResult:    map[types.ComplianceResult]int{},
+			QueryResult:    map[types.ConformanceStatus]int{},
 			SeverityResult: map[types.FindingSeverity]int{},
 			SecurityScore:  0,
 		}
 	}
-	resourceType.SeverityResult[finding.Severity]++
-	resourceType.QueryResult[finding.Result]++
+	if finding.ConformanceStatus != types.ComplianceResultOK {
+		resourceType.SeverityResult[finding.Severity]++
+	}
+	resourceType.QueryResult[finding.ConformanceStatus]++
 	r.BenchmarkResult.ResourceTypes[finding.ResourceType] = resourceType
 
 	connectionResourceType, ok := connection.ResourceTypes[finding.ResourceType]
 	if !ok {
 		connectionResourceType = Result{
-			QueryResult:    map[types.ComplianceResult]int{},
+			QueryResult:    map[types.ConformanceStatus]int{},
 			SeverityResult: map[types.FindingSeverity]int{},
 			SecurityScore:  0,
 		}
 	}
-	connectionResourceType.SeverityResult[finding.Severity]++
-	connectionResourceType.QueryResult[finding.Result]++
+	if finding.ConformanceStatus != types.ComplianceResultOK {
+		connectionResourceType.SeverityResult[finding.Severity]++
+	}
+	connectionResourceType.QueryResult[finding.ConformanceStatus]++
 	connection.ResourceTypes[finding.ResourceType] = connectionResourceType
 
 	control, ok := r.BenchmarkResult.Controls[finding.ControlID]
@@ -121,7 +129,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 		}
 	}
 
-	if !finding.Result.IsPassed() {
+	if !finding.ConformanceStatus.IsPassed() {
 		control.Passed = false
 
 		control.failedResources.Insert([]byte(finding.ResourceID))
@@ -141,7 +149,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			failedConnections: hyperloglog.New16(),
 		}
 	}
-	if !finding.Result.IsPassed() {
+	if !finding.ConformanceStatus.IsPassed() {
 		connectionControl.Passed = false
 		connectionControl.failedResources.Insert([]byte(finding.ResourceID))
 		connectionControl.failedConnections.Insert([]byte(finding.ConnectionID))
@@ -156,8 +164,8 @@ func (b *BenchmarkSummary) AddFinding(logger *zap.Logger,
 	if finding.Severity == "" {
 		finding.Severity = types.FindingSeverityNone
 	}
-	if finding.Result == "" {
-		finding.Result = types.ComplianceResultERROR
+	if finding.ConformanceStatus == "" {
+		finding.ConformanceStatus = types.ComplianceResultERROR
 	}
 	if finding.ResourceType == "" {
 		finding.ResourceType = "-"
@@ -265,7 +273,7 @@ func (b *BenchmarkSummary) AddFinding(logger *zap.Logger,
 			benchmarkSummaryRc = BenchmarkSummaryResult{
 				BenchmarkResult: ResultGroup{
 					Result: Result{
-						QueryResult:    map[types.ComplianceResult]int{},
+						QueryResult:    map[types.ConformanceStatus]int{},
 						SeverityResult: map[types.FindingSeverity]int{},
 						SecurityScore:  0,
 					},
