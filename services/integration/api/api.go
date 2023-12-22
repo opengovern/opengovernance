@@ -39,7 +39,6 @@ func New(
 	arn string,
 	masterAccessKey string,
 	masterSecretKey string,
-
 ) *API {
 	return &API{
 		logger:          logger.Named("api"),
@@ -62,6 +61,8 @@ func (api *API) Register(e *echo.Echo) {
 			repository.NewConnectionSQL(api.database),
 			api.kms,
 			api.arn,
+			api.describe,
+			api.inventory,
 			api.masterAccessKey,
 			api.masterSecretKey,
 		),

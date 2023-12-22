@@ -18,7 +18,7 @@ import (
 )
 
 func Command() *cobra.Command {
-	cnf := koanf.Provide("", config.OnboardConfig{})
+	cnf := koanf.Provide("", config.IntegrationConfig{})
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -27,7 +27,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			logger = logger.Named("onboard")
+			logger = logger.Named("integration")
 
 			db, err := db.New(cnf.Postgres, logger)
 			if err != nil {
