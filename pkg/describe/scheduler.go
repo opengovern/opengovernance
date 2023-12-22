@@ -10,11 +10,13 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/discovery"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"net"
 	"strconv"
 	"strings"
@@ -164,6 +166,8 @@ type Scheduler struct {
 	LambdaClient *lambda.Client
 
 	complianceScheduler *compliance.JobScheduler
+	discoveryScheduler  *discovery.Scheduler
+	conf                config2.SchedulerConfig
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -225,6 +229,7 @@ func InitializeScheduler(
 	lambdaCfg, err := config.LoadDefaultConfig(context.Background())
 	lambdaCfg.Region = KeyRegion
 
+	s.conf = conf
 	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
@@ -282,13 +287,13 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = db.Database{ORM: orm}
 
-	ElasticSearchIsOpenSearch, _ := strconv.ParseBool(ElasticSearchIsOpenSearchStr)
 	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses:    []string{ElasticSearchAddress},
-		Username:     &ElasticSearchUsername,
-		Password:     &ElasticSearchPassword,
-		IsOpenSearch: &ElasticSearchIsOpenSearch,
-		AwsRegion:    &ElasticSearchAwsRegion,
+		Addresses:     []string{conf.ElasticSearch.Address},
+		Username:      &conf.ElasticSearch.Username,
+		Password:      &conf.ElasticSearch.Password,
+		IsOpenSearch:  &conf.ElasticSearch.IsOpenSearch,
+		AwsRegion:     &conf.ElasticSearch.AwsRegion,
+		AssumeRoleArn: &conf.ElasticSearch.AssumeRoleArn,
 	})
 	if err != nil {
 		return nil, err
@@ -376,7 +381,7 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
-	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger)
+	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
@@ -400,6 +405,17 @@ func InitializeScheduler(
 	}
 
 	s.complianceScheduler = compliance.New(
+		conf,
+		s.logger,
+		s.complianceClient,
+		s.onboardClient,
+		s.db,
+		s.kafkaProducer,
+		s.es,
+		s.complianceIntervalHours,
+	)
+
+	s.discoveryScheduler = discovery.New(
 		conf,
 		s.logger,
 		s.complianceClient,
@@ -503,6 +519,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		utils.EnsureRunGoroutin(func() {
 			s.RunDescribeResourceJobs(ctx)
 		})
+		s.discoveryScheduler.Run()
 		// ---------
 
 		// --------- describe
@@ -559,6 +576,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		utils.EnsureRunGoroutin(func() {
 			s.UpdateDescribedResourceCountScheduler()
 		})
+		utils.EnsureRunGoroutin(func() {
+			s.UpdateDescribedResourceCountScheduler()
+		})
 	case OperationModeReceiver:
 		utils.EnsureRunGoroutin(func() {
 			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
@@ -580,7 +600,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDisabledConnectionCleanup() {
-	ticker := time.NewTicker(time.Hour)
+	ticker := ticker.NewTicker(time.Hour, time.Second*10)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -605,7 +625,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup() {
 }
 
 func (s *Scheduler) RunScheduledJobCleanup() {
-	ticker := time.NewTicker(time.Hour)
+	ticker := ticker.NewTicker(time.Hour, time.Second*10)
 	defer ticker.Stop()
 	for range ticker.C {
 		tOlder := time.Now().AddDate(0, 0, -7)
@@ -683,7 +703,7 @@ func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
 func (s *Scheduler) RunCheckupJobScheduler() {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
-	t := time.NewTicker(JobSchedulingInterval)
+	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -757,7 +777,7 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 		return err
 	}
 
-	t := time.NewTicker(JobTimeoutCheckInterval)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {

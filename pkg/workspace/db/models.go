@@ -14,7 +14,7 @@ type Workspace struct {
 	AWSUniqueId              *string           `json:"aws_unique_id"`
 	AWSUserARN               *string           `json:"aws_user_arn"`
 	OwnerId                  *string           `json:"owner_id"`
-	Status                   string            `json:"status"`
+	Status                   api.StateID       `json:"status"`
 	Size                     api.WorkspaceSize `json:"workspace_size"`
 	Tier                     api.Tier          `json:"tier"`
 	OrganizationID           *int              `json:"organization_id"`
@@ -25,6 +25,7 @@ type Workspace struct {
 	InsightJobsID            string            `json:"insight_jobs_id"`
 	ComplianceTriggered      bool              `json:"complianceTriggered"`
 	OpenSearchEndpoint       string            `json:"open_search_endpoint"`
+	PipelineEndpoint         string            `json:"pipeline_endpoint"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {
@@ -40,7 +41,7 @@ func (w *Workspace) ToAPI() api.Workspace {
 		AWSUserARN:               w.AWSUserARN,
 		AWSUniqueId:              w.AWSUniqueId,
 		OwnerId:                  w.OwnerId,
-		Status:                   api.WorkspaceStatus(w.Status),
+		Status:                   w.Status,
 		Tier:                     w.Tier,
 		Organization:             org,
 		Size:                     w.Size,
@@ -80,7 +81,7 @@ func (o *Organization) ToAPI() api.Organization {
 }
 
 type WorkspaceTransaction struct {
-	WorkspaceID   string `gorm:"primarykey"`
-	TransactionID string `gorm:"primarykey"`
+	WorkspaceID   string            `gorm:"primarykey"`
+	TransactionID api.TransactionID `gorm:"primarykey"`
 	CreatedAt     time.Time
 }

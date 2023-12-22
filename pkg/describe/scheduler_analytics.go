@@ -12,6 +12,7 @@ import (
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
@@ -23,7 +24,7 @@ import (
 func (s *Scheduler) RunAnalyticsJobScheduler() {
 	s.logger.Info("Scheduling analytics jobs on a timer")
 
-	t := time.NewTicker(JobSchedulingInterval)
+	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -185,7 +186,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	defer consumer.Close()
 
 	msgs := consumer.Consume(context.TODO(), s.logger, 100)
-	t := time.NewTicker(JobTimeoutCheckInterval)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {

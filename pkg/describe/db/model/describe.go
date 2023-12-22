@@ -36,4 +36,5 @@ type DescribeConnectionJob struct {
 	FailureMessage         string // Should be NULLSTRING
 	ErrorCode              string // Should be NULLSTRING
 	DescribedResourceCount int64
+	DeletingCount          int64
 }

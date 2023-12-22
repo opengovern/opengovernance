@@ -71,14 +71,28 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
+	var finalErr error
 	for _, fp := range files {
-		err = CreateTemplate(elastic, logger, fp)
-		if err != nil {
-			logger.Error("failed to create template", zap.Error(err), zap.String("filepath", fp))
+		if strings.Contains(fp, "_component_template") {
+			err = CreateTemplate(elastic, logger, fp)
+			if err != nil {
+				finalErr = err
+				logger.Error("failed to create component template", zap.Error(err), zap.String("filepath", fp))
+			}
 		}
 	}
 
-	return nil
+	for _, fp := range files {
+		if !strings.Contains(fp, "_component_template") {
+			err = CreateTemplate(elastic, logger, fp)
+			if err != nil {
+				finalErr = err
+				logger.Error("failed to create template", zap.Error(err), zap.String("filepath", fp))
+			}
+		}
+	}
+
+	return finalErr
 }
 
 func CreateTemplate(es kaytu.Client, logger *zap.Logger, fp string) error {

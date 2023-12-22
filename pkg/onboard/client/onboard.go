@@ -160,7 +160,6 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 }
 
 func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Connection, error) {
-	ctx.UserRole = authApi.InternalRole
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 
 	var req api.GetSourcesRequest

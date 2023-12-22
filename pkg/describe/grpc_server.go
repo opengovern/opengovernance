@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
@@ -33,6 +34,7 @@ type GRPCDescribeServer struct {
 	db                        db.Database
 	rdb                       *redis.Client
 	producer                  *confluent_kafka.Producer
+	conf                      config2.SchedulerConfig
 	topic                     string
 	logger                    *zap.Logger
 	DoProcessReceivedMessages bool
@@ -41,7 +43,7 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db db.Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db db.Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger, conf config2.SchedulerConfig) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		rdb:                       rdb,
@@ -50,6 +52,7 @@ func NewDescribeServer(db db.Database, rdb *redis.Client, producer *confluent_ka
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
 		authGrpcClient:            authGrpcClient,
+		conf:                      conf,
 	}
 }
 
@@ -124,10 +127,6 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			//ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			return nil, err
-		}
-
-		if strings.ToLower(resource.Job.ResourceType) == "aws::costexplorer::byservicedaily" {
-			fmt.Println("===================================================== Cost", resource.UniqueId, "\n", resource.DescriptionJson)
 		}
 
 		var tags []es2.Tag
@@ -212,6 +211,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 
 	i := 0
 	for {
+		if s.conf.ElasticSearch.IsOpenSearch {
+			s.logger.Error("workspace on opensearch and getting described resources on grpc???")
+		}
 		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger, nil); err != nil {
 			if i > 10 {
 				StreamFailureCount.WithLabelValues("aws").Inc()
@@ -322,6 +324,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 	i := 0
 	for {
+		if s.conf.ElasticSearch.IsOpenSearch {
+			s.logger.Error("workspace on opensearch and getting described resources on grpc???")
+		}
 		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger, nil); err != nil {
 			if i > 10 {
 				s.logger.Warn("send to kafka",

@@ -43,10 +43,14 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Create(m).Error
 }
 
-func (s *Database) GetReservedWorkspace() (*Workspace, error) {
+func (s *Database) GetReservedWorkspace(includeReserving bool) (*Workspace, error) {
 	var workspace Workspace
+	statuses := []api.StateID{api.StateID_Reserved}
+	if includeReserving {
+		statuses = append(statuses, api.StateID_Reserving)
+	}
 	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).
-		Where("status = ? OR status = ?", api.StatusReserved, api.StatusReserving).
+		Where("status IN ?", statuses).
 		First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -61,12 +65,16 @@ func (s *Database) UpdateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", m.ID).Updates(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(id string, status string) error {
+func (s *Database) UpdateWorkspaceStatus(id string, status api.StateID) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status).Error
 }
 
 func (s *Database) UpdateWorkspaceOpenSearchEndpoint(id string, openSearchEndpoint string) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("open_search_endpoint", openSearchEndpoint).Error
+}
+
+func (s *Database) UpdateWorkspacePipelineEndpoint(id string, endpoint string) error {
+	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("pipeline_endpoint", endpoint).Error
 }
 
 func (s *Database) SetWorkspaceCreated(id string) error {
@@ -184,5 +192,5 @@ func (s *Database) UpdateWorkspaceAWSUser(workspaceID string, arn *string) error
 }
 
 func (s *Database) HandleDeletedWorkspaces() error {
-	return s.Orm.Where("status = 'DELETED'").Unscoped().Delete(&Workspace{}).Error
+	return s.Orm.Where("status = ?", api.StateID_Deleted).Unscoped().Delete(&Workspace{}).Error
 }

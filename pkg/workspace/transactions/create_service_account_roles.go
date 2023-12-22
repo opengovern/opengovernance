@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"strings"
 )
@@ -28,7 +29,12 @@ var serviceNames = []string{
 }
 
 var rolePolicies = map[string][]string{
-	"scheduler": {"arn:aws:iam::${accountID}:policy/lambda-invoke-policy"},
+	"scheduler": {"arn:aws:iam::${accountID}:policy/lambda-invoke-policy",
+		"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
+	"analytics-worker":         {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
+	"compliance-report-worker": {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
+	"compliance-summarizer":    {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
+	"insight-worker":           {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
 }
 
 type CreateServiceAccountRoles struct {
@@ -49,7 +55,7 @@ func NewCreateServiceAccountRoles(
 	}
 }
 
-func (t *CreateServiceAccountRoles) Requirements() []TransactionID {
+func (t *CreateServiceAccountRoles) Requirements() []api.TransactionID {
 	return nil
 }
 
@@ -122,9 +128,29 @@ func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceNa
 		}
 	}
 
+	_, err = t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
+		PolicyName: aws.String(fmt.Sprintf("kaytu-ingestion-%s", workspace.ID)),
+		PolicyDocument: aws.String(`{
+    "Statement": [
+        {
+            "Action": "osis:Ingest",
+            "Effect": "Allow",
+            "Resource": "*"
+        }
+    ],
+    "Version": "2012-10-17"
+}`),
+	})
+	if err != nil {
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
+		}
+	}
+
 	if v, ok := rolePolicies[serviceName]; ok && len(v) > 0 {
 		for _, policyARN := range v {
 			policyARN = strings.ReplaceAll(policyARN, "${accountID}", t.kaytuAWSAccountID)
+			policyARN = strings.ReplaceAll(policyARN, "${workspaceID}", workspace.ID)
 
 			_, err = t.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
 				PolicyArn: aws.String(policyARN),

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -9,6 +10,7 @@ import (
 type Benchmark struct {
 	ID          string              `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
 	Title       string              `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
+	DisplayCode string              `json:"displayCode" example:"CIS 1.4.0"`                                                                                                                                                   // Benchmark display code
 	Description string              `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
 	LogoURI     string              `json:"logoURI"`                                                                                                                                                                           // Benchmark logo URI
 	Category    string              `json:"category"`                                                                                                                                                                          // Benchmark category
@@ -28,4 +30,31 @@ type Benchmark struct {
 type BenchmarkTrendDatapoint struct {
 	Timestamp     int     `json:"timestamp" example:"1686346668"` // Time
 	SecurityScore float64 `json:"securityScore"`
+}
+
+type GetBenchmarksSummaryResponse struct {
+	BenchmarkSummary []BenchmarkEvaluationSummary `json:"benchmarkSummary"`
+
+	TotalResult types.ComplianceResultSummary `json:"totalResult"`
+	TotalChecks types.SeverityResult          `json:"totalChecks"`
+}
+
+type BenchmarkEvaluationSummary struct {
+	ID             string                        `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
+	Title          string                        `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
+	Description    string                        `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
+	Connectors     []source.Type                 `json:"connectors" example:"[Azure]"`                                                                                                                                                      // Cloud providers
+	Tags           map[string][]string           `json:"tags" `                                                                                                                                                                             // Tags
+	Enabled        bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
+	Result         types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
+	Checks         types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
+	EvaluatedAt    *time.Time                    `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
+	LastJobStatus  string                        `json:"lastJobStatus" example:"success"`                                                                                                                                                   // Last job status
+	TopConnections []TopFieldRecord              `json:"topConnections"`                                                                                                                                                                    // Top connections
+}
+
+type BenchmarkControlSummary struct {
+	Benchmark Benchmark                 `json:"benchmark"`
+	Controls  []ControlSummary          `json:"control"`
+	Children  []BenchmarkControlSummary `json:"children"`
 }

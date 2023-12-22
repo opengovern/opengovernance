@@ -11,6 +11,7 @@ import (
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
@@ -31,7 +32,6 @@ type CreateHelmRelease struct {
 	kmsClient  *kms.Client
 	cfg        config.Config
 	db         *db.Database
-	reserving  bool
 }
 
 func NewCreateHelmRelease(
@@ -39,23 +39,17 @@ func NewCreateHelmRelease(
 	kmsClient *kms.Client,
 	cfg config.Config,
 	db *db.Database,
-	reserving bool,
 ) *CreateHelmRelease {
 	return &CreateHelmRelease{
 		kubeClient: kubeClient,
 		kmsClient:  kmsClient,
 		cfg:        cfg,
 		db:         db,
-		reserving:  reserving,
 	}
 }
 
-func (t *CreateHelmRelease) Requirements() []TransactionID {
-	if t.reserving {
-		return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles}
-	}
-
-	return []TransactionID{Transaction_CreateInsightBucket, Transaction_CreateOpenSearch, Transaction_CreateServiceAccountRoles, Transaction_EnsureCredentialOnboarded}
+func (t *CreateHelmRelease) Requirements() []api.TransactionID {
+	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateIngestionPipeline, api.Transaction_CreateServiceAccountRoles}
 }
 
 func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
@@ -65,32 +59,6 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 	}
 
 	if helmRelease == nil {
-		if workspace.Status != "RESERVING" && workspace.Status != "RESERVED" {
-			rs, err := t.db.GetReservedWorkspace()
-			if err != nil {
-				return err
-			}
-
-			if rs != nil {
-				err = t.db.DeleteWorkspace(workspace.ID)
-				if err != nil {
-					return err
-				}
-
-				err = t.db.UpdateCredentialWSID(workspace.ID, rs.ID)
-				if err != nil {
-					return err
-				}
-
-				workspace.ID = rs.ID
-				if err := t.db.UpdateWorkspace(&workspace); err != nil {
-					return err
-				}
-
-				return ErrTransactionNeedsTime
-			}
-		}
-
 		err := t.createHelmRelease(workspace)
 		if err != nil {
 			return fmt.Errorf("createHelmRelease: %w", err)
@@ -250,8 +218,9 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 				},
 			},
 			OpenSearch: types3.OpenSearchConfig{
-				Enabled:  true,
-				Endpoint: workspace.OpenSearchEndpoint,
+				Enabled:                   true,
+				Endpoint:                  workspace.OpenSearchEndpoint,
+				IngestionPipelineEndpoint: workspace.PipelineEndpoint,
 			},
 		},
 	}

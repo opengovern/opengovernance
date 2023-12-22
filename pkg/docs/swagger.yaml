@@ -671,6 +671,10 @@ definitions:
           guidance for establishing a secure baseline configuration for Microsoft
           Azure.
         type: string
+      displayCode:
+        description: Benchmark display code
+        example: CIS 1.4.0
+        type: string
       documentURI:
         description: Benchmark document URI
         example: benchmarks/azure_cis_v140.md
@@ -771,6 +775,19 @@ definitions:
         example: example-rc
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary:
+    properties:
+      benchmark:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
+      children:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary'
+        type: array
+      control:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
     properties:
       checks:
@@ -821,6 +838,11 @@ definitions:
         description: Benchmark title
         example: Azure CIS v1.4.0
         type: string
+      topConnections:
+        description: Top connections
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation:
     properties:
@@ -838,6 +860,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control:
     properties:
+      cliRemediation:
+        example: To enable multi-factor authentication for a user, run the following
+          command...
+        type: string
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
@@ -867,6 +893,10 @@ definitions:
       managed:
         example: true
         type: boolean
+      manualRemediation:
+        example: To enable multi-factor authentication for a user, run the following
+          command...
+        type: string
       manualVerification:
         example: true
         type: boolean
@@ -954,6 +984,10 @@ definitions:
         example: azure_cis_v140_7_5
         type: string
       controlTitle:
+        type: string
+      es_id:
+        type: string
+      es_index:
         type: string
       evaluatedAt:
         example: 1589395200
@@ -1459,6 +1493,8 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
       service:
         type: string
+      totalCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType:
     enum:
@@ -2876,6 +2912,24 @@ definitions:
       url:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID:
+    enum:
+    - RESERVING
+    - RESERVED
+    - WAITING_FOR_CREDENTIAL
+    - PROVISIONING
+    - PROVISIONED
+    - DELETING
+    - DELETED
+    type: string
+    x-enum-varnames:
+    - StateID_Reserving
+    - StateID_Reserved
+    - StateID_WaitingForCredential
+    - StateID_Provisioning
+    - StateID_Provisioned
+    - StateID_Deleting
+    - StateID_Deleted
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier:
     enum:
     - FREE
@@ -2918,7 +2972,7 @@ definitions:
         example: sm
       status:
         allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID'
         example: PROVISIONED
       tier:
         allOf:
@@ -2993,7 +3047,7 @@ definitions:
         example: sm
       status:
         allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID'
         example: PROVISIONED
       tier:
         allOf:
@@ -3015,22 +3069,6 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
-    enum:
-    - RESERVING
-    - RESERVED
-    - BOOTSTRAPPING
-    - PROVISIONED
-    - DELETING
-    - DELETED
-    type: string
-    x-enum-varnames:
-    - StatusReserving
-    - StatusReserved
-    - StatusBootstrapping
-    - StatusProvisioned
-    - StatusDeleting
-    - StatusDeleted
   kaytu.ResourceCollectionFilter:
     properties:
       account_ids:
@@ -3855,9 +3893,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary'
       security:
       - BearerToken: []
       summary: Get benchmark controls
@@ -3951,6 +3987,11 @@ paths:
       - description: timestamp for values in epoch seconds
         in: query
         name: timeAt
+        type: integer
+      - default: 3
+        description: Top account count
+        in: query
+        name: topAccountCount
         type: integer
       produces:
       - application/json
@@ -4079,6 +4120,11 @@ paths:
         in: query
         name: timeAt
         type: integer
+      - default: 3
+        description: Top account count
+        in: query
+        name: topAccountCount
+        type: integer
       produces:
       - application/json
       responses:
@@ -4188,7 +4234,7 @@ paths:
       parameters:
       - collectionFormat: csv
         description: Control IDs to filter by
-        in: path
+        in: query
         items:
           type: string
         name: controlId

@@ -1134,6 +1134,13 @@ const docTemplate = `{
                         "description": "timestamp for values in epoch seconds",
                         "name": "timeAt",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Top account count",
+                        "name": "topAccountCount",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1196,10 +1203,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary"
                         }
                     }
                 }
@@ -1344,6 +1348,13 @@ const docTemplate = `{
                         "description": "timestamp for values in epoch seconds",
                         "name": "timeAt",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Top account count",
+                        "name": "topAccountCount",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1479,7 +1490,7 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Control IDs to filter by",
                         "name": "controlId",
-                        "in": "path"
+                        "in": "query"
                     },
                     {
                         "type": "array",
@@ -7485,6 +7496,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
+                "displayCode": {
+                    "description": "Benchmark display code",
+                    "type": "string",
+                    "example": "CIS 1.4.0"
+                },
                 "documentURI": {
                     "description": "Benchmark document URI",
                     "type": "string",
@@ -7623,6 +7639,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary": {
+            "type": "object",
+            "properties": {
+                "benchmark": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlSummary"
+                    }
+                },
+                "control": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary": {
             "type": "object",
             "properties": {
@@ -7691,6 +7727,13 @@ const docTemplate = `{
                     "description": "Benchmark title",
                     "type": "string",
                     "example": "Azure CIS v1.4.0"
+                },
+                "topConnections": {
+                    "description": "Top connections",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
+                    }
                 }
             }
         },
@@ -7718,6 +7761,10 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control": {
             "type": "object",
             "properties": {
+                "cliRemediation": {
+                    "type": "string",
+                    "example": "To enable multi-factor authentication for a user, run the following command..."
+                },
                 "connector": {
                     "allOf": [
                         {
@@ -7753,6 +7800,10 @@ const docTemplate = `{
                 "managed": {
                     "type": "boolean",
                     "example": true
+                },
+                "manualRemediation": {
+                    "type": "string",
+                    "example": "To enable multi-factor authentication for a user, run the following command..."
                 },
                 "manualVerification": {
                     "type": "boolean",
@@ -7881,6 +7932,12 @@ const docTemplate = `{
                     "example": "azure_cis_v140_7_5"
                 },
                 "controlTitle": {
+                    "type": "string"
+                },
+                "es_id": {
+                    "type": "string"
+                },
+                "es_index": {
                     "type": "string"
                 },
                 "evaluatedAt": {
@@ -8606,6 +8663,9 @@ const docTemplate = `{
                 },
                 "service": {
                     "type": "string"
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -10613,6 +10673,27 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID": {
+            "type": "string",
+            "enum": [
+                "RESERVING",
+                "RESERVED",
+                "WAITING_FOR_CREDENTIAL",
+                "PROVISIONING",
+                "PROVISIONED",
+                "DELETING",
+                "DELETED"
+            ],
+            "x-enum-varnames": [
+                "StateID_Reserving",
+                "StateID_Reserved",
+                "StateID_WaitingForCredential",
+                "StateID_Provisioning",
+                "StateID_Provisioned",
+                "StateID_Deleting",
+                "StateID_Deleted"
+            ]
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier": {
             "type": "string",
             "enum": [
@@ -10673,7 +10754,7 @@ const docTemplate = `{
                 "status": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID"
                         }
                     ],
                     "example": "PROVISIONED"
@@ -10786,7 +10867,7 @@ const docTemplate = `{
                 "status": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID"
                         }
                     ],
                     "example": "PROVISIONED"
@@ -10818,25 +10899,6 @@ const docTemplate = `{
                 "SizeSM",
                 "SizeMD",
                 "SizeLG"
-            ]
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
-            "type": "string",
-            "enum": [
-                "RESERVING",
-                "RESERVED",
-                "BOOTSTRAPPING",
-                "PROVISIONED",
-                "DELETING",
-                "DELETED"
-            ],
-            "x-enum-varnames": [
-                "StatusReserving",
-                "StatusReserved",
-                "StatusBootstrapping",
-                "StatusProvisioned",
-                "StatusDeleting",
-                "StatusDeleted"
             ]
         },
         "kaytu.ResourceCollectionFilter": {

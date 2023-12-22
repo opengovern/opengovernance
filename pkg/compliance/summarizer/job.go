@@ -12,6 +12,7 @@ import (
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -122,9 +123,19 @@ func (w *Worker) RunJob(j Job) error {
 
 	w.logger.Info("Summarize done", zap.Any("summary", bs))
 
-	err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, []kafka.Doc{bs}, w.logger, nil)
-	if err != nil {
-		return err
+	if w.config.ElasticSearch.IsOpenSearch {
+		keys, idx := bs.KeysAndIndex()
+		bs.EsID = kafka.HashOf(keys...)
+		bs.EsIndex = idx
+
+		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, []kafka.Doc{bs}); err != nil {
+			return err
+		}
+	} else {
+		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, []kafka.Doc{bs}, w.logger, nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	w.logger.Info("Finished summarizer",

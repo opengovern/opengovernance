@@ -36,13 +36,15 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	}
 	dbm := db.Database{Orm: orm}
 
-	p := GitParser{}
+	p := GitParser{
+		logger: logger,
+	}
 	if err := p.ExtractQueries(config.QueriesGitPath); err != nil {
 		logger.Error("failed to extract queries", zap.Error(err))
 		return err
 	}
 	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
-	if err := p.ExtractCompliance(config.ComplianceGitPath); err != nil {
+	if err := p.ExtractCompliance(config.ComplianceGitPath, config.ControlEnrichmentGitPath); err != nil {
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
 		return err
 	}
@@ -111,8 +113,20 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 			obj.Children = nil
 			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                                                                                                                     // key column
-				DoUpdates: clause.AssignmentColumns([]string{"title", "description", "logo_uri", "category", "document_uri", "enabled", "managed", "auto_assign", "baseline", "updated_at"}), // column needed to be updated
+				Columns: []clause.Column{{Name: "id"}}, // key column
+				DoUpdates: clause.AssignmentColumns([]string{
+					"title",
+					"display_code",
+					"description",
+					"logo_uri",
+					"category",
+					"document_uri",
+					"enabled",
+					"managed",
+					"auto_assign",
+					"baseline",
+					"updated_at",
+				}), // column needed to be updated
 			}).Create(&obj).Error
 			if err != nil {
 				return err

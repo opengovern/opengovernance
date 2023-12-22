@@ -8,6 +8,7 @@ import (
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
 	"time"
 )
@@ -59,7 +60,7 @@ func (s *JobScheduler) Run() {
 func (s *JobScheduler) RunScheduler() {
 	s.logger.Info("Scheduling compliance jobs on a timer")
 
-	t := time.NewTicker(JobSchedulingInterval)
+	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -74,7 +75,7 @@ func (s *JobScheduler) RunScheduler() {
 func (s *JobScheduler) RunPublisher() {
 	s.logger.Info("Scheduling publisher on a timer")
 
-	t := time.NewTicker(JobSchedulingInterval)
+	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -89,7 +90,7 @@ func (s *JobScheduler) RunPublisher() {
 func (s *JobScheduler) RunSummarizer() {
 	s.logger.Info("Scheduling compliance summarizer on a timer")
 
-	t := time.NewTicker(SummarizerSchedulingInterval)
+	t := ticker.NewTicker(SummarizerSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {

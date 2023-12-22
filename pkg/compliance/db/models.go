@@ -30,6 +30,7 @@ type BenchmarkAssignment struct {
 type Benchmark struct {
 	ID          string `gorm:"primarykey"`
 	Title       string
+	DisplayCode string
 	Connector   source.Type
 	Description string
 	LogoURI     string
@@ -53,6 +54,7 @@ func (b Benchmark) ToApi() api.Benchmark {
 	ba := api.Benchmark{
 		ID:          b.ID,
 		Title:       b.Title,
+		DisplayCode: b.DisplayCode,
 		Description: b.Description,
 		LogoURI:     b.LogoURI,
 		Category:    b.Category,
@@ -150,6 +152,12 @@ func (p Control) ToApi() api.Control {
 	}
 	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"usefulness-example"]; ok && len(v) > 0 {
 		pa.UsefulExample = v[0]
+	}
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"manual-remediation"]; ok && len(v) > 0 {
+		pa.ManualRemediation = v[0]
+	}
+	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"cli-remediation"]; ok && len(v) > 0 {
+		pa.CliRemediation = v[0]
 	}
 
 	return pa

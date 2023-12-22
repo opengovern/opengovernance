@@ -13,8 +13,9 @@ type KaytuConfig struct {
 	OpenSearch   OpenSearchConfig `json:"opensearch"`
 }
 type OpenSearchConfig struct {
-	Enabled  bool   `json:"enabled"`
-	Endpoint string `json:"endpoint"`
+	Enabled                   bool   `json:"enabled"`
+	Endpoint                  string `json:"endpoint"`
+	IngestionPipelineEndpoint string `json:"ingestionPipelineEndpoint"`
 }
 type InsightsConfig struct {
 	S3 S3Config `json:"s3"`

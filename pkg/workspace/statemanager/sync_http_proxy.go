@@ -2,8 +2,8 @@ package statemanager
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/state"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,8 +19,8 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 	var httpIncludes []contourv1.Include
 	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
-		if !(state.StateID(w.Status) == state.StateID_Provisioned ||
-			(state.StateID(w.Status) == state.StateID_Bootstrapping && w.IsCreated)) {
+		if !(w.Status == api.StateID_Provisioned ||
+			((w.Status == api.StateID_WaitingForCredential || w.Status == api.StateID_Provisioning) && w.IsCreated)) {
 			continue
 		}
 		httpIncludes = append(httpIncludes, contourv1.Include{

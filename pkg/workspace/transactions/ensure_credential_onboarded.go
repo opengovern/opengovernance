@@ -37,8 +37,8 @@ func NewEnsureCredentialOnboarded(
 	}
 }
 
-func (t *EnsureCredentialOnboarded) Requirements() []TransactionID {
-	return nil
+func (t *EnsureCredentialOnboarded) Requirements() []api.TransactionID {
+	return []api.TransactionID{api.Transaction_CreateMasterCredential, api.Transaction_CreateHelmRelease}
 }
 
 func (t *EnsureCredentialOnboarded) Apply(workspace db.Workspace) error {
@@ -58,6 +58,10 @@ func (t *EnsureCredentialOnboarded) Apply(workspace db.Workspace) error {
 				return err
 			}
 		}
+	}
+
+	if !workspace.IsBootstrapInputFinished {
+		return ErrTransactionNeedsTime
 	}
 
 	return nil

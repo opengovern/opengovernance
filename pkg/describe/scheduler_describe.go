@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"math/rand"
@@ -53,7 +54,7 @@ type CloudNativeCall struct {
 func (s *Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
-	t := time.NewTicker(30 * time.Second)
+	t := ticker.NewTicker(30*time.Second, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -64,7 +65,7 @@ func (s *Scheduler) RunDescribeJobScheduler() {
 func (s *Scheduler) RunStackScheduler() {
 	s.logger.Info("Scheduling stack jobs on a timer")
 
-	t := time.NewTicker(1 * time.Minute)
+	t := ticker.NewTicker(1*time.Minute, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -238,13 +239,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
-	t := time.NewTicker(time.Second * 30)
+	t := ticker.NewTicker(time.Second*30, time.Second*10)
 	defer t.Stop()
 	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
 			s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
 		}
-		t.Reset(time.Second * 30)
+		t.Reset(time.Second*30, time.Second*10)
 	}
 }
 
@@ -443,7 +444,8 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 
 		if job.Status == api.DescribeResourceJobCreated ||
 			job.Status == api.DescribeResourceJobQueued ||
-			job.Status == api.DescribeResourceJobInProgress {
+			job.Status == api.DescribeResourceJobInProgress ||
+			job.Status == api.DescribeResourceJobOldResourceDeletion {
 			return nil, ErrJobInProgress
 		}
 	}
@@ -519,12 +521,14 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	)
 
 	input := LambdaDescribeWorkerInput{
-		WorkspaceId:      CurrentWorkspaceID,
-		WorkspaceName:    workspaceName,
-		DescribeEndpoint: s.describeEndpoint,
-		KeyARN:           s.keyARN,
-		KeyRegion:        s.keyRegion,
-		KafkaTopic:       kafkaTopic,
+		WorkspaceId:               CurrentWorkspaceID,
+		WorkspaceName:             workspaceName,
+		DescribeEndpoint:          s.describeEndpoint,
+		IngestionPipelineEndpoint: s.conf.ElasticSearch.IngestionEndpoint,
+		UseOpenSearch:             s.conf.ElasticSearch.IsOpenSearch,
+		KeyARN:                    s.keyARN,
+		KeyRegion:                 s.keyRegion,
+		KafkaTopic:                kafkaTopic,
 		DescribeJob: DescribeJob{
 			JobID:        dc.ID,
 			ResourceType: dc.ResourceType,
@@ -554,7 +558,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	isFailed := false
 	defer func() {
 		if isFailed {
-			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0)
+			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
 			if err != nil {
 				s.logger.Error("failed to update describe resource job status",
 					zap.Uint("jobID", dc.ID),
@@ -716,7 +720,8 @@ func (s *Scheduler) scheduleStackJobs() error {
 			for _, job := range jobs {
 				if job.Status == apiDescribe.DescribeResourceJobCreated ||
 					job.Status == apiDescribe.DescribeResourceJobQueued ||
-					job.Status == apiDescribe.DescribeResourceJobInProgress {
+					job.Status == apiDescribe.DescribeResourceJobInProgress ||
+					job.Status == apiDescribe.DescribeResourceJobOldResourceDeletion {
 					finished = false
 				}
 			}

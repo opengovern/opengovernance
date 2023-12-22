@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"strconv"
 	"strings"
 	"time"
@@ -298,7 +299,7 @@ func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres
 				var resources []kafka.Doc
 				resourceTypeList := []es.InsightResourceType{es.InsightResourceProviderHistory, es.InsightResourceProviderLast}
 				for _, resourceType := range resourceTypeList {
-					resources = append(resources, es.InsightResource{
+					item := es.InsightResource{
 						JobID:               j.JobID,
 						InsightID:           j.InsightID,
 						Query:               j.Query,
@@ -315,12 +316,24 @@ func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres
 						PerConnectionCount:  perConnectionCountMap,
 						S3Location:          result.Location,
 						ResourceCollection:  j.ResourceCollectionId,
-					})
+					}
+					keys, idx := item.KeysAndIndex()
+					item.EsID = kafka.HashOf(keys...)
+					item.EsIndex = idx
+
+					resources = append(resources, item)
 				}
 
 				logger.Info("sending docs to kafka", zap.Any("producer", producer), zap.String("topic", topic), zap.Int("count", len(resources)))
-				if err := kafka.DoSend(producer, topic, -1, resources, logger, nil); err != nil {
-					fail(fmt.Errorf("send to kafka: %w", err))
+
+				if esConfig.IsOpenSearch {
+					if err := pipeline.SendToPipeline(esConfig.IngestionEndpoint, resources); err != nil {
+						fail(fmt.Errorf("send to kafka: %w", err))
+					}
+				} else {
+					if err := kafka.DoSend(producer, topic, -1, resources, logger, nil); err != nil {
+						fail(fmt.Errorf("send to kafka: %w", err))
+					}
 				}
 			} else {
 				logger.Error("failed to upload to s3", zap.Error(err))

@@ -54,7 +54,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v2 := r.Group("/api/v2")
 
 	v1.GET("/sources", httpserver2.AuthorizeHandler(h.ListSources, api3.ViewerRole))
-	v1.POST("/sources", httpserver2.AuthorizeHandler(h.GetSources, api3.KaytuAdminRole))
+	v1.POST("/sources", httpserver2.AuthorizeHandler(h.GetSources, api3.ViewerRole))
 	v1.GET("/sources/count", httpserver2.AuthorizeHandler(h.CountSources, api3.ViewerRole))
 	v1.GET("/catalog/metrics", httpserver2.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
 
@@ -180,7 +180,13 @@ func (h HttpHandler) CheckMaxConnections(additionCount int64) error {
 	if err != nil {
 		return err
 	}
-	maxConnections := cnf.GetValue().(int64)
+
+	var maxConnections int64
+	if v, ok := cnf.GetValue().(int64); ok {
+		maxConnections = v
+	} else if v, ok := cnf.GetValue().(int); ok {
+		maxConnections = int64(v)
+	}
 	if count+additionCount > maxConnections {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
@@ -1246,7 +1252,14 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	maxConnections := cnf.GetValue().(int64)
+
+	var maxConnections int64
+
+	if v, ok := cnf.GetValue().(int64); ok {
+		maxConnections = v
+	} else if v, ok := cnf.GetValue().(int); ok {
+		maxConnections = int64(v)
+	}
 
 	onboardedSources := make([]api.Connection, 0)
 	switch credential.ConnectorType {
@@ -2125,7 +2138,6 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 					return err
 				}
 			}
-
 		}
 
 		res = append(res, apiRes)

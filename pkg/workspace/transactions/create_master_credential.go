@@ -9,9 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	kms2 "github.com/aws/aws-sdk-go/service/kms"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"strings"
 )
 
 type CreateMasterCredential struct {
@@ -35,7 +37,7 @@ func NewCreateMasterCredential(
 	}
 }
 
-func (t *CreateMasterCredential) Requirements() []TransactionID {
+func (t *CreateMasterCredential) Requirements() []api.TransactionID {
 	return nil
 }
 
@@ -48,7 +50,16 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		Tags:                nil,
 	})
 	if err != nil {
-		return err
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
+		}
+		u, err := t.iam.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
+		if err != nil {
+			return err
+		}
+		iamUser = &iam.CreateUserOutput{
+			User: u.User,
+		}
 	}
 	policy, err := t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
 		PolicyDocument: aws.String(`{
@@ -62,18 +73,41 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 		PolicyName: aws.String(userName + "-assume-role"),
 	})
 	if err != nil {
-		return err
+		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
+			return err
+		}
+	} else {
+		_, err = t.iam.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
+			PolicyArn: policy.Policy.Arn,
+			UserName:  aws.String(userName),
+		})
 	}
-
-	_, err = t.iam.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
-		PolicyArn: policy.Policy.Arn,
-		UserName:  aws.String(userName),
-	})
 
 	key, err := t.iam.CreateAccessKey(context.Background(), &iam.CreateAccessKeyInput{
 		UserName: aws.String(userName),
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "LimitExceeded") {
+			accessKeys, err := t.iam.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
+				UserName: aws.String(userName),
+			})
+			if err != nil {
+				if !strings.Contains(err.Error(), "NoSuchEntity") {
+					return err
+				}
+				accessKeys = &iam.ListAccessKeysOutput{}
+			}
+			for _, accessKey := range accessKeys.AccessKeyMetadata {
+				_, err := t.iam.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
+					UserName:    aws.String(userName),
+					AccessKeyId: accessKey.AccessKeyId,
+				})
+				if err != nil {
+					return err
+				}
+			}
+			return ErrTransactionNeedsTime
+		}
 		return err
 	}
 
@@ -118,7 +152,10 @@ func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
 			UserName: aws.String(userName),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
+			accessKeys = &iam.ListAccessKeysOutput{}
 		}
 		for _, accessKey := range accessKeys.AccessKeyMetadata {
 			_, err := t.iam.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
@@ -134,7 +171,10 @@ func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
 			UserName: aws.String(userName),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
+			policies = &iam.ListAttachedUserPoliciesOutput{}
 		}
 
 		for _, policy := range policies.AttachedPolicies {
@@ -159,7 +199,9 @@ func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
 			UserName: aws.String(userName),
 		})
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "NoSuchEntity") {
+				return err
+			}
 		}
 
 		err = t.db.DeleteMasterCredential(*workspace.AWSUniqueId)

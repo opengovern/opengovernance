@@ -69,18 +69,18 @@ type ChangeWorkspaceOrganizationRequest struct {
 }
 
 type Workspace struct {
-	ID                       string          `json:"id" example:"ws-698542025141040315"`
-	Name                     string          `json:"name" example:"kaytu"`
-	AWSUserARN               *string         `json:"aws_user_arn" example:"kaytu"`
-	AWSUniqueId              *string         `json:"aws_unique_id" example:"kaytu"`
-	OwnerId                  *string         `json:"ownerId" example:"google-oauth2|204590896945502695694"`
-	Status                   WorkspaceStatus `json:"status" example:"PROVISIONED"`
-	Tier                     Tier            `json:"tier" example:"ENTERPRISE"`
-	Organization             *Organization   `json:"organization,omitempty"`
-	Size                     WorkspaceSize   `json:"size" example:"sm"`
-	CreatedAt                time.Time       `json:"createdAt" example:"2023-05-17T14:39:02.707659Z"`
-	IsCreated                bool            `json:"is_created"`
-	IsBootstrapInputFinished bool            `json:"is_bootstrap_input_finished"`
+	ID                       string        `json:"id" example:"ws-698542025141040315"`
+	Name                     string        `json:"name" example:"kaytu"`
+	AWSUserARN               *string       `json:"aws_user_arn" example:"kaytu"`
+	AWSUniqueId              *string       `json:"aws_unique_id" example:"kaytu"`
+	OwnerId                  *string       `json:"ownerId" example:"google-oauth2|204590896945502695694"`
+	Status                   StateID       `json:"status" example:"PROVISIONED"`
+	Tier                     Tier          `json:"tier" example:"ENTERPRISE"`
+	Organization             *Organization `json:"organization,omitempty"`
+	Size                     WorkspaceSize `json:"size" example:"sm"`
+	CreatedAt                time.Time     `json:"createdAt" example:"2023-05-17T14:39:02.707659Z"`
+	IsCreated                bool          `json:"is_created"`
+	IsBootstrapInputFinished bool          `json:"is_bootstrap_input_finished"`
 }
 
 type WorkspaceResponse struct {

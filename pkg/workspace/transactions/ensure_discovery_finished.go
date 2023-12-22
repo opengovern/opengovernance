@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"strings"
@@ -22,8 +23,8 @@ func NewEnsureDiscoveryFinished(
 	}
 }
 
-func (t *EnsureDiscoveryFinished) Requirements() []TransactionID {
-	return []TransactionID{Transaction_EnsureBootstrapInputFinished}
+func (t *EnsureDiscoveryFinished) Requirements() []api3.TransactionID {
+	return []api3.TransactionID{api3.Transaction_EnsureCredentialOnboarded, api3.Transaction_CreateHelmRelease}
 }
 
 func (t *EnsureDiscoveryFinished) Apply(workspace db.Workspace) error {
