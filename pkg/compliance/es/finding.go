@@ -125,11 +125,11 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 		filters = append(filters, kaytu.NewTermsFilter("severity", severity))
 	}
 	if len(conformanceStatuses) > 0 {
-		strControlResult := make([]string, 0)
+		strConformanceStatus := make([]string, 0)
 		for _, cr := range conformanceStatuses {
-			strControlResult = append(strControlResult, string(cr))
+			strConformanceStatus = append(strConformanceStatus, string(cr))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("result", strControlResult))
+		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
 	if len(connectionID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
@@ -271,11 +271,11 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 		terms["severity"] = severity
 	}
 	if len(conformanceStatuses) > 0 {
-		strControlResult := make([]string, 0)
+		strConformanceStatus := make([]string, 0)
 		for _, cr := range conformanceStatuses {
-			strControlResult = append(strControlResult, string(cr))
+			strConformanceStatus = append(strConformanceStatus, string(cr))
 		}
-		terms["result"] = strControlResult
+		terms["conformanceStatus"] = strConformanceStatus
 	}
 
 	root := map[string]any{}
@@ -353,47 +353,15 @@ type FindingsTopFieldResponse struct {
 	} `json:"aggregations"`
 }
 
-type AccountsFindingsBySeverityResponse struct {
-	Aggregations struct {
-		Accounts struct {
-			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-			SumOtherDocCount        int `json:"sum_other_doc_count"`
-			Buckets                 []struct {
-				Key      string `json:"key"`
-				DocCount int    `json:"doc_count"`
-				Result   struct {
-					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-					SumOtherDocCount        int `json:"sum_other_doc_count"`
-					Buckets                 []struct {
-						Key      string `json:"key"`
-						DocCount int    `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"result"`
-				Severity struct {
-					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-					SumOtherDocCount        int `json:"sum_other_doc_count"`
-					Buckets                 []struct {
-						Key      string `json:"key"`
-						DocCount int    `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"severity"`
-				LastEvaluation struct {
-					Value float64 `json:"value"`
-				} `json:"last_evaluation"`
-			} `json:"buckets"`
-		} `json:"accounts"`
-	} `json:"aggregations"`
-}
-
 type FindingsFieldCountByControlResponse struct {
 	Aggregations struct {
 		ControlCount struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
 			SumOtherDocCount        int `json:"sum_other_doc_count"`
 			Buckets                 []struct {
-				Key      string `json:"key"`
-				DocCount int    `json:"doc_count"`
-				Results  struct {
+				Key                 string `json:"key"`
+				DocCount            int    `json:"doc_count"`
+				ConformanceStatuses struct {
 					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
 					SumOtherDocCount        int `json:"sum_other_doc_count"`
 					Buckets                 []struct {
@@ -403,7 +371,7 @@ type FindingsFieldCountByControlResponse struct {
 							Value int `json:"value"`
 						} `json:"field_count"`
 					} `json:"buckets"`
-				} `json:"results"`
+				} `json:"conformanceStatus"`
 			} `json:"buckets"`
 		} `json:"control_count"`
 	} `json:"aggregations"`
@@ -411,7 +379,7 @@ type FindingsFieldCountByControlResponse struct {
 
 func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity, controlResult []types.ConformanceStatus, size int) (*FindingsTopFieldResponse, error) {
+	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, size int) (*FindingsTopFieldResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
@@ -422,8 +390,8 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 		terms["controlID"] = controlID
 	}
 
-	if len(controlResult) > 0 {
-		terms["result"] = controlResult
+	if len(conformanceStatuses) > 0 {
+		terms["conformanceStatus"] = conformanceStatuses
 	}
 
 	if len(severity) > 0 {
@@ -501,12 +469,12 @@ type ResourceTypesFindingsSummaryResponse struct {
 						DocCount int    `json:"doc_count"`
 					} `json:"buckets"`
 				} `json:"severity"`
-				ControlResult struct {
+				ConformanceStatus struct {
 					Buckets []struct {
 						Key      string `json:"key"`
 						DocCount int    `json:"doc_count"`
 					} `json:"buckets"`
-				} `json:"controlResult"`
+				} `json:"conformanceStatus"`
 			} `json:"buckets"`
 		} `json:"summaries"`
 	} `json:"aggregations"`
@@ -543,9 +511,9 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 							"size":  1000,
 						},
 					},
-					"controlResult": map[string]any{
+					"conformanceStatus": map[string]any{
 						"terms": map[string]any{
-							"field": "result",
+							"field": "conformanceStatus",
 							"size":  1000,
 						},
 					},
@@ -613,9 +581,9 @@ func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
 				"field": "controlID",
 			},
 			"aggs": map[string]any{
-				"results": map[string]any{
+				"conformanceStatus": map[string]any{
 					"terms": map[string]any{
-						"field": "result",
+						"field": "conformanceStatus",
 					},
 					"aggs": map[string]any{
 						"field_count": map[string]any{

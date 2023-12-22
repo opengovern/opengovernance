@@ -953,7 +953,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 	}
 	for _, b := range res.Aggregations.ControlCount.Buckets {
 		var fieldCounts []api.TopFieldRecord
-		for _, bucketField := range b.Results.Buckets {
+		for _, bucketField := range b.ConformanceStatuses.Buckets {
 			bucketField := bucketField
 			fieldCounts = append(fieldCounts, api.TopFieldRecord{Field: &bucketField.Key, Count: bucketField.FieldCount.Value})
 		}
@@ -1105,7 +1105,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 			sevMap[severity.Key] = severity.DocCount
 		}
 		resMap := make(map[string]int)
-		for _, controlResult := range resourceType.ControlResult.Buckets {
+		for _, controlResult := range resourceType.ConformanceStatus.Buckets {
 			resMap[controlResult.Key] = controlResult.DocCount
 		}
 
