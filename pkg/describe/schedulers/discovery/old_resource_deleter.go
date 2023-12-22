@@ -40,15 +40,15 @@ func (s *Scheduler) runDeleter() error {
 
 			for _, task := range tasks.Hits.Hits {
 				for _, resource := range task.Source.DeletingResources {
-					err = s.esClient.Delete(string(resource.Key), task.Source.EsIndex)
+					err = s.esClient.Delete(string(resource.Key), resource.Index)
 					if err != nil {
 						if !strings.Contains(err.Error(), "not_found") {
 							return err
 						}
 					}
 				}
-
 				err = s.esClient.Delete(task.ID, es.DeleteTasksIndex)
+
 				if err != nil {
 					if !strings.Contains(err.Error(), "not_found") {
 						return err
