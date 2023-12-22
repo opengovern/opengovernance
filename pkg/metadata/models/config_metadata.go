@@ -1,5 +1,19 @@
 package models
 
+import (
+	"errors"
+)
+
+var ErrIncompatibleType = errors.New("given config metadata interface does not have the required type")
+
+func HasType(cfg IConfigMetadata, typ ConfigMetadataType) error {
+	if cfg.GetType() != typ {
+		return ErrIncompatibleType
+	}
+
+	return nil
+}
+
 type IConfigMetadata interface {
 	GetKey() MetadataKey
 	GetType() ConfigMetadataType
