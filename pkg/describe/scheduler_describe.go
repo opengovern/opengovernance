@@ -558,7 +558,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	isFailed := false
 	defer func() {
 		if isFailed {
-			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0)
+			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
 			if err != nil {
 				s.logger.Error("failed to update describe resource job status",
 					zap.Uint("jobID", dc.ID),

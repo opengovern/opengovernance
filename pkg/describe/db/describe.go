@@ -246,6 +246,19 @@ func (db Database) ListDescribeJobs() ([]model.DescribeConnectionJob, error) {
 	return job, nil
 }
 
+func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus) ([]model.DescribeConnectionJob, error) {
+	var job []model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", status).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]model.DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
@@ -384,9 +397,9 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
-	tx := db.ORM.Exec("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ?",
-		status, msg, errCode, resourceCount, id)
+func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount, deletingCount int64) error {
+	tx := db.ORM.Exec("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ?, deleting_count = ? WHERE id = ?",
+		status, msg, errCode, resourceCount, deletingCount, id)
 	if tx.Error != nil {
 		return tx.Error
 	}

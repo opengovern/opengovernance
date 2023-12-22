@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/discovery"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
@@ -165,6 +166,7 @@ type Scheduler struct {
 	LambdaClient *lambda.Client
 
 	complianceScheduler *compliance.JobScheduler
+	discoveryScheduler  *discovery.Scheduler
 	conf                config2.SchedulerConfig
 }
 
@@ -412,6 +414,17 @@ func InitializeScheduler(
 		s.es,
 		s.complianceIntervalHours,
 	)
+
+	s.discoveryScheduler = discovery.New(
+		conf,
+		s.logger,
+		s.complianceClient,
+		s.onboardClient,
+		s.db,
+		s.kafkaProducer,
+		s.es,
+		s.complianceIntervalHours,
+	)
 	return s, nil
 }
 
@@ -506,6 +519,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		utils.EnsureRunGoroutin(func() {
 			s.RunDescribeResourceJobs(ctx)
 		})
+		s.discoveryScheduler.Run()
 		// ---------
 
 		// --------- describe
@@ -558,6 +572,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		})
 		utils.EnsureRunGoroutin(func() {
 			s.RunScheduledJobCleanup()
+		})
+		utils.EnsureRunGoroutin(func() {
+			s.UpdateDescribedResourceCountScheduler()
 		})
 		utils.EnsureRunGoroutin(func() {
 			s.UpdateDescribedResourceCountScheduler()
