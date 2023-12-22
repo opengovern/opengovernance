@@ -11,7 +11,7 @@ import (
 const OldResourceDeleterInterval = 1 * time.Minute
 
 func (s *Scheduler) OldResourceDeleter() {
-	s.logger.Info("Scheduling compliance summarizer on a timer")
+	s.logger.Info("Scheduling OldResourceDeleter on a timer")
 
 	t := ticker.NewTicker(OldResourceDeleterInterval, time.Second*10)
 	defer t.Stop()
@@ -25,6 +25,8 @@ func (s *Scheduler) OldResourceDeleter() {
 }
 
 func (s *Scheduler) runDeleter() error {
+	s.logger.Info("runDeleter")
+
 	deletingJobs, err := s.db.ListDescribeJobsByStatus(api.DescribeResourceJobOldResourceDeletion)
 	if err != nil {
 		return err
