@@ -444,7 +444,8 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 
 		if job.Status == api.DescribeResourceJobCreated ||
 			job.Status == api.DescribeResourceJobQueued ||
-			job.Status == api.DescribeResourceJobInProgress {
+			job.Status == api.DescribeResourceJobInProgress ||
+			job.Status == api.DescribeResourceJobOldResourceDeletion {
 			return nil, ErrJobInProgress
 		}
 	}
@@ -719,7 +720,8 @@ func (s *Scheduler) scheduleStackJobs() error {
 			for _, job := range jobs {
 				if job.Status == apiDescribe.DescribeResourceJobCreated ||
 					job.Status == apiDescribe.DescribeResourceJobQueued ||
-					job.Status == apiDescribe.DescribeResourceJobInProgress {
+					job.Status == apiDescribe.DescribeResourceJobInProgress ||
+					job.Status == apiDescribe.DescribeResourceJobOldResourceDeletion {
 					finished = false
 				}
 			}

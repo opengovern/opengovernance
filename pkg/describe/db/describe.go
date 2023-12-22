@@ -67,7 +67,7 @@ type ResourceTypeCount struct {
 
 func (db Database) CountRunningDescribeJobsPerResourceType() ([]ResourceTypeCount, error) {
 	var count []ResourceTypeCount
-	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
+	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, api.DescribeResourceJobOldResourceDeletion}
 	tx := db.ORM.Raw(`select resource_type, count(*) as count from describe_connection_jobs where status in ? group by 1`, runningJobs).Find(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -308,6 +308,15 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 
 	tx = db.ORM.
 		Model(&model.DescribeConnectionJob{}).
+		Where("updated_at < NOW() - INTERVAL '30 minutes'").
+		Where("status IN ?", []string{string(api.DescribeResourceJobOldResourceDeletion)}).
+		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.ORM.
+		Model(&model.DescribeConnectionJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
@@ -336,6 +345,15 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 		Model(&model.DescribeConnectionJob{}).
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
+		Where("resource_type = ?", resourceType).
+		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
+	if tx.Error != nil {
+		return totalCount, tx.Error
+	}
+	tx = db.ORM.
+		Model(&model.DescribeConnectionJob{}).
+		Where("updated_at < NOW() - INTERVAL '30 minutes'").
+		Where("status IN ?", []string{string(api.DescribeResourceJobOldResourceDeletion)}).
 		Where("resource_type = ?", resourceType).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
@@ -382,6 +400,18 @@ func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 		Where("id = ?", id).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobInProgress, InProgressedAt: time.Now()})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateDescribeConnectionJobToDeletionOfOldResources(id uint) error {
+	tx := db.ORM.
+		Model(&model.DescribeConnectionJob{}).
+		Where("id = ?", id).
+		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobOldResourceDeletion})
 	if tx.Error != nil {
 		return tx.Error
 	}

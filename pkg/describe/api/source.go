@@ -44,12 +44,13 @@ type ErrorResponse struct {
 type DescribeResourceJobStatus string
 
 const (
-	DescribeResourceJobCreated    DescribeResourceJobStatus = "CREATED"
-	DescribeResourceJobQueued     DescribeResourceJobStatus = "QUEUED"
-	DescribeResourceJobInProgress DescribeResourceJobStatus = "IN_PROGRESS"
-	DescribeResourceJobTimeout    DescribeResourceJobStatus = "TIMEOUT"
-	DescribeResourceJobFailed     DescribeResourceJobStatus = "FAILED"
-	DescribeResourceJobSucceeded  DescribeResourceJobStatus = "SUCCEEDED"
+	DescribeResourceJobCreated             DescribeResourceJobStatus = "CREATED"
+	DescribeResourceJobQueued              DescribeResourceJobStatus = "QUEUED"
+	DescribeResourceJobInProgress          DescribeResourceJobStatus = "IN_PROGRESS"
+	DescribeResourceJobOldResourceDeletion DescribeResourceJobStatus = "OLD_RESOURCE_DELETION"
+	DescribeResourceJobTimeout             DescribeResourceJobStatus = "TIMEOUT"
+	DescribeResourceJobFailed              DescribeResourceJobStatus = "FAILED"
+	DescribeResourceJobSucceeded           DescribeResourceJobStatus = "SUCCEEDED"
 )
 
 type DescribeAllJobsStatus string

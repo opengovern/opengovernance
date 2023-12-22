@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"strings"
@@ -114,7 +115,12 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				zap.String("status", string(result.Status)),
 			)
 
-			if s.DoDeleteOldResources {
+			if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
+				err = s.db.UpdateDescribeConnectionJobToDeletionOfOldResources(result.JobID)
+				if err != nil {
+					s.logger.Error("failed to update job status to deletion of old resources due to", zap.Error(err))
+				}
+
 				if err := s.cleanupOldResources(result); err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
@@ -262,6 +268,12 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			break
 		}
 		var msgs []*confluent_kafka.Message
+		task := es.DeleteTask{
+			ConnectionID: res.DescribeJob.SourceID,
+			ResourceType: res.DescribeJob.ResourceType,
+			Connector:    res.DescribeJob.SourceType,
+		}
+
 		for _, hit := range esResp.Hits.Hits {
 			searchAfter = hit.Sort
 			esResourceID := hit.Source.ResourceID
@@ -285,6 +297,11 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				keys, idx := resource.KeysAndIndex()
 				msg := kafka.Msg(kafka.HashOf(keys...), nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
+				task.DeletingResources = append(task.DeletingResources, es.DeletingResource{
+					Key:        msg.Key,
+					ResourceID: esResourceID,
+					Index:      idx,
+				})
 
 				lookupResource := es2.LookupResource{
 					ResourceID:   esResourceID,
@@ -295,6 +312,12 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				lookUpKeys, lookUpIdx := lookupResource.KeysAndIndex()
 				msg = kafka.Msg(kafka.HashOf(lookUpKeys...), nil, lookUpIdx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
+				task.DeletingResources = append(task.DeletingResources, es.DeletingResource{
+					Key:        msg.Key,
+					ResourceID: esResourceID,
+					Index:      idx,
+				})
+
 				if err != nil {
 					CleanupJobCount.WithLabelValues("failure").Inc()
 					s.logger.Error("CleanJob failed",
@@ -306,7 +329,15 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 
 		i := 0
 		for {
-			_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
+			if s.conf.ElasticSearch.IsOpenSearch {
+				taskKeys, taskIdx := task.KeysAndIndex()
+				task.EsID = kafka.HashOf(taskKeys...)
+				task.EsIndex = taskIdx
+				err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []kafka.Doc{task})
+			} else {
+				_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
+			}
+
 			if err != nil {
 				s.logger.Error("failed to send delete message to kafka",
 					zap.Uint("jobId", res.JobID),
@@ -322,6 +353,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			}
 			break
 		}
+
 		deletedCount += len(msgs)
 	}
 	s.logger.Info("deleted old resources",
