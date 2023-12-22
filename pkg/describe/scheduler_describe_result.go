@@ -317,7 +317,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 				task.DeletingResources = append(task.DeletingResources, es.DeletingResource{
 					Key:        msg.Key,
 					ResourceID: esResourceID,
-					Index:      idx,
+					Index:      lookUpIdx,
 				})
 
 				if err != nil {
