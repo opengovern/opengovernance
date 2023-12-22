@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -95,6 +99,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.GET("/resource", httpserver2.AuthorizeHandler(h.ListResourceStack, apiAuth.ViewerRole))
 	stacks.POST("/describer/trigger", httpserver2.AuthorizeHandler(h.TriggerStackDescriber, apiAuth.AdminRole))
 	stacks.GET("/:stackId/insights", httpserver2.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
+
+	v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
 }
 
 // ListJobs godoc
@@ -826,6 +832,85 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusJobsFinished)
+}
+
+type MigratorResponse struct {
+	Hits  MigratorHits `json:"hits"`
+	PitID string
+}
+type MigratorHits struct {
+	Total kaytu.SearchTotal `json:"total"`
+	Hits  []MigratorHit     `json:"hits"`
+}
+type MigratorHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  MigrateSource `json:"_source"`
+	Sort    []any         `json:"sort"`
+}
+
+type MigrateSource map[string]any
+
+func (m MigrateSource) KeysAndIndex() ([]string, string) {
+	return nil, ""
+}
+
+func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
+	indexesToMigrate := []string{
+		"analytics_connection_summary",
+		"analytics_connector_summary",
+		"analytics_spend_connection_summary",
+		"analytics_spend_connector_summary",
+		"rc_analytics_connection_summary",
+		"rc_analytics_connector_summary",
+		"insights",
+		"benchmark_summary",
+	}
+
+	for _, indexToMigrate := range indexesToMigrate {
+		paginator, err := kaytu.NewPaginator(h.Scheduler.es.ES(), indexToMigrate, nil, nil)
+		if err != nil {
+			return err
+		}
+
+		ctx := context.Background()
+		for {
+			if paginator.Done() {
+				break
+			}
+
+			var res MigratorResponse
+			err = paginator.SearchWithLog(ctx, &res, true)
+			if err != nil {
+				return err
+			}
+
+			var items []kafka.Doc
+			for _, hit := range res.Hits.Hits {
+				item := hit.Source
+				item["es_id"] = hit.ID
+				item["es_index"] = indexToMigrate
+				items = append(items, hit.Source)
+			}
+
+			err := pipeline.SendToPipeline(h.Scheduler.conf.ElasticSearch.IngestionEndpoint, items)
+			if err != nil {
+				return err
+			}
+
+			hits := int64(len(res.Hits.Hits))
+			if hits > 0 {
+				paginator.UpdateState(hits, res.Hits.Hits[hits-1].Sort, res.PitID)
+			} else {
+				paginator.UpdateState(hits, nil, "")
+			}
+		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
