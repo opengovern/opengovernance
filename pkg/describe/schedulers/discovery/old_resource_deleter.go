@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -41,13 +42,17 @@ func (s *Scheduler) runDeleter() error {
 				for _, resource := range task.Source.DeletingResources {
 					err = s.esClient.Delete(string(resource.Key), task.Source.EsIndex)
 					if err != nil {
-						return err
+						if !strings.Contains(err.Error(), "not_found") {
+							return err
+						}
 					}
 				}
 
 				err = s.esClient.Delete(task.ID, es.DeleteTasksIndex)
 				if err != nil {
-					return err
+					if !strings.Contains(err.Error(), "not_found") {
+						return err
+					}
 				}
 			}
 		}
