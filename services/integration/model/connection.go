@@ -48,3 +48,7 @@ func (s *Connection) BeforeDelete(tx *gorm.DB) error {
 		Update("lifecycle_state", ConnectionLifecycleStateArchived)
 	return t.Error
 }
+
+func (s *Connection) TableName() string {
+	return "sources"
+}
