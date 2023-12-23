@@ -31,7 +31,7 @@ type Connection struct {
 	repo            repository.Connection
 	describe        describe.SchedulerServiceClient
 	inventory       inventory.InventoryServiceClient
-	meta            meta.Meta
+	meta            *meta.Meta
 	masterAccessKey string
 	masterSecretKey string
 }
@@ -42,7 +42,7 @@ func NewConnection(
 	keyARN string,
 	describe describe.SchedulerServiceClient,
 	inventory inventory.InventoryServiceClient,
-	meta meta.Meta,
+	meta *meta.Meta,
 	masterAccessKey string,
 	masterSecretKey string,
 ) Connection {
