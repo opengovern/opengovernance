@@ -673,7 +673,7 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 	return output, nil
 }
 
-// PostSourceAzure godoc
+// CreateAzureSPN godoc
 //
 //	@Summary		Create Azure source
 //	@Description	Creating Azure source
@@ -714,10 +714,10 @@ func (h API) CreateAzureSPN(c echo.Context) error {
 	if err != nil {
 		h.logger.Error("error in checking reader role roleAssignment", zap.Error(err))
 
-		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, "permission error")
 	}
 	if !isAttached {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Failed to find reader role roleAssignment")
+		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find reader role roleAssignment")
 	}
 
 	cred, err := createAzureCredential(

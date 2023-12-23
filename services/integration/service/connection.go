@@ -216,6 +216,8 @@ func (h Connection) Count(ctx context.Context, t *source.Type) (int64, error) {
 	return count, nil
 }
 
+// ListWithFilter lists connections based on the given filters. Filters are applied as
+// where clause in the database query.
 func (h Connection) ListWithFilter(
 	ctx context.Context,
 	types []source.Type,
@@ -231,6 +233,7 @@ func (h Connection) ListWithFilter(
 	return nil, nil
 }
 
+// Create a new connection in the database based on the given instance.
 func (h Connection) Create(
 	ctx context.Context,
 	c model.Connection,
