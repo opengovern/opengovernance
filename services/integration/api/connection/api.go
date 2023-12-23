@@ -720,7 +720,7 @@ func (h API) CreateAzureSPN(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find reader role roleAssignment")
 	}
 
-	cred, err := createAzureCredential(
+	cred, err := h.svc.NewAzureCredential(
 		ctx,
 		fmt.Sprintf("%s - %s - default credentials", source.CloudAzure, req.Config.SubscriptionId),
 		model.CredentialTypeAutoAzure,
