@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 var ErrMaxConnectionsExceeded = errors.New("number of connections exceeded")
@@ -34,6 +35,7 @@ type Connection struct {
 	meta            *meta.Meta
 	masterAccessKey string
 	masterSecretKey string
+	logger          *zap.Logger
 }
 
 func NewConnection(
@@ -45,6 +47,7 @@ func NewConnection(
 	meta *meta.Meta,
 	masterAccessKey string,
 	masterSecretKey string,
+	logger *zap.Logger,
 ) Connection {
 	return Connection{
 		tracer:          otel.GetTracerProvider().Tracer("integration.service.sources"),
@@ -56,6 +59,7 @@ func NewConnection(
 		meta:            meta,
 		masterAccessKey: masterAccessKey,
 		masterSecretKey: masterSecretKey,
+		logger:          logger.Named("service").Named("connection"),
 	}
 }
 

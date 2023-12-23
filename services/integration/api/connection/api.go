@@ -727,10 +727,14 @@ func (h API) CreateAzureSPN(c echo.Context) error {
 		req.Config,
 	)
 	if err != nil {
-		return err
+		h.logger.Error("creating azure credential failed", zap.Error(err))
+
+		return echo.ErrInternalServerError
 	}
 
-	azSub, err := currentAzureSubscription(ctx, h.logger, req.Config.SubscriptionId, kaytuAzure.AuthConfig{
+	// An Azure subscription is a unit of management, billing, and provisioning within Microsoft Azure,
+	// which is Microsoft’s cloud computing platform.
+	azSub, err := h.svc.AzureCurrentSubscription(ctx, req.Config.SubscriptionId, kaytuAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
 		ObjectID:     req.Config.ObjectId,
 		SecretID:     req.Config.SecretId,
@@ -738,31 +742,25 @@ func (h API) CreateAzureSPN(c echo.Context) error {
 		ClientSecret: req.Config.ClientSecret,
 	})
 	if err != nil {
-		return err
+		h.logger.Error("getting current azure subscription failed", zap.Error(err))
+
+		return echo.ErrInternalServerError
 	}
 
-	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred)
-	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+	src, err := h.svc.NewAzureConnectionWithCredentials(ctx, azSub, source.SourceCreationMethodManual, req.Description, cred, req.Config.AsMap())
 	if err != nil {
-		return err
-	}
-	src.Credential.Secret = string(secretBytes)
-	// trace :
-	//_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
-	//span2.SetName("new_CreateSource")
+		h.logger.Error("build new connection using azure credentials", zap.Error(err))
 
-	err = h.db.CreateSource(&src)
-	if err != nil {
-		// span2.RecordError(err)
-		// span2.SetStatus(codes.Error, err.Error())
-		return err
+		return echo.ErrInternalServerError
 	}
-	//span2.AddEvent("information", trace.WithAttributes(
-	//	attribute.String("source name ", src.Name),
-	//))
-	//span2.End()
 
-	return c.JSON(http.StatusOK, api.CreateSourceResponse{
+	if err := h.svc.Create(ctx, src); err != nil {
+		h.logger.Error("inserting newly created connection into the database", zap.Error(err))
+
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, entity.CreateConnectionResponse{
 		ID: src.ID,
 	})
 }

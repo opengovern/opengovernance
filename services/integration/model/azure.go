@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
@@ -51,4 +53,17 @@ func NewAzureCredential(name string, credentialType CredentialType, metadata *Az
 	}
 
 	return crd, nil
+}
+
+type AzureSubscription struct {
+	SubscriptionID string
+	SubModel       armsubscription.Subscription
+	SubTags        []armresources.TagDetails
+}
+
+// AzureConnectionMetadata converts into json and stored along side its connection.
+type AzureConnectionMetadata struct {
+	SubscriptionID string                       `json:"subscription_id"`
+	SubModel       armsubscription.Subscription `json:"subscription_model"`
+	SubTags        map[string][]string          `json:"subscription_tags"`
 }

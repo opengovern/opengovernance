@@ -66,6 +66,7 @@ func (api *API) Register(e *echo.Echo) {
 			api.meta,
 			api.masterAccessKey,
 			api.masterSecretKey,
+			api.logger,
 		),
 		api.logger,
 	)
