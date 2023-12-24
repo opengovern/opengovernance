@@ -394,7 +394,7 @@ func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceColl
 		}
 	}
 
-	logger.Info("done sending result to kafka", zap.String("metric", metric.ID))
+	logger.Info("done sending result to kafka", zap.String("metric", metric.ID), zap.Bool("isOpenSearch", conf.ElasticSearch.IsOpenSearch))
 	return nil
 }
 
