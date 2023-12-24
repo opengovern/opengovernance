@@ -236,6 +236,7 @@ type FindingFiltersAggregationResponse struct {
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
 		ResourceCollectionFilter AggregationResult `json:"resource_collection_filter"`
+		ConformanceStatusFilter  AggregationResult `json:"conformance_status_filter"`
 	} `json:"aggregations"`
 }
 
@@ -289,6 +290,7 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 		"benchmark_id_filter":        map[string]any{"terms": map[string]any{"field": "benchmarkID", "size": 1000}},
 		"control_id_filter":          map[string]any{"terms": map[string]any{"field": "controlID", "size": 1000}},
 		"severity_filter":            map[string]any{"terms": map[string]any{"field": "severity", "size": 1000}},
+		"conformance_status_filter":  map[string]any{"terms": map[string]any{"field": "conformanceStatus", "size": 1000}},
 	}
 	root["aggs"] = aggs
 

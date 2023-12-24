@@ -56,6 +56,7 @@ type FindingFilters struct {
 type FindingFilterWithMetadata struct {
 	Key         string `json:"key" example:"key"`                 // Key
 	DisplayName string `json:"displayName" example:"displayName"` // Display Name
+	Count       *int   `json:"count" example:"10"`                // Count
 }
 
 type FindingFiltersWithMetadata struct {
@@ -66,6 +67,7 @@ type FindingFiltersWithMetadata struct {
 	ConnectionID       []FindingFilterWithMetadata `json:"connectionID"`
 	ResourceCollection []FindingFilterWithMetadata `json:"resourceCollection"`
 	Severity           []FindingFilterWithMetadata `json:"severity"`
+	ConformanceStatus  []FindingFilterWithMetadata `json:"conformanceStatus"`
 }
 
 type GetFindingsRequest struct {
