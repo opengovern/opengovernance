@@ -444,6 +444,7 @@ func (j *Job) DoSpendMetric(steampipeDB *steampipe.Database, kfkProducer *conflu
 			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionID)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
+					logger.Warn("data fro connection found but got source not found", zap.String("connectionID", connectionID))
 					continue
 				}
 				return fmt.Errorf("GetSource id=%s err=%v", connectionID, err)
