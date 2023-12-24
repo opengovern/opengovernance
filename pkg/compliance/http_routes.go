@@ -245,14 +245,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	for _, h := range res {
 		finding := api.Finding{
-			Finding:                h.Source,
-			ResourceTypeName:       h.Source.ResourceID,
-			ParentBenchmarkNames:   make([]string, 0, len(h.Source.ParentBenchmarks)),
-			ControlTitle:           "",
-			ProviderConnectionID:   "",
-			ProviderConnectionName: "",
-			NoOfOccurrences:        1,
-			SortKey:                h.Sort,
+			Finding:                     h.Source,
+			ResourceTypeName:            h.Source.ResourceID,
+			ParentBenchmarkNames:        make([]string, 0, len(h.Source.ParentBenchmarks)),
+			ParentBenchmarkDisplayCodes: make([]string, 0, len(h.Source.ParentBenchmarks)),
+			ControlTitle:                "",
+			ProviderConnectionID:        "",
+			ProviderConnectionName:      "",
+			NoOfOccurrences:             1,
+			SortKey:                     h.Sort,
 		}
 		if finding.Finding.ResourceType == "" {
 			finding.Finding.ResourceType = "Unknown"
@@ -262,6 +263,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		for _, parentBenchmark := range h.Source.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
+				finding.ParentBenchmarkDisplayCodes = append(finding.ParentBenchmarkDisplayCodes, benchmark.DisplayCode)
 			}
 		}
 
@@ -423,13 +425,14 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		controlFinding.ResourceName = lookupResource.Name
 		controlFinding.ResourceLocation = lookupResource.Location
 		finding := api.Finding{
-			Finding:                controlFinding,
-			ResourceTypeName:       "",
-			ParentBenchmarkNames:   nil,
-			ControlTitle:           "",
-			ProviderConnectionID:   "",
-			ProviderConnectionName: "",
-			NoOfOccurrences:        len(controlFindings),
+			Finding:                     controlFinding,
+			ResourceTypeName:            "",
+			ParentBenchmarkNames:        nil,
+			ParentBenchmarkDisplayCodes: nil,
+			ControlTitle:                "",
+			ProviderConnectionID:        "",
+			ProviderConnectionName:      "",
+			NoOfOccurrences:             len(controlFindings),
 		}
 		if finding.Finding.ResourceType == "" {
 			finding.Finding.ResourceType = "Unknown"
@@ -439,6 +442,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		for _, parentBenchmark := range finding.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
+				finding.ParentBenchmarkDisplayCodes = append(finding.ParentBenchmarkDisplayCodes, benchmark.DisplayCode)
 			}
 		}
 

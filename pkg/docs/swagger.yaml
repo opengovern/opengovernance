@@ -1020,6 +1020,12 @@ definitions:
       noOfOccurrences:
         example: 1
         type: integer
+      parentBenchmarkDisplayCodes:
+        example:
+        - Azure CIS v1.4.0
+        items:
+          type: string
+        type: array
       parentBenchmarkNames:
         example:
         - Azure CIS v1.4.0
@@ -3173,11 +3179,11 @@ definitions:
     - error
     type: string
     x-enum-varnames:
-    - ComplianceResultOK
-    - ComplianceResultALARM
-    - ComplianceResultINFO
-    - ComplianceResultSKIP
-    - ComplianceResultERROR
+    - ConformanceStatusOK
+    - ConformanceStatusALARM
+    - ConformanceStatusINFO
+    - ConformanceStatusSKIP
+    - ConformanceStatusERROR
   types.ConformanceStatusSummary:
     properties:
       alarmCount:
