@@ -318,6 +318,8 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
+	logger.Info("FindingsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
+
 	var resp FindingFiltersAggregationResponse
 	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
 	if err != nil {
