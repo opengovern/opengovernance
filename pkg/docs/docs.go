@@ -8062,6 +8062,11 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata": {
             "type": "object",
             "properties": {
+                "count": {
+                    "description": "Count",
+                    "type": "integer",
+                    "example": 10
+                },
                 "displayName": {
                     "description": "Display Name",
                     "type": "string",
@@ -8172,6 +8177,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "benchmarkID": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
+                    }
+                },
+                "conformanceStatus": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"

@@ -188,6 +188,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	var response api.GetFindingsResponse
 
+	if len(req.Filters.ConformanceStatus) == 0 {
+		req.Filters.ConformanceStatus = []kaytuTypes.ConformanceStatus{
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
+		}
+	}
+
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceTypeID, req.Filters.ResourceCollection,
@@ -490,6 +499,14 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	if len(req.ConformanceStatus) == 0 {
+		req.ConformanceStatus = []kaytuTypes.ConformanceStatus{
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
+		}
+	}
 
 	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
 		nil, nil, nil, false, nil, 10000, 1)
@@ -561,10 +578,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			response.BenchmarkID = append(response.BenchmarkID, api.FindingFilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: benchmark.Title,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
 			response.BenchmarkID = append(response.BenchmarkID, api.FindingFilterWithMetadata{
-				Key: item.Key,
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		}
 	}
@@ -573,19 +593,23 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			response.ControlID = append(response.ControlID, api.FindingFilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: control.Title,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
 			response.ControlID = append(response.ControlID, api.FindingFilterWithMetadata{
-				Key: item.Key,
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		}
 	}
 	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
-		connectors := source.ParseTypes(possibleFilters.Aggregations.ConnectorFilter.GetBucketsKeys())
-		for _, connector := range connectors {
+		for _, bucket := range possibleFilters.Aggregations.ConnectorFilter.Buckets {
+			connector, _ := source.ParseType(bucket.Key)
 			response.Connector = append(response.Connector, api.FindingFilterWithMetadata{
 				Key:         connector.String(),
 				DisplayName: connector.String(),
+				Count:       utils.GetPointer(bucket.DocCount),
 			})
 		}
 	}
@@ -594,6 +618,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: rtMetadata.ResourceLabel,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else if item.Key == "" {
 			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
@@ -602,7 +627,9 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			})
 		} else {
 			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
-				Key: item.Key,
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		}
 	}
@@ -612,10 +639,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			response.ConnectionID = append(response.ConnectionID, api.FindingFilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: connection.ConnectionName,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
 			response.ConnectionID = append(response.ConnectionID, api.FindingFilterWithMetadata{
-				Key: item.Key,
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		}
 	}
@@ -625,17 +655,30 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 			response.ResourceCollection = append(response.ResourceCollection, api.FindingFilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: resourceCollection.Name,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
 			response.ResourceCollection = append(response.ResourceCollection, api.FindingFilterWithMetadata{
-				Key: item.Key,
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
 			})
 		}
 	}
 
 	for _, item := range possibleFilters.Aggregations.SeverityFilter.Buckets {
 		response.Severity = append(response.Severity, api.FindingFilterWithMetadata{
-			Key: item.Key,
+			Key:         item.Key,
+			DisplayName: item.Key,
+			Count:       utils.GetPointer(item.DocCount),
+		})
+	}
+
+	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
+		response.ConformanceStatus = append(response.ConformanceStatus, api.FindingFilterWithMetadata{
+			Key:         item.Key,
+			DisplayName: item.Key,
+			Count:       utils.GetPointer(item.DocCount),
 		})
 	}
 

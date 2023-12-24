@@ -1081,6 +1081,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata:
     properties:
+      count:
+        description: Count
+        example: 10
+        type: integer
       displayName:
         description: Display Name
         example: displayName
@@ -1158,6 +1162,10 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
     properties:
       benchmarkID:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      conformanceStatus:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
