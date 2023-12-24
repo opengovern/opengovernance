@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -671,98 +670,6 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 		output = values
 	}
 	return output, nil
-}
-
-// CreateAzureSPN godoc
-//
-//	@Summary		Create Azure source
-//	@Description	Creating Azure source
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200		{object}	api.CreateSourceResponse
-//	@Param			request	body		api.SourceAzureRequest	true	"Request"
-//	@Router			/integration/api/v1/connection/azure [post]
-func (h API) CreateAzureSPN(c echo.Context) error {
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
-
-	ctx, span := h.tracer.Start(ctx, "create-azure-spn")
-	defer span.End()
-
-	var req entity.CreateAzureConnectionRequest
-
-	if err := c.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if err := c.Validate(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	err := h.svc.Validate(ctx, 1)
-	if err != nil {
-		return err
-	}
-
-	isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
-		TenantID:     req.Config.TenantId,
-		ObjectID:     req.Config.ObjectId,
-		SecretID:     req.Config.SecretId,
-		ClientID:     req.Config.ClientId,
-		ClientSecret: req.Config.ClientSecret,
-	}, req.Config.SubscriptionId, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
-	if err != nil {
-		h.logger.Error("error in checking reader role roleAssignment", zap.Error(err))
-
-		return echo.NewHTTPError(http.StatusUnauthorized, "permission error")
-	}
-	if !isAttached {
-		return echo.NewHTTPError(http.StatusUnauthorized, "failed to find reader role roleAssignment")
-	}
-
-	cred, err := h.svc.NewAzureCredential(
-		ctx,
-		fmt.Sprintf("%s - %s - default credentials", source.CloudAzure, req.Config.SubscriptionId),
-		model.CredentialTypeAutoAzure,
-		req.Config,
-	)
-	if err != nil {
-		h.logger.Error("creating azure credential failed", zap.Error(err))
-
-		return echo.ErrInternalServerError
-	}
-
-	// An Azure subscription is a unit of management, billing, and provisioning within Microsoft Azure,
-	// which is Microsoft’s cloud computing platform.
-	azSub, err := h.svc.AzureCurrentSubscription(ctx, req.Config.SubscriptionId, kaytuAzure.AuthConfig{
-		TenantID:     req.Config.TenantId,
-		ObjectID:     req.Config.ObjectId,
-		SecretID:     req.Config.SecretId,
-		ClientID:     req.Config.ClientId,
-		ClientSecret: req.Config.ClientSecret,
-	})
-	if err != nil {
-		h.logger.Error("getting current azure subscription failed", zap.Error(err))
-
-		return echo.ErrInternalServerError
-	}
-
-	src, err := h.svc.NewAzureConnectionWithCredentials(ctx, azSub, source.SourceCreationMethodManual, req.Description, cred, req.Config.AsMap())
-	if err != nil {
-		h.logger.Error("build new connection using azure credentials", zap.Error(err))
-
-		return echo.ErrInternalServerError
-	}
-
-	if err := h.svc.Create(ctx, src); err != nil {
-		h.logger.Error("inserting newly created connection into the database", zap.Error(err))
-
-		return echo.ErrInternalServerError
-	}
-
-	return c.JSON(http.StatusOK, entity.CreateConnectionResponse{
-		ID: src.ID,
-	})
 }
 
 func (s API) Register(g *echo.Group) {

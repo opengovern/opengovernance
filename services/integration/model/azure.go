@@ -34,7 +34,7 @@ func (m AzureCredentialMetadata) GetExpirationDate() time.Time {
 	return m.SecretExpirationDate
 }
 
-func NewAzureCredential(name string, credentialType CredentialType, metadata *AzureCredentialMetadata) (*Credential, error) {
+func NewAzureCredential(credentialType CredentialType, metadata *AzureCredentialMetadata) (*Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
@@ -42,7 +42,7 @@ func NewAzureCredential(name string, credentialType CredentialType, metadata *Az
 	}
 	crd := &Credential{
 		ID:             id,
-		Name:           &name,
+		Name:           nil,
 		ConnectorType:  source.CloudAzure,
 		Secret:         fmt.Sprintf("sources/%s/%s", strings.ToLower(string(source.CloudAzure)), id),
 		CredentialType: credentialType,
@@ -66,4 +66,28 @@ type AzureConnectionMetadata struct {
 	SubscriptionID string                       `json:"subscription_id"`
 	SubModel       armsubscription.Subscription `json:"subscription_model"`
 	SubTags        map[string][]string          `json:"subscription_tags"`
+}
+
+func NewAzureConnectionMetadata(
+	sub *AzureSubscription,
+) AzureConnectionMetadata {
+	metadata := AzureConnectionMetadata{
+		SubscriptionID: sub.SubscriptionID,
+		SubModel:       sub.SubModel,
+		SubTags:        make(map[string][]string),
+	}
+	for _, tag := range sub.SubTags {
+		if tag.TagName == nil || tag.Count == nil {
+			continue
+		}
+		metadata.SubTags[*tag.TagName] = make([]string, 0, len(tag.Values))
+		for _, value := range tag.Values {
+			if value == nil || value.TagValue == nil {
+				continue
+			}
+			metadata.SubTags[*tag.TagName] = append(metadata.SubTags[*tag.TagName], *value.TagValue)
+		}
+	}
+
+	return metadata
 }

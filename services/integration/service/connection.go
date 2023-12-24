@@ -50,7 +50,7 @@ func NewConnection(
 	logger *zap.Logger,
 ) Connection {
 	return Connection{
-		tracer:          otel.GetTracerProvider().Tracer("integration.service.sources"),
+		tracer:          otel.GetTracerProvider().Tracer("integration.service.connection"),
 		repo:            repo,
 		keyARN:          keyARN,
 		kms:             kms,
