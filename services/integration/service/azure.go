@@ -33,6 +33,13 @@ func (h Credential) NewAzure(
 	if err != nil {
 		return nil, err
 	}
+
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	if err != nil {
+		return nil, err
+	}
+	cred.Secret = string(secretBytes)
+
 	return cred, nil
 }
 

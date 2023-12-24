@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -51,10 +52,16 @@ func (h API) CreateAzure(c echo.Context) error {
 	var req entity.CreateAzureConnectionRequest
 
 	if err := c.Bind(req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Validate(req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -64,15 +71,18 @@ func (h API) CreateAzure(c echo.Context) error {
 		req.Config,
 	)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		h.logger.Error("creating azure credential failed", zap.Error(err))
 
 		return echo.ErrInternalServerError
 	}
 
-	// An Azure subscription is a unit of management, billing, and provisioning within Microsoft Azure,
-	// which is Microsoft’s cloud computing platform.
-
 	if err := h.credentialSvc.Create(ctx, cred); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		h.logger.Error("inserting newly created credential into the database", zap.Error(err))
 
 		return echo.ErrInternalServerError
@@ -80,9 +90,12 @@ func (h API) CreateAzure(c echo.Context) error {
 
 	// call auto onboard so read current subscriptions of the given azure credentials
 
+	// An Azure subscription is a unit of management, billing, and provisioning within Microsoft Azure,
+	// which is Microsoft’s cloud computing platform.
+
 	// change response to create credential and also add the list of newly created subscriptions
-	return c.JSON(http.StatusOK, entity.CreateConnectionResponse{
-		ID: src.ID,
+	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{
+		ID: cred.ID.String(),
 	})
 }
 
