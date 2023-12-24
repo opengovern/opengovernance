@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
@@ -87,6 +88,35 @@ func (h Credential) AzureMetadata(ctx context.Context, config describe.AzureSubs
 	}
 
 	return &metadata, nil
+}
+
+func (h Credential) HealthCheck(ctx context.Context, cred *model.Credential) (bool, error) {
+	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return false, err
+	}
+
+	var azureConfig describe.AzureSubscriptionConfig
+	azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
+	if err != nil {
+		return false, err
+	}
+
+	if err := kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
+		TenantID:            azureConfig.TenantID,
+		ObjectID:            azureConfig.ObjectID,
+		SecretID:            azureConfig.SecretID,
+		ClientID:            azureConfig.ClientID,
+		ClientSecret:        azureConfig.ClientSecret,
+		CertificatePath:     azureConfig.CertificatePath,
+		CertificatePassword: azureConfig.CertificatePass,
+		Username:            azureConfig.Username,
+		Password:            azureConfig.Password,
+	}); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (h Credential) Create(ctx context.Context, cred *model.Credential) error {
