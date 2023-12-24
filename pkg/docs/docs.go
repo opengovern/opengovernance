@@ -7975,6 +7975,15 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "parentBenchmarkDisplayCodes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Azure CIS v1.4.0"
+                    ]
+                },
                 "parentBenchmarkNames": {
                     "type": "array",
                     "items": {
@@ -11035,11 +11044,11 @@ const docTemplate = `{
                 "error"
             ],
             "x-enum-varnames": [
-                "ComplianceResultOK",
-                "ComplianceResultALARM",
-                "ComplianceResultINFO",
-                "ComplianceResultSKIP",
-                "ComplianceResultERROR"
+                "ConformanceStatusOK",
+                "ConformanceStatusALARM",
+                "ConformanceStatusINFO",
+                "ConformanceStatusSKIP",
+                "ConformanceStatusERROR"
             ]
         },
         "types.ConformanceStatusSummary": {
