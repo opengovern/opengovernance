@@ -4,20 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/labstack/echo/v4"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
@@ -150,7 +147,7 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 		return false, err
 	}
 
-	if err := kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
+	if err := azure.CheckSPNAccessPermission(azure.AuthConfig{
 		TenantID:            azureConfig.TenantID,
 		ObjectID:            azureConfig.ObjectID,
 		SecretID:            azureConfig.SecretID,
@@ -186,7 +183,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 
 	h.logger.Info("discovering azure subscriptions", zap.String("credential-id", credential.ID.String()))
 
-	subs, err := h.AzureDiscoverSubscriptions(ctx, kaytuAzure.AuthConfig{
+	subs, err := h.AzureDiscoverSubscriptions(ctx, azure.AuthConfig{
 		TenantID:     azureCnf.TenantID,
 		ObjectID:     azureCnf.ObjectID,
 		SecretID:     azureCnf.SecretID,
@@ -249,17 +246,23 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 		if err != nil {
 			return nil, err
 		}
-		if count >= maxConnections {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+
+		maxConnections, err := h.connSvc.MaxConnections()
+		if err != nil {
+			return nil, err
 		}
 
-		isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
+		if count >= maxConnections {
+			return nil, ErrMaxConnectionsExceeded
+		}
+
+		isAttached, err := azure.CheckRole(azure.AuthConfig{
 			TenantID:     azureCnf.TenantID,
 			ObjectID:     azureCnf.ObjectID,
 			SecretID:     azureCnf.SecretID,
 			ClientID:     azureCnf.ClientID,
 			ClientSecret: azureCnf.ClientSecret,
-		}, sub.SubscriptionID, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
+		}, sub.SubscriptionID, azure.DefaultReaderRoleDefinitionIDTemplate)
 		if err != nil {
 			h.logger.Warn("failed to check role", zap.Error(err))
 			continue

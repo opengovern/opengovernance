@@ -23,7 +23,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrMaxConnectionsExceeded = errors.New("number of connections exceeded")
+var (
+	ErrMaxConnectionsExceeded   = errors.New("number of connections exceeded")
+	ErrInvalidMaxConnectionType = errors.New("max connections should be int or int64")
+)
 
 type Connection struct {
 	keyARN          string
@@ -258,4 +261,24 @@ func (h Connection) Update(
 	defer span.End()
 
 	return h.repo.Update(ctx, c)
+}
+
+func (h Connection) MaxConnections() (int64, error) {
+	cnf, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyConnectionLimit)
+	if err != nil {
+		return 0, err
+	}
+
+	var maxConnections int64
+
+	switch v := cnf.GetValue().(type) {
+	case int64:
+		maxConnections = v
+	case int:
+		maxConnections = int64(v)
+	default:
+		return 0, ErrInvalidMaxConnectionType
+	}
+
+	return maxConnections, nil
 }
