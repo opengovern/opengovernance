@@ -82,6 +82,10 @@ func (p ResourcePaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
+func (p ResourcePaginator) Close(ctx context.Context) error {
+	return p.paginator.Deallocate(ctx)
+}
+
 func (p ResourcePaginator) NextPage(ctx context.Context) ([]Resource, error) {
 	var response ResourceSearchResponse
 	err := p.paginator.Search(ctx, &response)
@@ -188,6 +192,10 @@ func ListResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 			for _, v := range page {
 				d.StreamListItem(ctx, v)
 			}
+		}
+		err = paginator.Close(ctx)
+		if err != nil {
+			return nil, err
 		}
 	}
 

@@ -93,6 +93,10 @@ func (p LookupResourcePaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
+func (p LookupResourcePaginator) Close(ctx context.Context) error {
+	return p.paginator.Deallocate(ctx)
+}
+
 func (p LookupResourcePaginator) NextPage(ctx context.Context) ([]LookupResource, error) {
 	var response LookupResourceSearchResponse
 	err := p.paginator.SearchWithLog(ctx, &response, true)
@@ -170,6 +174,11 @@ func ListLookupResources(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		for _, v := range page {
 			d.StreamListItem(ctx, v)
 		}
+	}
+
+	err = paginator.Close(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return nil, nil
