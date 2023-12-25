@@ -345,7 +345,9 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 
 type FindingKPIResponse struct {
 	Hits struct {
-		Total kaytu.SearchTotal `json:"total"`
+		Total struct {
+			Value int64 `json:"value"`
+		} `json:"total"`
 	} `json:"hits"`
 	Aggregations struct {
 		ResourceCount struct {
