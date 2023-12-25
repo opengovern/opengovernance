@@ -106,7 +106,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
-	findings.POST("/kpi", httpserver2.AuthorizeHandler(h.GetFindingKPIs, authApi.ViewerRole))
+	findings.GET("/kpi", httpserver2.AuthorizeHandler(h.GetFindingKPIs, authApi.ViewerRole))
 	findings.GET("/top/:field/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByControls, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
@@ -695,7 +695,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	api.FindingKPIResponse
-//	@Router			/compliance/api/v1/findings/kpi [post]
+//	@Router			/compliance/api/v1/findings/kpi [get]
 func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
 	kpiRes, err := es.FindingKPIQuery(h.logger, h.client)
 	if err != nil {

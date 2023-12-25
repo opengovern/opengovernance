@@ -1743,7 +1743,7 @@ const docTemplate = `{
             }
         },
         "/compliance/api/v1/findings/kpi": {
-            "post": {
+            "get": {
                 "security": [
                     {
                         "BearerToken": []

@@ -346,7 +346,7 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 type FindingKPIResponse struct {
 	Hits struct {
 		Total kaytu.SearchTotal `json:"total"`
-	}
+	} `json:"hits"`
 	Aggregations struct {
 		ResourceCount struct {
 			Value int64 `json:"value"`
@@ -357,7 +357,7 @@ type FindingKPIResponse struct {
 		ConnectionCount struct {
 			Value int64 `json:"value"`
 		} `json:"connection_count"`
-	}
+	} `json:"aggregations"`
 }
 
 func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIResponse, error) {
