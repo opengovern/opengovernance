@@ -1194,6 +1194,17 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingKPIResponse:
+    properties:
+      failedConnectionCount:
+        type: integer
+      failedControlCount:
+        type: integer
+      failedFindingsCount:
+        type: integer
+      failedResourceCount:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -4502,6 +4513,23 @@ paths:
       security:
       - BearerToken: []
       summary: Get possible values for finding filters
+      tags:
+      - compliance
+  /compliance/api/v1/findings/kpi:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving KPIs for findings.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingKPIResponse'
+      security:
+      - BearerToken: []
+      summary: Get finding KPIs
       tags:
       - compliance
   /compliance/api/v1/findings/resource:
