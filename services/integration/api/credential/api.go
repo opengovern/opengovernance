@@ -35,12 +35,12 @@ func New(
 
 // CreateAzure godoc
 //
-//	@Summary		Create Azure credential
-//	@Description	Creating Azure credential, testing it and reads all the subscriptions
+//	@Summary		Create Azure credential and does onboarding for its subscriptions
+//	@Description	Creating Azure credential, testing it and on-board its subscriptions
 //	@Security		BearerToken
 //	@Tags			integration
 //	@Produce		json
-//	@Success		200		{object}	entity.CreateConnectionResponse
+//	@Success		200		{object}	entity.CreateCredentialResponse
 //	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
 //	@Router			/integration/api/v1/credential/azure [post]
 func (h API) CreateAzure(c echo.Context) error {
