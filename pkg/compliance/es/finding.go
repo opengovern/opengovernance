@@ -343,6 +343,73 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	return &resp, nil
 }
 
+type FindingKPIResponse struct {
+	Hits struct {
+		Total kaytu.SearchTotal `json:"total"`
+	}
+	Aggregations struct {
+		ResourceCount struct {
+			Value int64 `json:"value"`
+		} `json:"resource_count"`
+		ControlCount struct {
+			Value int64 `json:"value"`
+		} `json:"control_count"`
+		ConnectionCount struct {
+			Value int64 `json:"value"`
+		} `json:"connection_count"`
+	}
+}
+
+func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIResponse, error) {
+	root := make(map[string]any)
+	root["size"] = 0
+	root["track_total_hits"] = true
+
+	filters := make([]map[string]any, 0)
+	filters = append(filters, map[string]any{
+		"terms": map[string]any{
+			"conformanceStatus": []types.ConformanceStatus{
+				types.ConformanceStatusALARM,
+				types.ConformanceStatusINFO,
+				types.ConformanceStatusSKIP,
+				types.ConformanceStatusERROR,
+			},
+		},
+	})
+
+	root["aggs"] = map[string]any{
+		"resource_count": map[string]any{
+			"cardinality": map[string]any{
+				"field": "kaytuResourceID",
+			},
+		},
+		"control_count": map[string]any{
+			"cardinality": map[string]any{
+				"field": "controlID",
+			},
+		},
+		"connection_count": map[string]any{
+			"cardinality": map[string]any{
+				"field": "connectionID",
+			},
+		},
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("FindingKPIQuery", zap.String("query", string(queryBytes)))
+	var resp FindingKPIResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	if err != nil {
+		logger.Error("FindingKPIQuery", zap.Error(err), zap.String("query", string(queryBytes)))
+		return nil, err
+	}
+	return &resp, err
+}
+
 type Bucket struct {
 	Key      string `json:"key"`
 	DocCount int    `json:"doc_count"`

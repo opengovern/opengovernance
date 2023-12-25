@@ -106,6 +106,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
+	findings.POST("/kpi", httpserver2.AuthorizeHandler(h.GetFindingKPIs, authApi.ViewerRole))
 	findings.GET("/top/:field/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByControls, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
@@ -682,6 +683,31 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		})
 	}
 
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingKPIs godoc
+//
+//	@Summary		Get finding KPIs
+//	@Description	Retrieving KPIs for findings.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.FindingKPIResponse
+//	@Router			/compliance/api/v1/findings/kpi [post]
+func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
+	kpiRes, err := es.FindingKPIQuery(h.logger, h.client)
+	if err != nil {
+		h.logger.Error("failed to get finding kpis", zap.Error(err))
+		return err
+	}
+	response := api.FindingKPIResponse{
+		FailedFindingsCount:   kpiRes.Hits.Total.Value,
+		FailedResourceCount:   kpiRes.Aggregations.ResourceCount.Value,
+		FailedControlCount:    kpiRes.Aggregations.ControlCount.Value,
+		FailedConnectionCount: kpiRes.Aggregations.ConnectionCount.Value,
+	}
 	return ctx.JSON(http.StatusOK, response)
 }
 

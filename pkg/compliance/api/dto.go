@@ -188,3 +188,9 @@ type GetFindingsResponse struct {
 	Findings   []Finding `json:"findings"`
 	TotalCount int64     `json:"totalCount" example:"100"`
 }
+type FindingKPIResponse struct {
+	FailedFindingsCount   int64 `json:"failedFindingsCount"`
+	FailedResourceCount   int64 `json:"failedResourceCount"`
+	FailedControlCount    int64 `json:"failedControlCount"`
+	FailedConnectionCount int64 `json:"failedConnectionCount"`
+}

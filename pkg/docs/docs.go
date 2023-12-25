@@ -1742,6 +1742,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/findings/kpi": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving KPIs for findings.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get finding KPIs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingKPIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings/resource": {
             "post": {
                 "security": [
@@ -8223,6 +8251,23 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
                     }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingKPIResponse": {
+            "type": "object",
+            "properties": {
+                "failedConnectionCount": {
+                    "type": "integer"
+                },
+                "failedControlCount": {
+                    "type": "integer"
+                },
+                "failedFindingsCount": {
+                    "type": "integer"
+                },
+                "failedResourceCount": {
+                    "type": "integer"
                 }
             }
         },
