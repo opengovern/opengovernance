@@ -378,6 +378,11 @@ func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIRespon
 			},
 		},
 	})
+	root["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
 
 	root["aggs"] = map[string]any{
 		"resource_count": map[string]any{
