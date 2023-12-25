@@ -409,12 +409,11 @@ func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIRespon
 
 	logger.Info("FindingKPIQuery", zap.String("query", string(queryBytes)))
 	var resp FindingKPIResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(queryBytes), nil, &resp, true)
 	if err != nil {
 		logger.Error("FindingKPIQuery", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
 	}
-	logger.Info("FindingKPIQuery", zap.String("query", string(queryBytes)), zap.Any("resp", resp))
 	return &resp, err
 }
 
