@@ -230,7 +230,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 						localConn.LifecycleState = model.ConnectionLifecycleStateDisabled
 					}
 					if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
-						if _, err := h.db.UpdateSource(&localConn); err != nil {
+						if err := h.connSvc.Update(ctx, localConn); err != nil {
 							h.logger.Error("failed to update source", zap.Error(err))
 							return nil, err
 						}

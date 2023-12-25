@@ -248,3 +248,14 @@ func (h Connection) Create(
 
 	return h.repo.Create(ctx, c)
 }
+
+// Updates given connection in the database.
+func (h Connection) Update(
+	ctx context.Context,
+	c model.Connection,
+) error {
+	ctx, span := h.tracer.Start(ctx, "update")
+	defer span.End()
+
+	return h.repo.Update(ctx, c)
+}

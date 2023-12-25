@@ -10,7 +10,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var ErrDuplicateConnection = errors.New("didn't create connection due to id conflict")
+var (
+	ErrDuplicateConnection = errors.New("didn't create connection due to id conflict")
+	ErrConnectionNotFound  = errors.New("cannot find the given connection")
+)
 
 type Connection interface {
 	List(context.Context) ([]model.Connection, error)
@@ -30,6 +33,7 @@ type Connection interface {
 	CountOfType(context.Context, source.Type) (int64, error)
 
 	Create(context.Context, model.Connection) error
+	Update(context.Context, model.Connection) error
 }
 
 type ConnectionSQL struct {
@@ -150,6 +154,19 @@ func (s ConnectionSQL) Create(ctx context.Context, c model.Connection) error {
 		return tx.Error
 	} else if tx.RowsAffected != 1 {
 		return ErrDuplicateConnection
+	}
+
+	return nil
+}
+
+func (s ConnectionSQL) Update(ctx context.Context, c model.Connection) error {
+	tx := s.db.DB.
+		Where("id = ?", c.ID.String()).Updates(c)
+
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return ErrConnectionNotFound
 	}
 
 	return nil
