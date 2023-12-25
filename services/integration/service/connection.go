@@ -146,6 +146,7 @@ func (h Connection) Pending(ctx *httpclient.Context) ([]string, error) {
 	return pending, nil
 }
 
+// List lists connection with given type, passing empty list of types means you don't want any kind of type filtering.
 func (h Connection) List(ctx context.Context, types []source.Type) ([]model.Connection, error) {
 	var (
 		connections []model.Connection

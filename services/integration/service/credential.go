@@ -22,6 +22,7 @@ type Credential struct {
 	masterAccessKey string
 	masterSecretKey string
 	logger          *zap.Logger
+	connSvc         Connection
 }
 
 func NewCredential(
@@ -31,6 +32,7 @@ func NewCredential(
 	describe describe.SchedulerServiceClient,
 	inventory inventory.InventoryServiceClient,
 	meta *meta.Meta,
+	connSvc Connection,
 	masterAccessKey string,
 	masterSecretKey string,
 	logger *zap.Logger,
@@ -45,6 +47,7 @@ func NewCredential(
 		meta:            meta,
 		masterAccessKey: masterAccessKey,
 		masterSecretKey: masterSecretKey,
+		connSvc:         connSvc,
 		logger:          logger.Named("service").Named("credential"),
 	}
 }
