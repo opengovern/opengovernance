@@ -55,6 +55,10 @@ func (p ConnectionCostSummaryPaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
+func (p ConnectionCostSummaryPaginator) Close(ctx context.Context) error {
+	return p.paginator.Deallocate(ctx)
+}
+
 func (p ConnectionCostSummaryPaginator) NextPage(ctx context.Context) ([]spend.ConnectionMetricTrendSummary, error) {
 	var response ConnectionCostSummarySearchResponse
 	err := p.paginator.Search(ctx, &response)

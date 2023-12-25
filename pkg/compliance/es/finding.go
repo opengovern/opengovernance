@@ -52,6 +52,10 @@ func (p FindingPaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
+func (p FindingPaginator) Close(ctx context.Context) error {
+	return p.paginator.Deallocate(ctx)
+}
+
 func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
 	var response FindingsQueryResponse
 	err := p.paginator.SearchWithLog(ctx, &response, true)

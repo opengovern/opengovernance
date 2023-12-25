@@ -50,6 +50,10 @@ func (p FindingPaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
+func (p FindingPaginator) Close(ctx context.Context) error {
+	return p.paginator.Deallocate(ctx)
+}
+
 func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
 	var response FindingSearchResponse
 	err := p.paginator.Search(ctx, &response)
@@ -122,6 +126,11 @@ func ListFindings(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 		for _, v := range page {
 			d.StreamListItem(ctx, v)
 		}
+	}
+
+	err = paginator.Close(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return nil, nil

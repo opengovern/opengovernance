@@ -114,6 +114,11 @@ func (w *Worker) RunJob(j Job) error {
 		}
 	}
 
+	err = paginator.Close(ctx)
+	if err != nil {
+		return err
+	}
+
 	w.logger.Info("Starting to summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),

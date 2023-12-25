@@ -914,6 +914,11 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 				paginator.UpdateState(hits, nil, "")
 			}
 		}
+
+		err = paginator.Deallocate(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	return ctx.NoContent(http.StatusOK)
