@@ -399,6 +399,13 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				resource.EsIndex = idx
 				msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
+				if s.conf.ElasticSearch.IsOpenSearch {
+					err = s.es.Delete(key, idx)
+					if err != nil {
+						s.logger.Error("failed to delete resource from opensearch", zap.Error(err))
+						return
+					}
+				}
 
 				lookupResource := es2.LookupResource{
 					ResourceID:   hit.Source.ResourceID,
@@ -412,8 +419,19 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				lookupResource.EsIndex = idx
 				msg = kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
+				if s.conf.ElasticSearch.IsOpenSearch {
+					err = s.es.Delete(key, idx)
+					if err != nil {
+						s.logger.Error("failed to delete lookup from opensearch", zap.Error(err))
+						return
+					}
+				}
 			}
-			_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
+
+			if !s.conf.ElasticSearch.IsOpenSearch {
+				_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
+			}
+
 			if err != nil {
 				s.logger.Error("failed to send delete message to kafka", zap.Error(err))
 				break
