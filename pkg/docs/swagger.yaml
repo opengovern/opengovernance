@@ -6793,7 +6793,7 @@ paths:
       tags:
       - describe
   /schedule/api/v1/jobs:
-    get:
+    post:
       parameters:
       - description: List jobs request
         in: body

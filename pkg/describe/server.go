@@ -86,7 +86,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/all/jobs/state", httpserver2.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
 	v1.GET("/discovery/resourcetypes/list", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
-	v1.GET("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
+	v1.POST("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver2.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
@@ -111,7 +111,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 //	@Param		request	body	api.ListJobsRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	api.ListJobsResponse
-//	@Router		/schedule/api/v1/jobs [get]
+//	@Router		/schedule/api/v1/jobs [post]
 func (h HttpServer) ListJobs(ctx echo.Context) error {
 	var request api.ListJobsRequest
 	if err := ctx.Bind(&request); err != nil {

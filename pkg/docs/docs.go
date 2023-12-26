@@ -5429,7 +5429,7 @@ const docTemplate = `{
             }
         },
         "/schedule/api/v1/jobs": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerToken": []
