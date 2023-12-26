@@ -51,14 +51,14 @@ func (h API) CreateAzure(c echo.Context) error {
 
 	var req entity.CreateAzureConnectionRequest
 
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.Validate(req); err != nil {
+	if err := c.Validate(&req); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 
