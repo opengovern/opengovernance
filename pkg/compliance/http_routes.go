@@ -200,7 +200,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
-		req.Filters.ResourceTypeID, req.Filters.ResourceCollection,
+		req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID,
 		req.Filters.Severity, req.Filters.ConformanceStatus, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
@@ -567,7 +567,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID,
-		req.ResourceCollection, req.BenchmarkID, req.ControlID,
+		req.BenchmarkID, req.ControlID,
 		req.Severity, req.ConformanceStatus)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
@@ -988,19 +988,8 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 		return err
 	}
 
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
-
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
-	if len(severities) == 0 {
-		severities = []kaytuTypes.FindingSeverity{
-			kaytuTypes.FindingSeverityCritical,
-			kaytuTypes.FindingSeverityHigh,
-			kaytuTypes.FindingSeverityMedium,
-			kaytuTypes.FindingSeverityLow,
-			kaytuTypes.FindingSeverityNone,
-		}
-	}
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -1017,7 +1006,13 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.FindingsFieldCountByControl(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, nil, severities)
+	res, err := es.FindingsFieldCountByControl(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
+		[]kaytuTypes.ConformanceStatus{
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
+		})
 	if err != nil {
 		return err
 	}

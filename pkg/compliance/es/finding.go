@@ -80,7 +80,7 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 
 func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
 	provider []source.Type, connectionID []string,
-	resourceTypes []string, resourceCollections []string,
+	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []string, conformanceStatuses []types.ConformanceStatus,
 	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
@@ -144,10 +144,6 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 			connectors = append(connectors, p.String())
 		}
 		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
-	}
-	if len(resourceCollections) > 0 {
-		idx = types.ResourceCollectionsFindingsIndex
-		filters = append(filters, kaytu.NewTermsFilter("resourceCollection", resourceCollections))
 	}
 
 	isStack := false
@@ -245,7 +241,7 @@ type FindingFiltersAggregationResponse struct {
 }
 
 func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
-	resourceIDs []string, connector []source.Type, connectionID []string, resourceCollections []string,
+	resourceIDs []string, connector []source.Type, connectionID []string,
 	benchmarkID []string, controlID []string, severity []string, conformanceStatuses []types.ConformanceStatus,
 ) (*FindingFiltersAggregationResponse, error) {
 	idx := types.FindingsIndex
@@ -259,11 +255,6 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(connectionID) > 0 {
 		terms["connectionID"] = connectionID
-	}
-
-	if len(resourceCollections) > 0 {
-		idx = types.ResourceCollectionsFindingsIndex
-		terms["resourceCollection"] = resourceCollections
 	}
 
 	if len(benchmarkID) > 0 {
@@ -329,15 +320,6 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	if err != nil {
 		logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
-	}
-	if len(resourceCollections) == 0 {
-		var rcResp FindingFiltersAggregationResponse
-		err = client.Search(context.Background(), types.ResourceCollectionsFindingsIndex, string(queryBytes), &rcResp)
-		if err != nil {
-			logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
-			return nil, err
-		}
-		resp.Aggregations.ResourceCollectionFilter = rcResp.Aggregations.ResourceCollectionFilter
 	}
 
 	return &resp, nil
@@ -622,7 +604,8 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 }
 
 func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity) (*FindingsFieldCountByControlResponse, error) {
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
+	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsFieldCountByControlResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
@@ -637,6 +620,10 @@ func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
 		terms["severity"] = severity
 	}
 
+	if len(conformanceStatuses) > 0 {
+		terms["conformanceStatus"] = conformanceStatuses
+	}
+
 	if len(connectionIDs) > 0 {
 		terms["connectionID"] = connectionIDs
 	}
@@ -647,11 +634,6 @@ func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
 
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
-	}
-
-	if len(resourceCollections) > 0 {
-		idx = types.ResourceCollectionsFindingsIndex
-		terms["resourceCollection"] = resourceCollections
 	}
 
 	root := map[string]any{}

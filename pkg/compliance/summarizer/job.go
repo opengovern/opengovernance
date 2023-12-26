@@ -11,20 +11,12 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"go.uber.org/zap"
 	"strings"
-	"time"
 )
 
-type Job struct {
-	ID          uint
-	BenchmarkID string
-	CreatedAt   time.Time
-}
-
-func (w *Worker) RunJob(j Job) error {
+func (w *Worker) RunJob(j types2.Job) error {
 	ctx := context.Background()
 
 	w.logger.Info("Running summarizer",
@@ -32,32 +24,33 @@ func (w *Worker) RunJob(j Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []kaytu.BoolFilter{
-		kaytu.NewTermFilter("parentBenchmarks", j.BenchmarkID),
-	}, nil)
+	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, nil, nil)
 	if err != nil {
 		return err
 	}
 
 	w.logger.Info("FindingsIndex paginator ready")
 
-	bs := types2.BenchmarkSummary{
-		BenchmarkID:      j.BenchmarkID,
-		JobID:            j.ID,
-		EvaluatedAtEpoch: j.CreatedAt.Unix(),
-		Connections: types2.BenchmarkSummaryResult{
-			BenchmarkResult: types2.ResultGroup{
-				Result: types2.Result{
-					QueryResult:    map[types.ConformanceStatus]int{},
-					SeverityResult: map[types.FindingSeverity]int{},
-					SecurityScore:  0,
+	jd := types2.JobDocs{
+		BenchmarkSummary: types2.BenchmarkSummary{
+			BenchmarkID:      j.BenchmarkID,
+			JobID:            j.ID,
+			EvaluatedAtEpoch: j.CreatedAt.Unix(),
+			Connections: types2.BenchmarkSummaryResult{
+				BenchmarkResult: types2.ResultGroup{
+					Result: types2.Result{
+						QueryResult:    map[types.ConformanceStatus]int{},
+						SeverityResult: map[types.FindingSeverity]int{},
+						SecurityScore:  0,
+					},
+					ResourceTypes: map[string]types2.Result{},
+					Controls:      map[string]types2.ControlResult{},
 				},
-				ResourceTypes: map[string]types2.Result{},
-				Controls:      map[string]types2.ControlResult{},
+				Connections: map[string]types2.ResultGroup{},
 			},
-			Connections: map[string]types2.ResultGroup{},
+			ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
 		},
-		ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
+		ResourcesFindings: make(map[string]types.ResourceFinding),
 
 		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
 		ConnectionCache:         map[string]onboardApi.Connection{},
@@ -70,7 +63,7 @@ func (w *Worker) RunJob(j Job) error {
 	}
 	for _, rc := range resourceCollections {
 		rc := rc
-		bs.ResourceCollectionCache[rc.ID] = rc
+		jd.ResourceCollectionCache[rc.ID] = rc
 	}
 
 	connections, err := w.onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, nil)
@@ -81,7 +74,7 @@ func (w *Worker) RunJob(j Job) error {
 	for _, c := range connections {
 		c := c
 		// use provider id instead of kaytu id because we need that to check resource collections
-		bs.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
+		jd.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
 	}
 
 	for page := 1; paginator.HasNext(); page++ {
@@ -110,7 +103,7 @@ func (w *Worker) RunJob(j Job) error {
 
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
-			bs.AddFinding(w.logger, f, lookupResourcesMap[f.KaytuResourceID])
+			jd.AddFinding(w.logger, j, f, lookupResourcesMap[f.KaytuResourceID])
 		}
 	}
 
@@ -124,20 +117,28 @@ func (w *Worker) RunJob(j Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	bs.Summarize()
+	jd.Summarize(w.logger)
 
-	w.logger.Info("Summarize done", zap.Any("summary", bs))
+	w.logger.Info("Summarize done", zap.Any("summary", jd))
 
+	keys, idx := jd.BenchmarkSummary.KeysAndIndex()
+	jd.BenchmarkSummary.EsID = kafka.HashOf(keys...)
+	jd.BenchmarkSummary.EsIndex = idx
+
+	docs := make([]kafka.Doc, 0, len(jd.ResourcesFindings)+1)
+	docs = append(docs, jd.BenchmarkSummary)
+	for _, rf := range jd.ResourcesFindings {
+		keys, idx := rf.KeysAndIndex()
+		rf.EsID = kafka.HashOf(keys...)
+		rf.EsIndex = idx
+		docs = append(docs, rf)
+	}
 	if w.config.ElasticSearch.IsOpenSearch {
-		keys, idx := bs.KeysAndIndex()
-		bs.EsID = kafka.HashOf(keys...)
-		bs.EsIndex = idx
-
-		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, []kafka.Doc{bs}); err != nil {
+		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
 			return err
 		}
 	} else {
-		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, []kafka.Doc{bs}, w.logger, nil)
+		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
 		if err != nil {
 			return err
 		}

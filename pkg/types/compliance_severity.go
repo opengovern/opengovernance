@@ -44,6 +44,11 @@ func ParseFindingSeverities(list []string) []FindingSeverity {
 	return result
 }
 
+type SeverityResultWithTotal struct {
+	SeverityResult
+	TotalCount int `json:"totalCount" example:"5"`
+}
+
 type SeverityResult struct {
 	UnknownCount  int `json:"unknownCount" example:"1"`
 	LowCount      int `json:"lowCount" example:"1"`
