@@ -5444,16 +5444,13 @@ const docTemplate = `{
                 "summary": "Lists all jobs",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Hours",
-                        "name": "hours",
-                        "in": "query"
+                        "description": "List jobs request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -8810,7 +8807,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus"
+                    "type": "string"
                 },
                 "title": {
                     "type": "string"
@@ -8823,25 +8820,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus": {
-            "type": "string",
-            "enum": [
-                "created",
-                "queued",
-                "in_progress",
-                "successful",
-                "failure",
-                "timeout"
-            ],
-            "x-enum-varnames": [
-                "JobStatus_Created",
-                "JobStatus_Queued",
-                "JobStatus_InProgress",
-                "JobStatus_Successful",
-                "JobStatus_Failure",
-                "JobStatus_Timeout"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary": {
             "type": "object",
             "properties": {
@@ -8849,7 +8827,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus"
+                    "type": "string"
                 },
                 "type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType"
@@ -8881,6 +8859,38 @@ const docTemplate = `{
                     }
                 },
                 "azureResourceTypes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsRequest": {
+            "type": "object",
+            "properties": {
+                "hours": {
+                    "type": "integer"
+                },
+                "pageNo": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "sortBy": {
+                    "type": "string"
+                },
+                "sortOrder": {
+                    "type": "string"
+                },
+                "statusFilter": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "typeFilters": {
                     "type": "array",
                     "items": {
                         "type": "string"
