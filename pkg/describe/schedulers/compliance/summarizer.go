@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
+	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -63,21 +64,7 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJ
 		return 0, err
 	}
 
-	totalValue := sankDocumentCountResponse.Hits.Total.Value
-	sankDocumentCountResponse = SankDocumentCountResponse{}
-	err = s.esClient.SearchWithTrackTotalHits(
-		context.TODO(), types.ResourceCollectionsFindingsIndex,
-		string(query),
-		nil,
-		&sankDocumentCountResponse, true,
-	)
-	if err != nil {
-		s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", benchmarkId))
-		return 0, err
-	}
-	totalValue += sankDocumentCountResponse.Hits.Total.Value
-
-	return totalValue, nil
+	return sankDocumentCountResponse.Hits.Total.Value, nil
 }
 
 func (s *JobScheduler) runSummarizer() error {
@@ -187,7 +174,7 @@ func (s *JobScheduler) createSummarizer(job model.ComplianceJob) error {
 }
 
 func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
-	summarizerJob := summarizer.Job{
+	summarizerJob := types2.Job{
 		ID:          job.ID,
 		BenchmarkID: job.BenchmarkID,
 		CreatedAt:   job.CreatedAt,

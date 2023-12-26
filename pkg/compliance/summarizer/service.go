@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
@@ -112,7 +113,7 @@ func (w *Worker) Run() error {
 func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 	startTime := time.Now()
 
-	var job Job
+	var job types.Job
 	err := json.Unmarshal(msg.Value, &job)
 	if err != nil {
 		return err
