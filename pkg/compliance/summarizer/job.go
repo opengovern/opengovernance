@@ -127,7 +127,9 @@ func (w *Worker) RunJob(j types2.Job) error {
 
 	docs := make([]kafka.Doc, 0, len(jd.ResourcesFindings)+1)
 	docs = append(docs, jd.BenchmarkSummary)
-	for _, rf := range jd.ResourcesFindings {
+	resourceIds := make([]string, 0, len(jd.ResourcesFindings))
+	for resourceId, rf := range jd.ResourcesFindings {
+		resourceIds = append(resourceIds, resourceId)
 		keys, idx := rf.KeysAndIndex()
 		rf.EsID = kafka.HashOf(keys...)
 		rf.EsIndex = idx
@@ -142,6 +144,12 @@ func (w *Worker) RunJob(j types2.Job) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// Delete old resource findings
+	err = es.DeleteOtherResourceFindingsExcept(w.logger, w.esClient, resourceIds, j.ID)
+	if err != nil {
+		return err
 	}
 
 	w.logger.Info("Finished summarizer",
