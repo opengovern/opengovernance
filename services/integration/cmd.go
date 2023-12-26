@@ -10,7 +10,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/config"
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
-	"github.com/kaytu-io/kaytu-engine/services/integration/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/spf13/cobra"
@@ -34,11 +33,6 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			s, err := steampipe.New(cnf.Steampipe, logger)
-			if err != nil {
-				return err
-			}
-
 			// TODO (parham) why access-key and secret-key are empty?
 			kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", cnf.KMS.Region)
 			if err != nil {
@@ -52,7 +46,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			api.New(logger, d, i, m, s, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey)
+			api.New(logger, d, i, m, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey)
 
 			cmd.SilenceUsage = true
 
