@@ -56,6 +56,8 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			Findings:              nil,
 			ResourceCollection:    nil,
 			ResourceCollectionMap: make(map[string]bool),
+			JobId:                 job.ID,
+			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
 	}
 	if resourceFinding.ResourceName == "" {
