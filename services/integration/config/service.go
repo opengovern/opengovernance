@@ -6,7 +6,6 @@ type IntegrationConfig struct {
 	Postgres        koanf.Postgres     `json:"postgres,omitempty" koanf:"postgres"`
 	Steampipe       koanf.Postgres     `json:"steampipe,omitempty" koanf:"steampipe"`
 	Http            koanf.HttpServer   `json:"http,omitempty" koanf:"http"`
-	RabbitMQ        koanf.RabbitMQ     `json:"rabbit_mq,omitempty" koanf:"rabbit_mq"`
 	KMS             koanf.KMS          `json:"kms,omitempty" koanf:"kms"`
 	Metadata        koanf.KaytuService `json:"metadata,omitempty" koanf:"metadata"`
 	Inventory       koanf.KaytuService `json:"inventory,omitempty" koanf:"inventory"`
