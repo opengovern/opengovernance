@@ -108,52 +108,15 @@ func (h HttpServer) Register(e *echo.Echo) {
 //	@Summary	Lists all jobs
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		limit	query	int	false	"Limit"
-//	@Param		hours	query	int	false	"Hours"
+//	@Param		request	body	api.ListJobsRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	api.ListJobsResponse
 //	@Router		/schedule/api/v1/jobs [get]
 func (h HttpServer) ListJobs(ctx echo.Context) error {
-	hoursStr := ctx.QueryParam("hours")
-	limitStr := ctx.QueryParam("limit")
-	typeFilter := ctx.QueryParam("type")
-	statusFilter := api.JobStatus(ctx.QueryParam("status"))
-
-	var queryStatusFilter []string
-	switch statusFilter {
-	case api.JobStatus_Created:
-		queryStatusFilter = []string{"CREATED"}
-	case api.JobStatus_Queued:
-		queryStatusFilter = []string{"QUEUED"}
-	case api.JobStatus_InProgress:
-		queryStatusFilter = []string{"IN_PROGRESS", "RUNNERS_IN_PROGRESS", "SUMMARIZER_IN_PROGRESS"}
-	case api.JobStatus_Successful:
-		queryStatusFilter = []string{"COMPLETED", "SUCCESSFUL", "SUCCEEDED"}
-	case api.JobStatus_Failure:
-		queryStatusFilter = []string{"COMPLETED_WITH_FAILURE", "FAILED"}
-	case api.JobStatus_Timeout:
-		queryStatusFilter = []string{"TIMEOUT", "TIMEDOUT"}
-	default:
-		queryStatusFilter = []string{}
-	}
-
-	hours := 24
-	limit := 500
-
-	if len(hoursStr) > 0 {
-		n, err := strconv.Atoi(hoursStr)
-		if err != nil {
-			return err
-		}
-		hours = n
-	}
-
-	if len(limitStr) > 0 {
-		n, err := strconv.Atoi(limitStr)
-		if err != nil {
-			return err
-		}
-		limit = n
+	var request api.ListJobsRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	var jobs []api.Job
@@ -173,27 +136,22 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		return err
 	}
 
-	describeJobs, err := h.DB.ListAllJobs(limit, typeFilter, queryStatusFilter)
+	sortBy := "id"
+	if request.SortBy != "" {
+		sortBy = string(request.SortBy)
+	}
+
+	sortOrder := "ASC"
+	if request.SortOrder == api.JobSortOrder_DESC {
+		sortOrder = "DESC"
+	}
+
+	describeJobs, err := h.DB.ListAllJobs(request.PageNo, request.PageSize, request.Hours, request.TypeFilters,
+		request.StatusFilter, sortBy, sortOrder)
 	if err != nil {
 		return err
 	}
 	for _, job := range describeJobs {
-		var status api.JobStatus
-		switch job.Status {
-		case "CREATED":
-			status = api.JobStatus_Created
-		case "QUEUED":
-			status = api.JobStatus_Queued
-		case "IN_PROGRESS", "RUNNERS_IN_PROGRESS", "SUMMARIZER_IN_PROGRESS":
-			status = api.JobStatus_InProgress
-		case "COMPLETED", "SUCCESSFUL", "SUCCEEDED":
-			status = api.JobStatus_Successful
-		case "COMPLETED_WITH_FAILURE", "FAILED":
-			status = api.JobStatus_Failure
-		case "TIMEOUT", "TIMEDOUT":
-			status = api.JobStatus_Timeout
-		}
-
 		var jobSRC onboardapi.Connection
 		for _, src := range srcs {
 			if src.ID.String() == job.ConnectionID {
@@ -208,6 +166,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 				}
 			}
 		}
+
 		if job.JobType == "compliance" {
 			for _, benchmark := range benchmarks {
 				if fmt.Sprintf("%v", benchmark.ID) == job.Title {
@@ -225,36 +184,20 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 			ConnectionProviderID:   jobSRC.ConnectionID,
 			ConnectionProviderName: jobSRC.ConnectionName,
 			Title:                  job.Title,
-			Status:                 status,
+			Status:                 job.Status,
 			FailureReason:          job.FailureMessage,
 		})
 	}
 
 	var jobSummaries []api.JobSummary
-	summaries, err := h.DB.GetAllJobSummary(hours)
+	summaries, err := h.DB.GetAllJobSummary(request.Hours)
 	if err != nil {
 		return err
 	}
 	for _, summary := range summaries {
-		var status api.JobStatus
-		switch summary.Status {
-		case "CREATED":
-			status = api.JobStatus_Created
-		case "QUEUED":
-			status = api.JobStatus_Queued
-		case "IN_PROGRESS", "RUNNERS_IN_PROGRESS", "SUMMARIZER_IN_PROGRESS":
-			status = api.JobStatus_InProgress
-		case "COMPLETED", "SUCCESSFUL", "SUCCEEDED":
-			status = api.JobStatus_Successful
-		case "COMPLETED_WITH_FAILURE", "FAILED":
-			status = api.JobStatus_Failure
-		case "TIMEOUT", "TIMEDOUT":
-			status = api.JobStatus_Timeout
-		}
-
 		jobSummaries = append(jobSummaries, api.JobSummary{
 			Type:   api.JobType(summary.JobType),
-			Status: status,
+			Status: summary.Status,
 			Count:  summary.Count,
 		})
 	}

@@ -1580,7 +1580,7 @@ definitions:
       id:
         type: integer
       status:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus'
+        type: string
       title:
         type: string
       type:
@@ -1588,28 +1588,12 @@ definitions:
       updatedAt:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus:
-    enum:
-    - created
-    - queued
-    - in_progress
-    - successful
-    - failure
-    - timeout
-    type: string
-    x-enum-varnames:
-    - JobStatus_Created
-    - JobStatus_Queued
-    - JobStatus_InProgress
-    - JobStatus_Successful
-    - JobStatus_Failure
-    - JobStatus_Timeout
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary:
     properties:
       count:
         type: integer
       status:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobStatus'
+        type: string
       type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobType'
     type: object
@@ -1632,6 +1616,27 @@ definitions:
           type: string
         type: array
       azureResourceTypes:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsRequest:
+    properties:
+      hours:
+        type: integer
+      pageNo:
+        type: integer
+      pageSize:
+        type: integer
+      sortBy:
+        type: string
+      sortOrder:
+        type: string
+      statusFilter:
+        items:
+          type: string
+        type: array
+      typeFilters:
         items:
           type: string
         type: array
@@ -6790,14 +6795,12 @@ paths:
   /schedule/api/v1/jobs:
     get:
       parameters:
-      - description: Limit
-        in: query
-        name: limit
-        type: integer
-      - description: Hours
-        in: query
-        name: hours
-        type: integer
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsRequest'
       produces:
       - application/json
       responses:

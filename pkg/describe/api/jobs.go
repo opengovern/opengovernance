@@ -72,6 +72,33 @@ const (
 	JobStatus_Timeout    JobStatus = "timeout"
 )
 
+type JobSort string
+
+const (
+	JobSort_ByJobID        = "id"
+	JobSort_ByJobType      = "job_type"
+	JobSort_ByConnectionID = "connection_id"
+	JobSort_ByStatus       = "status"
+)
+
+type JobSortOrder string
+
+const (
+	JobSortOrder_ASC  = "ASC"
+	JobSortOrder_DESC = "DESC"
+)
+
+type ListJobsRequest struct {
+	Hours        int      `json:"hours"`
+	PageNo       int      `json:"pageNo"`
+	PageSize     int      `json:"pageSize"`
+	TypeFilters  []string `json:"typeFilters"`
+	StatusFilter []string `json:"statusFilter"`
+
+	SortBy    JobSort      `json:"sortBy"`
+	SortOrder JobSortOrder `json:"sortOrder"`
+}
+
 type Job struct {
 	ID                     uint      `json:"id"`
 	CreatedAt              time.Time `json:"createdAt"`
@@ -81,14 +108,14 @@ type Job struct {
 	ConnectionProviderID   string    `json:"connectionProviderID"`
 	ConnectionProviderName string    `json:"connectionProviderName"`
 	Title                  string    `json:"title"`
-	Status                 JobStatus `json:"status"`
+	Status                 string    `json:"status"`
 	FailureReason          string    `json:"failureReason"`
 }
 
 type JobSummary struct {
-	Type   JobType   `json:"type"`
-	Status JobStatus `json:"status"`
-	Count  int64     `json:"count"`
+	Type   JobType `json:"type"`
+	Status string  `json:"status"`
+	Count  int64   `json:"count"`
 }
 
 type ListJobsResponse struct {
