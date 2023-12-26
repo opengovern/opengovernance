@@ -191,7 +191,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	}
 
 	var jobSummaries []api.JobSummary
-	summaries, err := h.DB.GetAllJobSummary(request.Hours)
+	summaries, err := h.DB.GetAllJobSummary(request.Hours, request.TypeFilters, request.StatusFilter)
 	if err != nil {
 		return err
 	}

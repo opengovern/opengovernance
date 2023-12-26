@@ -206,8 +206,26 @@ UNION ALL
 	return job, nil
 }
 
-func (db Database) GetAllJobSummary(hours int) ([]model.JobSummary, error) {
+func (db Database) GetAllJobSummary(hours int, typeFilter []string, statusFilter []string) ([]model.JobSummary, error) {
 	var job []model.JobSummary
+
+	whereQuery := ""
+	var values []interface{}
+
+	if len(typeFilter) > 0 || len(statusFilter) > 0 {
+		var queries []string
+		if len(typeFilter) > 0 {
+			queries = append(queries, "job_type IN ?")
+			values = append(values, typeFilter)
+		}
+
+		if len(statusFilter) > 0 {
+			queries = append(queries, "status IN ?")
+			values = append(values, statusFilter)
+		}
+
+		whereQuery = "WHERE " + strings.Join(queries, " AND ")
+	}
 
 	rawQuery := fmt.Sprintf(`
 SELECT * FROM (
@@ -220,10 +238,10 @@ UNION ALL
 UNION ALL 
 (SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
 )
-) AS t;
-`, hours)
+) AS t %s;
+`, hours, whereQuery)
 
-	tx := db.ORM.Raw(rawQuery).Find(&job)
+	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
