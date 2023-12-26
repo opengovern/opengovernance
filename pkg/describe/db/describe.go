@@ -160,7 +160,7 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) ListAllJobs(pageNo, pageSize, hours int, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
+func (db Database) ListAllJobs(pageStart, pageEnd, hours int, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
 	var job []model.Job
 
 	whereQuery := ""
@@ -195,7 +195,7 @@ UNION ALL
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, hours, whereQuery, sortBy, sortOrder)
 
-	values = append(values, pageSize, pageNo*pageSize)
+	values = append(values, pageEnd-pageStart, pageStart)
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {

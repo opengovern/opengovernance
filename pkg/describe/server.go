@@ -147,7 +147,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		sortOrder = "DESC"
 	}
 
-	describeJobs, err := h.DB.ListAllJobs(request.PageNo, request.PageSize, request.Hours, request.TypeFilters,
+	describeJobs, err := h.DB.ListAllJobs(request.PageStart, request.PageEnd, request.Hours, request.TypeFilters,
 		request.StatusFilter, sortBy, sortOrder)
 	if err != nil {
 		return err

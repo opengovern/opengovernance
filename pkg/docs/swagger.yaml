@@ -1050,9 +1050,6 @@ definitions:
       reason:
         example: The VM is not using managed disks
         type: string
-      resourceCollection:
-        description: Resource collection
-        type: string
       resourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
@@ -1624,9 +1621,9 @@ definitions:
     properties:
       hours:
         type: integer
-      pageNo:
+      pageEnd:
         type: integer
-      pageSize:
+      pageStart:
         type: integer
       sortBy:
         type: string
