@@ -2894,7 +2894,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/integration/api/v1/connections/summary": {
+        "/integration/api/v1/connections/summaries": {
             "get": {
                 "security": [
                     {

@@ -19,8 +19,8 @@ type CredentialSQL struct {
 	db db.Database
 }
 
-func NewCredentialSQL(db db.Database) Connection {
-	return ConnectionSQL{
+func NewCredentialSQL(db db.Database) Credential {
+	return CredentialSQL{
 		db: db,
 	}
 }
