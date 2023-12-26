@@ -137,7 +137,8 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	}
 
 	sortBy := "id"
-	if request.SortBy != "" {
+	switch request.SortBy {
+	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
 		sortBy = string(request.SortBy)
 	}
 
