@@ -8,13 +8,13 @@ on:
     inputs:
       servicesList:
         type: string
-        description: 'List of services to build'
+        description: "List of services to build"
         required: false
-        default: ''
+        default: ""
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   tag:
@@ -47,96 +47,97 @@ jobs:
       - tag
     environment: golang
     outputs:
-        steampipe: ${{ steps.build_services.outputs.steampipe }}
-        auth-service: ${{ steps.build_services.outputs.auth-service }}
-        checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
-        compliance-report-worker: ${{ steps.build_services.outputs.compliance-report-worker }}
-        compliance-service: ${{ steps.build_services.outputs.compliance-service }}
-        compliance-summarizer: ${{ steps.build_services.outputs.compliance-summarizer }}
-        describe-scheduler: ${{ steps.build_services.outputs.describe-scheduler }}
-        hopper: ${{ steps.build_services.outputs.hopper }}
-        reporter: ${{ steps.build_services.outputs.reporter }}
-        insight-worker: ${{ steps.build_services.outputs.insight-worker }}
-        inventory-service: ${{ steps.build_services.outputs.inventory-service }}
-        metadata-service: ${{ steps.build_services.outputs.metadata-service }}
-        migrator-worker: ${{ steps.build_services.outputs.migrator-worker }}
-        onboard-service: ${{ steps.build_services.outputs.onboard-service }}
-        subscription-service: ${{ steps.build_services.outputs.subscription-service }}
-        swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
-        workspace-service: ${{ steps.build_services.outputs.workspace-service }}
-        analytics-worker: ${{ steps.build_services.outputs.analytics-worker }}
-        alerting-service: ${{ steps.build_services.outputs.alerting-service }}
-        cost-estimator-service: ${{ steps.build_services.outputs.cost-estimator-service }}
-        steampipe-plugin-kaytu: ${{ steps.build_services.outputs.steampipe-plugin-kaytu }}
+      steampipe: ${{ steps.build_services.outputs.steampipe }}
+      auth-service: ${{ steps.build_services.outputs.auth-service }}
+      checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
+      compliance-report-worker: ${{ steps.build_services.outputs.compliance-report-worker }}
+      compliance-service: ${{ steps.build_services.outputs.compliance-service }}
+      compliance-summarizer: ${{ steps.build_services.outputs.compliance-summarizer }}
+      describe-scheduler: ${{ steps.build_services.outputs.describe-scheduler }}
+      hopper: ${{ steps.build_services.outputs.hopper }}
+      reporter: ${{ steps.build_services.outputs.reporter }}
+      insight-worker: ${{ steps.build_services.outputs.insight-worker }}
+      inventory-service: ${{ steps.build_services.outputs.inventory-service }}
+      metadata-service: ${{ steps.build_services.outputs.metadata-service }}
+      migrator-worker: ${{ steps.build_services.outputs.migrator-worker }}
+      onboard-service: ${{ steps.build_services.outputs.onboard-service }}
+      subscription-service: ${{ steps.build_services.outputs.subscription-service }}
+      swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
+      workspace-service: ${{ steps.build_services.outputs.workspace-service }}
+      analytics-worker: ${{ steps.build_services.outputs.analytics-worker }}
+      alerting-service: ${{ steps.build_services.outputs.alerting-service }}
+      cost-estimator-service: ${{ steps.build_services.outputs.cost-estimator-service }}
+      steampipe-plugin-kaytu: ${{ steps.build_services.outputs.steampipe-plugin-kaytu }}
+      integration-service: ${{ steps.build_services.outputs.integration-service }}
     #        gpt-service: ${{ steps.build_services.outputs.gpt-service }}
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
     steps:
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
-      with:
-        # this might remove tools that are actually needed,
-        # if set to "true" but frees about 6 GB
-        tool-cache: false
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
 
-        # all of these default to true, but feel free to set to
-        # "false" if necessary for your workflow
-        android: true
-        dotnet: true
-        haskell: true
-        large-packages: false
-        docker-images: true
-        swap-storage: true
-    - name: Install musl cc
-      uses: awalsh128/cache-apt-pkgs-action@v1
-      with:
-        packages: musl-tools musl-dev musl
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 5
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version-file: './go.mod'
-        cache: false
-    - name: Go Cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/go/pkg/mod
-          ~/.cache/go-build
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/kaytu-io.insteadOf https://github.com/kaytu-io
-    - name: Build services
-      id: build_services
-      run: |
-        set -x
-        ./scripts/list_services > ./service-list
-        cat ./service-list
-        cat ./service-list | sed 's/^\<steampipe\>$//g' | sed 's/^\<redoc\>$//g' | sed 's/\s\+/\n/g' > ./build_services
-        cat ./build_services
-        mkdir -p ./build
-        if [ ! -z "$(cat ./build_services)" ]; then
-          for f in $(cat ./build_services); do
-            CC=/usr/bin/musl-gcc GOPRIVATE="github.com/kaytu-io" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
-          done
-          chmod +x ./build/*
-        fi
-        for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
-    - name: Pack build
-      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-      run: |
-        tar -czvf build.tar.gz build
-    - name: Upload artifact
-      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-      uses: actions/upload-artifact@v3
-      with:
-        name: build
-        path: build.tar.gz
-        retention-days: 1
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: true
+      - name: Install musl cc
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: musl-tools musl-dev musl
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 5
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "./go.mod"
+          cache: false
+      - name: Go Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/kaytu-io.insteadOf https://github.com/kaytu-io
+      - name: Build services
+        id: build_services
+        run: |
+          set -x
+          ./scripts/list_services > ./service-list
+          cat ./service-list
+          cat ./service-list | sed 's/^\<steampipe\>$//g' | sed 's/^\<redoc\>$//g' | sed 's/\s\+/\n/g' > ./build_services
+          cat ./build_services
+          mkdir -p ./build
+          if [ ! -z "$(cat ./build_services)" ]; then
+            for f in $(cat ./build_services); do
+              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/kaytu-io" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
+            done
+            chmod +x ./build/*
+          fi
+          for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
+      - name: Pack build
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          tar -czvf build.tar.gz build
+      - name: Upload artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build.tar.gz
+          retention-days: 1
   deploy-steampipe:
     runs-on: ubuntu-latest
     needs:
@@ -149,33 +150,33 @@ jobs:
     environment: docker
     if: needs.build.outputs.steampipe == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    - name: Download artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: build
-        path: .
-    - name: Unpack artifact
-      run: |
-        tar -xvf build.tar.gz
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-region: ${{ vars.AWS_REGION }}
-        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-    - uses: docker/login-action@v2
-      with:
-        registry: ${{ vars.DOCKER_REGISTRY }}
-    - name: Build and push Docker images
-      uses: docker/build-push-action@v4
-      with:
-        push: true
-        tags: ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
-        file: docker/SteampipeServiceDockerfile
-        build-args: |
-          PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
-        context: .
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar.gz
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
+          file: docker/SteampipeServiceDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+          context: .
   deploy-auth-service:
     runs-on: ubuntu-latest
     needs:
@@ -432,6 +433,42 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_REGISTRY }}/hopper:${{ needs.tag.outputs.latest_tag }}
           file: docker/HopperDockerfile
+          context: .
+  deploy-integration-service:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - tag
+    permissions:
+      id-token: write
+      contents: read
+    environment: docker
+    if: needs.build.outputs.integration-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar.gz
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ vars.DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}
+          file: docker/IntegrationServiceDockerfile
           context: .
   deploy-reporter:
     runs-on: ubuntu-latest
@@ -935,7 +972,6 @@ jobs:
             ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1-${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipePluginKaytuDockerfile
           context: .
-
 #  deploy-gpt-service:
 #    runs-on: ubuntu-latest
 #    needs:
