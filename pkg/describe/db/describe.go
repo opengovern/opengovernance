@@ -192,10 +192,10 @@ UNION ALL
 UNION ALL 
 (SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]d HOURS')
 )
-) AS t %s LIMIT ? OFFSET ? ORDER BY ? %s;
-`, hours, whereQuery, sortOrder)
+) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
+`, hours, whereQuery, sortBy, sortOrder)
 
-	values = append(values, pageSize, pageNo*pageSize, sortBy)
+	values = append(values, pageSize, pageNo*pageSize)
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
