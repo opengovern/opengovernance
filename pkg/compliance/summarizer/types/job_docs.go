@@ -175,6 +175,8 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			jd.BenchmarkSummary.ResourceCollections[rcId] = benchmarkSummaryRc
 		}
 	}
+
+	jd.ResourcesFindings[resource.ResourceID] = resourceFinding
 }
 
 func (jd *JobDocs) Summarize(logger *zap.Logger) {

@@ -155,6 +155,7 @@ func (w *Worker) RunJob(j types2.Job) error {
 	w.logger.Info("Finished summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
+		zap.Int("resource_count", len(jd.ResourcesFindings)),
 	)
 	return nil
 }
