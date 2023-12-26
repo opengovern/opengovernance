@@ -87,7 +87,7 @@ func (api *API) Register(e *echo.Echo) {
 		api.logger,
 	)
 
-	healthz.Register(e.Group("/integration/api/v1/healthz"))
-	connection.Register(e.Group("/integration/api/v1/connections"))
-	credential.Register(e.Group("/integration/api/v1/credentials"))
+	healthz.Register(e.Group("/api/v1/healthz"))
+	connection.Register(e.Group("/api/v1/connections"))
+	credential.Register(e.Group("/api/v1/credentials"))
 }
