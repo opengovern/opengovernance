@@ -46,11 +46,13 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			api.New(logger, d, i, m, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey)
-
 			cmd.SilenceUsage = true
 
-			return httpserver.RegisterAndStart(logger, cnf.Http.Address, nil)
+			return httpserver.RegisterAndStart(
+				logger,
+				cnf.Http.Address,
+				api.New(logger, d, i, m, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey),
+			)
 		},
 	}
 
