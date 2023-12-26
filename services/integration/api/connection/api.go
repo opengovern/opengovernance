@@ -174,7 +174,7 @@ func (h API) Count(c echo.Context) error {
 //	@Param			needCost			query		boolean			false	"for quicker inquiry send this parameter as false, default: true"
 //	@Param			needResourceCount	query		boolean			false	"for quicker inquiry send this parameter as false, default: true"
 //	@Param			sortBy				query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost,growth,growth_rate,cost_growth,cost_growth_rate)
-//	@Success		200					{object}	api.ListConnectionSummaryResponse
+//	@Success		200					{object}	entity.ListConnectionsSummaryResponse
 //	@Router			/integration/api/v1/connections/summary [get]
 func (h API) Summaries(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))

@@ -2889,6 +2889,197 @@
                 }
             }
         },
+        "/integration/api/v1/connections/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving a list of connections summaries",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "List connections summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection IDs to filter by",
+                        "name": "resourceCollection",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection Groups",
+                        "name": "connectionGroups",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "DISABLED",
+                            "DISCOVERED",
+                            "IN_PROGRESS",
+                            "ONBOARD",
+                            "ARCHIVED"
+                        ],
+                        "type": "string",
+                        "description": "lifecycle state filter",
+                        "name": "lifecycleState",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "healthy",
+                            "unhealthy"
+                        ],
+                        "type": "string",
+                        "description": "health state filter",
+                        "name": "healthState",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "for quicker inquiry send this parameter as false, default: true",
+                        "name": "needCost",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "for quicker inquiry send this parameter as false, default: true",
+                        "name": "needResourceCount",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "onboard_date",
+                            "resource_count",
+                            "cost",
+                            "growth",
+                            "growth_rate",
+                            "cost_growth",
+                            "cost_growth_rate"
+                        ],
+                        "type": "string",
+                        "description": "column to sort by - default is cost",
+                        "name": "sortBy",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListConnectionsSummaryResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credential/azure": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Creating Azure credential, testing it and on-board its subscriptions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "integration"
+                ],
+                "summary": "Create Azure credential and does onboarding for its subscriptions",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/query": {
             "get": {
                 "security": [
@@ -10998,6 +11189,400 @@
                 "SizeMD",
                 "SizeLG"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig": {
+            "type": "object",
+            "required": [
+                "clientId",
+                "clientSecret",
+                "objectId",
+                "tenantId"
+            ],
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "type": "string"
+                },
+                "objectId": {
+                    "type": "string"
+                },
+                "tenantId": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection": {
+            "type": "object",
+            "properties": {
+                "assetDiscovery": {
+                    "type": "boolean"
+                },
+                "assetDiscoveryMethod": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.AssetDiscoveryMethodType"
+                        }
+                    ],
+                    "example": "scheduled"
+                },
+                "connector": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "cost": {
+                    "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
+                    "example": 1000
+                },
+                "credential": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential"
+                },
+                "credentialID": {
+                    "type": "string",
+                    "example": "7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"
+                },
+                "credentialName": {
+                    "type": "string"
+                },
+                "credentialType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType"
+                        }
+                    ],
+                    "example": "manual"
+                },
+                "dailyCostAtEndTime": {
+                    "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
+                    "example": 1000
+                },
+                "dailyCostAtStartTime": {
+                    "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
+                    "example": 1000
+                },
+                "describeJobRunning": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "This is an example connection"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "johndoe@example.com"
+                },
+                "healthReason": {
+                    "type": "string"
+                },
+                "healthState": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.HealthStatus"
+                        }
+                    ],
+                    "example": "healthy"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "lastHealthCheckTime": {
+                    "type": "string",
+                    "example": "2023-05-07T00:00:00Z"
+                },
+                "lastInventory": {
+                    "type": "string",
+                    "example": "2023-05-07T00:00:00Z"
+                },
+                "lifecycleState": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectionLifecycleState"
+                        }
+                    ],
+                    "example": "enabled"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "oldResourceCount": {
+                    "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
+                    "example": 100
+                },
+                "onboardDate": {
+                    "type": "string",
+                    "example": "2023-05-07T00:00:00Z"
+                },
+                "providerConnectionID": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "providerConnectionName": {
+                    "type": "string",
+                    "example": "example-connection"
+                },
+                "resourceCount": {
+                    "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
+                    "example": 100
+                },
+                "spendDiscovery": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectionLifecycleState": {
+            "type": "string",
+            "enum": [
+                "ONBOARD",
+                "DISABLED",
+                "DISCOVERED",
+                "IN_PROGRESS",
+                "ARCHIVED"
+            ],
+            "x-enum-varnames": [
+                "ConnectionLifecycleStateOnboard",
+                "ConnectionLifecycleStateDisabled",
+                "ConnectionLifecycleStateDiscovered",
+                "ConnectionLifecycleStateInProgress",
+                "ConnectionLifecycleStateArchived"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential": {
+            "type": "object",
+            "properties": {
+                "archived_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 0
+                },
+                "autoOnboardEnabled": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "config": {},
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                    }
+                },
+                "connectorType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "AWS"
+                },
+                "credentialType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType"
+                        }
+                    ],
+                    "example": "manual-aws-org"
+                },
+                "disabled_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 0
+                },
+                "discovered_connections": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 50
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "healthReason": {
+                    "type": "string",
+                    "example": ""
+                },
+                "healthStatus": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.HealthStatus"
+                        }
+                    ],
+                    "example": "healthy"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "1028642a-b22e-26ha-c5h2-22nl254678m5"
+                },
+                "lastHealthCheckTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-06-03T12:21:33.406928Z"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string",
+                    "example": "a-1mahsl7lzk"
+                },
+                "onboardDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-06-03T12:21:33.406928Z"
+                },
+                "onboard_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 250
+                },
+                "spendDiscovery": {
+                    "type": "boolean"
+                },
+                "total_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 300
+                },
+                "unhealthy_connections": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 50
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType": {
+            "type": "string",
+            "enum": [
+                "auto-azure",
+                "auto-aws",
+                "manual-aws-org",
+                "manual-azure-spn"
+            ],
+            "x-enum-varnames": [
+                "CredentialTypeAutoAzure",
+                "CredentialTypeAutoAws",
+                "CredentialTypeManualAwsOrganization",
+                "CredentialTypeManualAzureSpn"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListConnectionsSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "connectionCount": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 10
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                    }
+                },
+                "totalArchivedCount": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
+                },
+                "totalCost": {
+                    "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
+                    "example": 1000
+                },
+                "totalDisabledCount": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
+                },
+                "totalDiscoveredCount": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
+                },
+                "totalOldResourceCount": {
+                    "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
+                    "example": 100
+                },
+                "totalOnboardedCount": {
+                    "description": "Also includes in-progress",
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
+                },
+                "totalResourceCount": {
+                    "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
+                    "example": 100
+                },
+                "totalUnhealthyCount": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
+                }
+            }
         },
         "kaytu.ResourceCollectionFilter": {
             "type": "object",

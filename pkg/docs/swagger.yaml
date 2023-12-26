@@ -3125,6 +3125,289 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig:
+    properties:
+      clientId:
+        type: string
+      clientSecret:
+        type: string
+      objectId:
+        type: string
+      tenantId:
+        type: string
+    required:
+    - clientId
+    - clientSecret
+    - objectId
+    - tenantId
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection:
+    properties:
+      assetDiscovery:
+        type: boolean
+      assetDiscoveryMethod:
+        allOf:
+        - $ref: '#/definitions/source.AssetDiscoveryMethodType'
+        example: scheduled
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      cost:
+        example: 1000
+        maximum: 10000000
+        minimum: 0
+        type: number
+      credential:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential'
+      credentialID:
+        example: 7r6123ac-ca1c-434f-b1a3-91w2w9d277c8
+        type: string
+      credentialName:
+        type: string
+      credentialType:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType'
+        example: manual
+      dailyCostAtEndTime:
+        example: 1000
+        maximum: 10000000
+        minimum: 0
+        type: number
+      dailyCostAtStartTime:
+        example: 1000
+        maximum: 10000000
+        minimum: 0
+        type: number
+      describeJobRunning:
+        type: boolean
+      description:
+        example: This is an example connection
+        type: string
+      email:
+        example: johndoe@example.com
+        type: string
+      healthReason:
+        type: string
+      healthState:
+        allOf:
+        - $ref: '#/definitions/source.HealthStatus'
+        example: healthy
+      id:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      lastHealthCheckTime:
+        example: "2023-05-07T00:00:00Z"
+        type: string
+      lastInventory:
+        example: "2023-05-07T00:00:00Z"
+        type: string
+      lifecycleState:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectionLifecycleState'
+        example: enabled
+      metadata:
+        additionalProperties: {}
+        type: object
+      oldResourceCount:
+        example: 100
+        maximum: 1000000
+        minimum: 0
+        type: integer
+      onboardDate:
+        example: "2023-05-07T00:00:00Z"
+        type: string
+      providerConnectionID:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      providerConnectionName:
+        example: example-connection
+        type: string
+      resourceCount:
+        example: 100
+        maximum: 1000000
+        minimum: 0
+        type: integer
+      spendDiscovery:
+        type: boolean
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectionLifecycleState:
+    enum:
+    - ONBOARD
+    - DISABLED
+    - DISCOVERED
+    - IN_PROGRESS
+    - ARCHIVED
+    type: string
+    x-enum-varnames:
+    - ConnectionLifecycleStateOnboard
+    - ConnectionLifecycleStateDisabled
+    - ConnectionLifecycleStateDiscovered
+    - ConnectionLifecycleStateInProgress
+    - ConnectionLifecycleStateArchived
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig'
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+        type: array
+      id:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential:
+    properties:
+      archived_connections:
+        example: 0
+        maximum: 1000
+        minimum: 0
+        type: integer
+      autoOnboardEnabled:
+        example: false
+        type: boolean
+      config: {}
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+        type: array
+      connectorType:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: AWS
+      credentialType:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType'
+        example: manual-aws-org
+      disabled_connections:
+        example: 0
+        maximum: 1000
+        minimum: 0
+        type: integer
+      discovered_connections:
+        example: 50
+        maximum: 100
+        minimum: 0
+        type: integer
+      enabled:
+        example: true
+        type: boolean
+      healthReason:
+        example: ""
+        type: string
+      healthStatus:
+        allOf:
+        - $ref: '#/definitions/source.HealthStatus'
+        example: healthy
+      id:
+        example: 1028642a-b22e-26ha-c5h2-22nl254678m5
+        type: string
+      lastHealthCheckTime:
+        example: "2023-06-03T12:21:33.406928Z"
+        format: date-time
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      name:
+        example: a-1mahsl7lzk
+        type: string
+      onboard_connections:
+        example: 250
+        maximum: 1000
+        minimum: 0
+        type: integer
+      onboardDate:
+        example: "2023-06-03T12:21:33.406928Z"
+        format: date-time
+        type: string
+      spendDiscovery:
+        type: boolean
+      total_connections:
+        example: 300
+        maximum: 1000
+        minimum: 0
+        type: integer
+      unhealthy_connections:
+        example: 50
+        maximum: 100
+        minimum: 0
+        type: integer
+      version:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType:
+    enum:
+    - auto-azure
+    - auto-aws
+    - manual-aws-org
+    - manual-azure-spn
+    type: string
+    x-enum-varnames:
+    - CredentialTypeAutoAzure
+    - CredentialTypeAutoAws
+    - CredentialTypeManualAwsOrganization
+    - CredentialTypeManualAzureSpn
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListConnectionsSummaryResponse:
+    properties:
+      connectionCount:
+        example: 10
+        maximum: 1000
+        minimum: 0
+        type: integer
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+        type: array
+      totalArchivedCount:
+        example: 10
+        maximum: 100
+        minimum: 0
+        type: integer
+      totalCost:
+        example: 1000
+        maximum: 10000000
+        minimum: 0
+        type: number
+      totalDisabledCount:
+        example: 10
+        maximum: 100
+        minimum: 0
+        type: integer
+      totalDiscoveredCount:
+        example: 10
+        maximum: 100
+        minimum: 0
+        type: integer
+      totalOldResourceCount:
+        example: 100
+        maximum: 1000000
+        minimum: 0
+        type: integer
+      totalOnboardedCount:
+        description: Also includes in-progress
+        example: 10
+        maximum: 100
+        minimum: 0
+        type: integer
+      totalResourceCount:
+        example: 100
+        maximum: 1000000
+        minimum: 0
+        type: integer
+      totalUnhealthyCount:
+        example: 10
+        maximum: 100
+        minimum: 0
+        type: integer
+    type: object
   kaytu.ResourceCollectionFilter:
     properties:
       account_ids:
@@ -5138,6 +5421,135 @@ paths:
       summary: Get Azure cost
       tags:
       - cost-estimator
+  /integration/api/v1/connections/summary:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving a list of connections summaries
+      parameters:
+      - description: Filter costs
+        in: query
+        name: filter
+        type: string
+      - collectionFormat: csv
+        description: Connector
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
+        description: Connection Groups
+        in: query
+        items:
+          type: string
+        name: connectionGroups
+        type: array
+      - description: lifecycle state filter
+        enum:
+        - DISABLED
+        - DISCOVERED
+        - IN_PROGRESS
+        - ONBOARD
+        - ARCHIVED
+        in: query
+        name: lifecycleState
+        type: string
+      - description: health state filter
+        enum:
+        - healthy
+        - unhealthy
+        in: query
+        name: healthState
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      - description: start time in unix seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds
+        in: query
+        name: endTime
+        type: integer
+      - description: 'for quicker inquiry send this parameter as false, default: true'
+        in: query
+        name: needCost
+        type: boolean
+      - description: 'for quicker inquiry send this parameter as false, default: true'
+        in: query
+        name: needResourceCount
+        type: boolean
+      - description: column to sort by - default is cost
+        enum:
+        - onboard_date
+        - resource_count
+        - cost
+        - growth
+        - growth_rate
+        - cost_growth
+        - cost_growth_rate
+        in: query
+        name: sortBy
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListConnectionsSummaryResponse'
+      security:
+      - BearerToken: []
+      summary: List connections summaries
+      tags:
+      - connections
+  /integration/api/v1/credential/azure:
+    post:
+      description: Creating Azure credential, testing it and on-board its subscriptions
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse'
+      security:
+      - BearerToken: []
+      summary: Create Azure credential and does onboarding for its subscriptions
+      tags:
+      - integration
   /inventory/api/v1/query:
     get:
       description: Retrieving list of smart queries by specified filters
