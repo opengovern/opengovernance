@@ -1892,7 +1892,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		////totalResultCount := datapoint.ConformanceStatusSummary.OkCount + datapoint.ConformanceStatusSummary.ErrorCount +
 		////	datapoint.ConformanceStatusSummary.AlarmCount + datapoint.ConformanceStatusSummary.InfoCount + datapoint.ConformanceStatusSummary.SkipCount
 		////totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
-		////	datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
+		////	datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.NoneCount +
 		////	datapoint.SeverityResult.PassedCount
 		//if (totalResultCount + totalChecksCount) > 0 {
 		response = append(response, api.BenchmarkTrendDatapoint{
