@@ -8233,10 +8233,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "The VM is not using managed disks"
                 },
-                "resourceCollection": {
-                    "description": "Resource collection",
-                    "type": "string"
-                },
                 "resourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
@@ -9063,10 +9059,10 @@ const docTemplate = `{
                 "hours": {
                     "type": "integer"
                 },
-                "pageNo": {
+                "pageEnd": {
                     "type": "integer"
                 },
-                "pageSize": {
+                "pageStart": {
                     "type": "integer"
                 },
                 "sortBy": {

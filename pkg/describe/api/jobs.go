@@ -90,8 +90,8 @@ const (
 
 type ListJobsRequest struct {
 	Hours        int      `json:"hours"`
-	PageNo       int      `json:"pageNo"`
-	PageSize     int      `json:"pageSize"`
+	PageStart    int      `json:"pageStart"`
+	PageEnd      int      `json:"pageEnd"`
 	TypeFilters  []string `json:"typeFilters"`
 	StatusFilter []string `json:"statusFilter"`
 
