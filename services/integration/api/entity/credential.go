@@ -14,7 +14,8 @@ type CreateCredentialRequest struct {
 }
 
 type CreateCredentialResponse struct {
-	ID string `json:"id"`
+	ID          string       `json:"id"`
+	Connections []Connection `json:"connections"`
 }
 
 type UpdateCredentialRequest struct {

@@ -2,10 +2,17 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gorm.io/gorm/clause"
+)
+
+var (
+	ErrDuplicateConnection = errors.New("didn't create connection due to id conflict")
+	ErrConnectionNotFound  = errors.New("cannot find the given connection")
 )
 
 type Connection interface {
@@ -24,6 +31,9 @@ type Connection interface {
 
 	Count(context.Context) (int64, error)
 	CountOfType(context.Context, source.Type) (int64, error)
+
+	Create(context.Context, model.Connection) error
+	Update(context.Context, model.Connection) error
 }
 
 type ConnectionSQL struct {
@@ -133,4 +143,31 @@ func (s ConnectionSQL) CountOfType(ctx context.Context, t source.Type) (int64, e
 	}
 
 	return c, nil
+}
+
+func (s ConnectionSQL) Create(ctx context.Context, c model.Connection) error {
+	tx := s.db.DB.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&c)
+
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return ErrDuplicateConnection
+	}
+
+	return nil
+}
+
+func (s ConnectionSQL) Update(ctx context.Context, c model.Connection) error {
+	tx := s.db.DB.
+		Where("id = ?", c.ID.String()).Updates(c)
+
+	if tx.Error != nil {
+		return tx.Error
+	} else if tx.RowsAffected != 1 {
+		return ErrConnectionNotFound
+	}
+
+	return nil
 }

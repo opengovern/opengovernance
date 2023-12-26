@@ -676,4 +676,5 @@ func (s API) Register(g *echo.Group) {
 	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
+	g.GET("/summary", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
 }

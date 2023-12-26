@@ -63,8 +63,10 @@ func (api *API) Register(e *echo.Echo) {
 			api.arn,
 			api.describe,
 			api.inventory,
+			api.meta,
 			api.masterAccessKey,
 			api.masterSecretKey,
+			api.logger,
 		),
 		api.logger,
 	)

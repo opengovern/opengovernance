@@ -3,10 +3,9 @@ package entity
 import (
 	"encoding/json"
 
+	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -52,12 +51,10 @@ type ConnectionAWSRequest struct {
 }
 
 type AzureCredentialConfig struct {
-	SubscriptionId string `json:"subscriptionId"`
-	TenantId       string `json:"tenantId" validate:"required,uuid_rfc4122"`
-	ObjectId       string `json:"objectId" validate:"required,uuid_rfc4122"`
-	SecretId       string `json:"secretId" validate:"required,uuid_rfc4122"`
-	ClientId       string `json:"clientId" validate:"required"`
-	ClientSecret   string `json:"clientSecret" validate:"required"`
+	TenantId     string `json:"tenantId" validate:"required,uuid_rfc4122"`
+	ObjectId     string `json:"objectId" validate:"required,uuid_rfc4122"`
+	ClientId     string `json:"clientId" validate:"required"`
+	ClientSecret string `json:"clientSecret" validate:"required"`
 }
 
 func (s AzureCredentialConfig) AsMap() map[string]any {
