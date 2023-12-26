@@ -42,7 +42,7 @@ func New(
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
 //	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
-//	@Router			/integration/api/v1/credential/azure [post]
+//	@Router			/integration/api/v1/credentials/azure [post]
 func (h API) CreateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
