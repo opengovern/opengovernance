@@ -1,6 +1,9 @@
 package summarizer
 
-import "time"
+import (
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
+	"time"
+)
 
 type ComplianceSummarizerStatus string
 
@@ -12,7 +15,7 @@ const (
 )
 
 type JobResult struct {
-	Job       Job
+	Job       types.Job
 	StartedAt time.Time
 	Status    ComplianceSummarizerStatus
 	Error     string

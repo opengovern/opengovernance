@@ -108,7 +108,6 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			Reason:                reason,
 			ComplianceJobID:       w.ID,
 			ParentComplianceJobID: w.ParentJobID,
-			ResourceCollection:    w.ExecutionPlan.ResourceCollectionID,
 			ParentBenchmarks:      caller.ParentBenchmarkIDs,
 		})
 	}
