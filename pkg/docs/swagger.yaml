@@ -3534,7 +3534,7 @@ definitions:
       mediumCount:
         example: 1
         type: integer
-      unknownCount:
+      noneCount:
         example: 1
         type: integer
     type: object

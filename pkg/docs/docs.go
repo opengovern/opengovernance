@@ -11759,7 +11759,7 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "unknownCount": {
+                "noneCount": {
                     "type": "integer",
                     "example": 1
                 }
