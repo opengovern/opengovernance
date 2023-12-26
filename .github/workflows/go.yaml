@@ -467,7 +467,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationServiceDockerfile
           context: .
   deploy-reporter:
