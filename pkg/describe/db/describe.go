@@ -169,7 +169,7 @@ func (db Database) ListAllJobs(pageStart, pageEnd, hours int, typeFilter []strin
 	if len(typeFilter) > 0 || len(statusFilter) > 0 {
 		var queries []string
 		if len(typeFilter) > 0 {
-			queries = append(queries, "type IN ?")
+			queries = append(queries, "job_type IN ?")
 			values = append(values, typeFilter)
 		}
 
