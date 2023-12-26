@@ -17,7 +17,7 @@ import (
 )
 
 func Command() *cobra.Command {
-	cnf := koanf.Provide("", config.IntegrationConfig{})
+	cnf := koanf.Provide("integration", config.IntegrationConfig{})
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {

@@ -4,6 +4,7 @@ import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/connection"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/credential"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/healthz"
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
@@ -52,14 +53,33 @@ func New(
 
 func (api *API) Register(e *echo.Echo) {
 	var healthz healthz.Healthz
+
+	connSvc := service.NewConnection(
+		repository.NewConnectionSQL(api.database),
+		api.kms,
+		api.arn,
+		api.describe,
+		api.inventory,
+		api.meta,
+		api.masterAccessKey,
+		api.masterSecretKey,
+		api.logger,
+	)
+
 	connection := connection.New(
-		service.NewConnection(
-			repository.NewConnectionSQL(api.database),
+		connSvc,
+		api.logger,
+	)
+
+	credential := credential.New(
+		service.NewCredential(
+			repository.NewCredentialSQL(api.database),
 			api.kms,
 			api.arn,
 			api.describe,
 			api.inventory,
 			api.meta,
+			connSvc,
 			api.masterAccessKey,
 			api.masterSecretKey,
 			api.logger,
@@ -67,6 +87,7 @@ func (api *API) Register(e *echo.Echo) {
 		api.logger,
 	)
 
-	healthz.Register(e.Group("/healthz"))
-	connection.Register(e.Group("/connections"))
+	healthz.Register(e.Group("/integration/api/v1/healthz"))
+	connection.Register(e.Group("/integration/api/v1/connections"))
+	credential.Register(e.Group("/integration/api/v1/credentials"))
 }

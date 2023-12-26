@@ -5418,7 +5418,7 @@ paths:
       summary: Get Azure cost
       tags:
       - cost-estimator
-  /integration/api/v1/connections/summary:
+  /integration/api/v1/connections/summaries:
     get:
       consumes:
       - application/json
