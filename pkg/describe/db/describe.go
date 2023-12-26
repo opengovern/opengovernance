@@ -192,7 +192,7 @@ UNION ALL
 UNION ALL 
 (SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]d HOURS')
 )
-) AS t %s ORDER BY updated_at DESC LIMIT ? OFFSET ? ORDER BY ? %s;
+) AS t %s LIMIT ? OFFSET ? ORDER BY ? %s;
 `, hours, whereQuery, sortOrder)
 
 	values = append(values, pageSize, pageNo*pageSize, sortBy)

@@ -418,9 +418,6 @@ func (ts *testSuite) TestCreateAPIKey() { // not finished yet. has problem with 
 			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			r.Header.Set(httpserver.XKaytuWorkspaceNameHeader, tc.WorkspaceID)
 			r.Header.Set(httpserver.XKaytuUserRoleHeader, tc.Role)
-			r.Header.Set(httpserver.XKaytuMaxUsersHeader, "10")
-			r.Header.Set(httpserver.XKaytuMaxConnectionsHeader, "10")
-			r.Header.Set(httpserver.XKaytuMaxResourcesHeader, "10")
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
