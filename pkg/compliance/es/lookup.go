@@ -51,7 +51,6 @@ func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) ([]e
 		"resources": map[string]any{
 			"terms": map[string]any{
 				"field": "resource_id",
-				"size":  len(resourceID),
 			},
 			"aggs": map[string]any{
 				"hit_select": map[string]any{
