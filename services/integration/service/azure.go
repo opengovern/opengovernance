@@ -174,8 +174,8 @@ func (h Credential) Create(ctx context.Context, cred *model.Credential) error {
 	return h.repo.Create(ctx, cred)
 }
 
-func (h Credential) AzureOnboard(ctx context.Context, credential model.Credential) ([]entity.Connection, error) {
-	connections := make([]entity.Connection, 0)
+func (h Credential) AzureOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
+	connections := make([]model.Connection, 0)
 
 	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
 	if err != nil {
@@ -298,23 +298,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 			}
 		}
 
-		connections = append(connections, entity.Connection{
-			ID:                   src.ID,
-			ConnectionID:         src.SourceId,
-			ConnectionName:       src.Name,
-			Email:                src.Email,
-			Connector:            src.Type,
-			Description:          src.Description,
-			OnboardDate:          src.CreatedAt,
-			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-			CredentialID:         src.CredentialID.String(),
-			CredentialName:       src.Credential.Name,
-			LifecycleState:       entity.ConnectionLifecycleState(src.LifecycleState),
-			HealthState:          src.HealthState,
-			LastHealthCheckTime:  src.LastHealthCheckTime,
-			HealthReason:         src.HealthReason,
-			Metadata:             metadata,
-		})
+		connections = append(connections, src)
 	}
 
 	return connections, nil
