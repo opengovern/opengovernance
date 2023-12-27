@@ -153,10 +153,6 @@ func (s *Service) StartReconciler() {
 			s.logger.Error(fmt.Sprintf("reservation: %v", err))
 		}
 
-		err = s.db.HandleDeletedWorkspaces()
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("HandleDeletedWorkspaces: %v", err))
-		}
 		// reset the time ticker
 		ticker.Reset(reconcilerInterval)
 	}
