@@ -685,9 +685,9 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 //	@Summary		Get Azure connection health
 //	@Description	Get live connection health status with given connection ID for Azure.
 //	@Security		BearerToken
-//	@Tags				connections
+//	@Tags			connections
 //	@Produce		json
-//	@Param			connectionId		path		string	true	"connection ID"
+//	@Param			connectionId	path		string	true	"connection ID"
 //	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
 //	@Success		200				{object}	entity.Connection
 //	@Router			/integration/api/v1/connections/{connectionId}/azure/healthcheck [get]
