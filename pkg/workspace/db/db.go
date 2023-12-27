@@ -190,7 +190,3 @@ func (s *Database) UpdateWorkspaceAWSUser(workspaceID string, arn *string) error
 	return s.Orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("aws_user_arn", arn).Error
 
 }
-
-func (s *Database) HandleDeletedWorkspaces() error {
-	return s.Orm.Where("status = ?", api.StateID_Deleted).Unscoped().Delete(&Workspace{}).Error
-}
