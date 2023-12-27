@@ -499,92 +499,89 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	switch s.OperationMode {
-	case OperationModeScheduler:
-		s.logger.Info("starting scheduler")
-		// --------- describe
-		utils.EnsureRunGoroutin(func() {
-			s.RunDescribeJobScheduler()
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.RunDescribeResourceJobs(ctx)
-		})
-		s.discoveryScheduler.Run()
-		// ---------
+	s.logger.Info("starting scheduler")
+	// --------- describe
+	utils.EnsureRunGoroutin(func() {
+		s.RunDescribeJobScheduler()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.RunDescribeResourceJobs(ctx)
+	})
+	s.discoveryScheduler.Run()
+	// ---------
 
-		// --------- describe
-		utils.EnsureRunGoroutin(func() {
-			s.RunStackScheduler()
-		})
-		// ---------
+	// --------- describe
+	utils.EnsureRunGoroutin(func() {
+		s.RunStackScheduler()
+	})
+	// ---------
 
-		// --------- inventory summarizer
-		utils.EnsureRunGoroutin(func() {
-			s.RunAnalyticsJobScheduler()
-		})
+	// --------- inventory summarizer
+	utils.EnsureRunGoroutin(func() {
+		s.RunAnalyticsJobScheduler()
+	})
 
-		utils.EnsureRunGoroutin(func() {
-			s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
-		})
-		// ---------
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
+	})
+	// ---------
 
-		// --------- compliance
-		s.complianceScheduler.Run()
-		utils.EnsureRunGoroutin(func() {
-			s.RunJobSequencer()
-		})
-		// ---------
+	// --------- compliance
+	s.complianceScheduler.Run()
+	utils.EnsureRunGoroutin(func() {
+		s.RunJobSequencer()
+	})
+	// ---------
 
-		// --------- insights
-		utils.EnsureRunGoroutin(func() {
-			s.RunInsightJobScheduler()
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
-		})
-		// ---------
+	// --------- insights
+	utils.EnsureRunGoroutin(func() {
+		s.RunInsightJobScheduler()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+	})
+	// ---------
 
-		//EnsureRunGoroutin(func() {
-		//	s.RunScheduleJobCompletionUpdater()
-		//})
+	//EnsureRunGoroutin(func() {
+	//	s.RunScheduleJobCompletionUpdater()
+	//})
 
-		utils.EnsureRunGoroutin(func() {
-			s.RunCheckupJobScheduler()
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.RunDisabledConnectionCleanup()
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.RunScheduledJobCleanup()
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.UpdateDescribedResourceCountScheduler()
-		})
-		utils.EnsureRunGoroutin(func() {
-			s.UpdateDescribedResourceCountScheduler()
-		})
-	case OperationModeReceiver:
-		utils.EnsureRunGoroutin(func() {
-			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
-		})
-		s.logger.Info("starting receiver")
-		lis, err := net.Listen("tcp", GRPCServerAddress)
-		if err != nil {
-			s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
-		}
-		go func() {
-			err := s.grpcServer.Serve(lis)
-			if err != nil {
-				s.logger.Fatal("failed to serve grpc server", zap.Error(err))
-			}
-		}()
+	utils.EnsureRunGoroutin(func() {
+		s.RunCheckupJobScheduler()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.RunDisabledConnectionCleanup()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.RunScheduledJobCleanup()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.UpdateDescribedResourceCountScheduler()
+	})
+	utils.EnsureRunGoroutin(func() {
+		s.UpdateDescribedResourceCountScheduler()
+	})
+
+	utils.EnsureRunGoroutin(func() {
+		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+	})
+	s.logger.Info("starting receiver")
+	lis, err := net.Listen("tcp", GRPCServerAddress)
+	if err != nil {
+		s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
 	}
+	go func() {
+		err := s.grpcServer.Serve(lis)
+		if err != nil {
+			s.logger.Fatal("failed to serve grpc server", zap.Error(err))
+		}
+	}()
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
