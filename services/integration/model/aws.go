@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
@@ -40,4 +41,39 @@ func ExtractCredentialMetadata(accountID string, org *types.Organization, accoun
 		metadata.OrganizationDiscoveredAccountCount = fp.Optional[int](len(accounts))
 	}
 	return &metadata, nil
+}
+
+type AWSCredentialConfig struct {
+	AccountID           string   `json:"accountID"`
+	AssumeRoleName      string   `json:"assumeRoleName"`
+	HealthCheckPolicies []string `json:"healthCheckPolicies"`
+	ExternalId          *string  `json:"externalId"`
+}
+
+func (s AWSCredentialConfig) AsMap() map[string]any {
+	in, err := json.Marshal(s)
+	if err != nil {
+		panic(err) // Don't expect any error
+	}
+
+	var out map[string]any
+	if err := json.Unmarshal(in, &out); err != nil {
+		panic(err) // Don't expect any error
+	}
+
+	return out
+}
+
+func AWSCredentialConfigFromMap(cnf map[string]any) (*AWSCredentialConfig, error) {
+	in, err := json.Marshal(cnf)
+	if err != nil {
+		return nil, err
+	}
+
+	var out AWSCredentialConfig
+	if err := json.Unmarshal(in, &out); err != nil {
+		return nil, err
+	}
+
+	return &out, nil
 }

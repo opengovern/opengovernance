@@ -72,14 +72,6 @@ func (h API) List(c echo.Context) error {
 		if httpserver.GetUserRole(c) == api.InternalRole {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
-			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(s.Credential.Secret)
-				if err != nil {
-					h.logger.Error("failed to provide credential from v2 to v1", zap.Error(err))
-
-					return echo.ErrInternalServerError
-				}
-			}
 		}
 		resp = append(resp, apiRes)
 	}
@@ -116,13 +108,6 @@ func (h API) Get(c echo.Context) error {
 		if httpserver.GetUserRole(c) == api.InternalRole {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
-			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(conn.Credential.Secret)
-				if err != nil {
-					return err
-				}
-			}
-
 		}
 
 		res = append(res, apiRes)
