@@ -56,7 +56,7 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetConfigMetadata", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetConfigMetadata")
 
-	metadata, err := src.GetConfigMetadata(h.db, h.redis, key)
+	metadata, err := src.GetConfigMetadata(h.db, key)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -101,7 +101,7 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_SetConfigMetadata", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_SetConfigMetadata")
 
-	err = src.SetConfigMetadata(h.db, h.redis, key, req.Value)
+	err = src.SetConfigMetadata(h.db, key, req.Value)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

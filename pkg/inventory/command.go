@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	RedisAddress = os.Getenv("REDIS_ADDRESS")
-
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
@@ -62,7 +60,6 @@ func start(ctx context.Context, cnf config3.InventoryConfig) error {
 		KafkaService,
 		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl,
 		logger,
-		RedisAddress,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)

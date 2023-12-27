@@ -139,7 +139,7 @@ func InitializeHttpHandler(
 	h.syncJobsQueue = syncJobsQueue
 
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
-	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
+	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
 	h.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 	h.metadataClient = metadataClient.NewMetadataServiceClient(conf.Metadata.BaseURL)
 	h.openAIClient = openai.NewClient(conf.OpenAI.Token)

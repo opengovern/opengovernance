@@ -38,7 +38,7 @@ func (t *EnsureJobsFinished) Apply(workspace db.Workspace) error {
 	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
 	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
-	onboardClient := client3.NewOnboardServiceClient(onboardURL, nil)
+	onboardClient := client3.NewOnboardServiceClient(onboardURL)
 
 	job, err := schedulerClient.GetAnalyticsJob(hctx, workspace.AnalyticsJobID)
 	if err != nil {

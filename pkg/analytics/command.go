@@ -142,7 +142,7 @@ func InitializeWorker(
 	w.config = conf
 	w.logger = logger
 
-	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
+	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 	return w, nil

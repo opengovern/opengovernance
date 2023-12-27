@@ -3,10 +3,8 @@ package describe
 import (
 	"context"
 	"errors"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"time"
-
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 )
 
 var ErrMaxResourceCountExceeded = errors.New("maximum resource count exceeded")
@@ -26,11 +24,6 @@ func (s *Scheduler) CheckWorkspaceResourceLimit() error {
 
 	if currentResourceCount >= limit.MaxResources {
 		return ErrMaxResourceCountExceeded
-	}
-
-	if err = s.rdb.Set(context.Background(), RedisKeyWorkspaceResourceRemaining,
-		limit.MaxResources-currentResourceCount, 12*time.Hour).Err(); err != nil {
-		return err
 	}
 
 	return nil

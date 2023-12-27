@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"os"
-	"strconv"
-	"time"
-
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"os"
 )
 
 var (
@@ -19,11 +16,6 @@ var (
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
-
-	RedisAddress  = os.Getenv("REDIS_ADDRESS")
-	RedisPassword = os.Getenv("REDIS_PASSWORD")
-	RedisDB       = os.Getenv("REDIS_DB")
-	RedisTTLSec   = os.Getenv("REDIS_TTL_SEC")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -42,21 +34,6 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
-	redisDBInt := 0
-	if RedisDB != "" {
-		redisDBInt, err = strconv.Atoi(RedisDB)
-		if err != nil {
-			return fmt.Errorf("redis db: %w", err)
-		}
-	}
-	redisTTLSecInt := 300
-	if RedisTTLSec != "" {
-		redisTTLSecInt, err = strconv.Atoi(RedisTTLSec)
-		if err != nil {
-			return fmt.Errorf("redis ttl: %w", err)
-		}
-	}
-
 	handler, err := InitializeHttpHandler(
 		PostgreSQLUser,
 		PostgreSQLPassword,
@@ -64,10 +41,6 @@ func start(ctx context.Context) error {
 		PostgreSQLPort,
 		PostgreSQLDb,
 		PostgreSQLSSLMode,
-		RedisAddress,
-		RedisPassword,
-		redisDBInt,
-		time.Duration(redisTTLSecInt)*time.Second,
 		logger,
 	)
 	if err != nil {

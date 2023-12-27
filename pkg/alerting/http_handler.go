@@ -49,7 +49,7 @@ func InitializeHttpHandler(
 	httpHandler.db = db
 	httpHandler.logger.Info("Initialized postgres database")
 
-	httpHandler.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl, nil)
+	httpHandler.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl)
 	httpHandler.complianceClient = client.NewComplianceClient(complianceBaseUrl)
 
 	return httpHandler, nil

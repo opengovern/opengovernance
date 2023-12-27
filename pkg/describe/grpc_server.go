@@ -15,7 +15,6 @@ import (
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/go-redis/redis/v8"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
@@ -32,7 +31,6 @@ import (
 
 type GRPCDescribeServer struct {
 	db                        db.Database
-	rdb                       *redis.Client
 	producer                  *confluent_kafka.Producer
 	conf                      config2.SchedulerConfig
 	topic                     string
@@ -43,10 +41,9 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db db.Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger, conf config2.SchedulerConfig) *GRPCDescribeServer {
+func NewDescribeServer(db db.Database, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger, conf config2.SchedulerConfig) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
-		rdb:                       rdb,
 		producer:                  producer,
 		topic:                     topic,
 		logger:                    logger,

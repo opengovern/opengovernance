@@ -40,7 +40,7 @@ func (t *EnsureJobsRunning) Apply(workspace db.Workspace) error {
 	complianceURL := strings.ReplaceAll(t.cfg.Compliance.BaseURL, "%NAMESPACE%", workspace.ID)
 	complianceClient := client.NewComplianceClient(complianceURL)
 	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
-	onboardClient := client3.NewOnboardServiceClient(onboardURL, nil)
+	onboardClient := client3.NewOnboardServiceClient(onboardURL)
 
 	// run analytics if not running
 	if workspace.AnalyticsJobID <= 0 {

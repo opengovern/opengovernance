@@ -171,7 +171,7 @@ func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
 		return nil, err
 	}
 
-	onboard := onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
+	onboard := onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL)
 
 	if config.ScheduleMinutes <= 0 {
 		config.ScheduleMinutes = 5

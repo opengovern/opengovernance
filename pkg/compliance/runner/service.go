@@ -91,7 +91,7 @@ func InitializeNewWorker(
 		esClient:         esClient,
 		kafkaProducer:    producer,
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
-		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil),
+		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 	}
 
