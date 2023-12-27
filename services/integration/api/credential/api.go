@@ -195,6 +195,21 @@ func (h API) CreateAWS(c echo.Context) error {
 		return err
 	}
 
+	connections, err := h.credentialSvc.AWSOnboard(ctx, *cred)
+	if err != nil {
+		h.logger.Error("azure onboarding failed", zap.Error(err))
+
+		return echo.ErrInternalServerError
+	}
+
+	response := make([]entity.Connection, len(connections))
+
+	for i, connection := range connections {
+		// TODO(parham): checking the connection health and update its metadata.
+
+		response[i] = entity.NewConnection(connection)
+	}
+
 	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{ID: cred.ID.String()})
 }
 

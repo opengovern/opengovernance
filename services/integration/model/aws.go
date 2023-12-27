@@ -8,6 +8,23 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 )
 
+type AWSAccountType string
+
+const (
+	AWSAccountTypeStandalone          AWSAccountType = "standalone"
+	AWSAccountTypeOrganizationMember  AWSAccountType = "organization_member"
+	AWSAccountTypeOrganizationManager AWSAccountType = "organization_manager"
+)
+
+type AWSConnectionMetadata struct {
+	AccountID           string              `json:"account_id"`
+	AccountName         string              `json:"account_name"`
+	AccountType         AWSAccountType      `json:"account_type"`
+	Organization        *types.Organization `json:"account_organization,omitempty"`
+	OrganizationAccount *types.Account      `json:"organization_account,omitempty"`
+	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
+}
+
 type AWSCredentialMetadata struct {
 	AccountID                          string    `json:"account_id"`
 	IamUserName                        *string   `json:"iam_user_name"`

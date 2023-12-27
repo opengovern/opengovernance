@@ -10,6 +10,7 @@ import (
 
 	awsOfficial "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
@@ -101,8 +102,8 @@ func (h Credential) AWSHealthCheck(
 
 		cred.LastHealthCheckTime = time.Now()
 
-		if err := h.repo.Update(ctx, cred); err != nil {
-			err = err
+		if dberr := h.repo.Update(ctx, cred); dberr != nil {
+			err = dberr
 		}
 	}()
 
@@ -197,4 +198,231 @@ func (h Credential) OrgAccounts(ctx context.Context, cfg awsOfficial.Config) (*t
 	}
 
 	return orgs, accounts, nil
+}
+
+func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
+	onboardedSources := make([]model.Connection, 0)
+	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	if err != nil {
+		return nil, err
+	}
+
+	awsCnf, err := model.AWSCredentialConfigFromMap(cnf)
+	if err != nil {
+		return nil, err
+	}
+
+	awsConfig, err := aws.GetConfig(
+		context.Background(),
+		h.masterAccessKey,
+		h.masterSecretKey,
+		"",
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", awsCnf.AccountID, awsCnf.AssumeRoleName),
+		awsCnf.ExternalId,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if awsConfig.Region == "" {
+		awsConfig.Region = "us-east-1"
+	}
+
+	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
+
+	org, err := describer.OrganizationOrganization(context.Background(), awsConfig)
+	if err != nil {
+		var ae smithy.APIError
+		if !errors.As(err, &ae) ||
+			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+			return nil, err
+		}
+	}
+
+	accounts, err := describer.OrganizationAccounts(context.Background(), awsConfig)
+	if err != nil {
+		var ae smithy.APIError
+		if !errors.As(err, &ae) ||
+			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+			return nil, err
+		}
+	}
+
+	h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
+
+	existingConnections, err := h.connSvc.List(ctx, []source.Type{credential.ConnectorType})
+	if err != nil {
+		return nil, err
+	}
+
+	existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
+	for _, conn := range existingConnections {
+		existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
+	}
+	accountsToOnboard := make([]types.Account, 0)
+
+	for _, account := range accounts {
+		if !fp.Includes(*account.Id, existingConnectionAccountIDs) {
+			accountsToOnboard = append(accountsToOnboard, account)
+		} else {
+			for _, conn := range existingConnections {
+				if conn.SourceId == *account.Id {
+					name := *account.Id
+					if account.Name != nil {
+						name = *account.Name
+					}
+
+					if conn.CredentialID.String() != credential.ID.String() {
+						h.logger.Warn("organization account is onboarded as an standalone account",
+							zap.String("accountID", *account.Id),
+							zap.String("connectionID", conn.ID.String()))
+					}
+
+					localConn := conn
+					if conn.Name != name {
+						localConn.Name = name
+					}
+					if account.Status != types.AccountStatusActive {
+						localConn.LifecycleState = model.ConnectionLifecycleStateArchived
+					} else if localConn.LifecycleState == model.ConnectionLifecycleStateArchived {
+						localConn.LifecycleState = model.ConnectionLifecycleStateDiscovered
+						if credential.AutoOnboardEnabled {
+							localConn.LifecycleState = model.ConnectionLifecycleStateOnboard
+						}
+					}
+					if conn.Name != name || account.Status != types.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
+						if err := h.connSvc.Update(ctx, localConn); err != nil {
+							h.logger.Error("failed to update source", zap.Error(err))
+
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+	}
+
+	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
+	for _, account := range accountsToOnboard {
+		h.logger.Info("onboarding account", zap.String("accountID", *account.Id))
+		count, err := h.connSvc.Count(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		maxConnections, err := h.connSvc.MaxConnections()
+		if err != nil {
+			return nil, err
+		}
+
+		if count >= maxConnections {
+			return nil, ErrMaxConnectionsExceeded
+		}
+
+		src, err := NewAWSAutoOnboardedConnection(
+			org,
+			account,
+			source.SourceCreationMethodAutoOnboard,
+			fmt.Sprintf("Auto onboarded account %s", *account.Id),
+			credential,
+			awsConfig,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := h.connSvc.Create(ctx, src); err != nil {
+			return nil, err
+		}
+
+		metadata := make(map[string]any)
+		if src.Metadata.String() != "" {
+			err := json.Unmarshal(src.Metadata, &metadata)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		onboardedSources = append(onboardedSources, src)
+	}
+
+	return onboardedSources, nil
+}
+
+func NewAWSAutoOnboardedConnection(org *types.Organization, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig awsOfficial.Config) (model.Connection, error) {
+	id := uuid.New()
+
+	name := *account.Id
+	if account.Name != nil {
+		name = *account.Name
+	}
+
+	lifecycleState := model.ConnectionLifecycleStateDiscovered
+	if creds.AutoOnboardEnabled {
+		lifecycleState = model.ConnectionLifecycleStateInProgress
+	}
+
+	if account.Status != types.AccountStatusActive {
+		lifecycleState = model.ConnectionLifecycleStateArchived
+	}
+
+	s := model.Connection{
+		ID:                   id,
+		SourceId:             *account.Id,
+		Name:                 name,
+		Description:          description,
+		Type:                 source.CloudAWS,
+		CredentialID:         creds.ID,
+		Credential:           creds,
+		LifecycleState:       lifecycleState,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		LastHealthCheckTime:  time.Now(),
+		CreationMethod:       creationMethod,
+	}
+	metadata := model.AWSConnectionMetadata{
+		AccountID:           *account.Id,
+		AccountName:         name,
+		Organization:        nil,
+		OrganizationAccount: &account,
+		OrganizationTags:    nil,
+	}
+	if creds.CredentialType == model.CredentialTypeAutoAws {
+		metadata.AccountType = model.AWSAccountTypeStandalone
+	} else {
+		metadata.AccountType = model.AWSAccountTypeOrganizationMember
+	}
+
+	metadata.Organization = org
+	if org != nil {
+		if org.MasterAccountId != nil &&
+			*metadata.Organization.MasterAccountId == *account.Id {
+			metadata.AccountType = model.AWSAccountTypeOrganizationManager
+		}
+
+		organizationClient := organizations.NewFromConfig(awsConfig)
+		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+			ResourceId: &metadata.AccountID,
+		})
+		if err != nil {
+			return model.Connection{}, err
+		}
+		metadata.OrganizationTags = make(map[string]string)
+		for _, tag := range tags.Tags {
+			if tag.Key == nil || tag.Value == nil {
+				continue
+			}
+			metadata.OrganizationTags[*tag.Key] = *tag.Value
+		}
+	}
+
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return model.Connection{}, err
+	}
+
+	s.Metadata = jsonMetadata
+
+	return s, nil
 }
