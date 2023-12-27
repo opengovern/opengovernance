@@ -24,7 +24,9 @@ func (w *Worker) RunJob(j types2.Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, nil, nil)
+	// We have to sort by kaytuResourceID to be able to optimize memory usage for resourceFinding generations
+	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
+	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, nil, nil, []map[string]any{{"kaytuResourceID": "asc"}})
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,8 @@ func (w *Worker) RunJob(j types2.Job) error {
 			},
 			ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
 		},
-		ResourcesFindings: make(map[string]types.ResourceFinding),
+		ResourcesFindings:       make(map[string]types.ResourceFinding),
+		ResourcesFindingsIsDone: make(map[string]bool),
 
 		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
 		ConnectionCache:         map[string]onboardApi.Connection{},
@@ -105,6 +108,32 @@ func (w *Worker) RunJob(j types2.Job) error {
 		for _, f := range page {
 			jd.AddFinding(w.logger, j, f, lookupResourcesMap[f.KaytuResourceID])
 		}
+
+		var docs []kafka.Doc
+		for resourceId, isReady := range jd.ResourcesFindingsIsDone {
+			if !isReady {
+				continue
+			}
+			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceId])
+			keys, idx := resourceFinding.KeysAndIndex()
+			resourceFinding.EsID = kafka.HashOf(keys...)
+			resourceFinding.EsIndex = idx
+			docs = append(docs, resourceFinding)
+			delete(jd.ResourcesFindings, resourceId)
+			delete(jd.ResourcesFindingsIsDone, resourceId)
+		}
+		if w.config.ElasticSearch.IsOpenSearch {
+			if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+				w.logger.Error("failed to send to pipeline", zap.Error(err))
+				return err
+			}
+		} else {
+			err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
+			if err != nil {
+				w.logger.Error("failed to send to kafka", zap.Error(err))
+				return err
+			}
+		}
 	}
 
 	err = paginator.Close(ctx)
@@ -137,11 +166,13 @@ func (w *Worker) RunJob(j types2.Job) error {
 	}
 	if w.config.ElasticSearch.IsOpenSearch {
 		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+			w.logger.Error("failed to send to pipeline", zap.Error(err))
 			return err
 		}
 	} else {
 		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
 		if err != nil {
+			w.logger.Error("failed to send to kafka", zap.Error(err))
 			return err
 		}
 	}

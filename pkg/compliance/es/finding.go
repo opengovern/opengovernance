@@ -35,8 +35,8 @@ type FindingPaginator struct {
 	paginator *kaytu.BaseESPaginator
 }
 
-func NewFindingPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64) (FindingPaginator, error) {
-	paginator, err := kaytu.NewPaginator(client.ES(), idx, filters, limit)
+func NewFindingPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64, sort []map[string]any) (FindingPaginator, error) {
+	paginator, err := kaytu.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
 	if err != nil {
 		return FindingPaginator{}, err
 	}

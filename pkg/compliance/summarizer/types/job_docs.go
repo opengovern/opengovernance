@@ -13,6 +13,9 @@ type JobDocs struct {
 	BenchmarkSummary  BenchmarkSummary                 `json:"benchmarkSummary"`
 	ResourcesFindings map[string]types.ResourceFinding `json:"resourcesFindings"`
 
+	// these are used to track if the resource finding is done so we can remove it from the map and send it to queue to save memory
+	ResourcesFindingsIsDone map[string]bool `json:"-"`
+	LastResourceId          string          `json:"-"`
 	// caches, these are not marshalled and only used
 	ResourceCollectionCache map[string]inventoryApi.ResourceCollection `json:"-"`
 	ConnectionCache         map[string]onboardApi.Connection           `json:"-"`
@@ -46,6 +49,12 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 		return
 	}
 
+	if jd.LastResourceId == "" {
+		jd.LastResourceId = resource.ResourceID
+	} else if jd.LastResourceId != resource.ResourceID {
+		jd.ResourcesFindingsIsDone[jd.LastResourceId] = true
+		jd.LastResourceId = resource.ResourceID
+	}
 	resourceFinding, ok := jd.ResourcesFindings[resource.ResourceID]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
@@ -59,6 +68,8 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			JobId:                 job.ID,
 			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
+		jd.ResourcesFindingsIsDone[resource.ResourceID] = false
+
 	}
 	if resourceFinding.ResourceName == "" {
 		resourceFinding.ResourceName = resource.Name
@@ -177,6 +188,14 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 	}
 
 	jd.ResourcesFindings[resource.ResourceID] = resourceFinding
+}
+
+func (jd *JobDocs) SummarizeResourceFinding(logger *zap.Logger, resourceFinding types.ResourceFinding) types.ResourceFinding {
+	resourceFinding.ResourceCollection = nil
+	for rcId, _ := range resourceFinding.ResourceCollectionMap {
+		resourceFinding.ResourceCollection = append(resourceFinding.ResourceCollection, rcId)
+	}
+	return resourceFinding
 }
 
 func (jd *JobDocs) Summarize(logger *zap.Logger) {
