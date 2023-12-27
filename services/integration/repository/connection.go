@@ -115,7 +115,7 @@ func (s ConnectionSQL) ListWithFilters(
 func (s ConnectionSQL) Get(ctx context.Context, ids []string) ([]model.Connection, error) {
 	var connections []model.Connection
 
-	tx := s.db.DB.WithContext(ctx).Joins("Connector").Joins("Credential").Find(&connections, "id IN ?", ids)
+	tx := s.db.DB.WithContext(ctx).Joins("Connector").Joins("Credential").Find(&connections, "sources.id IN ?", ids)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
