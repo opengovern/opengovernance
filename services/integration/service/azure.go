@@ -94,7 +94,7 @@ func (h Credential) NewAzureConnection(
 	return s
 }
 
-func (h Credential) AzureMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
+func (Credential) AzureMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,

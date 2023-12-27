@@ -126,7 +126,7 @@ func (h API) CreateAzure(c echo.Context) error {
 //	@Tags			integration
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
-//	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
+//	@Param			request	body		entity.CreateAWSConnectionRequest	true	"Request"
 //	@Router			/integration/api/v1/credentials/aws [post]
 func (h API) CreateAWS(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -150,67 +150,39 @@ func (h API) CreateAWS(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
+	awsCnf, err := describe.AWSAccountConfigFromMap(req.Config.AsMap())
 	if err != nil {
 		h.logger.Error("cannot read aws config from describe", zap.Error(err))
 
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid config")
 	}
 
-	metadata, err := getAWSCredentialsMetadata(ctx, h.logger, awsCnf)
+	metadata, err := h.credentialSvc.AWSMetadata(ctx, awsCnf)
 	if err != nil {
+		h.logger.Error("cannot read aws credential metadata", zap.Error(err))
+
 		return err
 	}
 
 	name := metadata.AccountID
-	req.AccountId = metadata.AccountID
+	req.Config.AccountId = metadata.AccountID
 	if metadata.OrganizationID != nil {
 		name = *metadata.OrganizationID
 	}
 
-	cred, err := NewAWSCredential(name, metadata, model.CredentialTypeManualAwsOrganization, 1)
+	cred, err := h.credentialSvc.NewAWS(ctx, name, metadata, model.CredentialTypeManualAwsOrganization, 1, req.Config)
 	if err != nil {
 		return err
 	}
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
-	if err != nil {
-		return err
-	}
-	cred.Secret = string(secretBytes)
-	// trace :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction ", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_Transaction")
 
-	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-		// trace :
-		_, span2 := tracer.Start(outputS, "new_CreateCredential", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("new_CreateCredential")
-
-		if err := h.db.CreateCredential(cred); err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span2.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *cred.Name),
-		))
-		span2.End()
-
-		return nil
-	})
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span.End()
+	h.credentialSvc.Create(ctx, cred)
 
 	_, err = h.checkCredentialHealth(outputS, *cred)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.CreateCredentialResponse{ID: cred.ID.String()})
+	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{ID: cred.ID.String()})
 }
 
 func (s API) Register(g *echo.Group) {
