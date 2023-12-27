@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -19,9 +20,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -29,19 +32,22 @@ import (
 )
 
 type API struct {
-	svc    service.Connection
-	tracer trace.Tracer
-	logger *zap.Logger
+	connSvc service.Connection
+	credSvc service.Credential
+	tracer  trace.Tracer
+	logger  *zap.Logger
 }
 
 func New(
-	svc service.Connection,
+	connSvc service.Connection,
+	credSvc service.Credential,
 	logger *zap.Logger,
 ) API {
 	return API{
-		svc:    svc,
-		tracer: otel.GetTracerProvider().Tracer("integration.http.sources"),
-		logger: logger.Named("source"),
+		connSvc: connSvc,
+		credSvc: credSvc,
+		tracer:  otel.GetTracerProvider().Tracer("integration.http.sources"),
+		logger:  logger.Named("source"),
 	}
 }
 
@@ -53,7 +59,7 @@ func (h API) List(c echo.Context) error {
 
 	types := httpserver.QueryArrayParam(c, "connector")
 
-	sources, err := h.svc.List(ctx, source.ParseTypes(types))
+	sources, err := h.connSvc.List(ctx, source.ParseTypes(types))
 	if err != nil {
 		h.logger.Error("failed to read sources from the service", zap.Error(err))
 
@@ -67,7 +73,7 @@ func (h API) List(c echo.Context) error {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.svc.CredentialV2ToV1(s.Credential.Secret)
+				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(s.Credential.Secret)
 				if err != nil {
 					h.logger.Error("failed to provide credential from v2 to v1", zap.Error(err))
 
@@ -97,7 +103,7 @@ func (h API) Get(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	conns, err := h.svc.Get(ctx, req.SourceIDs)
+	conns, err := h.connSvc.Get(ctx, req.SourceIDs)
 	if err != nil {
 		h.logger.Error("failed to read connections from the service", zap.Error(err))
 
@@ -111,7 +117,7 @@ func (h API) Get(c echo.Context) error {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.svc.CredentialV2ToV1(conn.Credential.Secret)
+				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(conn.Credential.Secret)
 				if err != nil {
 					return err
 				}
@@ -142,7 +148,7 @@ func (h API) Count(c echo.Context) error {
 		st = &t
 	}
 
-	count, err := h.svc.Count(ctx, st)
+	count, err := h.connSvc.Count(ctx, st)
 	if err != nil {
 		h.logger.Error("failed to read connections from the service", zap.Error(err))
 
@@ -251,7 +257,7 @@ func (h API) Summaries(c echo.Context) error {
 		h.logger.Warn("Filtered Connections", zap.Strings("connection-ids", connectionIDs))
 	}
 
-	connections, err := h.svc.ListWithFilter(ctx, connectors, connectionIDs, lifecycleStates, healthStates)
+	connections, err := h.connSvc.ListWithFilter(ctx, connectors, connectionIDs, lifecycleStates, healthStates)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -291,13 +297,13 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectionData := map[string]inventoryAPI.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.svc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.connSvc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}
 	}
 
-	pendingDescribeConnections, err := h.svc.Pending(&httpclient.Context{UserRole: api.InternalRole})
+	pendingDescribeConnections, err := h.connSvc.Pending(&httpclient.Context{UserRole: api.InternalRole})
 	if err != nil {
 		return err
 	}
@@ -507,7 +513,7 @@ func (h API) Summaries(c echo.Context) error {
 func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]string, error) {
 	var connections []string
 
-	allConnections, err := h.svc.List(ctx, nil)
+	allConnections, err := h.connSvc.List(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -518,16 +524,18 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 	}
 
 	for key, value := range filter {
-		if key == "Match" {
+		switch key {
+		case "Match":
 			dimFilter := value.(map[string]interface{})
 			if dimKey, ok := dimFilter["Key"]; ok {
-				if dimKey == "ConnectionID" {
+				switch dimKey {
+				case "ConnectionID":
 					connections, err = dimFilterFunction(dimFilter, allConnectionIDs)
 					if err != nil {
 						return nil, err
 					}
 					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connections))
-				} else if dimKey == "Provider" {
+				case "Provider":
 					providers, err := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
 					if err != nil {
 						return nil, err
@@ -538,7 +546,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 							connections = append(connections, c.ID.String())
 						}
 					}
-				} else if dimKey == "ConnectionName" {
+				case "ConnectionName":
 					var allConnectionsNames []string
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.Name)
@@ -557,7 +565,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 			} else {
 				return nil, fmt.Errorf("missing key")
 			}
-		} else if key == "AND" {
+		case "AND":
 			var andFilters []map[string]interface{}
 			for _, v := range value.([]interface{}) {
 				andFilter := v.(map[string]interface{})
@@ -580,7 +588,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 					}
 				}
 			}
-		} else if key == "OR" {
+		case "OR":
 			var orFilters []map[string]interface{}
 			for _, v := range value.([]interface{}) {
 				orFilter := v.(map[string]interface{})
@@ -597,7 +605,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 					}
 				}
 			}
-		} else {
+		default:
 			return nil, fmt.Errorf("invalid key: %s", key)
 		}
 	}
@@ -672,9 +680,90 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 	return output, nil
 }
 
+// HealthCheck godoc
+//
+//	@Summary		Get Azure connection health
+//	@Description	Get live connection health status with given connection ID for Azure.
+//	@Security		BearerToken
+//	@Tags			connections
+//	@Produce		json
+//	@Param			connectionId	path		string	true	"connection ID"
+//	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
+//	@Success		200				{object}	entity.Connection
+//	@Router			/integration/api/v1/connections/{connectionId}/azure/healthcheck [get]
+func (h API) AzureHealthCheck(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	defer span.End()
+
+	id, err := uuid.Parse(c.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
+	}
+
+	// means by default we are considering updateMetadata as true and makes it false only
+	// when we have a query parameter name updateMetadata equals to "false"
+	updateMetadata := strings.ToLower(c.QueryParam("updateMetadata")) != "false"
+
+	connections, err := h.connSvc.Get(ctx, []string{id.String()})
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connectionId", id.String()))
+
+		return err
+	}
+
+	// we are passing only one id to the get method,
+	// so we are expecting exactly one response.
+	connection := connections[0]
+
+	span.SetAttributes(
+		attribute.String("connection name", connection.Name),
+	)
+
+	if !connection.LifecycleState.IsEnabled() {
+		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false))
+		if err != nil {
+			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			return err
+		}
+	} else {
+		isHealthy, err := h.credSvc.AzureHealthCheck(ctx, &connection.Credential)
+		if err != nil {
+			h.logger.Error("failed to check credential health",
+				zap.Error(err),
+				zap.String("connectionId", connection.SourceId),
+			)
+
+			return err
+		}
+
+		if !isHealthy {
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false))
+			if err != nil {
+				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				return err
+			}
+		} else {
+			connection, err = h.connSvc.AzureHealth(ctx, connection, updateMetadata)
+			if err != nil {
+				h.logger.Error("connection healthcheck failed", zap.Error(err))
+
+				return err
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, entity.NewConnection(connection))
+}
+
 func (s API) Register(g *echo.Group) {
 	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
+	g.GET("/:connectionId/azure/healthcheck", httpserver.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
 }
