@@ -2,23 +2,17 @@ package inventory
 
 import (
 	"fmt"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strings"
-	"time"
-
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 
-	"github.com/go-redis/cache/v8"
-
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-
-	"github.com/go-redis/redis/v8"
 
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -38,8 +32,6 @@ type HttpHandler struct {
 	schedulerClient  describeClient.SchedulerServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	complianceClient complianceClient.ComplianceServiceClient
-	rdb              *redis.Client
-	cache            *cache.Cache
 	kafkaProducer    *confluent_kafka.Producer
 
 	logger *zap.Logger
@@ -54,7 +46,6 @@ func InitializeHttpHandler(
 	KafkaService string,
 	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
-	redisAddress string,
 ) (h *HttpHandler, err error) {
 
 	h = &HttpHandler{}
@@ -117,16 +108,7 @@ func InitializeHttpHandler(
 	}
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
 
-	h.rdb = redis.NewClient(&redis.Options{
-		Addr:     redisAddress,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	h.cache = cache.New(&cache.Options{
-		Redis:      h.rdb,
-		LocalCache: cache.NewTinyLFU(100000, 5*time.Minute),
-	})
-	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl, h.cache)
+	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl)
 	h.complianceClient = complianceClient.NewComplianceClient(complianceBaseUrl)
 
 	h.logger = logger

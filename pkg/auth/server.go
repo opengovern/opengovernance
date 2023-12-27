@@ -5,14 +5,11 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/golang-jwt/jwt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
-
-	"github.com/golang-jwt/jwt"
 
 	"github.com/labstack/echo/v4"
 
@@ -26,7 +23,6 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/go-redis/cache/v8"
 	"github.com/gogo/googleapis/google/rpc"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -40,7 +36,6 @@ type Server struct {
 	verifierNative  *oidc.IDTokenVerifier
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
-	cache           *cache.Cache
 
 	workspaceIDNameMap map[string]string
 	mapLock            sync.RWMutex
@@ -146,34 +141,6 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			},
 		},
 	}, nil
-}
-
-func (s *Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string, ignoreUsage bool) (api2.WorkspaceLimitsUsage, error) {
-	key := "cache-limits-" + workspaceName
-
-	var res api2.WorkspaceLimitsUsage
-	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), key, &res); err == nil {
-			return res, nil
-		}
-	}
-
-	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.RoleName, UserID: rb.UserID,
-		WorkspaceName: workspaceName}, workspaceName, ignoreUsage)
-	if err != nil {
-		return api2.WorkspaceLimitsUsage{}, err
-	}
-
-	if s.cache != nil {
-		s.cache.Set(&cache.Item{
-			Ctx:   context.Background(),
-			Key:   key,
-			Value: limits,
-			TTL:   1 * time.Minute,
-		})
-	}
-
-	return limits, nil
 }
 
 type userClaim struct {

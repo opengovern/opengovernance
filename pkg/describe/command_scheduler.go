@@ -34,8 +34,6 @@ var (
 	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
 	GRPCServerAddress = os.Getenv("GRPC_ADDRESS")
 
-	RedisAddress = os.Getenv("REDIS_ADDRESS")
-
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
 	FullDiscoveryIntervalHours = os.Getenv("FULL_DISCOVERY_INTERVAL_HOURS")
 	CostDiscoveryIntervalHours = os.Getenv("COST_DISCOVERY_INTERVAL_HOURS")

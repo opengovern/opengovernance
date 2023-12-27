@@ -79,7 +79,7 @@ func InitializeWorker(
 	w.pusher.Collector(DoCheckupJobsCount).
 		Collector(DoCheckupJobsDuration)
 
-	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL, nil)
+	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL)
 	return w, nil
 }
 

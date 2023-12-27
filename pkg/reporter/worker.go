@@ -101,7 +101,7 @@ func InitializeWorker(
 	w.pusher = push.New(prometheusPushAddress, "reporter-worker")
 	w.pusher.Collector(ReporterJobsCount)
 
-	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL, nil)
+	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL)
 
 	return w, nil
 }

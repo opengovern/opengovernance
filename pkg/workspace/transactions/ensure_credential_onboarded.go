@@ -83,7 +83,7 @@ func (t *EnsureCredentialOnboarded) Rollback(workspace db.Workspace) error {
 
 func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(workspace db.Workspace, cred db.Credential) error {
 	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
-	onboardClient := client.NewOnboardServiceClient(onboardURL, nil)
+	onboardClient := client.NewOnboardServiceClient(onboardURL)
 
 	var request api.AddCredentialRequest
 	decoded, err := base64.StdEncoding.DecodeString(cred.Metadata)

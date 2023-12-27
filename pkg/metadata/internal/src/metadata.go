@@ -1,10 +1,6 @@
 package src
 
 import (
-	"fmt"
-
-	"github.com/go-redis/redis/v8"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/cache"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/database"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 )
@@ -13,7 +9,7 @@ const (
 	ConfigMetadataKeyPrefix = "config_metadata:"
 )
 
-func GetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key string) (models.IConfigMetadata, error) {
+func GetConfigMetadata(db database.Database, key string) (models.IConfigMetadata, error) {
 	//value, err := rdb.Get(ConfigMetadataKeyPrefix + key)
 	//if err == nil {
 	//	var cm models.ConfigMetadata
@@ -49,7 +45,7 @@ func GetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key 
 	return typedCm, nil
 }
 
-func SetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key models.MetadataKey, value any) error {
+func SetConfigMetadata(db database.Database, key models.MetadataKey, value any) error {
 	valueStr, err := key.GetConfigMetadataType().SerializeValue(value)
 	if err != nil {
 		return err
@@ -61,10 +57,6 @@ func SetConfigMetadata(db database.Database, rdb *cache.MetadataRedisCache, key 
 	})
 	if err != nil {
 		return err
-	}
-	err = rdb.Delete(ConfigMetadataKeyPrefix + key.String())
-	if err != nil && err != redis.Nil {
-		fmt.Printf("error deleting config metadata from redis: %v\n", err)
 	}
 	return nil
 }

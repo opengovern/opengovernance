@@ -15,10 +15,8 @@ import (
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
-	"github.com/go-redis/redis/v8"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/cache"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/database"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"go.uber.org/zap"
@@ -32,10 +30,9 @@ import (
 type HttpHandlerSuite struct {
 	suite.Suite
 
-	handler     *HttpHandler
-	router      *echo.Echo
-	orm         *gorm.DB
-	redisClient *redis.Client
+	handler *HttpHandler
+	router  *echo.Echo
+	orm     *gorm.DB
 }
 
 func (s *HttpHandlerSuite) SetupSuite() {
@@ -84,17 +81,6 @@ func (s *HttpHandlerSuite) SetupSuite() {
 			return err
 		}
 
-		s.redisClient = redis.NewClient(&redis.Options{
-			Addr:     fmt.Sprintf("%s:%s", idocker.GetDockerHost(), redisDocker.GetPort("6379/tcp")),
-			Password: "",
-			DB:       0,
-		})
-
-		err = s.redisClient.Ping(s.redisClient.Context()).Err()
-		if err != nil {
-			return err
-		}
-
 		return nil
 	})
 	require.NoError(err, "wait for postgres connection")
@@ -103,8 +89,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	require.NoError(tx.Error, "enable uuid v4")
 
 	s.handler = &HttpHandler{
-		db:    database.NewDatabase(s.orm),
-		redis: cache.NewMetadataRedisCache(s.redisClient, time.Minute),
+		db: database.NewDatabase(s.orm),
 	}
 
 	logger, err := zap.NewProduction()

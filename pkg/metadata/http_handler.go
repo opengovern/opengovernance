@@ -1,20 +1,14 @@
 package metadata
 
 import (
-	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"time"
-
-	"github.com/go-redis/redis/v8"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/cache"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/database"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	db    database.Database
-	redis *cache.MetadataRedisCache
+	db database.Database
 }
 
 func InitializeHttpHandler(
@@ -24,10 +18,6 @@ func InitializeHttpHandler(
 	postgresPort string,
 	postgresDb string,
 	postgresSSLMode string,
-	redisAddress string,
-	redisPassword string,
-	redisDB int,
-	redisTTL time.Duration,
 	logger *zap.Logger,
 ) (*HttpHandler, error) {
 
@@ -54,19 +44,7 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     redisAddress,
-		Password: redisPassword,
-		DB:       redisDB,
-	})
-	if err := redisClient.Ping(context.Background()).Err(); err != nil {
-		return nil, fmt.Errorf("failed to ping redis: %w", err)
-	}
-	redisCache := cache.NewMetadataRedisCache(redisClient, redisTTL)
-	fmt.Printf("Connected to the redis database: %d in address %s", redisDB, redisAddress)
-
 	return &HttpHandler{
-		db:    db,
-		redis: redisCache,
+		db: db,
 	}, nil
 }

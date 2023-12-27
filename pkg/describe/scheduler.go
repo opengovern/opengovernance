@@ -31,7 +31,6 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/go-redis/redis/v8"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
@@ -56,8 +55,6 @@ const (
 	ConcurrentDeletedSources = 1000
 
 	schedulerConsumerGroup = "describe-scheduler"
-
-	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -147,7 +144,6 @@ type Scheduler struct {
 	inventoryClient     inventoryClient.InventoryServiceClient
 	authGrpcClient      envoyauth.AuthorizationClient
 	es                  kaytu.Client
-	rdb                 *redis.Client
 	kafkaProducer       *confluent_kafka.Producer
 	kafkaResourcesTopic string
 	kafkaConsumer       *confluent_kafka.Consumer
@@ -367,7 +363,7 @@ func InitializeScheduler(
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
-	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL, nil)
+	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
 	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
@@ -375,13 +371,7 @@ func InitializeScheduler(
 	}
 	s.authGrpcClient = envoyauth.NewAuthorizationClient(authGRPCConn)
 
-	s.rdb = redis.NewClient(&redis.Options{
-		Addr:     RedisAddress,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger, conf)
+	describeServer := NewDescribeServer(s.db, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),

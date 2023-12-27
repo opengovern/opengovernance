@@ -1182,7 +1182,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		response.CurrentResources = resourceCount
 
 		onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", dbWorkspace.ID)
-		onboardClient := client.NewOnboardServiceClient(onboardURL, nil)
+		onboardClient := client.NewOnboardServiceClient(onboardURL)
 		count, err := onboardClient.CountSources(httpclient.FromEchoContext(c), source.Nil)
 		response.CurrentConnections = count
 	}

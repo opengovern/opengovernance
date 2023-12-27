@@ -9,17 +9,13 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"net"
-	"os"
-	"strconv"
-	"time"
-
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"net"
+	"os"
+	"strconv"
 
-	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 
@@ -55,8 +51,6 @@ var (
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
-
-	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
 	grpcServerAddress = os.Getenv("GRPC_ADDRESS")
 	grpcTlsCertPath   = os.Getenv("GRPC_TLS_CERT_PATH")
@@ -114,12 +108,6 @@ func start(ctx context.Context) error {
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     RedisAddress,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
 	b, err := base64.StdEncoding.DecodeString(kaytuPublicKey)
 	if err != nil {
 		return fmt.Errorf("public key decode: %w", err)
@@ -156,11 +144,6 @@ func start(ctx context.Context) error {
 		workspaceIDNameMap: map[string]string{},
 	}
 	go authServer.WorkspaceMapUpdater()
-
-	authServer.cache = cache.New(&cache.Options{
-		Redis:      rdb,
-		LocalCache: cache.NewTinyLFU(10000, 5*time.Minute),
-	})
 
 	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
 	if err != nil {

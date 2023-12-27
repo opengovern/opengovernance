@@ -16,9 +16,6 @@ import (
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/labstack/echo/v4"
 
-	"github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
-
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
@@ -44,14 +41,11 @@ type OnboardServiceClient interface {
 
 type onboardClient struct {
 	baseURL string
-	rdb     *redis.Client
-	cache   *cache.Cache
 }
 
-func NewOnboardServiceClient(baseURL string, cache *cache.Cache) OnboardServiceClient {
+func NewOnboardServiceClient(baseURL string) OnboardServiceClient {
 	return &onboardClient{
 		baseURL: baseURL,
-		cache:   cache,
 	}
 }
 
@@ -83,24 +77,11 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Connection
-	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), "get-source-"+sourceID, &source); err == nil {
-			return &source, nil
-		}
-	}
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
-	}
-	if s.cache != nil {
-		_ = s.cache.Set(&cache.Item{
-			Ctx:   context.Background(),
-			Key:   "get-source-" + sourceID,
-			Value: source,
-			TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
-		})
 	}
 	return &source, nil
 }
@@ -166,13 +147,6 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 	var res []api.Connection
 
 	for _, sourceID := range sourceIDs {
-		if s.cache != nil {
-			var src api.Connection
-			if err := s.cache.Get(context.Background(), "get-source-"+sourceID, &src); err == nil {
-				res = append(res, src)
-				continue
-			}
-		}
 		req.SourceIDs = append(req.SourceIDs, sourceID)
 	}
 
@@ -188,16 +162,6 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 				return nil, echo.NewHTTPError(statusCode, err.Error())
 			}
 			return nil, err
-		}
-		if s.cache != nil {
-			for _, src := range response {
-				_ = s.cache.Set(&cache.Item{
-					Ctx:   context.Background(),
-					Key:   "get-source-" + src.ID.String(),
-					Value: src,
-					TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
-				})
-			}
 		}
 		res = append(res, response...)
 	}
@@ -223,16 +187,6 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
-	}
-	if s.cache != nil {
-		for _, src := range response {
-			_ = s.cache.Set(&cache.Item{
-				Ctx:   context.Background(),
-				Key:   "get-source-" + src.ID.String(),
-				Value: src,
-				TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
-			})
-		}
 	}
 	return response, nil
 }
@@ -308,11 +262,6 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, connection
 	url := fmt.Sprintf("%s/api/v1/source/%s/healthcheck", s.baseURL, connectionId)
 
 	var connection api.Connection
-	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), "get-source-healthcheck-"+connectionId, &connection); err == nil {
-			return &connection, nil
-		}
-	}
 
 	url += "?"
 	//firstParamAttached = true
@@ -323,14 +272,6 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, connection
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
-	}
-	if s.cache != nil {
-		_ = s.cache.Set(&cache.Item{
-			Ctx:   context.Background(),
-			Key:   "get-source-healthcheck-" + connectionId,
-			Value: connection,
-			TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
-		})
 	}
 	return &connection, nil
 }

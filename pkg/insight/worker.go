@@ -114,7 +114,7 @@ func InitializeWorker(
 	w.pusher.Collector(DoInsightJobsCount).
 		Collector(DoInsightJobsDuration)
 
-	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL, nil)
+	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(workerConfig.Inventory.BaseURL)
 	w.schedulerClient = client2.NewSchedulerServiceClient(workerConfig.Scheduler.BaseURL)
 
