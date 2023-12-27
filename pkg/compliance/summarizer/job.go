@@ -122,6 +122,7 @@ func (w *Worker) RunJob(j types2.Job) error {
 			delete(jd.ResourcesFindings, resourceId)
 			delete(jd.ResourcesFindingsIsDone, resourceId)
 		}
+		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
 		if w.config.ElasticSearch.IsOpenSearch {
 			if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
 				w.logger.Error("failed to send to pipeline", zap.Error(err))
