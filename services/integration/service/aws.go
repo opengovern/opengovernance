@@ -187,25 +187,6 @@ func DiscoverAWSAccounts(ctx context.Context, cfg awsOfficial.Config) ([]model.A
 }
 
 func (h Credential) AWSHealthCheck(ctx context.Context, cred *model.Credential) (bool, error) {
-	defer func() {
-		if err != nil {
-			h.logger.Error("credential is not healthy", zap.Error(err))
-		}
-		if !healthy || err != nil {
-			errStr := err.Error()
-			cred.HealthReason = &errStr
-			cred.HealthStatus = source.HealthStatusUnhealthy
-		} else {
-			cred.HealthStatus = source.HealthStatusHealthy
-			cred.HealthReason = fp.Optional("")
-		}
-		cred.LastHealthCheckTime = time.Now()
-		_, dbErr := h.db.UpdateCredential(&cred)
-		if dbErr != nil {
-			err = dbErr
-		}
-	}()
-
 	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
 	if err != nil {
 		return false, err
@@ -263,7 +244,7 @@ func (h Credential) AWSHealthCheck(ctx context.Context, cred *model.Credential) 
 
 	for _, policyARN := range strings.Split(awsSpendDiscovery.GetValue().(string), ",") {
 		policyARN = strings.ReplaceAll(policyARN, "${accountID}", awsConfig.AccountID)
-		if !utils.Includes(policyARNs, policyARN) {
+		if !fp.Includes(policyARN, policyARNs) {
 			h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
 			spendAttached = false
 		}
