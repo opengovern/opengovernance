@@ -160,8 +160,8 @@ func (s ConnectionSQL) Create(ctx context.Context, c model.Connection) error {
 }
 
 func (s ConnectionSQL) Update(ctx context.Context, c model.Connection) error {
-	tx := s.db.DB.
-		Where("id = ?", c.ID.String()).Updates(c)
+	tx := s.db.DB.WithContext(ctx).
+		Where("id = ?", c.ID.String()).Updates(&c)
 
 	if tx.Error != nil {
 		return tx.Error
