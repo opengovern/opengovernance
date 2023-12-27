@@ -18,16 +18,19 @@ import (
 
 type API struct {
 	credentialSvc service.Credential
+	connectionSvc service.Connection
 	tracer        trace.Tracer
 	logger        *zap.Logger
 }
 
 func New(
 	credentialSvc service.Credential,
+	connectionSvc service.Connection,
 	logger *zap.Logger,
 ) API {
 	return API{
 		credentialSvc: credentialSvc,
+		connectionSvc: connectionSvc,
 		tracer:        otel.GetTracerProvider().Tracer("integration.http.sources"),
 		logger:        logger.Named("source"),
 	}
@@ -98,9 +101,18 @@ func (h API) CreateAzure(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	// change response to create credential and also add the list of newly created subscriptions
+	response := make([]entity.Connection, len(connections))
+
+	for i, connection := range connections {
+		// checking the connection health and update its metadata.
+		h.connectionSvc.AzureHealth(ctx, connection, true)
+
+		response[i] = entity.NewConnection(connection)
+	}
+
+	// newly created credential id an the list of its subscriptions.
 	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{
-		Connections: connections,
+		Connections: response,
 		ID:          cred.ID.String(),
 	})
 }

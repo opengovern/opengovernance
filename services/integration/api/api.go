@@ -87,6 +87,7 @@ func (api *API) Register(e *echo.Echo) {
 
 	credential := credential.New(
 		credSvc,
+		connSvc,
 		api.logger,
 	)
 
