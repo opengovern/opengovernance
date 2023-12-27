@@ -5418,6 +5418,33 @@ paths:
       summary: Get Azure cost
       tags:
       - cost-estimator
+  /integration/api/v1/connections/{connectionId}/azure/healthcheck:
+    get:
+      description: Get live connection health status with given connection ID for
+        Azure.
+      parameters:
+      - description: connection ID
+        in: path
+        name: connectionId
+        required: true
+        type: string
+      - default: true
+        description: Whether to update metadata or not
+        in: query
+        name: updateMetadata
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+      security:
+      - BearerToken: []
+      summary: Get Azure connection health
+      tags:
+      - connections
   /integration/api/v1/connections/summaries:
     get:
       consumes:
@@ -5525,7 +5552,7 @@ paths:
       summary: List connections summaries
       tags:
       - connections
-  /integration/api/v1/credential/azure:
+  /integration/api/v1/credentials/azure:
     post:
       description: Creating Azure credential, testing it and on-board its subscriptions
       parameters:

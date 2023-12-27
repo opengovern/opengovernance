@@ -3044,7 +3044,48 @@
                 }
             }
         },
-        "/integration/api/v1/credential/azure": {
+        "/integration/api/v1/connections/{connectionId}/azure/healthcheck": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get live connection health status with given connection ID for Azure.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "Get Azure connection health",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "connection ID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether to update metadata or not",
+                        "name": "updateMetadata",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials/azure": {
             "post": {
                 "security": [
                     {
