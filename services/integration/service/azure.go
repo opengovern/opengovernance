@@ -4,16 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
@@ -370,4 +375,161 @@ func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig a
 	}
 
 	return subs, nil
+}
+
+func (h Connection) AzureHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
+	var cnf map[string]any
+
+	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
+	if err != nil {
+		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		return connection, err
+	}
+
+	var assetDiscoveryAttached, spendAttached bool
+
+	subscriptionConfig, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	if err != nil {
+		h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		return connection, err
+	}
+
+	authCnf := azure.AuthConfig{
+		TenantID:            subscriptionConfig.TenantID,
+		ClientID:            subscriptionConfig.ClientID,
+		ObjectID:            subscriptionConfig.ObjectID,
+		SecretID:            subscriptionConfig.SecretID,
+		ClientSecret:        subscriptionConfig.ClientSecret,
+		CertificatePath:     subscriptionConfig.CertificatePath,
+		CertificatePassword: subscriptionConfig.CertificatePass,
+		Username:            subscriptionConfig.Username,
+		Password:            subscriptionConfig.Password,
+	}
+
+	azureAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
+	if err != nil {
+		return connection, err
+	}
+
+	assetDiscoveryAttached = true
+	for _, ruleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
+		isAttached, err := azure.CheckRole(authCnf, connection.SourceId, ruleID)
+		if err != nil {
+			return connection, err
+		}
+
+		if !isAttached {
+			h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+			assetDiscoveryAttached = false
+		}
+	}
+
+	azureSpendDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
+	if err != nil {
+		return connection, err
+	}
+
+	spendAttached = true
+	for _, ruleID := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
+		isAttached, err := azure.CheckRole(authCnf, connection.SourceId, ruleID)
+		if err != nil {
+			return connection, err
+		}
+
+		if !isAttached {
+			h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+			spendAttached = false
+		}
+	}
+
+	if (assetDiscoveryAttached || spendAttached) && updateMetadata {
+		var subscription *model.AzureSubscription
+
+		subscription, err = CurrentAzureSubscription(ctx, connection.SourceId, authCnf)
+		if err != nil {
+			h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("connectionId", connection.SourceId))
+			return connection, err
+		}
+
+		metadata := model.NewAzureConnectionMetadata(subscription)
+		var jsonMetadata []byte
+		jsonMetadata, err = json.Marshal(metadata)
+		if err != nil {
+			h.logger.Error("failed to marshal azure metadata", zap.Error(err), zap.String("connectionId", connection.SourceId))
+			return connection, err
+		}
+		connection.Metadata = jsonMetadata
+	}
+
+	ctx, span := h.tracer.Start(ctx, "new_CreateSource(loop)")
+	defer span.End()
+
+	if !assetDiscoveryAttached && !spendAttached {
+		var healthMessage string
+		if err == nil {
+			healthMessage = "Failed to find read permission"
+		} else {
+			healthMessage = err.Error()
+		}
+
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false))
+		if err != nil {
+			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+
+			return connection, err
+		}
+	} else {
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached)
+		if err != nil {
+			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+
+			return connection, err
+		}
+	}
+
+	return connection, nil
+}
+
+func CurrentAzureSubscription(ctx context.Context, subId string, authConfig azure.AuthConfig) (*model.AzureSubscription, error) {
+	identity, err := azidentity.NewClientSecretCredential(
+		authConfig.TenantID,
+		authConfig.ClientID,
+		authConfig.ClientSecret,
+		nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := armsubscription.NewSubscriptionsClient(identity, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	sub, err := client.Get(ctx, subId, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	tagsClient, err := armresources.NewTagsClient(*sub.SubscriptionID, identity, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	tagIt := tagsClient.NewListPager(nil)
+	tagList := make([]armresources.TagDetails, 0)
+	for tagIt.More() {
+		tagPage, err := tagIt.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, tag := range tagPage.Value {
+			tagList = append(tagList, *tag)
+		}
+	}
+
+	return &model.AzureSubscription{
+		SubscriptionID: subId,
+		SubModel:       sub.Subscription,
+		SubTags:        tagList,
+	}, nil
 }

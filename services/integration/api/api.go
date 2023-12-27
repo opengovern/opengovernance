@@ -66,24 +66,27 @@ func (api *API) Register(e *echo.Echo) {
 		api.logger,
 	)
 
+	credSvc := service.NewCredential(
+		repository.NewCredentialSQL(api.database),
+		api.kms,
+		api.arn,
+		api.describe,
+		api.inventory,
+		api.meta,
+		connSvc,
+		api.masterAccessKey,
+		api.masterSecretKey,
+		api.logger,
+	)
+
 	connection := connection.New(
 		connSvc,
+		credSvc,
 		api.logger,
 	)
 
 	credential := credential.New(
-		service.NewCredential(
-			repository.NewCredentialSQL(api.database),
-			api.kms,
-			api.arn,
-			api.describe,
-			api.inventory,
-			api.meta,
-			connSvc,
-			api.masterAccessKey,
-			api.masterSecretKey,
-			api.logger,
-		),
+		credSvc,
 		api.logger,
 	)
 

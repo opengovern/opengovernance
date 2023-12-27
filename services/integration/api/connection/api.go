@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
@@ -21,6 +20,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -524,16 +524,18 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 	}
 
 	for key, value := range filter {
-		if key == "Match" {
+		switch key {
+		case "Match":
 			dimFilter := value.(map[string]interface{})
 			if dimKey, ok := dimFilter["Key"]; ok {
-				if dimKey == "ConnectionID" {
+				switch dimKey {
+				case "ConnectionID":
 					connections, err = dimFilterFunction(dimFilter, allConnectionIDs)
 					if err != nil {
 						return nil, err
 					}
 					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connections))
-				} else if dimKey == "Provider" {
+				case "Provider":
 					providers, err := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
 					if err != nil {
 						return nil, err
@@ -544,7 +546,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 							connections = append(connections, c.ID.String())
 						}
 					}
-				} else if dimKey == "ConnectionName" {
+				case "ConnectionName":
 					var allConnectionsNames []string
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.Name)
@@ -563,7 +565,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 			} else {
 				return nil, fmt.Errorf("missing key")
 			}
-		} else if key == "AND" {
+		case "AND":
 			var andFilters []map[string]interface{}
 			for _, v := range value.([]interface{}) {
 				andFilter := v.(map[string]interface{})
@@ -586,7 +588,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 					}
 				}
 			}
-		} else if key == "OR" {
+		case "OR":
 			var orFilters []map[string]interface{}
 			for _, v := range value.([]interface{}) {
 				orFilter := v.(map[string]interface{})
@@ -603,7 +605,7 @@ func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]strin
 					}
 				}
 			}
-		} else {
+		default:
 			return nil, fmt.Errorf("invalid key: %s", key)
 		}
 	}
@@ -688,8 +690,8 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 //	@Param			sourceId		path		string	true	"Source ID"
 //	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
 //	@Success		200				{object}	api.Connection
-//	@Router			/integration/api/v1/connections/{connectionId}/healthcheck [get]
-func (h API) HealthCheck(c echo.Context) error {
+//	@Router			/integration/api/v1/connections/{connectionId}/azure/healthcheck [get]
+func (h API) AzureHealthCheck(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
 	ctx, span := h.tracer.Start(ctx, "healthcheck")
@@ -702,7 +704,7 @@ func (h API) HealthCheck(c echo.Context) error {
 
 	// means by default we are considering updateMetadata as true and makes it false only
 	// when we have a query parameter name updateMetadata equals to "false"
-	updateMetadata := !(strings.ToLower(c.QueryParam("updateMetadata")) == "false")
+	updateMetadata := strings.ToLower(c.QueryParam("updateMetadata")) != "false"
 
 	connections, err := h.connSvc.Get(ctx, []string{id.String()})
 	if err != nil {
@@ -723,7 +725,7 @@ func (h API) HealthCheck(c echo.Context) error {
 	)
 
 	if !connection.LifecycleState.IsEnabled() {
-		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, "Connection is not enabled", aws.Bool(false), aws.Bool(false))
+		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false))
 		if err != nil {
 			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return err
@@ -740,13 +742,18 @@ func (h API) HealthCheck(c echo.Context) error {
 		}
 
 		if !isHealthy {
-			connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"), aws.Bool(false), aws.Bool(false))
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false))
 			if err != nil {
-				h.logger.Error("failed to update source health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 				return err
 			}
 		} else {
-			connection, err = h.checkConnectionHealth(ctx, connection, updateMetadata)
+			connection, err = h.connSvc.AzureHealth(ctx, connection, updateMetadata)
+			if err != nil {
+				h.logger.Error("connection healthcheck failed", zap.Error(err))
+
+				return err
+			}
 		}
 	}
 
@@ -758,4 +765,5 @@ func (s API) Register(g *echo.Group) {
 	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
+	g.GET("/:connectionId/azure/healthcheck", httpserver.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
 }
