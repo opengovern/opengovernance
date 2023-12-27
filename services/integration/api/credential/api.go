@@ -1,6 +1,7 @@
 package credential
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -150,35 +151,48 @@ func (h API) CreateAWS(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	awsCnf, err := describe.AWSAccountConfigFromMap(req.Config.AsMap())
+	awsConfig, err := h.credentialSvc.AWSSDKConfig(
+		ctx,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", req.Config.AccountID, req.Config.AssumeRoleName),
+		req.Config.ExternalId,
+	)
 	if err != nil {
-		h.logger.Error("cannot read aws config from describe", zap.Error(err))
+		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
 
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid config")
+		return err
 	}
 
-	metadata, err := h.credentialSvc.AWSMetadata(ctx, awsCnf)
+	org, accounts, err := h.credentialSvc.OrgAccounts(ctx, awsConfig)
 	if err != nil {
-		h.logger.Error("cannot read aws credential metadata", zap.Error(err))
+		h.logger.Error("getting aws accounts and organizations", zap.Error(err))
 
+		return err
+	}
+
+	metadata, err := model.ExtractCredentialMetadata(req.Config.AccountID, org, accounts)
+	if err != nil {
 		return err
 	}
 
 	name := metadata.AccountID
-	req.Config.AccountId = metadata.AccountID
 	if metadata.OrganizationID != nil {
 		name = *metadata.OrganizationID
 	}
 
-	cred, err := h.credentialSvc.NewAWS(ctx, name, metadata, model.CredentialTypeManualAwsOrganization, 1, req.Config)
+	cred, err := h.credentialSvc.NewAWS(ctx, name, metadata, model.CredentialTypeManualAwsOrganization, req.Config)
 	if err != nil {
+		h.logger.Error("building aws credential failed", zap.Error(err))
+
 		return err
 	}
 
-	h.credentialSvc.Create(ctx, cred)
+	if err := h.credentialSvc.Create(ctx, cred); err != nil {
+		h.logger.Error("creating aws credential failed", zap.Error(err))
 
-	_, err = h.checkCredentialHealth(outputS, *cred)
-	if err != nil {
+		return err
+	}
+
+	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred); err != nil {
 		return err
 	}
 

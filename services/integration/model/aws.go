@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
 )
 
 type AWSCredentialMetadata struct {
@@ -22,4 +23,21 @@ type AWSAccount struct {
 	AccountName  *string
 	Organization *types.Organization
 	Account      *types.Account
+}
+
+func ExtractCredentialMetadata(accountID string, org *types.Organization, accounts []types.Account) (*AWSCredentialMetadata, error) {
+	metadata := AWSCredentialMetadata{
+		AccountID:             accountID,
+		IamUserName:           nil,
+		IamApiKeyCreationDate: time.Time{},
+		AttachedPolicies:      nil,
+	}
+
+	if org != nil {
+		metadata.OrganizationID = org.Id
+		metadata.OrganizationMasterAccountEmail = org.MasterAccountEmail
+		metadata.OrganizationMasterAccountId = org.MasterAccountId
+		metadata.OrganizationDiscoveredAccountCount = fp.Optional[int](len(accounts))
+	}
+	return &metadata, nil
 }
