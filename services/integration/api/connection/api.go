@@ -682,14 +682,14 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 
 // HealthCheck godoc
 //
-//	@Summary		Get source health
-//	@Description	Get live source health status with given source ID.
+//	@Summary		Get Azure connection health
+//	@Description	Get live connection health status with given connection ID for Azure.
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags				connections
 //	@Produce		json
-//	@Param			sourceId		path		string	true	"Source ID"
+//	@Param			connectionId		path		string	true	"connection ID"
 //	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
-//	@Success		200				{object}	api.Connection
+//	@Success		200				{object}	entity.Connection
 //	@Router			/integration/api/v1/connections/{connectionId}/azure/healthcheck [get]
 func (h API) AzureHealthCheck(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
