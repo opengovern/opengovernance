@@ -252,7 +252,7 @@ func (h Connection) Create(
 	return h.repo.Create(ctx, c)
 }
 
-// Updates given connection in the database.
+// Update updates given connection in the database.
 func (h Connection) Update(
 	ctx context.Context,
 	c model.Connection,
@@ -263,6 +263,8 @@ func (h Connection) Update(
 	return h.repo.Update(ctx, c)
 }
 
+// MaxConnections reads the maximum number of the available connection in the workspace
+// from the metadata service.
 func (h Connection) MaxConnections() (int64, error) {
 	cnf, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyConnectionLimit)
 	if err != nil {
@@ -281,4 +283,28 @@ func (h Connection) MaxConnections() (int64, error) {
 	}
 
 	return maxConnections, nil
+}
+
+// UpdateHealth update the health status of the connction.
+func (h Connection) UpdateHealth(
+	ctx context.Context,
+	connection model.Connection,
+	healthStatus source.HealthStatus,
+	reason *string,
+	spendDiscovery, assetDiscovery *bool,
+) (model.Connection, error) {
+	connection.HealthState = healthStatus
+	connection.HealthReason = reason
+	connection.LastHealthCheckTime = time.Now()
+	connection.SpendDiscovery = spendDiscovery
+	connection.AssetDiscovery = assetDiscovery
+
+	ctx, span := h.tracer.Start(ctx, "update-health")
+	defer span.End()
+
+	if err := h.repo.Update(ctx, connection); err != nil {
+		return model.Connection{}, err
+	}
+
+	return connection, nil
 }

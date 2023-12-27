@@ -22,7 +22,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-// NewAzureCredential create a credential instance for azure SPN
+// NewAzure create a credential instance for azure SPN
 func (h Credential) NewAzure(
 	ctx context.Context,
 	credType model.CredentialType,
@@ -135,6 +135,7 @@ func (h Credential) AzureMetadata(ctx context.Context, config describe.AzureSubs
 	return &metadata, nil
 }
 
+// AzureHealthCheck checks the credential health.
 func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential) (bool, error) {
 	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
 	if err != nil {

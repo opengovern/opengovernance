@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -22,6 +24,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -29,19 +32,22 @@ import (
 )
 
 type API struct {
-	svc    service.Connection
-	tracer trace.Tracer
-	logger *zap.Logger
+	connSvc service.Connection
+	credSvc service.Credential
+	tracer  trace.Tracer
+	logger  *zap.Logger
 }
 
 func New(
-	svc service.Connection,
+	connSvc service.Connection,
+	credSvc service.Credential,
 	logger *zap.Logger,
 ) API {
 	return API{
-		svc:    svc,
-		tracer: otel.GetTracerProvider().Tracer("integration.http.sources"),
-		logger: logger.Named("source"),
+		connSvc: connSvc,
+		credSvc: credSvc,
+		tracer:  otel.GetTracerProvider().Tracer("integration.http.sources"),
+		logger:  logger.Named("source"),
 	}
 }
 
@@ -53,7 +59,7 @@ func (h API) List(c echo.Context) error {
 
 	types := httpserver.QueryArrayParam(c, "connector")
 
-	sources, err := h.svc.List(ctx, source.ParseTypes(types))
+	sources, err := h.connSvc.List(ctx, source.ParseTypes(types))
 	if err != nil {
 		h.logger.Error("failed to read sources from the service", zap.Error(err))
 
@@ -67,7 +73,7 @@ func (h API) List(c echo.Context) error {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.svc.CredentialV2ToV1(s.Credential.Secret)
+				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(s.Credential.Secret)
 				if err != nil {
 					h.logger.Error("failed to provide credential from v2 to v1", zap.Error(err))
 
@@ -97,7 +103,7 @@ func (h API) Get(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	conns, err := h.svc.Get(ctx, req.SourceIDs)
+	conns, err := h.connSvc.Get(ctx, req.SourceIDs)
 	if err != nil {
 		h.logger.Error("failed to read connections from the service", zap.Error(err))
 
@@ -111,7 +117,7 @@ func (h API) Get(c echo.Context) error {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.svc.CredentialV2ToV1(conn.Credential.Secret)
+				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(conn.Credential.Secret)
 				if err != nil {
 					return err
 				}
@@ -142,7 +148,7 @@ func (h API) Count(c echo.Context) error {
 		st = &t
 	}
 
-	count, err := h.svc.Count(ctx, st)
+	count, err := h.connSvc.Count(ctx, st)
 	if err != nil {
 		h.logger.Error("failed to read connections from the service", zap.Error(err))
 
@@ -251,7 +257,7 @@ func (h API) Summaries(c echo.Context) error {
 		h.logger.Warn("Filtered Connections", zap.Strings("connection-ids", connectionIDs))
 	}
 
-	connections, err := h.svc.ListWithFilter(ctx, connectors, connectionIDs, lifecycleStates, healthStates)
+	connections, err := h.connSvc.ListWithFilter(ctx, connectors, connectionIDs, lifecycleStates, healthStates)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -291,13 +297,13 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectionData := map[string]inventoryAPI.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.svc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.connSvc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}
 	}
 
-	pendingDescribeConnections, err := h.svc.Pending(&httpclient.Context{UserRole: api.InternalRole})
+	pendingDescribeConnections, err := h.connSvc.Pending(&httpclient.Context{UserRole: api.InternalRole})
 	if err != nil {
 		return err
 	}
@@ -507,7 +513,7 @@ func (h API) Summaries(c echo.Context) error {
 func (h API) Filter(ctx context.Context, filter map[string]interface{}) ([]string, error) {
 	var connections []string
 
-	allConnections, err := h.svc.List(ctx, nil)
+	allConnections, err := h.connSvc.List(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -670,6 +676,81 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 		output = values
 	}
 	return output, nil
+}
+
+// HealthCheck godoc
+//
+//	@Summary		Get source health
+//	@Description	Get live source health status with given source ID.
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			sourceId		path		string	true	"Source ID"
+//	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
+//	@Success		200				{object}	api.Connection
+//	@Router			/integration/api/v1/connections/{connectionId}/healthcheck [get]
+func (h API) HealthCheck(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	defer span.End()
+
+	id, err := uuid.Parse(c.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
+	}
+
+	// means by default we are considering updateMetadata as true and makes it false only
+	// when we have a query parameter name updateMetadata equals to "false"
+	updateMetadata := !(strings.ToLower(c.QueryParam("updateMetadata")) == "false")
+
+	connections, err := h.connSvc.Get(ctx, []string{id.String()})
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connectionId", id.String()))
+
+		return err
+	}
+
+	// we are passing only one id to the get method,
+	// so we are expecting exactly one response.
+	connection := connections[0]
+
+	span.SetAttributes(
+		attribute.String("connection name", connection.Name),
+	)
+
+	if !connection.LifecycleState.IsEnabled() {
+		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, "Connection is not enabled", aws.Bool(false), aws.Bool(false))
+		if err != nil {
+			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			return err
+		}
+	} else {
+		isHealthy, err := h.credSvc.AzureHealthCheck(ctx, &connection.Credential)
+		if err != nil {
+			h.logger.Error("failed to check credential health",
+				zap.Error(err),
+				zap.String("connectionId", connection.SourceId),
+			)
+
+			return err
+		}
+
+		if !isHealthy {
+			connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"), aws.Bool(false), aws.Bool(false))
+			if err != nil {
+				h.logger.Error("failed to update source health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				return err
+			}
+		} else {
+			connection, err = h.checkConnectionHealth(ctx, connection, updateMetadata)
+		}
+	}
+
+	return c.JSON(http.StatusOK, entity.NewConnection(connection))
 }
 
 func (s API) Register(g *echo.Group) {
