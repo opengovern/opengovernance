@@ -3199,6 +3199,19 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig:
+    properties:
+      accountID:
+        type: string
+      assumeRoleName:
+        type: string
+      externalId:
+        type: string
+      healthCheckPolicies:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig:
     properties:
       clientId:
@@ -3319,6 +3332,11 @@ definitions:
     - ConnectionLifecycleStateDiscovered
     - ConnectionLifecycleStateInProgress
     - ConnectionLifecycleStateArchived
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig'
+    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest:
     properties:
       config:
@@ -5537,6 +5555,33 @@ paths:
       summary: Get Azure cost
       tags:
       - cost-estimator
+  /integration/api/v1/connections/{connectionId}/aws/healthcheck:
+    get:
+      description: Get live connection health status with given connection ID for
+        Azure.
+      parameters:
+      - description: connection ID
+        in: path
+        name: connectionId
+        required: true
+        type: string
+      - default: true
+        description: Whether to update metadata or not
+        in: query
+        name: updateMetadata
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+      security:
+      - BearerToken: []
+      summary: Get AWS connection health
+      tags:
+      - connections
   /integration/api/v1/connections/{connectionId}/azure/healthcheck:
     get:
       description: Get live connection health status with given connection ID for
@@ -5671,6 +5716,28 @@ paths:
       summary: List connections summaries
       tags:
       - connections
+  /integration/api/v1/credentials/aws:
+    post:
+      description: Creating AWS credential, testing it and on-board its subscriptions
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse'
+      security:
+      - BearerToken: []
+      summary: Create AWS credential and does onboarding for its subscriptions
+      tags:
+      - integration
   /integration/api/v1/credentials/azure:
     post:
       description: Creating Azure credential, testing it and on-board its subscriptions

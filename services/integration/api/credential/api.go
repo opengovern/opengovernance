@@ -39,14 +39,14 @@ func New(
 
 // CreateAzure godoc
 //
-//	@Summary			Create Azure credential and does onboarding for its subscriptions
-//	@Description		Creating Azure credential, testing it and on-board its subscriptions
-//	@Security			BearerToken
-//	@Tags				integration
-//	@Produce			json
-//	@Success			200		{object}	entity.CreateCredentialResponse
-//	@Param				request	body		entity.CreateAzureConnectionRequest	true	"Request"
-//	@Router				/integration/api/v1/credentials/azure [post]
+//	@Summary		Create Azure credential and does onboarding for its subscriptions
+//	@Description	Creating Azure credential, testing it and on-board its subscriptions
+//	@Security		BearerToken
+//	@Tags			integration
+//	@Produce		json
+//	@Success		200		{object}	entity.CreateCredentialResponse
+//	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
+//	@Router			/integration/api/v1/credentials/azure [post]
 func (h API) CreateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
@@ -97,7 +97,7 @@ func (h API) CreateAzure(c echo.Context) error {
 	}
 
 	// An Azure subscription is a unit of management, billing, and provisioning within Microsoft Azure,
-	// which is Microsoft’s cloud computing platform.
+	// which is Microsoft's cloud computing platform.
 	// call auto onboard so read current subscriptions of the given azure credentials gathered.
 	connections, err := h.credentialSvc.AzureOnboard(ctx, *cred)
 	if err != nil {
@@ -124,14 +124,14 @@ func (h API) CreateAzure(c echo.Context) error {
 
 // CreateAWS godoc
 //
-//	@Summary			Create AWS credential and does onboarding for its subscriptions
-//	@Description		Creating AWS credential, testing it and on-board its subscriptions
-//	@Security			BearerToken
-//	@Tags				integration
-//	@Produce			json
-//	@Success			200		{object}	entity.CreateCredentialResponse
-//	@Param				request	body		entity.CreateAWSConnectionRequest	true	"Request"
-//	@Router				/integration/api/v1/credentials/aws [post]
+//	@Summary		Create AWS credential and does onboarding for its subscriptions
+//	@Description	Creating AWS credential, testing it and on-board its subscriptions
+//	@Security		BearerToken
+//	@Tags			integration
+//	@Produce		json
+//	@Success		200		{object}	entity.CreateCredentialResponse
+//	@Param			request	body		entity.CreateAWSConnectionRequest	true	"Request"
+//	@Router			/integration/api/v1/credentials/aws [post]
 func (h API) CreateAWS(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
