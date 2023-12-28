@@ -803,6 +803,28 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary'
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus:
+    properties:
+      critical:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult'
+      high:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult'
+      low:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult'
+      medium:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult'
+      none:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult'
+      total:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult:
+    properties:
+      passed:
+        type: integer
+      total:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
     properties:
       checks:
@@ -820,6 +842,10 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
+      controlsSeverityStatus:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
+        description: Controls severity status
       description:
         description: Benchmark description
         example: The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive

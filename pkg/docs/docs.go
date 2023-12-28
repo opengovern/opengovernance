@@ -7582,6 +7582,40 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus": {
+            "type": "object",
+            "properties": {
+                "critical": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                },
+                "high": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                },
+                "low": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                },
+                "medium": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                },
+                "none": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                },
+                "total": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult": {
+            "type": "object",
+            "properties": {
+                "passed": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary": {
             "type": "object",
             "properties": {
@@ -7609,6 +7643,14 @@ const docTemplate = `{
                     },
                     "example": [
                         "[Azure]"
+                    ]
+                },
+                "controlsSeverityStatus": {
+                    "description": "Controls severity status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus"
+                        }
                     ]
                 },
                 "description": {
