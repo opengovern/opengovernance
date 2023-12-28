@@ -97,7 +97,7 @@ func (h API) CreateAzure(c echo.Context) error {
 	}
 
 	// An Azure subscription is a unit of management, billing, and provisioning within Microsoft Azure,
-	// which is Microsoft’s cloud computing platform.
+	// which is Microsoft's cloud computing platform.
 	// call auto onboard so read current subscriptions of the given azure credentials gathered.
 	connections, err := h.credentialSvc.AzureOnboard(ctx, *cred)
 	if err != nil {
