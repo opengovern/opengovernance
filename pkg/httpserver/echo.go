@@ -3,7 +3,10 @@ package httpserver
 import (
 	"context"
 	"fmt"
-	"github.com/brpaz/echozap"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -12,17 +15,16 @@ import (
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"os"
-	"strconv"
-	"strings"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-var agentHost = os.Getenv("JAEGER_AGENT_HOST")
-var serviceName = os.Getenv("JAEGER_SERVICE_NAME")
-var sampleRate = os.Getenv("JAEGER_SAMPLE_RATE")
+var (
+	agentHost   = os.Getenv("JAEGER_AGENT_HOST")
+	serviceName = os.Getenv("JAEGER_SERVICE_NAME")
+	sampleRate  = os.Getenv("JAEGER_SAMPLE_RATE")
+)
 
 type Routes interface {
 	Register(router *echo.Echo)
@@ -33,7 +35,7 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerPr
 	e.HideBanner = true
 
 	e.Use(middleware.Recover())
-	e.Use(echozap.ZapLogger(logger))
+	e.Use(Logger(logger))
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Skipper: func(c echo.Context) bool {
 			// skip metric endpoints

@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"context"
-
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
@@ -21,6 +19,8 @@ func Command() *cobra.Command {
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
 			logger, err := zap.NewProduction()
 			if err != nil {
 				return err
@@ -33,8 +33,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			// TODO (parham) why access-key and secret-key are empty?
-			kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", cnf.KMS.Region)
+			kms, err := vault.NewKMSVaultSourceConfig(ctx, "", "", cnf.KMS.Region)
 			if err != nil {
 				return err
 			}
