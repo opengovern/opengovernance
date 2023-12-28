@@ -197,6 +197,7 @@ func (h API) CreateAWS(c echo.Context) error {
 		return err
 	}
 
+	// update credential health before writing it into the database.
 	cred.HealthReason = fp.Optional("")
 	cred.HealthStatus = source.HealthStatusHealthy
 
