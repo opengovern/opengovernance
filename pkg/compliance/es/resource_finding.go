@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -189,12 +190,12 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 			})
 		case sort.FailedCount != nil:
 			scriptSource :=
-				`int total = 0; 
+				fmt.Sprintf(`int total = 0; 
 for (int i=0; i<params['_source']['findings'].length;++i) { 
-  if(params['_source']['findings'][i]['conformanceStatus'] == 'alarm') 
+  if(params['_source']['findings'][i]['conformanceStatus'] != '%s') 
     total+=1;
   } 
-return total;`
+return total;`, types.ConformanceStatusOK)
 			requestSort = append(requestSort, map[string]any{
 				"_script": map[string]any{
 					"type": "number",
