@@ -44,18 +44,15 @@ func (t *CreateRoleBinding) ApplyIdempotent(workspace db.Workspace) error {
 }
 
 func (t *CreateRoleBinding) RollbackIdempotent(workspace db.Workspace) error {
-	//authCtx := &httpclient.Context{
-	//	UserID:        *workspace.OwnerId,
-	//	UserRole:      authapi.AdminRole,
-	//	WorkspaceName: workspace.Name,
-	//	WorkspaceID:   workspace.ID,
-	//}
-	//
-	//if err := t.authClient.DeleteRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-	//	UserID:   *workspace.OwnerId,
-	//	RoleName: authapi.AdminRole,
-	//}); err != nil {
-	//	return fmt.Errorf("DeleteRoleBinding: %w", err)
-	//}
+	authCtx := &httpclient.Context{
+		UserID:        *workspace.OwnerId,
+		UserRole:      authapi.AdminRole,
+		WorkspaceName: workspace.Name,
+		WorkspaceID:   workspace.ID,
+	}
+
+	if err := t.authClient.DeleteRoleBinding(authCtx, workspace.ID, *workspace.OwnerId); err != nil {
+		return fmt.Errorf("DeleteRoleBinding: %w", err)
+	}
 	return nil
 }

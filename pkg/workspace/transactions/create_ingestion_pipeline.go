@@ -91,8 +91,7 @@ func (t *CreateIngestionPipeline) RollbackIdempotent(workspace db.Workspace) err
 		return err
 	}
 
-	deleted := pipe.Pipeline.Status != types.PipelineStatusDeleting
-	if !deleted {
+	if pipe.Pipeline.Status != types.PipelineStatusDeleting {
 		_, err := t.osis.DeletePipeline(context.Background(), &osis.DeletePipelineInput{PipelineName: aws.String(pipelineName)})
 		if err != nil {
 			return err

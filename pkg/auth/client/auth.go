@@ -16,6 +16,7 @@ type AuthServiceClient interface {
 	GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBindingsResponse, error)
 	ListAPIKeys(ctx *httpclient.Context, workspaceID string) ([]api.WorkspaceApiKey, error)
 	UpdateWorkspaceMap(ctx *httpclient.Context) error
+	DeleteRoleBinding(ctx *httpclient.Context, workspaceID, userID string) error
 }
 
 type authClient struct {
@@ -44,6 +45,18 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
 	}
 	_, res := httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
+	return res
+}
+
+func (c *authClient) DeleteRoleBinding(ctx *httpclient.Context, workspaceID, userID string) error {
+	url := fmt.Sprintf("%s/api/v1/user/role/binding?userId=%s", c.baseURL, userID)
+
+	headers := map[string]string{
+		httpserver.XKaytuUserIDHeader:      ctx.UserID,
+		httpserver.XKaytuUserRoleHeader:    string(ctx.UserRole),
+		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
+	}
+	_, res := httpclient.DoRequest(http.MethodPut, url, headers, nil, nil)
 	return res
 }
 
