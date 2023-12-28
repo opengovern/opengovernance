@@ -150,9 +150,9 @@ func (s *Server) Register(e *echo.Echo) {
 	workspacesGroup.GET("/byname/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceByName, authapi.ViewerRole))
 
 	organizationGroup := v1Group.Group("/organization")
-	organizationGroup.GET("", httpserver.AuthorizeHandler(s.ListOrganization, authapi.EditorRole))
-	organizationGroup.POST("", httpserver.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
-	organizationGroup.DELETE("/:organizationId", httpserver.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
+	organizationGroup.GET("", httpserver.AuthorizeHandler(s.ListOrganization, authapi.KaytuAdminRole))
+	organizationGroup.POST("", httpserver.AuthorizeHandler(s.CreateOrganization, authapi.KaytuAdminRole))
+	organizationGroup.DELETE("/:organizationId", httpserver.AuthorizeHandler(s.DeleteOrganization, authapi.KaytuAdminRole))
 
 	costEstimatorGroup := v1Group.Group("/costestimator")
 	costEstimatorGroup.GET("/aws", httpserver.AuthorizeHandler(s.GetAwsCost, authapi.ViewerRole))
@@ -428,10 +428,15 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name} [get]
 func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
+	userID := httpserver.GetUserID(c)
 
 	ws, err := s.db.GetWorkspaceByName(workspaceName)
 	if err != nil {
 		return err
+	}
+
+	if *ws.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
 	if ws == nil {
@@ -482,6 +487,11 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 		return err
 	}
 
+	userID := httpserver.GetUserID(c)
+	if *ws.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	}
+
 	err = s.db.SetWorkspaceBootstrapInputFinished(ws.ID)
 	if err != nil {
 		return err
@@ -527,6 +537,11 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 	ws, err := s.db.GetWorkspaceByName(workspaceName)
 	if err != nil {
 		return err
+	}
+
+	userID := httpserver.GetUserID(ctx)
+	if *ws.OwnerId != userID {
+		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
 	count := 0
@@ -734,17 +749,6 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "success"})
 }
 
-// GetWorkspace godoc
-//
-//	@Summary		Get workspace for workspace service
-//	@Description	Get workspace with workspace id
-//	@Security		BearerToken
-//	@Tags			workspace
-//	@Accept			json
-//	@Produce		json
-//	@Param			workspace_id	path	string	true	"Workspace ID"
-//	@Success		200
-//	@Router			/workspace/api/v1/workspaces/{workspace_id} [get]
 func (s *Server) GetWorkspace(c echo.Context) error {
 	userId := httpserver.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
@@ -798,17 +802,6 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 	})
 }
 
-// GetWorkspaceByName godoc
-//
-//	@Summary		Get workspace for workspace service
-//	@Description	Get workspace with workspace name
-//	@Security		BearerToken
-//	@Tags			workspace
-//	@Accept			json
-//	@Produce		json
-//	@Param			workspace_name	path	string	true	"Workspace Name"
-//	@Success		200
-//	@Router			/workspace/api/v1/workspaces/byname/{workspace_name} [get]
 func (s *Server) GetWorkspaceByName(c echo.Context) error {
 	userId := httpserver.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
@@ -974,17 +967,6 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 	})
 }
 
-// ChangeOwnership godoc
-//
-//	@Summary	Change ownership of workspace
-//	@Tags		workspace
-//	@Security	BearerToken
-//	@Accept		json
-//	@Produce	json
-//	@Param		request			body	api.ChangeWorkspaceOwnershipRequest	true	"Change ownership request"
-//	@Param		workspace_id	path	string								true	"WorkspaceID"
-//	@Success	200
-//	@Router		/workspace/api/v1/workspace/{workspace_id}/owner [post]
 func (s *Server) ChangeOwnership(c echo.Context) error {
 	userID := httpserver.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
@@ -1018,17 +1000,6 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// ChangeOrganization godoc
-//
-//	@Summary	Change organization of workspace
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		request			body	api.ChangeWorkspaceOrganizationRequest	true	"Change organization request"
-//	@Param		workspace_id	path	string									true	"WorkspaceID"
-//	@Success	200
-//	@Router		/workspace/api/v1/workspace/{workspace_id}/organization [post]
 func (s *Server) ChangeOrganization(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
 
@@ -1116,16 +1087,6 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// GetWorkspaceLimitsByID godoc
-//
-//	@Summary	Get workspace limits
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		workspace_id	path		string	true	"Workspace ID"
-//	@Success	200				{object}	api.WorkspaceLimits
-//	@Router		/workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
 
@@ -1136,16 +1097,6 @@ func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, api.GetLimitsByTier(dbWorkspace.Tier))
 }
 
-// GetWorkspaceByID godoc
-//
-//	@Summary	Get workspace
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		workspace_id	path		string	true	"Workspace ID"
-//	@Success	200				{object}	api.Workspace
-//	@Router		/workspace/api/v1/workspaces/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceByID(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
 
@@ -1157,16 +1108,6 @@ func (s *Server) GetWorkspaceByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, dbWorkspace.ToAPI())
 }
 
-// CreateOrganization godoc
-//
-//	@Summary	Create an organization
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		request	body		api.Organization	true	"Organization"
-//	@Success	201		{object}	api.Organization
-//	@Router		/workspace/api/v1/organization [post]
 func (s *Server) CreateOrganization(c echo.Context) error {
 	var request api.Organization
 	if err := c.Bind(&request); err != nil {
@@ -1192,15 +1133,6 @@ func (s *Server) CreateOrganization(c echo.Context) error {
 	return c.JSON(http.StatusCreated, dbOrg.ToAPI())
 }
 
-// ListOrganization godoc
-//
-//	@Summary	List all organizations
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Success	201	{object}	[]api.Organization
-//	@Router		/workspace/api/v1/organization [get]
 func (s *Server) ListOrganization(c echo.Context) error {
 	orgs, err := s.db.ListOrganizations()
 	if err != nil {
@@ -1214,16 +1146,6 @@ func (s *Server) ListOrganization(c echo.Context) error {
 	return c.JSON(http.StatusCreated, apiOrg)
 }
 
-// DeleteOrganization godoc
-//
-//	@Summary	Create an organization
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		organizationId	path	int	true	"Organization ID"
-//	@Success	202
-//	@Router		/workspace/api/v1/organization/{organizationId} [delete]
 func (s *Server) DeleteOrganization(c echo.Context) error {
 	organizationIDStr := c.Param("organizationId")
 	organizationID, err := strconv.ParseInt(organizationIDStr, 10, 64)

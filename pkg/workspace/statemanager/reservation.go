@@ -33,14 +33,14 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 		return err
 	}
 
-	workspace.ID, rs.ID = rs.ID, workspace.ID
-	rs.Name = fmt.Sprintf("rs-deleting-%d", rand.Int())
-	rs.Status = api.StateID_Deleting
-
 	err = s.db.UpdateCredentialWSID(workspace.ID, rs.ID)
 	if err != nil {
 		return err
 	}
+
+	workspace.ID, rs.ID = rs.ID, workspace.ID
+	rs.Name = fmt.Sprintf("rs-deleting-%d", rand.Int())
+	rs.Status = api.StateID_Deleting
 
 	err = s.db.UpdateWorkspace(&workspace)
 	if err != nil {
