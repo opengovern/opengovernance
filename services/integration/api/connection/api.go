@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -748,7 +749,7 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 // AWSHealthCheck godoc
 //
 //	@Summary		Get AWS connection health
-//	@Description	Get live connection health status with given connection ID for Azure.
+//	@Description	Get live connection health status with given connection ID for AWS.
 //	@Security		BearerToken
 //	@Tags			connections
 //	@Produce		json
@@ -823,6 +824,67 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, entity.NewConnection(connection))
+}
+
+// PostSourceAws godoc
+//
+//	@Summary		Create AWS connection [standalone]
+//	@Description	Creating AWS source [standalone]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200		{object}	api.CreateSourceResponse
+//	@Param			request	body		api.SourceAwsRequest	true	"Request"
+//	@Router			/integration/api/v1/connections/aws [post]
+func (h API) AWSCreate(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "create.aws")
+	defer span.End()
+
+	var req entity.CreateAWSCredentialRequest
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	sdkCnf, err := h.credSvc.AWSSDKConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	if err != nil {
+		return err
+	}
+
+	acc, err := currentAwsAccount(context.Background(), h.logger, cfg)
+	if err != nil {
+		return err
+	}
+	if req.Name != "" {
+		acc.AccountName = &req.Name
+	}
+
+	err = h.CheckMaxConnections(1)
+	if err != nil {
+		return err
+	}
+
+	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
+	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	src.Credential.Secret = string(secretBytes)
+
+	err = h.db.CreateSource(&src)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, entity.CreateConnectionResponse{
+		ID: src.ID,
+	})
 }
 
 func (s API) Register(g *echo.Group) {

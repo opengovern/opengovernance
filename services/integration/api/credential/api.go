@@ -42,12 +42,12 @@ func New(
 // CreateAzure godoc
 //
 //	@Summary		Create Azure credential and does onboarding for its subscriptions
-//	@Description	Creating Azure credential, testing it and on-board its subscriptions
+//	@Description	Creating Azure credential, testing it and onboard its subscriptions
 //	@Security		BearerToken
 //	@Tags			integration
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
-//	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
+//	@Param			request	body		entity.CreateAzureCredentialRequest	true	"Request"
 //	@Router			/integration/api/v1/credentials/azure [post]
 func (h API) CreateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -55,7 +55,7 @@ func (h API) CreateAzure(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "create-azure-spn")
 	defer span.End()
 
-	var req entity.CreateAzureConnectionRequest
+	var req entity.CreateAzureCredentialRequest
 
 	if err := c.Bind(&req); err != nil {
 		span.RecordError(err)
@@ -126,13 +126,13 @@ func (h API) CreateAzure(c echo.Context) error {
 
 // CreateAWS godoc
 //
-//	@Summary		Create AWS credential and does onboarding for its subscriptions
-//	@Description	Creating AWS credential, testing it and on-board its subscriptions
+//	@Summary		Create AWS credential and does onboarding for its accounts (organization account)
+//	@Description	Creating AWS credential, testing it and onboard its accounts (organization account)
 //	@Security		BearerToken
 //	@Tags			integration
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
-//	@Param			request	body		entity.CreateAWSConnectionRequest	true	"Request"
+//	@Param			request	body		entity.CreateAWSCredentialRequest	true	"Request"
 //	@Router			/integration/api/v1/credentials/aws [post]
 func (h API) CreateAWS(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -140,7 +140,7 @@ func (h API) CreateAWS(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "create-aws")
 	defer span.End()
 
-	var req entity.CreateAWSConnectionRequest
+	var req entity.CreateAWSCredentialRequest
 
 	if err := c.Bind(&req); err != nil {
 		span.RecordError(err)
@@ -209,7 +209,7 @@ func (h API) CreateAWS(c echo.Context) error {
 
 	connections, err := h.credentialSvc.AWSOnboard(ctx, *cred)
 	if err != nil {
-		h.logger.Error("azure onboarding failed", zap.Error(err))
+		h.logger.Error("aws onboarding failed", zap.Error(err))
 
 		return echo.ErrInternalServerError
 	}

@@ -29,7 +29,7 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 	return out
 }
 
-type CreateAWSConnectionRequest struct {
+type CreateAWSCredentialRequest struct {
 	Config AWSCredentialConfig `json:"config,omitempty"`
 }
 
