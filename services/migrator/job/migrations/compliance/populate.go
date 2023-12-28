@@ -123,7 +123,6 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 					"document_uri",
 					"enabled",
 					"managed",
-					"auto_assign",
 					"baseline",
 					"updated_at",
 				}), // column needed to be updated

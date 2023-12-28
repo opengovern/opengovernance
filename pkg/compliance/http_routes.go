@@ -2242,6 +2242,7 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id		path		string		true	"Benchmark ID"
+//	@Param			auto_assign			query		bool		false	"Auto enable benchmark for connections"
 //	@Param			connectionId		query		[]string	false	"Connection ID or 'all' for everything"
 //	@Param			connectionGroup		query		[]string	false	"Connection group"
 //	@Param			resourceCollection	query		[]string	false	"Resource collection"
@@ -2257,6 +2258,8 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	if len(connectionIDs) > 0 && len(resourceCollections) > 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
 	}
+
+	autoAssignStr := ctx.QueryParam("auto_assign")
 
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
@@ -2289,6 +2292,17 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	ca := benchmark.ToApi()
 	switch {
+	case len(autoAssignStr) > 0:
+		autoAssign, err := strconv.ParseBool(autoAssignStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid auto_enable value")
+		}
+		err = h.db.SetBenchmarkAutoAssign(benchmarkId, autoAssign)
+		if err != nil {
+			h.logger.Error("failed to set auto assign", zap.Error(err))
+			return err
+		}
+		return ctx.JSON(http.StatusOK, []api.BenchmarkAssignment{})
 	case len(connectionIDs) > 0:
 		connections := make([]onboardApi.Connection, 0)
 		if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
@@ -2377,7 +2391,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		}
 		return ctx.JSON(http.StatusOK, result)
 	}
-	return echo.NewHTTPError(http.StatusBadRequest, "connection or resource collection is required")
+	return echo.NewHTTPError(http.StatusBadRequest, "auto assign, connection or resource collection is required")
 }
 
 // ListAssignmentsByConnection godoc

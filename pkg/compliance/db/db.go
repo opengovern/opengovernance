@@ -167,6 +167,14 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
+func (db Database) SetBenchmarkAutoAssign(benchmarkId string, autoAssign bool) error {
+	tx := db.Orm.Model(&Benchmark{}).Where("id = ?", benchmarkId).Update("auto_assign", autoAssign)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
 func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
 	s := make(map[string]Benchmark)
 
