@@ -14,13 +14,13 @@ import (
 )
 
 type FindingsQueryResponse struct {
-	Hits  FindingsQueryHits `json:"hits"`
-	PitID string            `json:"pit_id"`
+	Hits struct {
+		Total kaytu.SearchTotal  `json:"total"`
+		Hits  []FindingsQueryHit `json:"hits"`
+	} `json:"hits"`
+	PitID string `json:"pit_id"`
 }
-type FindingsQueryHits struct {
-	Total kaytu.SearchTotal  `json:"total"`
-	Hits  []FindingsQueryHit `json:"hits"`
-}
+
 type FindingsQueryHit struct {
 	ID      string        `json:"_id"`
 	Score   float64       `json:"_score"`
@@ -81,7 +81,7 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
 	provider []source.Type, connectionID []string,
 	resourceTypes []string,
-	benchmarkID []string, controlID []string, severity []string, conformanceStatuses []types.ConformanceStatus,
+	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
 	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
@@ -126,7 +126,11 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
 	}
 	if len(severity) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("severity", severity))
+		strSeverity := make([]string, 0)
+		for _, s := range severity {
+			strSeverity = append(strSeverity, string(s))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("severity", strSeverity))
 	}
 	if len(conformanceStatuses) > 0 {
 		strConformanceStatus := make([]string, 0)
@@ -242,7 +246,7 @@ type FindingFiltersAggregationResponse struct {
 
 func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	resourceIDs []string, connector []source.Type, connectionID []string,
-	benchmarkID []string, controlID []string, severity []string, conformanceStatuses []types.ConformanceStatus,
+	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
 ) (*FindingFiltersAggregationResponse, error) {
 	idx := types.FindingsIndex
 	terms := make(map[string]any)

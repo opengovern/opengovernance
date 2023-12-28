@@ -112,6 +112,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
 
+	resourceFindings := v1.Group("/resource_findings")
+	resourceFindings.GET("", httpserver2.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
+
 	ai := v1.Group("/ai")
 	ai.POST("/control/:controlID/remediation", httpserver2.AuthorizeHandler(h.GetControlRemediation, authApi.ViewerRole))
 }
@@ -1214,6 +1217,56 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 			},
 		}
 		response.Services = append(response.Services, service)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListResourceFindings godoc
+//
+//	@Summary		List resource findings
+//	@Description	Retrieving list of resource findings
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.ListResourceFindingsRequest	true	"Request"
+//	@Success		200		{object}	api.ListResourceFindingsResponse
+//	@Router			/compliance/api/v1/resource_findings [post]
+func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
+	var req api.ListResourceFindingsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if len(req.Filters.ConformanceStatus) == 0 {
+		req.Filters.ConformanceStatus = []kaytuTypes.ConformanceStatus{
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
+		}
+	}
+
+	resourceFindings, totalCount, err := es.ResourceFindingsQuery(h.logger, h.client,
+		req.Filters.Connector, req.Filters.ConnectionID,
+		req.Filters.ResourceCollection, req.Filters.ResourceTypeID,
+		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
+		req.Filters.ConformanceStatus, req.Sort, req.Limit, req.AfterSortKey)
+	if err != nil {
+		h.logger.Error("failed to get resource findings", zap.Error(err))
+		return err
+	}
+
+	response := api.ListResourceFindingsResponse{
+		TotalCount:       int(totalCount),
+		ResourceFindings: nil,
+	}
+
+	for _, resourceFinding := range resourceFindings {
+		apiRf := api.GetAPIResourceFinding(resourceFinding.Source)
+		apiRf.SortKey = resourceFinding.Sort
+		response.ResourceFindings = append(response.ResourceFindings, apiRf)
 	}
 
 	return ctx.JSON(http.StatusOK, response)
