@@ -50,13 +50,17 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	allStateTransactionsMet := true
 	for _, stateRequirement := range currentState.Requirements(*workspace) {
 		alreadyDone := false
+		running := false
 		for _, tn := range currentTransactions {
-			if tn.Done && tn.TransactionID == stateRequirement {
+			if tn.TransactionID == stateRequirement {
+				if !tn.Done {
+					running = true
+				}
 				alreadyDone = true
 			}
 		}
 
-		if alreadyDone {
+		if alreadyDone && !running {
 			continue
 		}
 
@@ -83,14 +87,17 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			allStateTransactionsMet = false
 			continue
 		}
+
 		wt := db.WorkspaceTransaction{WorkspaceID: workspace.ID, TransactionID: stateRequirement, CreatedAt: time.Now(), UpdatedAt: time.Now()}
-		err := s.db.CreateWorkspaceTransaction(&wt)
-		if err != nil {
-			return err
+		if !running {
+			err := s.db.CreateWorkspaceTransaction(&wt)
+			if err != nil {
+				return err
+			}
 		}
 
 		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err = transaction.ApplyIdempotent(*workspace)
+		err := transaction.ApplyIdempotent(*workspace)
 		if err != nil {
 			if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 				return err
