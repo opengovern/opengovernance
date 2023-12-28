@@ -112,7 +112,7 @@ func (h Credential) AWSHealthCheck(
 		return false, err
 	}
 
-	awsCnf, err := model.AWSCredentialConfigFromMap(config)
+	awsCnf, err := fp.FromMap[model.AWSCredentialConfig](config)
 	if err != nil {
 		return false, err
 	}
@@ -207,7 +207,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		return nil, err
 	}
 
-	awsCnf, err := model.AWSCredentialConfigFromMap(cnf)
+	awsCnf, err := fp.FromMap[model.AWSCredentialConfig](cnf)
 	if err != nil {
 		return nil, err
 	}

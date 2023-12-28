@@ -80,17 +80,3 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 
 	return out
 }
-
-func AWSCredentialConfigFromMap(cnf map[string]any) (*AWSCredentialConfig, error) {
-	in, err := json.Marshal(cnf)
-	if err != nil {
-		return nil, err
-	}
-
-	var out AWSCredentialConfig
-	if err := json.Unmarshal(in, &out); err != nil {
-		return nil, err
-	}
-
-	return &out, nil
-}
