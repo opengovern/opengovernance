@@ -153,8 +153,19 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 				},
 			},
 		},
-		"size":         pageSizeLimit,
-		"search_after": searchAfter,
+		"size": pageSizeLimit,
+	}
+	if len(filters) == 0 {
+		delete(requestMap["query"].(map[string]any), "bool")
+	}
+	if len(nestedFilters) == 0 {
+		delete(requestMap["query"].(map[string]any), "nested")
+	}
+	if len(requestMap["query"].(map[string]any)) == 0 {
+		delete(requestMap, "query")
+	}
+	if len(searchAfter) > 0 {
+		requestMap["search_after"] = searchAfter
 	}
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
