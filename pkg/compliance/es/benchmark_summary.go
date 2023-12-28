@@ -501,7 +501,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 
 	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch"}
+	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.Controls"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
 	}
@@ -512,16 +512,23 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Controls")
 	for _, connectionID := range connectionIDs {
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Result", connectionID))
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
 	}
 	for _, resourceCollection := range resourceCollections {
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result", resourceCollection))
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Controls", resourceCollection))
 		for _, connectionID := range connectionIDs {
 			pathFilters = append(pathFilters,
 				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Result", resourceCollection, connectionID))
+			pathFilters = append(pathFilters,
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Controls", resourceCollection, connectionID))
 		}
 	}
 

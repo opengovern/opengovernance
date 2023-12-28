@@ -1313,6 +1313,52 @@ func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.BenchmarkRemediation{Remediation: resp.Choices[0].Message.Content})
 }
 
+func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSeverityStatus, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatus {
+	if control == nil {
+		control = &db.Control{
+			Severity: kaytuTypes.FindingSeverityNone,
+		}
+	}
+	switch control.Severity {
+	case kaytuTypes.FindingSeverityCritical:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.Critical.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.Critical.PassedCount++
+		}
+	case kaytuTypes.FindingSeverityHigh:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.High.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.High.PassedCount++
+		}
+	case kaytuTypes.FindingSeverityMedium:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.Medium.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.Medium.PassedCount++
+		}
+	case kaytuTypes.FindingSeverityLow:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.Low.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.Low.PassedCount++
+		}
+	case kaytuTypes.FindingSeverityNone, "":
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.None.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.None.PassedCount++
+		}
+	}
+	return controlSeverityResult
+}
+
 // ListBenchmarksSummary godoc
 //
 //	@Summary		List benchmarks summaries
@@ -1373,6 +1419,17 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	}
 	span2.End()
 
+	controls, err := h.db.ListControlsBare()
+	if err != nil {
+		h.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	controlsMap := make(map[string]*db.Control)
+	for _, control := range controls {
+		control := control
+		controlsMap[strings.ToLower(control.ID)] = &control
+	}
+
 	benchmarkIDs := make([]string, 0, len(benchmarks))
 	for _, b := range benchmarks {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
@@ -1396,12 +1453,18 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		summaryAtTime := summariesAtTime[b.ID]
 		csResult := kaytuTypes.ConformanceStatusSummary{}
 		sResult := kaytuTypes.SeverityResult{}
+		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+
 		if len(connectionIDs) > 0 {
 			for _, connectionID := range connectionIDs {
 				csResult.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 				sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 				response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 				response.TotalChecks.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
+				for controlId, controlResult := range summaryAtTime.Connections.Connections[connectionID].Controls {
+					control := controlsMap[strings.ToLower(controlId)]
+					controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+				}
 			}
 		} else if len(resourceCollections) > 0 {
 			for _, resourceCollection := range resourceCollections {
@@ -1409,12 +1472,20 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 				response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
+				for controlId, controlResult := range summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Controls {
+					control := controlsMap[strings.ToLower(controlId)]
+					controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+				}
 			}
 		} else {
 			csResult.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 			response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
+			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+				control := controlsMap[strings.ToLower(controlId)]
+				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+			}
 		}
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
@@ -1479,7 +1550,9 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Enabled:                  b.Enabled,
 			ConformanceStatusSummary: csResult,
 			Checks:                   sResult,
+			ControlsSeverityStatus:   controlSeverityResult,
 			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			LastJobStatus:            "",
 			TopConnections:           topConnections,
 		})
 	}
@@ -1556,6 +1629,17 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
+	controls, err := h.db.ListControlsByBenchmarkID(benchmarkID)
+	if err != nil {
+		h.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	controlsMap := make(map[string]*db.Control)
+	for _, control := range controls {
+		control := control
+		controlsMap[strings.ToLower(control.ID)] = &control
+	}
+
 	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		return err
@@ -1565,19 +1649,32 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	csResult := kaytuTypes.ConformanceStatusSummary{}
 	sResult := kaytuTypes.SeverityResult{}
+	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 	if len(connectionIDs) > 0 {
 		for _, connectionID := range connectionIDs {
 			csResult.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
+			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+				control := controlsMap[strings.ToLower(controlId)]
+				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+			}
 		}
 	} else if len(resourceCollections) > 0 {
 		for _, resourceCollection := range resourceCollections {
 			csResult.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
+			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+				control := controlsMap[strings.ToLower(controlId)]
+				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+			}
 		}
 	} else {
 		csResult.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
+		for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+			control := controlsMap[strings.ToLower(controlId)]
+			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+		}
 	}
 
 	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(ctx), benchmarkID)
@@ -1654,6 +1751,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Enabled:                  benchmark.Enabled,
 		ConformanceStatusSummary: csResult,
 		Checks:                   sResult,
+		ControlsSeverityStatus:   controlSeverityResult,
 		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:            lastJobStatus,
 	}
