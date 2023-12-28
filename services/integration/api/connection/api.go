@@ -796,7 +796,7 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 			return err
 		}
 	} else {
-		isHealthy, err := h.credSvc.AWSHealthCheck(ctx, &connection.Credential)
+		isHealthy, err := h.credSvc.AWSHealthCheck(ctx, &connection.Credential, true)
 		if err != nil {
 			h.logger.Error("failed to check credential health",
 				zap.Error(err),

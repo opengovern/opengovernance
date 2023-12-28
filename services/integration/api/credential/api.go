@@ -9,6 +9,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -189,9 +191,14 @@ func (h API) CreateAWS(c echo.Context) error {
 		return err
 	}
 
-	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred); err != nil {
+	// we are going to check the credential health but not updating it in the database,
+	// because it doesn't exists there yet.
+	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred, false); err != nil {
 		return err
 	}
+
+	cred.HealthReason = fp.Optional("")
+	cred.HealthStatus = source.HealthStatusHealthy
 
 	if err := h.credentialSvc.Create(ctx, cred); err != nil {
 		h.logger.Error("creating aws credential failed", zap.Error(err))

@@ -86,6 +86,7 @@ func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, externalID
 func (h Credential) AWSHealthCheck(
 	ctx context.Context,
 	cred *model.Credential,
+	update bool,
 ) (healthy bool, err error) {
 	// defer function is called to update the credential health.
 	defer func() {
@@ -103,8 +104,10 @@ func (h Credential) AWSHealthCheck(
 
 		cred.LastHealthCheckTime = time.Now()
 
-		if dberr := h.repo.Update(ctx, cred); dberr != nil {
-			err = dberr
+		if update == true {
+			if dberr := h.repo.Update(ctx, cred); dberr != nil {
+				err = dberr
+			}
 		}
 	}()
 
