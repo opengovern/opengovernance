@@ -8592,7 +8592,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "evaluatedAt": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "failedCount": {
                     "type": "integer"

@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"time"
 )
 
 type ResourceFinding struct {
@@ -14,7 +15,7 @@ type ResourceFinding struct {
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`
 
-	EvaluatedAt int64 `json:"evaluatedAt"`
+	EvaluatedAt time.Time `json:"evaluatedAt"`
 
 	Findings []Finding `json:"findings"`
 
@@ -31,7 +32,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 		FailedCount: 0,
 		TotalCount:  len(resourceFinding.Findings),
 
-		EvaluatedAt: resourceFinding.EvaluatedAt,
+		EvaluatedAt: time.UnixMilli(resourceFinding.EvaluatedAt),
 
 		Findings: nil,
 	}

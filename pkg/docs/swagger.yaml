@@ -1512,7 +1512,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding:
     properties:
       evaluatedAt:
-        type: integer
+        type: string
       failedCount:
         type: integer
       findings:
