@@ -22,3 +22,10 @@ func (s *Database) DeleteWorkspaceTransaction(workspaceID string, transactionID 
 		Delete(&WorkspaceTransaction{}).
 		Error
 }
+
+func (s *Database) MarkWorkspaceTransactionDone(workspaceID string, transactionID api.TransactionID) error {
+	return s.Orm.Model(&WorkspaceTransaction{}).
+		Where("workspace_id = ? AND transaction_id = ?", workspaceID, transactionID).
+		Update("done", true).
+		Error
+}

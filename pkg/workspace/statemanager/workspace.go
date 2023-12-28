@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	"go.uber.org/zap"
 	"reflect"
+	"time"
 )
 
 func (s *Service) getTransactionByTransactionID(currentState state.State, tid api.TransactionID) transactions.Transaction {
@@ -50,7 +51,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	for _, stateRequirement := range currentState.Requirements(*workspace) {
 		alreadyDone := false
 		for _, tn := range currentTransactions {
-			if tn.TransactionID == stateRequirement {
+			if tn.Done && tn.TransactionID == stateRequirement {
 				alreadyDone = true
 			}
 		}
@@ -82,9 +83,14 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			allStateTransactionsMet = false
 			continue
 		}
+		wt := db.WorkspaceTransaction{WorkspaceID: workspace.ID, TransactionID: stateRequirement, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+		err := s.db.CreateWorkspaceTransaction(&wt)
+		if err != nil {
+			return err
+		}
 
 		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.ApplyIdempotent(*workspace)
+		err = transaction.ApplyIdempotent(*workspace)
 		if err != nil {
 			if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 				return err
@@ -93,8 +99,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 			return err
 		}
 
-		wt := db.WorkspaceTransaction{WorkspaceID: workspace.ID, TransactionID: stateRequirement}
-		err = s.db.CreateWorkspaceTransaction(&wt)
+		err = s.db.MarkWorkspaceTransactionDone(wt.WorkspaceID, wt.TransactionID)
 		if err != nil {
 			return err
 		}

@@ -84,4 +84,6 @@ type WorkspaceTransaction struct {
 	WorkspaceID   string            `gorm:"primarykey"`
 	TransactionID api.TransactionID `gorm:"primarykey"`
 	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Done          bool
 }
