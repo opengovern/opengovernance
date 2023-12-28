@@ -1,6 +1,7 @@
 package credential
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -38,14 +39,14 @@ func New(
 
 // CreateAzure godoc
 //
-//	@Summary		Create Azure credential and does onboarding for its subscriptions
-//	@Description	Creating Azure credential, testing it and on-board its subscriptions
-//	@Security		BearerToken
-//	@Tags			integration
-//	@Produce		json
-//	@Success		200		{object}	entity.CreateCredentialResponse
-//	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
-//	@Router			/integration/api/v1/credentials/azure [post]
+//	@Summary			Create Azure credential and does onboarding for its subscriptions
+//	@Description		Creating Azure credential, testing it and on-board its subscriptions
+//	@Security			BearerToken
+//	@Tags				integration
+//	@Produce			json
+//	@Success			200		{object}	entity.CreateCredentialResponse
+//	@Param				request	body		entity.CreateAzureConnectionRequest	true	"Request"
+//	@Router				/integration/api/v1/credentials/azure [post]
 func (h API) CreateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
@@ -80,6 +81,10 @@ func (h API) CreateAzure(c echo.Context) error {
 		h.logger.Error("creating azure credential failed", zap.Error(err))
 
 		return echo.ErrInternalServerError
+	}
+
+	if _, err := h.credentialSvc.AzureHealthCheck(ctx, cred); err != nil {
+		return err
 	}
 
 	if err := h.credentialSvc.Create(ctx, cred); err != nil {
@@ -117,6 +122,106 @@ func (h API) CreateAzure(c echo.Context) error {
 	})
 }
 
+// CreateAWS godoc
+//
+//	@Summary			Create AWS credential and does onboarding for its subscriptions
+//	@Description		Creating AWS credential, testing it and on-board its subscriptions
+//	@Security			BearerToken
+//	@Tags				integration
+//	@Produce			json
+//	@Success			200		{object}	entity.CreateCredentialResponse
+//	@Param				request	body		entity.CreateAWSConnectionRequest	true	"Request"
+//	@Router				/integration/api/v1/credentials/aws [post]
+func (h API) CreateAWS(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "create-aws")
+	defer span.End()
+
+	var req entity.CreateAWSConnectionRequest
+
+	if err := c.Bind(&req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	awsConfig, err := h.credentialSvc.AWSSDKConfig(
+		ctx,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", req.Config.AccountID, req.Config.AssumeRoleName),
+		req.Config.ExternalId,
+	)
+	if err != nil {
+		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
+
+		return err
+	}
+
+	org, accounts, err := h.credentialSvc.AWSOrgAccounts(ctx, awsConfig)
+	if err != nil {
+		h.logger.Error("getting aws accounts and organizations", zap.Error(err))
+
+		return err
+	}
+
+	metadata, err := model.ExtractCredentialMetadata(req.Config.AccountID, org, accounts)
+	if err != nil {
+		return err
+	}
+
+	name := metadata.AccountID
+	if metadata.OrganizationID != nil {
+		name = *metadata.OrganizationID
+	}
+
+	cred, err := h.credentialSvc.NewAWS(ctx, name, metadata, model.CredentialTypeManualAwsOrganization, req.Config)
+	if err != nil {
+		h.logger.Error("building aws credential failed", zap.Error(err))
+
+		return err
+	}
+
+	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred); err != nil {
+		return err
+	}
+
+	if err := h.credentialSvc.Create(ctx, cred); err != nil {
+		h.logger.Error("creating aws credential failed", zap.Error(err))
+
+		return err
+	}
+
+	connections, err := h.credentialSvc.AWSOnboard(ctx, *cred)
+	if err != nil {
+		h.logger.Error("azure onboarding failed", zap.Error(err))
+
+		return echo.ErrInternalServerError
+	}
+
+	response := make([]entity.Connection, len(connections))
+
+	for i, connection := range connections {
+		// checking the connection health and update its metadata.
+		h.connectionSvc.AWSHealthCheck(ctx, connection, true)
+
+		response[i] = entity.NewConnection(connection)
+	}
+
+	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{
+		Connections: response,
+		ID:          cred.ID.String(),
+	})
+}
+
 func (s API) Register(g *echo.Group) {
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
+	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
 }

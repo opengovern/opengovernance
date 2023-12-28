@@ -8,6 +8,31 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
+type AWSCredentialConfig struct {
+	AccountID           string   `json:"accountID"`
+	AssumeRoleName      string   `json:"assumeRoleName"`
+	HealthCheckPolicies []string `json:"healthCheckPolicies"`
+	ExternalId          *string  `json:"externalId"`
+}
+
+func (s AWSCredentialConfig) AsMap() map[string]any {
+	in, err := json.Marshal(s)
+	if err != nil {
+		panic(err) // Don't expect any error
+	}
+
+	var out map[string]any
+	if err := json.Unmarshal(in, &out); err != nil {
+		panic(err) // Don't expect any error
+	}
+
+	return out
+}
+
+type CreateAWSConnectionRequest struct {
+	Config AWSCredentialConfig `json:"config,omitempty"`
+}
+
 type CreateCredentialRequest struct {
 	SourceType source.Type `json:"source_type" example:"Azure"`
 	Config     any         `json:"config"`
@@ -68,6 +93,7 @@ type Credential struct {
 	ArchivedConnections   *int `json:"archived_connections" example:"0" minimum:"0" maximum:"1000"`
 }
 
+// NewCredential creates API compatible credential from model credential.
 func NewCredential(credential model.Credential) Credential {
 	metadata := make(map[string]any)
 	if string(credential.Metadata) == "" {
@@ -78,7 +104,7 @@ func NewCredential(credential model.Credential) Credential {
 		ID:                  credential.ID.String(),
 		Name:                credential.Name,
 		ConnectorType:       credential.ConnectorType,
-		CredentialType:      CredentialTypeToAPI(credential.CredentialType),
+		CredentialType:      NewCredentialType(credential.CredentialType),
 		Enabled:             credential.Enabled,
 		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
 		OnboardDate:         credential.CreatedAt,
@@ -99,4 +125,8 @@ func NewCredential(credential model.Credential) Credential {
 	}
 
 	return apiCredential
+}
+
+func NewCredentialType(c model.CredentialType) CredentialType {
+	return CredentialType(c)
 }

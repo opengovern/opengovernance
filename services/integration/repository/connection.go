@@ -46,7 +46,7 @@ func NewConnectionSQL(db db.Database) Connection {
 	}
 }
 
-// List gets list of all source
+// List gets list of all connections
 func (s ConnectionSQL) List(ctx context.Context) ([]model.Connection, error) {
 	var connections []model.Connection
 
@@ -58,16 +58,16 @@ func (s ConnectionSQL) List(ctx context.Context) ([]model.Connection, error) {
 	return connections, nil
 }
 
-// ListOfType gets list of sources with matching type
+// ListOfType gets list of connections with matching type
 func (s ConnectionSQL) ListOfType(ctx context.Context, t source.Type) ([]model.Connection, error) {
 	return s.ListOfTypes(ctx, []source.Type{t})
 }
 
-// ListOfTypes gets list of sources with matching types
+// ListOfTypes gets list of connections with matching types
 func (s ConnectionSQL) ListOfTypes(ctx context.Context, types []source.Type) ([]model.Connection, error) {
 	var connections []model.Connection
 
-	tx := s.db.DB.WithContext(ctx).Joins("Connector").Joins("Credential").Find(&connections, "type IN ?", types)
+	tx := s.db.DB.WithContext(ctx).Joins("Connector").Joins("Credential").Find(&connections, "sources.type IN ?", types)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -75,7 +75,7 @@ func (s ConnectionSQL) ListOfTypes(ctx context.Context, types []source.Type) ([]
 	return connections, nil
 }
 
-// ListWithFilters gets list of all source with specified filters.
+// ListWithFilters gets list of all connections with specified filters.
 func (s ConnectionSQL) ListWithFilters(
 	ctx context.Context,
 	types []source.Type,
@@ -88,19 +88,19 @@ func (s ConnectionSQL) ListWithFilters(
 	tx := s.db.DB.WithContext(ctx).Joins("Connector").Joins("Credential")
 
 	if len(types) > 0 {
-		tx = tx.Where("type IN ?", types)
+		tx = tx.Where("sources.type IN ?", types)
 	}
 
 	if len(ids) > 0 {
-		tx = tx.Where("id IN ?", ids)
+		tx = tx.Where("sources.id IN ?", ids)
 	}
 
 	if len(lifecycleState) > 0 {
-		tx = tx.Where("lifecycle_state IN ?", lifecycleState)
+		tx = tx.Where("sources.lifecycle_state IN ?", lifecycleState)
 	}
 
 	if len(healthState) > 0 {
-		tx = tx.Where("health_state IN ?", healthState)
+		tx = tx.Where("sources.health_state IN ?", healthState)
 	}
 
 	tx.Find(&c)
@@ -112,6 +112,7 @@ func (s ConnectionSQL) ListWithFilters(
 	return c, nil
 }
 
+// Get connections that their ID exist in the IDs list.
 func (s ConnectionSQL) Get(ctx context.Context, ids []string) ([]model.Connection, error) {
 	var connections []model.Connection
 

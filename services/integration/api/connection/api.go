@@ -72,14 +72,6 @@ func (h API) List(c echo.Context) error {
 		if httpserver.GetUserRole(c) == api.InternalRole {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
-			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(s.Credential.Secret)
-				if err != nil {
-					h.logger.Error("failed to provide credential from v2 to v1", zap.Error(err))
-
-					return echo.ErrInternalServerError
-				}
-			}
 		}
 		resp = append(resp, apiRes)
 	}
@@ -116,13 +108,6 @@ func (h API) Get(c echo.Context) error {
 		if httpserver.GetUserRole(c) == api.InternalRole {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
-			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.connSvc.CredentialV2ToV1(conn.Credential.Secret)
-				if err != nil {
-					return err
-				}
-			}
-
 		}
 
 		res = append(res, apiRes)
@@ -680,7 +665,7 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 	return output, nil
 }
 
-// HealthCheck godoc
+// AzureHealthCheck godoc
 //
 //	@Summary		Get Azure connection health
 //	@Description	Get live connection health status with given connection ID for Azure.
@@ -760,10 +745,91 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, entity.NewConnection(connection))
 }
 
+// AWSHealthCheck godoc
+//
+//	@Summary		Get AWS connection health
+//	@Description	Get live connection health status with given connection ID for Azure.
+//	@Security		BearerToken
+//	@Tags			connections
+//	@Produce		json
+//	@Param			connectionId	path		string	true	"connection ID"
+//	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
+//	@Success		200				{object}	entity.Connection
+//	@Router			/integration/api/v1/connections/{connectionId}/aws/healthcheck [get]
+func (h API) AWSHealthCheck(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	defer span.End()
+
+	id, err := uuid.Parse(c.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
+	}
+
+	// means by default we are considering updateMetadata as true and makes it false only
+	// when we have a query parameter name updateMetadata equals to "false"
+	updateMetadata := strings.ToLower(c.QueryParam("updateMetadata")) != "false"
+
+	connections, err := h.connSvc.Get(ctx, []string{id.String()})
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connectionId", id.String()))
+
+		return err
+	}
+
+	// we are passing only one id to the get method,
+	// so we are expecting exactly one response.
+	connection := connections[0]
+
+	span.SetAttributes(
+		attribute.String("connection name", connection.Name),
+	)
+
+	if !connection.LifecycleState.IsEnabled() {
+		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false))
+		if err != nil {
+			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			return err
+		}
+	} else {
+		isHealthy, err := h.credSvc.AWSHealthCheck(ctx, &connection.Credential)
+		if err != nil {
+			h.logger.Error("failed to check credential health",
+				zap.Error(err),
+				zap.String("connectionId", connection.SourceId),
+			)
+
+			return err
+		}
+
+		if !isHealthy {
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false))
+			if err != nil {
+				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				return err
+			}
+		} else {
+			connection, err = h.connSvc.AWSHealthCheck(ctx, connection, updateMetadata)
+			if err != nil {
+				h.logger.Error("connection healthcheck failed", zap.Error(err))
+
+				return err
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, entity.NewConnection(connection))
+}
+
 func (s API) Register(g *echo.Group) {
 	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
 	g.GET("/:connectionId/azure/healthcheck", httpserver.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
+	g.GET("/:connectionId/aws/healthcheck", httpserver.AuthorizeHandler(s.AWSHealthCheck, api.EditorRole))
 }

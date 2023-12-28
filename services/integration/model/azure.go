@@ -12,17 +12,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
-type AWSCredentialMetadata struct {
-	AccountID                          string    `json:"account_id"`
-	IamUserName                        *string   `json:"iam_user_name"`
-	IamApiKeyCreationDate              time.Time `json:"iam_api_key_creation_date"`
-	AttachedPolicies                   []string  `json:"attached_policies"`
-	OrganizationID                     *string   `json:"organization_id"`
-	OrganizationMasterAccountEmail     *string   `json:"organization_master_account_email"`
-	OrganizationMasterAccountId        *string   `json:"organization_master_account_id"`
-	OrganizationDiscoveredAccountCount *int      `json:"organization_discovered_account_count"`
-}
-
 type AzureCredentialMetadata struct {
 	SpnName              string    `json:"spn_name"`
 	ObjectId             string    `json:"object_id"`

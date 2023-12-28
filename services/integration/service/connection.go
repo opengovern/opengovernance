@@ -11,7 +11,6 @@ import (
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
@@ -64,35 +63,6 @@ func NewConnection(
 		masterSecretKey: masterSecretKey,
 		logger:          logger.Named("service").Named("connection"),
 	}
-}
-
-func (h Connection) CredentialV2ToV1(newCred string) (string, error) {
-	cnf, err := h.kms.Decrypt(newCred, h.keyARN)
-	if err != nil {
-		return "", err
-	}
-
-	awsCnf, err := entity.AWSCredentialV2ConfigFromMap(cnf)
-	if err != nil {
-		return "", err
-	}
-
-	newConf := entity.AWSCredentialConfig{
-		AccountId:            awsCnf.AccountID,
-		Regions:              nil,
-		AccessKey:            h.masterAccessKey,
-		SecretKey:            h.masterSecretKey,
-		AssumeRoleName:       awsCnf.AssumeRoleName,
-		AssumeAdminRoleName:  awsCnf.AssumeRoleName,
-		AssumeRolePolicyName: "",
-		ExternalId:           awsCnf.ExternalId,
-	}
-	newSecret, err := h.kms.Encrypt(newConf.AsMap(), h.keyARN)
-	if err != nil {
-		return "", err
-	}
-
-	return string(newSecret), nil
 }
 
 // Validate check whether number of the user connections
