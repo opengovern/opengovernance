@@ -4,38 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 )
 
 const (
 	FREESupportTier string = "FREE"
 	PAIDSupportTier string = "PAID"
 )
-
-type AWSCredentialConfig struct {
-	AccountID           string   `json:"accountID"`
-	AssumeRoleName      string   `json:"assumeRoleName"`
-	HealthCheckPolicies []string `json:"healthCheckPolicies"`
-	ExternalId          *string  `json:"externalId"`
-}
-
-func (s AWSCredentialConfig) AsMap() map[string]any {
-	in, err := json.Marshal(s)
-	if err != nil {
-		panic(err) // Don't expect any error
-	}
-
-	var out map[string]any
-	if err := json.Unmarshal(in, &out); err != nil {
-		panic(err) // Don't expect any error
-	}
-
-	return out
-}
-
-type CreateAWSConnectionRequest struct {
-	Config AWSCredentialConfig `json:"config,omitempty"`
-}
 
 type AzureCredentialConfig struct {
 	TenantId     string `json:"tenantId" validate:"required,uuid_rfc4122"`
@@ -103,8 +77,4 @@ type DiscoverAzureSubscriptionsResponse struct {
 	ID             string `json:"id"`
 	SubscriptionID string `json:"subscriptionId"`
 	Name           string `json:"name"`
-}
-
-func CredentialTypeToAPI(c model.CredentialType) CredentialType {
-	return CredentialType(c)
 }

@@ -161,7 +161,7 @@ func (h API) CreateAWS(c echo.Context) error {
 		return err
 	}
 
-	org, accounts, err := h.credentialSvc.OrgAccounts(ctx, awsConfig)
+	org, accounts, err := h.credentialSvc.AWSOrgAccounts(ctx, awsConfig)
 	if err != nil {
 		h.logger.Error("getting aws accounts and organizations", zap.Error(err))
 
@@ -205,12 +205,16 @@ func (h API) CreateAWS(c echo.Context) error {
 	response := make([]entity.Connection, len(connections))
 
 	for i, connection := range connections {
-		// TODO(parham): checking the connection health and update its metadata.
+		// checking the connection health and update its metadata.
+		h.connectionSvc.AWSHealthCheck(ctx, connection, true)
 
 		response[i] = entity.NewConnection(connection)
 	}
 
-	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{ID: cred.ID.String()})
+	return c.JSON(http.StatusOK, entity.CreateCredentialResponse{
+		Connections: response,
+		ID:          cred.ID.String(),
+	})
 }
 
 func (s API) Register(g *echo.Group) {

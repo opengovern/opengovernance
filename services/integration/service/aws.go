@@ -82,11 +82,12 @@ func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, externalID
 	return awsConfig, nil
 }
 
-// AWSHealthCheck checks the aws credential health
+// AWSHealthCheck checks the AWS credential health
 func (h Credential) AWSHealthCheck(
 	ctx context.Context,
 	cred *model.Credential,
 ) (healthy bool, err error) {
+	// defer function is called to update the credential health.
 	defer func() {
 		if err != nil {
 			h.logger.Error("credential is not healthy", zap.Error(err))
@@ -119,11 +120,11 @@ func (h Credential) AWSHealthCheck(
 
 	sdkCnf, err := h.AWSSDKConfig(
 		ctx,
-		fmt.Sprintf("arn:aws:iam::%s:role/%s", awsCnf.AccountID, awsCnf.AssumeRoleName),
+		aws.GetRoleArnFromName(awsCnf.AccountID, awsCnf.AssumeRoleName),
 		awsCnf.ExternalId,
 	)
 
-	org, accounts, err := h.OrgAccounts(ctx, sdkCnf)
+	org, accounts, err := h.AWSOrgAccounts(ctx, sdkCnf)
 	if err != nil {
 		return false, err
 	}
@@ -176,7 +177,7 @@ func (h Credential) AWSHealthCheck(
 	return true, nil
 }
 
-func (h Credential) OrgAccounts(ctx context.Context, cfg awsOfficial.Config) (*types.Organization, []types.Account, error) {
+func (h Credential) AWSOrgAccounts(ctx context.Context, cfg awsOfficial.Config) (*types.Organization, []types.Account, error) {
 	orgs, err := describer.OrganizationOrganization(ctx, cfg)
 	if err != nil {
 		var ae smithy.APIError
@@ -202,6 +203,7 @@ func (h Credential) OrgAccounts(ctx context.Context, cfg awsOfficial.Config) (*t
 
 func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
 	onboardedSources := make([]model.Connection, 0)
+
 	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
 	if err != nil {
 		return nil, err
@@ -217,7 +219,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		h.masterAccessKey,
 		h.masterSecretKey,
 		"",
-		fmt.Sprintf("arn:aws:iam::%s:role/%s", awsCnf.AccountID, awsCnf.AssumeRoleName),
+		aws.GetRoleArnFromName(awsCnf.AccountID, awsCnf.AssumeRoleName),
 		awsCnf.ExternalId,
 	)
 	if err != nil {
@@ -305,6 +307,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 	}
 
 	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
+
 	for _, account := range accountsToOnboard {
 		h.logger.Info("onboarding account", zap.String("accountID", *account.Id))
 		count, err := h.connSvc.Count(ctx, nil)
@@ -351,7 +354,14 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 	return onboardedSources, nil
 }
 
-func NewAWSAutoOnboardedConnection(org *types.Organization, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig awsOfficial.Config) (model.Connection, error) {
+func NewAWSAutoOnboardedConnection(
+	org *types.Organization,
+	account types.Account,
+	creationMethod source.SourceCreationMethod,
+	description string,
+	creds model.Credential,
+	awsConfig awsOfficial.Config,
+) (model.Connection, error) {
 	id := uuid.New()
 
 	name := *account.Id
@@ -425,4 +435,82 @@ func NewAWSAutoOnboardedConnection(org *types.Organization, account types.Accoun
 	s.Metadata = jsonMetadata
 
 	return s, nil
+}
+
+func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
+	var cnf map[string]any
+
+	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
+	if err != nil {
+		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		return connection, err
+	}
+
+	awsCnf, err := fp.FromMap[model.AWSCredentialConfig](cnf)
+	if err != nil {
+		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		return connection, err
+	}
+
+	assumeRoleArn := aws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
+
+	sdkCnf, err := aws.GetConfig(ctx, h.masterAccessKey, h.masterSecretKey, "", assumeRoleArn, awsCnf.ExternalId)
+	if err != nil {
+		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		return connection, err
+	}
+
+	iamClient := iam.NewFromConfig(sdkCnf)
+	paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
+		RoleName: &awsCnf.AssumeRoleName,
+	})
+	var policyARNs []string
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return connection, err
+		}
+		for _, policy := range page.AttachedPolicies {
+			policyARNs = append(policyARNs, *policy.PolicyArn)
+		}
+	}
+
+	assetDiscoveryAttached := true
+
+	awsAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
+	if err != nil {
+		return connection, err
+	}
+
+	for _, policyARN := range strings.Split(awsAssetDiscovery.GetValue().(string), ",") {
+		policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
+		if !fp.Includes(policyARN, policyARNs) {
+			h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
+			assetDiscoveryAttached = false
+		}
+	}
+
+	spendAttached := connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
+
+	if !assetDiscoveryAttached && !spendAttached {
+		var healthMessage string
+		if err == nil {
+			healthMessage = "Failed to find read permission"
+		} else {
+			healthMessage = err.Error()
+		}
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false))
+		if err != nil {
+			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			return connection, err
+		}
+	} else {
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached)
+		if err != nil {
+			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			return connection, err
+		}
+	}
+
+	return connection, nil
 }

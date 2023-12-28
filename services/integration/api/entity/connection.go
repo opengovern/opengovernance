@@ -118,6 +118,7 @@ type CreateConnectionResponse struct {
 	ID uuid.UUID `json:"id"`
 }
 
+// NewConnection creates API compatible connection from model connection.
 func NewConnection(s model.Connection) Connection {
 	metadata := make(map[string]any)
 	if len(metadata) > 0 {
@@ -133,7 +134,7 @@ func NewConnection(s model.Connection) Connection {
 		Description:          s.Description,
 		CredentialID:         s.CredentialID.String(),
 		CredentialName:       s.Credential.Name,
-		CredentialType:       CredentialTypeToAPI(s.Credential.CredentialType),
+		CredentialType:       NewCredentialType(s.Credential.CredentialType),
 		OnboardDate:          s.CreatedAt,
 		HealthState:          s.HealthState,
 		LifecycleState:       ConnectionLifecycleState(s.LifecycleState),
