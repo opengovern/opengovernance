@@ -40,9 +40,9 @@ func New(
 // CreateAzure godoc
 //
 //	@Summary			Create Azure credential and does onboarding for its subscriptions
-//	@Description	Creating Azure credential, testing it and on-board its subscriptions
+//	@Description		Creating Azure credential, testing it and on-board its subscriptions
 //	@Security			BearerToken
-//	@Tags					integration
+//	@Tags				integration
 //	@Produce			json
 //	@Success			200		{object}	entity.CreateCredentialResponse
 //	@Param				request	body		entity.CreateAzureConnectionRequest	true	"Request"
@@ -125,9 +125,9 @@ func (h API) CreateAzure(c echo.Context) error {
 // CreateAWS godoc
 //
 //	@Summary			Create AWS credential and does onboarding for its subscriptions
-//	@Description	Creating AWS credential, testing it and on-board its subscriptions
+//	@Description		Creating AWS credential, testing it and on-board its subscriptions
 //	@Security			BearerToken
-//	@Tags					integration
+//	@Tags				integration
 //	@Produce			json
 //	@Success			200		{object}	entity.CreateCredentialResponse
 //	@Param				request	body		entity.CreateAWSConnectionRequest	true	"Request"
@@ -223,4 +223,5 @@ func (h API) CreateAWS(c echo.Context) error {
 
 func (s API) Register(g *echo.Group) {
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
+	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
 }
