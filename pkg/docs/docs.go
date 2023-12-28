@@ -3111,6 +3111,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/api/v1/connections/{connectionId}/aws/healthcheck": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get live connection health status with given connection ID for Azure.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "Get AWS connection health",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "connection ID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether to update metadata or not",
+                        "name": "updateMetadata",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                        }
+                    }
+                }
+            }
+        },
         "/integration/api/v1/connections/{connectionId}/azure/healthcheck": {
             "get": {
                 "security": [
@@ -3147,6 +3188,42 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials/aws": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Creating AWS credential, testing it and on-board its subscriptions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "integration"
+                ],
+                "summary": "Create AWS credential and does onboarding for its subscriptions",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse"
                         }
                     }
                 }
@@ -11000,6 +11077,26 @@ const docTemplate = `{
                 "SizeLG"
             ]
         },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "assumeRoleName": {
+                    "type": "string"
+                },
+                "externalId": {
+                    "type": "string"
+                },
+                "healthCheckPolicies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig": {
             "type": "object",
             "required": [
@@ -11172,6 +11269,14 @@ const docTemplate = `{
                 "ConnectionLifecycleStateInProgress",
                 "ConnectionLifecycleStateArchived"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig"
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest": {
             "type": "object",
