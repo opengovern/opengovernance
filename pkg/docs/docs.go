@@ -1926,6 +1926,23 @@ const docTemplate = `{
                         "description": "Severities to filter by defaults to all severities except passed",
                         "name": "severities",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "ok",
+                                "alarm",
+                                "info",
+                                "skip",
+                                "error"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
+                        "name": "conformanceStatus",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2814,6 +2831,45 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/resource_findings": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of resource findings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "List resource findings",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsResponse"
+                        }
                     }
                 }
             }
@@ -6399,48 +6455,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/{workspace_id}/name": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change name of workspace",
-                "parameters": [
-                    {
-                        "description": "Change name request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "WorkspaceID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/workspace/api/v1/workspace/{workspace_id}/organization": {
             "post": {
                 "security": [
@@ -6508,48 +6522,6 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "WorkspaceID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/tier": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change Tier of workspace",
-                "parameters": [
-                    {
-                        "description": "Change tier request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest"
                         }
                     },
                     {
@@ -8390,16 +8362,6 @@ const docTemplate = `{
                         "azure_cis_v140_7_5"
                     ]
                 },
-                "resourceCollection": {
-                    "description": "Resource Collection ID",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "example-rc"
-                    ]
-                },
                 "resourceID": {
                     "description": "Resource unique identifier",
                     "type": "array",
@@ -8424,7 +8386,7 @@ const docTemplate = `{
                     "description": "Severity",
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/types.FindingSeverity"
                     },
                     "example": [
                         "low"
@@ -8871,6 +8833,42 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest": {
+            "type": "object",
+            "properties": {
+                "afterSortKey": {
+                    "type": "array",
+                    "items": {}
+                },
+                "filters": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsFilters"
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "sort": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsSort"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsResponse": {
+            "type": "object",
+            "properties": {
+                "resourceFindings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding"
+                    }
+                },
+                "totalCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query": {
             "type": "object",
             "properties": {
@@ -8910,6 +8908,148 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2023-06-16T14:58:08.759554Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding": {
+            "type": "object",
+            "properties": {
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "failedCount": {
+                    "type": "integer"
+                },
+                "findings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding"
+                    }
+                },
+                "kaytuResourceID": {
+                    "type": "string"
+                },
+                "resourceLocation": {
+                    "type": "string"
+                },
+                "resourceName": {
+                    "type": "string"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "sortKey": {
+                    "type": "array",
+                    "items": {}
+                },
+                "totalCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsFilters": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "azure_cis_v140"
+                    ]
+                },
+                "conformanceStatus": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ConformanceStatus"
+                    },
+                    "example": [
+                        "alarm"
+                    ]
+                },
+                "connectionID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
+                },
+                "connector": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "Azure"
+                    ]
+                },
+                "controlID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "azure_cis_v140_7_5"
+                    ]
+                },
+                "resourceCollection": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "example-rc"
+                    ]
+                },
+                "resourceID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                    ]
+                },
+                "resourceTypeID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"
+                    ]
+                },
+                "severity": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.FindingSeverity"
+                    },
+                    "example": [
+                        "low"
+                    ]
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsSort": {
+            "type": "object",
+            "properties": {
+                "failedCount": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "kaytuResourceID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "resourceLocation": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "resourceName": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "resourceType": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
                 }
             }
         },
@@ -8966,6 +9106,17 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection": {
+            "type": "string",
+            "enum": [
+                "asc",
+                "desc"
+            ],
+            "x-enum-varnames": [
+                "SortDirectionAscending",
+                "SortDirectionDescending"
+            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",
@@ -10921,14 +11072,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
-            "type": "object",
-            "properties": {
-                "newName": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest": {
             "type": "object",
             "properties": {
@@ -10942,14 +11085,6 @@ const docTemplate = `{
             "properties": {
                 "newOwnerUserID": {
                     "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest": {
-            "type": "object",
-            "properties": {
-                "newName": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
                 }
             }
         },

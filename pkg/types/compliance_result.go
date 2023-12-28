@@ -1,5 +1,7 @@
 package types
 
+import "strings"
+
 type ConformanceStatus string
 
 const (
@@ -41,4 +43,30 @@ func (c *ConformanceStatusSummary) AddConformanceStatusMap(summary map[Conforman
 type ComplianceResultShortSummary struct {
 	Passed int `json:"passed"`
 	Failed int `json:"failed"`
+}
+
+var conformanceStatuses = []ConformanceStatus{
+	ConformanceStatusOK,
+	ConformanceStatusALARM,
+	ConformanceStatusINFO,
+	ConformanceStatusSKIP,
+	ConformanceStatusERROR,
+}
+
+func ParseConformanceStatus(s string) ConformanceStatus {
+	s = strings.ToLower(s)
+	for _, status := range conformanceStatuses {
+		if s == strings.ToLower(string(status)) {
+			return status
+		}
+	}
+	return ""
+}
+
+func ParseConformanceStatuses(list []string) []ConformanceStatus {
+	result := make([]ConformanceStatus, 0, len(list))
+	for _, s := range list {
+		result = append(result, ParseConformanceStatus(s))
+	}
+	return result
 }

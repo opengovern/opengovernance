@@ -1127,13 +1127,6 @@ definitions:
         items:
           type: string
         type: array
-      resourceCollection:
-        description: Resource Collection ID
-        example:
-        - example-rc
-        items:
-          type: string
-        type: array
       resourceID:
         description: Resource unique identifier
         example:
@@ -1153,7 +1146,7 @@ definitions:
         example:
         - low
         items:
-          type: string
+          $ref: '#/definitions/types.FindingSeverity'
         type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
@@ -1457,6 +1450,30 @@ definitions:
         example: 1000
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest:
+    properties:
+      afterSortKey:
+        items: {}
+        type: array
+      filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsFilters'
+      limit:
+        example: 100
+        type: integer
+      sort:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsSort'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsResponse:
+    properties:
+      resourceFindings:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding'
+        type: array
+      totalCount:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
       connector:
@@ -1491,6 +1508,100 @@ definitions:
       updatedAt:
         example: "2023-06-16T14:58:08.759554Z"
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding:
+    properties:
+      evaluatedAt:
+        type: integer
+      failedCount:
+        type: integer
+      findings:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding'
+        type: array
+      kaytuResourceID:
+        type: string
+      resourceLocation:
+        type: string
+      resourceName:
+        type: string
+      resourceType:
+        type: string
+      sortKey:
+        items: {}
+        type: array
+      totalCount:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsFilters:
+    properties:
+      benchmarkID:
+        example:
+        - azure_cis_v140
+        items:
+          type: string
+        type: array
+      conformanceStatus:
+        example:
+        - alarm
+        items:
+          $ref: '#/definitions/types.ConformanceStatus'
+        type: array
+      connectionID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      connector:
+        example:
+        - Azure
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      controlID:
+        example:
+        - azure_cis_v140_7_5
+        items:
+          type: string
+        type: array
+      resourceCollection:
+        example:
+        - example-rc
+        items:
+          type: string
+        type: array
+      resourceID:
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        items:
+          type: string
+        type: array
+      resourceTypeID:
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines
+        items:
+          type: string
+        type: array
+      severity:
+        example:
+        - low
+        items:
+          $ref: '#/definitions/types.FindingSeverity'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsSort:
+    properties:
+      failedCount:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      kaytuResourceID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resourceLocation:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resourceName:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resourceType:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary:
     properties:
@@ -1527,6 +1638,14 @@ definitions:
             type: integer
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection:
+    enum:
+    - asc
+    - desc
+    type: string
+    x-enum-varnames:
+    - SortDirectionAscending
+    - SortDirectionDescending
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       connection:
@@ -2908,11 +3027,6 @@ definitions:
       workspaceCreationStatus:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
-    properties:
-      newName:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest:
     properties:
       newOrgID:
@@ -2922,11 +3036,6 @@ definitions:
     properties:
       newOwnerUserID:
         type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest:
-    properties:
-      newName:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest:
     properties:
@@ -4919,6 +5028,20 @@ paths:
           type: string
         name: severities
         type: array
+      - collectionFormat: csv
+        description: ConformanceStatus to filter by defaults to all conformanceStatus
+          except passed
+        in: query
+        items:
+          enum:
+          - ok
+          - alarm
+          - info
+          - skip
+          - error
+          type: string
+        name: conformanceStatus
+        type: array
       produces:
       - application/json
       responses:
@@ -5368,6 +5491,30 @@ paths:
       security:
       - BearerToken: []
       summary: Sync queries
+      tags:
+      - compliance
+  /compliance/api/v1/resource_findings:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving list of resource findings
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsResponse'
+      security:
+      - BearerToken: []
+      summary: List resource findings
       tags:
       - compliance
   /cost_estimator/api/v1/cost/aws:
@@ -7675,32 +7822,6 @@ paths:
       summary: Delete workspace for workspace service
       tags:
       - workspace
-  /workspace/api/v1/workspace/{workspace_id}/name:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Change name request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest'
-      - description: WorkspaceID
-        in: path
-        name: workspace_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Change name of workspace
-      tags:
-      - workspace
   /workspace/api/v1/workspace/{workspace_id}/organization:
     post:
       consumes:
@@ -7751,32 +7872,6 @@ paths:
       security:
       - BearerToken: []
       summary: Change ownership of workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/tier:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Change tier request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest'
-      - description: WorkspaceID
-        in: path
-        name: workspace_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Change Tier of workspace
       tags:
       - workspace
   /workspace/api/v1/workspace/current:
