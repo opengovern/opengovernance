@@ -719,15 +719,16 @@ func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
-//	@Param			count			path		int								true	"Count"
-//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
-//	@Param			benchmarkId		query		[]string						false	"BenchmarkID"
-//	@Param			controlId		query		[]string						false	"ControlID"
-//	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
+//	@Param			count				path		int								true	"Count"
+//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
+//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
+//	@Param			controlId			query		[]string						false	"ControlID"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Param			conformanceStatus	query		[]kaytuTypes.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	field := ctx.Param("field")
@@ -749,28 +750,22 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		return err
 	}
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
-	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
-	if len(severities) == 0 {
-		severities = []kaytuTypes.FindingSeverity{
-			kaytuTypes.FindingSeverityCritical,
-			kaytuTypes.FindingSeverityHigh,
-			kaytuTypes.FindingSeverityMedium,
-			kaytuTypes.FindingSeverityLow,
-			kaytuTypes.FindingSeverityNone,
-		}
-	}
 	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
+	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
+	conformanceStatuses := kaytuTypes.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
 
-	failedResults := []kaytuTypes.ConformanceStatus{
-		kaytuTypes.ConformanceStatusALARM,
-		kaytuTypes.ConformanceStatusERROR,
-		kaytuTypes.ConformanceStatusINFO,
-		kaytuTypes.ConformanceStatusSKIP,
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = []kaytuTypes.ConformanceStatus{
+			kaytuTypes.ConformanceStatusALARM,
+			kaytuTypes.ConformanceStatusERROR,
+			kaytuTypes.ConformanceStatusINFO,
+			kaytuTypes.ConformanceStatusSKIP,
+		}
 	}
 
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, failedResults, esCount)
+	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, conformanceStatuses, esCount)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err

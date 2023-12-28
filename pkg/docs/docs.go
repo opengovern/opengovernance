@@ -1926,6 +1926,23 @@ const docTemplate = `{
                         "description": "Severities to filter by defaults to all severities except passed",
                         "name": "severities",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "ok",
+                                "alarm",
+                                "info",
+                                "skip",
+                                "error"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
+                        "name": "conformanceStatus",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6399,48 +6416,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/{workspace_id}/name": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change name of workspace",
-                "parameters": [
-                    {
-                        "description": "Change name request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "WorkspaceID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/workspace/api/v1/workspace/{workspace_id}/organization": {
             "post": {
                 "security": [
@@ -6508,48 +6483,6 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "WorkspaceID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/tier": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change Tier of workspace",
-                "parameters": [
-                    {
-                        "description": "Change tier request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest"
                         }
                     },
                     {
@@ -10921,14 +10854,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
-            "type": "object",
-            "properties": {
-                "newName": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest": {
             "type": "object",
             "properties": {
@@ -10942,14 +10867,6 @@ const docTemplate = `{
             "properties": {
                 "newOwnerUserID": {
                     "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest": {
-            "type": "object",
-            "properties": {
-                "newName": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
                 }
             }
         },
