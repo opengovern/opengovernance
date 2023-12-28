@@ -41,7 +41,7 @@ func (t *EnsureCredentialOnboarded) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateMasterCredential, api.Transaction_CreateHelmRelease}
 }
 
-func (t *EnsureCredentialOnboarded) Apply(workspace db.Workspace) error {
+func (t *EnsureCredentialOnboarded) ApplyIdempotent(workspace db.Workspace) error {
 	creds, err := t.db.ListCredentialsByWorkspaceID(workspace.ID)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (t *EnsureCredentialOnboarded) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *EnsureCredentialOnboarded) Rollback(workspace db.Workspace) error {
+func (t *EnsureCredentialOnboarded) RollbackIdempotent(workspace db.Workspace) error {
 	creds, err := t.db.ListCredentialsByWorkspaceID(workspace.ID)
 	if err != nil {
 		return fmt.Errorf("listing credentials: %w", err)

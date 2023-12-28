@@ -52,7 +52,7 @@ func (t *CreateHelmRelease) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateIngestionPipeline, api.Transaction_CreateServiceAccountRoles}
 }
 
-func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
+func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
 	helmRelease, err := t.findHelmRelease(context.Background(), workspace)
 	if err != nil {
 		return fmt.Errorf("findHelmRelease: %w", err)
@@ -94,7 +94,7 @@ func (t *CreateHelmRelease) Apply(workspace db.Workspace) error {
 	return ErrTransactionNeedsTime
 }
 
-func (t *CreateHelmRelease) Rollback(workspace db.Workspace) error {
+func (t *CreateHelmRelease) RollbackIdempotent(workspace db.Workspace) error {
 	helmRelease, err := t.findHelmRelease(context.Background(), workspace)
 	if err != nil {
 		return fmt.Errorf("find helm release: %w", err)

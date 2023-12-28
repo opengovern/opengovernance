@@ -30,7 +30,7 @@ func (t *StopIngestionPipeline) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateIngestionPipeline}
 }
 
-func (t *StopIngestionPipeline) Apply(workspace db.Workspace) error {
+func (t *StopIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 	pipeline, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{PipelineName: aws.String(pipelineName)})
 	if err != nil {
@@ -53,7 +53,7 @@ func (t *StopIngestionPipeline) Apply(workspace db.Workspace) error {
 	return ErrTransactionNeedsTime
 }
 
-func (t *StopIngestionPipeline) Rollback(workspace db.Workspace) error {
+func (t *StopIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 	pipeline, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{PipelineName: aws.String(pipelineName)})
 	if err != nil {

@@ -27,7 +27,7 @@ func (t *EnsureDiscoveryFinished) Requirements() []api3.TransactionID {
 	return []api3.TransactionID{api3.Transaction_EnsureCredentialOnboarded, api3.Transaction_CreateHelmRelease}
 }
 
-func (t *EnsureDiscoveryFinished) Apply(workspace db.Workspace) error {
+func (t *EnsureDiscoveryFinished) ApplyIdempotent(workspace db.Workspace) error {
 	hctx := &httpclient.Context{UserRole: api2.InternalRole}
 	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
@@ -45,6 +45,6 @@ func (t *EnsureDiscoveryFinished) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *EnsureDiscoveryFinished) Rollback(workspace db.Workspace) error {
+func (t *EnsureDiscoveryFinished) RollbackIdempotent(workspace db.Workspace) error {
 	return nil
 }

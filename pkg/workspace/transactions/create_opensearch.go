@@ -47,7 +47,7 @@ func (t *CreateOpenSearch) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateServiceAccountRoles}
 }
 
-func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {
+func (t *CreateOpenSearch) ApplyIdempotent(workspace db.Workspace) error {
 	processing, endpoint, err := t.isOpenSearchCreationFinished(workspace)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -75,7 +75,7 @@ func (t *CreateOpenSearch) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateOpenSearch) Rollback(workspace db.Workspace) error {
+func (t *CreateOpenSearch) RollbackIdempotent(workspace db.Workspace) error {
 	domainName := workspace.ID
 
 	domain, err := t.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{

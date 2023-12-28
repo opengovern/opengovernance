@@ -27,7 +27,7 @@ func (t *CreateInsightBucket) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *CreateInsightBucket) Apply(workspace db.Workspace) error {
+func (t *CreateInsightBucket) ApplyIdempotent(workspace db.Workspace) error {
 	bucketName := fmt.Sprintf("insights-%s", workspace.ID)
 	_, err := t.s3Client.CreateBucket(context.Background(), &s3.CreateBucketInput{
 		Bucket: aws.String(bucketName),
@@ -39,7 +39,7 @@ func (t *CreateInsightBucket) Apply(workspace db.Workspace) error {
 	return err
 }
 
-func (t *CreateInsightBucket) Rollback(workspace db.Workspace) error {
+func (t *CreateInsightBucket) RollbackIdempotent(workspace db.Workspace) error {
 	bucketName := fmt.Sprintf("insights-%s", workspace.ID)
 	objects, err := t.s3Client.ListObjects(context.Background(), &s3.ListObjectsInput{
 		Bucket: aws.String(bucketName),

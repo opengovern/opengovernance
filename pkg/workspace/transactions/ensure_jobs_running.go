@@ -33,7 +33,7 @@ func (t *EnsureJobsRunning) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_EnsureDiscoveryFinished}
 }
 
-func (t *EnsureJobsRunning) Apply(workspace db.Workspace) error {
+func (t *EnsureJobsRunning) ApplyIdempotent(workspace db.Workspace) error {
 	hctx := &httpclient.Context{UserRole: api2.InternalRole}
 	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
@@ -126,6 +126,6 @@ func (t *EnsureJobsRunning) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *EnsureJobsRunning) Rollback(workspace db.Workspace) error {
+func (t *EnsureJobsRunning) RollbackIdempotent(workspace db.Workspace) error {
 	return nil
 }

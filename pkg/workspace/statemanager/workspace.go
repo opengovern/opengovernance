@@ -84,7 +84,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		}
 
 		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.Apply(*workspace)
+		err := transaction.ApplyIdempotent(*workspace)
 		if err != nil {
 			if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 				return err
@@ -125,7 +125,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 		}
 
 		s.logger.Info("rolling back transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.Rollback(*workspace)
+		err := transaction.RollbackIdempotent(*workspace)
 		if err != nil {
 			return err
 		}

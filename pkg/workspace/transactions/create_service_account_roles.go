@@ -59,7 +59,7 @@ func (t *CreateServiceAccountRoles) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *CreateServiceAccountRoles) Apply(workspace db.Workspace) error {
+func (t *CreateServiceAccountRoles) ApplyIdempotent(workspace db.Workspace) error {
 	for _, serviceName := range serviceNames {
 		if err := t.createRole(workspace, serviceName); err != nil {
 			return err
@@ -68,7 +68,7 @@ func (t *CreateServiceAccountRoles) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateServiceAccountRoles) Rollback(workspace db.Workspace) error {
+func (t *CreateServiceAccountRoles) RollbackIdempotent(workspace db.Workspace) error {
 	for _, serviceName := range serviceNames {
 		roleName := aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName))
 
