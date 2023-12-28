@@ -4084,6 +4084,10 @@ paths:
         name: benchmark_id
         required: true
         type: string
+      - description: Auto enable benchmark for connections
+        in: query
+        name: auto_assign
+        type: boolean
       - collectionFormat: csv
         description: Connection ID or 'all' for everything
         in: query
