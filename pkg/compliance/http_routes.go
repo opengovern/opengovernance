@@ -1939,8 +1939,19 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 		}
 	}
 
+	missingControls := make([]string, 0)
 	for _, control := range benchmark.Controls {
 		if _, ok := baseControlsMap[control.ID]; !ok {
+			missingControls = append(missingControls, control.ID)
+		}
+	}
+	if len(missingControls) > 0 {
+		controls, err := h.db.GetControls(missingControls)
+		if err != nil {
+			h.logger.Error("failed to get controls", zap.Error(err))
+			return err
+		}
+		for _, control := range controls {
 			v := control.ToApi()
 			v.Connector = benchmark.Connector
 			baseControlsMap[control.ID] = v
