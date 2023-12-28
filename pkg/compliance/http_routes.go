@@ -113,7 +113,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
 
 	resourceFindings := v1.Group("/resource_findings")
-	resourceFindings.GET("", httpserver2.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
+	resourceFindings.POST("", httpserver2.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
 	ai.POST("/control/:controlID/remediation", httpserver2.AuthorizeHandler(h.GetControlRemediation, authApi.ViewerRole))
