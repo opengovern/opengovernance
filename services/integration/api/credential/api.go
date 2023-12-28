@@ -83,6 +83,10 @@ func (h API) CreateAzure(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	if _, err := h.credentialSvc.AzureHealthCheck(ctx, cred); err != nil {
+		return err
+	}
+
 	if err := h.credentialSvc.Create(ctx, cred); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -185,13 +189,13 @@ func (h API) CreateAWS(c echo.Context) error {
 		return err
 	}
 
-	if err := h.credentialSvc.Create(ctx, cred); err != nil {
-		h.logger.Error("creating aws credential failed", zap.Error(err))
-
+	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred); err != nil {
 		return err
 	}
 
-	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred); err != nil {
+	if err := h.credentialSvc.Create(ctx, cred); err != nil {
+		h.logger.Error("creating aws credential failed", zap.Error(err))
+
 		return err
 	}
 
