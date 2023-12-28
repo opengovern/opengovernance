@@ -8,8 +8,8 @@ import (
 
 type Transaction interface {
 	Requirements() []api.TransactionID
-	Apply(workspace db.Workspace) error
-	Rollback(workspace db.Workspace) error
+	ApplyIdempotent(workspace db.Workspace) error
+	RollbackIdempotent(workspace db.Workspace) error
 }
 
 var ErrTransactionNeedsTime = errors.New("transaction needs time")

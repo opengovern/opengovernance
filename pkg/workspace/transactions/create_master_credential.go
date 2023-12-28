@@ -41,7 +41,7 @@ func (t *CreateMasterCredential) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
+func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 	userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
 	iamUser, err := t.iam.CreateUser(context.Background(), &iam.CreateUserInput{
 		UserName:            aws.String(userName),
@@ -145,7 +145,7 @@ func (t *CreateMasterCredential) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateMasterCredential) Rollback(workspace db.Workspace) error {
+func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) error {
 	if workspace.AWSUniqueId != nil {
 		userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
 		accessKeys, err := t.iam.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{

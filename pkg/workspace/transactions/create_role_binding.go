@@ -25,7 +25,7 @@ func (t *CreateRoleBinding) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateHelmRelease}
 }
 
-func (t *CreateRoleBinding) Apply(workspace db.Workspace) error {
+func (t *CreateRoleBinding) ApplyIdempotent(workspace db.Workspace) error {
 	authCtx := &httpclient.Context{
 		UserID:        *workspace.OwnerId,
 		UserRole:      authapi.AdminRole,
@@ -43,7 +43,7 @@ func (t *CreateRoleBinding) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateRoleBinding) Rollback(workspace db.Workspace) error {
+func (t *CreateRoleBinding) RollbackIdempotent(workspace db.Workspace) error {
 	//authCtx := &httpclient.Context{
 	//	UserID:        *workspace.OwnerId,
 	//	UserRole:      authapi.AdminRole,

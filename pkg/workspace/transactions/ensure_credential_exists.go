@@ -21,7 +21,7 @@ func (t *EnsureCredentialExists) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *EnsureCredentialExists) Apply(workspace db.Workspace) error {
+func (t *EnsureCredentialExists) ApplyIdempotent(workspace db.Workspace) error {
 	creds, err := t.db.ListCredentialsByWorkspaceID(workspace.ID)
 	if err != nil {
 		return err
@@ -34,6 +34,6 @@ func (t *EnsureCredentialExists) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *EnsureCredentialExists) Rollback(workspace db.Workspace) error {
+func (t *EnsureCredentialExists) RollbackIdempotent(workspace db.Workspace) error {
 	return nil
 }

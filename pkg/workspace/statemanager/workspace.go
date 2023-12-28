@@ -27,6 +27,8 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid ap
 		transaction = transactions.NewCreateOpenSearch(s.cfg.SecurityGroupID, s.cfg.SubnetID, types3.OpenSearchPartitionInstanceTypeT3SmallSearch, 1, s.db, s.iam, s.opensearch)
 	case api.Transaction_CreateIngestionPipeline:
 		transaction = transactions.NewCreateIngestionPipeline(s.cfg.SecurityGroupID, s.cfg.SubnetID, s.db, s.osis, s.iam, s.cfg, s.s3Client)
+	case api.Transaction_StopIngestionPipeline:
+		transaction = transactions.NewStopIngestionPipeline(s.cfg, s.osis)
 	case api.Transaction_CreateRoleBinding:
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
 	case api.Transaction_CreateServiceAccountRoles:
@@ -82,7 +84,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		}
 
 		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.Apply(*workspace)
+		err := transaction.ApplyIdempotent(*workspace)
 		if err != nil {
 			if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 				return err
@@ -123,7 +125,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 		}
 
 		s.logger.Info("rolling back transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.Rollback(*workspace)
+		err := transaction.RollbackIdempotent(*workspace)
 		if err != nil {
 			return err
 		}

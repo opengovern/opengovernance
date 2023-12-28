@@ -50,7 +50,7 @@ func (t *CreateIngestionPipeline) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateOpenSearch}
 }
 
-func (t *CreateIngestionPipeline) Apply(workspace db.Workspace) error {
+func (t *CreateIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error {
 	processing, endpoint, err := t.isPipelineCreationFinished(workspace)
 	if err != nil {
 		if strings.Contains(err.Error(), "ResourceNotFoundException") {
@@ -78,7 +78,7 @@ func (t *CreateIngestionPipeline) Apply(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateIngestionPipeline) Rollback(workspace db.Workspace) error {
+func (t *CreateIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 
 	pipe, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{

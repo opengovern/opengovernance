@@ -134,8 +134,6 @@ func (s *Server) Register(e *echo.Echo) {
 	workspaceGroup.DELETE("/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
 	workspaceGroup.GET("/current", httpserver.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
 	workspaceGroup.POST("/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.KaytuAdminRole))
-	workspaceGroup.POST("/:workspace_id/tier", httpserver.AuthorizeHandler(s.ChangeTier, authapi.KaytuAdminRole))
 	workspaceGroup.POST("/:workspace_id/organization", httpserver.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
 
 	bootstrapGroup := v1Group.Group("/bootstrap")
@@ -1013,84 +1011,6 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 	}
 
 	err = s.db.UpdateWorkspaceOwner(workspaceID, request.NewOwnerUserID)
-	if err != nil {
-		return err
-	}
-
-	return c.NoContent(http.StatusOK)
-}
-
-// ChangeName godoc
-//
-//	@Summary	Change name of workspace
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		request			body	api.ChangeWorkspaceNameRequest	true	"Change name request"
-//	@Param		workspace_id	path	string							true	"WorkspaceID"
-//	@Success	200
-//	@Router		/workspace/api/v1/workspace/{workspace_id}/name [post]
-func (s *Server) ChangeName(c echo.Context) error {
-	workspaceID := c.Param("workspace_id")
-
-	var request api.ChangeWorkspaceNameRequest
-	if err := c.Bind(&request); err != nil {
-		c.Logger().Errorf("bind the request: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-	if workspaceID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-
-	_, err := s.db.GetWorkspace(workspaceID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
-		}
-		return err
-	}
-
-	err = s.db.UpdateWorkspaceName(workspaceID, request.NewName)
-	if err != nil {
-		return err
-	}
-
-	return c.NoContent(http.StatusOK)
-}
-
-// ChangeTier godoc
-//
-//	@Summary	Change Tier of workspace
-//	@Security	BearerToken
-//	@Tags		workspace
-//	@Accept		json
-//	@Produce	json
-//	@Param		request			body	api.ChangeWorkspaceTierRequest	true	"Change tier request"
-//	@Param		workspace_id	path	string							true	"WorkspaceID"
-//	@Success	200
-//	@Router		/workspace/api/v1/workspace/{workspace_id}/tier [post]
-func (s *Server) ChangeTier(c echo.Context) error {
-	workspaceID := c.Param("workspace_id")
-
-	var request api.ChangeWorkspaceTierRequest
-	if err := c.Bind(&request); err != nil {
-		c.Logger().Errorf("bind the request: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-	if workspaceID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
-	}
-
-	_, err := s.db.GetWorkspace(workspaceID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "workspace not found")
-		}
-		return err
-	}
-
-	err = s.db.UpdateWorkspaceTier(workspaceID, request.NewTier)
 	if err != nil {
 		return err
 	}
