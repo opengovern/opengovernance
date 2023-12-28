@@ -501,7 +501,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 
 	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.Controls"}
+	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.BenchmarkResult.Controls"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
 	}
@@ -512,7 +512,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Result")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Controls")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
 	for _, connectionID := range connectionIDs {
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Result", connectionID))
