@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -48,7 +48,6 @@ func New(
 //	@Success		200	{object}	[]entity.ConnectorCount
 //	@Router			/integration/api/v1/connector [get]
 func (h API) List(c echo.Context) error {
-	// trace :
 	ctx, span := h.tracer.Start(c.Request().Context(), "new_ListConnectors", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
@@ -108,20 +107,22 @@ func (h API) List(c echo.Context) error {
 //	@Summary		List catalog metrics
 //	@Description	Retrieving the list of metrics for catalog page.
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			integration
 //	@Produce		json
 //	@Param			connector	query		[]source.Type	false	"Connector"
-//	@Success		200			{object}	api.CatalogMetrics
-//	@Router			/onboard/api/v1/catalog/metrics [get]
+//	@Success		200			{object}	entity.CatalogMetrics
+//	@Router			/integration/api/v1/connectors/metrics [get]
 func (h API) CatalogMetrics(c echo.Context) error {
-	var metrics api.CatalogMetrics
-	// trace :
-	ctx, span := h.tracer.Start(ctx.Request().Context(), "new_ListSources", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_ListSources")
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	var metrics entity.CatalogMetrics
 
-	srcs, err := h.connSvc.ListWithFilter(ctx, connectors, nil, nil, nil)
+	ctx, span := h.tracer.Start(ctx, "catalog-metrics", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(c, "connector"))
+
+	connections, err := h.connSvc.ListWithFilter(ctx, connectors, nil, nil, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -129,23 +130,23 @@ func (h API) CatalogMetrics(c echo.Context) error {
 	}
 	span.End()
 
-	for _, src := range srcs {
+	for _, connection := range connections {
 		metrics.TotalConnections++
-		if src.LifecycleState.IsEnabled() {
+		if connection.LifecycleState.IsEnabled() {
 			metrics.ConnectionsEnabled++
 		}
 
-		switch src.HealthState {
+		switch connection.HealthState {
 		case source.HealthStatusHealthy:
 			metrics.HealthyConnections++
 		case source.HealthStatusUnhealthy:
 			metrics.UnhealthyConnections++
 		}
 
-		if src.LifecycleState == model.ConnectionLifecycleStateInProgress {
+		if connection.LifecycleState == model.ConnectionLifecycleStateInProgress {
 			metrics.InProgressConnections++
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, metrics)
+	return c.JSON(http.StatusOK, metrics)
 }
