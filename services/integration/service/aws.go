@@ -575,7 +575,9 @@ func (h Connection) NewAWS(
 	return s, nil
 }
 
-func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
+// AWSHealthCheck checks the connection health status and update the returned model. if the update flag is false then
+// the database is not get updated.
+func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, update bool) (model.Connection, error) {
 	var cnf map[string]any
 
 	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
@@ -624,6 +626,7 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 		policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
 		if !fp.Includes(policyARN, policyARNs) {
 			h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
+
 			assetDiscoveryAttached = false
 		}
 	}
@@ -637,14 +640,15 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 		} else {
 			healthMessage = err.Error()
 		}
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false))
+
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false), update)
 		if err != nil {
 			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 
 			return connection, err
 		}
 	} else {
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached)
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached, update)
 		if err != nil {
 			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 

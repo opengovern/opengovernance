@@ -454,14 +454,14 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 			healthMessage = err.Error()
 		}
 
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false))
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false), true)
 		if err != nil {
 			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 
 			return connection, err
 		}
 	} else {
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached)
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached, true)
 		if err != nil {
 			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 

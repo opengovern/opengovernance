@@ -262,6 +262,7 @@ func (h Connection) UpdateHealth(
 	healthStatus source.HealthStatus,
 	reason *string,
 	spendDiscovery, assetDiscovery *bool,
+	updateDatabase bool,
 ) (model.Connection, error) {
 	connection.HealthState = healthStatus
 	connection.HealthReason = reason
@@ -269,11 +270,13 @@ func (h Connection) UpdateHealth(
 	connection.SpendDiscovery = spendDiscovery
 	connection.AssetDiscovery = assetDiscovery
 
-	ctx, span := h.tracer.Start(ctx, "update-health")
-	defer span.End()
+	if updateDatabase == true {
+		ctx, span := h.tracer.Start(ctx, "update-health")
+		defer span.End()
 
-	if err := h.repo.Update(ctx, connection); err != nil {
-		return model.Connection{}, err
+		if err := h.repo.Update(ctx, connection); err != nil {
+			return model.Connection{}, err
+		}
 	}
 
 	return connection, nil
