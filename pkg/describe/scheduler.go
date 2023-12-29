@@ -380,7 +380,7 @@ func InitializeScheduler(
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
-		UserRole: api2.EditorRole,
+		UserRole: api2.InternalRole,
 	}, CurrentWorkspaceID)
 	if err != nil {
 		return nil, err

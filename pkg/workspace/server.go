@@ -143,8 +143,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
-	workspacesGroup.GET("/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
-	workspacesGroup.GET("/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
+	workspacesGroup.GET("/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.InternalRole))
 	workspacesGroup.GET("", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
 	workspacesGroup.GET("/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
 	workspacesGroup.GET("/byname/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceByName, authapi.ViewerRole))
@@ -428,15 +427,13 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 //	@Router		/workspace/api/v1/bootstrap/{workspace_name} [get]
 func (s *Server) GetBootstrapStatus(c echo.Context) error {
 	workspaceName := c.Param("workspace_name")
-	userID := httpserver.GetUserID(c)
-
 	ws, err := s.db.GetWorkspaceByName(workspaceName)
 	if err != nil {
 		return err
 	}
 
-	if *ws.OwnerId != userID {
-		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	if err := s.CheckRoleInWorkspace(c, ws.OwnerId); err != nil {
+		return err
 	}
 
 	if ws == nil {
@@ -750,12 +747,6 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 }
 
 func (s *Server) GetWorkspace(c echo.Context) error {
-	userId := httpserver.GetUserID(c)
-	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
-	if err != nil {
-		return fmt.Errorf("GetUserRoleBindings: %v", err)
-	}
-
 	id := c.Param("workspace_id")
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace id is empty")
@@ -770,18 +761,8 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	hasRoleInWorkspace := false
-	for _, roleBinding := range resp.RoleBindings {
-		if roleBinding.WorkspaceID == workspace.ID {
-			hasRoleInWorkspace = true
-		}
-	}
-	if resp.GlobalRoles != nil {
-		hasRoleInWorkspace = true
-	}
-
-	if *workspace.OwnerId != userId && !hasRoleInWorkspace {
-		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	if err := s.CheckRoleInWorkspace(c, workspace.OwnerId); err != nil {
+		return err
 	}
 
 	version := "unspecified"
@@ -803,12 +784,6 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 }
 
 func (s *Server) GetWorkspaceByName(c echo.Context) error {
-	userId := httpserver.GetUserID(c)
-	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
-	if err != nil {
-		return fmt.Errorf("GetUserRoleBindings: %v", err)
-	}
-
 	name := c.Param("workspace_name")
 	if name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace name is empty")
@@ -823,18 +798,8 @@ func (s *Server) GetWorkspaceByName(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	hasRoleInWorkspace := false
-	for _, roleBinding := range resp.RoleBindings {
-		if roleBinding.WorkspaceID == workspace.ID {
-			hasRoleInWorkspace = true
-		}
-	}
-	if resp.GlobalRoles != nil {
-		hasRoleInWorkspace = true
-	}
-
-	if *workspace.OwnerId != userId && !hasRoleInWorkspace {
-		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
+	if err := s.CheckRoleInWorkspace(c, workspace.OwnerId); err != nil {
+		return err
 	}
 
 	version := "unspecified"
@@ -1058,6 +1023,10 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		return err
 	}
 
+	if err := s.CheckRoleInWorkspace(c, dbWorkspace.OwnerId); err != nil {
+		return err
+	}
+
 	if ignoreUsage != "true" {
 		ectx := httpclient.FromEchoContext(c)
 		ectx.UserRole = authapi.AdminRole
@@ -1085,16 +1054,6 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	response.ID = dbWorkspace.ID
 	response.Name = dbWorkspace.Name
 	return c.JSON(http.StatusOK, response)
-}
-
-func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
-	workspaceID := c.Param("workspace_id")
-
-	dbWorkspace, err := s.db.GetWorkspace(workspaceID)
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, api.GetLimitsByTier(dbWorkspace.Tier))
 }
 
 func (s *Server) GetWorkspaceByID(c echo.Context) error {

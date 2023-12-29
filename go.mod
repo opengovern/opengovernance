@@ -22,7 +22,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.6
 	github.com/aws/smithy-go v1.19.0
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
-	github.com/brpaz/echozap v1.1.3
 	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/envoyproxy/go-control-plane v0.11.1

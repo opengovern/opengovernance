@@ -17,6 +17,11 @@ func (s *Server) GetAwsCost(ctx echo.Context) error {
 	if err := bindValidate(ctx, &request); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
+	if err := s.CheckRoleInWorkspace(ctx, nil); err != nil {
+		return err
+	}
+
 	s.logger.Info(fmt.Sprintf("calculating cost for %v", request))
 	cost, err := costestimator.CalcCosts(s.db, s.logger, "AWS", request.ResourceType,
 		kaytuResources.ResourceRequest{Request: request.Request, Address: request.ResourceId})
@@ -34,6 +39,11 @@ func (s *Server) GetAzureCost(ctx echo.Context) error {
 	if err := bindValidate(ctx, &request); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
+	if err := s.CheckRoleInWorkspace(ctx, nil); err != nil {
+		return err
+	}
+
 	s.logger.Info(fmt.Sprintf("calculating cost for %v", request))
 	cost, err := costestimator.CalcCosts(s.db, s.logger, "Azure", request.ResourceType,
 		kaytuResources.ResourceRequest{Request: request.Request, Address: request.ResourceId})
