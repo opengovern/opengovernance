@@ -36,7 +36,7 @@ func (h Credential) NewAWS(
 	name string,
 	metadata *model.AWSCredentialMetadata,
 	credentialType model.CredentialType,
-	config entity.AWSOrgCredentialConfig,
+	config entity.AWSCredentialConfig,
 ) (*model.Credential, error) {
 	id := uuid.New()
 
@@ -84,38 +84,6 @@ func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, externalID
 	}
 
 	return awsConfig, nil
-}
-
-func (h Credential) AWSSDKConfigWithKeys(ctx context.Context, accessKey string, secretKey string, sessionToken string, roleARN string, externalID *string) (awsOfficial.Config, error) {
-	awsConfig, err := aws.GetConfig(
-		ctx,
-		accessKey,
-		secretKey,
-		"",
-		roleARN,
-		externalID,
-	)
-	if err != nil {
-		return awsOfficial.Config{}, err
-	}
-
-	if awsConfig.Region == "" {
-		awsConfig.Region = "us-east-1"
-	}
-
-	return awsConfig, nil
-}
-
-func (h Credential) AWSCheckPolicy(cnf awsOfficial.Config) error {
-	isAttached, err := aws.CheckAttachedPolicy(h.logger.Named("aws"), cnf, "", "")
-	if err != nil {
-		return fmt.Errorf("error in checking security audit permission: %w", err)
-	}
-	if !isAttached {
-		return ErrAWSReadAccessPolicy
-	}
-
-	return nil
 }
 
 func AWSCurrentAccount(ctx context.Context, cfg awsOfficial.Config) (*model.AWSAccount, error) {
@@ -517,11 +485,15 @@ func NewAWSAutoOnboardedConnection(
 
 func (h Connection) NewAWS(
 	ctx context.Context,
-	cfg describe.AWSAccountConfig,
 	account model.AWSAccount,
 	description string,
-	req entity.AWSStandAloneCredentialConfig,
+	req entity.AWSCredentialConfig,
 ) (model.Connection, error) {
+	cfg := describe.AWSAccountConfig{
+		AccessKey: h.masterAccessKey,
+		SecretKey: h.masterSecretKey,
+	}
+
 	maxConnections, err := h.MaxConnections()
 	if err != nil {
 		h.logger.Error("cannot read number of the available connections", zap.Error(err))
@@ -575,6 +547,7 @@ func (h Connection) NewAWS(
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
 	}
+	s.Credential.Version = 2
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
 		s.Name = s.SourceId
@@ -602,18 +575,20 @@ func (h Connection) NewAWS(
 	return s, nil
 }
 
-func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
+// AWSHealthCheck checks the connection health status and update the returned model. if the update flag is false then
+// the database is not get updated.
+func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, update bool) (model.Connection, error) {
 	var cnf map[string]any
 
 	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
 	if err != nil {
-		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("connectionId", connection.SourceId))
 		return connection, err
 	}
 
 	awsCnf, err := fp.FromMap[model.AWSCredentialConfig](cnf)
 	if err != nil {
-		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
 		return connection, err
 	}
 
@@ -621,7 +596,7 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 
 	sdkCnf, err := aws.GetConfig(ctx, h.masterAccessKey, h.masterSecretKey, "", assumeRoleArn, awsCnf.ExternalId)
 	if err != nil {
-		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
+		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
 		return connection, err
 	}
 
@@ -651,6 +626,7 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 		policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
 		if !fp.Includes(policyARN, policyARNs) {
 			h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
+
 			assetDiscoveryAttached = false
 		}
 	}
@@ -664,15 +640,18 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 		} else {
 			healthMessage = err.Error()
 		}
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false))
+
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false), update)
 		if err != nil {
-			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+
 			return connection, err
 		}
 	} else {
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached)
+		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached, update)
 		if err != nil {
-			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+
 			return connection, err
 		}
 	}

@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -382,30 +382,30 @@ func (h API) Summaries(c echo.Context) error {
 				return *result.Connections[i].Cost > *result.Connections[j].Cost
 			}
 		case "growth":
-			diffi := utils.PSub(result.Connections[i].ResourceCount, result.Connections[i].OldResourceCount)
-			diffj := utils.PSub(result.Connections[j].ResourceCount, result.Connections[j].OldResourceCount)
-			if diffi == nil && diffj == nil {
+			diffI := utils.PSub(result.Connections[i].ResourceCount, result.Connections[i].OldResourceCount)
+			diffJ := utils.PSub(result.Connections[j].ResourceCount, result.Connections[j].OldResourceCount)
+			if diffI == nil && diffJ == nil {
 				break
 			}
-			if diffi == nil {
+			if diffI == nil {
 				return false
 			}
-			if diffj == nil {
+			if diffJ == nil {
 				return true
 			}
-			if *diffi != *diffj {
-				return *diffi > *diffj
+			if *diffI != *diffJ {
+				return *diffI > *diffJ
 			}
 		case "growth_rate":
-			diffi := utils.PSub(result.Connections[i].ResourceCount, result.Connections[i].OldResourceCount)
-			diffj := utils.PSub(result.Connections[j].ResourceCount, result.Connections[j].OldResourceCount)
-			if diffi == nil && diffj == nil {
+			diffI := utils.PSub(result.Connections[i].ResourceCount, result.Connections[i].OldResourceCount)
+			diffJ := utils.PSub(result.Connections[j].ResourceCount, result.Connections[j].OldResourceCount)
+			if diffI == nil && diffJ == nil {
 				break
 			}
-			if diffi == nil {
+			if diffI == nil {
 				return false
 			}
-			if diffj == nil {
+			if diffJ == nil {
 				return true
 			}
 			if result.Connections[i].OldResourceCount == nil && result.Connections[j].OldResourceCount == nil {
@@ -426,34 +426,34 @@ func (h API) Summaries(c echo.Context) error {
 			if *result.Connections[j].OldResourceCount == 0 {
 				return true
 			}
-			if float64(*diffi)/float64(*result.Connections[i].OldResourceCount) != float64(*diffj)/float64(*result.Connections[j].OldResourceCount) {
-				return float64(*diffi)/float64(*result.Connections[i].OldResourceCount) > float64(*diffj)/float64(*result.Connections[j].OldResourceCount)
+			if float64(*diffI)/float64(*result.Connections[i].OldResourceCount) != float64(*diffJ)/float64(*result.Connections[j].OldResourceCount) {
+				return float64(*diffI)/float64(*result.Connections[i].OldResourceCount) > float64(*diffJ)/float64(*result.Connections[j].OldResourceCount)
 			}
 		case "cost_growth":
-			diffi := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
-			diffj := utils.PSub(result.Connections[j].DailyCostAtEndTime, result.Connections[j].DailyCostAtStartTime)
-			if diffi == nil && diffj == nil {
+			diffI := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
+			diffJ := utils.PSub(result.Connections[j].DailyCostAtEndTime, result.Connections[j].DailyCostAtStartTime)
+			if diffI == nil && diffJ == nil {
 				break
 			}
-			if diffi == nil {
+			if diffI == nil {
 				return false
 			}
-			if diffj == nil {
+			if diffJ == nil {
 				return true
 			}
-			if *diffi != *diffj {
-				return *diffi > *diffj
+			if *diffI != *diffJ {
+				return *diffI > *diffJ
 			}
 		case "cost_growth_rate":
-			diffi := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
-			diffj := utils.PSub(result.Connections[j].DailyCostAtEndTime, result.Connections[j].DailyCostAtStartTime)
-			if diffi == nil && diffj == nil {
+			diffI := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
+			diffJ := utils.PSub(result.Connections[j].DailyCostAtEndTime, result.Connections[j].DailyCostAtStartTime)
+			if diffI == nil && diffJ == nil {
 				break
 			}
-			if diffi == nil {
+			if diffI == nil {
 				return false
 			}
-			if diffj == nil {
+			if diffJ == nil {
 				return true
 			}
 			if result.Connections[i].DailyCostAtStartTime == nil && result.Connections[j].DailyCostAtStartTime == nil {
@@ -474,8 +474,8 @@ func (h API) Summaries(c echo.Context) error {
 			if *result.Connections[j].DailyCostAtStartTime == 0 {
 				return true
 			}
-			if *diffi/(*result.Connections[i].DailyCostAtStartTime) != *diffj/(*result.Connections[j].DailyCostAtStartTime) {
-				return *diffi/(*result.Connections[i].DailyCostAtStartTime) > *diffj/(*result.Connections[j].DailyCostAtStartTime)
+			if *diffI/(*result.Connections[i].DailyCostAtStartTime) != *diffJ/(*result.Connections[j].DailyCostAtStartTime) {
+				return *diffI/(*result.Connections[i].DailyCostAtStartTime) > *diffJ/(*result.Connections[j].DailyCostAtStartTime)
 			}
 		}
 		return result.Connections[i].ConnectionName < result.Connections[j].ConnectionName
@@ -711,9 +711,9 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 	)
 
 	if !connection.LifecycleState.IsEnabled() {
-		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false))
+		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false), true)
 		if err != nil {
-			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 			return err
 		}
 	} else {
@@ -728,7 +728,7 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 		}
 
 		if !isHealthy {
-			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false))
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false), true)
 			if err != nil {
 				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 				return err
@@ -754,7 +754,6 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 //	@Tags			connections
 //	@Produce		json
 //	@Param			connectionId	path		string	true	"connection ID"
-//	@Param			updateMetadata	query		bool	false	"Whether to update metadata or not"	default(true)
 //	@Success		200				{object}	entity.Connection
 //	@Router			/integration/api/v1/connections/{connectionId}/aws/healthcheck [get]
 func (h API) AWSHealthCheck(c echo.Context) error {
@@ -767,10 +766,6 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
 	}
-
-	// means by default we are considering updateMetadata as true and makes it false only
-	// when we have a query parameter name updateMetadata equals to "false"
-	updateMetadata := strings.ToLower(c.QueryParam("updateMetadata")) != "false"
 
 	connections, err := h.connSvc.Get(ctx, []string{id.String()})
 	if err != nil {
@@ -791,9 +786,9 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	)
 
 	if !connection.LifecycleState.IsEnabled() {
-		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false))
+		connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusNil, fp.Optional("Connection is not enabled"), fp.Optional(false), fp.Optional(false), true)
 		if err != nil {
-			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 			return err
 		}
 	} else {
@@ -808,13 +803,13 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 		}
 
 		if !isHealthy {
-			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false))
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false), true)
 			if err != nil {
 				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 				return err
 			}
 		} else {
-			connection, err = h.connSvc.AWSHealthCheck(ctx, connection, updateMetadata)
+			connection, err = h.connSvc.AWSHealthCheck(ctx, connection, true)
 			if err != nil {
 				h.logger.Error("connection healthcheck failed", zap.Error(err))
 
@@ -852,13 +847,9 @@ func (h API) AWSCreate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	cfg, err := h.credSvc.AWSSDKConfigWithKeys(ctx, req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	cfg, err := h.credSvc.AWSSDKConfig(ctx, aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName), req.Config.ExternalId)
 	if err != nil {
 		return err
-	}
-
-	if err := h.credSvc.AWSCheckPolicy(cfg); err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
 	acc, err := service.AWSCurrentAccount(ctx, cfg)
@@ -869,9 +860,15 @@ func (h API) AWSCreate(c echo.Context) error {
 		acc.AccountName = &req.Name
 	}
 
-	src, err := h.connSvc.NewAWS(ctx, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description, *req.Config)
+	src, err := h.connSvc.NewAWS(ctx, *acc, req.Description, *req.Config)
 	if err != nil {
 		h.logger.Error("cannot build an aws connection", zap.Error(err))
+
+		return err
+	}
+
+	if _, err := h.connSvc.AWSHealthCheck(ctx, src, false); err != nil {
+		h.logger.Error("connection health check failed", zap.Error(err))
 
 		return err
 	}
