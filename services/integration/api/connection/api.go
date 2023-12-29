@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type API struct {
@@ -50,6 +51,95 @@ func New(
 		tracer:  otel.GetTracerProvider().Tracer("integration.http.sources"),
 		logger:  logger.Named("source"),
 	}
+}
+
+// DeleteSource godoc
+//
+//	@Summary		Delete source
+//	@Description	Deleting a single source either AWS / Azure for the given source id.
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			connectionId	path	string	true	"Source ID"
+//	@Router			/onboard/api/v1/source/{connectionId} [delete]
+func (h API) Delete(ctx echo.Context) error {
+	// when connection is deleted, we need to remove its credential if it doesn't have any other account.
+	srcId, err := uuid.Parse(ctx.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	// trace :
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	src, err := h.db.GetSource(srcId)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", src.Name),
+	))
+
+	// trace :
+	output1, span1 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_Transaction")
+
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		outputS2, span2 := tracer.Start(output1, "new_DeleteSource")
+
+		if err := h.db.DeleteSource(srcId); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
+			return err
+		}
+		span1.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", src.Name),
+		))
+		span2.End()
+
+		if src.Credential.CredentialType.IsManual() {
+			// trace :
+			_, span3 := tracer.Start(outputS2, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
+			span3.SetName("new_DeleteCredential")
+			err = h.db.DeleteCredential(src.Credential.ID)
+			if err != nil {
+				span3.RecordError(err)
+				span3.SetStatus(codes.Error, err.Error())
+				return err
+			}
+			span3.AddEvent("information", trace.WithAttributes(
+				attribute.String("credential name", *src.Credential.Name),
+			))
+			span3.End()
+		}
+
+		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+			Action:     api.SourceDeleted,
+			SourceID:   src.ID,
+			SourceType: src.Type,
+			Secret:     src.Credential.Secret,
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.End()
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (h API) List(c echo.Context) error {
@@ -867,7 +957,8 @@ func (h API) AWSCreate(c echo.Context) error {
 		return err
 	}
 
-	if _, err := h.connSvc.AWSHealthCheck(ctx, src, false); err != nil {
+	src, err = h.connSvc.AWSHealthCheck(ctx, src, false)
+	if err != nil {
 		h.logger.Error("connection health check failed", zap.Error(err))
 
 		return err

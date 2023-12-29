@@ -3,9 +3,13 @@ package credential
 import (
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
@@ -13,10 +17,12 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type API struct {
@@ -37,6 +43,248 @@ func New(
 		tracer:        otel.GetTracerProvider().Tracer("integration.http.sources"),
 		logger:        logger.Named("source"),
 	}
+}
+
+// PutCredentials godoc
+//
+//	@Summary		Edit credential
+//	@Description	Edit a credential by ID
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			credentialId	path	string						true	"Credential ID"
+//	@Param			config			body	api.UpdateCredentialRequest	true	"config"
+//	@Router			/integration/api/v1/credentials/{credentialId} [put]
+func (h API) Update(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	var req entity.UpdateCredentialRequest
+
+	ctx, span := h.tracer.Start(ctx, "update-credential")
+	defer span.End()
+
+	if err := c.Bind(&req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	switch req.Connector {
+	case source.CloudAzure:
+		return h.putAzureCredentials(ctx, req)
+	case source.CloudAWS:
+		return h.putAWSCredentials(ctx, req)
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *req.Name),
+	))
+
+	return c.JSON(http.StatusBadRequest, "invalid source type")
+}
+
+// ListCredentials godoc
+//
+//	@Summary		List credentials
+//	@Description	Retrieving list of credentials with their details
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200				{object}	api.ListCredentialResponse
+//	@Param			connector		query		source.Type				false	"filter by connector type"
+//	@Param			health			query		string					false	"filter by health status"	Enums(healthy, unhealthy)
+//	@Param			credentialType	query		[]api.CredentialType	false	"filter by credential type"
+//	@Param			pageSize		query		int						false	"page size"		default(50)
+//	@Param			pageNumber		query		int						false	"page number"	default(1)
+//	@Router			/integration/api/v1/credentials [get]
+func (h API) List(c echo.Context) error {
+	connector, _ := source.ParseType(c.QueryParam("connector"))
+	health, _ := source.ParseHealthStatus(c.QueryParam("health"))
+	credentialTypes := model.ParseCredentialTypes(c.QueryParams()["credentialType"])
+	if len(credentialTypes) == 0 {
+		// Take note if you want the change this, the default is used in the frontend AND the checkup worker
+		credentialTypes = model.GetManualCredentialTypes()
+	}
+	pageSizeStr := c.QueryParam("pageSize")
+	pageNumberStr := c.QueryParam("pageNumber")
+
+	pageSize := int64(50)
+	pageNumber := int64(1)
+	if pageSizeStr != "" {
+		pageSize, _ = strconv.ParseInt(pageSizeStr, 10, 64)
+	}
+	if pageNumberStr != "" {
+		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
+	}
+	// trace :
+	_, span := h.tracer.Start(c.Request().Context(), "new_GetCredentialsByFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetCredentialsByFilters")
+
+	credentials, err := h.db.GetCredentialsByFilters(connector, health, credentialTypes)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	span.End()
+
+	apiCredentials := make([]entity.Credential, 0, len(credentials))
+	for _, cred := range credentials {
+		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, []source.HealthStatus{source.HealthStatusUnhealthy})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		onboardConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(),
+			[]model.ConnectionLifecycleState{model.ConnectionLifecycleStateInProgress, model.ConnectionLifecycleStateOnboard}, nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDiscovered}, nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		disabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDisabled}, nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		archivedConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateArchived}, nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		apiCredential := cred.ToAPI()
+		apiCredential.TotalConnections = &totalConnectionCount
+		apiCredential.UnhealthyConnections = &unhealthyConnectionCount
+
+		apiCredential.DiscoveredConnections = &discoveredConnectionCount
+		apiCredential.OnboardConnections = &onboardConnectionCount
+		apiCredential.DisabledConnections = &disabledConnectionCount
+		apiCredential.ArchivedConnections = &archivedConnectionCount
+
+		apiCredentials = append(apiCredentials, apiCredential)
+	}
+
+	sort.Slice(apiCredentials, func(i, j int) bool {
+		return apiCredentials[i].OnboardDate.After(apiCredentials[j].OnboardDate)
+	})
+
+	result := entity.ListCredentialResponse{
+		TotalCredentialCount: len(apiCredentials),
+		Credentials:          utils.Paginate(pageNumber, pageSize, apiCredentials),
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+// DeleteCredential godoc
+//
+//	@Summary		Delete credential
+//	@Description	Remove a credential by ID
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			credentialId	path	string	true	"CredentialID"
+//	@Router			/onboard/api/v1/credential/{credentialId} [delete]
+func (h API) DeleteCredential(ctx echo.Context) error {
+	// on deleting a credential, we need to delete its accounts / subscription
+
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	// trace :
+	outputS, span1 := h.tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetCredentialByID")
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+	span1.End()
+
+	// trace :
+	_, span2 := h.tracer.Start(outputS, "new_GetSourcesByCredentialID", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetSourcesByCredentialID")
+
+	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	span2.End()
+
+	// trace :
+	outputS3, span3 := h.tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+	span3.SetName("new_Transaction")
+
+	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		_, span4 := h.tracer.Start(outputS3, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
+		span4.SetName("new_DeleteCredential")
+
+		if err := h.db.DeleteCredential(credential.ID); err != nil {
+			span4.RecordError(err)
+			span4.SetStatus(codes.Error, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		span4.AddEvent("information", trace.WithAttributes(
+			attribute.String("credential name", *credential.Name),
+		))
+		span4.End()
+
+		// trace :
+		output5, span5 := tracer.Start(outputS3, "new_UpdateSourceLifecycleState(loop)", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_UpdateSourceLifecycleState(loop)")
+		for _, src := range sources {
+			// trace :
+			_, span6 := tracer.Start(output5, "new_UpdateSourceLifecycleState", trace.WithSpanKind(trace.SpanKindServer))
+			span6.SetName("new_UpdateSourceLifecycleState")
+			if err := h.db.UpdateSourceLifecycleState(src.ID, model.ConnectionLifecycleStateDisabled); err != nil {
+				span6.RecordError(err)
+				span6.SetStatus(codes.Error, err.Error())
+				return err
+			}
+			span6.AddEvent("information", trace.WithAttributes(
+				attribute.String("source name", src.Name),
+			))
+			span6.End()
+		}
+		span5.End()
+
+		return nil
+	})
+	if err != nil {
+		span3.RecordError(err)
+		span3.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span3.End()
+
+	return ctx.JSON(http.StatusOK, struct{}{})
 }
 
 // CreateAzure godoc
@@ -232,4 +480,6 @@ func (h API) CreateAWS(c echo.Context) error {
 func (s API) Register(g *echo.Group) {
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
+	// TODO: autoonboard AWS
+	// TODO: autoonboard Azure
 }
