@@ -6251,6 +6251,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/subscription/api/v1/metering": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Get meters",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/bootstrap/{workspace_name}": {
             "get": {
                 "security": [
@@ -11595,6 +11633,68 @@ const docTemplate = `{
                     "example": 10
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest": {
+            "type": "object",
+            "properties": {
+                "end_time_epoch_millis": {
+                    "type": "integer"
+                },
+                "start_time_epoch_millis": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse": {
+            "type": "object",
+            "properties": {
+                "meters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType": {
+            "type": "string",
+            "enum": [
+                "InventoryDiscoveryJobCount",
+                "CostDiscoveryJobCount",
+                "MetricEvaluationCount",
+                "InsightEvaluationCount",
+                "BenchmarkEvaluationCount",
+                "TotalFindings",
+                "TotalResource",
+                "TotalUsers",
+                "TotalApiKeys",
+                "TotalRules",
+                "AlertCount"
+            ],
+            "x-enum-varnames": [
+                "MeterType_InventoryDiscoveryJobCount",
+                "MeterType_CostDiscoveryJobCount",
+                "MeterType_MetricEvaluationCount",
+                "MeterType_InsightEvaluationCount",
+                "MeterType_BenchmarkEvaluationCount",
+                "MeterType_TotalFindings",
+                "MeterType_TotalResource",
+                "MeterType_TotalUsers",
+                "MeterType_TotalApiKeys",
+                "MeterType_TotalRules",
+                "MeterType_AlertCount"
+            ]
         },
         "kaytu.ResourceCollectionFilter": {
             "type": "object",
