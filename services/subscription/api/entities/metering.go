@@ -55,6 +55,8 @@ type GetMetersResponse struct {
 }
 
 type Meter struct {
-	Type  MeterType `json:"type"`
-	Value float64   `json:"value"`
+	WorkspaceName string    `json:"workspaceName"`
+	Type          MeterType `json:"type"`
+	IsTotal       bool      `json:"isTotal"`
+	Value         float64   `json:"value"`
 }
