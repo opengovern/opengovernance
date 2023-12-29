@@ -65,6 +65,7 @@ func (t *StopIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error
 	}
 
 	if pipeline.Pipeline.Status == types.PipelineStatusStarting {
+		fmt.Println("StopIngestionPipeline -> RollbackIdempotent -> Starting")
 		return ErrTransactionNeedsTime
 	}
 
@@ -73,5 +74,6 @@ func (t *StopIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error
 		return err
 	}
 
+	fmt.Println("StopIngestionPipeline -> RollbackIdempotent -> StartPipeline")
 	return ErrTransactionNeedsTime
 }
