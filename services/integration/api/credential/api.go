@@ -134,44 +134,49 @@ func (h API) List(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "list", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	credentials, err := h.db.GetCredentialsByFilters(connector, health, credentialTypes)
+	credentials, err := h.credentialSvc.ListWithFilters(ctx, connector, health, credentialTypes)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+
+		return err
 	}
-	span.End()
 
 	apiCredentials := make([]entity.Credential, 0, len(credentials))
+
 	for _, cred := range credentials {
 		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, nil)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return err
 		}
+
 		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, []source.HealthStatus{source.HealthStatusUnhealthy})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return err
 		}
 
 		onboardConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(),
 			[]model.ConnectionLifecycleState{model.ConnectionLifecycleStateInProgress, model.ConnectionLifecycleStateOnboard}, nil)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDiscovered}, nil)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		disabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDisabled}, nil)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		archivedConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateArchived}, nil)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return err
 		}
 
-		apiCredential := cred.ToAPI()
+		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDiscovered}, nil)
+		if err != nil {
+			return err
+		}
+
+		disabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDisabled}, nil)
+		if err != nil {
+			return err
+		}
+
+		archivedConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateArchived}, nil)
+		if err != nil {
+			return err
+		}
+
+		apiCredential := entity.NewCredential(cred)
 		apiCredential.TotalConnections = &totalConnectionCount
 		apiCredential.UnhealthyConnections = &unhealthyConnectionCount
 

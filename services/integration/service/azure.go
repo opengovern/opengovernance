@@ -253,7 +253,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 			return nil, err
 		}
 
-		maxConnections, err := h.connSvc.MaxConnections()
+		maxConnections, err := h.connSvc.MaxConnections(ctx)
 		if err != nil {
 			return nil, err
 		}

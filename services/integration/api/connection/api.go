@@ -53,48 +53,48 @@ func New(
 	}
 }
 
-// DeleteSource godoc
+// DeleteConnection godoc
 //
-//	@Summary		Delete source
-//	@Description	Deleting a single source either AWS / Azure for the given source id.
+//	@Summary		Delete connection
+//	@Description	Deleting a single connection either AWS / Azure for the given connection id.
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			connection
 //	@Produce		json
 //	@Success		200
 //	@Param			connectionId	path	string	true	"Source ID"
-//	@Router			/onboard/api/v1/source/{connectionId} [delete]
-func (h API) Delete(ctx echo.Context) error {
+//	@Router			/onboard/api/v1/connections/{connectionId} [delete]
+func (h API) Delete(c echo.Context) error {
 	// when connection is deleted, we need to remove its credential if it doesn't have any other account.
-	srcId, err := uuid.Parse(ctx.Param("connectionId"))
+
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	connID, err := uuid.Parse(c.Param("connectionId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	// trace :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span := h.tracer.Start(ctx, "delete", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	src, err := h.db.GetSource(srcId)
+	connections, err := h.connSvc.Get(ctx, []string{connID.String()})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+
 		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+			return echo.NewHTTPError(http.StatusNotFound, "connection not found")
 		}
+
 		return err
 	}
+
+	connection := connections[0]
+
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("source name", src.Name),
+		attribute.String("connection name", connection.Name),
 	))
 
-	// trace :
-	output1, span1 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_Transaction")
-
 	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-		// trace :
-		outputS2, span2 := tracer.Start(output1, "new_DeleteSource")
-
 		if err := h.db.DeleteSource(srcId); err != nil {
 			span2.RecordError(err)
 			span2.SetStatus(codes.Error, err.Error())
@@ -106,40 +106,26 @@ func (h API) Delete(ctx echo.Context) error {
 		span2.End()
 
 		if src.Credential.CredentialType.IsManual() {
-			// trace :
-			_, span3 := tracer.Start(outputS2, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
-			span3.SetName("new_DeleteCredential")
 			err = h.db.DeleteCredential(src.Credential.ID)
 			if err != nil {
 				span3.RecordError(err)
 				span3.SetStatus(codes.Error, err.Error())
 				return err
 			}
-			span3.AddEvent("information", trace.WithAttributes(
-				attribute.String("credential name", *src.Credential.Name),
-			))
-			span3.End()
 		}
 
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceDeleted,
-			SourceID:   src.ID,
-			SourceType: src.Type,
-			Secret:     src.Credential.Secret,
-		}); err != nil {
-			return err
-		}
+		// TODO publishes event into the event sourcing system.
 
 		return nil
 	})
 	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
 		return err
 	}
-	span1.End()
 
-	return ctx.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusOK)
 }
 
 func (h API) List(c echo.Context) error {

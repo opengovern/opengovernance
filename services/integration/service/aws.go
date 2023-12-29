@@ -361,7 +361,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 			return nil, err
 		}
 
-		maxConnections, err := h.connSvc.MaxConnections()
+		maxConnections, err := h.connSvc.MaxConnections(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -494,7 +494,7 @@ func (h Connection) NewAWS(
 		SecretKey: h.masterSecretKey,
 	}
 
-	maxConnections, err := h.MaxConnections()
+	maxConnections, err := h.MaxConnections(ctx)
 	if err != nil {
 		h.logger.Error("cannot read number of the available connections", zap.Error(err))
 
