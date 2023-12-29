@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -679,7 +680,7 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 func (h API) AzureHealthCheck(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	ctx, span := h.tracer.Start(ctx, "healthcheck.azure")
 	defer span.End()
 
 	id, err := uuid.Parse(c.Param("connectionId"))
@@ -748,7 +749,7 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 // AWSHealthCheck godoc
 //
 //	@Summary		Get AWS connection health
-//	@Description	Get live connection health status with given connection ID for Azure.
+//	@Description	Get live connection health status with given connection ID for AWS.
 //	@Security		BearerToken
 //	@Tags			connections
 //	@Produce		json
@@ -759,7 +760,7 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 func (h API) AWSHealthCheck(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	ctx, span := h.tracer.Start(ctx, "healthcheck.aws")
 	defer span.End()
 
 	id, err := uuid.Parse(c.Param("connectionId"))
@@ -796,7 +797,7 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 			return err
 		}
 	} else {
-		isHealthy, err := h.credSvc.AWSHealthCheck(ctx, &connection.Credential)
+		isHealthy, err := h.credSvc.AWSHealthCheck(ctx, &connection.Credential, true)
 		if err != nil {
 			h.logger.Error("failed to check credential health",
 				zap.Error(err),
@@ -825,11 +826,74 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, entity.NewConnection(connection))
 }
 
+// PostSourceAws godoc
+//
+//	@Summary		Create AWS connection [standalone]
+//	@Description	Creating AWS source [standalone]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200		{object}	entity.CreateConnectionResponse
+//	@Param			request	body		entity.CreateAWSConnectionRequest	true	"Request"
+//	@Router			/integration/api/v1/connections/aws [post]
+func (h API) AWSCreate(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "create.aws")
+	defer span.End()
+
+	var req entity.CreateAWSConnectionRequest
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	cfg, err := h.credSvc.AWSSDKConfigWithKeys(ctx, req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	if err != nil {
+		return err
+	}
+
+	if err := h.credSvc.AWSCheckPolicy(cfg); err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
+	acc, err := service.AWSCurrentAccount(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	if req.Name != "" {
+		acc.AccountName = &req.Name
+	}
+
+	src, err := h.connSvc.NewAWS(ctx, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description, *req.Config)
+	if err != nil {
+		h.logger.Error("cannot build an aws connection", zap.Error(err))
+
+		return err
+	}
+
+	err = h.connSvc.Create(ctx, src)
+	if err != nil {
+		h.logger.Error("cannot create an aws connection", zap.Error(err))
+
+		return err
+	}
+
+	return c.JSON(http.StatusOK, entity.CreateConnectionResponse{
+		ID: src.ID,
+	})
+}
+
 func (s API) Register(g *echo.Group) {
 	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
+	g.POST("/aws", httpserver.AuthorizeHandler(s.AWSCreate, api.EditorRole))
 	g.GET("/:connectionId/azure/healthcheck", httpserver.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
 	g.GET("/:connectionId/aws/healthcheck", httpserver.AuthorizeHandler(s.AWSHealthCheck, api.EditorRole))
 }

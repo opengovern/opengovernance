@@ -8,14 +8,14 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
-type AWSCredentialConfig struct {
+type AWSOrgCredentialConfig struct {
 	AccountID           string   `json:"accountID"`
 	AssumeRoleName      string   `json:"assumeRoleName"`
 	HealthCheckPolicies []string `json:"healthCheckPolicies"`
 	ExternalId          *string  `json:"externalId"`
 }
 
-func (s AWSCredentialConfig) AsMap() map[string]any {
+func (s AWSOrgCredentialConfig) AsMap() map[string]any {
 	in, err := json.Marshal(s)
 	if err != nil {
 		panic(err) // Don't expect any error
@@ -29,8 +29,33 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 	return out
 }
 
-type CreateAWSConnectionRequest struct {
-	Config AWSCredentialConfig `json:"config,omitempty"`
+type AWSStandAloneCredentialConfig struct {
+	AccountId            string   `json:"accountId"`
+	Regions              []string `json:"regions,omitempty"`
+	AccessKey            string   `json:"accessKey" validate:"required"`
+	SecretKey            string   `json:"secretKey" validate:"required"`
+	AssumeRoleName       string   `json:"assumeRoleName,omitempty"`
+	AssumeAdminRoleName  string   `json:"assumeAdminRoleName,omitempty"`
+	AssumeRolePolicyName string   `json:"assumeRolePolicyName,omitempty"`
+	ExternalId           *string  `json:"externalId,omitempty"`
+}
+
+func (s AWSStandAloneCredentialConfig) AsMap() map[string]any {
+	in, err := json.Marshal(s)
+	if err != nil {
+		panic(err) // Don't expect any error
+	}
+
+	var out map[string]any
+	if err := json.Unmarshal(in, &out); err != nil {
+		panic(err) // Don't expect any error
+	}
+
+	return out
+}
+
+type CreateAWSCredentialRequest struct {
+	Config AWSOrgCredentialConfig `json:"config,omitempty"`
 }
 
 type CreateCredentialRequest struct {

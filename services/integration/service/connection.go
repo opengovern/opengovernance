@@ -255,7 +255,7 @@ func (h Connection) MaxConnections() (int64, error) {
 	return maxConnections, nil
 }
 
-// UpdateHealth update the health status of the connction.
+// UpdateHealth update the health status of the connection.
 func (h Connection) UpdateHealth(
 	ctx context.Context,
 	connection model.Connection,

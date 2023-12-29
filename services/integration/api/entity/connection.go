@@ -118,6 +118,13 @@ type CreateConnectionResponse struct {
 	ID uuid.UUID `json:"id"`
 }
 
+type CreateAWSConnectionRequest struct {
+	Name        string                         `json:"name"`
+	Description string                         `json:"description"`
+	Email       string                         `json:"email"`
+	Config      *AWSStandAloneCredentialConfig `json:"config,omitempty"`
+}
+
 // NewConnection creates API compatible connection from model connection.
 func NewConnection(s model.Connection) Connection {
 	metadata := make(map[string]any)

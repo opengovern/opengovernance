@@ -9,6 +9,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -40,12 +42,12 @@ func New(
 // CreateAzure godoc
 //
 //	@Summary		Create Azure credential and does onboarding for its subscriptions
-//	@Description	Creating Azure credential, testing it and on-board its subscriptions
+//	@Description	Creating Azure credential, testing it and onboard its subscriptions
 //	@Security		BearerToken
 //	@Tags			integration
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
-//	@Param			request	body		entity.CreateAzureConnectionRequest	true	"Request"
+//	@Param			request	body		entity.CreateAzureCredentialRequest	true	"Request"
 //	@Router			/integration/api/v1/credentials/azure [post]
 func (h API) CreateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -53,7 +55,7 @@ func (h API) CreateAzure(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "create-azure-spn")
 	defer span.End()
 
-	var req entity.CreateAzureConnectionRequest
+	var req entity.CreateAzureCredentialRequest
 
 	if err := c.Bind(&req); err != nil {
 		span.RecordError(err)
@@ -124,13 +126,13 @@ func (h API) CreateAzure(c echo.Context) error {
 
 // CreateAWS godoc
 //
-//	@Summary		Create AWS credential and does onboarding for its subscriptions
-//	@Description	Creating AWS credential, testing it and on-board its subscriptions
+//	@Summary		Create AWS credential and does onboarding for its accounts (organization account)
+//	@Description	Creating AWS credential, testing it and onboard its accounts (organization account)
 //	@Security		BearerToken
 //	@Tags			integration
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
-//	@Param			request	body		entity.CreateAWSConnectionRequest	true	"Request"
+//	@Param			request	body		entity.CreateAWSCredentialRequest	true	"Request"
 //	@Router			/integration/api/v1/credentials/aws [post]
 func (h API) CreateAWS(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -138,7 +140,7 @@ func (h API) CreateAWS(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "create-aws")
 	defer span.End()
 
-	var req entity.CreateAWSConnectionRequest
+	var req entity.CreateAWSCredentialRequest
 
 	if err := c.Bind(&req); err != nil {
 		span.RecordError(err)
@@ -189,9 +191,15 @@ func (h API) CreateAWS(c echo.Context) error {
 		return err
 	}
 
-	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred); err != nil {
+	// we are going to check the credential health but not updating it in the database,
+	// because it doesn't exists there yet.
+	if _, err := h.credentialSvc.AWSHealthCheck(ctx, cred, false); err != nil {
 		return err
 	}
+
+	// update credential health before writing it into the database.
+	cred.HealthReason = fp.Optional("")
+	cred.HealthStatus = source.HealthStatusHealthy
 
 	if err := h.credentialSvc.Create(ctx, cred); err != nil {
 		h.logger.Error("creating aws credential failed", zap.Error(err))
@@ -201,7 +209,7 @@ func (h API) CreateAWS(c echo.Context) error {
 
 	connections, err := h.credentialSvc.AWSOnboard(ctx, *cred)
 	if err != nil {
-		h.logger.Error("azure onboarding failed", zap.Error(err))
+		h.logger.Error("aws onboarding failed", zap.Error(err))
 
 		return echo.ErrInternalServerError
 	}
