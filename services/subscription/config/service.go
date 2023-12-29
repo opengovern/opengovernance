@@ -1,15 +1,17 @@
 package config
 
-import "github.com/kaytu-io/kaytu-util/pkg/config"
+import (
+	"github.com/kaytu-io/kaytu-util/pkg/koanf"
+)
 
 type SubscriptionConfig struct {
-	Auth       config.KaytuService
-	Workspace  config.KaytuService
-	Scheduler  config.KaytuService
-	Alerting   config.KaytuService
-	Compliance config.KaytuService
-	Inventory  config.KaytuService
+	Auth       koanf.KaytuService `json:"auth,omitempty" koanf:"auth"`
+	Workspace  koanf.KaytuService `json:"workspace,omitempty" koanf:"workspace"`
+	Scheduler  koanf.KaytuService `json:"scheduler,omitempty" koanf:"scheduler"`
+	Alerting   koanf.KaytuService `json:"alerting,omitempty" koanf:"alerting"`
+	Compliance koanf.KaytuService `json:"compliance,omitempty" koanf:"compliance"`
+	Inventory  koanf.KaytuService `json:"inventory,omitempty" koanf:"inventory"`
 
-	Postgres config.Postgres
-	Http     config.HttpServer
+	Postgres koanf.Postgres   `json:"postgres,omitempty" koanf:"postgres"`
+	Http     koanf.HttpServer `json:"http,omitempty" koanf:"http"`
 }
