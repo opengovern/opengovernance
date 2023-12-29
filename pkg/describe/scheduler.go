@@ -48,11 +48,10 @@ import (
 )
 
 const (
-	JobSchedulingInterval    = 1 * time.Minute
-	JobSequencerInterval     = 1 * time.Minute
-	JobTimeoutCheckInterval  = 1 * time.Minute
-	MaxJobInQueue            = 10000
-	ConcurrentDeletedSources = 1000
+	JobSchedulingInterval   = 1 * time.Minute
+	JobSequencerInterval    = 1 * time.Minute
+	JobTimeoutCheckInterval = 1 * time.Minute
+	MaxJobInQueue           = 10000
 
 	schedulerConsumerGroup = "describe-scheduler"
 )

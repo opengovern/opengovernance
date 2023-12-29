@@ -3540,6 +3540,53 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest:
+    properties:
+      end_time_epoch_millis:
+        type: integer
+      start_time_epoch_millis:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse:
+    properties:
+      meters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter:
+    properties:
+      type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType'
+      value:
+        type: number
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType:
+    enum:
+    - InventoryDiscoveryJobCount
+    - CostDiscoveryJobCount
+    - MetricEvaluationCount
+    - InsightEvaluationCount
+    - BenchmarkEvaluationCount
+    - TotalFindings
+    - TotalResource
+    - TotalUsers
+    - TotalApiKeys
+    - TotalRules
+    - AlertCount
+    type: string
+    x-enum-varnames:
+    - MeterType_InventoryDiscoveryJobCount
+    - MeterType_CostDiscoveryJobCount
+    - MeterType_MetricEvaluationCount
+    - MeterType_InsightEvaluationCount
+    - MeterType_BenchmarkEvaluationCount
+    - MeterType_TotalFindings
+    - MeterType_TotalResource
+    - MeterType_TotalUsers
+    - MeterType_TotalApiKeys
+    - MeterType_TotalRules
+    - MeterType_AlertCount
   kaytu.ResourceCollectionFilter:
     properties:
       account_ids:
@@ -7744,6 +7791,29 @@ paths:
       summary: List Resource Stacks
       tags:
       - stack
+  /subscription/api/v1/metering:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse'
+      security:
+      - BearerToken: []
+      summary: Get meters
+      tags:
+      - subscription
   /workspace/api/v1/bootstrap/{workspace_name}:
     get:
       consumes:

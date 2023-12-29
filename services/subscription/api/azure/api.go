@@ -1,35 +1,46 @@
-package api
+package azure
 
 import (
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api/entities"
+	"github.com/kaytu-io/kaytu-engine/services/subscription/db"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
 )
 
-func (h HttpServer) Register(r *echo.Echo) {
-	v1 := r.Group("/api/v1")
-
-	v1.GET("/landing", h.HandleLanding)
-	v1.GET("/event", h.HandleEvent)
-	v1.GET("/subscriptions", httpserver.AuthorizeHandler(h.ListSubscriptions, api3.KaytuAdminRole))
-
+type API struct {
+	tracer trace.Tracer
+	logger *zap.Logger
+	db     db.Database
 }
 
-func (h HttpServer) HandleLanding(ctx echo.Context) error {
+func New(
+	logger *zap.Logger,
+	db db.Database,
+) API {
+	return API{
+		tracer: otel.GetTracerProvider().Tracer("subscription.http.azure"),
+		logger: logger.Named("azure"),
+		db:     db,
+	}
+}
+
+func (h API) HandleLanding(ctx echo.Context) error {
 	token := ctx.QueryParam("token")
 	h.logger.Info("landing called", zap.String("token", token))
 	return echo.NewHTTPError(http.StatusNotImplemented)
 }
 
-func (h HttpServer) HandleEvent(ctx echo.Context) error {
+func (h API) HandleEvent(ctx echo.Context) error {
 	h.logger.Info("event called")
 	return echo.NewHTTPError(http.StatusNotImplemented)
 }
 
-func (h HttpServer) ListSubscriptions(ctx echo.Context) error {
+func (h API) ListSubscriptions(ctx echo.Context) error {
 	subs, err := h.db.ListSubscriptions()
 	if err != nil {
 		return err
@@ -48,4 +59,10 @@ func (h HttpServer) ListSubscriptions(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, apiSubs)
+}
+
+func (h API) Register(g *echo.Group) {
+	g.GET("/landing", h.HandleLanding)
+	g.GET("/event", h.HandleEvent)
+	g.GET("/subscriptions", httpserver.AuthorizeHandler(h.ListSubscriptions, api.KaytuAdminRole))
 }
