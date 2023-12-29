@@ -6,6 +6,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -37,33 +38,28 @@ func New(
 	}
 }
 
-// ListConnectors godoc
+// List godoc
 //
 //	@Summary		List connectors
 //	@Description	Returns list of all connectors
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			connectors
 //	@Produce		json
-//	@Success		200	{object}	[]api.ConnectorCount
-//	@Router			/onboard/api/v1/connector [get]
-func (h API) ListConnectors(c echo.Context) error {
+//	@Success		200	{object}	[]entity.ConnectorCount
+//	@Router			/integration/api/v1/connector [get]
+func (h API) List(c echo.Context) error {
 	// trace :
 	ctx, span := h.tracer.Start(c.Request().Context(), "new_ListConnectors", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	connectors, err := h.db.ListConnectors()
 	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span1.End()
 
-	var res []api.ConnectorCount
-
-	// trace :
-	outputS2, span2 := h.tracer.Start(outputS, "new_CountSourcesOfType(loop)")
-	span2.SetName("new_CountSourcesOfType(loop)")
+	var res []entity.ConnectorCount
 
 	for _, c := range connectors {
 		_, span3 := tracer.Start(outputS2, "new_CountSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
@@ -85,8 +81,8 @@ func (h API) ListConnectors(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		res = append(res, api.ConnectorCount{
-			Connector: api.Connector{
+		res = append(res, entity.ConnectorCount{
+			Connector: entity.Connector{
 				Name:                c.Name,
 				Label:               c.Label,
 				ShortDescription:    c.ShortDescription,

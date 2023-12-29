@@ -202,7 +202,7 @@ func (h API) List(c echo.Context) error {
 func (h API) DeleteCredential(ctx echo.Context) error {
 	// on deleting a credential, we need to delete its accounts / subscription
 
-	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	credId, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
