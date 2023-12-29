@@ -28,20 +28,22 @@ var (
 )
 
 type Connection struct {
-	keyARN          string
-	kms             *vault.KMSVaultSourceConfig
-	tracer          trace.Tracer
-	repo            repository.Connection
-	describe        describe.SchedulerServiceClient
-	inventory       inventory.InventoryServiceClient
-	meta            *meta.Meta
-	masterAccessKey string
-	masterSecretKey string
-	logger          *zap.Logger
+	keyARN            string
+	kms               *vault.KMSVaultSourceConfig
+	tracer            trace.Tracer
+	repo              repository.Connection
+	transactionalRepo repository.CredConn
+	describe          describe.SchedulerServiceClient
+	inventory         inventory.InventoryServiceClient
+	meta              *meta.Meta
+	masterAccessKey   string
+	masterSecretKey   string
+	logger            *zap.Logger
 }
 
 func NewConnection(
 	repo repository.Connection,
+	transactionalRepo repository.CredConn,
 	kms *vault.KMSVaultSourceConfig,
 	keyARN string,
 	describe describe.SchedulerServiceClient,
@@ -52,16 +54,17 @@ func NewConnection(
 	logger *zap.Logger,
 ) Connection {
 	return Connection{
-		tracer:          otel.GetTracerProvider().Tracer("integration.service.connection"),
-		repo:            repo,
-		keyARN:          keyARN,
-		kms:             kms,
-		inventory:       inventory,
-		describe:        describe,
-		meta:            meta,
-		masterAccessKey: masterAccessKey,
-		masterSecretKey: masterSecretKey,
-		logger:          logger.Named("service").Named("connection"),
+		tracer:            otel.GetTracerProvider().Tracer("integration.service.connection"),
+		repo:              repo,
+		transactionalRepo: transactionalRepo,
+		keyARN:            keyARN,
+		kms:               kms,
+		inventory:         inventory,
+		describe:          describe,
+		meta:              meta,
+		masterAccessKey:   masterAccessKey,
+		masterSecretKey:   masterSecretKey,
+		logger:            logger.Named("service").Named("connection"),
 	}
 }
 
@@ -266,4 +269,15 @@ func (h Connection) CountByCredential(ctx context.Context, credentialID string, 
 	}
 
 	return count, err
+}
+
+func (h Connection) Delete(ctx context.Context, conn model.Connection) error {
+	ctx, span := h.tracer.Start(ctx, "delete")
+	defer span.End()
+
+	if err := h.transactionalRepo.DeleteConnection(ctx, conn); err != nil {
+		return err
+	}
+
+	return nil
 }

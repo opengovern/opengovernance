@@ -58,14 +58,12 @@ func New(
 //	@Summary		Delete connection
 //	@Description	Deleting a single connection either AWS / Azure for the given connection id.
 //	@Security		BearerToken
-//	@Tags			connection
+//	@Tags			connections
 //	@Produce		json
 //	@Success		200
 //	@Param			connectionId	path	string	true	"Source ID"
-//	@Router			/onboard/api/v1/connections/{connectionId} [delete]
+//	@Router			/integration/api/v1/connections/{connectionId} [delete]
 func (h API) Delete(c echo.Context) error {
-	// when connection is deleted, we need to remove its credential if it doesn't have any other account.
-
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
 	connID, err := uuid.Parse(c.Param("connectionId"))
@@ -94,33 +92,8 @@ func (h API) Delete(c echo.Context) error {
 		attribute.String("connection name", connection.Name),
 	))
 
-	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.DeleteSource(srcId); err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span1.AddEvent("information", trace.WithAttributes(
-			attribute.String("source name", src.Name),
-		))
-		span2.End()
-
-		if src.Credential.CredentialType.IsManual() {
-			err = h.db.DeleteCredential(src.Credential.ID)
-			if err != nil {
-				span3.RecordError(err)
-				span3.SetStatus(codes.Error, err.Error())
-				return err
-			}
-		}
-
-		// TODO publishes event into the event sourcing system.
-
-		return nil
-	})
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+	if err := h.connSvc.Delete(ctx, connection); err != nil {
+		h.logger.Error("cannot delete the given connection and its related credential", zap.Error(err))
 
 		return err
 	}
