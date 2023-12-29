@@ -18,7 +18,7 @@ func (s *Server) GetAwsCost(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := s.CheckRoleInWorkspace(ctx, nil); err != nil {
+	if err := s.CheckRoleInWorkspace(ctx, nil, nil); err != nil {
 		return err
 	}
 
@@ -40,7 +40,7 @@ func (s *Server) GetAzureCost(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := s.CheckRoleInWorkspace(ctx, nil); err != nil {
+	if err := s.CheckRoleInWorkspace(ctx, nil, nil); err != nil {
 		return err
 	}
 
