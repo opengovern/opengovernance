@@ -13,13 +13,13 @@ func (db Database) CreateMeter(meter *model.Meter) error {
 }
 
 func (db Database) SumOfMeter(workspaceId []string, meterType entities.MeterType, startTime, endTime time.Time) (int64, error) {
-	var sum *int64
+	var sum int64
 	tx := db.Orm.Model(&model.Meter{}).
 		Where("workspace_id IN ?", workspaceId).
 		Where("meter_type = ?", meterType).
 		Where("usage_date >= ?", startTime).
 		Where("usage_date <= ?", endTime).
-		Select("SUM(value)").Find(&sum)
+		Select("coalesce(SUM(value),0)").Find(&sum)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return 0, nil
@@ -28,21 +28,17 @@ func (db Database) SumOfMeter(workspaceId []string, meterType entities.MeterType
 	} else if tx.RowsAffected == 0 {
 		return 0, nil
 	}
-	if sum == nil {
-		return 0, nil
-	}
-
-	return *sum, nil
+	return sum, nil
 }
 
 func (db Database) AvgOfMeter(workspaceId []string, meterType entities.MeterType, startTime, endTime time.Time) (float64, error) {
-	var sum *float64
+	var sum float64
 	tx := db.Orm.Model(&model.Meter{}).
 		Where("workspace_id IN ?", workspaceId).
 		Where("meter_type = ?", meterType).
 		Where("usage_date >= ?", startTime).
 		Where("usage_date <= ?", endTime).
-		Select("AVG(value)").Find(&sum)
+		Select("coalesce(AVG(value),0)").Find(&sum)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return 0, nil
@@ -51,10 +47,7 @@ func (db Database) AvgOfMeter(workspaceId []string, meterType entities.MeterType
 	} else if tx.RowsAffected == 0 {
 		return 0, nil
 	}
-	if sum == nil {
-		return 0, nil
-	}
-	return *sum, nil
+	return sum, nil
 }
 
 func (db Database) GetMeter(workspaceId string, usageDate time.Time, meterType entities.MeterType) (*model.Meter, error) {
