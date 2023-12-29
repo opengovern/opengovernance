@@ -16,6 +16,10 @@ type CredConnSQL struct {
 	db db.Database
 }
 
+func NewCredConnSQL(db db.Database) CredConn {
+	return CredConnSQL{db: db}
+}
+
 // DeleteConnection delete the given connection and when connection is deleted, it removes its credential
 // if it doesn't have any other connections.
 func (c CredConnSQL) DeleteConnection(ctx context.Context, conn model.Connection) error {

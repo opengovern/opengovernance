@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
+	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -19,22 +21,22 @@ import (
 )
 
 type API struct {
-	connSvc service.Connection
-	credSvc service.Credential
-	tracer  trace.Tracer
-	logger  *zap.Logger
+	connectionSvc service.Connection
+	connectorSvc  service.Connector
+	tracer        trace.Tracer
+	logger        *zap.Logger
 }
 
 func New(
-	connSvc service.Connection,
-	credSvc service.Credential,
+	connectionSvc service.Connection,
+	connectorSvc service.Connector,
 	logger *zap.Logger,
 ) API {
 	return API{
-		connSvc: connSvc,
-		credSvc: credSvc,
-		tracer:  otel.GetTracerProvider().Tracer("integration.http.connector"),
-		logger:  logger.Named("source"),
+		connectionSvc: connectionSvc,
+		connectorSvc:  connectorSvc,
+		tracer:        otel.GetTracerProvider().Tracer("integration.http.connector"),
+		logger:        logger.Named("source"),
 	}
 }
 
@@ -46,12 +48,12 @@ func New(
 //	@Tags			connectors
 //	@Produce		json
 //	@Success		200	{object}	[]entity.ConnectorCount
-//	@Router			/integration/api/v1/connector [get]
+//	@Router			/integration/api/v1/connectors [get]
 func (h API) List(c echo.Context) error {
 	ctx, span := h.tracer.Start(c.Request().Context(), "new_ListConnectors", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	connectors, err := h.db.ListConnectors()
+	connectors, err := h.connectorSvc.List(ctx)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -61,25 +63,24 @@ func (h API) List(c echo.Context) error {
 	var res []entity.ConnectorCount
 
 	for _, c := range connectors {
-		_, span3 := tracer.Start(outputS2, "new_CountSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
-		span3.SetName("new_CountSourcesOfType")
+		span.AddEvent("information", trace.WithAttributes(
+			attribute.String("connector name", string(c.Name)),
+		))
 
-		count, err := h.db.CountSourcesOfType(c.Name)
+		count, err := h.connectionSvc.Count(ctx, fp.Optional(c.Name))
 		if err != nil {
-			span3.RecordError(err)
-			span3.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+
 			return err
 		}
-		span3.AddEvent("information", trace.WithAttributes(
-			attribute.String("source name", string(c.Name)),
-		))
-		span3.End()
 
 		tags := make(map[string]any)
 		err = json.Unmarshal(c.Tags, &tags)
 		if err != nil {
 			return err
 		}
+
 		res = append(res, entity.ConnectorCount{
 			Connector: entity.Connector{
 				Name:                c.Name,
@@ -97,7 +98,6 @@ func (h API) List(c echo.Context) error {
 			ConnectionCount: count,
 		})
 	}
-	span2.End()
 
 	return c.JSON(http.StatusOK, res)
 }
@@ -122,7 +122,7 @@ func (h API) CatalogMetrics(c echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(c, "connector"))
 
-	connections, err := h.connSvc.ListWithFilter(ctx, connectors, nil, nil, nil)
+	connections, err := h.connectionSvc.ListWithFilter(ctx, connectors, nil, nil, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -149,4 +149,9 @@ func (h API) CatalogMetrics(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, metrics)
+}
+
+func (s API) Register(g *echo.Group) {
+	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
+	g.GET("/metrics", httpserver.AuthorizeHandler(s.CatalogMetrics, api.ViewerRole))
 }
