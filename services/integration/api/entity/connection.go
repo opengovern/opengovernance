@@ -119,10 +119,10 @@ type CreateConnectionResponse struct {
 }
 
 type CreateAWSConnectionRequest struct {
-	Name        string                         `json:"name"`
-	Description string                         `json:"description"`
-	Email       string                         `json:"email"`
-	Config      *AWSStandAloneCredentialConfig `json:"config,omitempty"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	Email       string               `json:"email"`
+	Config      *AWSCredentialConfig `json:"config,omitempty"`
 }
 
 // NewConnection creates API compatible connection from model connection.

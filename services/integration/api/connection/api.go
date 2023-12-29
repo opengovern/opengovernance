@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -852,13 +852,9 @@ func (h API) AWSCreate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	cfg, err := h.credSvc.AWSSDKConfigWithKeys(ctx, req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	cfg, err := h.credSvc.AWSSDKConfig(ctx, aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName), req.Config.ExternalId)
 	if err != nil {
 		return err
-	}
-
-	if err := h.credSvc.AWSCheckPolicy(cfg); err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
 	acc, err := service.AWSCurrentAccount(ctx, cfg)
@@ -869,12 +865,14 @@ func (h API) AWSCreate(c echo.Context) error {
 		acc.AccountName = &req.Name
 	}
 
-	src, err := h.connSvc.NewAWS(ctx, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description, *req.Config)
+	src, err := h.connSvc.NewAWS(ctx, *acc, req.Description, *req.Config)
 	if err != nil {
 		h.logger.Error("cannot build an aws connection", zap.Error(err))
 
 		return err
 	}
+
+	h.connSvc.AWSHealthCheck(ctx, src, false)
 
 	err = h.connSvc.Create(ctx, src)
 	if err != nil {

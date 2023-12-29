@@ -432,6 +432,7 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 		subscription, err = CurrentAzureSubscription(ctx, connection.SourceId, authCnf)
 		if err != nil {
 			h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("connectionId", connection.SourceId))
+
 			return connection, err
 		}
 
@@ -444,9 +445,6 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 		}
 		connection.Metadata = jsonMetadata
 	}
-
-	ctx, span := h.tracer.Start(ctx, "new_CreateSource(loop)")
-	defer span.End()
 
 	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
