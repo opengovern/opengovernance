@@ -85,5 +85,5 @@ func (h API) GetMeters(c echo.Context) error {
 }
 
 func (h API) Register(g *echo.Group) {
-	g.GET("/", httpserver.AuthorizeHandler(h.GetMeters, api.KaytuAdminRole))
+	g.GET("", httpserver.AuthorizeHandler(h.GetMeters, api.KaytuAdminRole))
 }
