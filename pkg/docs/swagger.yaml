@@ -3199,7 +3199,7 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
-  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSOrgCredentialConfig:
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig:
     properties:
       accountID:
         type: string
@@ -3211,30 +3211,6 @@ definitions:
         items:
           type: string
         type: array
-    type: object
-  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSStandAloneCredentialConfig:
-    properties:
-      accessKey:
-        type: string
-      accountId:
-        type: string
-      assumeAdminRoleName:
-        type: string
-      assumeRoleName:
-        type: string
-      assumeRolePolicyName:
-        type: string
-      externalId:
-        type: string
-      regions:
-        items:
-          type: string
-        type: array
-      secretKey:
-        type: string
-    required:
-    - accessKey
-    - secretKey
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig:
     properties:
@@ -3359,7 +3335,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest:
     properties:
       config:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSStandAloneCredentialConfig'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig'
       description:
         type: string
       email:
@@ -3370,7 +3346,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSCredentialRequest:
     properties:
       config:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSOrgCredentialConfig'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig'
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureCredentialRequest:
     properties:
@@ -5652,11 +5628,6 @@ paths:
         name: connectionId
         required: true
         type: string
-      - default: true
-        description: Whether to update metadata or not
-        in: query
-        name: updateMetadata
-        type: boolean
       produces:
       - application/json
       responses:
@@ -7791,7 +7762,7 @@ paths:
       summary: List Resource Stacks
       tags:
       - stack
-  /subscription/api/v1/metering:
+  /subscription/api/v1/metering/list:
     get:
       consumes:
       - application/json

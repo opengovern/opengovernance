@@ -49,7 +49,7 @@ func New(
 //	@Produce	json
 //	@Param		request	body		entities.GetMetersRequest	true	"Request"
 //	@Success	200		{object}	entities.GetMetersResponse
-//	@Router		/subscription/api/v1/metering [get]
+//	@Router		/subscription/api/v1/metering/list [get]
 func (h API) GetMeters(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
@@ -85,5 +85,5 @@ func (h API) GetMeters(c echo.Context) error {
 }
 
 func (h API) Register(g *echo.Group) {
-	g.GET("", httpserver.AuthorizeHandler(h.GetMeters, api.KaytuAdminRole))
+	g.GET("/list", httpserver.AuthorizeHandler(h.GetMeters, api.KaytuAdminRole))
 }

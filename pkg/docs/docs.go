@@ -3169,13 +3169,6 @@ const docTemplate = `{
                         "name": "connectionId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Whether to update metadata or not",
-                        "name": "updateMetadata",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6251,7 +6244,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/subscription/api/v1/metering": {
+        "/subscription/api/v1/metering/list": {
             "get": {
                 "security": [
                     {
@@ -11151,7 +11144,7 @@ const docTemplate = `{
                 "SizeLG"
             ]
         },
-        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSOrgCredentialConfig": {
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig": {
             "type": "object",
             "properties": {
                 "accountID": {
@@ -11168,42 +11161,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSStandAloneCredentialConfig": {
-            "type": "object",
-            "required": [
-                "accessKey",
-                "secretKey"
-            ],
-            "properties": {
-                "accessKey": {
-                    "type": "string"
-                },
-                "accountId": {
-                    "type": "string"
-                },
-                "assumeAdminRoleName": {
-                    "type": "string"
-                },
-                "assumeRoleName": {
-                    "type": "string"
-                },
-                "assumeRolePolicyName": {
-                    "type": "string"
-                },
-                "externalId": {
-                    "type": "string"
-                },
-                "regions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "secretKey": {
-                    "type": "string"
                 }
             }
         },
@@ -11384,7 +11341,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSStandAloneCredentialConfig"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig"
                 },
                 "description": {
                     "type": "string"
@@ -11401,7 +11358,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSOrgCredentialConfig"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig"
                 }
             }
         },
