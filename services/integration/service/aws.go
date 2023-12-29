@@ -12,11 +12,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
@@ -26,13 +28,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// NewAWS create a credential instance for aws
+// NewAWS create a credential instance for AWS Organization.
 func (h Credential) NewAWS(
 	ctx context.Context,
 	name string,
 	metadata *model.AWSCredentialMetadata,
 	credentialType model.CredentialType,
-	config entity.AWSCredentialConfig,
+	config entity.AWSOrgCredentialConfig,
 ) (*model.Credential, error) {
 	id := uuid.New()
 
@@ -80,6 +82,67 @@ func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, externalID
 	}
 
 	return awsConfig, nil
+}
+
+func (h Credential) AWSSDKConfigWithKeys(ctx context.Context, accessKey string, secretKey string, sessionToken string, roleARN string, externalID *string) (awsOfficial.Config, error) {
+	awsConfig, err := aws.GetConfig(
+		ctx,
+		accessKey,
+		secretKey,
+		"",
+		roleARN,
+		externalID,
+	)
+	if err != nil {
+		return awsOfficial.Config{}, err
+	}
+
+	if awsConfig.Region == "" {
+		awsConfig.Region = "us-east-1"
+	}
+
+	return awsConfig, nil
+}
+
+func (h Credential) AWSCheckPolicy() {}
+
+func AWSCurrentAccount(ctx context.Context, cfg awsOfficial.Config) (*model.AWSAccount, error) {
+	stsClient := sts.NewFromConfig(cfg)
+	account, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	orgs, err := describer.OrganizationOrganization(ctx, cfg)
+	if err != nil {
+		var ae smithy.APIError
+		if !errors.As(err, &ae) ||
+			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+			return nil, err
+		}
+	}
+
+	acc, err := describer.OrganizationAccount(ctx, cfg, *account.Account)
+	if err != nil {
+		var ae smithy.APIError
+		if !errors.As(err, &ae) ||
+			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+			return nil, err
+		}
+	}
+	accountName := account.UserId
+	if acc != nil {
+		accountName = acc.Name
+	}
+
+	return &model.AWSAccount{
+		AccountID:    *account.Account,
+		AccountName:  accountName,
+		Organization: orgs,
+		Account:      acc,
+	}, nil
 }
 
 // AWSHealthCheck checks the AWS credential health
@@ -436,6 +499,93 @@ func NewAWSAutoOnboardedConnection(
 	}
 
 	s.Metadata = jsonMetadata
+
+	return s, nil
+}
+
+func (h Connection) NewAWS(
+	ctx context.Context,
+	cfg describe.AWSAccountConfig,
+	account model.AWSAccount,
+	description string,
+	req entity.AWSStandAloneCredentialConfig,
+) (model.Connection, error) {
+	maxConnections, err := h.MaxConnections()
+	if err != nil {
+		h.logger.Error("cannot read number of the available connections", zap.Error(err))
+
+		return model.Connection{}, err
+	}
+
+	currentConnections, err := h.Count(ctx, nil)
+	if err != nil {
+		h.logger.Error("cannot read number of the current connections", zap.Error(err))
+
+		return model.Connection{}, err
+	}
+
+	if currentConnections+1 > maxConnections {
+		return model.Connection{}, ErrMaxConnectionsExceeded
+	}
+
+	id := uuid.New()
+	provider := source.CloudAWS
+
+	credName := fmt.Sprintf("%s - %s - default credentials", provider, account.AccountID)
+	creds := model.Credential{
+		ID:             uuid.New(),
+		Name:           &credName,
+		ConnectorType:  provider,
+		Secret:         "",
+		CredentialType: model.CredentialTypeAutoAws,
+	}
+
+	accountName := account.AccountID
+	if account.AccountName != nil {
+		accountName = *account.AccountName
+	}
+	accountEmail := ""
+	if account.Account != nil && account.Account.Email != nil {
+		accountEmail = *account.Account.Email
+	}
+
+	s := model.Connection{
+		ID:                   id,
+		SourceId:             account.AccountID,
+		Name:                 accountName,
+		Email:                accountEmail,
+		Type:                 provider,
+		Description:          description,
+		CredentialID:         creds.ID,
+		Credential:           creds,
+		LifecycleState:       model.ConnectionLifecycleStateInProgress,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		LastHealthCheckTime:  time.Now(),
+		CreationMethod:       source.SourceCreationMethodManual,
+	}
+
+	if len(strings.TrimSpace(s.Name)) == 0 {
+		s.Name = s.SourceId
+	}
+
+	metadata, err := model.NewAWSConnectionMetadata(ctx, cfg, s, account)
+	if err != nil {
+		h.logger.Warn("cannot create metadata for the aws connection", zap.Error(err))
+	}
+
+	marshalMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		marshalMetadata = []byte("{}")
+	}
+	s.Metadata = marshalMetadata
+
+	secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
+	if err != nil {
+		h.logger.Error("cannot encrypt request data into the connection", zap.Error(err))
+
+		return model.Connection{}, err
+	}
+	s.Credential.Secret = string(secretBytes)
 
 	return s, nil
 }

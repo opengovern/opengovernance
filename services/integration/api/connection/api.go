@@ -680,7 +680,7 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 func (h API) AzureHealthCheck(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	ctx, span := h.tracer.Start(ctx, "healthcheck.azure")
 	defer span.End()
 
 	id, err := uuid.Parse(c.Param("connectionId"))
@@ -760,7 +760,7 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 func (h API) AWSHealthCheck(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	ctx, span := h.tracer.Start(ctx, "healthcheck")
+	ctx, span := h.tracer.Start(ctx, "healthcheck.aws")
 	defer span.End()
 
 	id, err := uuid.Parse(c.Param("connectionId"))
@@ -842,7 +842,7 @@ func (h API) AWSCreate(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "create.aws")
 	defer span.End()
 
-	var req entity.CreateAWSCredentialRequest
+	var req entity.CreateAWSConnectionRequest
 
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -852,12 +852,12 @@ func (h API) AWSCreate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	sdkCnf, err := h.credSvc.AWSSDKConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	cfg, err := h.credSvc.AWSSDKConfigWithKeys(ctx, req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
 
-	acc, err := currentAwsAccount(context.Background(), h.logger, cfg)
+	acc, err := service.AWSCurrentAccount(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -865,20 +865,17 @@ func (h API) AWSCreate(c echo.Context) error {
 		acc.AccountName = &req.Name
 	}
 
-	err = h.CheckMaxConnections(1)
+	src, err := h.connSvc.NewAWS(ctx, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description, *req.Config)
 	if err != nil {
+		h.logger.Error("cannot build an aws connection", zap.Error(err))
+
 		return err
 	}
 
-	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
-	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+	err = h.connSvc.Create(ctx, src)
 	if err != nil {
-		return err
-	}
-	src.Credential.Secret = string(secretBytes)
+		h.logger.Error("cannot create an aws connection", zap.Error(err))
 
-	err = h.db.CreateSource(&src)
-	if err != nil {
 		return err
 	}
 
@@ -892,6 +889,7 @@ func (s API) Register(g *echo.Group) {
 	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
+	g.POST("/aws", httpserver.AuthorizeHandler(s.AWSCreate, api.EditorRole))
 	g.GET("/:connectionId/azure/healthcheck", httpserver.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
 	g.GET("/:connectionId/aws/healthcheck", httpserver.AuthorizeHandler(s.AWSHealthCheck, api.EditorRole))
 }

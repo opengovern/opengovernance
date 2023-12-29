@@ -1,10 +1,14 @@
 package model
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 )
 
@@ -79,4 +83,62 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 	}
 
 	return out
+}
+
+func NewAWSConnectionMetadata(ctx context.Context, cfg describe.AWSAccountConfig, connection Connection, account AWSAccount) (AWSConnectionMetadata, error) {
+	metadata := AWSConnectionMetadata{
+		AccountID: account.AccountID,
+	}
+
+	if connection.Credential.CredentialType == CredentialTypeAutoAws {
+		metadata.AccountType = AWSAccountTypeStandalone
+	} else {
+		metadata.AccountType = AWSAccountTypeOrganizationMember
+	}
+
+	if account.AccountName != nil {
+		metadata.AccountName = *account.AccountName
+	}
+	metadata.Organization = account.Organization
+	metadata.OrganizationAccount = account.Account
+
+	if metadata.Organization != nil && metadata.Organization.MasterAccountId != nil &&
+		*metadata.Organization.MasterAccountId == account.AccountID {
+		metadata.AccountType = AWSAccountTypeOrganizationManager
+	}
+
+	if account.Organization != nil {
+		sdkCnf, err := aws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		if err != nil {
+			return metadata, err
+		}
+		organizationClient := organizations.NewFromConfig(sdkCnf)
+
+		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+			ResourceId: &metadata.AccountID,
+		})
+		if err != nil {
+			return metadata, err
+		}
+
+		metadata.OrganizationTags = make(map[string]string)
+		for _, tag := range tags.Tags {
+			if tag.Key == nil || tag.Value == nil {
+				continue
+			}
+			metadata.OrganizationTags[*tag.Key] = *tag.Value
+		}
+
+		if account.Account == nil {
+			orgAccount, err := organizationClient.DescribeAccount(context.TODO(), &organizations.DescribeAccountInput{
+				AccountId: &metadata.AccountID,
+			})
+			if err != nil {
+				return metadata, err
+			}
+			metadata.OrganizationAccount = orgAccount.Account
+		}
+	}
+
+	return metadata, nil
 }
