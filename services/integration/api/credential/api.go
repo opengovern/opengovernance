@@ -101,18 +101,24 @@ func (h API) Update(c echo.Context) error {
 //	@Success		200				{object}	api.ListCredentialResponse
 //	@Param			connector		query		source.Type				false	"filter by connector type"
 //	@Param			health			query		string					false	"filter by health status"	Enums(healthy, unhealthy)
-//	@Param			credentialType	query		[]api.CredentialType	false	"filter by credential type"
+//	@Param			credentialType	query		[]entity.CredentialType	false	"filter by credential type"
 //	@Param			pageSize		query		int						false	"page size"		default(50)
 //	@Param			pageNumber		query		int						false	"page number"	default(1)
 //	@Router			/integration/api/v1/credentials [get]
 func (h API) List(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
 	connector, _ := source.ParseType(c.QueryParam("connector"))
+
 	health, _ := source.ParseHealthStatus(c.QueryParam("health"))
+
 	credentialTypes := model.ParseCredentialTypes(c.QueryParams()["credentialType"])
 	if len(credentialTypes) == 0 {
-		// Take note if you want the change this, the default is used in the frontend AND the checkup worker
+		// take note if you want the change this,
+		// the default is used in the frontend AND the checkup worker.
 		credentialTypes = model.GetManualCredentialTypes()
 	}
+
 	pageSizeStr := c.QueryParam("pageSize")
 	pageNumberStr := c.QueryParam("pageNumber")
 
@@ -124,9 +130,9 @@ func (h API) List(c echo.Context) error {
 	if pageNumberStr != "" {
 		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
 	}
-	// trace :
-	_, span := h.tracer.Start(c.Request().Context(), "new_GetCredentialsByFilters", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetCredentialsByFilters")
+
+	ctx, span := h.tracer.Start(ctx, "list", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
 
 	credentials, err := h.db.GetCredentialsByFilters(connector, health, credentialTypes)
 	if err != nil {

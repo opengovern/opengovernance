@@ -6,6 +6,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/gorm/clause"
 )
 
@@ -17,6 +18,12 @@ var (
 type Credential interface {
 	Create(context.Context, *model.Credential) error
 	Update(context.Context, *model.Credential) error
+	ListByFilters(
+		context.Context,
+		source.Type,
+		source.HealthStatus,
+		[]model.CredentialType,
+	) ([]model.Credential, error)
 }
 
 type CredentialSQL struct {
@@ -55,4 +62,34 @@ func (c CredentialSQL) Update(ctx context.Context, creds *model.Credential) erro
 	}
 
 	return nil
+}
+
+func (c CredentialSQL) ListByFilters(
+	ctx context.Context,
+	connector source.Type,
+	health source.HealthStatus,
+	credentialType []model.CredentialType,
+) ([]model.Credential, error) {
+	var creds []model.Credential
+
+	tx := c.db.DB.WithContext(ctx)
+
+	if connector != source.Nil {
+		tx = tx.Where("connector_type = ?", connector)
+	}
+
+	if health != source.HealthStatusNil {
+		tx = tx.Where("health_status = ?", health)
+	}
+
+	if len(credentialType) > 0 {
+		tx = tx.Where("credential_type IN ?", credentialType)
+	}
+
+	tx = tx.Find(&creds)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return creds, nil
 }
