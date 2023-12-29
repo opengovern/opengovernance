@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/db/model"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -13,7 +13,7 @@ type Database struct {
 	Orm *gorm.DB
 }
 
-func NewDatabase(config config.Postgres, logger *zap.Logger) (Database, error) {
+func NewDatabase(config koanf.Postgres, logger *zap.Logger) (Database, error) {
 	cfg := postgres.Config{
 		Host:    config.Host,
 		Port:    config.Port,
