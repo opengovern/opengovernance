@@ -11616,11 +11616,17 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter": {
             "type": "object",
             "properties": {
+                "isTotal": {
+                    "type": "boolean"
+                },
                 "type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType"
                 },
                 "value": {
                     "type": "number"
+                },
+                "workspaceName": {
+                    "type": "string"
                 }
             }
         },

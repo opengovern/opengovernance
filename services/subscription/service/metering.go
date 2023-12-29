@@ -45,39 +45,35 @@ func (svc MeteringService) GetMeters(userID string, startTime, endTime time.Time
 
 	meterTypes := entities.ListAllMeterTypes()
 
-	var workspaceIDs []string
-	for _, workspace := range workspaces {
-		if workspace.OwnerId != nil && *workspace.OwnerId == userID {
-			workspaceIDs = append(workspaceIDs, workspace.ID)
-		}
-	}
-
-	if len(workspaceIDs) == 0 {
-		return nil, nil
-	}
-
 	var meters []entities.Meter
 	for _, meterType := range meterTypes {
-		var meterValue float64
+		for _, workspace := range workspaces {
+			if workspace.OwnerId == nil || *workspace.OwnerId != userID {
+				continue
+			}
 
-		if meterType.IsTotal() {
-			value, err := svc.db.AvgOfMeter(workspaceIDs, meterType, startTime, endTime)
-			if err != nil {
-				return nil, err
+			var meterValue float64
+			if meterType.IsTotal() {
+				value, err := svc.db.AvgOfMeter([]string{workspace.ID}, meterType, startTime, endTime)
+				if err != nil {
+					return nil, err
+				}
+				meterValue = value
+			} else {
+				value, err := svc.db.SumOfMeter([]string{workspace.ID}, meterType, startTime, endTime)
+				if err != nil {
+					return nil, err
+				}
+				meterValue = float64(value)
 			}
-			meterValue = value
-		} else {
-			value, err := svc.db.SumOfMeter(workspaceIDs, meterType, startTime, endTime)
-			if err != nil {
-				return nil, err
-			}
-			meterValue = float64(value)
+
+			meters = append(meters, entities.Meter{
+				WorkspaceName: workspace.Name,
+				Type:          meterType,
+				IsTotal:       meterType.IsTotal(),
+				Value:         meterValue,
+			})
 		}
-
-		meters = append(meters, entities.Meter{
-			Type:  meterType,
-			Value: meterValue,
-		})
 	}
 
 	return meters, nil
