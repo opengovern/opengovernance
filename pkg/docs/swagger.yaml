@@ -3199,7 +3199,7 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
-  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig:
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSOrgCredentialConfig:
     properties:
       accountID:
         type: string
@@ -3211,6 +3211,30 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSStandAloneCredentialConfig:
+    properties:
+      accessKey:
+        type: string
+      accountId:
+        type: string
+      assumeAdminRoleName:
+        type: string
+      assumeRoleName:
+        type: string
+      assumeRolePolicyName:
+        type: string
+      externalId:
+        type: string
+      regions:
+        items:
+          type: string
+        type: array
+      secretKey:
+        type: string
+    required:
+    - accessKey
+    - secretKey
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig:
     properties:
@@ -3335,15 +3359,31 @@ definitions:
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest:
     properties:
       config:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSStandAloneCredentialConfig'
+      description:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest:
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSCredentialRequest:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSOrgCredentialConfig'
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureCredentialRequest:
     properties:
       config:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig'
       description:
         type: string
       name:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateConnectionResponse:
+    properties:
+      id:
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse:
@@ -5558,7 +5598,7 @@ paths:
   /integration/api/v1/connections/{connectionId}/aws/healthcheck:
     get:
       description: Get live connection health status with given connection ID for
-        Azure.
+        AWS.
       parameters:
       - description: connection ID
         in: path
@@ -5609,6 +5649,28 @@ paths:
       summary: Get Azure connection health
       tags:
       - connections
+  /integration/api/v1/connections/aws:
+    post:
+      description: Creating AWS source [standalone]
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateConnectionResponse'
+      security:
+      - BearerToken: []
+      summary: Create AWS connection [standalone]
+      tags:
+      - onboard
   /integration/api/v1/connections/summaries:
     get:
       consumes:
@@ -5718,14 +5780,15 @@ paths:
       - connections
   /integration/api/v1/credentials/aws:
     post:
-      description: Creating AWS credential, testing it and on-board its subscriptions
+      description: Creating AWS credential, testing it and onboard its accounts (organization
+        account)
       parameters:
       - description: Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSCredentialRequest'
       produces:
       - application/json
       responses:
@@ -5735,19 +5798,20 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse'
       security:
       - BearerToken: []
-      summary: Create AWS credential and does onboarding for its subscriptions
+      summary: Create AWS credential and does onboarding for its accounts (organization
+        account)
       tags:
       - integration
   /integration/api/v1/credentials/azure:
     post:
-      description: Creating Azure credential, testing it and on-board its subscriptions
+      description: Creating Azure credential, testing it and onboard its subscriptions
       parameters:
       - description: Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureConnectionRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAzureCredentialRequest'
       produces:
       - application/json
       responses:

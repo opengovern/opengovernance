@@ -28,6 +28,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var ErrAWSReadAccessPolicy = errors.New("failed to find read access policy")
+
 // NewAWS create a credential instance for AWS Organization.
 func (h Credential) NewAWS(
 	ctx context.Context,
@@ -104,7 +106,17 @@ func (h Credential) AWSSDKConfigWithKeys(ctx context.Context, accessKey string, 
 	return awsConfig, nil
 }
 
-func (h Credential) AWSCheckPolicy() {}
+func (h Credential) AWSCheckPolicy(cnf awsOfficial.Config) error {
+	isAttached, err := aws.CheckAttachedPolicy(h.logger.Named("aws"), cnf, "", "")
+	if err != nil {
+		return fmt.Errorf("error in checking security audit permission: %w", err)
+	}
+	if !isAttached {
+		return ErrAWSReadAccessPolicy
+	}
+
+	return nil
+}
 
 func AWSCurrentAccount(ctx context.Context, cfg awsOfficial.Config) (*model.AWSAccount, error) {
 	stsClient := sts.NewFromConfig(cfg)

@@ -833,8 +833,8 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200		{object}	api.CreateSourceResponse
-//	@Param			request	body		api.SourceAwsRequest	true	"Request"
+//	@Success		200		{object}	entity.CreateConnectionResponse
+//	@Param			request	body		entity.CreateAWSConnectionRequest	true	"Request"
 //	@Router			/integration/api/v1/connections/aws [post]
 func (h API) AWSCreate(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -855,6 +855,10 @@ func (h API) AWSCreate(c echo.Context) error {
 	cfg, err := h.credSvc.AWSSDKConfigWithKeys(ctx, req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
+	}
+
+	if err := h.credSvc.AWSCheckPolicy(cfg); err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
 	acc, err := service.AWSCurrentAccount(ctx, cfg)
