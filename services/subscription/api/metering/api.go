@@ -49,7 +49,7 @@ func New(
 //	@Produce	json
 //	@Param		request	body		entities.GetMetersRequest	true	"Request"
 //	@Success	200		{object}	entities.GetMetersResponse
-//	@Router		/subscription/api/v1/metering/list [get]
+//	@Router		/subscription/api/v1/metering/list [post]
 func (h API) GetMeters(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 

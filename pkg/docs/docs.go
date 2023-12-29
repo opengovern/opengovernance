@@ -6245,7 +6245,7 @@ const docTemplate = `{
             }
         },
         "/subscription/api/v1/metering/list": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerToken": []

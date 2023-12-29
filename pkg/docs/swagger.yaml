@@ -7767,7 +7767,7 @@ paths:
       tags:
       - stack
   /subscription/api/v1/metering/list:
-    get:
+    post:
       consumes:
       - application/json
       parameters:
