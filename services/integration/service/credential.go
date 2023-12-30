@@ -17,21 +17,23 @@ import (
 )
 
 type Credential struct {
-	keyARN          string
-	kms             *vault.KMSVaultSourceConfig
-	tracer          trace.Tracer
-	repo            repository.Credential
-	describe        describe.SchedulerServiceClient
-	inventory       inventory.InventoryServiceClient
-	meta            *meta.Meta
-	masterAccessKey string
-	masterSecretKey string
-	logger          *zap.Logger
-	connSvc         Connection
+	keyARN            string
+	kms               *vault.KMSVaultSourceConfig
+	tracer            trace.Tracer
+	repo              repository.Credential
+	transactionalRepo repository.CredConn
+	describe          describe.SchedulerServiceClient
+	inventory         inventory.InventoryServiceClient
+	meta              *meta.Meta
+	masterAccessKey   string
+	masterSecretKey   string
+	logger            *zap.Logger
+	connSvc           Connection
 }
 
 func NewCredential(
 	repo repository.Credential,
+	transactionalRepo repository.CredConn,
 	kms *vault.KMSVaultSourceConfig,
 	keyARN string,
 	describe describe.SchedulerServiceClient,
@@ -43,17 +45,18 @@ func NewCredential(
 	logger *zap.Logger,
 ) Credential {
 	return Credential{
-		tracer:          otel.GetTracerProvider().Tracer("integration.service.credential"),
-		repo:            repo,
-		keyARN:          keyARN,
-		kms:             kms,
-		inventory:       inventory,
-		describe:        describe,
-		meta:            meta,
-		masterAccessKey: masterAccessKey,
-		masterSecretKey: masterSecretKey,
-		connSvc:         connSvc,
-		logger:          logger.Named("service").Named("credential"),
+		tracer:            otel.GetTracerProvider().Tracer("integration.service.credential"),
+		repo:              repo,
+		transactionalRepo: transactionalRepo,
+		keyARN:            keyARN,
+		kms:               kms,
+		inventory:         inventory,
+		describe:          describe,
+		meta:              meta,
+		masterAccessKey:   masterAccessKey,
+		masterSecretKey:   masterSecretKey,
+		connSvc:           connSvc,
+		logger:            logger.Named("service").Named("credential"),
 	}
 }
 
@@ -75,4 +78,33 @@ func (h Credential) ListWithFilters(
 	}
 
 	return creds, err
+}
+
+func (h Credential) Get(ctx context.Context, id string) (*model.Credential, error) {
+	ctx, span := h.tracer.Start(ctx, "get")
+	defer span.End()
+
+	cred, err := h.repo.Get(ctx, id)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return nil, err
+	}
+
+	return cred, nil
+}
+
+func (h Credential) Delete(ctx context.Context, cred model.Credential) error {
+	ctx, span := h.tracer.Start(ctx, "delete")
+	defer span.End()
+
+	if err := h.transactionalRepo.DeleteCredential(ctx, cred); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+
+	return nil
 }

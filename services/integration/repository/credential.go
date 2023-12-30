@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -16,6 +17,7 @@ var (
 )
 
 type Credential interface {
+	Get(context.Context, string) (*model.Credential, error)
 	Create(context.Context, *model.Credential) error
 	Update(context.Context, *model.Credential) error
 	ListByFilters(
@@ -34,6 +36,20 @@ func NewCredentialSQL(db db.Database) Credential {
 	return CredentialSQL{
 		db: db,
 	}
+}
+
+func (c CredentialSQL) Get(ctx context.Context, id string) (*model.Credential, error) {
+	cred := new(model.Credential)
+
+	if err := c.db.DB.WithContext(ctx).Find(cred, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrCredentialNotFound
+		}
+
+		return nil, err
+	}
+
+	return cred, nil
 }
 
 func (c CredentialSQL) Create(ctx context.Context, cred *model.Credential) error {

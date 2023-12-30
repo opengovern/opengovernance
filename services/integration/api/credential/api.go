@@ -1,6 +1,7 @@
 package credential
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -22,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type API struct {
@@ -200,7 +201,7 @@ func (h API) List(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
-// DeleteCredential godoc
+// Delete godoc
 //
 //	@Summary		Delete credential
 //	@Description	Remove a credential by ID
@@ -210,92 +211,43 @@ func (h API) List(c echo.Context) error {
 //	@Success		200
 //	@Param			credentialId	path	string	true	"CredentialID"
 //	@Router			/onboard/api/v1/credential/{credentialId} [delete]
-func (h API) DeleteCredential(ctx echo.Context) error {
+func (h API) Delete(c echo.Context) error {
 	// on deleting a credential, we need to delete its accounts / subscription.
 
-	credId, err := uuid.Parse(ctx.Param("credentialId"))
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	credId, err := uuid.Parse(c.Param("credentialId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	// trace :
-	outputS, span1 := h.tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetCredentialByID")
+	ctx, span := h.tracer.Start(ctx, "delete", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
 
-	credential, err := h.db.GetCredentialByID(credId)
+	credential, err := h.credentialSvc.Get(ctx, credId.String())
 	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		if errors.Is(err, repository.ErrCredentialNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
-	))
-	span1.End()
 
-	// trace :
-	_, span2 := h.tracer.Start(outputS, "new_GetSourcesByCredentialID", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_GetSourcesByCredentialID")
-
-	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	span2.End()
-
-	// trace :
-	outputS3, span3 := h.tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
-	span3.SetName("new_Transaction")
-
-	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-		// trace :
-		_, span4 := h.tracer.Start(outputS3, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
-		span4.SetName("new_DeleteCredential")
-
-		if err := h.db.DeleteCredential(credential.ID); err != nil {
-			span4.RecordError(err)
-			span4.SetStatus(codes.Error, err.Error())
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		span4.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *credential.Name),
-		))
-		span4.End()
-
-		// trace :
-		output5, span5 := tracer.Start(outputS3, "new_UpdateSourceLifecycleState(loop)", trace.WithSpanKind(trace.SpanKindServer))
-		span5.SetName("new_UpdateSourceLifecycleState(loop)")
-		for _, src := range sources {
-			// trace :
-			_, span6 := tracer.Start(output5, "new_UpdateSourceLifecycleState", trace.WithSpanKind(trace.SpanKindServer))
-			span6.SetName("new_UpdateSourceLifecycleState")
-			if err := h.db.UpdateSourceLifecycleState(src.ID, model.ConnectionLifecycleStateDisabled); err != nil {
-				span6.RecordError(err)
-				span6.SetStatus(codes.Error, err.Error())
-				return err
-			}
-			span6.AddEvent("information", trace.WithAttributes(
-				attribute.String("source name", src.Name),
-			))
-			span6.End()
-		}
-		span5.End()
-
-		return nil
-	})
-	if err != nil {
-		span3.RecordError(err)
-		span3.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span3.End()
 
-	return ctx.JSON(http.StatusOK, struct{}{})
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+
+	if err := h.credentialSvc.Delete(ctx, *credential); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 // CreateAzure godoc

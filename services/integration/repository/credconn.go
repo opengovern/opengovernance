@@ -10,6 +10,7 @@ import (
 
 type CredConn interface {
 	DeleteConnection(context.Context, model.Connection) error
+	DeleteCredential(context.Context, model.Credential) error
 }
 
 type CredConnSQL struct {
@@ -18,6 +19,24 @@ type CredConnSQL struct {
 
 func NewCredConnSQL(db db.Database) CredConn {
 	return CredConnSQL{db: db}
+}
+
+func (c CredConnSQL) DeleteCredential(ctx context.Context, cred model.Credential) error {
+	if err := c.db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(new(model.Credential), "WHERE id = ?", cred.ID.String()).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Delete(new(model.Connection), "WHERE credential_id = ?", cred.ID.String()).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteConnection delete the given connection and when connection is deleted, it removes its credential
