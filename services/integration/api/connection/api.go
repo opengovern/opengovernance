@@ -56,7 +56,7 @@ func New(
 // DeleteConnection godoc
 //
 //	@Summary		Delete connection
-//	@Description	Deleting a single connection either AWS / Azure for the given connection id.
+//	@Description	Deleting a single connection either AWS / Azure for the given connection id. it will delete its parent credential too, if it doesn't have any other child.
 //	@Security		BearerToken
 //	@Tags			connections
 //	@Produce		json

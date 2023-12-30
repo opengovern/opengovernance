@@ -98,7 +98,7 @@ func (h API) Update(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Success		200				{object}	api.ListCredentialResponse
+//	@Success		200				{object}	entity.ListCredentialResponse
 //	@Param			connector		query		source.Type				false	"filter by connector type"
 //	@Param			health			query		string					false	"filter by health status"	Enums(healthy, unhealthy)
 //	@Param			credentialType	query		[]entity.CredentialType	false	"filter by credential type"
@@ -145,33 +145,33 @@ func (h API) List(c echo.Context) error {
 	apiCredentials := make([]entity.Credential, 0, len(credentials))
 
 	for _, cred := range credentials {
-		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, nil)
+		totalConnectionCount, err := h.connectionSvc.CountByCredential(ctx, cred.ID.String(), nil, nil)
 		if err != nil {
 			return err
 		}
 
-		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, []source.HealthStatus{source.HealthStatusUnhealthy})
+		unhealthyConnectionCount, err := h.connectionSvc.CountByCredential(ctx, cred.ID.String(), nil, []source.HealthStatus{source.HealthStatusUnhealthy})
 		if err != nil {
 			return err
 		}
 
-		onboardConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(),
+		onboardConnectionCount, err := h.connectionSvc.CountByCredential(ctx, cred.ID.String(),
 			[]model.ConnectionLifecycleState{model.ConnectionLifecycleStateInProgress, model.ConnectionLifecycleStateOnboard}, nil)
 		if err != nil {
 			return err
 		}
 
-		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDiscovered}, nil)
+		discoveredConnectionCount, err := h.connectionSvc.CountByCredential(ctx, cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDiscovered}, nil)
 		if err != nil {
 			return err
 		}
 
-		disabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDisabled}, nil)
+		disabledConnectionCount, err := h.connectionSvc.CountByCredential(ctx, cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateDisabled}, nil)
 		if err != nil {
 			return err
 		}
 
-		archivedConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateArchived}, nil)
+		archivedConnectionCount, err := h.connectionSvc.CountByCredential(ctx, cred.ID.String(), []model.ConnectionLifecycleState{model.ConnectionLifecycleStateArchived}, nil)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func (h API) List(c echo.Context) error {
 //	@Param			credentialId	path	string	true	"CredentialID"
 //	@Router			/onboard/api/v1/credential/{credentialId} [delete]
 func (h API) DeleteCredential(ctx echo.Context) error {
-	// on deleting a credential, we need to delete its accounts / subscription
+	// on deleting a credential, we need to delete its accounts / subscription.
 
 	credId, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
