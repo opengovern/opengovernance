@@ -443,6 +443,7 @@ func (h API) CreateAWS(c echo.Context) error {
 func (s API) Register(g *echo.Group) {
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
+	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(s.Delete, api.EditorRole))
 	// TODO: autoonboard AWS
 	// TODO: autoonboard Azure
 }

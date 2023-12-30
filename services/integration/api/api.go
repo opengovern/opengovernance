@@ -55,9 +55,11 @@ func New(
 func (api *API) Register(e *echo.Echo) {
 	var healthz healthz.Healthz
 
+	repo := repository.NewCredConnSQL(api.database)
+
 	connSvc := service.NewConnection(
 		repository.NewConnectionSQL(api.database),
-		repository.NewCredConnSQL(api.database),
+		repo,
 		api.kms,
 		api.arn,
 		api.describe,
@@ -70,6 +72,7 @@ func (api *API) Register(e *echo.Echo) {
 
 	credSvc := service.NewCredential(
 		repository.NewCredentialSQL(api.database),
+		repo,
 		api.kms,
 		api.arn,
 		api.describe,
