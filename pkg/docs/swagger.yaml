@@ -3228,6 +3228,29 @@ definitions:
     - objectId
     - tenantId
     type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CatalogMetrics:
+    properties:
+      connectionsEnabled:
+        example: 20
+        minimum: 0
+        type: integer
+      healthyConnections:
+        example: 15
+        minimum: 0
+        type: integer
+      inProgressConnections:
+        example: 5
+        minimum: 0
+        type: integer
+      totalConnections:
+        example: 20
+        minimum: 0
+        type: integer
+      unhealthyConnections:
+        example: 5
+        minimum: 0
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection:
     properties:
       assetDiscovery:
@@ -3332,6 +3355,49 @@ definitions:
     - ConnectionLifecycleStateDiscovered
     - ConnectionLifecycleStateInProgress
     - ConnectionLifecycleStateArchived
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectorCount:
+    properties:
+      allowNewConnections:
+        example: true
+        type: boolean
+      autoOnboardSupport:
+        example: false
+        type: boolean
+      connection_count:
+        example: 1024
+        minimum: 0
+        type: integer
+      description:
+        example: This is a long volume of words for just showing the case of the description
+          for the demo and checking value purposes only and has no meaning whatsoever
+        type: string
+      direction:
+        $ref: '#/definitions/source.ConnectorDirectionType'
+      label:
+        example: Azure
+        type: string
+      logo:
+        example: https://kaytu.io/logo.png
+        type: string
+      maxConnectionLimit:
+        example: 10000
+        minimum: 0
+        type: integer
+      name:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      shortDescription:
+        example: This is a short Description for this connector
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/source.ConnectorStatus'
+        example: enabled
+      tags:
+        additionalProperties: {}
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest:
     properties:
       config:
@@ -3515,6 +3581,32 @@ definitions:
         maximum: 100
         minimum: 0
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListCredentialResponse:
+    properties:
+      credentials:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential'
+        type: array
+      totalCredentialCount:
+        example: 5
+        maximum: 20
+        minimum: 0
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAWSCredentialRequest:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig'
+      name:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAzureCredentialRequest:
+    properties:
+      config:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig'
+      name:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest:
     properties:
@@ -5618,6 +5710,27 @@ paths:
       summary: Get Azure cost
       tags:
       - cost-estimator
+  /integration/api/v1/connections/{connectionId}:
+    delete:
+      description: Deleting a single connection either AWS / Azure for the given connection
+        id. it will delete its parent credential too, if it doesn't have any other
+        child.
+      parameters:
+      - description: Source ID
+        in: path
+        name: connectionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Delete connection
+      tags:
+      - connections
   /integration/api/v1/connections/{connectionId}/aws/healthcheck:
     get:
       description: Get live connection health status with given connection ID for
@@ -5796,6 +5909,103 @@ paths:
       summary: List connections summaries
       tags:
       - connections
+  /integration/api/v1/connectors:
+    get:
+      description: Returns list of all connectors
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectorCount'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List connectors
+      tags:
+      - connectors
+  /integration/api/v1/connectors/metrics:
+    get:
+      description: Retrieving the list of metrics for catalog page.
+      parameters:
+      - collectionFormat: csv
+        description: Connector
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CatalogMetrics'
+      security:
+      - BearerToken: []
+      summary: List catalog metrics
+      tags:
+      - integration
+  /integration/api/v1/credentials:
+    get:
+      description: Retrieving list of credentials with their details
+      parameters:
+      - description: filter by connector type
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: filter by health status
+        enum:
+        - healthy
+        - unhealthy
+        in: query
+        name: health
+        type: string
+      - collectionFormat: csv
+        description: filter by credential type
+        in: query
+        items:
+          enum:
+          - auto-azure
+          - auto-aws
+          - manual-aws-org
+          - manual-azure-spn
+          type: string
+        name: credentialType
+        type: array
+      - default: 50
+        description: page size
+        in: query
+        name: pageSize
+        type: integer
+      - default: 1
+        description: page number
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListCredentialResponse'
+      security:
+      - BearerToken: []
+      summary: List credentials
+      tags:
+      - credentials
   /integration/api/v1/credentials/aws:
     post:
       description: Creating AWS credential, testing it and onboard its accounts (organization
@@ -5820,6 +6030,54 @@ paths:
         account)
       tags:
       - integration
+  /integration/api/v1/credentials/aws/{credentialId}:
+    put:
+      description: Edit an aws credential by ID
+      parameters:
+      - description: Credential ID
+        in: path
+        name: credentialId
+        required: true
+        type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAWSCredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Edit aws credential
+      tags:
+      - onboard
+  /integration/api/v1/credentials/aws/{credentialId}/autoonboard:
+    post:
+      description: Onboard all available connections for an aws credential
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Onboard aws credential connections
+      tags:
+      - onboard
   /integration/api/v1/credentials/azure:
     post:
       description: Creating Azure credential, testing it and onboard its subscriptions
@@ -5842,6 +6100,54 @@ paths:
       summary: Create Azure credential and does onboarding for its subscriptions
       tags:
       - integration
+  /integration/api/v1/credentials/azure/{credentialId}:
+    put:
+      description: Edit an azure credential by ID
+      parameters:
+      - description: Credential ID
+        in: path
+        name: credentialId
+        required: true
+        type: string
+      - description: config
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAzureCredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Edit azure credential
+      tags:
+      - onboard
+  /integration/api/v1/credentials/azure/{credentialId}/autoonboard:
+    post:
+      description: Onboard all available connections for an azure credential
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Onboard azure credential connections
+      tags:
+      - onboard
   /inventory/api/v1/query:
     get:
       description: Retrieving list of smart queries by specified filters

@@ -54,8 +54,8 @@ func New(
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			credentialId	path	string						true	"Credential ID"
-//	@Param			config			body	api.UpdateCredentialRequest	true	"config"
+//	@Param			credentialId	path	string								true	"Credential ID"
+//	@Param			config			body	entity.UpdateAzureCredentialRequest	true	"config"
 //	@Router			/integration/api/v1/credentials/azure/{credentialId} [put]
 func (h API) UpdateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -99,8 +99,8 @@ func (h API) UpdateAzure(c echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			credentialId	path	string						true	"Credential ID"
-//	@Param			config			body	api.UpdateCredentialRequest	true	"config"
+//	@Param			credentialId	path	string								true	"Credential ID"
+//	@Param			config			body	entity.UpdateAWSCredentialRequest	true	"config"
 //	@Router			/integration/api/v1/credentials/aws/{credentialId} [put]
 func (h API) UpdateAWS(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
