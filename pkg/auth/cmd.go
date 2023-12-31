@@ -134,17 +134,6 @@ func start(ctx context.Context) error {
 		panic(err)
 	}
 
-	authServer := &Server{
-		host:               kaytuHost,
-		kaytuPublicKey:     pub.(*rsa.PublicKey),
-		verifier:           verifier,
-		verifierNative:     verifierNative,
-		logger:             logger,
-		workspaceClient:    workspaceClient,
-		workspaceIDNameMap: map[string]string{},
-	}
-	go authServer.WorkspaceMapUpdater()
-
 	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
 	if err != nil {
 		return err
@@ -171,6 +160,17 @@ func start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
+
+	authServer := &Server{
+		host:            kaytuHost,
+		kaytuPublicKey:  pub.(*rsa.PublicKey),
+		verifier:        verifier,
+		verifierNative:  verifierNative,
+		logger:          logger,
+		workspaceClient: workspaceClient,
+		db:              adb,
+	}
+	go authServer.WorkspaceMapUpdater()
 
 	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
 		auth0Connection, int(inviteTTL))

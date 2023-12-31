@@ -5,27 +5,23 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"net/http"
-	"strings"
-	"sync"
-
-	"github.com/labstack/echo/v4"
-
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-
 	"github.com/coreos/go-oidc/v3/oidc"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/googleapis/google/rpc"
+	"github.com/golang-jwt/jwt"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	"gorm.io/gorm"
+	"net/http"
+	"strings"
 )
 
 type Server struct {
@@ -36,17 +32,20 @@ type Server struct {
 	verifierNative  *oidc.IDTokenVerifier
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
-
-	workspaceIDNameMap map[string]string
-	mapLock            sync.RWMutex
+	db              db.Database
 }
 
-func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, bool) {
-	s.mapLock.RLock()
-	defer s.mapLock.RUnlock()
-
-	v, ok := s.workspaceIDNameMap[workspaceName]
-	return v, ok
+func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
+	workspaceMap, err := s.db.GetWorkspaceMapByName(workspaceName)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "", fmt.Errorf("workspace does not exists %s", workspaceName)
+		} else {
+			s.logger.Error("failed to get workspace map by name", zap.Error(err))
+			return "", err
+		}
+	}
+	return workspaceMap.ID, nil
 }
 
 func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
@@ -209,9 +208,9 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 	}
 
 	if workspaceName != "kaytu" {
-		workspaceID, ok := s.GetWorkspaceIDByName(workspaceName)
-		if !ok {
-			return rb, fmt.Errorf("workspace does not exists: %s", workspaceName)
+		workspaceID, err := s.GetWorkspaceIDByName(workspaceName)
+		if err != nil {
+			return rb, err
 		}
 
 		rb.UserID = user.ExternalUserID
