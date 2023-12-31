@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Database struct {
@@ -107,6 +108,60 @@ func (db Database) UpdateAPIKeyRole(workspaceID string, id uint, role api.Role) 
 		Where("workspace_id", workspaceID).
 		Where("id", id).
 		Update("role", role)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpsertWorkspaceMap(workspaceID string, name string) error {
+	tx := db.Orm.Model(&WorkspaceMap{}).Clauses(
+		clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"name"}),
+		}).Create(&WorkspaceMap{ID: workspaceID, Name: name})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) ListWorkspaceMaps() ([]WorkspaceMap, error) {
+	var s []WorkspaceMap
+	tx := db.Orm.Model(&WorkspaceMap{}).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetWorkspaceMapByID(workspaceID string) (*WorkspaceMap, error) {
+	var s WorkspaceMap
+	tx := db.Orm.Model(&WorkspaceMap{}).
+		Where("id", workspaceID).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &s, nil
+}
+
+func (db Database) GetWorkspaceMapByName(name string) (*WorkspaceMap, error) {
+	var s WorkspaceMap
+	tx := db.Orm.Model(&WorkspaceMap{}).
+		Where("name", name).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &s, nil
+}
+
+func (db Database) DeleteWorkspaceMapByID(id string) error {
+	tx := db.Orm.Model(&WorkspaceMap{}).
+		Where("id", id).
+		Delete(&WorkspaceMap{})
 	if tx.Error != nil {
 		return tx.Error
 	}

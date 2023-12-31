@@ -16,3 +16,8 @@ type ApiKey struct {
 	MaskedKey     string
 	KeyHash       string
 }
+
+type WorkspaceMap struct {
+	ID   string `gorm:"primaryKey"`
+	Name string `gorm:"index"`
+}

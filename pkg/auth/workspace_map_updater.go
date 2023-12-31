@@ -30,21 +30,32 @@ func (s *Server) updateWorkspaceMap() error {
 		return err
 	}
 
-	s.mapLock.Lock()
-	defer s.mapLock.Unlock()
-
 	for _, workspace := range workspaces {
-		s.workspaceIDNameMap[workspace.Name] = workspace.ID
+		err = s.db.UpsertWorkspaceMap(workspace.ID, workspace.Name)
+		if err != nil {
+			s.logger.Error("failed to upsert workspace map", zap.Error(err))
+			return err
+		}
 	}
-	for name, _ := range s.workspaceIDNameMap {
+
+	workspaceMaps, err := s.db.ListWorkspaceMaps()
+	if err != nil {
+		s.logger.Error("failed to list workspace maps", zap.Error(err))
+		return err
+	}
+	for _, workspaceMap := range workspaceMaps {
 		exists := false
 		for _, workspace := range workspaces {
-			if workspace.Name == name {
+			if workspace.ID == workspaceMap.ID {
 				exists = true
 			}
 		}
 		if !exists {
-			delete(s.workspaceIDNameMap, name)
+			err = s.db.DeleteWorkspaceMapByID(workspaceMap.ID)
+			if err != nil {
+				s.logger.Error("failed to delete workspace map", zap.Error(err))
+				return err
+			}
 		}
 	}
 	return nil
