@@ -67,7 +67,7 @@ func (h API) UpdateAzure(c echo.Context) error {
 
 	var req entity.UpdateAzureCredentialRequest
 
-	ctx, span := h.tracer.Start(ctx, "update-credential")
+	ctx, span := h.tracer.Start(ctx, "update-azure")
 	defer span.End()
 
 	if err := c.Bind(&req); err != nil {
@@ -112,7 +112,7 @@ func (h API) UpdateAWS(c echo.Context) error {
 
 	var req entity.UpdateAWSCredentialRequest
 
-	ctx, span := h.tracer.Start(ctx, "update-credential")
+	ctx, span := h.tracer.Start(ctx, "update-aws")
 	defer span.End()
 
 	if err := c.Bind(&req); err != nil {
@@ -250,11 +250,11 @@ func (h API) List(c echo.Context) error {
 //	@Summary		Delete credential
 //	@Description	Remove a credential by ID
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string	true	"CredentialID"
-//	@Router			/onboard/api/v1/credential/{credentialId} [delete]
+//	@Router			/integration/api/v1/credential/{credentialId} [delete]
 func (h API) Delete(c echo.Context) error {
 	// on deleting a credential, we need to delete its accounts / subscription.
 

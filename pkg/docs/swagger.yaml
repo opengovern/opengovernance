@@ -5978,6 +5978,25 @@ paths:
       summary: List catalog metrics
       tags:
       - integration
+  /integration/api/v1/credential/{credentialId}:
+    delete:
+      description: Remove a credential by ID
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Delete credential
+      tags:
+      - credentials
   /integration/api/v1/credentials:
     get:
       description: Retrieving list of credentials with their details
