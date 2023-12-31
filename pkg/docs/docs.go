@@ -3323,6 +3323,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/api/v1/credential/{credentialId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Remove a credential by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials"
+                ],
+                "summary": "Delete credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/integration/api/v1/credentials": {
             "get": {
                 "security": [
