@@ -8327,6 +8327,38 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSort": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "conformanceStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "connectionID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "connector": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "controlID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "kaytuResourceID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "resourceID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "resourceTypeID": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "severity": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse": {
             "type": "object",
             "properties": {
@@ -8370,9 +8402,9 @@ const docTemplate = `{
                     "example": 100
                 },
                 "sort": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSort"
                     }
                 }
             }

@@ -3,9 +3,9 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"go.uber.org/zap"
-	"sort"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -82,35 +82,95 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	provider []source.Type, connectionID []string,
 	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
-	sorts map[string]string, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
+	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
-	filteredSortMap := make(map[string]string)
-	for sortField, sortDirection := range sorts {
-		key := ""
-		switch sortField {
-		case "controlTitle":
-			key = "controlID"
-		case "providerConnectionID", "providerConnectionName":
-			key = "connectionID"
-		default:
-			key = sortField
+	requestSort := make([]map[string]any, 0, len(sorts)+1)
+	for _, sort := range sorts {
+		switch {
+		case sort.Connector != nil:
+			requestSort = append(requestSort, map[string]any{
+				"connector": *sort.Connector,
+			})
+		case sort.KaytuResourceID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"kaytuResourceID": *sort.KaytuResourceID,
+			})
+		case sort.ResourceID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"resourceID": *sort.ResourceID,
+			})
+		case sort.ResourceTypeID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"resourceType": *sort.ResourceTypeID,
+			})
+		case sort.ConnectionID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"connectionID": *sort.ConnectionID,
+			})
+		case sort.BenchmarkID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"benchmarkID": *sort.BenchmarkID,
+			})
+		case sort.ControlID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"controlID": *sort.ControlID,
+			})
+		case sort.Severity != nil:
+			scriptSource :=
+				`if params['_source']['severity'] == 'critical' {
+					return 5
+				} else if params['_source']['severity'] == 'high' {
+					return 4
+				} else if params['_source']['severity'] == 'medium' {
+					return 3
+				} else if params['_source']['severity'] == 'low' {
+					return 2
+				} else if params['_source']['severity'] == 'none' {
+					return 1
+				} else {
+					return 1
+				}`
+			requestSort = append(requestSort, map[string]any{
+				"_script": map[string]any{
+					"type": "number",
+					"script": map[string]any{
+						"lang":   "painless",
+						"source": scriptSource,
+					},
+					"order": *sort.Severity,
+				},
+			})
+		case sort.ConformanceStatus != nil:
+			scriptSource :=
+				`if params['_source']['conformanceStatus'] == 'alarm' {
+					return 5
+				} else if params['_source']['conformanceStatus'] == 'error' {
+					return 4
+				} else if params['_source']['conformanceStatus'] == 'info' {
+					return 3
+				} else if params['_source']['conformanceStatus'] == 'skip' {
+					return 2
+				} else if params['_source']['conformanceStatus'] == 'ok' {
+					return 1
+				} else {
+					return 1
+				}`
+			requestSort = append(requestSort, map[string]any{
+				"_script": map[string]any{
+					"type": "number",
+					"script": map[string]any{
+						"lang":   "painless",
+						"source": scriptSource,
+					},
+					"order": *sort.ConformanceStatus,
+				},
+			})
 		}
-		filteredSortMap[key] = sortDirection
 	}
-	sortMapArray := make([]map[string]string, 0)
-	for k, v := range filteredSortMap {
-		sortMapArray = append(sortMapArray, map[string]string{k: v})
-	}
-	sort.Slice(sortMapArray, func(i, j int) bool {
-		for k := range sortMapArray[i] {
-			for l := range sortMapArray[j] {
-				return k < l
-			}
-		}
-		return false
+	requestSort = append(requestSort, map[string]any{
+		"_id": "asc",
 	})
-	sortMapArray = append(sortMapArray, map[string]string{"_id": "asc"})
 
 	var filters []kaytu.BoolFilter
 	if len(resourceIDs) > 0 {
@@ -166,7 +226,7 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 			"filter": filters,
 		},
 	}
-	query["sort"] = sortMapArray
+	query["sort"] = requestSort
 	if len(searchAfter) > 0 {
 		query["search_after"] = searchAfter
 	}
