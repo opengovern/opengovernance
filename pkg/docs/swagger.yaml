@@ -6050,6 +6050,27 @@ paths:
       summary: List credentials
       tags:
       - credentials
+  /integration/api/v1/credentials/{credentialId}:
+    get:
+      description: Retrieving credential details by credential ID
+      parameters:
+      - description: Credential ID
+        in: path
+        name: credentialId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential'
+      security:
+      - BearerToken: []
+      summary: Get Credential
+      tags:
+      - credentials
   /integration/api/v1/credentials/aws:
     post:
       description: Creating AWS credential, testing it and onboard its accounts (organization
@@ -6073,7 +6094,7 @@ paths:
       summary: Create AWS credential and does onboarding for its accounts (organization
         account)
       tags:
-      - integration
+      - credentials
   /integration/api/v1/credentials/aws/{credentialId}:
     put:
       description: Edit an aws credential by ID
@@ -6098,7 +6119,7 @@ paths:
       - BearerToken: []
       summary: Edit aws credential
       tags:
-      - onboard
+      - credentials
   /integration/api/v1/credentials/aws/{credentialId}/autoonboard:
     post:
       description: Onboard all available connections for an aws credential
@@ -6121,7 +6142,7 @@ paths:
       - BearerToken: []
       summary: Onboard aws credential connections
       tags:
-      - onboard
+      - credentials
   /integration/api/v1/credentials/azure:
     post:
       description: Creating Azure credential, testing it and onboard its subscriptions
@@ -6168,7 +6189,7 @@ paths:
       - BearerToken: []
       summary: Edit azure credential
       tags:
-      - onboard
+      - credentials
   /integration/api/v1/credentials/azure/{credentialId}/autoonboard:
     post:
       description: Onboard all available connections for an azure credential
@@ -6191,7 +6212,7 @@ paths:
       - BearerToken: []
       summary: Onboard azure credential connections
       tags:
-      - onboard
+      - credentials
   /inventory/api/v1/query:
     get:
       description: Retrieving list of smart queries by specified filters

@@ -1,6 +1,7 @@
 package credential
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sort"
@@ -46,12 +47,114 @@ func New(
 	}
 }
 
+// Get godoc
+//
+//	@Summary		Get Credential
+//	@Description	Retrieving credential details by credential ID
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200				{object}	entity.Credential
+//	@Param			credentialId	path		string	true	"Credential ID"
+//	@Router			/integration/api/v1/credentials/{credentialId} [get]
+func (h API) Get(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	id, err := uuid.Parse(c.Param("credentialId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+
+	ctx, span := h.tracer.Start(ctx, "delete")
+	defer span.End()
+
+	credential, err := h.credentialSvc.Get(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		if err == repository.ErrCredentialNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+
+	connections, err := h.connectionSvc.ListByCredential(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+
+	metadata := make(map[string]any)
+	err = json.Unmarshal(credential.Metadata, &metadata)
+	if err != nil {
+		return err
+	}
+
+	apiCredential := entity.NewCredential(*credential)
+	if err != nil {
+		return err
+	}
+
+	for _, conn := range connections {
+		apiCredential.Connections = append(apiCredential.Connections, entity.NewConnection(conn))
+
+		switch conn.LifecycleState {
+		case model.ConnectionLifecycleStateDiscovered:
+			apiCredential.DiscoveredConnections = utils.PAdd(apiCredential.DiscoveredConnections, fp.Optional[int64](1))
+		case model.ConnectionLifecycleStateInProgress:
+			fallthrough
+		case model.ConnectionLifecycleStateOnboard:
+			apiCredential.OnboardConnections = utils.PAdd(apiCredential.OnboardConnections, fp.Optional[int64](1))
+		case model.ConnectionLifecycleStateDisabled:
+			apiCredential.DisabledConnections = utils.PAdd(apiCredential.DisabledConnections, fp.Optional[int64](1))
+		case model.ConnectionLifecycleStateArchived:
+			apiCredential.ArchivedConnections = utils.PAdd(apiCredential.ArchivedConnections, fp.Optional[int64](1))
+		}
+		if conn.HealthState == source.HealthStatusUnhealthy {
+			apiCredential.UnhealthyConnections = utils.PAdd(apiCredential.UnhealthyConnections, fp.Optional[int64](1))
+		}
+
+		apiCredential.TotalConnections = utils.PAdd(apiCredential.TotalConnections, fp.Optional[int64](1))
+	}
+
+	switch credential.ConnectorType {
+	case source.CloudAzure:
+		cnf, err := h.credentialSvc.AzureCredentialConfig(ctx, *credential)
+		if err != nil {
+			return err
+		}
+		apiCredential.Config = entity.AzureCredentialConfig{
+			TenantId: cnf.TenantID,
+			ObjectId: cnf.ObjectID,
+			ClientId: cnf.ClientID,
+		}
+	case source.CloudAWS:
+		cnf, err := h.credentialSvc.AWSCredentialConfig(ctx, *credential)
+		if err != nil {
+			return err
+		}
+		apiCredential.Config = entity.AWSCredentialConfig{
+			AssumeRoleName: cnf.AssumeRoleName,
+			ExternalId:     cnf.ExternalId,
+		}
+	}
+
+	return c.JSON(http.StatusOK, apiCredential)
+}
+
 // UpdateAzure godoc
 //
 //	@Summary		Edit azure credential
 //	@Description	Edit an azure credential by ID
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string								true	"Credential ID"
@@ -96,7 +199,7 @@ func (h API) UpdateAzure(c echo.Context) error {
 //	@Summary		Edit aws credential
 //	@Description	Edit an aws credential by ID
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string								true	"Credential ID"
@@ -384,7 +487,7 @@ func (h API) CreateAzure(c echo.Context) error {
 //	@Summary		Create AWS credential and does onboarding for its accounts (organization account)
 //	@Description	Creating AWS credential, testing it and onboard its accounts (organization account)
 //	@Security		BearerToken
-//	@Tags			integration
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
 //	@Param			request	body		entity.CreateAWSCredentialRequest	true	"Request"
@@ -489,7 +592,7 @@ func (h API) CreateAWS(c echo.Context) error {
 //	@Summary		Onboard aws credential connections
 //	@Description	Onboard all available connections for an aws credential
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Param			credentialId	path		string	true	"CredentialID"
 //	@Success		200				{object}	[]entity.Connection
@@ -543,7 +646,7 @@ func (h API) AutoOnboardAWS(c echo.Context) error {
 //	@Summary		Onboard azure credential connections
 //	@Description	Onboard all available connections for an azure credential
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Param			credentialId	path		string	true	"CredentialID"
 //	@Success		200				{object}	[]entity.Connection
@@ -593,9 +696,11 @@ func (h API) AutoOnboardAzure(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
+	g.POST("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
 	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(s.Delete, api.EditorRole))
+	g.GET("/:credentialId", httpserver.AuthorizeHandler(s.Get, api.ViewerRole))
 	g.PUT("/aws/:credentialId", httpserver.AuthorizeHandler(s.UpdateAWS, api.EditorRole))
 	g.PUT("/azure/:credentialId", httpserver.AuthorizeHandler(s.UpdateAzure, api.EditorRole))
 	g.POST("aws/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAWS, api.EditorRole))

@@ -936,8 +936,8 @@ func (h API) AWSCreate(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
-	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
-	g.POST("/", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
+	g.GET("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
+	g.POST("", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
 	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.AWSCreate, api.EditorRole))

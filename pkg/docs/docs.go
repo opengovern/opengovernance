@@ -3444,7 +3444,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "integration"
+                    "credentials"
                 ],
                 "summary": "Create AWS credential and does onboarding for its accounts (organization account)",
                 "parameters": [
@@ -3480,7 +3480,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "onboard"
+                    "credentials"
                 ],
                 "summary": "Edit aws credential",
                 "parameters": [
@@ -3520,7 +3520,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "onboard"
+                    "credentials"
                 ],
                 "summary": "Onboard aws credential connections",
                 "parameters": [
@@ -3593,7 +3593,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "onboard"
+                    "credentials"
                 ],
                 "summary": "Edit azure credential",
                 "parameters": [
@@ -3633,7 +3633,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "onboard"
+                    "credentials"
                 ],
                 "summary": "Onboard azure credential connections",
                 "parameters": [
@@ -3653,6 +3653,40 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials/{credentialId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving credential details by credential ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials"
+                ],
+                "summary": "Get Credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Credential ID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential"
                         }
                     }
                 }

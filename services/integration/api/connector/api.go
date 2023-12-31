@@ -152,6 +152,6 @@ func (h API) CatalogMetrics(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
-	g.GET("/", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
+	g.GET("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.GET("/metrics", httpserver.AuthorizeHandler(s.CatalogMetrics, api.ViewerRole))
 }
