@@ -670,6 +670,21 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 	return nil
 }
 
+// AWSCredentialConfig reads credentials configuration from aws credential secret and return it.
+func (h Credential) AWSCredentialConfig(ctx context.Context, credential model.Credential) (*model.AWSCredentialConfig, error) {
+	raw, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	if err != nil {
+		return nil, err
+	}
+
+	cnf, err := fp.FromMap[model.AWSCredentialConfig](raw)
+	if err != nil {
+		return nil, err
+	}
+
+	return cnf, nil
+}
+
 // AWSHealthCheck checks the connection health status and update the returned model. if the update flag is false then
 // the database is not get updated.
 func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, update bool) (model.Connection, error) {

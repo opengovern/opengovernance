@@ -281,3 +281,15 @@ func (h Connection) Delete(ctx context.Context, conn model.Connection) error {
 
 	return nil
 }
+
+func (h Connection) ListByCredential(ctx context.Context, credentialID string) ([]model.Connection, error) {
+	ctx, span := h.tracer.Start(ctx, "delete")
+	defer span.End()
+
+	conns, err := h.repo.ListByCredential(ctx, credentialID)
+	if err != nil {
+		return nil, err
+	}
+
+	return conns, nil
+}

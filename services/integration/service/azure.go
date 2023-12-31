@@ -437,6 +437,21 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 	return nil
 }
 
+// AzureCredentialConfig reads credentials configuration from azure credential secret and return it.
+func (h Credential) AzureCredentialConfig(ctx context.Context, credential model.Credential) (*describe.AzureSubscriptionConfig, error) {
+	raw, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	if err != nil {
+		return nil, err
+	}
+
+	cnf, err := describe.AzureSubscriptionConfigFromMap(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cnf, nil
+}
+
 func (h Connection) AzureHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
 	var cnf map[string]any
 

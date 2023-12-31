@@ -1,6 +1,7 @@
 package credential
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sort"
@@ -44,6 +45,108 @@ func New(
 		tracer:        otel.GetTracerProvider().Tracer("integration.http.sources"),
 		logger:        logger.Named("source"),
 	}
+}
+
+// Get godoc
+//
+//	@Summary		Get Credential
+//	@Description	Retrieving credential details by credential ID
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200				{object}	api.Credential
+//	@Param			credentialId	path		string	true	"Credential ID"
+//	@Router			/integration/api/v1/credentials/{credentialId} [get]
+func (h API) Get(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	id, err := uuid.Parse(c.Param("credentialId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+
+	ctx, span := h.tracer.Start(ctx, "delete")
+	defer span.End()
+
+	credential, err := h.credentialSvc.Get(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		if err == repository.ErrCredentialNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+
+	connections, err := h.connectionSvc.ListByCredential(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+
+	metadata := make(map[string]any)
+	err = json.Unmarshal(credential.Metadata, &metadata)
+	if err != nil {
+		return err
+	}
+
+	apiCredential := entity.NewCredential(*credential)
+	if err != nil {
+		return err
+	}
+
+	for _, conn := range connections {
+		apiCredential.Connections = append(apiCredential.Connections, entity.NewConnection(conn))
+
+		switch conn.LifecycleState {
+		case model.ConnectionLifecycleStateDiscovered:
+			apiCredential.DiscoveredConnections = utils.PAdd(apiCredential.DiscoveredConnections, fp.Optional[int64](1))
+		case model.ConnectionLifecycleStateInProgress:
+			fallthrough
+		case model.ConnectionLifecycleStateOnboard:
+			apiCredential.OnboardConnections = utils.PAdd(apiCredential.OnboardConnections, fp.Optional[int64](1))
+		case model.ConnectionLifecycleStateDisabled:
+			apiCredential.DisabledConnections = utils.PAdd(apiCredential.DisabledConnections, fp.Optional[int64](1))
+		case model.ConnectionLifecycleStateArchived:
+			apiCredential.ArchivedConnections = utils.PAdd(apiCredential.ArchivedConnections, fp.Optional[int64](1))
+		}
+		if conn.HealthState == source.HealthStatusUnhealthy {
+			apiCredential.UnhealthyConnections = utils.PAdd(apiCredential.UnhealthyConnections, fp.Optional[int64](1))
+		}
+
+		apiCredential.TotalConnections = utils.PAdd(apiCredential.TotalConnections, fp.Optional[int64](1))
+	}
+
+	switch credential.ConnectorType {
+	case source.CloudAzure:
+		cnf, err := h.credentialSvc.AzureCredentialConfig(ctx, *credential)
+		if err != nil {
+			return err
+		}
+		apiCredential.Config = entity.AzureCredentialConfig{
+			TenantId: cnf.TenantID,
+			ObjectId: cnf.ObjectID,
+			ClientId: cnf.ClientID,
+		}
+	case source.CloudAWS:
+		cnf, err := h.credentialSvc.AWSCredentialConfig(ctx, *credential)
+		if err != nil {
+			return err
+		}
+		apiCredential.Config = entity.AWSCredentialConfig{
+			AssumeRoleName: cnf.AssumeRoleName,
+			ExternalId:     cnf.ExternalId,
+		}
+	}
+
+	return c.JSON(http.StatusOK, apiCredential)
 }
 
 // UpdateAzure godoc

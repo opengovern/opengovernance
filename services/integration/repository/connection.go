@@ -26,6 +26,7 @@ type Connection interface {
 		[]model.ConnectionLifecycleState,
 		[]source.HealthStatus,
 	) ([]model.Connection, error)
+	ListByCredential(context.Context, string) ([]model.Connection, error)
 
 	Get(context.Context, []string) ([]model.Connection, error)
 
@@ -192,4 +193,14 @@ func (s ConnectionSQL) CountByCredential(ctx context.Context, credentialID strin
 	}
 
 	return count, nil
+}
+
+func (s ConnectionSQL) ListByCredential(ctx context.Context, credentialID string) ([]model.Connection, error) {
+	var connections []model.Connection
+
+	if err := s.db.DB.WithContext(ctx).Model(new(model.Connection)).Where("credential_id = ?", credentialID).Find(&connections).Error; err != nil {
+		return nil, err
+	}
+
+	return connections, nil
 }
