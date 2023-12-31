@@ -162,14 +162,13 @@ func start(ctx context.Context) error {
 	}
 
 	authServer := &Server{
-		host:               kaytuHost,
-		kaytuPublicKey:     pub.(*rsa.PublicKey),
-		verifier:           verifier,
-		verifierNative:     verifierNative,
-		logger:             logger,
-		workspaceClient:    workspaceClient,
-		db:                 adb,
-		workspaceIDNameMap: map[string]string{},
+		host:            kaytuHost,
+		kaytuPublicKey:  pub.(*rsa.PublicKey),
+		verifier:        verifier,
+		verifierNative:  verifierNative,
+		logger:          logger,
+		workspaceClient: workspaceClient,
+		db:              adb,
 	}
 	go authServer.WorkspaceMapUpdater()
 
