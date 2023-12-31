@@ -1,8 +1,6 @@
 package credential
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
@@ -27,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type API struct {
@@ -48,120 +44,6 @@ func New(
 		tracer:        otel.GetTracerProvider().Tracer("integration.http.sources"),
 		logger:        logger.Named("source"),
 	}
-}
-
-func (h API) updateAWSCredentials(ctx context.Context, id uuid.UUID, req entity.UpdateCredentialRequest) error {
-	cred, err := h.db.GetCredentialByID(id)
-	if err != nil {
-		if err != gorm.ErrRecordNotFound {
-			return err
-		}
-		return ctx.JSON(http.StatusNotFound, "credential not found")
-	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *cred.Name),
-	))
-	span.End()
-
-	if req.Name != nil {
-		cred.Name = req.Name
-	}
-
-	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
-	if err != nil {
-		return err
-	}
-	config, err := describe.AWSAccountConfigFromMap(cnf)
-	if err != nil {
-		return err
-	}
-
-	if req.Config != nil {
-		configStr, err := json.Marshal(req.Config)
-		if err != nil {
-			return err
-		}
-		newConfig := api.AWSCredentialConfig{}
-		err = json.Unmarshal(configStr, &newConfig)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
-		}
-
-		if newConfig.AccountId != "" {
-			config.AccountID = newConfig.AccountId
-		}
-		if newConfig.Regions != nil {
-			config.Regions = newConfig.Regions
-		}
-		if newConfig.AccessKey != "" {
-			config.AccessKey = newConfig.AccessKey
-		}
-		if newConfig.SecretKey != "" {
-			config.SecretKey = newConfig.SecretKey
-		}
-		if newConfig.AssumeRoleName != "" {
-			config.AssumeRoleName = newConfig.AssumeRoleName
-		}
-		if newConfig.AssumeAdminRoleName != "" {
-			config.AssumeAdminRoleName = newConfig.AssumeAdminRoleName
-		}
-		if newConfig.AssumeRolePolicyName != "" {
-			config.AssumeRolePolicyName = newConfig.AssumeRolePolicyName
-		}
-		if newConfig.ExternalId != nil {
-			config.ExternalID = newConfig.ExternalId
-		}
-	}
-
-	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, config)
-	if err != nil {
-		return err
-	}
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		return err
-	}
-	cred.Metadata = jsonMetadata
-	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
-	if err != nil {
-		return err
-	}
-	cred.Secret = string(secretBytes)
-	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
-		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
-		config.AssumeRoleName != "" && config.ExternalID != nil {
-		cred.Name = metadata.OrganizationID
-		cred.CredentialType = model.CredentialTypeManualAwsOrganization
-		cred.AutoOnboardEnabled = true
-	}
-
-	err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-		// trace :
-		_, span3 := tracer.Start(outputS2, "new_UpdateCredential", trace.WithSpanKind(trace.SpanKindServer))
-		span3.SetName("new_UpdateCredential")
-
-		if _, err := h.db.UpdateCredential(cred); err != nil {
-			span3.RecordError(err)
-			span3.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span3.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *cred.Name),
-		))
-		span3.End()
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = h.checkCredentialHealth(outputS, *cred)
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, struct{}{})
 }
 
 // Update godoc
@@ -204,9 +86,9 @@ func (h API) Update(c echo.Context) error {
 
 	switch req.Connector {
 	case source.CloudAzure:
-		return h.credentialSvc.UpdateAzure(ctx, id, req)
+		return h.credentialSvc.AzureUpdate(ctx, id, req)
 	case source.CloudAWS:
-		return h.updateAWSCredentials(ctx, id, req)
+		return h.credentialSvc.AWSUpdate(ctx, id, req)
 	}
 	span.AddEvent("information", trace.WithAttributes(
 		attribute.String("credential name", *req.Name),

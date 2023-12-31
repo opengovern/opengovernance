@@ -23,6 +23,9 @@ import (
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 )
@@ -359,6 +362,94 @@ func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig a
 	}
 
 	return subs, nil
+}
+
+func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateCredentialRequest) error {
+	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
+	defer span.End()
+
+	cred, err := h.Get(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *cred.Name),
+	))
+
+	if req.Name != nil {
+		cred.Name = req.Name
+	}
+
+	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+	config, err := fp.FromMap[describe.AzureSubscriptionConfig](cnf)
+	if err != nil {
+		return err
+	}
+
+	if req.Config != nil {
+		configStr, err := json.Marshal(req.Config)
+		if err != nil {
+			return err
+		}
+
+		var newConfig entity.AzureCredentialConfig
+
+		if err := json.Unmarshal(configStr, &newConfig); err != nil {
+			return err
+		}
+
+		if newConfig.TenantId != "" {
+			config.TenantID = newConfig.TenantId
+		}
+
+		if newConfig.ObjectId != "" {
+			config.ObjectID = newConfig.ObjectId
+		}
+
+		if newConfig.ClientId != "" {
+			config.ClientID = newConfig.ClientId
+		}
+
+		if newConfig.ClientSecret != "" {
+			config.ClientSecret = newConfig.ClientSecret
+		}
+	}
+
+	metadata, err := h.AzureMetadata(ctx, *config)
+	if err != nil {
+		return err
+	}
+
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	cred.Metadata = jsonMetadata
+	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+
+	cred.Secret = string(secretBytes)
+	if metadata.SpnName != "" {
+		cred.Name = &metadata.SpnName
+	}
+
+	if err := h.repo.Update(ctx, cred); err != nil {
+		return err
+	}
+
+	if err := h.repo.Update(ctx, cred); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (h Connection) AzureHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {

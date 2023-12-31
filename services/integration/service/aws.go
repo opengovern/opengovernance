@@ -25,6 +25,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -575,6 +578,95 @@ func (h Connection) NewAWS(
 	return s, nil
 }
 
+func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateCredentialRequest) error {
+	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
+	defer span.End()
+
+	cred, err := h.Get(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *cred.Name),
+	))
+
+	if req.Name != nil {
+		cred.Name = req.Name
+	}
+
+	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+
+	config, err := fp.FromMap[describe.AWSAccountConfig](cnf)
+	if err != nil {
+		return err
+	}
+
+	if req.Config != nil {
+		configStr, err := json.Marshal(req.Config)
+		if err != nil {
+			return err
+		}
+
+		var newConfig entity.AWSCredentialConfig
+
+		if err := json.Unmarshal(configStr, &newConfig); err != nil {
+			return err
+		}
+
+		if newConfig.AssumeRoleName != "" {
+			config.AssumeRoleName = newConfig.AssumeRoleName
+		}
+
+		if newConfig.ExternalId != nil {
+			config.ExternalID = newConfig.ExternalId
+		}
+	}
+
+	metadata, err := h.AWSMetadata(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+
+	cred.Metadata = jsonMetadata
+
+	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+
+	cred.Secret = string(secretBytes)
+	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
+		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
+		config.AssumeRoleName != "" && config.ExternalID != nil {
+		cred.Name = metadata.OrganizationID
+		cred.CredentialType = model.CredentialTypeManualAwsOrganization
+		cred.AutoOnboardEnabled = true
+	}
+
+	if err := h.repo.Update(ctx, cred); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	if _, err := h.AWSHealthCheck(ctx, cred, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // AWSHealthCheck checks the connection health status and update the returned model. if the update flag is false then
 // the database is not get updated.
 func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, update bool) (model.Connection, error) {
@@ -657,4 +749,96 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 	}
 
 	return connection, nil
+}
+
+func (h Credential) AWSMetadata(ctx context.Context, config *describe.AWSAccountConfig) (*model.AWSCredentialMetadata, error) {
+	creds, err := aws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if creds.Region == "" {
+		creds.Region = "us-east-1"
+	}
+
+	iamClient := iam.NewFromConfig(creds)
+
+	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
+	if err != nil {
+		h.logger.Warn("failed to get user", zap.Error(err))
+		return nil, err
+	}
+	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
+		UserName: user.User.UserName,
+	})
+
+	policyARNs := make([]string, 0)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			h.logger.Warn("failed to get attached policies", zap.Error(err))
+			return nil, err
+		}
+		for _, policy := range page.AttachedPolicies {
+			policyARNs = append(policyARNs, *policy.PolicyArn)
+		}
+	}
+
+	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
+		UserName: user.User.UserName,
+	})
+	if err != nil {
+		h.logger.Warn("failed to get access keys", zap.Error(err))
+		return nil, err
+	}
+
+	creds, err = aws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accID, err := describer.STSAccount(ctx, creds)
+	if err != nil {
+		h.logger.Warn("failed to get account id", zap.Error(err))
+		return nil, err
+	}
+
+	metadata := model.AWSCredentialMetadata{
+		AccountID:        accID,
+		IamUserName:      user.User.UserName,
+		AttachedPolicies: policyARNs,
+	}
+	for _, key := range accessKeys.AccessKeyMetadata {
+		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
+			metadata.IamApiKeyCreationDate = *key.CreateDate
+		}
+	}
+
+	organization, err := describer.OrganizationOrganization(ctx, creds)
+	if err != nil {
+		var ae smithy.APIError
+		if !errors.As(err, &ae) ||
+			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+			h.logger.Warn("failed to get organization", zap.Error(err))
+
+			return nil, err
+		}
+	}
+
+	if organization != nil {
+		metadata.OrganizationID = organization.Id
+		metadata.OrganizationMasterAccountEmail = organization.MasterAccountEmail
+		metadata.OrganizationMasterAccountId = organization.MasterAccountId
+
+		accounts, err := discoverAWSAccounts(ctx, creds)
+		if err != nil {
+			h.logger.Warn("failed to get accounts", zap.Error(err))
+			return nil, err
+		}
+
+		metadata.OrganizationDiscoveredAccountCount = fp.Optional[int](len(accounts))
+	}
+
+	return &metadata, nil
 }
