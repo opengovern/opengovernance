@@ -176,12 +176,15 @@ func (h Connection) ListWithFilter(
 	lifecycleState []model.ConnectionLifecycleState,
 	healthStates []source.HealthStatus,
 ) ([]model.Connection, error) {
-	ctx, span := h.tracer.Start(ctx, "count")
+	ctx, span := h.tracer.Start(ctx, "list-with-filter")
 	defer span.End()
 
-	h.repo.ListWithFilters(ctx, types, ids, lifecycleState, healthStates)
+	conns, err := h.repo.ListWithFilters(ctx, types, ids, lifecycleState, healthStates)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return conns, nil
 }
 
 // Create a new connection in the database based on the given instance.

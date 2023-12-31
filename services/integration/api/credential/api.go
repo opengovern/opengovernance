@@ -54,7 +54,7 @@ func New(
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Success		200				{object}	api.Credential
+//	@Success		200				{object}	entity.Credential
 //	@Param			credentialId	path		string	true	"Credential ID"
 //	@Router			/integration/api/v1/credentials/{credentialId} [get]
 func (h API) Get(c echo.Context) error {
@@ -154,7 +154,7 @@ func (h API) Get(c echo.Context) error {
 //	@Summary		Edit azure credential
 //	@Description	Edit an azure credential by ID
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string								true	"Credential ID"
@@ -199,7 +199,7 @@ func (h API) UpdateAzure(c echo.Context) error {
 //	@Summary		Edit aws credential
 //	@Description	Edit an aws credential by ID
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string								true	"Credential ID"
@@ -487,7 +487,7 @@ func (h API) CreateAzure(c echo.Context) error {
 //	@Summary		Create AWS credential and does onboarding for its accounts (organization account)
 //	@Description	Creating AWS credential, testing it and onboard its accounts (organization account)
 //	@Security		BearerToken
-//	@Tags			integration
+//	@Tags			credentials
 //	@Produce		json
 //	@Success		200		{object}	entity.CreateCredentialResponse
 //	@Param			request	body		entity.CreateAWSCredentialRequest	true	"Request"
@@ -592,7 +592,7 @@ func (h API) CreateAWS(c echo.Context) error {
 //	@Summary		Onboard aws credential connections
 //	@Description	Onboard all available connections for an aws credential
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Param			credentialId	path		string	true	"CredentialID"
 //	@Success		200				{object}	[]entity.Connection
@@ -646,7 +646,7 @@ func (h API) AutoOnboardAWS(c echo.Context) error {
 //	@Summary		Onboard azure credential connections
 //	@Description	Onboard all available connections for an azure credential
 //	@Security		BearerToken
-//	@Tags			onboard
+//	@Tags			credentials
 //	@Produce		json
 //	@Param			credentialId	path		string	true	"CredentialID"
 //	@Success		200				{object}	[]entity.Connection
@@ -696,9 +696,11 @@ func (h API) AutoOnboardAzure(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
+	g.POST("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
 	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(s.Delete, api.EditorRole))
+	g.GET("/:credentialId", httpserver.AuthorizeHandler(s.Get, api.ViewerRole))
 	g.PUT("/aws/:credentialId", httpserver.AuthorizeHandler(s.UpdateAWS, api.EditorRole))
 	g.PUT("/azure/:credentialId", httpserver.AuthorizeHandler(s.UpdateAzure, api.EditorRole))
 	g.POST("aws/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAWS, api.EditorRole))
