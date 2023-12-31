@@ -696,7 +696,7 @@ func (h API) AutoOnboardAzure(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
-	g.POST("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
+	g.GET("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
 	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(s.Delete, api.EditorRole))

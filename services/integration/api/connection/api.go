@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -532,8 +531,6 @@ func (h API) Summaries(c echo.Context) error {
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
 	for idx, cnn := range result.Connections {
-		cnn.ConnectionID = demo.EncodeResponseData(c, cnn.ConnectionID)
-		cnn.ConnectionName = demo.EncodeResponseData(c, cnn.ConnectionName)
 		for _, pc := range pendingDescribeConnections {
 			if cnn.ID.String() == pc {
 				cnn.DescribeJobRunning = true
