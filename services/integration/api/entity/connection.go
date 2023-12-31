@@ -128,7 +128,7 @@ type CreateAWSConnectionRequest struct {
 // NewConnection creates API compatible connection from model connection.
 func NewConnection(s model.Connection) Connection {
 	metadata := make(map[string]any)
-	if len(metadata) > 0 {
+	if len(s.Metadata) > 0 {
 		_ = json.Unmarshal(s.Metadata, &metadata)
 	}
 
