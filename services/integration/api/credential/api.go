@@ -2,12 +2,12 @@ package credential
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -413,7 +413,7 @@ func (h API) CreateAWS(c echo.Context) error {
 
 	awsConfig, err := h.credentialSvc.AWSSDKConfig(
 		ctx,
-		fmt.Sprintf("arn:aws:iam::%s:role/%s", req.Config.AccountID, req.Config.AssumeRoleName),
+		aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName),
 		req.Config.ExternalId,
 	)
 	if err != nil {

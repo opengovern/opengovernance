@@ -60,6 +60,10 @@ func NewCredential(
 	}
 }
 
+func (h Credential) Create(ctx context.Context, cred *model.Credential) error {
+	return h.repo.Create(ctx, cred)
+}
+
 func (h Credential) ListWithFilters(
 	ctx context.Context,
 	connector source.Type,

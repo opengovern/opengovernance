@@ -173,10 +173,6 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 	return true, nil
 }
 
-func (h Credential) Create(ctx context.Context, cred *model.Credential) error {
-	return h.repo.Create(ctx, cred)
-}
-
 func (h Credential) AzureOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
 	connections := make([]model.Connection, 0)
 

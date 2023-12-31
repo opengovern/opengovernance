@@ -602,7 +602,7 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 		return err
 	}
 
-	config, err := fp.FromMap[describe.AWSAccountConfig](cnf)
+	config, err := fp.FromMap[entity.AWSCredentialConfig](cnf)
 	if err != nil {
 		return err
 	}
@@ -612,12 +612,34 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 			config.AssumeRoleName = req.Config.AssumeRoleName
 		}
 
+		if req.Config.AccountID != "" {
+			config.AccountID = req.Config.AccountID
+		}
+
 		if req.Config.ExternalId != nil {
-			config.ExternalID = req.Config.ExternalId
+			config.ExternalId = req.Config.ExternalId
 		}
 	}
 
-	metadata, err := h.AWSMetadata(ctx, config)
+	awsConfig, err := h.AWSSDKConfig(
+		ctx,
+		aws.GetRoleArnFromName(config.AccountID, config.AssumeRoleName),
+		req.Config.ExternalId,
+	)
+	if err != nil {
+		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
+
+		return err
+	}
+
+	org, accounts, err := h.AWSOrgAccounts(ctx, awsConfig)
+	if err != nil {
+		h.logger.Error("getting aws accounts and organizations", zap.Error(err))
+
+		return err
+	}
+
+	metadata, err := model.ExtractCredentialMetadata(config.AccountID, org, accounts)
 	if err != nil {
 		return err
 	}
@@ -629,19 +651,11 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 
 	cred.Metadata = jsonMetadata
 
-	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
 	if err != nil {
 		return err
 	}
-
 	cred.Secret = string(secretBytes)
-	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
-		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
-		config.AssumeRoleName != "" && config.ExternalID != nil {
-		cred.Name = metadata.OrganizationID
-		cred.CredentialType = model.CredentialTypeManualAwsOrganization
-		cred.AutoOnboardEnabled = true
-	}
 
 	if err := h.repo.Update(ctx, cred); err != nil {
 		span.RecordError(err)
@@ -738,96 +752,4 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 	}
 
 	return connection, nil
-}
-
-func (h Credential) AWSMetadata(ctx context.Context, config *describe.AWSAccountConfig) (*model.AWSCredentialMetadata, error) {
-	creds, err := aws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if creds.Region == "" {
-		creds.Region = "us-east-1"
-	}
-
-	iamClient := iam.NewFromConfig(creds)
-
-	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
-	if err != nil {
-		h.logger.Warn("failed to get user", zap.Error(err))
-		return nil, err
-	}
-	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
-		UserName: user.User.UserName,
-	})
-
-	policyARNs := make([]string, 0)
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			h.logger.Warn("failed to get attached policies", zap.Error(err))
-			return nil, err
-		}
-		for _, policy := range page.AttachedPolicies {
-			policyARNs = append(policyARNs, *policy.PolicyArn)
-		}
-	}
-
-	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
-		UserName: user.User.UserName,
-	})
-	if err != nil {
-		h.logger.Warn("failed to get access keys", zap.Error(err))
-		return nil, err
-	}
-
-	creds, err = aws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	accID, err := describer.STSAccount(ctx, creds)
-	if err != nil {
-		h.logger.Warn("failed to get account id", zap.Error(err))
-		return nil, err
-	}
-
-	metadata := model.AWSCredentialMetadata{
-		AccountID:        accID,
-		IamUserName:      user.User.UserName,
-		AttachedPolicies: policyARNs,
-	}
-	for _, key := range accessKeys.AccessKeyMetadata {
-		if *key.AccessKeyId == config.AccessKey && key.CreateDate != nil {
-			metadata.IamApiKeyCreationDate = *key.CreateDate
-		}
-	}
-
-	organization, err := describer.OrganizationOrganization(ctx, creds)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) ||
-			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
-			h.logger.Warn("failed to get organization", zap.Error(err))
-
-			return nil, err
-		}
-	}
-
-	if organization != nil {
-		metadata.OrganizationID = organization.Id
-		metadata.OrganizationMasterAccountEmail = organization.MasterAccountEmail
-		metadata.OrganizationMasterAccountId = organization.MasterAccountId
-
-		accounts, err := discoverAWSAccounts(ctx, creds)
-		if err != nil {
-			h.logger.Warn("failed to get accounts", zap.Error(err))
-			return nil, err
-		}
-
-		metadata.OrganizationDiscoveredAccountCount = fp.Optional[int](len(accounts))
-	}
-
-	return &metadata, nil
 }
