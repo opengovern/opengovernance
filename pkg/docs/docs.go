@@ -3147,6 +3147,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/api/v1/connections/{connectionId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Deleting a single connection either AWS / Azure for the given connection id. it will delete its parent credential too, if it doesn't have any other child.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "Delete connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/integration/api/v1/connections/{connectionId}/aws/healthcheck": {
             "get": {
                 "security": [
@@ -3222,6 +3253,154 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/api/v1/connectors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of all connectors",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connectors"
+                ],
+                "summary": "List connectors",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectorCount"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/connectors/metrics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the list of metrics for catalog page.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "integration"
+                ],
+                "summary": "List catalog metrics",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector",
+                        "name": "connector",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CatalogMetrics"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of credentials with their details",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "credentials"
+                ],
+                "summary": "List credentials",
+                "parameters": [
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "filter by connector type",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "healthy",
+                            "unhealthy"
+                        ],
+                        "type": "string",
+                        "description": "filter by health status",
+                        "name": "health",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "auto-azure",
+                                "auto-aws",
+                                "manual-aws-org",
+                                "manual-azure-spn"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter by credential type",
+                        "name": "credentialType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "page size",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "page number",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListCredentialResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/integration/api/v1/credentials/aws": {
             "post": {
                 "security": [
@@ -3258,6 +3437,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/api/v1/credentials/aws/{credentialId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Edit an aws credential by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Edit aws credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Credential ID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAWSCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials/aws/{credentialId}/autoonboard": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Onboard all available connections for an aws credential",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Onboard aws credential connections",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/integration/api/v1/credentials/azure": {
             "post": {
                 "security": [
@@ -3289,6 +3545,83 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateCredentialResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials/azure/{credentialId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Edit an azure credential by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Edit azure credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Credential ID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAzureCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/integration/api/v1/credentials/azure/{credentialId}/autoonboard": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Onboard all available connections for an azure credential",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Onboard azure credential connections",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection"
+                            }
                         }
                     }
                 }
@@ -11219,6 +11552,36 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CatalogMetrics": {
+            "type": "object",
+            "properties": {
+                "connectionsEnabled": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 20
+                },
+                "healthyConnections": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 15
+                },
+                "inProgressConnections": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
+                },
+                "totalConnections": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 20
+                },
+                "unhealthyConnections": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Connection": {
             "type": "object",
             "properties": {
@@ -11368,6 +11731,68 @@ const docTemplate = `{
                 "ConnectionLifecycleStateInProgress",
                 "ConnectionLifecycleStateArchived"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ConnectorCount": {
+            "type": "object",
+            "properties": {
+                "allowNewConnections": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "autoOnboardSupport": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "connection_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 1024
+                },
+                "description": {
+                    "type": "string",
+                    "example": "This is a long volume of words for just showing the case of the description for the demo and checking value purposes only and has no meaning whatsoever"
+                },
+                "direction": {
+                    "$ref": "#/definitions/source.ConnectorDirectionType"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Azure"
+                },
+                "logo": {
+                    "type": "string",
+                    "example": "https://kaytu.io/logo.png"
+                },
+                "maxConnectionLimit": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 10000
+                },
+                "name": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "shortDescription": {
+                    "type": "string",
+                    "example": "This is a short Description for this connector"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.ConnectorStatus"
+                        }
+                    ],
+                    "example": "enabled"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest": {
             "type": "object",
@@ -11620,6 +12045,45 @@ const docTemplate = `{
                     "maximum": 100,
                     "minimum": 0,
                     "example": 10
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListCredentialResponse": {
+            "type": "object",
+            "properties": {
+                "credentials": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Credential"
+                    }
+                },
+                "totalCredentialCount": {
+                    "type": "integer",
+                    "maximum": 20,
+                    "minimum": 0,
+                    "example": 5
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAWSCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAzureCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

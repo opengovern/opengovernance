@@ -4,6 +4,7 @@ import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/connection"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/connector"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/credential"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/healthz"
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
@@ -54,8 +55,11 @@ func New(
 func (api *API) Register(e *echo.Echo) {
 	var healthz healthz.Healthz
 
+	repo := repository.NewCredConnSQL(api.database)
+
 	connSvc := service.NewConnection(
 		repository.NewConnectionSQL(api.database),
+		repo,
 		api.kms,
 		api.arn,
 		api.describe,
@@ -68,6 +72,7 @@ func (api *API) Register(e *echo.Echo) {
 
 	credSvc := service.NewCredential(
 		repository.NewCredentialSQL(api.database),
+		repo,
 		api.kms,
 		api.arn,
 		api.describe,
@@ -91,7 +96,14 @@ func (api *API) Register(e *echo.Echo) {
 		api.logger,
 	)
 
+	connector := connector.New(
+		connSvc,
+		service.NewConnector(repository.NewConnectorSQL(api.database), api.logger),
+		api.logger,
+	)
+
 	healthz.Register(e.Group("/api/v1/healthz"))
 	connection.Register(e.Group("/api/v1/connections"))
 	credential.Register(e.Group("/api/v1/credentials"))
+	connector.Register(e.Group("/api/v1/connectors"))
 }

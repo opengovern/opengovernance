@@ -25,6 +25,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -148,8 +151,8 @@ func (h Credential) AWSHealthCheck(
 		cred.LastHealthCheckTime = time.Now()
 
 		if update == true {
-			if dberr := h.repo.Update(ctx, cred); dberr != nil {
-				err = dberr
+			if dbErr := h.repo.Update(ctx, cred); dbErr != nil {
+				err = dbErr
 			}
 		}
 	}()
@@ -361,7 +364,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 			return nil, err
 		}
 
-		maxConnections, err := h.connSvc.MaxConnections()
+		maxConnections, err := h.connSvc.MaxConnections(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -494,7 +497,7 @@ func (h Connection) NewAWS(
 		SecretKey: h.masterSecretKey,
 	}
 
-	maxConnections, err := h.MaxConnections()
+	maxConnections, err := h.MaxConnections(ctx)
 	if err != nil {
 		h.logger.Error("cannot read number of the available connections", zap.Error(err))
 
@@ -573,6 +576,98 @@ func (h Connection) NewAWS(
 	s.Credential.Secret = string(secretBytes)
 
 	return s, nil
+}
+
+func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateAWSCredentialRequest) error {
+	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
+	defer span.End()
+
+	cred, err := h.Get(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *cred.Name),
+	))
+
+	if req.Name != nil {
+		cred.Name = req.Name
+	}
+
+	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+
+	config, err := fp.FromMap[entity.AWSCredentialConfig](cnf)
+	if err != nil {
+		return err
+	}
+
+	if req.Config != nil {
+		if req.Config.AssumeRoleName != "" {
+			config.AssumeRoleName = req.Config.AssumeRoleName
+		}
+
+		if req.Config.AccountID != "" {
+			config.AccountID = req.Config.AccountID
+		}
+
+		if req.Config.ExternalId != nil {
+			config.ExternalId = req.Config.ExternalId
+		}
+	}
+
+	awsConfig, err := h.AWSSDKConfig(
+		ctx,
+		aws.GetRoleArnFromName(config.AccountID, config.AssumeRoleName),
+		req.Config.ExternalId,
+	)
+	if err != nil {
+		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
+
+		return err
+	}
+
+	org, accounts, err := h.AWSOrgAccounts(ctx, awsConfig)
+	if err != nil {
+		h.logger.Error("getting aws accounts and organizations", zap.Error(err))
+
+		return err
+	}
+
+	metadata, err := model.ExtractCredentialMetadata(config.AccountID, org, accounts)
+	if err != nil {
+		return err
+	}
+
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+
+	cred.Metadata = jsonMetadata
+
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	cred.Secret = string(secretBytes)
+
+	if err := h.repo.Update(ctx, cred); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	if _, err := h.AWSHealthCheck(ctx, cred, true); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AWSHealthCheck checks the connection health status and update the returned model. if the update flag is false then

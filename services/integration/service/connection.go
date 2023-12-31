@@ -28,20 +28,22 @@ var (
 )
 
 type Connection struct {
-	keyARN          string
-	kms             *vault.KMSVaultSourceConfig
-	tracer          trace.Tracer
-	repo            repository.Connection
-	describe        describe.SchedulerServiceClient
-	inventory       inventory.InventoryServiceClient
-	meta            *meta.Meta
-	masterAccessKey string
-	masterSecretKey string
-	logger          *zap.Logger
+	keyARN            string
+	kms               *vault.KMSVaultSourceConfig
+	tracer            trace.Tracer
+	repo              repository.Connection
+	transactionalRepo repository.CredConn
+	describe          describe.SchedulerServiceClient
+	inventory         inventory.InventoryServiceClient
+	meta              *meta.Meta
+	masterAccessKey   string
+	masterSecretKey   string
+	logger            *zap.Logger
 }
 
 func NewConnection(
 	repo repository.Connection,
+	transactionalRepo repository.CredConn,
 	kms *vault.KMSVaultSourceConfig,
 	keyARN string,
 	describe describe.SchedulerServiceClient,
@@ -52,47 +54,18 @@ func NewConnection(
 	logger *zap.Logger,
 ) Connection {
 	return Connection{
-		tracer:          otel.GetTracerProvider().Tracer("integration.service.connection"),
-		repo:            repo,
-		keyARN:          keyARN,
-		kms:             kms,
-		inventory:       inventory,
-		describe:        describe,
-		meta:            meta,
-		masterAccessKey: masterAccessKey,
-		masterSecretKey: masterSecretKey,
-		logger:          logger.Named("service").Named("connection"),
+		tracer:            otel.GetTracerProvider().Tracer("integration.service.connection"),
+		repo:              repo,
+		transactionalRepo: transactionalRepo,
+		keyARN:            keyARN,
+		kms:               kms,
+		inventory:         inventory,
+		describe:          describe,
+		meta:              meta,
+		masterAccessKey:   masterAccessKey,
+		masterSecretKey:   masterSecretKey,
+		logger:            logger.Named("service").Named("connection"),
 	}
-}
-
-// Validate check whether number of the user connections
-// reached the threshold or not.
-func (h Connection) Validate(ctx context.Context, toAdd int) error {
-	ctx, span := h.tracer.Start(ctx, "validate")
-	defer span.End()
-
-	count, err := h.Count(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	cnf, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyConnectionLimit)
-	if err != nil {
-		return err
-	}
-
-	var maxConnections int64
-	if v, ok := cnf.GetValue().(int64); ok {
-		maxConnections = v
-	} else if v, ok := cnf.GetValue().(int); ok {
-		maxConnections = int64(v)
-	}
-
-	if count+int64(toAdd) > maxConnections {
-		return ErrMaxConnectionsExceeded
-	}
-
-	return nil
 }
 
 func (h Connection) Data(
@@ -235,7 +208,10 @@ func (h Connection) Update(
 
 // MaxConnections reads the maximum number of the available connection in the workspace
 // from the metadata service.
-func (h Connection) MaxConnections() (int64, error) {
+func (h Connection) MaxConnections(ctx context.Context) (int64, error) {
+	ctx, span := h.tracer.Start(ctx, "count-by-credential")
+	defer span.End()
+
 	cnf, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyConnectionLimit)
 	if err != nil {
 		return 0, err
@@ -255,7 +231,8 @@ func (h Connection) MaxConnections() (int64, error) {
 	return maxConnections, nil
 }
 
-// UpdateHealth update the health status of the connection.
+// UpdateHealth update the health status of the connection. using update database flag,
+// you can control the database record should be updated or not.
 func (h Connection) UpdateHealth(
 	ctx context.Context,
 	connection model.Connection,
@@ -280,4 +257,27 @@ func (h Connection) UpdateHealth(
 	}
 
 	return connection, nil
+}
+
+func (h Connection) CountByCredential(ctx context.Context, credentialID string, states []model.ConnectionLifecycleState, healthStates []source.HealthStatus) (int64, error) {
+	ctx, span := h.tracer.Start(ctx, "count-by-credential")
+	defer span.End()
+
+	count, err := h.repo.CountByCredential(ctx, credentialID, states, healthStates)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, err
+}
+
+func (h Connection) Delete(ctx context.Context, conn model.Connection) error {
+	ctx, span := h.tracer.Start(ctx, "delete")
+	defer span.End()
+
+	if err := h.transactionalRepo.DeleteConnection(ctx, conn); err != nil {
+		return err
+	}
+
+	return nil
 }

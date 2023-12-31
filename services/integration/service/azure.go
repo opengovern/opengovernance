@@ -23,6 +23,9 @@ import (
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 )
@@ -170,10 +173,6 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 	return true, nil
 }
 
-func (h Credential) Create(ctx context.Context, cred *model.Credential) error {
-	return h.repo.Create(ctx, cred)
-}
-
 func (h Credential) AzureOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
 	connections := make([]model.Connection, 0)
 
@@ -253,7 +252,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 			return nil, err
 		}
 
-		maxConnections, err := h.connSvc.MaxConnections()
+		maxConnections, err := h.connSvc.MaxConnections(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -359,6 +358,83 @@ func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig a
 	}
 
 	return subs, nil
+}
+
+func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateAzureCredentialRequest) error {
+	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
+	defer span.End()
+
+	cred, err := h.Get(ctx, id.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *cred.Name),
+	))
+
+	if req.Name != nil {
+		cred.Name = req.Name
+	}
+
+	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+	config, err := fp.FromMap[describe.AzureSubscriptionConfig](cnf)
+	if err != nil {
+		return err
+	}
+
+	if req.Config != nil {
+		if req.Config.TenantId != "" {
+			config.TenantID = req.Config.TenantId
+		}
+
+		if req.Config.ObjectId != "" {
+			config.ObjectID = req.Config.ObjectId
+		}
+
+		if req.Config.ClientId != "" {
+			config.ClientID = req.Config.ClientId
+		}
+
+		if req.Config.ClientSecret != "" {
+			config.ClientSecret = req.Config.ClientSecret
+		}
+	}
+
+	metadata, err := h.AzureMetadata(ctx, *config)
+	if err != nil {
+		return err
+	}
+
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	cred.Metadata = jsonMetadata
+	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+
+	cred.Secret = string(secretBytes)
+	if metadata.SpnName != "" {
+		cred.Name = &metadata.SpnName
+	}
+
+	if err := h.repo.Update(ctx, cred); err != nil {
+		return err
+	}
+
+	if err := h.repo.Update(ctx, cred); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (h Connection) AzureHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {

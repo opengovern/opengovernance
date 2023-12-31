@@ -31,6 +31,7 @@ type Connection interface {
 
 	Count(context.Context) (int64, error)
 	CountOfType(context.Context, source.Type) (int64, error)
+	CountByCredential(context.Context, string, []model.ConnectionLifecycleState, []source.HealthStatus) (int64, error)
 
 	Create(context.Context, model.Connection) error
 	Update(context.Context, model.Connection) error
@@ -171,4 +172,24 @@ func (s ConnectionSQL) Update(ctx context.Context, c model.Connection) error {
 	}
 
 	return nil
+}
+
+func (s ConnectionSQL) CountByCredential(ctx context.Context, credentialID string, states []model.ConnectionLifecycleState, healthStates []source.HealthStatus) (int64, error) {
+	var count int64
+	tx := s.db.DB.WithContext(ctx).Model(new(model.Connection)).Where("credential_id = ?", credentialID)
+
+	if len(states) > 0 {
+		tx = tx.Where("lifecycle_state IN ?", states)
+	}
+
+	if len(healthStates) > 0 {
+		tx = tx.Where("health_state IN ?", healthStates)
+	}
+
+	tx = tx.Count(&count)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+
+	return count, nil
 }

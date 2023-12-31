@@ -38,10 +38,14 @@ type CreateCredentialResponse struct {
 	Connections []Connection `json:"connections"`
 }
 
-type UpdateCredentialRequest struct {
-	Connector source.Type `json:"connector" example:"Azure"`
-	Name      *string     `json:"name"`
-	Config    any         `json:"config"`
+type UpdateAWSCredentialRequest struct {
+	Name   *string              `json:"name"`
+	Config *AWSCredentialConfig `json:"config"`
+}
+
+type UpdateAzureCredentialRequest struct {
+	Name   *string                `json:"name"`
+	Config *AzureCredentialConfig `json:"config"`
 }
 
 type ListCredentialResponse struct {
@@ -79,13 +83,13 @@ type Credential struct {
 
 	Connections []Connection `json:"connections,omitempty"`
 
-	TotalConnections     *int `json:"total_connections" example:"300" minimum:"0" maximum:"1000"`
-	UnhealthyConnections *int `json:"unhealthy_connections" example:"50" minimum:"0" maximum:"100"`
+	TotalConnections     *int64 `json:"total_connections" example:"300" minimum:"0" maximum:"1000"`
+	UnhealthyConnections *int64 `json:"unhealthy_connections" example:"50" minimum:"0" maximum:"100"`
 
-	DiscoveredConnections *int `json:"discovered_connections" example:"50" minimum:"0" maximum:"100"`
-	OnboardConnections    *int `json:"onboard_connections" example:"250" minimum:"0" maximum:"1000"`
-	DisabledConnections   *int `json:"disabled_connections" example:"0" minimum:"0" maximum:"1000"`
-	ArchivedConnections   *int `json:"archived_connections" example:"0" minimum:"0" maximum:"1000"`
+	DiscoveredConnections *int64 `json:"discovered_connections" example:"50" minimum:"0" maximum:"100"`
+	OnboardConnections    *int64 `json:"onboard_connections" example:"250" minimum:"0" maximum:"1000"`
+	DisabledConnections   *int64 `json:"disabled_connections" example:"0" minimum:"0" maximum:"1000"`
+	ArchivedConnections   *int64 `json:"archived_connections" example:"0" minimum:"0" maximum:"1000"`
 }
 
 // NewCredential creates API compatible credential from model credential.

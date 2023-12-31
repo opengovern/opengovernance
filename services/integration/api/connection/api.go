@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type API struct {
@@ -50,6 +51,54 @@ func New(
 		tracer:  otel.GetTracerProvider().Tracer("integration.http.sources"),
 		logger:  logger.Named("source"),
 	}
+}
+
+// DeleteConnection godoc
+//
+//	@Summary		Delete connection
+//	@Description	Deleting a single connection either AWS / Azure for the given connection id. it will delete its parent credential too, if it doesn't have any other child.
+//	@Security		BearerToken
+//	@Tags			connections
+//	@Produce		json
+//	@Success		200
+//	@Param			connectionId	path	string	true	"Source ID"
+//	@Router			/integration/api/v1/connections/{connectionId} [delete]
+func (h API) Delete(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	connID, err := uuid.Parse(c.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	ctx, span := h.tracer.Start(ctx, "delete", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	connections, err := h.connSvc.Get(ctx, []string{connID.String()})
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "connection not found")
+		}
+
+		return err
+	}
+
+	connection := connections[0]
+
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("connection name", connection.Name),
+	))
+
+	if err := h.connSvc.Delete(ctx, connection); err != nil {
+		h.logger.Error("cannot delete the given connection and its related credential", zap.Error(err))
+
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (h API) List(c echo.Context) error {
@@ -867,7 +916,8 @@ func (h API) AWSCreate(c echo.Context) error {
 		return err
 	}
 
-	if _, err := h.connSvc.AWSHealthCheck(ctx, src, false); err != nil {
+	src, err = h.connSvc.AWSHealthCheck(ctx, src, false)
+	if err != nil {
 		h.logger.Error("connection health check failed", zap.Error(err))
 
 		return err
