@@ -13,6 +13,7 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
 		&ApiKey{},
+		&WorkspaceMap{},
 	)
 	if err != nil {
 		return err
