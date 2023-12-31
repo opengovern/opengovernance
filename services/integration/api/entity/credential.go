@@ -38,10 +38,14 @@ type CreateCredentialResponse struct {
 	Connections []Connection `json:"connections"`
 }
 
-type UpdateCredentialRequest struct {
-	Connector source.Type `json:"connector" example:"Azure"`
-	Name      *string     `json:"name"`
-	Config    any         `json:"config"`
+type UpdateAWSCredentialRequest struct {
+	Name   *string              `json:"name"`
+	Config *AWSCredentialConfig `json:"config"`
+}
+
+type UpdateAzureCredentialRequest struct {
+	Name   *string                `json:"name"`
+	Config *AzureCredentialConfig `json:"config"`
 }
 
 type ListCredentialResponse struct {

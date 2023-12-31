@@ -578,7 +578,7 @@ func (h Connection) NewAWS(
 	return s, nil
 }
 
-func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateCredentialRequest) error {
+func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateAWSCredentialRequest) error {
 	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
 	defer span.End()
 
@@ -608,23 +608,12 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 	}
 
 	if req.Config != nil {
-		configStr, err := json.Marshal(req.Config)
-		if err != nil {
-			return err
+		if req.Config.AssumeRoleName != "" {
+			config.AssumeRoleName = req.Config.AssumeRoleName
 		}
 
-		var newConfig entity.AWSCredentialConfig
-
-		if err := json.Unmarshal(configStr, &newConfig); err != nil {
-			return err
-		}
-
-		if newConfig.AssumeRoleName != "" {
-			config.AssumeRoleName = newConfig.AssumeRoleName
-		}
-
-		if newConfig.ExternalId != nil {
-			config.ExternalID = newConfig.ExternalId
+		if req.Config.ExternalId != nil {
+			config.ExternalID = req.Config.ExternalId
 		}
 	}
 

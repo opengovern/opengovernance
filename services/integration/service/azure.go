@@ -364,7 +364,7 @@ func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig a
 	return subs, nil
 }
 
-func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateCredentialRequest) error {
+func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateAzureCredentialRequest) error {
 	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
 	defer span.End()
 
@@ -393,31 +393,20 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 	}
 
 	if req.Config != nil {
-		configStr, err := json.Marshal(req.Config)
-		if err != nil {
-			return err
+		if req.Config.TenantId != "" {
+			config.TenantID = req.Config.TenantId
 		}
 
-		var newConfig entity.AzureCredentialConfig
-
-		if err := json.Unmarshal(configStr, &newConfig); err != nil {
-			return err
+		if req.Config.ObjectId != "" {
+			config.ObjectID = req.Config.ObjectId
 		}
 
-		if newConfig.TenantId != "" {
-			config.TenantID = newConfig.TenantId
+		if req.Config.ClientId != "" {
+			config.ClientID = req.Config.ClientId
 		}
 
-		if newConfig.ObjectId != "" {
-			config.ObjectID = newConfig.ObjectId
-		}
-
-		if newConfig.ClientId != "" {
-			config.ClientID = newConfig.ClientId
-		}
-
-		if newConfig.ClientSecret != "" {
-			config.ClientSecret = newConfig.ClientSecret
+		if req.Config.ClientSecret != "" {
+			config.ClientSecret = req.Config.ClientSecret
 		}
 	}
 

@@ -46,18 +46,18 @@ func New(
 	}
 }
 
-// Update godoc
+// UpdateAzure godoc
 //
-//	@Summary		Edit credential
-//	@Description	Edit a credential by ID
+//	@Summary		Edit azure credential
+//	@Description	Edit an azure credential by ID
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string						true	"Credential ID"
 //	@Param			config			body	api.UpdateCredentialRequest	true	"config"
-//	@Router			/integration/api/v1/credentials/{credentialId} [put]
-func (h API) Update(c echo.Context) error {
+//	@Router			/integration/api/v1/credentials/azure/{credentialId} [put]
+func (h API) UpdateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
 	id, err := uuid.Parse(c.Param("credentialId"))
@@ -65,7 +65,7 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
 
-	var req entity.UpdateCredentialRequest
+	var req entity.UpdateAzureCredentialRequest
 
 	ctx, span := h.tracer.Start(ctx, "update-credential")
 	defer span.End()
@@ -84,17 +84,56 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	switch req.Connector {
-	case source.CloudAzure:
-		return h.credentialSvc.AzureUpdate(ctx, id, req)
-	case source.CloudAWS:
-		return h.credentialSvc.AWSUpdate(ctx, id, req)
+	if err := h.credentialSvc.AzureUpdate(ctx, id, req); err != nil {
+		return err
 	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *req.Name),
-	))
 
-	return c.JSON(http.StatusBadRequest, "invalid source type")
+	return c.NoContent(http.StatusOK)
+}
+
+// UpdateAWS godoc
+//
+//	@Summary		Edit aws credential
+//	@Description	Edit an aws credential by ID
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			credentialId	path	string						true	"Credential ID"
+//	@Param			config			body	api.UpdateCredentialRequest	true	"config"
+//	@Router			/integration/api/v1/credentials/aws/{credentialId} [put]
+func (h API) UpdateAWS(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	id, err := uuid.Parse(c.Param("credentialId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+
+	var req entity.UpdateAWSCredentialRequest
+
+	ctx, span := h.tracer.Start(ctx, "update-credential")
+	defer span.End()
+
+	if err := c.Bind(&req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(&req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := h.credentialSvc.AWSUpdate(ctx, id, req); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 // List godoc
@@ -445,10 +484,120 @@ func (h API) CreateAWS(c echo.Context) error {
 	})
 }
 
+// AutoOnboardAWS godoc
+//
+//	@Summary		Onboard aws credential connections
+//	@Description	Onboard all available connections for an aws credential
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			credentialId	path		string	true	"CredentialID"
+//	@Success		200				{object}	[]entity.Connection
+//	@Router			/integration/api/v1/credentials/aws/{credentialId}/autoonboard [post]
+func (h API) AutoOnboardAWS(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "auto-onboard-aws")
+	defer span.End()
+
+	credID, err := uuid.Parse(c.Param("credentialId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.credentialSvc.Get(ctx, credID.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		if errors.Is(err, repository.ErrCredentialNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+
+		return err
+	}
+
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+
+	connections, err := h.credentialSvc.AWSOnboard(ctx, *credential)
+	if err != nil {
+		return err
+	}
+
+	response := make([]entity.Connection, len(connections))
+
+	for i, connection := range connections {
+		// checking the connection health and update its metadata.
+		h.connectionSvc.AWSHealthCheck(ctx, connection, true)
+
+		response[i] = entity.NewConnection(connection)
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// AutoOnboardAzure godoc
+//
+//	@Summary		Onboard azure credential connections
+//	@Description	Onboard all available connections for an azure credential
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			credentialId	path		string	true	"CredentialID"
+//	@Success		200				{object}	[]entity.Connection
+//	@Router			/integration/api/v1/credentials/azure/{credentialId}/autoonboard [post]
+func (h API) AutoOnboardAzure(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+
+	ctx, span := h.tracer.Start(ctx, "auto-onboard-azure")
+	defer span.End()
+
+	credID, err := uuid.Parse(c.Param("credentialId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.credentialSvc.Get(ctx, credID.String())
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		if errors.Is(err, repository.ErrCredentialNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+
+		return err
+	}
+
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+
+	connections, err := h.credentialSvc.AzureOnboard(ctx, *credential)
+	if err != nil {
+		return err
+	}
+
+	response := make([]entity.Connection, len(connections))
+
+	for i, connection := range connections {
+		// checking the connection health and update its metadata.
+		h.connectionSvc.AzureHealth(ctx, connection, true)
+
+		response[i] = entity.NewConnection(connection)
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
 func (s API) Register(g *echo.Group) {
 	g.POST("/azure", httpserver.AuthorizeHandler(s.CreateAzure, api.EditorRole))
 	g.POST("/aws", httpserver.AuthorizeHandler(s.CreateAWS, api.EditorRole))
 	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(s.Delete, api.EditorRole))
-	// TODO: autoonboard AWS
-	// TODO: autoonboard Azure
+	g.PUT("/aws/:credentialId", httpserver.AuthorizeHandler(s.UpdateAWS, api.EditorRole))
+	g.PUT("/azure/:credentialId", httpserver.AuthorizeHandler(s.UpdateAzure, api.EditorRole))
+	g.POST("aws/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAWS, api.EditorRole))
+	g.POST("azure/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAzure, api.EditorRole))
 }
