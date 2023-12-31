@@ -151,8 +151,8 @@ func (h Credential) AWSHealthCheck(
 		cred.LastHealthCheckTime = time.Now()
 
 		if update == true {
-			if dberr := h.repo.Update(ctx, cred); dberr != nil {
-				err = dberr
+			if dbErr := h.repo.Update(ctx, cred); dbErr != nil {
+				err = dbErr
 			}
 		}
 	}()
