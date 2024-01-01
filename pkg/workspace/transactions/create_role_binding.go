@@ -45,8 +45,8 @@ func (t *CreateRoleBinding) ApplyIdempotent(workspace db.Workspace) error {
 
 func (t *CreateRoleBinding) RollbackIdempotent(workspace db.Workspace) error {
 	authCtx := &httpclient.Context{
-		UserID:        *workspace.OwnerId,
-		UserRole:      authapi.AdminRole,
+		UserID:        authapi.GodUserID,
+		UserRole:      authapi.InternalRole,
 		WorkspaceName: workspace.Name,
 		WorkspaceID:   workspace.ID,
 	}
