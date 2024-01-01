@@ -1266,7 +1266,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				return true
 			}
 			if *diffi != *diffj {
-				return *diffi > *diffj
+				return math.Abs(*diffi) > math.Abs(*diffj)
 			}
 		case "growth_rate":
 			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
@@ -1299,7 +1299,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				return true
 			}
 			if *diffi/(*costMetrics[i].DailyCostAtStartTime) != *diffj/(*costMetrics[j].DailyCostAtStartTime) {
-				return *diffi/(*costMetrics[i].DailyCostAtStartTime) > *diffj/(*costMetrics[j].DailyCostAtStartTime)
+				return math.Abs(*diffi/(*costMetrics[i].DailyCostAtStartTime)) > math.Abs(*diffj/(*costMetrics[j].DailyCostAtStartTime))
 			}
 		}
 		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
