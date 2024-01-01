@@ -56,7 +56,7 @@ func (c *authClient) DeleteRoleBinding(ctx *httpclient.Context, workspaceID, use
 		httpserver.XKaytuUserRoleHeader:    string(ctx.UserRole),
 		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
 	}
-	_, res := httpclient.DoRequest(http.MethodPut, url, headers, nil, nil)
+	_, res := httpclient.DoRequest(http.MethodDelete, url, headers, nil, nil)
 	return res
 }
 
