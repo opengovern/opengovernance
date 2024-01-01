@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
+	"strings"
 )
 
 type ResourceFindingsQueryHit struct {
@@ -227,4 +228,150 @@ return total;`, types.ConformanceStatusOK)
 	}
 
 	return response.Hits.Hits, response.Hits.Total.Value, nil
+}
+
+type GetPerBenchmarkResourceSeverityResultResponse struct {
+	Aggregations struct {
+		Findings struct {
+			BenchmarkGroup struct {
+				Buckets []struct {
+					Key           string `json:"key"`
+					SeverityGroup struct {
+						Buckets []struct {
+							Key           string `json:"key"`
+							ResourceCount struct {
+								DocCount int `json:"doc_count"`
+							} `json:"resourceCount"`
+						} `json:"buckets"`
+					} `json:"severityGroup"`
+				} `json:"buckets"`
+			} `json:"benchmarkGroup"`
+		} `json:"findings"`
+	} `json:"aggregations"`
+}
+
+func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
+	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.SeverityResultWithTotal, error) {
+	request := make(map[string]any)
+	filters := make([]map[string]any, 0)
+	nestedFilters := make([]map[string]any, 0)
+	if len(benchmarkIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string][]string{
+				"findings.benchmarkID": benchmarkIDs,
+			},
+		})
+	}
+	if len(connectionIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string][]string{
+				"findings.connectionID": connectionIDs,
+			},
+		})
+	}
+	if len(resourceCollections) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"resourceCollections": resourceCollections,
+			},
+		})
+	}
+	if len(severities) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string]any{
+				"findings.severity": severities,
+			},
+		})
+	}
+	if len(conformanceStatuses) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string]any{
+				"findings.conformanceStatus": conformanceStatuses,
+			},
+		})
+	}
+
+	requestQuery := make(map[string]any, 0)
+	if len(nestedFilters) > 0 {
+		requestQuery["nested"] = map[string]any{
+			"nested": map[string]any{
+				"path":  "findings",
+				"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
+			},
+		}
+	}
+	if len(filters) > 0 {
+		requestQuery["bool"] = map[string]any{
+			"filter": filters,
+		}
+	}
+	request["query"] = requestQuery
+	request["size"] = 0
+
+	request["aggs"] = map[string]any{
+		"findings": map[string]any{
+			"nested": map[string]any{
+				"path": "findings",
+			},
+			"aggs": map[string]any{
+				"benchmarkGroup": map[string]any{
+					"terms": map[string]any{
+						"field": "findings.benchmarkID",
+						"size":  10000,
+					},
+					"aggs": map[string]any{
+						"severityGroup": map[string]any{
+							"terms": map[string]any{
+								"field": "findings.severity",
+								"size":  10000,
+							},
+							"aggs": map[string]any{
+								"resourceCount": map[string]any{
+									"reverse_nested": map[string]any{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		logger.Error("GetPerBenchmarkResourceSeverityResult", zap.Error(err), zap.Any("request", request))
+	}
+
+	logger.Info("GetPerBenchmarkResourceSeverityResult", zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
+	var response GetPerBenchmarkResourceSeverityResultResponse
+	err = client.Search(context.Background(), types.ResourceFindingsIndex, string(query), &response)
+	if err != nil {
+		logger.Error("GetPerBenchmarkResourceSeverityResult", zap.Error(err), zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
+		return nil, err
+	}
+
+	result := make(map[string]types.SeverityResultWithTotal)
+	for _, benchmarkBucket := range response.Aggregations.Findings.BenchmarkGroup.Buckets {
+		severityResult := types.SeverityResultWithTotal{}
+		for _, severityBucket := range benchmarkBucket.SeverityGroup.Buckets {
+			severityResult.TotalCount += severityBucket.ResourceCount.DocCount
+
+			switch types.ParseFindingSeverity(strings.ToLower(severityBucket.Key)) {
+			case types.FindingSeverityCritical:
+				severityResult.CriticalCount += severityBucket.ResourceCount.DocCount
+			case types.FindingSeverityHigh:
+				severityResult.HighCount += severityBucket.ResourceCount.DocCount
+			case types.FindingSeverityMedium:
+				severityResult.MediumCount += severityBucket.ResourceCount.DocCount
+			case types.FindingSeverityLow:
+				severityResult.LowCount += severityBucket.ResourceCount.DocCount
+			case types.FindingSeverityNone, "":
+				severityResult.NoneCount += severityBucket.ResourceCount.DocCount
+			}
+		}
+		result[benchmarkBucket.Key] = severityResult
+	}
+
+	return result, nil
 }
