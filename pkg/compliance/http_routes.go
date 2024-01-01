@@ -1542,12 +1542,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
-			ID:                       b.ID,
-			Title:                    b.Title,
-			Description:              b.Description,
-			Connectors:               be.Connectors,
-			Tags:                     be.Tags,
-			Enabled:                  b.Enabled,
+			Benchmark:                be,
 			ConformanceStatusSummary: csResult,
 			Checks:                   sResult,
 			ControlsSeverityStatus:   controlSeverityResult,
@@ -1743,12 +1738,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 
 	response := api.BenchmarkEvaluationSummary{
-		ID:                       benchmark.ID,
-		Title:                    benchmark.Title,
-		Description:              benchmark.Description,
-		Connectors:               be.Connectors,
-		Tags:                     be.Tags,
-		Enabled:                  benchmark.Enabled,
+		Benchmark:                be,
 		ConformanceStatusSummary: csResult,
 		Checks:                   sResult,
 		ControlsSeverityStatus:   controlSeverityResult,

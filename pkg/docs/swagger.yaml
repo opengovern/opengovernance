@@ -827,33 +827,72 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
     properties:
+      autoAssign:
+        description: Whether the benchmark is auto assigned or not
+        example: true
+        type: boolean
+      baseline:
+        description: Whether the benchmark is baseline or not
+        example: true
+        type: boolean
+      category:
+        description: Benchmark category
+        type: string
       checks:
         allOf:
         - $ref: '#/definitions/types.SeverityResult'
         description: Checks summary
+      children:
+        description: Benchmark children
+        example:
+        - '[azure_cis_v140_1'
+        - ' azure_cis_v140_2]'
+        items:
+          type: string
+        type: array
       conformanceStatusSummary:
         allOf:
         - $ref: '#/definitions/types.ConformanceStatusSummary'
         description: Compliance result summary
       connectors:
-        description: Cloud providers
+        description: Benchmark connectors
         example:
-        - '[Azure]'
+        - '[azure]'
         items:
           $ref: '#/definitions/source.Type'
+        type: array
+      controls:
+        description: Benchmark controls
+        example:
+        - '[azure_cis_v140_1_1'
+        - ' azure_cis_v140_1_2]'
+        items:
+          type: string
         type: array
       controlsSeverityStatus:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
         description: Controls severity status
+      createdAt:
+        description: Benchmark creation date
+        example: "2020-01-01T00:00:00Z"
+        type: string
       description:
         description: Benchmark description
         example: The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive
           guidance for establishing a secure baseline configuration for Microsoft
           Azure.
         type: string
+      displayCode:
+        description: Benchmark display code
+        example: CIS 1.4.0
+        type: string
+      documentURI:
+        description: Benchmark document URI
+        example: benchmarks/azure_cis_v140.md
+        type: string
       enabled:
-        description: Enabled
+        description: Whether the benchmark is enabled or not
         example: true
         type: boolean
       evaluatedAt:
@@ -868,12 +907,19 @@ definitions:
         description: Last job status
         example: success
         type: string
+      logoURI:
+        description: Benchmark logo URI
+        type: string
+      managed:
+        description: Whether the benchmark is managed or not
+        example: true
+        type: boolean
       tags:
         additionalProperties:
           items:
             type: string
           type: array
-        description: Tags
+        description: Benchmark tags
         type: object
       title:
         description: Benchmark title
@@ -884,6 +930,10 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
         type: array
+      updatedAt:
+        description: Benchmark last update date
+        example: "2020-01-01T00:00:00Z"
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation:
     properties:

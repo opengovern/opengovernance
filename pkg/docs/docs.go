@@ -8161,12 +8161,37 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary": {
             "type": "object",
             "properties": {
+                "autoAssign": {
+                    "description": "Whether the benchmark is auto assigned or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "baseline": {
+                    "description": "Whether the benchmark is baseline or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "category": {
+                    "description": "Benchmark category",
+                    "type": "string"
+                },
                 "checks": {
                     "description": "Checks summary",
                     "allOf": [
                         {
                             "$ref": "#/definitions/types.SeverityResult"
                         }
+                    ]
+                },
+                "children": {
+                    "description": "Benchmark children",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[azure_cis_v140_1",
+                        " azure_cis_v140_2]"
                     ]
                 },
                 "conformanceStatusSummary": {
@@ -8178,13 +8203,24 @@ const docTemplate = `{
                     ]
                 },
                 "connectors": {
-                    "description": "Cloud providers",
+                    "description": "Benchmark connectors",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/source.Type"
                     },
                     "example": [
-                        "[Azure]"
+                        "[azure]"
+                    ]
+                },
+                "controls": {
+                    "description": "Benchmark controls",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[azure_cis_v140_1_1",
+                        " azure_cis_v140_1_2]"
                     ]
                 },
                 "controlsSeverityStatus": {
@@ -8195,13 +8231,28 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "createdAt": {
+                    "description": "Benchmark creation date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
                 "description": {
                     "description": "Benchmark description",
                     "type": "string",
                     "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
+                "displayCode": {
+                    "description": "Benchmark display code",
+                    "type": "string",
+                    "example": "CIS 1.4.0"
+                },
+                "documentURI": {
+                    "description": "Benchmark document URI",
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140.md"
+                },
                 "enabled": {
-                    "description": "Enabled",
+                    "description": "Whether the benchmark is enabled or not",
                     "type": "boolean",
                     "example": true
                 },
@@ -8220,8 +8271,17 @@ const docTemplate = `{
                     "type": "string",
                     "example": "success"
                 },
+                "logoURI": {
+                    "description": "Benchmark logo URI",
+                    "type": "string"
+                },
+                "managed": {
+                    "description": "Whether the benchmark is managed or not",
+                    "type": "boolean",
+                    "example": true
+                },
                 "tags": {
-                    "description": "Tags",
+                    "description": "Benchmark tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "array",
@@ -8241,6 +8301,11 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
                     }
+                },
+                "updatedAt": {
+                    "description": "Benchmark last update date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 }
             }
         },
