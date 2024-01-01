@@ -295,10 +295,8 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 	requestQuery := make(map[string]any, 0)
 	if len(nestedFilters) > 0 {
 		requestQuery["nested"] = map[string]any{
-			"nested": map[string]any{
-				"path":  "findings",
-				"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
-			},
+			"path":  "findings",
+			"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
 		}
 	}
 	if len(filters) > 0 {
