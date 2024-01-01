@@ -1444,6 +1444,20 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	_, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_PopulateConnectors(loop)")
 
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, []kaytuTypes.ConformanceStatus{
+		kaytuTypes.ConformanceStatusOK,
+	})
+	if err != nil {
+		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
+		return err
+	}
+
+	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, nil)
+	if err != nil {
+		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
+		return err
+	}
+
 	for _, b := range benchmarks {
 		be := b.ToApi()
 		if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
@@ -1505,6 +1519,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				kaytuTypes.ConformanceStatusERROR,
 				kaytuTypes.ConformanceStatusINFO,
 				kaytuTypes.ConformanceStatusSKIP,
+				kaytuTypes.ConformanceStatusOK,
 			}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
@@ -1541,11 +1556,28 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			}
 		}
 
+		resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
+		allResources := allResourcesResult[b.ID]
+		resourcesSeverityResult.Total.TotalCount = allResources.TotalCount
+		resourcesSeverityResult.Critical.TotalCount = allResources.CriticalCount
+		resourcesSeverityResult.High.TotalCount = allResources.HighCount
+		resourcesSeverityResult.Medium.TotalCount = allResources.MediumCount
+		resourcesSeverityResult.Low.TotalCount = allResources.LowCount
+		resourcesSeverityResult.None.TotalCount = allResources.NoneCount
+		passedResource := passedResourcesResult[b.ID]
+		resourcesSeverityResult.Total.PassedCount = passedResource.TotalCount
+		resourcesSeverityResult.Critical.PassedCount = passedResource.CriticalCount
+		resourcesSeverityResult.High.PassedCount = passedResource.HighCount
+		resourcesSeverityResult.Medium.PassedCount = passedResource.MediumCount
+		resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
+		resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
+
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
 			Benchmark:                be,
 			ConformanceStatusSummary: csResult,
 			Checks:                   sResult,
 			ControlsSeverityStatus:   controlSeverityResult,
+			ResourcesSeverityStatus:  resourcesSeverityResult,
 			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 			LastJobStatus:            "",
 			TopConnections:           topConnections,
@@ -1637,6 +1669,20 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
+		return err
+	}
+
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, []kaytuTypes.ConformanceStatus{
+		kaytuTypes.ConformanceStatusOK,
+	})
+	if err != nil {
+		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
+		return err
+	}
+
+	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, nil)
+	if err != nil {
+		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
 		return err
 	}
 
@@ -1737,11 +1783,28 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		}
 	}
 
+	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
+	allResources := allResourcesResult[benchmarkID]
+	resourcesSeverityResult.Total.TotalCount = allResources.TotalCount
+	resourcesSeverityResult.Critical.TotalCount = allResources.CriticalCount
+	resourcesSeverityResult.High.TotalCount = allResources.HighCount
+	resourcesSeverityResult.Medium.TotalCount = allResources.MediumCount
+	resourcesSeverityResult.Low.TotalCount = allResources.LowCount
+	resourcesSeverityResult.None.TotalCount = allResources.NoneCount
+	passedResource := passedResourcesResult[benchmarkID]
+	resourcesSeverityResult.Total.PassedCount = passedResource.TotalCount
+	resourcesSeverityResult.Critical.PassedCount = passedResource.CriticalCount
+	resourcesSeverityResult.High.PassedCount = passedResource.HighCount
+	resourcesSeverityResult.Medium.PassedCount = passedResource.MediumCount
+	resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
+	resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
+
 	response := api.BenchmarkEvaluationSummary{
 		Benchmark:                be,
 		ConformanceStatusSummary: csResult,
 		Checks:                   sResult,
 		ControlsSeverityStatus:   controlSeverityResult,
+		ResourcesSeverityStatus:  resourcesSeverityResult,
 		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:            lastJobStatus,
 	}

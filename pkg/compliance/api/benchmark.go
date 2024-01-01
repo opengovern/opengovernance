@@ -39,29 +39,40 @@ type GetBenchmarksSummaryResponse struct {
 	TotalChecks                   types.SeverityResult           `json:"totalChecks"`
 }
 
-type BenchmarkControlsSeverityStatusResult struct {
+type BenchmarkSeverityStatusResult struct {
 	PassedCount int `json:"passed"`
 	TotalCount  int `json:"total"`
 }
 
 type BenchmarkControlsSeverityStatus struct {
-	Total BenchmarkControlsSeverityStatusResult `json:"total"`
+	Total BenchmarkSeverityStatusResult `json:"total"`
 
-	Critical BenchmarkControlsSeverityStatusResult `json:"critical"`
-	High     BenchmarkControlsSeverityStatusResult `json:"high"`
-	Medium   BenchmarkControlsSeverityStatusResult `json:"medium"`
-	Low      BenchmarkControlsSeverityStatusResult `json:"low"`
-	None     BenchmarkControlsSeverityStatusResult `json:"none"`
+	Critical BenchmarkSeverityStatusResult `json:"critical"`
+	High     BenchmarkSeverityStatusResult `json:"high"`
+	Medium   BenchmarkSeverityStatusResult `json:"medium"`
+	Low      BenchmarkSeverityStatusResult `json:"low"`
+	None     BenchmarkSeverityStatusResult `json:"none"`
+}
+
+type BenchmarkResourcesSeverityStatus struct {
+	Total BenchmarkSeverityStatusResult `json:"total"`
+
+	Critical BenchmarkSeverityStatusResult `json:"critical"`
+	High     BenchmarkSeverityStatusResult `json:"high"`
+	Medium   BenchmarkSeverityStatusResult `json:"medium"`
+	Low      BenchmarkSeverityStatusResult `json:"low"`
+	None     BenchmarkSeverityStatusResult `json:"none"`
 }
 
 type BenchmarkEvaluationSummary struct {
 	Benchmark
-	ConformanceStatusSummary types.ConformanceStatusSummary  `json:"conformanceStatusSummary"`                   // Compliance result summary
-	Checks                   types.SeverityResult            `json:"checks"`                                     // Checks summary
-	ControlsSeverityStatus   BenchmarkControlsSeverityStatus `json:"controlsSeverityStatus"`                     // Controls severity status
-	EvaluatedAt              *time.Time                      `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"` // Evaluated at
-	LastJobStatus            string                          `json:"lastJobStatus" example:"success"`            // Last job status
-	TopConnections           []TopFieldRecord                `json:"topConnections"`                             // Top connections
+	ConformanceStatusSummary types.ConformanceStatusSummary   `json:"conformanceStatusSummary"`                   // Compliance result summary
+	Checks                   types.SeverityResult             `json:"checks"`                                     // Checks summary
+	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`                     // Controls severity status
+	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`                    // Resource severity status
+	EvaluatedAt              *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"` // Evaluated at
+	LastJobStatus            string                           `json:"lastJobStatus" example:"success"`            // Last job status
+	TopConnections           []TopFieldRecord                 `json:"topConnections"`                             // Top connections
 }
 
 type BenchmarkControlSummary struct {

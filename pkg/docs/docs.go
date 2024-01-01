@@ -8128,33 +8128,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "critical": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
                 },
                 "high": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
                 },
                 "low": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
                 },
                 "medium": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
                 },
                 "none": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
                 },
                 "total": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatusResult": {
-            "type": "object",
-            "properties": {
-                "passed": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
                 }
             }
         },
@@ -8280,6 +8269,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "resourcesSeverityStatus": {
+                    "description": "Resource severity status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus"
+                        }
+                    ]
+                },
                 "tags": {
                     "description": "Benchmark tags",
                     "type": "object",
@@ -8314,6 +8311,40 @@ const docTemplate = `{
             "properties": {
                 "remediation": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus": {
+            "type": "object",
+            "properties": {
+                "critical": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
+                },
+                "high": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
+                },
+                "low": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
+                },
+                "medium": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
+                },
+                "none": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
+                },
+                "total": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSeverityStatusResult": {
+            "type": "object",
+            "properties": {
+                "passed": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
