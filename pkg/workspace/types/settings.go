@@ -1,12 +1,16 @@
 package types
 
-import "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+import (
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
+)
 
 type KaytuWorkspaceSettings struct {
 	Kaytu KaytuConfig `json:"kaytu"`
 }
 type KaytuConfig struct {
 	ReplicaCount int              `json:"replicaCount"`
+	EnvType      config.EnvType   `json:"envType"`
 	Workspace    WorkspaceConfig  `json:"workspace"`
 	Docker       DockerConfig     `json:"docker"`
 	Insights     InsightsConfig   `json:"insights"`

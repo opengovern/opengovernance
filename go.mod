@@ -39,7 +39,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/kaytu-io/kaytu-aws-describer v0.29.0
 	github.com/kaytu-io/kaytu-azure-describer v0.20.0
-	github.com/kaytu-io/kaytu-util v0.0.0-20231228044200-bb2ac49b8328
+	github.com/kaytu-io/kaytu-util v0.0.0-20240102121038-02f6552da8f3
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
@@ -50,7 +50,7 @@ require (
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/projectcontour/contour v1.22.0
-	github.com/prometheus/client_golang v1.17.0
+	github.com/prometheus/client_golang v1.18.0
 	github.com/sashabaranov/go-openai v1.15.4
 	github.com/shopspring/decimal v1.3.1
 	github.com/sony/sonyflake v1.1.0
