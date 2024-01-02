@@ -129,6 +129,11 @@ func (t *CreateHelmRelease) ensureSettingsSynced(workspace db.Workspace, release
 
 	needsUpdate := false
 
+	if settings.Kaytu.EnvType != t.cfg.EnvType {
+		settings.Kaytu.EnvType = t.cfg.EnvType
+		needsUpdate = true
+	}
+
 	if settings.Kaytu.Workspace.Name != workspace.Name {
 		settings.Kaytu.Workspace.Name = workspace.Name
 		needsUpdate = true
@@ -206,6 +211,7 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 	settings := types3.KaytuWorkspaceSettings{
 		Kaytu: types3.KaytuConfig{
 			ReplicaCount: 1,
+			EnvType:      t.cfg.EnvType,
 			Workspace: types3.WorkspaceConfig{
 				Name:    workspace.Name,
 				Size:    workspace.Size,

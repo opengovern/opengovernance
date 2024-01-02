@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	EnvType    config.EnvType `yaml:"env_type"`
 	Postgres   config.Postgres
 	Http       config.HttpServer
 	Auth       config.KaytuService
