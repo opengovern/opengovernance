@@ -10,7 +10,14 @@ on:
         type: string
         description: "List of services to build"
         required: false
-        default: ""
+        default: "all"
+      deployTo:
+        type: choice
+        description: "Environment to deploy to"
+        options:
+          - "dev"
+          - "prod"
+        default: "dev"
   push:
     branches: ["main"]
   pull_request:
@@ -172,7 +179,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipeServiceDockerfile
           build-args: |
             PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
@@ -210,7 +219,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/auth-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/auth-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/auth-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AuthServiceDockerfile
           context: .
   deploy-checkup-worker:
@@ -246,7 +257,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/CheckupWorkerDockerfile
           context: .
   deploy-compliance-report-worker:
@@ -283,7 +296,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
@@ -321,7 +336,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/compliance-summarizer:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
             PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
@@ -359,7 +376,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/compliance-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceServiceDockerfile
           context: .
   deploy-describe-scheduler:
@@ -395,7 +414,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/describe-scheduler:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/DescribeSchedulerDockerfile
           context: .
   deploy-hopper:
@@ -431,7 +452,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/hopper:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/hopper:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/hopper:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/HopperDockerfile
           context: .
   deploy-integration-service:
@@ -467,7 +490,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/integration:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/IntegrationServiceDockerfile
           context: .
   deploy-reporter:
@@ -503,7 +528,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/reporter:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ReporterDockerfile
           context: .
   deploy-insight-worker:
@@ -540,7 +567,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InsightWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
@@ -578,7 +607,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/inventory-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InventoryServiceDockerfile
           context: .
   deploy-metadata-service:
@@ -614,7 +645,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/metadata-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/MetadataServiceDockerfile
           context: .
   deploy-migrator-worker:
@@ -650,7 +683,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/migrator:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/MigratorDockerfile
           context: .
   deploy-onboard-service:
@@ -686,7 +721,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/onboard-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/OnboardServiceDockerfile
           context: .
   deploy-subscription-service:
@@ -722,7 +759,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/subscription-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/subscription-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/subscription-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SubscriptionServiceDockerfile
           context: .
   deploy-swagger-ui-and-redoc:
@@ -758,14 +797,18 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SwaggerUIDockerfile
           context: .
       - name: Build and push Docker images - redoc
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/redoc:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/RedocDockerfile
           context: .
   deploy-workspace-service:
@@ -801,7 +844,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/WorkspaceServiceDockerfile
           context: .
   deploy-analytics-worker:
@@ -838,7 +883,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/analytics-worker:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
@@ -876,7 +923,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/alerting-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/alerting-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/alerting-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AlertingServiceDockerfile
           context: .
   deploy-cost-estimator-service:
@@ -912,7 +961,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/cost-estimator-service:${{ needs.tag.outputs.latest_tag }}
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/cost-estimator-service:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/cost-estimator-service:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/CostEstimatorServiceDockerfile
           context: .
   deploy-steampipe-plugin-kaytu:
@@ -969,44 +1020,7 @@ jobs:
           push: true
           tags: |
             ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
-            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1-${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}
+            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipePluginKaytuDockerfile
           context: .
-#  deploy-gpt-service:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - tag
-#    permissions:
-#      id-token: write
-#      contents: read
-#    environment: docker
-#    if: needs.build.outputs.gpt-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#      - name: Download artifact
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: build
-#          path: .
-#      - name: Unpack artifact
-#        run: |
-#          tar -xvf build.tar.gz
-#      - name: Configure AWS credentials
-#        uses: aws-actions/configure-aws-credentials@v2
-#        with:
-#          aws-region: ${{ vars.AWS_REGION }}
-#          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-#      - uses: docker/login-action@v2
-#        with:
-#          registry: ${{ vars.DOCKER_REGISTRY }}
-#      - name: Build and push Docker images
-#        uses: docker/build-push-action@v4
-#        with:
-#          push: true
-#          tags: ${{ vars.DOCKER_REGISTRY }}/gpt-service:${{ needs.tag.outputs.latest_tag }}
-#          file: docker/GPTServiceDockerfile
-#          build-args: |
-#            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
-#          context: .
