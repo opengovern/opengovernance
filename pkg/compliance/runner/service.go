@@ -179,8 +179,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 			return
 		}
 
-		fmt.Sprintf("job-result-%d", job.ID)
-		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson); err != nil {
+		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.ID)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()

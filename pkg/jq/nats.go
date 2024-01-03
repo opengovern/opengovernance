@@ -91,8 +91,8 @@ func (jq *JobQueue) Consume(
 	return consumeCtx, nil
 }
 
-func (jq *JobQueue) Produce(ctx context.Context, msg *nats.Msg) error {
-	if _, err := jq.js.PublishMsg(ctx, msg); err != nil {
+func (jq *JobQueue) Produce(ctx context.Context, topic string, data []byte, id string) error {
+	if _, err := jq.js.Publish(ctx, topic, data, jetstream.WithMsgID(id)); err != nil {
 		return err
 	}
 
