@@ -156,16 +156,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 				return 0, err
 			}
-		} else {
-			err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
-			if err != nil {
-				w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
-				return 0, err
-			}
 		}
 
-		err = w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, caller.RootBenchmark, caller.ControlID)
-		if err != nil {
+		if err := w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, caller.RootBenchmark, caller.ControlID); err != nil {
 			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}

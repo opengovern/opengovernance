@@ -103,8 +103,8 @@ func InitializeNewWorker(
 	return w, nil
 }
 
-// Run should be called in another goroutine. It runs a NATS consumer and it will close it
-// when the given context is closed.
+// Run is a blocking function so you may decide to call it in another goroutine.
+// It runs a NATS consumer and it will close it when the given context is closed.
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
 
@@ -152,21 +152,20 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit bool, requeue bool, err error) {
-	startTime := time.Now()
-
 	var job Job
-	err = json.Unmarshal(msg.Data(), &job)
-	if err != nil {
+
+	if err := json.Unmarshal(msg.Data(), &job); err != nil {
 		return true, false, err
 	}
 
 	result := JobResult{
 		Job:               job,
-		StartedAt:         startTime,
+		StartedAt:         time.Now(),
 		Status:            ComplianceRunnerSucceeded,
 		Error:             "",
 		TotalFindingCount: nil,
 	}
+
 	defer func() {
 		if err != nil {
 			result.Error = err.Error()
@@ -185,6 +184,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	}()
 
 	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
+
 	totalFindingCount, err := w.RunJob(ctx, job)
 	if err != nil {
 		return true, false, err
