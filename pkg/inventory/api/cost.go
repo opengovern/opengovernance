@@ -8,10 +8,17 @@ import (
 )
 
 type CostTrendDatapoint struct {
-	Cost                                    float64   `json:"count" minimum:"0"`
-	TotalDescribedConnectionCount           int64     `json:"totalConnectionCount"`
-	TotalSuccessfulDescribedConnectionCount int64     `json:"totalSuccessfulDescribedConnectionCount"`
-	Date                                    time.Time `json:"date" format:"date-time"`
+	Cost                                    float64           `json:"cost" minimum:"0"`
+	CostStacked                             []CostStackedItem `json:"costStacked" minimum:"0"`
+	TotalDescribedConnectionCount           int64             `json:"totalConnectionCount"`
+	TotalSuccessfulDescribedConnectionCount int64             `json:"totalSuccessfulDescribedConnectionCount"`
+	Date                                    time.Time         `json:"date" format:"date-time"`
+}
+
+type CostStackedItem struct {
+	MetricID   string  `json:"metricID"`
+	MetricName string  `json:"metricName"`
+	Cost       float64 `json:"cost"`
 }
 
 type ListServicesCostTrendDatapoint struct {

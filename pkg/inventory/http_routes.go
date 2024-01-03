@@ -1625,8 +1625,24 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 			format = "2006"
 		}
 		dt, _ := time.Parse(format, timeAt)
+		var cost []inventoryApi.CostStackedItem
+		for k, v := range costVal.CostStacked {
+			metricName := ""
+			for _, v := range metrics {
+				if v.ID == k {
+					metricName = v.Name
+				}
+			}
+			cost = append(cost, inventoryApi.CostStackedItem{
+				MetricID:   k,
+				MetricName: metricName,
+				Cost:       v,
+			})
+		}
+
 		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{
 			Cost:                                    costVal.Cost,
+			CostStacked:                             cost,
 			TotalDescribedConnectionCount:           costVal.TotalConnections,
 			TotalSuccessfulDescribedConnectionCount: costVal.TotalSuccessfulConnections,
 			Date:                                    dt,

@@ -2085,11 +2085,24 @@ definitions:
         minimum: 0
         type: number
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostStackedItem:
+    properties:
+      cost:
+        type: number
+      metricID:
+        type: string
+      metricName:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint:
     properties:
-      count:
+      cost:
         minimum: 0
         type: number
+      costStacked:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostStackedItem'
+        type: array
       date:
         format: date-time
         type: string

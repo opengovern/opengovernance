@@ -9972,12 +9972,32 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostStackedItem": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "metricID": {
+                    "type": "string"
+                },
+                "metricName": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint": {
             "type": "object",
             "properties": {
-                "count": {
+                "cost": {
                     "type": "number",
                     "minimum": 0
+                },
+                "costStacked": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostStackedItem"
+                    }
                 },
                 "date": {
                     "type": "string",
