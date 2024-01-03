@@ -71,35 +71,35 @@ func populateMdMapFromPath(path string) (map[string]string, error) {
 }
 
 func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrichmentBasePath string) error {
-	manualRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "manual"))
+	manualRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "manual"))
 	if err != nil {
 		g.logger.Warn("failed to load manual remediation", zap.Error(err))
 	} else {
 		g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
 	}
 
-	cliRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "cli"))
+	cliRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "cli"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
 		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
-	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "noncompliance-cost"))
+	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "noncompliance-cost"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
 		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
-	usefulnessExampleMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "usefulness-example"))
+	usefulnessExampleMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "usefulness-example"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
 		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
-	explanationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "explanation"))
+	explanationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "explanation"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
