@@ -9323,23 +9323,13 @@ const docTemplate = `{
                 },
                 "providerConnectionID": {
                     "description": "Connection ID",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                    ]
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "providerConnectionName": {
                     "description": "Connection ID",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                    ]
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "resourceLocation": {
                     "type": "string"

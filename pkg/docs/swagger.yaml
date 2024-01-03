@@ -1641,18 +1641,12 @@ definitions:
         type: string
       providerConnectionID:
         description: Connection ID
-        example:
-        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        items:
-          type: string
-        type: array
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
       providerConnectionName:
         description: Connection ID
-        example:
-        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        items:
-          type: string
-        type: array
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
       resourceLocation:
         type: string
       resourceName:
