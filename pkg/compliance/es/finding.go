@@ -118,15 +118,15 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 			})
 		case sort.Severity != nil:
 			scriptSource :=
-				`if params['_source']['severity'] == 'critical' {
+				`if (params['_source']['severity'] == 'critical') {
 					return 5
-				} else if params['_source']['severity'] == 'high' {
+				} else if (params['_source']['severity'] == 'high') {
 					return 4
-				} else if params['_source']['severity'] == 'medium' {
+				} else if (params['_source']['severity'] == 'medium') {
 					return 3
-				} else if params['_source']['severity'] == 'low' {
+				} else if (params['_source']['severity'] == 'low') {
 					return 2
-				} else if params['_source']['severity'] == 'none' {
+				} else if (params['_source']['severity'] == 'none') {
 					return 1
 				} else {
 					return 1
@@ -143,15 +143,15 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 			})
 		case sort.ConformanceStatus != nil:
 			scriptSource :=
-				`if params['_source']['conformanceStatus'] == 'alarm' {
+				`if (params['_source']['conformanceStatus']) == 'alarm' {
 					return 5
-				} else if params['_source']['conformanceStatus'] == 'error' {
+				} else if (params['_source']['conformanceStatus']) == 'error' {
 					return 4
-				} else if params['_source']['conformanceStatus'] == 'info' {
+				} else if (params['_source']['conformanceStatus']) == 'info' {
 					return 3
-				} else if params['_source']['conformanceStatus'] == 'skip' {
+				} else if (params['_source']['conformanceStatus']) == 'skip' {
 					return 2
-				} else if params['_source']['conformanceStatus'] == 'ok' {
+				} else if (params['_source']['conformanceStatus']) == 'ok' {
 					return 1
 				} else {
 					return 1
