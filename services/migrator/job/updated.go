@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/job/types"
+	"go.uber.org/zap"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -33,13 +34,14 @@ func (w *Job) CheckIfUpdateIsNeeded(name string, mig types.Migration) (bool, err
 	}
 
 	if mig.IsGitBased() {
+		w.logger.Info("Git based migration", zap.String("name", name), zap.String("commit_refs", w.commitRefs), zap.String("additional_info", m.AdditionalInfo))
 		return m.AdditionalInfo != w.commitRefs, nil
 	} else {
 		hashes, err := w.FindFilesHashes(mig)
 		if err != nil {
 			return false, err
 		}
-
+		w.logger.Info("File based migration", zap.String("name", name), zap.String("hashes", hashes), zap.String("additional_info", m.AdditionalInfo))
 		return m.AdditionalInfo != hashes, nil
 	}
 }

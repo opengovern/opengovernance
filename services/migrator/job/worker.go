@@ -74,6 +74,7 @@ func (w *Job) Run() error {
 		}
 
 		if !updateNeeded {
+			w.logger.Info("migration is up to date", zap.String("migrationName", name))
 			continue
 		}
 
