@@ -85,6 +85,27 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
+	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "noncompliance-cost"))
+	if err != nil {
+		g.logger.Warn("failed to load cli remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+	}
+
+	usefulnessExampleMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "usefulness-example"))
+	if err != nil {
+		g.logger.Warn("failed to load cli remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+	}
+
+	explanationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "remediation", "explanation"))
+	if err != nil {
+		g.logger.Warn("failed to load cli remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+	}
+
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".json") {
 			content, err := os.ReadFile(path)
@@ -120,6 +141,33 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
 						Key:   "x-kaytu-cli-remediation",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+			if v, ok := noncomplianceCostMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-noncompliance-cost",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+			if v, ok := explanationMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-explanation",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+			if v, ok := usefulnessExampleMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-usefulness-example",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
