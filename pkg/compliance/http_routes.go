@@ -1239,7 +1239,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), req.Filters.ConnectionID)
+	connections, err :=  h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
