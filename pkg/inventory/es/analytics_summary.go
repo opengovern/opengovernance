@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"go.uber.org/zap"
 	"math"
 	"strconv"
 	"time"
@@ -39,7 +40,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []string,
+func FetchConnectionAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client, metricIDs []string,
 	connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
@@ -111,10 +112,12 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []s
 
 	query := string(b)
 
-	fmt.Println("FetchConnectionAnalyticMetricCountAtTime = ", query)
+	logger.Info("FetchConnectionAnalyticMetricCountAtTime", zap.String("query", query), zap.String("index", idx))
+
 	var response FetchConnectionAnalyticMetricCountAtTimeResponse
 	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
+		logger.Error("FetchConnectionAnalyticMetricCountAtTime", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
@@ -144,6 +147,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []s
 			} else if hit.Source.Connections != nil {
 				handleConnResults(*hit.Source.Connections)
 			} else {
+				logger.Warn("FetchConnectionAnalyticMetricCountAtTime", zap.String("error", "no connections or resource collections found"))
 				return nil, errors.New("no connections or resource collections found")
 			}
 		}
@@ -169,7 +173,7 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
+func FetchConnectorAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client,
 	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
@@ -231,9 +235,12 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 
 	query := string(b)
 
+	logger.Info("FetchConnectorAnalyticMetricCountAtTime", zap.String("query", query), zap.String("index", idx))
+
 	var response FetchConnectorAnalyticMetricCountAtTimeResponse
 	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
+		logger.Error("FetchConnectorAnalyticMetricCountAtTime", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
 
@@ -264,6 +271,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 			} else if hit.Source.Connectors != nil {
 				handleConnResults(*hit.Source.Connectors)
 			} else {
+				logger.Warn("FetchConnectorAnalyticMetricCountAtTime", zap.String("error", "no connectors or resource collections found"))
 				return nil, errors.New("no connectors or resource collections found")
 			}
 		}
@@ -271,7 +279,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 	return result, nil
 }
 
-func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(client kaytu.Client,
+func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client,
 	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]map[string]CountWithTime, error) {
 	idx := resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
@@ -333,9 +341,12 @@ func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(client kaytu.C
 
 	query := string(b)
 
+	logger.Info("FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime", zap.String("query", query), zap.String("index", idx))
+
 	var response FetchConnectorAnalyticMetricCountAtTimeResponse
 	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
+		logger.Error("FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
 
@@ -403,7 +414,7 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectionMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -488,10 +499,12 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs []
 	}
 	query := string(b)
 
-	fmt.Println("FetchConnectionMetricTrendSummaryPage = ", query)
+	logger.Info("FetchConnectionMetricTrendSummaryPage", zap.String("query", query), zap.String("index", idx))
+
 	var response ConnectionMetricTrendSummaryQueryResponse
 	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
+		logger.Error("FetchConnectionMetricTrendSummaryPage", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
@@ -574,7 +587,7 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, resourceCollections []string, startTime time.Time, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectorMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Client, connectors []source.Type, metricIDs []string, resourceCollections []string, startTime time.Time, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
 	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -653,9 +666,12 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 
 	query := string(b)
 
+	logger.Info("FetchConnectorMetricTrendSummaryPage", zap.String("query", query), zap.String("index", idx))
+
 	var response ConnectorMetricTrendSummaryQueryResponse
 	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
+		logger.Error("FetchConnectorMetricTrendSummaryPage", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
 
@@ -705,7 +721,6 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 		}
 	}
 
-	fmt.Println(hits)
 	for k, v := range hits {
 		for _, total := range v.connectorTotal {
 			v.TotalConnections += total
@@ -743,7 +758,7 @@ type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
 	LatestEvaluatedAt int64
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string,
+func FetchConnectionAnalyticsResourcesCountAtTime(logger *zap.Logger, client kaytu.Client, connectors []source.Type, connectionIDs []string,
 	resourceCollections []string, metricIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	if len(resourceCollections) > 0 {
@@ -812,7 +827,9 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	}
 
 	query := string(b)
-	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query, "index =", idx)
+
+	logger.Info("FetchConnectionAnalyticsResourcesCountAtTime", zap.String("query", query), zap.String("index", idx))
+
 	var response FetchConnectionAnalyticsResourcesCountAtTimeResponse
 	err = client.Search(
 		context.Background(),
@@ -820,6 +837,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 		query,
 		&response)
 	if err != nil {
+		logger.Error("FetchConnectionAnalyticsResourcesCountAtTime", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
 
@@ -882,7 +900,7 @@ type AssetTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granularity inventoryApi.TableGranularityType, dimension inventoryApi.DimensionType, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchAssetTableByDimension(logger *zap.Logger, client kaytu.Client, metricIds []string, granularity inventoryApi.TableGranularityType, dimension inventoryApi.DimensionType, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -955,11 +973,13 @@ func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granula
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("FetchAssetTableByDimension = %s\n", queryJson)
+
+	logger.Info("FetchAssetTableByDimension", zap.String("query", string(queryJson)), zap.String("index", index))
 
 	var response AssetTableByDimensionQueryResponse
 	err = client.Search(context.Background(), index, string(queryJson), &response)
 	if err != nil {
+		logger.Error("FetchAssetTableByDimension", zap.Error(err), zap.String("query", string(queryJson)), zap.String("index", index))
 		return nil, err
 	}
 

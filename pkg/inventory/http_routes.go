@@ -222,9 +222,9 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 
 	var metricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, filteredMetricIDs, connectorTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, filteredMetricIDs, connectorTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, filteredMetricIDs, connectorTypes, resourceCollections, timeAt, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, filteredMetricIDs, connectorTypes, resourceCollections, timeAt, EsFetchPageSize)
 	}
 	if err != nil {
 		return nil, nil, err
@@ -513,9 +513,9 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	if metricType == analyticsDB.MetricTypeAssets {
 		if len(connectionIDs) > 0 {
-			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, nil, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
+			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, nil, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 		} else {
-			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, nil, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
+			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, nil, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
 		}
 		if err != nil {
 			return err
@@ -670,12 +670,12 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		esDatapointCount = 1
 	}
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.logger, h.client, connectionIDs, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.logger, h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -811,9 +811,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var metricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -821,9 +821,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var oldMetricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
-		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
 	} else {
-		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, resourceCollections, startTime, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, resourceCollections, startTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -1049,7 +1049,7 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	for _, m := range ms {
 		metricIds = append(metricIds, m.ID)
 	}
-	mt, err := es.FetchAssetTableByDimension(h.client, metricIds, granularity, dimension, startTime, endTime)
+	mt, err := es.FetchAssetTableByDimension(h.logger, h.client, metricIds, granularity, dimension, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1866,7 +1866,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			metricIDs = append(metricIDs, m.ID)
 		}
 
-		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, resourceCollections, metricIDs, endTime, EsFetchPageSize)
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.logger, h.client, connectors, connectionIDs, resourceCollections, metricIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1885,7 +1885,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
-		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, resourceCollections, metricIDs, startTime, EsFetchPageSize)
+		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.logger, h.client, connectors, connectionIDs, resourceCollections, metricIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2059,7 +2059,7 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
-	metricsIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
+	metricsIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2407,7 +2407,7 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 		filteredMetricMap[metric.ID] = metric
 	}
 
-	perRcMetricResult, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.client,
+	perRcMetricResult, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.logger, h.client,
 		filteredMetricIds, nil, collectionIds, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
@@ -2489,7 +2489,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		filteredMetricMap[metric.ID] = metric
 	}
 
-	metricIndexed, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.client,
+	metricIndexed, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.logger, h.client,
 		filteredMetricIds, nil, []string{collectionID}, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
@@ -2523,7 +2523,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		}
 	}
 
-	perConnectionMetric, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, nil,
+	perConnectionMetric, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.logger, h.client, nil, nil,
 		[]string{collectionID}, filteredMetricIds, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per connection metric count", zap.Error(err))
@@ -2566,7 +2566,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
 		metricsMap[metric.ID] = metric
 	}
-	metricIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
+	metricIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
