@@ -139,6 +139,11 @@ func (t *CreateHelmRelease) ensureSettingsSynced(workspace db.Workspace, release
 		needsUpdate = true
 	}
 
+	if settings.Kaytu.OpenSearch.IngestionPipelineEndpoint != workspace.PipelineEndpoint {
+		settings.Kaytu.OpenSearch.IngestionPipelineEndpoint = workspace.PipelineEndpoint
+		needsUpdate = true
+	}
+
 	if settings.Kaytu.Workspace.Name != workspace.Name {
 		settings.Kaytu.Workspace.Name = workspace.Name
 		needsUpdate = true
