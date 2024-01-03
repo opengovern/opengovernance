@@ -468,7 +468,9 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Tab
 
 	result := make(map[string]DatapointWithFailures)
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
-		res := DatapointWithFailures{}
+		res := DatapointWithFailures{
+			CostStacked: map[string]float64{},
+		}
 		for _, hit := range bucket.HitSelect.Hits.Hits {
 			for _, connection := range hit.Source.Connections {
 				if (len(connectionIDs) > 0 && !includeConnectionMap[connection.ConnectionID]) ||
@@ -480,6 +482,7 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Tab
 					res.TotalSuccessfulConnections++
 				}
 				res.Cost += connection.CostValue
+				res.CostStacked[hit.Source.MetricID] += connection.CostValue
 			}
 		}
 		result[bucket.Key] = res
@@ -571,7 +574,9 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Tabl
 
 	result := make(map[string]DatapointWithFailures)
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
-		res := DatapointWithFailures{}
+		res := DatapointWithFailures{
+			CostStacked: map[string]float64{},
+		}
 		perConnectorTotalConnections := make(map[source.Type]int64)
 		perConnectorTotalSuccessfulConnections := make(map[source.Type]int64)
 		for _, hit := range bucket.HitSelect.Hits.Hits {
@@ -582,6 +587,7 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Tabl
 				perConnectorTotalConnections[connector.Connector] = max(perConnectorTotalConnections[connector.Connector], connector.TotalConnections)
 				perConnectorTotalSuccessfulConnections[connector.Connector] = max(perConnectorTotalSuccessfulConnections[connector.Connector], connector.TotalSuccessfulConnections)
 				res.Cost += connector.CostValue
+				res.CostStacked[hit.Source.MetricID] += connector.CostValue
 			}
 		}
 		for connector, totalConnections := range perConnectorTotalConnections {

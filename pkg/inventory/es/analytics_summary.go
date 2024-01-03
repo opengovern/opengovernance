@@ -370,6 +370,7 @@ func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(client kaytu.C
 
 type DatapointWithFailures struct {
 	Cost                       float64
+	CostStacked                map[string]float64
 	Count                      int
 	TotalSuccessfulConnections int64
 	TotalConnections           int64
