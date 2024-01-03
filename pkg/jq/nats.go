@@ -58,6 +58,8 @@ func (jq *JobQueue) closeHandler(nc *nats.Conn) {
 }
 
 // Consume consumes messages from the given topic using the specified queue group.
+// it creates pull consumer which is the only mode that is available in the new version
+// of nats.go library.
 func (jq *JobQueue) Consume(
 	ctx context.Context,
 	service string,
@@ -65,7 +67,7 @@ func (jq *JobQueue) Consume(
 	topics []string,
 	queue string,
 	handler func(jetstream.Msg),
-) error {
+) (jetstream.ConsumeContext, error) {
 	consumer, err := jq.js.CreateOrUpdateConsumer(ctx, stream, jetstream.ConsumerConfig{
 		Name:              fmt.Sprintf("%s-service", service),
 		Durable:           "",
@@ -78,10 +80,21 @@ func (jq *JobQueue) Consume(
 		InactiveThreshold: time.Hour,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	consumer.Consume(handler)
+	consumeCtx, err := consumer.Consume(handler)
+	if err != nil {
+		return nil, err
+	}
+
+	return consumeCtx, nil
+}
+
+func (jq *JobQueue) Produce(ctx context.Context, msg *nats.Msg) error {
+	if _, err := jq.js.PublishMsg(ctx, msg); err != nil {
+		return err
+	}
 
 	return nil
 }

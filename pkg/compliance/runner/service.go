@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -14,19 +13,23 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )
 
 const (
-	JobQueue      = "compliance-runner-job-queue"
-	ResultQueue   = "compliance-runner-job-result"
-	ConsumerGroup = "compliance-runner"
+	JobQueueTopic    = "compliance-runner-job-queue"
+	ResultQueueTopic = "compliance-runner-job-result"
+	ConsumerGroup    = "compliance-runner"
 
-	JobTimeoutCheckInterval = 5 * time.Minute
+	// Jobs are processed in goroutines, by increasing this value
+	// you will get more concurrent jobs at the same time and by decreasing
+	// it they will more likely timeout.
+	// Please note that, the value is set on the NATS produce context.
+	JobProcessingTimeout = 10 * time.Second
 )
 
 type Config struct {
@@ -100,71 +103,59 @@ func InitializeNewWorker(
 	return w, nil
 }
 
-func (w *Worker) Run() error {
-	w.logger.Info("starting")
-
-	ctx := context.Background()
-
-	consumer, err := kafka.NewTopicConsumerWithRebalanceCB(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup, true, func(consumer *kafka2.Consumer, event kafka2.Event) error {
-		w.logger.Info(fmt.Sprintf("Consumer: %v, Event: %v, EventType: %s", consumer, event, reflect.TypeOf(event).String()))
-		if v, ok := event.(kafka2.AssignedPartitions); ok {
-			for _, partition := range v.Partitions {
-				w.logger.Info(fmt.Sprintf("Partition %d is assigned with offset %v", partition.Partition, partition.Offset))
-			}
-		} else if v, ok := event.(kafka2.RevokedPartitions); ok {
-			for _, partition := range v.Partitions {
-				w.logger.Info(fmt.Sprintf("Partition %d is revoked", partition.Partition))
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	msgs := consumer.Consume(ctx, w.logger, 1)
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
+// Run should be called in another goroutine. It runs a NATS consumer and it will close it
+// when the given context is closed.
+func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-			w.logger.Info("received a job")
-			t.Reset(JobTimeoutCheckInterval)
 
-			commit, requeue, err := w.ProcessMessage(msg)
+	consumeCtx, err := w.jq.Consume(ctx, "compliance", "", []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
+		w.logger.Info("received a new job")
+
+		go func() {
+			ctx, done := context.WithTimeout(context.Background(), JobProcessingTimeout)
+			defer done()
+
+			commit, requeue, err := w.ProcessMessage(ctx, msg)
 			if err != nil {
 				w.logger.Error("failed to process message", zap.Error(err))
 			}
 
 			if requeue {
-				// TODO
+				if err := msg.Nak(); err != nil {
+					w.logger.Error("failed to send a not ack message", zap.Error(err))
+				}
 			}
 
 			if commit {
-				w.logger.Info("commiting")
-				err := consumer.Commit(msg)
-				if err != nil {
-					w.logger.Error("failed to commit message", zap.Error(err))
+				w.logger.Info("committing")
+				if err := msg.Ack(); err != nil {
+					w.logger.Error("failed to send an ack message", zap.Error(err))
 				}
 			}
-			w.logger.Info("going for the next job")
-		case _ = <-t.C:
-			w.logger.Info("still waiting for a job")
-			continue
+
+			w.logger.Info("processing a job completed")
+		}()
+	})
+	if err != nil {
+		return err
+	}
+
+	w.logger.Info("consuming")
+
+	for {
+		select {
+		case <-ctx.Done():
+			consumeCtx.Stop()
+		default:
 		}
 	}
 }
 
-func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool, err error) {
+func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit bool, requeue bool, err error) {
 	startTime := time.Now()
 
 	var job Job
-	err = json.Unmarshal(msg.Value, &job)
+	err = json.Unmarshal(msg.Data(), &job)
 	if err != nil {
 		return true, false, err
 	}
@@ -188,18 +179,18 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 			return
 		}
 
-		resultMsg := kafka.Msg(fmt.Sprintf("job-result-%d", job.ID), resultJson, "", ResultQueue, kafka2.PartitionAny)
-		_, err = kafka.SyncSend(w.logger, w.kafkaProducer, []*kafka2.Message{resultMsg}, nil)
-		if err != nil {
+		fmt.Sprintf("job-result-%d", job.ID)
+		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
 
-	w.logger.Info("running job", zap.String("job", string(msg.Value)))
-	totalFindingCount, err := w.RunJob(job)
+	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
+	totalFindingCount, err := w.RunJob(ctx, job)
 	if err != nil {
 		return true, false, err
 	}
+
 	result.TotalFindingCount = &totalFindingCount
 
 	return true, false, nil

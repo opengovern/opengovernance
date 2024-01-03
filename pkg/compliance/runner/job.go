@@ -6,10 +6,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"io"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -99,9 +100,7 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	return nil
 }
 
-func (w *Worker) RunJob(j Job) (int, error) {
-	ctx := context.Background()
-
+func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.QueryID),
@@ -189,7 +188,8 @@ func (w *Worker) RunJob(j Job) (int, error) {
 func (w *Worker) RemoveOldFindings(jobID uint,
 	connectionId *string,
 	benchmarkID,
-	controlID string) error {
+	controlID string,
+) error {
 	ctx := context.Background()
 	idx := types.FindingsIndex
 	var filters []map[string]any
