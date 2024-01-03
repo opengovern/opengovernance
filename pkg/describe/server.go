@@ -101,6 +101,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.GET("/:stackId/insights", httpserver2.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
 
 	v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
+	v1.PUT("/opensearch/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
 }
 
 // ListJobs godoc
@@ -814,6 +815,8 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 		"benchmark_summary",
 	}
 
+	ingestionPipeUrl := ctx.QueryParam("ingestion_pipeline_url")
+
 	for _, indexToMigrate := range indexesToMigrate {
 		paginator, err := kaytu.NewPaginator(h.Scheduler.es.ES(), indexToMigrate, nil, nil)
 		if err != nil {
@@ -845,7 +848,7 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 
 			for startPageIdx := 0; startPageIdx < len(items); startPageIdx += 100 {
 				msgsToSend := items[startPageIdx:min(startPageIdx+100, len(items))]
-				err := pipeline.SendToPipeline(h.Scheduler.conf.ElasticSearch.IngestionEndpoint, msgsToSend)
+				err := pipeline.SendToPipeline(ingestionPipeUrl, msgsToSend)
 				if err != nil {
 					return err
 				}
