@@ -134,6 +134,11 @@ func (t *CreateHelmRelease) ensureSettingsSynced(workspace db.Workspace, release
 		needsUpdate = true
 	}
 
+	if settings.Kaytu.Octopus.Namespace != t.cfg.KaytuOctopusNamespace {
+		settings.Kaytu.Octopus.Namespace = t.cfg.KaytuOctopusNamespace
+		needsUpdate = true
+	}
+
 	if settings.Kaytu.Workspace.Name != workspace.Name {
 		settings.Kaytu.Workspace.Name = workspace.Name
 		needsUpdate = true
@@ -212,6 +217,9 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 		Kaytu: types3.KaytuConfig{
 			ReplicaCount: 1,
 			EnvType:      t.cfg.EnvType,
+			Octopus: types3.OctopusConfig{
+				Namespace: t.cfg.KaytuOctopusNamespace,
+			},
 			Workspace: types3.WorkspaceConfig{
 				Name:    workspace.Name,
 				Size:    workspace.Size,

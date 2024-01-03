@@ -8,6 +8,11 @@ import (
 type KaytuWorkspaceSettings struct {
 	Kaytu KaytuConfig `json:"kaytu"`
 }
+
+type OctopusConfig struct {
+	Namespace string `json:"namespace"`
+}
+
 type KaytuConfig struct {
 	ReplicaCount int              `json:"replicaCount"`
 	EnvType      config.EnvType   `json:"envType"`
@@ -15,6 +20,7 @@ type KaytuConfig struct {
 	Docker       DockerConfig     `json:"docker"`
 	Insights     InsightsConfig   `json:"insights"`
 	OpenSearch   OpenSearchConfig `json:"opensearch"`
+	Octopus      OctopusConfig    `json:"octopus"`
 }
 type OpenSearchConfig struct {
 	Enabled                   bool   `json:"enabled"`
