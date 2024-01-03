@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -90,6 +91,21 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 				logger.Error("failed to create template", zap.Error(err), zap.String("filepath", fp))
 			}
 		}
+	}
+
+	// Increase number of shards per node to 2000
+	// curl -X PUT http://localhost:9200/_cluster/settings --json '{"persistent":{"cluster.max_shards_per_node": 2000}}'
+	reqBody := `{"persistent":{"cluster.max_shards_per_node": 2000}}`
+	res, err := elastic.ES().Cluster.PutSettings(strings.NewReader(reqBody))
+	if err != nil {
+		logger.Error("failed to increase number of shards per node", zap.Error(err))
+		finalErr = err
+	} else if res.StatusCode != 200 {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			logger.Error("failed to read response body", zap.Error(err))
+		}
+		logger.Error("failed to increase number of shards per node", zap.String("body", string(body)), zap.Int("status_code", res.StatusCode))
 	}
 
 	return finalErr
