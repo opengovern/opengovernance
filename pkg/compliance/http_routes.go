@@ -1276,10 +1276,9 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 
 	for _, resourceFinding := range resourceFindings {
 		apiRf := api.GetAPIResourceFinding(resourceFinding.Source)
-		for _, connectionId := range apiRf.ProviderConnectionID {
-			if connection, ok := connectionMap[connectionId]; ok {
-				apiRf.ProviderConnectionName = append(apiRf.ProviderConnectionName, connection.ConnectionName)
-			}
+		connectionName, ok := connectionMap[apiRf.ProviderConnectionID]
+		if ok {
+			apiRf.ProviderConnectionName = connectionName.ConnectionName
 		}
 		apiRf.SortKey = resourceFinding.Sort
 		response.ResourceFindings = append(response.ResourceFindings, apiRf)

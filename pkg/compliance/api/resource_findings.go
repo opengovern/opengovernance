@@ -22,8 +22,8 @@ type ResourceFinding struct {
 
 	SortKey []any `json:"sortKey"`
 
-	ProviderConnectionID   []string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
-	ProviderConnectionName []string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
+	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 }
 
 func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFinding {
@@ -49,11 +49,13 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 			apiRf.FailedCount++
 		}
 		connectionIds[finding.ConnectionID] = true
+		apiRf.ProviderConnectionID = finding.ConnectionID
 		apiRf.Findings = append(apiRf.Findings, Finding{Finding: finding})
 	}
 
-	for connectionId := range connectionIds {
-		apiRf.ProviderConnectionID = append(apiRf.ProviderConnectionID, connectionId)
+	if len(connectionIds) > 1 {
+		apiRf.ProviderConnectionID = "Global (Multiple)"
+		apiRf.ProviderConnectionName = "Global (Multiple)"
 	}
 
 	return apiRf
