@@ -1239,6 +1239,17 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), req.Filters.ConnectionID)
+	if err != nil {
+		h.logger.Error("failed to get connections", zap.Error(err))
+		return err
+	}
+	connectionMap := make(map[string]*onboardApi.Connection)
+	for _, connection := range connections {
+		connection := connection
+		connectionMap[connection.ID.String()] = &connection
+	}
+
 	if len(req.Filters.ConformanceStatus) == 0 {
 		req.Filters.ConformanceStatus = []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
@@ -1265,6 +1276,11 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 
 	for _, resourceFinding := range resourceFindings {
 		apiRf := api.GetAPIResourceFinding(resourceFinding.Source)
+		for _, connectionId := range apiRf.ProviderConnectionID {
+			if connection, ok := connectionMap[connectionId]; ok {
+				apiRf.ProviderConnectionName = append(apiRf.ProviderConnectionName, connection.ConnectionName)
+			}
+		}
 		apiRf.SortKey = resourceFinding.Sort
 		response.ResourceFindings = append(response.ResourceFindings, apiRf)
 	}

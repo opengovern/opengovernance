@@ -7,10 +7,11 @@ import (
 )
 
 type ResourceFinding struct {
-	KaytuResourceID  string `json:"kaytuResourceID"`
-	ResourceName     string `json:"resourceName"`
-	ResourceLocation string `json:"resourceLocation"`
-	ResourceType     string `json:"resourceType"`
+	KaytuResourceID  string      `json:"kaytuResourceID"`
+	ResourceName     string      `json:"resourceName"`
+	ResourceLocation string      `json:"resourceLocation"`
+	ResourceType     string      `json:"resourceType"`
+	Connector        source.Type `json:"connector"`
 
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`
@@ -20,6 +21,9 @@ type ResourceFinding struct {
 	Findings []Finding `json:"findings"`
 
 	SortKey []any `json:"sortKey"`
+
+	ProviderConnectionID   []string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
+	ProviderConnectionName []string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 }
 
 func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFinding {
@@ -28,6 +32,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 		ResourceName:     resourceFinding.ResourceName,
 		ResourceLocation: resourceFinding.ResourceLocation,
 		ResourceType:     resourceFinding.ResourceType,
+		Connector:        resourceFinding.Connector,
 
 		FailedCount: 0,
 		TotalCount:  len(resourceFinding.Findings),
@@ -37,11 +42,18 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 		Findings: nil,
 	}
 
+	connectionIds := make(map[string]bool)
+
 	for _, finding := range resourceFinding.Findings {
 		if !finding.ConformanceStatus.IsPassed() {
 			apiRf.FailedCount++
 		}
+		connectionIds[finding.ConnectionID] = true
 		apiRf.Findings = append(apiRf.Findings, Finding{Finding: finding})
+	}
+
+	for connectionId := range connectionIds {
+		apiRf.ProviderConnectionID = append(apiRf.ProviderConnectionID, connectionId)
 	}
 
 	return apiRf

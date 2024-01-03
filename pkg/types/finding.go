@@ -56,10 +56,11 @@ type ResourceFinding struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	KaytuResourceID  string `json:"kaytuResourceID"`
-	ResourceType     string `json:"resourceType"`
-	ResourceName     string `json:"resourceName"`
-	ResourceLocation string `json:"resourceLocation"`
+	KaytuResourceID  string      `json:"kaytuResourceID"`
+	ResourceType     string      `json:"resourceType"`
+	ResourceName     string      `json:"resourceName"`
+	ResourceLocation string      `json:"resourceLocation"`
+	Connector        source.Type `json:"connector"`
 
 	//ConformanceStatusPerSeverity ConformanceStatusPerSeverity `json:"conformanceStatusPerSeverity"`
 	Findings []Finding `json:"findings"`

@@ -1627,6 +1627,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding:
     properties:
+      connector:
+        $ref: '#/definitions/source.Type'
       evaluatedAt:
         type: string
       failedCount:
@@ -1637,6 +1639,20 @@ definitions:
         type: array
       kaytuResourceID:
         type: string
+      providerConnectionID:
+        description: Connection ID
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      providerConnectionName:
+        description: Connection ID
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
       resourceLocation:
         type: string
       resourceName:
