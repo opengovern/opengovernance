@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	config2 "github.com/aws/aws-sdk-go-v2/config"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
@@ -13,9 +13,10 @@ import (
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
+	workspaceConfig "github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -33,7 +34,7 @@ const (
 )
 
 type Service struct {
-	cfg        config.Config
+	cfg        workspaceConfig.Config
 	logger     *zap.Logger
 	db         *db.Database
 	kmsClient  *kms.Client
@@ -46,7 +47,7 @@ type Service struct {
 	s3Client   *s3.Client
 }
 
-func New(cfg config.Config) (*Service, error) {
+func New(cfg workspaceConfig.Config) (*Service, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
@@ -80,7 +81,7 @@ func New(cfg config.Config) (*Service, error) {
 	}
 	iamClientMaster := iam.NewFromConfig(awsConfigMaster)
 
-	awsCfg, err := config2.LoadDefaultConfig(context.Background())
+	awsCfg, err := awsConfig.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
@@ -147,10 +148,11 @@ func (s *Service) StartReconciler() {
 				s.logger.Error(fmt.Sprintf("syncing http proxy: %v", err))
 			}
 		}
-
-		err = s.handleReservation()
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("reservation: %v", err))
+		if s.cfg.EnvType == config.EnvTypeProd {
+			err = s.handleReservation()
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("reservation: %v", err))
+			}
 		}
 
 		// reset the time ticker
