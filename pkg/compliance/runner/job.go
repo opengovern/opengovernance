@@ -151,11 +151,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			docs = append(docs, f)
 		}
 
-		if w.config.ElasticSearch.IsOpenSearch {
-			if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
-				w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
-				return 0, err
-			}
+		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
+			return 0, err
 		}
 
 		if err := w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, caller.RootBenchmark, caller.ControlID); err != nil {

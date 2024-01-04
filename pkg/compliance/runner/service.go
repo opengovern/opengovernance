@@ -24,12 +24,6 @@ const (
 	JobQueueTopic    = "compliance-runner-job-queue"
 	ResultQueueTopic = "compliance-runner-job-result"
 	ConsumerGroup    = "compliance-runner"
-
-	// Jobs are processed in goroutines, by increasing this value
-	// you will get more concurrent jobs at the same time and by decreasing
-	// it they will more likely timeout.
-	// Please note that, the value is set on the NATS produce context.
-	JobProcessingTimeout = 10 * time.Second
 )
 
 type Config struct {
@@ -111,30 +105,25 @@ func (w *Worker) Run(ctx context.Context) error {
 	consumeCtx, err := w.jq.Consume(ctx, "compliance", "", []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("received a new job")
 
-		go func() {
-			ctx, done := context.WithTimeout(context.Background(), JobProcessingTimeout)
-			defer done()
+		commit, requeue, err := w.ProcessMessage(context.Background(), msg)
+		if err != nil {
+			w.logger.Error("failed to process message", zap.Error(err))
+		}
 
-			commit, requeue, err := w.ProcessMessage(ctx, msg)
-			if err != nil {
-				w.logger.Error("failed to process message", zap.Error(err))
+		if requeue {
+			if err := msg.Nak(); err != nil {
+				w.logger.Error("failed to send a not ack message", zap.Error(err))
 			}
+		}
 
-			if requeue {
-				if err := msg.Nak(); err != nil {
-					w.logger.Error("failed to send a not ack message", zap.Error(err))
-				}
+		if commit {
+			w.logger.Info("committing")
+			if err := msg.Ack(); err != nil {
+				w.logger.Error("failed to send an ack message", zap.Error(err))
 			}
+		}
 
-			if commit {
-				w.logger.Info("committing")
-				if err := msg.Ack(); err != nil {
-					w.logger.Error("failed to send an ack message", zap.Error(err))
-				}
-			}
-
-			w.logger.Info("processing a job completed")
-		}()
+		w.logger.Info("processing a job completed")
 	})
 	if err != nil {
 		return err
