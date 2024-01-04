@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+
 	"github.com/axiomhq/hyperloglog"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
