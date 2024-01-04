@@ -4,40 +4,40 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime"
+	"strings"
+	"time"
+
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
-	"runtime"
-	"strings"
-	"time"
 )
 
 const (
-	JobQueue      = "compliance-summarizer-job-queue"
-	ResultQueue   = "compliance-summarizer-job-result"
-	ConsumerGroup = "compliance-summarizer"
-
-	JobTimeoutCheckInterval = 1 * time.Minute
+	JobQueueTopic    = "compliance-summarizer-job-queue"
+	ResultQueueTopic = "compliance-summarizer-job-result"
+	ConsumerGroup    = "compliance-summarizer"
 )
 
 type Config struct {
 	ElasticSearch         config.ElasticSearch
-	Kafka                 config.Kafka
+	NATS                  config.NATS
 	PrometheusPushAddress string
 	Inventory             config.KaytuService
 	Onboard               config.KaytuService
 }
 
 type Worker struct {
-	config        Config
-	logger        *zap.Logger
-	esClient      kaytu.Client
-	kafkaProducer *kafka2.Producer
+	config   Config
+	logger   *zap.Logger
+	esClient kaytu.Client
+	jq       *jq.JobQueue
 
 	inventoryClient inventoryClient.InventoryServiceClient
 	onboardClient   onboardClient.OnboardServiceClient
@@ -60,7 +60,7 @@ func InitializeNewWorker(
 		return nil, err
 	}
 
-	producer, err := kafka.NewDefaultKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
+	jq, err := jq.New(config.NATS.URL, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func InitializeNewWorker(
 		config:          config,
 		logger:          logger,
 		esClient:        esClient,
-		kafkaProducer:   producer,
+		jq:              jq,
 		inventoryClient: inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		onboardClient:   onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 	}
