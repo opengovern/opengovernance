@@ -1005,7 +1005,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	case "controlid":
-		controls, err := h.db.ListControls()
+		resControlIDs := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
+			resControlIDs = append(resControlIDs, item.Key)
+		}
+		controls, err := h.db.GetControls(resControlIDs)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -1048,7 +1052,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 
 		resourcesResult, err := es.GetPerFieldResourceConformanceResult(h.logger, h.client, "controlID",
-			connectionIDs, nil, controlIDs, benchmarkIDs, severities, nil)
+			connectionIDs, nil, resControlIDs, benchmarkIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
 			return err
