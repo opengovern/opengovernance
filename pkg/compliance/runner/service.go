@@ -4,9 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -14,9 +19,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
-	"reflect"
-	"strings"
-	"time"
 )
 
 const (
@@ -29,7 +31,7 @@ const (
 
 type Config struct {
 	ElasticSearch         config.ElasticSearch
-	Kafka                 config.Kafka
+	NATS                  config.NATS
 	Compliance            config.KaytuService
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
@@ -42,7 +44,7 @@ type Worker struct {
 	logger           *zap.Logger
 	steampipeConn    *steampipe.Database
 	esClient         kaytu.Client
-	kafkaProducer    *kafka2.Producer
+	jq               *jq.JobQueue
 	complianceClient complianceClient.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
@@ -79,7 +81,7 @@ func InitializeNewWorker(
 		return nil, err
 	}
 
-	producer, err := newKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
+	jq, err := jq.New(config.NATS.URL, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +91,7 @@ func InitializeNewWorker(
 		logger:           logger,
 		steampipeConn:    steampipeConn,
 		esClient:         esClient,
-		kafkaProducer:    producer,
+		jq:               jq,
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
 		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
@@ -140,7 +142,7 @@ func (w *Worker) Run() error {
 			}
 
 			if requeue {
-				//TODO
+				// TODO
 			}
 
 			if commit {
