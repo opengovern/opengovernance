@@ -45,9 +45,16 @@ type TopFieldRecord struct {
 	Control      *Control
 	Service      *string
 
-	Field      *string `json:"field"`
-	Count      int     `json:"count"`
-	TotalCount int     `json:"totalCount"`
+	Field *string `json:"field"`
+
+	ControlCount      *int `json:"controlCount,omitempty"`
+	ControlTotalCount *int `json:"controlTotalCount,omitempty"`
+
+	ResourceCount      *int `json:"resourceCount,omitempty"`
+	ResourceTotalCount *int `json:"resourceTotalCount,omitempty"`
+
+	Count      int `json:"count"`
+	TotalCount int `json:"totalCount"`
 }
 
 type BenchmarkRemediation struct {
