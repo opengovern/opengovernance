@@ -124,6 +124,8 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) error {
 		if err != nil {
 			result.Error = err.Error()
 			result.Status = ComplianceSummarizerFailed
+
+			return
 		}
 
 		resultJson, err := json.Marshal(result)

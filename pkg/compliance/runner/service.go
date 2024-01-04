@@ -159,6 +159,8 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 		if err != nil {
 			result.Error = err.Error()
 			result.Status = ComplianceRunnerFailed
+
+			return
 		}
 
 		resultJson, err := json.Marshal(result)
