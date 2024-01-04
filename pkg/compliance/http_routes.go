@@ -905,11 +905,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{
-					Connection: &onboardApi.Connection{
-						ConnectionID: item.Key,
-					},
-				}
+				continue
 			}
 			record.TotalCount += item.DocCount
 			recordMap[item.Key] = record
@@ -918,11 +914,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{
-					Connection: &onboardApi.Connection{
-						ConnectionID: item.Key,
-					},
-				}
+				continue
 			}
 			record.Count = item.DocCount
 			recordMap[item.Key] = record
@@ -937,11 +929,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range controlsResult.Aggregations.ConnectionGroup.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{
-					Connection: &onboardApi.Connection{
-						ConnectionID: item.Key,
-					},
-				}
+				continue
 			}
 			for _, control := range item.ControlCount.Buckets {
 				isFailed := false
@@ -971,11 +959,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			results := results
 			record, ok := recordMap[connectionId]
 			if !ok {
-				record = api.TopFieldRecord{
-					Connection: &onboardApi.Connection{
-						ConnectionID: connectionId,
-					},
-				}
+				continue
 			}
 			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
 			for _, conformanceStatus := range conformanceStatuses {
@@ -1028,11 +1012,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{
-					Control: &api.Control{
-						ID: item.Key,
-					},
-				}
+				continue
 			}
 			record.TotalCount += item.DocCount
 			recordMap[item.Key] = record
@@ -1041,11 +1021,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{
-					Control: &api.Control{
-						ID: item.Key,
-					},
-				}
+				continue
 			}
 			record.Count = item.DocCount
 			recordMap[item.Key] = record
@@ -1062,11 +1038,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			results := results
 			record, ok := recordMap[controlId]
 			if !ok {
-				record = api.TopFieldRecord{
-					Control: &api.Control{
-						ID: controlId,
-					},
-				}
+				continue
 			}
 			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
 			for _, conformanceStatus := range conformanceStatuses {
