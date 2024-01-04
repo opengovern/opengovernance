@@ -139,6 +139,16 @@ func (t *CreateHelmRelease) ensureSettingsSynced(workspace db.Workspace, release
 		needsUpdate = true
 	}
 
+	if settings.Kaytu.Domain.App != t.cfg.AppDomain {
+		settings.Kaytu.Domain.App = t.cfg.AppDomain
+		needsUpdate = true
+	}
+
+	if settings.Kaytu.Domain.Grpc != t.cfg.GrpcDomain {
+		settings.Kaytu.Domain.Grpc = t.cfg.GrpcDomain
+		needsUpdate = true
+	}
+
 	if settings.Kaytu.OpenSearch.IngestionPipelineEndpoint != workspace.PipelineEndpoint {
 		settings.Kaytu.OpenSearch.IngestionPipelineEndpoint = workspace.PipelineEndpoint
 		needsUpdate = true
@@ -224,6 +234,10 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 			EnvType:      t.cfg.EnvType,
 			Octopus: types3.OctopusConfig{
 				Namespace: t.cfg.KaytuOctopusNamespace,
+			},
+			Domain: types3.DomainConfig{
+				App:  t.cfg.AppDomain,
+				Grpc: t.cfg.GrpcDomain,
 			},
 			Workspace: types3.WorkspaceConfig{
 				Name:    workspace.Name,

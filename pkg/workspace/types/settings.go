@@ -13,6 +13,11 @@ type OctopusConfig struct {
 	Namespace string `json:"namespace"`
 }
 
+type DomainConfig struct {
+	App  string `json:"app"`
+	Grpc string `json:"grpc"`
+}
+
 type KaytuConfig struct {
 	ReplicaCount int              `json:"replicaCount"`
 	EnvType      config.EnvType   `json:"envType"`
@@ -21,6 +26,7 @@ type KaytuConfig struct {
 	Insights     InsightsConfig   `json:"insights"`
 	OpenSearch   OpenSearchConfig `json:"opensearch"`
 	Octopus      OctopusConfig    `json:"octopus"`
+	Domain       DomainConfig     `json:"domain"`
 }
 type OpenSearchConfig struct {
 	Enabled                   bool   `json:"enabled"`

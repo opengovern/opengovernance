@@ -15,6 +15,8 @@ type Config struct {
 	Inventory  config.KaytuService
 
 	DomainSuffix               string
+	AppDomain                  string `yaml:"app_domain"`
+	GrpcDomain                 string `yaml:"grpc_domain"`
 	KaytuHelmChartLocation     string
 	KaytuOctopusNamespace      string
 	FluxSystemNamespace        string
