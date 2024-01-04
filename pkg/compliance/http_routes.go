@@ -928,10 +928,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			recordMap[item.Key] = record
 		}
 
-		for _, record := range recordMap {
-			response.Records = append(response.Records, record)
-		}
-
 		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
 			h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
 		if err != nil {
@@ -998,6 +994,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			}
 			recordMap[connectionId] = record
 		}
+
+		for _, record := range recordMap {
+			response.Records = append(response.Records, record)
+		}
+
+		sort.Slice(response.Records, func(i, j int) bool {
+			return response.Records[i].Count > response.Records[j].Count
+		})
 
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	case "controlid":
@@ -1081,6 +1085,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, record := range recordMap {
 			response.Records = append(response.Records, record)
 		}
+
+		sort.Slice(response.Records, func(i, j int) bool {
+			return response.Records[i].Count > response.Records[j].Count
+		})
+
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	default:
 		totalCountMap := make(map[string]int)
