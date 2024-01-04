@@ -2,6 +2,7 @@ package summarizer
 
 import (
 	"errors"
+
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -35,14 +36,13 @@ func WorkerCommand() *cobra.Command {
 				logger,
 				cnf.PrometheusPushAddress,
 			)
-
 			if err != nil {
 				return err
 			}
 
 			defer w.Stop()
 
-			return w.Run()
+			return w.Run(cmd.Context())
 		},
 	}
 

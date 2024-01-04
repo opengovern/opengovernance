@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
-	"strings"
 	"time"
 
-	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )
 
@@ -77,44 +75,40 @@ func InitializeNewWorker(
 	return w, nil
 }
 
-func (w *Worker) Run() error {
-	w.logger.Info("starting")
+// Run is a blocking function so you may decide to call it in another goroutine.
+// It runs a NATS consumer and it will close it when the given context is closed.
+func (w *Worker) Run(ctx context.Context) error {
+	w.logger.Info("starting to consume")
 
-	ctx := context.Background()
-	consumer, err := kafka.NewTopicConsumer(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup, true)
+	consumeCtx, err := w.jq.Consume(ctx, "compliance", "", []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
+		w.logger.Info("received a new job")
+
+		if err := w.ProcessMessage(context.Background(), msg); err != nil {
+			w.logger.Error("failed to process message", zap.Error(err))
+		}
+
+		w.logger.Info("processing a job completed")
+	})
 	if err != nil {
 		return err
 	}
-	msgs := consumer.Consume(ctx, w.logger, 1)
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
 
-	w.logger.Info("starting to consume")
+	w.logger.Info("consuming")
+
 	for {
 		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-			w.logger.Info("received a job")
-			t.Reset(JobTimeoutCheckInterval)
-
-			err := w.ProcessMessage(msg)
-			if err != nil {
-				w.logger.Error("failed to process message", zap.Error(err))
-			}
-		case _ = <-t.C:
-			w.logger.Info("still waiting for a job")
-			continue
+		case <-ctx.Done():
+			consumeCtx.Stop()
+		default:
 		}
 	}
 }
 
-func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
+func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) error {
 	startTime := time.Now()
 
 	var job types.Job
-	err := json.Unmarshal(msg.Value, &job)
+	err := json.Unmarshal(msg.Data(), &job)
 	if err != nil {
 		return err
 	}
@@ -138,14 +132,15 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 			return
 		}
 
-		resultMsg := kafka.Msg(fmt.Sprintf("job-result-%d", job.ID), resultJson, "", ResultQueue, kafka2.PartitionAny)
-		_, err = kafka.SyncSend(w.logger, w.kafkaProducer, []*kafka2.Message{resultMsg}, nil)
-		if err != nil {
+		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.ID)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
+
 	runtime.GC()
-	w.logger.Info("running job", zap.String("job", string(msg.Value)))
+
+	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
+
 	err = w.RunJob(job)
 	if err != nil {
 		w.logger.Info("failure while running job", zap.Error(err))
@@ -157,15 +152,4 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) error {
 
 func (w *Worker) Stop() error {
 	return nil
-}
-
-func newKafkaProducer(kafkaServers []string) (*kafka2.Producer, error) {
-	return kafka2.NewProducer(&kafka2.ConfigMap{
-		"bootstrap.servers": strings.Join(kafkaServers, ","),
-		"acks":              "all",
-		"retries":           3,
-		"linger.ms":         1,
-		"batch.size":        1000000,
-		"compression.type":  "lz4",
-	})
 }

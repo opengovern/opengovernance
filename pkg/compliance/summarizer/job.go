@@ -2,6 +2,8 @@ package summarizer
 
 import (
 	"context"
+	"strings"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
@@ -13,7 +15,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"go.uber.org/zap"
-	"strings"
 )
 
 func (w *Worker) RunJob(j types2.Job) error {
@@ -123,17 +124,10 @@ func (w *Worker) RunJob(j types2.Job) error {
 			delete(jd.ResourcesFindingsIsDone, resourceId)
 		}
 		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
-		if w.config.ElasticSearch.IsOpenSearch {
-			if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
-				w.logger.Error("failed to send to pipeline", zap.Error(err))
-				return err
-			}
-		} else {
-			err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
-			if err != nil {
-				w.logger.Error("failed to send to kafka", zap.Error(err))
-				return err
-			}
+
+		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+			w.logger.Error("failed to send to pipeline", zap.Error(err))
+			return err
 		}
 	}
 
@@ -165,17 +159,9 @@ func (w *Worker) RunJob(j types2.Job) error {
 		rf.EsIndex = idx
 		docs = append(docs, rf)
 	}
-	if w.config.ElasticSearch.IsOpenSearch {
-		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
-			w.logger.Error("failed to send to pipeline", zap.Error(err))
-			return err
-		}
-	} else {
-		err = kafka.DoSend(w.kafkaProducer, w.config.Kafka.Topic, -1, docs, w.logger, nil)
-		if err != nil {
-			w.logger.Error("failed to send to kafka", zap.Error(err))
-			return err
-		}
+	if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+		w.logger.Error("failed to send to pipeline", zap.Error(err))
+		return err
 	}
 
 	// Delete old resource findings

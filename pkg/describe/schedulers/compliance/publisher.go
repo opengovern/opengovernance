@@ -3,6 +3,7 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
@@ -65,7 +66,7 @@ func (s *JobScheduler) runPublisher() error {
 				continue
 			}
 
-			msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", runner.JobQueue, kafka.PartitionAny)
+			msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", runner.JobQueueTopic, kafka.PartitionAny)
 			_, err = kafka2.SyncSend(s.logger, s.kafkaProducer, []*kafka.Message{msg}, nil)
 			if err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
