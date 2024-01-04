@@ -477,8 +477,8 @@ func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Clien
 			"aggs": map[string]any{
 				"fieldGroup": map[string]any{
 					"terms": map[string]any{
-						"field":  fmt.Sprintf("findings.%s", field),
-						"size: ": 10000,
+						"field": fmt.Sprintf("findings.%s", field),
+						"size":  10000,
 					},
 					"aggs": map[string]any{
 						"conformanceGroup": map[string]any{
