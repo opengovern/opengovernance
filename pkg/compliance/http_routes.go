@@ -890,24 +890,115 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			h.logger.Error("failed to get connections", zap.Error(err))
 			return err
 		}
-		connectionMap := make(map[string]*onboardApi.Connection)
+
+		recordMap := make(map[string]api.TopFieldRecord)
+
 		for _, connection := range connections {
 			connection := connection
-			connectionMap[connection.ID.String()] = &connection
+			if _, ok := recordMap[connection.ID.String()]; !ok {
+				recordMap[connection.ID.String()] = api.TopFieldRecord{
+					Connection: &connection,
+				}
+			}
 		}
 
-		totalCountMap := make(map[string]int)
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
-			totalCountMap[item.Key] += item.DocCount
+			record, ok := recordMap[item.Key]
+			if !ok {
+				record = api.TopFieldRecord{
+					Connection: &onboardApi.Connection{
+						ConnectionID: item.Key,
+					},
+				}
+			}
+			record.TotalCount += item.DocCount
+			recordMap[item.Key] = record
 		}
 
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
-			response.Records = append(response.Records, api.TopFieldRecord{
-				Connection: connectionMap[item.Key],
-				Count:      item.DocCount,
-				TotalCount: totalCountMap[item.Key],
-			})
+			record, ok := recordMap[item.Key]
+			if !ok {
+				record = api.TopFieldRecord{
+					Connection: &onboardApi.Connection{
+						ConnectionID: item.Key,
+					},
+				}
+			}
+			record.Count = item.DocCount
+			recordMap[item.Key] = record
 		}
+
+		for _, record := range recordMap {
+			response.Records = append(response.Records, record)
+		}
+
+		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
+			h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
+		if err != nil {
+			h.logger.Error("failed to get controls", zap.Error(err))
+			return err
+		}
+		for _, item := range controlsResult.Aggregations.ConnectionGroup.Buckets {
+			record, ok := recordMap[item.Key]
+			if !ok {
+				record = api.TopFieldRecord{
+					Connection: &onboardApi.Connection{
+						ConnectionID: item.Key,
+					},
+				}
+			}
+			for _, control := range item.ControlCount.Buckets {
+				isFailed := false
+				for _, conformanceStatus := range control.ConformanceStatuses.Buckets {
+					status := kaytuTypes.ParseConformanceStatus(conformanceStatus.Key)
+					if !status.IsPassed() && conformanceStatus.DocCount > 0 {
+						isFailed = true
+						break
+					}
+				}
+				if isFailed {
+					record.ControlCount = utils.PAdd(record.ControlCount, utils.GetPointer(1))
+				}
+				record.ControlTotalCount = utils.PAdd(record.ControlTotalCount, utils.GetPointer(1))
+			}
+			recordMap[item.Key] = record
+		}
+
+		resourcesResult, err := es.GetPerFieldResourceConformanceResult(h.logger, h.client, "connectionID",
+			resConnectionIDs, nil, controlIDs, benchmarkIDs, severities, nil)
+		if err != nil {
+			h.logger.Error("failed to get resourcesResult", zap.Error(err))
+			return err
+		}
+
+		for connectionId, results := range resourcesResult {
+			results := results
+			record, ok := recordMap[connectionId]
+			if !ok {
+				record = api.TopFieldRecord{
+					Connection: &onboardApi.Connection{
+						ConnectionID: connectionId,
+					},
+				}
+			}
+			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
+			for _, conformanceStatus := range conformanceStatuses {
+				switch conformanceStatus {
+				case kaytuTypes.ConformanceStatusALARM:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.AlarmCount)
+				case kaytuTypes.ConformanceStatusERROR:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.ErrorCount)
+				case kaytuTypes.ConformanceStatusINFO:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.InfoCount)
+				case kaytuTypes.ConformanceStatusSKIP:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.SkipCount)
+				case kaytuTypes.ConformanceStatusOK:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.OkCount)
+				}
+			}
+			recordMap[connectionId] = record
+		}
+
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	case "controlid":
 		controls, err := h.db.ListControls()
@@ -915,23 +1006,80 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
 		}
-		controlsMap := make(map[string]*db.Control)
+
+		recordMap := make(map[string]api.TopFieldRecord)
 		for _, control := range controls {
 			control := control
-			controlsMap[control.ID] = &control
+			if _, ok := recordMap[control.ID]; !ok {
+				recordMap[control.ID] = api.TopFieldRecord{
+					Control: utils.GetPointer(control.ToApi()),
+				}
+			}
 		}
 
-		totalCountMap := make(map[string]int)
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
-			totalCountMap[item.Key] += item.DocCount
+			record, ok := recordMap[item.Key]
+			if !ok {
+				record = api.TopFieldRecord{
+					Control: &api.Control{
+						ID: item.Key,
+					},
+				}
+			}
+			record.TotalCount += item.DocCount
+			recordMap[item.Key] = record
 		}
 
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
-			response.Records = append(response.Records, api.TopFieldRecord{
-				Control:    utils.GetPointer(controlsMap[item.Key].ToApi()),
-				Count:      item.DocCount,
-				TotalCount: totalCountMap[item.Key],
-			})
+			record, ok := recordMap[item.Key]
+			if !ok {
+				record = api.TopFieldRecord{
+					Control: &api.Control{
+						ID: item.Key,
+					},
+				}
+			}
+			record.Count = item.DocCount
+			recordMap[item.Key] = record
+		}
+
+		resourcesResult, err := es.GetPerFieldResourceConformanceResult(h.logger, h.client, "controlID",
+			connectionIDs, nil, controlIDs, benchmarkIDs, severities, nil)
+		if err != nil {
+			h.logger.Error("failed to get resourcesResult", zap.Error(err))
+			return err
+		}
+
+		for controlId, results := range resourcesResult {
+			results := results
+			record, ok := recordMap[controlId]
+			if !ok {
+				record = api.TopFieldRecord{
+					Control: &api.Control{
+						ID: controlId,
+					},
+				}
+			}
+			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
+			for _, conformanceStatus := range conformanceStatuses {
+				switch conformanceStatus {
+				case kaytuTypes.ConformanceStatusALARM:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.AlarmCount)
+				case kaytuTypes.ConformanceStatusERROR:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.ErrorCount)
+				case kaytuTypes.ConformanceStatusINFO:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.InfoCount)
+				case kaytuTypes.ConformanceStatusSKIP:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.SkipCount)
+				case kaytuTypes.ConformanceStatusOK:
+					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.OkCount)
+				}
+			}
+			recordMap[controlId] = record
+		}
+
+		for _, record := range recordMap {
+			response.Records = append(response.Records, record)
 		}
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	default:
@@ -1239,7 +1387,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	connections, err :=  h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err

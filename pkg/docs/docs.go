@@ -9529,11 +9529,23 @@ const docTemplate = `{
                 "control": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control"
                 },
+                "controlCount": {
+                    "type": "integer"
+                },
+                "controlTotalCount": {
+                    "type": "integer"
+                },
                 "count": {
                     "type": "integer"
                 },
                 "field": {
                     "type": "string"
+                },
+                "resourceCount": {
+                    "type": "integer"
+                },
+                "resourceTotalCount": {
+                    "type": "integer"
                 },
                 "resourceType": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"

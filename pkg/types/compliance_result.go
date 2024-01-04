@@ -16,6 +16,11 @@ func (r ConformanceStatus) IsPassed() bool {
 	return r == ConformanceStatusOK
 }
 
+type ConformanceStatusSummaryWithTotal struct {
+	ConformanceStatusSummary
+	TotalCount int `json:"totalCount" example:"5"`
+}
+
 type ConformanceStatusSummary struct {
 	OkCount    int `json:"okCount" example:"1"`
 	AlarmCount int `json:"alarmCount" example:"1"`
