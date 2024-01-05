@@ -1627,6 +1627,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding:
     properties:
+      connectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
       connector:
         $ref: '#/definitions/source.Type'
       evaluatedAt:
@@ -1652,6 +1656,8 @@ definitions:
       resourceName:
         type: string
       resourceType:
+        type: string
+      resourceTypeLabel:
         type: string
       sortKey:
         items: {}

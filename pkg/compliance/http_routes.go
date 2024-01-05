@@ -1391,6 +1391,17 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		connectionMap[connection.ID.String()] = &connection
 	}
 
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx), nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource types metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMap := make(map[string]*inventoryApi.ResourceType)
+	for _, rt := range resourceTypes.ResourceTypes {
+		rt := rt
+		resourceTypeMap[strings.ToLower(rt.ResourceType)] = &rt
+	}
+
 	if len(req.Filters.ConformanceStatus) == 0 {
 		req.Filters.ConformanceStatus = []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
@@ -1417,9 +1428,12 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 
 	for _, resourceFinding := range resourceFindings {
 		apiRf := api.GetAPIResourceFinding(resourceFinding.Source)
-		connectionName, ok := connectionMap[apiRf.ProviderConnectionID]
-		if ok {
-			apiRf.ProviderConnectionName = connectionName.ConnectionName
+		if connection, ok := connectionMap[apiRf.ConnectionID]; ok {
+			apiRf.ProviderConnectionID = connection.ConnectionID
+			apiRf.ProviderConnectionName = connection.ConnectionName
+		}
+		if resourceType, ok := resourceTypeMap[strings.ToLower(apiRf.ResourceType)]; ok {
+			apiRf.ResourceTypeLabel = resourceType.ResourceLabel
 		}
 		apiRf.SortKey = resourceFinding.Sort
 		response.ResourceFindings = append(response.ResourceFindings, apiRf)

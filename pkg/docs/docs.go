@@ -9303,6 +9303,11 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding": {
             "type": "object",
             "properties": {
+                "connectionID": {
+                    "description": "Connection ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
                 "connector": {
                     "$ref": "#/definitions/source.Type"
                 },
@@ -9338,6 +9343,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceType": {
+                    "type": "string"
+                },
+                "resourceTypeLabel": {
                     "type": "string"
                 },
                 "sortKey": {

@@ -7,11 +7,12 @@ import (
 )
 
 type ResourceFinding struct {
-	KaytuResourceID  string      `json:"kaytuResourceID"`
-	ResourceName     string      `json:"resourceName"`
-	ResourceLocation string      `json:"resourceLocation"`
-	ResourceType     string      `json:"resourceType"`
-	Connector        source.Type `json:"connector"`
+	KaytuResourceID   string      `json:"kaytuResourceID"`
+	ResourceName      string      `json:"resourceName"`
+	ResourceLocation  string      `json:"resourceLocation"`
+	ResourceType      string      `json:"resourceType"`
+	ResourceTypeLabel string      `json:"resourceTypeLabel"`
+	Connector         source.Type `json:"connector"`
 
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`
@@ -22,6 +23,7 @@ type ResourceFinding struct {
 
 	SortKey []any `json:"sortKey"`
 
+	ConnectionID           string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`           // Connection ID
 	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
 	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 }
@@ -49,11 +51,12 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 			apiRf.FailedCount++
 		}
 		connectionIds[finding.ConnectionID] = true
-		apiRf.ProviderConnectionID = finding.ConnectionID
+		apiRf.ConnectionID = finding.ConnectionID
 		apiRf.Findings = append(apiRf.Findings, Finding{Finding: finding})
 	}
 
 	if len(connectionIds) > 1 {
+		apiRf.ConnectionID = "Global (Multiple)"
 		apiRf.ProviderConnectionID = "Global (Multiple)"
 		apiRf.ProviderConnectionName = "Global (Multiple)"
 	}
