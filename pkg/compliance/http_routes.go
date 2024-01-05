@@ -983,10 +983,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			response.Records = append(response.Records, record)
 		}
 
-		sort.Slice(response.Records, func(i, j int) bool {
-			return response.Records[i].Count > response.Records[j].Count
-		})
-
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	case "controlid":
 		resControlIDs := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
@@ -1062,10 +1058,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			response.Records = append(response.Records, record)
 		}
 
-		sort.Slice(response.Records, func(i, j int) bool {
-			return response.Records[i].Count > response.Records[j].Count
-		})
-
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	default:
 		totalCountMap := make(map[string]int)
@@ -1083,6 +1075,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	}
+
+	sort.Slice(response.Records, func(i, j int) bool {
+		if response.Records[i].Count != response.Records[j].Count {
+			return response.Records[i].Count > response.Records[j].Count
+		}
+		return response.Records[i].TotalCount > response.Records[j].TotalCount
+	})
+	response.Records = response.Records[:count]
 
 	return ctx.JSON(http.StatusOK, response)
 }
