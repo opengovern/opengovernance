@@ -1,8 +1,9 @@
 package summarizer
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 )
 
 type ComplianceSummarizerStatus string

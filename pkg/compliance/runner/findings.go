@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"

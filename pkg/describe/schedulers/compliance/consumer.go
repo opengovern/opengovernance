@@ -3,20 +3,21 @@ package compliance
 import (
 	"context"
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
-	"strings"
-	"time"
 )
 
 const JobTimeoutCheckInterval = 5 * time.Minute
 
 func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 	ctx := context.Background()
-	consumer, err := kafka2.NewTopicConsumer(ctx, strings.Split(s.conf.Kafka.Addresses, ","), runner.ResultQueue, runner.ConsumerGroup, false)
+	consumer, err := kafka2.NewTopicConsumer(ctx, strings.Split(s.conf.Kafka.Addresses, ","), runner.ResultQueueTopic, runner.ConsumerGroup, false)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 
 func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
 	ctx := context.Background()
-	consumer, err := kafka2.NewTopicConsumer(ctx, strings.Split(s.conf.Kafka.Addresses, ","), summarizer.ResultQueue, summarizer.ConsumerGroup, false)
+	consumer, err := kafka2.NewTopicConsumer(ctx, strings.Split(s.conf.Kafka.Addresses, ","), summarizer.ResultQueueTopic, summarizer.ConsumerGroup, false)
 	if err != nil {
 		return err
 	}

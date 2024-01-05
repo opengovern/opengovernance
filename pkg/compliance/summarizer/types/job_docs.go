@@ -1,12 +1,13 @@
 package types
 
 import (
+	"strings"
+
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type JobDocs struct {
@@ -22,7 +23,8 @@ type JobDocs struct {
 }
 
 func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
-	finding types.Finding, resource *es.LookupResource) {
+	finding types.Finding, resource *es.LookupResource,
+) {
 	if finding.Severity == "" {
 		finding.Severity = types.FindingSeverityNone
 	}
@@ -193,7 +195,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 
 func (jd *JobDocs) SummarizeResourceFinding(logger *zap.Logger, resourceFinding types.ResourceFinding) types.ResourceFinding {
 	resourceFinding.ResourceCollection = nil
-	for rcId, _ := range resourceFinding.ResourceCollectionMap {
+	for rcId := range resourceFinding.ResourceCollectionMap {
 		resourceFinding.ResourceCollection = append(resourceFinding.ResourceCollection, rcId)
 	}
 	return resourceFinding
@@ -203,7 +205,7 @@ func (jd *JobDocs) Summarize(logger *zap.Logger) {
 	jd.BenchmarkSummary.summarize()
 	for i, resourceFinding := range jd.ResourcesFindings {
 		resourceFinding := resourceFinding
-		for rcId, _ := range resourceFinding.ResourceCollectionMap {
+		for rcId := range resourceFinding.ResourceCollectionMap {
 			resourceFinding.ResourceCollection = append(resourceFinding.ResourceCollection, rcId)
 			jd.ResourcesFindings[i] = resourceFinding
 		}
