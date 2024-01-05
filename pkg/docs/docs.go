@@ -8187,7 +8187,7 @@ const docTemplate = `{
                     "description": "Compliance result summary",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/types.ConformanceStatusSummary"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary"
                         }
                     ]
                 },
@@ -8361,6 +8361,28 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus": {
+            "type": "string",
+            "enum": [
+                "failed",
+                "passed"
+            ],
+            "x-enum-varnames": [
+                "ConformanceStatusFailed",
+                "ConformanceStatusPassed"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary": {
+            "type": "object",
+            "properties": {
+                "passed": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control": {
             "type": "object",
             "properties": {
@@ -8521,7 +8543,7 @@ const docTemplate = `{
                 "conformanceStatus": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/types.ConformanceStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus"
                         }
                     ],
                     "example": "alarm"
@@ -8543,12 +8565,6 @@ const docTemplate = `{
                     "example": "azure_cis_v140_7_5"
                 },
                 "controlTitle": {
-                    "type": "string"
-                },
-                "es_id": {
-                    "type": "string"
-                },
-                "es_index": {
                     "type": "string"
                 },
                 "evaluatedAt": {
@@ -8683,7 +8699,7 @@ const docTemplate = `{
                 "conformanceStatus": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.ConformanceStatus"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus"
                     },
                     "example": [
                         "alarm"
@@ -8877,7 +8893,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/types.SeverityResult"
                 },
                 "totalConformanceStatusSummary": {
-                    "$ref": "#/definitions/types.ConformanceStatusSummary"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary"
                 }
             }
         },
@@ -9372,7 +9388,7 @@ const docTemplate = `{
                 "conformanceStatus": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.ConformanceStatus"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus"
                     },
                     "example": [
                         "alarm"
@@ -9469,19 +9485,10 @@ const docTemplate = `{
                 "conformanceStatusesCount": {
                     "type": "object",
                     "properties": {
-                        "error": {
-                            "type": "integer"
-                        },
                         "failed": {
                             "type": "integer"
                         },
-                        "info": {
-                            "type": "integer"
-                        },
                         "passed": {
-                            "type": "integer"
-                        },
-                        "skip": {
                             "type": "integer"
                         }
                     }
@@ -12464,48 +12471,6 @@ const docTemplate = `{
                 "CloudAWS",
                 "CloudAzure"
             ]
-        },
-        "types.ConformanceStatus": {
-            "type": "string",
-            "enum": [
-                "ok",
-                "alarm",
-                "info",
-                "skip",
-                "error"
-            ],
-            "x-enum-varnames": [
-                "ConformanceStatusOK",
-                "ConformanceStatusALARM",
-                "ConformanceStatusINFO",
-                "ConformanceStatusSKIP",
-                "ConformanceStatusERROR"
-            ]
-        },
-        "types.ConformanceStatusSummary": {
-            "type": "object",
-            "properties": {
-                "alarmCount": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "errorCount": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "infoCount": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "okCount": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "skipCount": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
         },
         "types.FindingSeverity": {
             "type": "string",

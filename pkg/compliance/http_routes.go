@@ -192,8 +192,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	var response api.GetFindingsResponse
 
-	if len(req.Filters.ConformanceStatus) == 0 {
-		req.Filters.ConformanceStatus = []kaytuTypes.ConformanceStatus{
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	for _, status := range req.Filters.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+	if len(esConformanceStatuses) == 0 {
+		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
 			kaytuTypes.ConformanceStatusERROR,
 			kaytuTypes.ConformanceStatusINFO,
@@ -211,7 +215,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID,
-		req.Filters.Severity, req.Filters.ConformanceStatus, req.Sort, req.Limit, req.AfterSortKey)
+		req.Filters.Severity, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
@@ -264,7 +268,25 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	for _, h := range res {
 		finding := api.Finding{
-			Finding:                     h.Source,
+			BenchmarkID:           h.Source.BenchmarkID,
+			ControlID:             h.Source.ControlID,
+			ConnectionID:          h.Source.ConnectionID,
+			EvaluatedAt:           h.Source.EvaluatedAt,
+			StateActive:           h.Source.StateActive,
+			ConformanceStatus:     "",
+			Severity:              h.Source.Severity,
+			Evaluator:             h.Source.Evaluator,
+			Connector:             h.Source.Connector,
+			KaytuResourceID:       h.Source.KaytuResourceID,
+			ResourceID:            h.Source.ResourceID,
+			ResourceName:          h.Source.ResourceName,
+			ResourceLocation:      h.Source.ResourceLocation,
+			ResourceType:          h.Source.ResourceType,
+			Reason:                h.Source.Reason,
+			ComplianceJobID:       h.Source.ComplianceJobID,
+			ParentComplianceJobID: h.Source.ParentComplianceJobID,
+			ParentBenchmarks:      h.Source.ParentBenchmarks,
+
 			ResourceTypeName:            h.Source.ResourceID,
 			ParentBenchmarkNames:        make([]string, 0, len(h.Source.ParentBenchmarks)),
 			ParentBenchmarkDisplayCodes: make([]string, 0, len(h.Source.ParentBenchmarks)),
@@ -274,8 +296,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			NoOfOccurrences:             1,
 			SortKey:                     h.Sort,
 		}
-		if finding.Finding.ResourceType == "" {
-			finding.Finding.ResourceType = "Unknown"
+
+		if h.Source.ConformanceStatus.IsPassed() {
+			finding.ConformanceStatus = api.ConformanceStatusPassed
+		} else {
+			finding.ConformanceStatus = api.ConformanceStatusFailed
+		}
+
+		if finding.ResourceType == "" {
+			finding.ResourceType = "Unknown"
 			finding.ResourceTypeName = "Unknown"
 		}
 
@@ -286,7 +315,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			}
 		}
 
-		if src, ok := allSourcesMap[finding.Finding.ConnectionID]; ok {
+		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
 			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
 			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
 		}
@@ -444,7 +473,25 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		controlFinding.ResourceName = lookupResource.Name
 		controlFinding.ResourceLocation = lookupResource.Location
 		finding := api.Finding{
-			Finding:                     controlFinding,
+			BenchmarkID:           controlFinding.BenchmarkID,
+			ControlID:             controlFinding.ControlID,
+			ConnectionID:          controlFinding.ConnectionID,
+			EvaluatedAt:           controlFinding.EvaluatedAt,
+			StateActive:           controlFinding.StateActive,
+			ConformanceStatus:     "",
+			Severity:              controlFinding.Severity,
+			Evaluator:             controlFinding.Evaluator,
+			Connector:             controlFinding.Connector,
+			KaytuResourceID:       controlFinding.KaytuResourceID,
+			ResourceID:            controlFinding.ResourceID,
+			ResourceName:          controlFinding.ResourceName,
+			ResourceLocation:      controlFinding.ResourceLocation,
+			ResourceType:          controlFinding.ResourceType,
+			Reason:                controlFinding.Reason,
+			ComplianceJobID:       controlFinding.ComplianceJobID,
+			ParentComplianceJobID: controlFinding.ParentComplianceJobID,
+			ParentBenchmarks:      controlFinding.ParentBenchmarks,
+
 			ResourceTypeName:            "",
 			ParentBenchmarkNames:        nil,
 			ParentBenchmarkDisplayCodes: nil,
@@ -453,8 +500,15 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 			ProviderConnectionName:      "",
 			NoOfOccurrences:             len(controlFindings),
 		}
-		if finding.Finding.ResourceType == "" {
-			finding.Finding.ResourceType = "Unknown"
+
+		if controlFinding.ConformanceStatus.IsPassed() {
+			finding.ConformanceStatus = api.ConformanceStatusPassed
+		} else {
+			finding.ConformanceStatus = api.ConformanceStatusFailed
+		}
+
+		if finding.ResourceType == "" {
+			finding.ResourceType = "Unknown"
 			finding.ResourceTypeName = "Unknown"
 		}
 
@@ -465,7 +519,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 			}
 		}
 
-		if src, ok := allSourcesMap[finding.Finding.ConnectionID]; ok {
+		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
 			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
 			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
 		}
@@ -509,8 +563,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if len(req.ConformanceStatus) == 0 {
-		req.ConformanceStatus = []kaytuTypes.ConformanceStatus{
+
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
+	for _, status := range req.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+	if len(esConformanceStatuses) == 0 {
+		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
 			kaytuTypes.ConformanceStatusERROR,
 			kaytuTypes.ConformanceStatusINFO,
@@ -577,7 +636,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID,
 		req.BenchmarkID, req.ControlID,
-		req.Severity, req.ConformanceStatus)
+		req.Severity, esConformanceStatuses)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
@@ -684,11 +743,20 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		})
 	}
 
+	apiConformanceStatuses := make(map[api.ConformanceStatus]int)
 	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
+		if kaytuTypes.ParseConformanceStatus(item.Key).IsPassed() {
+			apiConformanceStatuses[api.ConformanceStatusPassed] += item.DocCount
+		} else {
+			apiConformanceStatuses[api.ConformanceStatusFailed] += item.DocCount
+		}
+	}
+	for status, count := range apiConformanceStatuses {
+		count := count
 		response.ConformanceStatus = append(response.ConformanceStatus, api.FindingFilterWithMetadata{
-			Key:         item.Key,
-			DisplayName: item.Key,
-			Count:       utils.GetPointer(item.DocCount),
+			Key:         string(status),
+			DisplayName: string(status),
+			Count:       &count,
 		})
 	}
 
@@ -1346,15 +1414,12 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 			ConformanceStatusesCount: struct {
 				Passed int `json:"passed"`
 				Failed int `json:"failed"`
-				Error  int `json:"error"`
-				Info   int `json:"info"`
-				Skip   int `json:"skip"`
 			}{
 				Passed: resMap[string(kaytuTypes.ConformanceStatusOK)],
-				Failed: resMap[string(kaytuTypes.ConformanceStatusALARM)],
-				Error:  resMap[string(kaytuTypes.ConformanceStatusERROR)],
-				Info:   resMap[string(kaytuTypes.ConformanceStatusINFO)],
-				Skip:   resMap[string(kaytuTypes.ConformanceStatusSKIP)],
+				Failed: resMap[string(kaytuTypes.ConformanceStatusALARM)] +
+					resMap[string(kaytuTypes.ConformanceStatusERROR)] +
+					resMap[string(kaytuTypes.ConformanceStatusINFO)] +
+					resMap[string(kaytuTypes.ConformanceStatusSKIP)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -1402,8 +1467,12 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		resourceTypeMap[strings.ToLower(rt.ResourceType)] = &rt
 	}
 
-	if len(req.Filters.ConformanceStatus) == 0 {
-		req.Filters.ConformanceStatus = []kaytuTypes.ConformanceStatus{
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	for _, status := range req.Filters.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+	if len(esConformanceStatuses) == 0 {
+		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
 			kaytuTypes.ConformanceStatusERROR,
 			kaytuTypes.ConformanceStatusINFO,
@@ -1415,7 +1484,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceCollection, req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		req.Filters.ConformanceStatus, req.Sort, req.Limit, req.AfterSortKey)
+		esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get resource findings", zap.Error(err))
 		return err
@@ -1635,15 +1704,15 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		summaryAtTime := summariesAtTime[b.ID]
-		csResult := kaytuTypes.ConformanceStatusSummary{}
+		csResult := api.ConformanceStatusSummary{}
 		sResult := kaytuTypes.SeverityResult{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 
 		if len(connectionIDs) > 0 {
 			for _, connectionID := range connectionIDs {
-				csResult.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+				csResult.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 				sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
-				response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+				response.TotalConformanceStatusSummary.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 				response.TotalChecks.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 				for controlId, controlResult := range summaryAtTime.Connections.Connections[connectionID].Controls {
 					control := controlsMap[strings.ToLower(controlId)]
@@ -1652,9 +1721,9 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			}
 		} else if len(resourceCollections) > 0 {
 			for _, resourceCollection := range resourceCollections {
-				csResult.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+				csResult.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
-				response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+				response.TotalConformanceStatusSummary.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 				for controlId, controlResult := range summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Controls {
 					control := controlsMap[strings.ToLower(controlId)]
@@ -1662,9 +1731,9 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				}
 			}
 		} else {
-			csResult.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+			csResult.AddESConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
-			response.TotalConformanceStatusSummary.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+			response.TotalConformanceStatusSummary.AddESConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
@@ -1858,12 +1927,12 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	summaryAtTime := summariesAtTime[benchmarkID]
 
-	csResult := kaytuTypes.ConformanceStatusSummary{}
+	csResult := api.ConformanceStatusSummary{}
 	sResult := kaytuTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 	if len(connectionIDs) > 0 {
 		for _, connectionID := range connectionIDs {
-			csResult.AddConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
+			csResult.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
 			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
@@ -1872,7 +1941,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		}
 	} else if len(resourceCollections) > 0 {
 		for _, resourceCollection := range resourceCollections {
-			csResult.AddConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
+			csResult.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
 			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
@@ -1880,7 +1949,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 			}
 		}
 	} else {
-		csResult.AddConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
+		csResult.AddESConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
 		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
 		for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
 			control := controlsMap[strings.ToLower(controlId)]

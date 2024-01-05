@@ -52,7 +52,32 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 		}
 		connectionIds[finding.ConnectionID] = true
 		apiRf.ConnectionID = finding.ConnectionID
-		apiRf.Findings = append(apiRf.Findings, Finding{Finding: finding})
+		f := Finding{
+			BenchmarkID:           finding.BenchmarkID,
+			ControlID:             finding.ControlID,
+			ConnectionID:          finding.ConnectionID,
+			EvaluatedAt:           finding.EvaluatedAt,
+			StateActive:           finding.StateActive,
+			ConformanceStatus:     "",
+			Severity:              finding.Severity,
+			Evaluator:             finding.Evaluator,
+			Connector:             finding.Connector,
+			KaytuResourceID:       finding.KaytuResourceID,
+			ResourceID:            finding.ResourceID,
+			ResourceName:          finding.ResourceName,
+			ResourceLocation:      finding.ResourceLocation,
+			ResourceType:          finding.ResourceType,
+			Reason:                finding.Reason,
+			ComplianceJobID:       finding.ComplianceJobID,
+			ParentComplianceJobID: finding.ParentComplianceJobID,
+			ParentBenchmarks:      finding.ParentBenchmarks,
+		}
+		if finding.ConformanceStatus.IsPassed() {
+			f.ConformanceStatus = ConformanceStatusPassed
+		} else {
+			f.ConformanceStatus = ConformanceStatusFailed
+		}
+		apiRf.Findings = append(apiRf.Findings, f)
 	}
 
 	if len(connectionIds) > 1 {
@@ -65,15 +90,15 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 }
 
 type ResourceFindingsFilters struct {
-	Connector          []source.Type             `json:"connector" example:"Azure"`
-	ResourceID         []string                  `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceTypeID     []string                  `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
-	ConnectionID       []string                  `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ResourceCollection []string                  `json:"resourceCollection" example:"example-rc"`
-	BenchmarkID        []string                  `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID          []string                  `json:"controlID" example:"azure_cis_v140_7_5"`
-	Severity           []types.FindingSeverity   `json:"severity" example:"low"`
-	ConformanceStatus  []types.ConformanceStatus `json:"conformanceStatus" example:"alarm"`
+	Connector          []source.Type           `json:"connector" example:"Azure"`
+	ResourceID         []string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceTypeID     []string                `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
+	ConnectionID       []string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ResourceCollection []string                `json:"resourceCollection" example:"example-rc"`
+	BenchmarkID        []string                `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          []string                `json:"controlID" example:"azure_cis_v140_7_5"`
+	Severity           []types.FindingSeverity `json:"severity" example:"low"`
+	ConformanceStatus  []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
 }
 
 type ResourceFindingsSort struct {

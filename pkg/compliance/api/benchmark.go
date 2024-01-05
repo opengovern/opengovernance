@@ -35,8 +35,8 @@ type BenchmarkTrendDatapoint struct {
 type GetBenchmarksSummaryResponse struct {
 	BenchmarkSummary []BenchmarkEvaluationSummary `json:"benchmarkSummary"`
 
-	TotalConformanceStatusSummary types.ConformanceStatusSummary `json:"totalConformanceStatusSummary"`
-	TotalChecks                   types.SeverityResult           `json:"totalChecks"`
+	TotalConformanceStatusSummary ConformanceStatusSummary `json:"totalConformanceStatusSummary"`
+	TotalChecks                   types.SeverityResult     `json:"totalChecks"`
 }
 
 type BenchmarkSeverityStatusResult struct {
@@ -64,9 +64,22 @@ type BenchmarkResourcesSeverityStatus struct {
 	None     BenchmarkSeverityStatusResult `json:"none"`
 }
 
+type ConformanceStatusSummary struct {
+	PassedCount int `json:"passed"`
+	FailedCount int `json:"total"`
+}
+
+func (c *ConformanceStatusSummary) AddESConformanceStatusMap(summary map[types.ConformanceStatus]int) {
+	c.PassedCount += summary[types.ConformanceStatusOK]
+	c.FailedCount += summary[types.ConformanceStatusALARM]
+	c.FailedCount += summary[types.ConformanceStatusINFO]
+	c.FailedCount += summary[types.ConformanceStatusSKIP]
+	c.FailedCount += summary[types.ConformanceStatusERROR]
+}
+
 type BenchmarkEvaluationSummary struct {
 	Benchmark
-	ConformanceStatusSummary types.ConformanceStatusSummary   `json:"conformanceStatusSummary"`                   // Compliance result summary
+	ConformanceStatusSummary ConformanceStatusSummary         `json:"conformanceStatusSummary"`                   // Compliance result summary
 	Checks                   types.SeverityResult             `json:"checks"`                                     // Checks summary
 	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`                     // Controls severity status
 	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`                    // Resource severity status

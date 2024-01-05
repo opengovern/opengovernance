@@ -7,14 +7,14 @@ import (
 )
 
 type FindingFilters struct {
-	Connector         []source.Type             `json:"connector" example:"Azure"`                                                                                    // Clout Provider
-	ResourceID        []string                  `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"` // Resource unique identifier
-	ResourceTypeID    []string                  `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`  // Resource type
-	ConnectionID      []string                  `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
-	BenchmarkID       []string                  `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
-	ControlID         []string                  `json:"controlID" example:"azure_cis_v140_7_5"`                                                                       // Control ID
-	Severity          []types.FindingSeverity   `json:"severity" example:"low"`                                                                                       // Severity
-	ConformanceStatus []types.ConformanceStatus `json:"conformanceStatus" example:"alarm"`
+	Connector         []source.Type           `json:"connector" example:"Azure"`                                                                                    // Clout Provider
+	ResourceID        []string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"` // Resource unique identifier
+	ResourceTypeID    []string                `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`  // Resource type
+	ConnectionID      []string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
+	BenchmarkID       []string                `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
+	ControlID         []string                `json:"controlID" example:"azure_cis_v140_7_5"`                                                                       // Control ID
+	Severity          []types.FindingSeverity `json:"severity" example:"low"`                                                                                       // Severity
+	ConformanceStatus []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
 }
 
 type FindingFilterWithMetadata struct {
@@ -70,8 +70,42 @@ type GetSingleResourceFindingResponse struct {
 	ControlFindings []Finding   `json:"controls"`
 }
 
+type ConformanceStatus string
+
+const (
+	ConformanceStatusFailed ConformanceStatus = "failed"
+	ConformanceStatusPassed ConformanceStatus = "passed"
+)
+
+func (cs ConformanceStatus) GetEsConformanceStatuses() []types.ConformanceStatus {
+	switch cs {
+	case ConformanceStatusFailed:
+		return []types.ConformanceStatus{types.ConformanceStatusALARM, types.ConformanceStatusERROR, types.ConformanceStatusINFO, types.ConformanceStatusSKIP}
+	case ConformanceStatusPassed:
+		return []types.ConformanceStatus{types.ConformanceStatusOK}
+	}
+	return nil
+}
+
 type Finding struct {
-	types.Finding
+	BenchmarkID           string                `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID             string                `json:"controlID" example:"azure_cis_v140_7_5"`
+	ConnectionID          string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	EvaluatedAt           int64                 `json:"evaluatedAt" example:"1589395200"`
+	StateActive           bool                  `json:"stateActive" example:"true"`
+	ConformanceStatus     ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
+	Severity              types.FindingSeverity `json:"severity" example:"low"`
+	Evaluator             string                `json:"evaluator" example:"steampipe-v0.5"`
+	Connector             source.Type           `json:"connector" example:"Azure"`
+	KaytuResourceID       string                `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID            string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceName          string                `json:"resourceName" example:"vm-1"`
+	ResourceLocation      string                `json:"resourceLocation" example:"eastus"`
+	ResourceType          string                `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	Reason                string                `json:"reason" example:"The VM is not using managed disks"`
+	ComplianceJobID       uint                  `json:"complianceJobID" example:"1"`
+	ParentComplianceJobID uint                  `json:"parentComplianceJobID" example:"1"`
+	ParentBenchmarks      []string              `json:"parentBenchmarks"`
 
 	ResourceTypeName            string   `json:"resourceTypeName" example:"Virtual Machine"`
 	ParentBenchmarkNames        []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
@@ -109,9 +143,6 @@ type ServiceFindingsSummary struct {
 	ConformanceStatusesCount struct {
 		Passed int `json:"passed"`
 		Failed int `json:"failed"`
-		Error  int `json:"error"`
-		Info   int `json:"info"`
-		Skip   int `json:"skip"`
 	} `json:"conformanceStatusesCount"`
 }
 
