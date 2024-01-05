@@ -201,6 +201,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		}
 	}
 
+	if len(req.Sort) == 0 {
+		req.Sort = []api.FindingsSort{
+			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
+		}
+	}
+
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceTypeID,
@@ -1082,7 +1088,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		return response.Records[i].TotalCount > response.Records[j].TotalCount
 	})
-	response.Records = response.Records[:count]
+	response.Records = response.Records[:min(len(response.Records), count)]
 
 	return ctx.JSON(http.StatusOK, response)
 }
