@@ -57,6 +57,25 @@ func (jq *JobQueue) closeHandler(nc *nats.Conn) {
 	jq.logger.Fatal("connection lost", zap.Error(nc.LastError()))
 }
 
+func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics []string) error {
+	// https://docs.nats.io/nats-concepts/jetstream/streams
+	if _, err := jq.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+		Name:         name,
+		Description:  description,
+		Subjects:     topics,
+		Retention:    jetstream.WorkQueuePolicy,
+		MaxConsumers: -1,
+		MaxMsgs:      1000,
+		Discard:      jetstream.DiscardOld,
+		Duplicates:   15 * time.Minute,
+		Replicas:     1,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Consume consumes messages from the given topic using the specified queue group.
 // it creates pull consumer which is the only mode that is available in the new version
 // of nats.go library.

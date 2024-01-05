@@ -21,6 +21,8 @@ const (
 	JobQueueTopic    = "compliance-summarizer-job-queue"
 	ResultQueueTopic = "compliance-summarizer-job-result"
 	ConsumerGroup    = "compliance-summarizer"
+
+	StreamName = "compliance-summarizer"
 )
 
 type Config struct {
@@ -41,7 +43,7 @@ type Worker struct {
 	onboardClient   onboardClient.OnboardServiceClient
 }
 
-func InitializeNewWorker(
+func NewWorker(
 	config Config,
 	logger *zap.Logger,
 	prometheusPushAddress string,
@@ -63,6 +65,10 @@ func InitializeNewWorker(
 		return nil, err
 	}
 
+	if err := jq.Stream(context.Background(), StreamName, "compliance summarizer job queues", []string{JobQueueTopic, ResultQueueTopic}); err != nil {
+		return nil, err
+	}
+
 	w := &Worker{
 		config:          config,
 		logger:          logger,
@@ -80,7 +86,7 @@ func InitializeNewWorker(
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
 
-	consumeCtx, err := w.jq.Consume(ctx, "compliance", "", []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
+	consumeCtx, err := w.jq.Consume(ctx, "compliance-summarizer", StreamName, []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("received a new job")
 
 		if err := w.ProcessMessage(context.Background(), msg); err != nil {
