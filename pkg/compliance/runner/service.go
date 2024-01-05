@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
@@ -194,15 +192,4 @@ func (w *Worker) Stop() error {
 	w.steampipeConn.Conn().Close()
 	steampipe.StopSteampipeService(w.logger)
 	return nil
-}
-
-func newKafkaProducer(kafkaServers []string) (*kafka2.Producer, error) {
-	return kafka2.NewProducer(&kafka2.ConfigMap{
-		"bootstrap.servers": strings.Join(kafkaServers, ","),
-		"acks":              "all",
-		"retries":           3,
-		"linger.ms":         1,
-		"batch.size":        1000000,
-		"compression.type":  "lz4",
-	})
 }
