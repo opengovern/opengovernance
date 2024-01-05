@@ -845,7 +845,7 @@ definitions:
         type: array
       conformanceStatusSummary:
         allOf:
-        - $ref: '#/definitions/types.ConformanceStatusSummary'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
         description: Compliance result summary
       connectors:
         description: Benchmark connectors
@@ -968,6 +968,21 @@ definitions:
         example: 1686346668
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus:
+    enum:
+    - failed
+    - passed
+    type: string
+    x-enum-varnames:
+    - ConformanceStatusFailed
+    - ConformanceStatusPassed
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary:
+    properties:
+      passed:
+        type: integer
+      total:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control:
     properties:
       cliRemediation:
@@ -1085,7 +1100,7 @@ definitions:
         type: integer
       conformanceStatus:
         allOf:
-        - $ref: '#/definitions/types.ConformanceStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
         example: alarm
       connectionID:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -1098,10 +1113,6 @@ definitions:
         example: azure_cis_v140_7_5
         type: string
       controlTitle:
-        type: string
-      es_id:
-        type: string
-      es_index:
         type: string
       evaluatedAt:
         example: 1589395200
@@ -1199,7 +1210,7 @@ definitions:
         example:
         - alarm
         items:
-          $ref: '#/definitions/types.ConformanceStatus'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
         type: array
       connectionID:
         description: Connection ID
@@ -1327,7 +1338,7 @@ definitions:
       totalChecks:
         $ref: '#/definitions/types.SeverityResult'
       totalConformanceStatusSummary:
-        $ref: '#/definitions/types.ConformanceStatusSummary'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
@@ -1677,7 +1688,7 @@ definitions:
         example:
         - alarm
         items:
-          $ref: '#/definitions/types.ConformanceStatus'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
         type: array
       connectionID:
         example:
@@ -1739,15 +1750,9 @@ definitions:
     properties:
       conformanceStatusesCount:
         properties:
-          error:
-            type: integer
           failed:
             type: integer
-          info:
-            type: integer
           passed:
-            type: integer
-          skip:
             type: integer
         type: object
       securityScore:
@@ -3855,38 +3860,6 @@ definitions:
     - Nil
     - CloudAWS
     - CloudAzure
-  types.ConformanceStatus:
-    enum:
-    - ok
-    - alarm
-    - info
-    - skip
-    - error
-    type: string
-    x-enum-varnames:
-    - ConformanceStatusOK
-    - ConformanceStatusALARM
-    - ConformanceStatusINFO
-    - ConformanceStatusSKIP
-    - ConformanceStatusERROR
-  types.ConformanceStatusSummary:
-    properties:
-      alarmCount:
-        example: 1
-        type: integer
-      errorCount:
-        example: 1
-        type: integer
-      infoCount:
-        example: 1
-        type: integer
-      okCount:
-        example: 1
-        type: integer
-      skipCount:
-        example: 1
-        type: integer
-    type: object
   types.FindingSeverity:
     enum:
     - none
