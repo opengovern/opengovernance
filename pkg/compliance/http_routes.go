@@ -1088,7 +1088,9 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		return response.Records[i].TotalCount > response.Records[j].TotalCount
 	})
-	response.Records = response.Records[:min(len(response.Records), count)]
+	if len(response.Records) > 0 {
+		response.Records = response.Records[:min(len(response.Records), count)]
+	}
 
 	return ctx.JSON(http.StatusOK, response)
 }
