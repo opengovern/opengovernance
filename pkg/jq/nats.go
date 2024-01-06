@@ -70,6 +70,7 @@ func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics
 		Discard:      jetstream.DiscardOld,
 		Duplicates:   15 * time.Minute,
 		Replicas:     1,
+		Storage:      jetstream.MemoryStorage,
 	}); err != nil {
 		return err
 	}
