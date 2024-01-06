@@ -66,7 +66,7 @@ func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics
 		Retention:    jetstream.WorkQueuePolicy,
 		MaxConsumers: -1,
 		MaxMsgs:      1000,
-		MaxBytes:     100 * 1000 * 1000, // we are considering around 100MB for each stream
+		MaxBytes:     10 * 1000 * 1000, // we are considering around 50MB for each stream
 		Discard:      jetstream.DiscardOld,
 		Duplicates:   15 * time.Minute,
 		Replicas:     1,
