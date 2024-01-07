@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -14,9 +15,12 @@ import (
 )
 
 type MeteringService struct {
-	logger          *zap.Logger
-	db              db.Database
-	cnf             config.SubscriptionConfig
+	logger *zap.Logger
+	db     db.Database
+	cnf    config.SubscriptionConfig
+
+	firehoseClient *firehose.Client
+
 	workspaceClient workspaceClient.WorkspaceServiceClient
 	authClient      client2.AuthServiceClient
 }
@@ -25,6 +29,7 @@ func NewMeteringService(
 	logger *zap.Logger,
 	db db.Database,
 	cnf config.SubscriptionConfig,
+	firehoseClient *firehose.Client,
 	workspaceClient workspaceClient.WorkspaceServiceClient,
 	authClient client2.AuthServiceClient,
 ) MeteringService {
@@ -32,6 +37,7 @@ func NewMeteringService(
 		logger:          logger.Named("meteringSvc"),
 		db:              db,
 		cnf:             cnf,
+		firehoseClient:  firehoseClient,
 		workspaceClient: workspaceClient,
 		authClient:      authClient,
 	}

@@ -1,6 +1,11 @@
 package service
 
 import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
@@ -10,9 +15,47 @@ import (
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api/entities"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/db/model"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 )
+
+type FirehoseMeter struct {
+	WorkspaceID string             `json:"workspaceId"`
+	UsageDate   time.Time          `json:"usageDate"`
+	MeterType   entities.MeterType `json:"meterType"`
+	CreatedAt   time.Time          `json:"createdAt"`
+	Value       int64              `json:"value"`
+}
+
+func (svc MeteringService) sendMeterToFirehose(ctx context.Context, meter *model.Meter) error {
+	fhMeter := FirehoseMeter{
+		WorkspaceID: meter.WorkspaceID,
+		UsageDate:   meter.UsageDate,
+		MeterType:   meter.MeterType,
+		CreatedAt:   meter.CreatedAt,
+		Value:       meter.Value,
+	}
+	jsonFhMeter, err := json.Marshal(fhMeter)
+	if err != nil {
+		svc.logger.Error("failed to marshal meter", zap.Error(err))
+	}
+
+	base64EncodedFhMeter := []byte(base64.StdEncoding.EncodeToString(jsonFhMeter))
+
+	_, err = svc.firehoseClient.PutRecord(ctx, &firehose.PutRecordInput{
+		DeliveryStreamName: &svc.cnf.UsageMetersFirehoseStreamName,
+		Record: &types.Record{
+			Data: base64EncodedFhMeter,
+		},
+	})
+	if err != nil {
+		svc.logger.Error("failed to send meter to firehose", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
 
 func (svc MeteringService) generateMeter(workspaceId string, usageDate time.Time, meterType entities.MeterType) error {
 	var err error
@@ -59,16 +102,37 @@ func (svc MeteringService) generateSchedulerMeter(workspaceId string, usageDate 
 
 	count, err := schedulerClient.CountJobsByDate(ctx, includeCost, jobType, startDate, endDate)
 	if err != nil {
+		svc.logger.Error("failed to count jobs", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 		return err
 	}
-	return svc.db.CreateMeter(&model.Meter{
+
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
 		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       count,
 		Published:   false,
-	})
+	}
+
+	err = svc.db.CreateMeter(&meter)
+	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (svc MeteringService) generateInventoryDiscoveryJobCountMeter(workspaceId string, usageDate time.Time) error {
@@ -94,76 +158,162 @@ func (svc MeteringService) generateBenchmarkEvaluationCountMeter(workspaceId str
 }
 
 func (svc MeteringService) generateTotalFindingsMeter(workspaceId string, usageDate time.Time) error {
+	meterType := entities.MeterType_TotalFindings
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	complianceClient := client4.NewComplianceClient(strings.ReplaceAll(svc.cnf.Compliance.BaseURL, "%NAMESPACE%", workspaceId))
 
 	count, err := complianceClient.CountFindings(ctx)
 	if err != nil {
+		svc.logger.Error("failed to count findings", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 		return err
 	}
-	return svc.db.CreateMeter(&model.Meter{
+
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
-		MeterType:   entities.MeterType_TotalFindings,
+		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       count,
 		Published:   false,
-	})
+	}
+
+	err = svc.db.CreateMeter(&meter)
+	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (svc MeteringService) generateTotalResourceMeter(workspaceId string, usageDate time.Time) error {
+	meterType := entities.MeterType_TotalResource
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	inventoryClient := client2.NewInventoryServiceClient(strings.ReplaceAll(svc.cnf.Inventory.BaseURL, "%NAMESPACE%", workspaceId))
 
 	count, err := inventoryClient.CountResources(ctx)
 	if err != nil {
+		svc.logger.Error("failed to count resources", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 		return err
 	}
-	return svc.db.CreateMeter(&model.Meter{
+
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
-		MeterType:   entities.MeterType_TotalResource,
+		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       count,
 		Published:   false,
-	})
-}
+	}
 
-func (svc MeteringService) generateTotalUsersMeter(workspaceId string, usageDate time.Time) error {
-	ctx := &httpclient.Context{UserRole: api.InternalRole, UserID: api.GodUserID}
-	users, err := svc.authClient.GetWorkspaceRoleBindings(ctx, workspaceId)
+	err = svc.db.CreateMeter(&meter)
 	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 		return err
 	}
 
-	return svc.db.CreateMeter(&model.Meter{
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (svc MeteringService) generateTotalUsersMeter(workspaceId string, usageDate time.Time) error {
+	meterType := entities.MeterType_TotalUsers
+	ctx := &httpclient.Context{UserRole: api.InternalRole, UserID: api.GodUserID}
+	users, err := svc.authClient.GetWorkspaceRoleBindings(ctx, workspaceId)
+	if err != nil {
+		svc.logger.Error("failed to get workspace role bindings", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
-		MeterType:   entities.MeterType_TotalUsers,
+		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       int64(len(users)),
 		Published:   false,
-	})
+	}
+
+	err = svc.db.CreateMeter(&meter)
+	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (svc MeteringService) generateTotalApiKeysMeter(workspaceId string, usageDate time.Time) error {
+	meterType := entities.MeterType_TotalApiKeys
 	ctx := &httpclient.Context{UserRole: api.InternalRole, UserID: api.GodUserID}
 	apiKeys, err := svc.authClient.ListAPIKeys(ctx, workspaceId)
 	if err != nil {
 		return err
 	}
 
-	return svc.db.CreateMeter(&model.Meter{
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
-		MeterType:   entities.MeterType_TotalApiKeys,
+		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       int64(len(apiKeys)),
 		Published:   false,
-	})
+	}
+
+	err = svc.db.CreateMeter(&meter)
+	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (svc MeteringService) generateTotalRulesMeter(workspaceId string, usageDate time.Time) error {
+	meterType := entities.MeterType_TotalRules
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	alertingClient := client.NewAlertingServiceClient(strings.ReplaceAll(svc.cnf.Alerting.BaseURL, "%NAMESPACE%", workspaceId))
 	rules, err := alertingClient.ListRules(ctx)
@@ -171,17 +321,37 @@ func (svc MeteringService) generateTotalRulesMeter(workspaceId string, usageDate
 		return err
 	}
 
-	return svc.db.CreateMeter(&model.Meter{
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
-		MeterType:   entities.MeterType_TotalRules,
+		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       int64(len(rules)),
 		Published:   false,
-	})
+	}
+
+	err = svc.db.CreateMeter(&meter)
+	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (svc MeteringService) generateAlertCountMeter(workspaceId string, usageDate time.Time) error {
+	meterType := entities.MeterType_AlertCount
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	alertingClient := client.NewAlertingServiceClient(strings.ReplaceAll(svc.cnf.Alerting.BaseURL, "%NAMESPACE%", workspaceId))
 	startDate, endDate := getStartEndByDateHour(usageDate)
@@ -190,12 +360,31 @@ func (svc MeteringService) generateAlertCountMeter(workspaceId string, usageDate
 		return err
 	}
 
-	return svc.db.CreateMeter(&model.Meter{
+	meter := model.Meter{
 		WorkspaceID: workspaceId,
 		UsageDate:   usageDate,
-		MeterType:   entities.MeterType_AlertCount,
+		MeterType:   meterType,
 		CreatedAt:   time.Now(),
 		Value:       count,
 		Published:   false,
-	})
+	}
+
+	err = svc.db.CreateMeter(&meter)
+	if err != nil {
+		svc.logger.Error("failed to create meter", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+		return err
+	}
+
+	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	if err != nil {
+		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+	} else {
+		err = svc.db.UpdateMeterPublished(workspaceId, usageDate, meterType)
+		if err != nil {
+			svc.logger.Error("failed to update meter published", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
+			return err
+		}
+	}
+
+	return nil
 }

@@ -68,7 +68,7 @@ func (db Database) GetMeter(workspaceId string, usageDate time.Time, meterType e
 	return &meter, nil
 }
 
-func (db Database) UpdateMeterPublished(workspaceId, usageDate time.Time, meterType entities.MeterType) error {
+func (db Database) UpdateMeterPublished(workspaceId string, usageDate time.Time, meterType entities.MeterType) error {
 	return db.Orm.Model(&model.Meter{}).
 		Where("workspace_id = ?", workspaceId).
 		Where("usage_date = ?", usageDate).
