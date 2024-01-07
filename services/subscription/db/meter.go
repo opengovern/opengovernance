@@ -68,10 +68,46 @@ func (db Database) GetMeter(workspaceId string, usageDate time.Time, meterType e
 	return &meter, nil
 }
 
+func (db Database) GetUnpublishedMeters() ([]*model.Meter, error) {
+	var meters []*model.Meter
+	tx := db.Orm.Model(&model.Meter{}).
+		Where("published = ?", false).
+		Find(&meters)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	} else if tx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return meters, nil
+}
+
 func (db Database) UpdateMeterPublished(workspaceId string, usageDate time.Time, meterType entities.MeterType) error {
 	return db.Orm.Model(&model.Meter{}).
 		Where("workspace_id = ?", workspaceId).
 		Where("usage_date = ?", usageDate).
 		Where("meter_type = ?", meterType).
 		Update("published", true).Error
+}
+
+func (db Database) UpdateMetersPublished(meters []*model.Meter) error {
+	err := db.Orm.Transaction(func(tx *gorm.DB) error {
+		for _, meter := range meters {
+			err := tx.Model(&model.Meter{}).
+				Where("workspace_id = ?", meter.WorkspaceID).
+				Where("usage_date = ?", meter.UsageDate).
+				Where("meter_type = ?", meter.MeterType).
+				Update("published", true).Error
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

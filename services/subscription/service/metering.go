@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api/entities"
@@ -33,7 +35,7 @@ func NewMeteringService(
 	workspaceClient workspaceClient.WorkspaceServiceClient,
 	authClient client2.AuthServiceClient,
 ) MeteringService {
-	return MeteringService{
+	svc := MeteringService{
 		logger:          logger.Named("meteringSvc"),
 		db:              db,
 		cnf:             cnf,
@@ -41,6 +43,14 @@ func NewMeteringService(
 		workspaceClient: workspaceClient,
 		authClient:      authClient,
 	}
+
+	return svc
+}
+
+func (svc MeteringService) Start() {
+	utils.EnsureRunGoroutin(func() {
+		svc.RunEnsurePublishing()
+	})
 }
 
 func (svc MeteringService) GetMeters(userID string, startTime, endTime time.Time) ([]entities.Meter, error) {
@@ -131,6 +141,31 @@ func (svc MeteringService) RunChecks() {
 				}
 			} else {
 				svc.logger.Info("metrics is already there", zap.Int64("value", meter.Value))
+			}
+		}
+	}
+}
+
+func (svc MeteringService) RunEnsurePublishing() {
+	ticker := time.NewTicker(30 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			svc.logger.Info("running ensure publishing")
+			unpublishedMeters, err := svc.db.GetUnpublishedMeters()
+			if err != nil {
+				svc.logger.Error("failed to get unpublished meters", zap.Error(err))
+				continue
+			}
+			err = svc.sendMetersToFirehose(context.TODO(), unpublishedMeters)
+			if err != nil {
+				svc.logger.Error("failed to send meters to firehose", zap.Error(err))
+				continue
+			}
+			err = svc.db.UpdateMetersPublished(unpublishedMeters)
+			if err != nil {
+				svc.logger.Error("failed to update meters published", zap.Error(err))
+				continue
 			}
 		}
 	}
