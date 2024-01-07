@@ -2,8 +2,11 @@ package statemanager
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/internal/helm"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -136,6 +139,46 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 		err := s.kubeClient.Create(ctx, &grpcProxy)
 		if err != nil {
 			s.logger.Error("failed to create grpc proxy", zap.Error(err), zap.Any("grpcProxy", grpcProxy))
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) ensureSettingsSynced(ctx context.Context, workspace db.Workspace) error {
+	needsUpdate, settings, err := helm.GetUpToDateWorkspaceHelmValues(ctx, s.cfg, s.kubeClient, s.db, s.kmsClient, workspace)
+	if err != nil {
+		return fmt.Errorf("get up to date workspace helm values: %w", err)
+	}
+
+	if !needsUpdate {
+		s.logger.Debug("no need to update helm release", zap.String("workspace", workspace.ID))
+		return nil
+	}
+
+	s.logger.Info("updating helm release", zap.String("workspace", workspace.ID))
+	valuesJson, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+
+	err = helm.UpdateHelmRelease(ctx, s.cfg, s.kubeClient, workspace, valuesJson)
+	if err != nil {
+		return fmt.Errorf("update helm release: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) syncHelmValues(workspaces []*db.Workspace) error {
+	for _, w := range workspaces {
+		if !(w.Status == api.StateID_Provisioned ||
+			((w.Status == api.StateID_WaitingForCredential || w.Status == api.StateID_Provisioning) && w.IsCreated)) {
+			continue
+		}
+
+		err := s.ensureSettingsSynced(context.Background(), *w)
+		if err != nil {
 			return err
 		}
 	}

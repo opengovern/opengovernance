@@ -14,17 +14,14 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/internal/helm"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 type CreateHelmRelease struct {
@@ -53,7 +50,7 @@ func (t *CreateHelmRelease) Requirements() []api.TransactionID {
 }
 
 func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
-	helmRelease, err := t.findHelmRelease(context.Background(), workspace)
+	helmRelease, err := helm.FindHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace)
 	if err != nil {
 		return fmt.Errorf("findHelmRelease: %w", err)
 	}
@@ -66,7 +63,7 @@ func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
 		return ErrTransactionNeedsTime
 	}
 
-	err = t.ensureSettingsSynced(workspace, helmRelease)
+	err = t.ensureSettingsSynced(context.Background(), workspace, helmRelease)
 	if err != nil {
 		return err
 	}
@@ -95,13 +92,13 @@ func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
 }
 
 func (t *CreateHelmRelease) RollbackIdempotent(workspace db.Workspace) error {
-	helmRelease, err := t.findHelmRelease(context.Background(), workspace)
+	helmRelease, err := helm.FindHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace)
 	if err != nil {
 		return fmt.Errorf("find helm release: %w", err)
 	}
 
 	if helmRelease != nil {
-		if err := t.deleteHelmRelease(context.Background(), workspace); err != nil {
+		if err := helm.DeleteHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace); err != nil {
 			return fmt.Errorf("delete helm release: %w", err)
 		}
 		return ErrTransactionNeedsTime
@@ -121,101 +118,21 @@ func (t *CreateHelmRelease) RollbackIdempotent(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateHelmRelease) ensureSettingsSynced(workspace db.Workspace, release *helmv2.HelmRelease) error {
-	settings, err := GetWorkspaceHelmValues(release)
+func (t *CreateHelmRelease) ensureSettingsSynced(ctx context.Context, workspace db.Workspace, release *helmv2.HelmRelease) error {
+	needsUpdate, settings, err := helm.GetUpToDateWorkspaceHelmValues(ctx, t.cfg, t.kubeClient, t.db, t.kmsClient, workspace)
 	if err != nil {
-		return err
-	}
-
-	needsUpdate := false
-
-	if settings.Kaytu.EnvType != t.cfg.EnvType {
-		settings.Kaytu.EnvType = t.cfg.EnvType
-		needsUpdate = true
-	}
-
-	if settings.Kaytu.Octopus.Namespace != t.cfg.KaytuOctopusNamespace {
-		settings.Kaytu.Octopus.Namespace = t.cfg.KaytuOctopusNamespace
-		needsUpdate = true
-	}
-
-	if settings.Kaytu.Domain.App != t.cfg.AppDomain {
-		settings.Kaytu.Domain.App = t.cfg.AppDomain
-		needsUpdate = true
-	}
-
-	if settings.Kaytu.Domain.Grpc != t.cfg.GrpcDomain {
-		settings.Kaytu.Domain.Grpc = t.cfg.GrpcDomain
-		needsUpdate = true
-	}
-
-	if settings.Kaytu.OpenSearch.IngestionPipelineEndpoint != workspace.PipelineEndpoint {
-		settings.Kaytu.OpenSearch.IngestionPipelineEndpoint = workspace.PipelineEndpoint
-		needsUpdate = true
-	}
-
-	if settings.Kaytu.Workspace.Name != workspace.Name {
-		settings.Kaytu.Workspace.Name = workspace.Name
-		needsUpdate = true
-	}
-
-	if workspace.AWSUserARN != nil && settings.Kaytu.Workspace.UserARN != *workspace.AWSUserARN {
-		settings.Kaytu.Workspace.UserARN = *workspace.AWSUserARN
-		needsUpdate = true
-	}
-
-	if workspace.AWSUniqueId != nil {
-		masterCred, err := t.db.GetMasterCredentialByWorkspaceUID(*workspace.AWSUniqueId)
-		if err != nil {
-			return err
-		}
-
-		decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
-		if err != nil {
-			return err
-		}
-
-		result, err := t.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
-			CiphertextBlob:      decoded,
-			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-			KeyId:               &t.cfg.KMSKeyARN,
-			EncryptionContext:   nil, //TODO-Saleh use workspaceID
-		})
-		if err != nil {
-			return fmt.Errorf("failed to encrypt ciphertext: %v", err)
-		}
-
-		var accessKey types2.AccessKey
-		err = json.Unmarshal(result.Plaintext, &accessKey)
-		if err != nil {
-			return err
-		}
-
-		if settings.Kaytu.Workspace.MasterAccessKey != *accessKey.AccessKeyId {
-			settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
-			settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
-			needsUpdate = true
-		}
+		return fmt.Errorf("get up to date workspace helm values: %w", err)
 	}
 
 	if needsUpdate {
-		err = t.UpdateWorkspaceSettings(release, settings)
+		valuesJson, err := json.Marshal(settings)
 		if err != nil {
 			return err
 		}
 
-		var res corev1.PodList
-		err = t.kubeClient.List(context.Background(), &res)
+		err = helm.UpdateHelmRelease(ctx, t.cfg, t.kubeClient, workspace, valuesJson)
 		if err != nil {
-			return fmt.Errorf("listing pods: %w", err)
-		}
-		for _, pod := range res.Items {
-			if strings.HasPrefix(pod.Name, "describe-scheduler") {
-				err = t.kubeClient.Delete(context.Background(), &pod)
-				if err != nil {
-					return fmt.Errorf("deleting pods: %w", err)
-				}
-			}
+			return fmt.Errorf("update helm release: %w", err)
 		}
 	}
 
@@ -288,49 +205,12 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 		settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
 	}
 
-	settingsJSON, err := json.Marshal(settings)
+	valuesJson, err := json.Marshal(settings)
 	if err != nil {
 		return err
 	}
 
-	helmRelease := helmv2.HelmRelease{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "helm.toolkit.fluxcd.io/v2beta1",
-			Kind:       "HelmRelease",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workspace.ID,
-			Namespace: t.cfg.FluxSystemNamespace,
-		},
-		Spec: helmv2.HelmReleaseSpec{
-			Interval: metav1.Duration{
-				Duration: 5 + time.Minute,
-			},
-			TargetNamespace: workspace.ID,
-			ReleaseName:     workspace.ID,
-			Chart: helmv2.HelmChartTemplate{
-				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: t.cfg.KaytuHelmChartLocation,
-					SourceRef: helmv2.CrossNamespaceObjectReference{
-						Kind:      "GitRepository",
-						Name:      "flux-system",
-						Namespace: t.cfg.FluxSystemNamespace,
-					},
-					Interval: &metav1.Duration{
-						Duration: time.Minute,
-					},
-					ReconcileStrategy: "Revision",
-				},
-			},
-			Values: &apiextensionsv1.JSON{
-				Raw: settingsJSON,
-			},
-			Install: &helmv2.Install{
-				CreateNamespace: true,
-			},
-		},
-	}
-	if err := t.kubeClient.Create(context.Background(), &helmRelease); err != nil {
+	if err := helm.CreateHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace, valuesJson); err != nil {
 		return fmt.Errorf("create helm release: %w", err)
 	}
 
@@ -358,21 +238,6 @@ func (t *CreateHelmRelease) findTargetNamespace(ctx context.Context, name string
 		return nil, fmt.Errorf("find target namespace: %w", err)
 	}
 	return &ns, nil
-}
-
-func (t *CreateHelmRelease) findHelmRelease(ctx context.Context, workspace db.Workspace) (*helmv2.HelmRelease, error) {
-	key := types.NamespacedName{
-		Name:      workspace.ID,
-		Namespace: t.cfg.FluxSystemNamespace,
-	}
-	var helmRelease helmv2.HelmRelease
-	if err := t.kubeClient.Get(ctx, key, &helmRelease); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &helmRelease, nil
 }
 
 func (t *CreateHelmRelease) deleteHelmRelease(ctx context.Context, workspace db.Workspace) error {
