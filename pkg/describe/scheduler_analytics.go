@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	analyticsApi "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
@@ -13,10 +16,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"time"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
-
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -92,8 +91,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 
 	job := newAnalyticsJob(analyticsJobType)
 
-	err = s.db.AddAnalyticsJob(&job)
-	if err != nil {
+	if err = s.db.AddAnalyticsJob(&job); err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to create AnalyticsJob",
 			zap.Uint("jobId", job.ID),
@@ -102,8 +100,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		return 0, err
 	}
 
-	err = s.enqueueAnalyticsJobs(job)
-	if err != nil {
+	if err = s.enqueueAnalyticsJobs(job); err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue AnalyticsJob",
 			zap.Uint("jobId", job.ID),
@@ -150,10 +147,7 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
 		return err
 	}
 
-	if err := kafka.SyncSendWithRetry(s.logger, s.kafkaProducer, []*confluent_kafka.Message{{
-		TopicPartition: confluent_kafka.TopicPartition{Topic: utils.GetPointer(analytics.JobQueueTopic), Partition: confluent_kafka.PartitionAny},
-		Value:          aJobJson,
-	}}, nil, 5); err != nil {
+	if err := s.jq.Produce(context.Background(), analytics.JobQueueTopic, aJobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
 		return err
 	}
 
