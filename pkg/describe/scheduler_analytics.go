@@ -204,7 +204,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 			s.logger.Error("Failed to commit message", zap.Error(err))
 		}
 	}); err != nil {
-		s.logger.Error("Failed to create kafka consumer", zap.Error(err))
+		s.logger.Error("Failed to create nats consumer", zap.Error(err))
 		return err
 	}
 
