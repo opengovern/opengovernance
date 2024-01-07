@@ -174,7 +174,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Reading messages from the queue")
 
-	w.jq.Consume(context.Background(), "analytics", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
+	if _, err := w.jq.Consume(context.Background(), "analytics-worker", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("Parsing job")
 
 		var job Job
@@ -209,7 +209,12 @@ func (w *Worker) Run() error {
 		if err := msg.Ack(); err != nil {
 			w.logger.Error("Failed to commit message", zap.Error(err))
 		}
-	})
+	}); err != nil {
+		return err
+	}
+
+	for {
+	}
 
 	return nil
 }
