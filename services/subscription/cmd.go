@@ -42,6 +42,7 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			awsCfg.Region = cnf.UsageMetersFirehoseRegion
 			firehoseClient := firehose.NewFromConfig(awsCfg)
 
 			meteringService := service.NewMeteringService(logger, pdb, cnf, firehoseClient, w, a)
