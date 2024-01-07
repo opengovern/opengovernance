@@ -46,7 +46,7 @@ func Command() *cobra.Command {
 			firehoseClient := firehose.NewFromConfig(awsCfg)
 
 			meteringService := service.NewMeteringService(logger, pdb, cnf, firehoseClient, w, a)
-
+			go meteringService.Start()
 			go jobs.GenerateMeters(meteringService, logger)
 			return httpserver.RegisterAndStart(
 				logger,
