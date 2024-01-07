@@ -557,14 +557,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Sends an invitation to a user to join the workspace with a designated role.",
+                "description": "Changes user color blind mode and color mode",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Invite User",
+                "summary": "Change User Preferences",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -572,7 +572,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.ChangeUserPreferencesRequest"
                         }
                     }
                 ],
@@ -7388,6 +7388,17 @@ const docTemplate = `{
                 "MetricTypeSpend"
             ]
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.ChangeUserPreferencesRequest": {
+            "type": "object",
+            "properties": {
+                "enableColorBlindMode": {
+                    "type": "boolean"
+                },
+                "theme": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest": {
             "type": "object",
             "properties": {
@@ -7695,6 +7706,19 @@ const docTemplate = `{
                 "AdminRole",
                 "EditorRole",
                 "ViewerRole"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme": {
+            "type": "string",
+            "enum": [
+                "system",
+                "light",
+                "dark"
+            ],
+            "x-enum-varnames": [
+                "Theme_System",
+                "Theme_Light",
+                "Theme_Dark"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding": {
