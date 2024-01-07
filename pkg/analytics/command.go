@@ -219,7 +219,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			consumeCtx.Stop()
 		default:
-			return nil
+			continue
 		}
 	}
 }
