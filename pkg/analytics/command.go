@@ -62,7 +62,7 @@ func WorkerCommand() *cobra.Command {
 
 			defer w.Stop()
 
-			return w.Run()
+			return w.Run(cmd.Context())
 		},
 	}
 
@@ -136,7 +136,7 @@ func NewWorker(
 	return w, nil
 }
 
-func (w *Worker) Run() error {
+func (w *Worker) Run(ctx context.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
 			w.logger.Error("panic happened with error", zap.Error(fmt.Errorf("%v", r)))
@@ -174,7 +174,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Reading messages from the queue")
 
-	if _, err := w.jq.Consume(context.Background(), "analytics-worker", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
+	consumeCtx, err := w.jq.Consume(context.Background(), "analytics-worker", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("Parsing job")
 
 		var job Job
@@ -209,14 +209,19 @@ func (w *Worker) Run() error {
 		if err := msg.Ack(); err != nil {
 			w.logger.Error("Failed to commit message", zap.Error(err))
 		}
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
 	for {
+		select {
+		case <-ctx.Done():
+			consumeCtx.Stop()
+		default:
+			return nil
+		}
 	}
-
-	return nil
 }
 
 func (w *Worker) Stop() {

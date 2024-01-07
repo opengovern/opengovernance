@@ -1,9 +1,10 @@
 package resource
 
 import (
+	"strconv"
+
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"strconv"
 )
 
 const (
