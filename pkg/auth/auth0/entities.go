@@ -25,6 +25,8 @@ type Metadata struct {
 	GlobalAccess    *api.Role           `json:"globalAccess,omitempty"`
 	ColorBlindMode  *bool               `json:"colorBlindMode"`
 	Theme           *api.Theme          `json:"theme"`
+	MemberSince     *string             `json:"memberSince"`
+	LastLogin       *string             `json:"lastLogin"`
 }
 
 type User struct {
