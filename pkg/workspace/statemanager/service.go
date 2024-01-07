@@ -147,6 +147,10 @@ func (s *Service) StartReconciler() {
 			if err := s.syncHTTPProxy(workspaces); err != nil {
 				s.logger.Error(fmt.Sprintf("syncing http proxy: %v", err))
 			}
+
+			if err := s.syncHelmValues(workspaces); err != nil {
+				s.logger.Error(fmt.Sprintf("syncing helm values: %v", err))
+			}
 		}
 		if s.cfg.EnvType == config.EnvTypeProd {
 			err = s.handleReservation()
