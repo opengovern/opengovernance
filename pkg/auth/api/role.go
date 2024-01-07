@@ -147,3 +147,16 @@ type RoleBinding struct {
 	WorkspaceName string `json:"workspaceName" example:"demo"`                         // Name of the workspace
 	RoleName      Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the binding role
 }
+
+type Theme string
+
+const (
+	Theme_System Theme = "system"
+	Theme_Light  Theme = "light"
+	Theme_Dark   Theme = "dark"
+)
+
+type ChangeUserPreferencesRequest struct {
+	EnableColorBlindMode bool  `json:"enableColorBlindMode"`
+	Theme                Theme `json:"theme"`
+}

@@ -283,6 +283,13 @@ definitions:
     x-enum-varnames:
     - MetricTypeAssets
     - MetricTypeSpend
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.ChangeUserPreferencesRequest:
+    properties:
+      enableColorBlindMode:
+        type: boolean
+      theme:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest:
     properties:
       name:
@@ -498,6 +505,16 @@ definitions:
     - AdminRole
     - EditorRole
     - ViewerRole
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme:
+    enum:
+    - system
+    - light
+    - dark
+    type: string
+    x-enum-varnames:
+    - Theme_System
+    - Theme_Light
+    - Theme_Dark
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding:
     properties:
       roleName:
@@ -4249,15 +4266,14 @@ paths:
       - users
   /auth/api/v1/user/invite:
     post:
-      description: Sends an invitation to a user to join the workspace with a designated
-        role.
+      description: Changes user color blind mode and color mode
       parameters:
       - description: Request Body
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.ChangeUserPreferencesRequest'
       produces:
       - application/json
       responses:
@@ -4265,7 +4281,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Invite User
+      summary: Change User Preferences
       tags:
       - users
   /auth/api/v1/user/role/binding:

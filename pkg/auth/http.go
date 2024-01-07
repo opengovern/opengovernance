@@ -59,6 +59,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
 	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
+	v1.PUT("/user/preferences", httpserver.AuthorizeHandler(r.ChangeUserPreferences, api.ViewerRole))
 
 	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
@@ -440,6 +441,39 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// ChangeUserPreferences godoc
+//
+//	@Summary		Change User Preferences
+//	@Description	Changes user color blind mode and color mode
+//	@Security		BearerToken
+//	@Tags			users
+//	@Produce		json
+//	@Param			request	body		api.ChangeUserPreferencesRequest	true	"Request Body"
+//	@Success		200		{object}	nil
+//	@Router			/auth/api/v1/user/invite [post]
+func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
+	var req api.ChangeUserPreferencesRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	userId := httpserver.GetUserID(ctx)
+	auth0User, err := r.auth0Service.GetUser(userId)
+	if err != nil {
+		return err
+	}
+
+	auth0User.AppMetadata.ColorBlindMode = &req.EnableColorBlindMode
+	auth0User.AppMetadata.Theme = &req.Theme
+
+	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata)
+	if err != nil {
+		return err
 	}
 
 	return ctx.NoContent(http.StatusOK)
