@@ -26,7 +26,7 @@ type Metadata struct {
 	ColorBlindMode  *bool               `json:"colorBlindMode,omitempty"`
 	Theme           *api.Theme          `json:"theme,omitempty"`
 	MemberSince     *string             `json:"memberSince,omitempty"`
-	LastLogin       *string             `json:"lastLogin,omitempty"`
+	LastLogin       *string             `json:"userLastLogin,omitempty"`
 }
 
 type User struct {
