@@ -1,14 +1,13 @@
 package compliance
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
@@ -66,9 +65,7 @@ func (s *JobScheduler) runPublisher() error {
 				continue
 			}
 
-			msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", runner.JobQueueTopic, kafka.PartitionAny)
-			_, err = kafka2.SyncSend(s.logger, s.kafkaProducer, []*kafka.Message{msg}, nil)
-			if err != nil {
+			if err := s.jq.Produce(context.Background(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue

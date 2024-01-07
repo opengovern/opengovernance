@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"go.uber.org/zap"
 )
 
@@ -186,9 +184,7 @@ func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
 		return err
 	}
 
-	msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", summarizer.JobQueueTopic, kafka.PartitionAny)
-	_, err = kafka2.SyncSend(s.logger, s.kafkaProducer, []*kafka.Message{msg}, nil)
-	if err != nil {
+	if err := s.jq.Produce(context.Background(), summarizer.JobQueueTopic, jobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
 		_ = s.db.UpdateSummarizerJob(job.ID, summarizer.ComplianceSummarizerFailed, job.CreatedAt, err.Error())
 		return err
 	}

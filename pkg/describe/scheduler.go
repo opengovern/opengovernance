@@ -5,6 +5,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
@@ -14,13 +19,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"net"
-	"strconv"
-	"strings"
-	"time"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
@@ -135,14 +137,17 @@ type Scheduler struct {
 	analyticsIntervalHours     time.Duration
 	complianceIntervalHours    time.Duration
 
-	logger              *zap.Logger
-	workspaceClient     workspaceClient.WorkspaceServiceClient
-	metadataClient      metadataClient.MetadataServiceClient
-	complianceClient    client.ComplianceServiceClient
-	onboardClient       onboardClient.OnboardServiceClient
-	inventoryClient     inventoryClient.InventoryServiceClient
-	authGrpcClient      envoyauth.AuthorizationClient
-	es                  kaytu.Client
+	logger           *zap.Logger
+	workspaceClient  workspaceClient.WorkspaceServiceClient
+	metadataClient   metadataClient.MetadataServiceClient
+	complianceClient client.ComplianceServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
+	inventoryClient  inventoryClient.InventoryServiceClient
+	authGrpcClient   envoyauth.AuthorizationClient
+	es               kaytu.Client
+
+	jq *jq.JobQueue
+
 	kafkaProducer       *confluent_kafka.Producer
 	kafkaResourcesTopic string
 	kafkaConsumer       *confluent_kafka.Consumer
@@ -279,6 +284,12 @@ func InitializeScheduler(
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
 
+	jq, err := jq.New(conf.NATS.URL, s.logger)
+	if err != nil {
+		return nil, err
+	}
+	s.jq = jq
+
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = db.Database{ORM: orm}
 
@@ -399,7 +410,7 @@ func InitializeScheduler(
 		s.complianceClient,
 		s.onboardClient,
 		s.db,
-		s.kafkaProducer,
+		s.jq,
 		s.es,
 		s.complianceIntervalHours,
 	)
