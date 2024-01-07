@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
@@ -17,7 +17,7 @@ import (
 const JobSchedulingInterval = 1 * time.Minute
 
 type JobScheduler struct {
-	conf                    config2.SchedulerConfig
+	conf                    config.SchedulerConfig
 	logger                  *zap.Logger
 	complianceClient        client.ComplianceServiceClient
 	onboardClient           onboardClient.OnboardServiceClient
@@ -28,7 +28,7 @@ type JobScheduler struct {
 }
 
 func New(
-	conf config2.SchedulerConfig,
+	conf config.SchedulerConfig,
 	logger *zap.Logger,
 	complianceClient client.ComplianceServiceClient,
 	onboardClient onboardClient.OnboardServiceClient,
