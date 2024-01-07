@@ -164,7 +164,7 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the analyticsJobResultQueue queue")
 
-	if _, err := s.jq.Consume(context.Background(), "", "", []string{analytics.JobResultQueueTopic}, "", func(msg jetstream.Msg) {
+	if _, err := s.jq.Consume(context.Background(), "analytics-scheduler", analytics.StreamName, []string{analytics.JobResultQueueTopic}, "analytics-scheduler", func(msg jetstream.Msg) {
 		var result analytics.JobResult
 
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {

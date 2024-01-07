@@ -25,7 +25,7 @@ const (
 	JobQueueTopic       = "analytics-jobs-queue"
 	JobResultQueueTopic = "analytics-results-queue"
 	consumerGroup       = "analytics-worker"
-	streamName          = "analytics-worker"
+	StreamName          = "analytics-worker"
 )
 
 func WorkerCommand() *cobra.Command {
@@ -143,6 +143,10 @@ func (w *Worker) Run() error {
 		}
 	}()
 
+	if err := w.jq.Stream(context.Background(), StreamName, "analytics jobs", []string{JobQueueTopic, JobResultQueueTopic}); err != nil {
+		return err
+	}
+
 	w.logger.Info("Starting analytics worker")
 
 	if err := steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAWS); err != nil {
@@ -170,7 +174,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Reading messages from the queue")
 
-	w.jq.Consume(context.Background(), "analytics", streamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
+	w.jq.Consume(context.Background(), "analytics", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("Parsing job")
 
 		var job Job
