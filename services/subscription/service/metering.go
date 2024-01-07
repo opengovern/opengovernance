@@ -1,9 +1,12 @@
 package service
 
 import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api/entities"
@@ -14,9 +17,12 @@ import (
 )
 
 type MeteringService struct {
-	logger          *zap.Logger
-	db              db.Database
-	cnf             config.SubscriptionConfig
+	logger *zap.Logger
+	db     db.Database
+	cnf    config.SubscriptionConfig
+
+	firehoseClient *firehose.Client
+
 	workspaceClient workspaceClient.WorkspaceServiceClient
 	authClient      client2.AuthServiceClient
 }
@@ -25,16 +31,26 @@ func NewMeteringService(
 	logger *zap.Logger,
 	db db.Database,
 	cnf config.SubscriptionConfig,
+	firehoseClient *firehose.Client,
 	workspaceClient workspaceClient.WorkspaceServiceClient,
 	authClient client2.AuthServiceClient,
 ) MeteringService {
-	return MeteringService{
+	svc := MeteringService{
 		logger:          logger.Named("meteringSvc"),
 		db:              db,
 		cnf:             cnf,
+		firehoseClient:  firehoseClient,
 		workspaceClient: workspaceClient,
 		authClient:      authClient,
 	}
+
+	return svc
+}
+
+func (svc MeteringService) Start() {
+	utils.EnsureRunGoroutin(func() {
+		svc.RunEnsurePublishing()
+	})
 }
 
 func (svc MeteringService) GetMeters(userID string, startTime, endTime time.Time) ([]entities.Meter, error) {
@@ -125,6 +141,37 @@ func (svc MeteringService) RunChecks() {
 				}
 			} else {
 				svc.logger.Info("metrics is already there", zap.Int64("value", meter.Value))
+			}
+		}
+	}
+}
+
+func (svc MeteringService) RunEnsurePublishing() {
+	ticker := time.NewTicker(30 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			// Get all unpublished meters to publish them, although this might result in duplicate publishing of some meters in some cases,
+			// but it can be handled by the consumer of the firehose by checking the primary keys of the meters.
+			svc.logger.Info("running ensure publishing")
+			unpublishedMeters, err := svc.db.GetUnpublishedMetersOlderThan(time.Now().Add(time.Hour * -1))
+			if err != nil {
+				svc.logger.Error("failed to get unpublished meters", zap.Error(err))
+				continue
+			}
+			for i := 0; i < len(unpublishedMeters); i += 100 {
+				meters := unpublishedMeters[i:min(i+100, len(unpublishedMeters))]
+				err = svc.sendMetersToFirehose(context.TODO(), meters)
+				if err != nil {
+					svc.logger.Error("failed to send meters to firehose", zap.Error(err))
+					break
+				}
+				err = svc.db.UpdateMetersPublished(meters)
+				if err != nil {
+					svc.logger.Error("failed to update meters published", zap.Error(err))
+					break
+				}
+				svc.logger.Info("meters published", zap.Int("count", len(meters)))
 			}
 		}
 	}

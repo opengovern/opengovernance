@@ -14,4 +14,7 @@ type SubscriptionConfig struct {
 
 	Postgres koanf.Postgres   `json:"postgres,omitempty" koanf:"postgres"`
 	Http     koanf.HttpServer `json:"http,omitempty" koanf:"http"`
+
+	UsageMetersFirehoseStreamName string `json:"usage_meters_firehose_stream_name,omitempty" koanf:"usage_meters_firehose_stream_name"`
+	UsageMetersFirehoseRegion     string `json:"usage_meters_firehose_region,omitempty" koanf:"usage_meters_firehose_region"`
 }
