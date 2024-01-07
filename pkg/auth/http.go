@@ -455,7 +455,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body		api.ChangeUserPreferencesRequest	true	"Request Body"
 //	@Success		200		{object}	nil
-//	@Router			/auth/api/v1/user/invite [post]
+//	@Router			/auth/api/v1/user/preferences [put]
 func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
 	var req api.ChangeUserPreferencesRequest
 	if err := bindValidate(ctx, &req); err != nil {
