@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-util/pkg/email"
@@ -197,6 +198,24 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 			})
 		}
 		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
+
+		timeNow := time.Now().Format("2006-01-02")
+		doUpdate := false
+		if usr.AppMetadata.MemberSince == nil {
+			usr.AppMetadata.MemberSince = &timeNow
+			doUpdate = true
+		}
+		if usr.AppMetadata.LastLogin == nil || *usr.AppMetadata.LastLogin != timeNow {
+			usr.AppMetadata.LastLogin = &timeNow
+			doUpdate = true
+		}
+
+		if doUpdate {
+			err = r.auth0Service.PatchUserAppMetadata(userID, usr.AppMetadata)
+			if err != nil {
+				r.logger.Error("failed to update user metadata", zap.String("userId", userID))
+			}
+		}
 	} else {
 		r.logger.Warn("user not found in auth0", zap.String("externalID", userID))
 	}
