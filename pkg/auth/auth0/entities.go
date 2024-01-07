@@ -22,11 +22,11 @@ type TokenResponse struct {
 
 type Metadata struct {
 	WorkspaceAccess map[string]api.Role `json:"workspaceAccess,omitempty"`
-	GlobalAccess    *api.Role           `json:"globalAccess,omitempty"`
-	ColorBlindMode  *bool               `json:"colorBlindMode"`
-	Theme           *api.Theme          `json:"theme"`
-	MemberSince     *string             `json:"memberSince"`
-	LastLogin       *string             `json:"lastLogin"`
+	GlobalAccess    *api.Role           `json:"globalAccess,omitempty,omitempty"`
+	ColorBlindMode  *bool               `json:"colorBlindMode,omitempty"`
+	Theme           *api.Theme          `json:"theme,omitempty"`
+	MemberSince     *string             `json:"memberSince,omitempty"`
+	LastLogin       *string             `json:"lastLogin,omitempty"`
 }
 
 type User struct {

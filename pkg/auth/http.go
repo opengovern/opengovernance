@@ -211,9 +211,9 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		}
 
 		if doUpdate {
-			err = r.auth0Service.PatchUserAppMetadata(userID, usr.AppMetadata)
+			err = r.auth0Service.PatchUserAppMetadata(usr.UserId, usr.AppMetadata)
 			if err != nil {
-				r.logger.Error("failed to update user metadata", zap.String("userId", userID))
+				r.logger.Error("failed to update user metadata", zap.String("userId", userID), zap.Error(err))
 			}
 		}
 	} else {
@@ -490,7 +490,7 @@ func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
 	auth0User.AppMetadata.ColorBlindMode = &req.EnableColorBlindMode
 	auth0User.AppMetadata.Theme = &req.Theme
 
-	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata)
+	err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
 	if err != nil {
 		return err
 	}
