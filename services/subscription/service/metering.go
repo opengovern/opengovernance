@@ -151,8 +151,10 @@ func (svc MeteringService) RunEnsurePublishing() {
 	for {
 		select {
 		case <-ticker.C:
+			// Get all unpublished meters to publish them, although this might result in duplicate publishing of some meters in some cases,
+			// but it can be handled by the consumer of the firehose by checking the primary keys of the meters.
 			svc.logger.Info("running ensure publishing")
-			unpublishedMeters, err := svc.db.GetUnpublishedMeters()
+			unpublishedMeters, err := svc.db.GetUnpublishedMetersOlderThan(time.Now().Add(time.Hour * -1))
 			if err != nil {
 				svc.logger.Error("failed to get unpublished meters", zap.Error(err))
 				continue

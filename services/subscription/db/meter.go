@@ -68,10 +68,11 @@ func (db Database) GetMeter(workspaceId string, usageDate time.Time, meterType e
 	return &meter, nil
 }
 
-func (db Database) GetUnpublishedMeters() ([]*model.Meter, error) {
+func (db Database) GetUnpublishedMetersOlderThan(olderThanTime time.Time) ([]*model.Meter, error) {
 	var meters []*model.Meter
 	tx := db.Orm.Model(&model.Meter{}).
 		Where("published = ?", false).
+		Where("created_at <= ?", olderThanTime).
 		Find(&meters)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
