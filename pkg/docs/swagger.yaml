@@ -4269,6 +4269,27 @@ paths:
       - users
   /auth/api/v1/user/invite:
     post:
+      description: Sends an invitation to a user to join the workspace with a designated
+        role.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Invite User
+      tags:
+      - users
+  /auth/api/v1/user/preferences:
+    put:
       description: Changes user color blind mode and color mode
       parameters:
       - description: Request Body
