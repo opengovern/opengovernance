@@ -157,15 +157,19 @@ func (svc MeteringService) RunEnsurePublishing() {
 				svc.logger.Error("failed to get unpublished meters", zap.Error(err))
 				continue
 			}
-			err = svc.sendMetersToFirehose(context.TODO(), unpublishedMeters)
-			if err != nil {
-				svc.logger.Error("failed to send meters to firehose", zap.Error(err))
-				continue
-			}
-			err = svc.db.UpdateMetersPublished(unpublishedMeters)
-			if err != nil {
-				svc.logger.Error("failed to update meters published", zap.Error(err))
-				continue
+			for i := 0; i < len(unpublishedMeters); i += 100 {
+				meters := unpublishedMeters[i:min(i+100, len(unpublishedMeters))]
+				err = svc.sendMetersToFirehose(context.TODO(), meters)
+				if err != nil {
+					svc.logger.Error("failed to send meters to firehose", zap.Error(err))
+					break
+				}
+				err = svc.db.UpdateMetersPublished(meters)
+				if err != nil {
+					svc.logger.Error("failed to update meters published", zap.Error(err))
+					break
+				}
+				svc.logger.Info("meters published", zap.Int("count", len(meters)))
 			}
 		}
 	}
