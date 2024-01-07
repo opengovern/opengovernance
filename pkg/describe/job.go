@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

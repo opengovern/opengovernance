@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"strings"
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
 )
 
@@ -102,7 +101,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				ResultsProcessedCount.WithLabelValues("", "failure").Inc()
 
 				s.logger.Error("failed to consume message from describeJobResult", zap.Error(err))
-				//err = msg.Nack(false, false)
+				// err = msg.Nack(false, false)
 				err := consumer.Commit(msg)
 				if err != nil {
 					s.logger.Error("failure while sending nack for message", zap.Error(err))
@@ -149,7 +148,6 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else if strings.Contains(errStr, "context deadline exceeded") {
 					errCodeStr = "ContextDeadlineExceeded"
 				}
-
 			}
 			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
 			err = s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount)
@@ -183,6 +181,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 		}
 	}
 }
+
 func (s *Scheduler) handleTimedoutDiscoveryJobs() {
 	awsResources := aws.ListResourceTypes()
 	for _, r := range awsResources {
@@ -199,8 +198,8 @@ func (s *Scheduler) handleTimedoutDiscoveryJobs() {
 			interval = s.fullDiscoveryIntervalHours
 		}
 		_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
-		//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
-		//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_aws").Inc()
+		// s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
+		// DescribeResourceJobsCount.WithLabelValues("failure", "timedout_aws").Inc()
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 		}
@@ -220,8 +219,8 @@ func (s *Scheduler) handleTimedoutDiscoveryJobs() {
 			interval = s.fullDiscoveryIntervalHours
 		}
 		_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
-		//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
-		//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
+		// s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
+		// DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 		}

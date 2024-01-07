@@ -5,18 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
-	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
-	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
 	"regexp"
@@ -24,23 +12,32 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
+	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/terraform-package/external/states/statefile"
+	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
-
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"gorm.io/gorm"
-
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
-	"github.com/labstack/echo/v4"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -58,7 +55,6 @@ func NewHTTPServer(
 	s *Scheduler,
 	helmConfig HelmConfig,
 ) *HttpServer {
-
 	return &HttpServer{
 		Address:    address,
 		DB:         db,
@@ -100,7 +96,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.POST("/describer/trigger", httpserver2.AuthorizeHandler(h.TriggerStackDescriber, apiAuth.AdminRole))
 	stacks.GET("/:stackId/insights", httpserver2.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
 
-	//v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
+	// v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
 }
 
 // ListJobs godoc
@@ -209,11 +205,15 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	})
 }
 
-var awsResourceTypeReg, _ = regexp.Compile("aws::[a-z0-9-_/]+::[a-z0-9-_/]+")
-var azureResourceTypeReg, _ = regexp.Compile("microsoft.[a-z0-9-_/]+")
+var (
+	awsResourceTypeReg, _   = regexp.Compile("aws::[a-z0-9-_/]+::[a-z0-9-_/]+")
+	azureResourceTypeReg, _ = regexp.Compile("microsoft.[a-z0-9-_/]+")
+)
 
-var awsTableReg, _ = regexp.Compile("aws_[a-z0-9_]+")
-var azureTableReg, _ = regexp.Compile("azure_[a-z0-9_]+")
+var (
+	awsTableReg, _   = regexp.Compile("aws_[a-z0-9_]+")
+	azureTableReg, _ = regexp.Compile("azure_[a-z0-9_]+")
+)
 
 func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
 	switch queryConnector {
@@ -270,7 +270,7 @@ func UniqueArray(arr []string) []string {
 		m[item] = struct{}{}
 	}
 	var resp []string
-	for k, _ := range m {
+	for k := range m {
 		resp = append(resp, k)
 	}
 	return resp
