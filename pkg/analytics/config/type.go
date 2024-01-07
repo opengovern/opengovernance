@@ -4,7 +4,7 @@ import "github.com/kaytu-io/kaytu-util/pkg/config"
 
 type WorkerConfig struct {
 	RabbitMQ      config.RabbitMQ
-	Kafka         config.Kafka
+	NATS          config.NATS
 	PostgreSQL    config.Postgres
 	ElasticSearch config.ElasticSearch
 	Steampipe     config.Postgres

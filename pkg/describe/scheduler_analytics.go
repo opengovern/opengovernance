@@ -4,19 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	analyticsApi "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"time"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
-
+	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -92,8 +89,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 
 	job := newAnalyticsJob(analyticsJobType)
 
-	err = s.db.AddAnalyticsJob(&job)
-	if err != nil {
+	if err = s.db.AddAnalyticsJob(&job); err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to create AnalyticsJob",
 			zap.Uint("jobId", job.ID),
@@ -102,8 +98,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		return 0, err
 	}
 
-	err = s.enqueueAnalyticsJobs(job)
-	if err != nil {
+	if err = s.enqueueAnalyticsJobs(job); err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue AnalyticsJob",
 			zap.Uint("jobId", job.ID),
@@ -150,10 +145,7 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
 		return err
 	}
 
-	if err := kafka.SyncSendWithRetry(s.logger, s.kafkaProducer, []*confluent_kafka.Message{{
-		TopicPartition: confluent_kafka.TopicPartition{Topic: utils.GetPointer(analytics.JobQueueTopic), Partition: confluent_kafka.PartitionAny},
-		Value:          aJobJson,
-	}}, nil, 5); err != nil {
+	if err := s.jq.Produce(context.Background(), analytics.JobQueueTopic, aJobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
 		return err
 	}
 
@@ -172,85 +164,50 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the analyticsJobResultQueue queue")
 
-	consumer, err := kafka.NewTopicConsumer(
-		context.Background(),
-		s.kafkaServers,
-		analytics.JobResultQueueTopic,
-		schedulerConsumerGroup,
-		false,
-	)
-	if err != nil {
+	if _, err := s.jq.Consume(context.Background(), "analytics-scheduler", analytics.StreamName, []string{analytics.JobResultQueueTopic}, "analytics-scheduler", func(msg jetstream.Msg) {
+		var result analytics.JobResult
+
+		if err := json.Unmarshal(msg.Data(), &result); err != nil {
+			AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to unmarshal analytics.JobResult results", zap.Error(err), zap.ByteString("value", msg.Data()))
+
+			if err := msg.Ack(); err != nil {
+				s.logger.Error("Failed to commit message", zap.Error(err))
+			}
+
+			return
+		}
+
+		s.logger.Info("Processing analytics.JobResult for Job",
+			zap.Uint("jobId", result.JobID),
+			zap.String("status", string(result.Status)),
+		)
+
+		if result.Status == analyticsApi.JobCompleted {
+			AnalyticsJobResultsCount.WithLabelValues("successful").Inc()
+		} else {
+			AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
+		}
+
+		if err := s.db.UpdateAnalyticsJob(result.JobID, result.Status, result.Error); err != nil {
+			AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to update the status of AnalyticsJob",
+				zap.Uint("jobId", result.JobID),
+				zap.Error(err),
+			)
+
+			return
+		}
+
+		if err := msg.Ack(); err != nil {
+			AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to commit message", zap.Error(err))
+		}
+	}); err != nil {
 		s.logger.Error("Failed to create kafka consumer", zap.Error(err))
 		return err
 	}
-	defer consumer.Close()
-
-	msgs := consumer.Consume(context.TODO(), s.logger, 100)
-	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
-	defer t.Stop()
 
 	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result analytics.JobResult
-			if err := json.Unmarshal(msg.Value, &result); err != nil {
-				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to unmarshal analytics.JobResult results", zap.Error(err), zap.String("value", string(msg.Value)))
-				err = consumer.Commit(msg)
-				if err != nil {
-					s.logger.Error("Failed to commit message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing analytics.JobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-
-			if result.Status == analyticsApi.JobCompleted {
-				AnalyticsJobResultsCount.WithLabelValues("successful").Inc()
-			} else {
-				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-			}
-
-			err := s.db.UpdateAnalyticsJob(result.JobID, result.Status, result.Error)
-			if err != nil {
-				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to update the status of AnalyticsJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err))
-
-				if err := consumer.Commit(msg); err != nil {
-					AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-					s.logger.Error("Failed to commit message", zap.Error(err))
-				}
-
-				// requeue the message
-				if err2 := kafka.SyncSendWithRetry(s.logger, s.kafkaProducer, []*confluent_kafka.Message{{
-					TopicPartition: confluent_kafka.TopicPartition{Topic: utils.GetPointer(analytics.JobResultQueueTopic), Partition: confluent_kafka.PartitionAny},
-					Value:          msg.Value,
-				}}, nil, 5); err2 != nil {
-					s.logger.Error("Failed to requeue the message", zap.Error(err2))
-					return err
-				}
-				continue
-			}
-
-			if err := consumer.Commit(msg); err != nil {
-				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to commit message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateAnalyticsJobsTimedOut(s.analyticsIntervalHours)
-			if err != nil {
-				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to update timed out AnalyticsJob", zap.Error(err))
-			}
-		}
 	}
 }

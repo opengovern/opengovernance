@@ -5,16 +5,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
 
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
@@ -41,10 +42,9 @@ type JobResult struct {
 }
 
 func (j *Job) Do(
+	jq *jq.JobQueue,
 	db db.Database,
 	steampipeConn *steampipe.Database,
-	kfkProducer *confluent_kafka.Producer,
-	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
 	schedulerClient describeClient.SchedulerServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient,
@@ -92,13 +92,13 @@ func (j *Job) Do(
 	}
 	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
 
-	if err := j.Run(db, encodedResourceCollectionFilters, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger, config); err != nil {
+	if err := j.Run(jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, logger, config); err != nil {
 		fail(err)
 	}
 	return result
 }
 
-func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, kfkProducer *confluent_kafka.Producer, kfkTopic string, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
+func (j *Job) Run(jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics([]db.AnalyticMetricStatus{db.AnalyticMetricStatusActive, db.AnalyticMetricStatusInvisible})
 	if err != nil {
@@ -135,17 +135,17 @@ func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters map[string]s
 			}
 
 			err = j.DoAssetMetric(
+				jq,
 				steampipeDB,
 				encodedResourceCollectionFilters,
-				kfkProducer,
-				kfkTopic,
 				onboardClient,
 				logger,
 				metric,
 				connectionCache,
 				startTime,
 				status,
-				config)
+				config,
+			)
 			if err != nil {
 				return err
 			}
@@ -182,9 +182,8 @@ func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters map[string]s
 			}
 
 			err = j.DoSpendMetric(
+				jq,
 				steampipeDB,
-				kfkProducer,
-				kfkTopic,
 				onboardClient,
 				logger,
 				metric,
@@ -206,7 +205,8 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 	onboardClient onboardClient.OnboardServiceClient) (
 	*resource.ConnectionMetricTrendSummaryResult,
 	*resource.ConnectorMetricTrendSummaryResult,
-	error) {
+	error,
+) {
 	logger.Info("assets ==== ", zap.String("query", metric.Query))
 	res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
 	if err != nil {
@@ -316,7 +316,7 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 		}, nil
 }
 
-func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, kfkProducer *confluent_kafka.Producer, kfkTopic string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
@@ -379,26 +379,20 @@ func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceColl
 	connectorMetricTrendSummary.EsID = kafka.HashOf(keys...)
 	connectorMetricTrendSummary.EsIndex = idx
 
-	var msgs = []kafka.Doc{
+	msgs := []kafka.Doc{
 		connectionMetricTrendSummary,
 		connectorMetricTrendSummary,
 	}
 
-	if conf.ElasticSearch.IsOpenSearch {
-		if err := pipeline.SendToPipeline(conf.ElasticSearch.IngestionEndpoint, msgs); err != nil {
-			return err
-		}
-	} else {
-		if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
-			return err
-		}
+	if err := pipeline.SendToPipeline(conf.ElasticSearch.IngestionEndpoint, msgs); err != nil {
+		return err
 	}
 
 	logger.Info("done sending result to kafka", zap.String("metric", metric.ID), zap.Bool("isOpenSearch", conf.ElasticSearch.IsOpenSearch))
 	return nil
 }
 
-func (j *Job) DoSpendMetric(steampipeDB *steampipe.Database, kfkProducer *confluent_kafka.Producer, kfkTopic string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoSpendMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
@@ -586,14 +580,8 @@ func (j *Job) DoSpendMetric(steampipeDB *steampipe.Database, kfkProducer *conflu
 		msgs = append(msgs, item)
 	}
 
-	if conf.ElasticSearch.IsOpenSearch {
-		if err := pipeline.SendToPipeline(conf.ElasticSearch.IngestionEndpoint, msgs); err != nil {
-			return err
-		}
-	} else {
-		if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
-			return err
-		}
+	if err := pipeline.SendToPipeline(conf.ElasticSearch.IngestionEndpoint, msgs); err != nil {
+		return err
 	}
 
 	logger.Info("done with spend metric",

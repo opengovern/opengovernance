@@ -5,33 +5,33 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
+
+	workerConfig "github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"strings"
 )
 
 const (
 	JobQueueTopic       = "analytics-jobs-queue"
 	JobResultQueueTopic = "analytics-results-queue"
 	consumerGroup       = "analytics-worker"
+	StreamName          = "analytics-worker"
 )
 
 func WorkerCommand() *cobra.Command {
 	var (
 		id  string
-		cnf config2.WorkerConfig
+		cnf workerConfig.WorkerConfig
 	)
 	config.ReadFromEnv(&cnf, nil)
 
@@ -51,12 +51,11 @@ func WorkerCommand() *cobra.Command {
 				return err
 			}
 
-			w, err := InitializeWorker(
+			w, err := NewWorker(
 				id,
 				cnf,
 				logger,
 			)
-
 			if err != nil {
 				return err
 			}
@@ -74,9 +73,8 @@ func WorkerCommand() *cobra.Command {
 
 type Worker struct {
 	id              string
-	jobQueue        *kafka.TopicConsumer
-	kfkProducer     *confluent_kafka.Producer
-	config          config2.WorkerConfig
+	jq              *jq.JobQueue
+	config          workerConfig.WorkerConfig
 	logger          *zap.Logger
 	db              db.Database
 	onboardClient   onboardClient.OnboardServiceClient
@@ -84,9 +82,9 @@ type Worker struct {
 	inventoryClient inventoryClient.InventoryServiceClient
 }
 
-func InitializeWorker(
+func NewWorker(
 	id string,
-	conf config2.WorkerConfig,
+	conf workerConfig.WorkerConfig,
 	logger *zap.Logger,
 ) (w *Worker, err error) {
 	if id == "" {
@@ -123,21 +121,11 @@ func InitializeWorker(
 	}
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
-	consumer, err := kafka.NewTopicConsumer(context.Background(),
-		strings.Split(conf.Kafka.Addresses, ","), JobQueueTopic, consumerGroup, false)
-	if err != nil {
-		logger.Error("Failed to create kafka consumer", zap.Error(err))
-		return nil, err
-	}
-	w.jobQueue = consumer
-
-	producer, err := kafka.NewDefaultKafkaProducer(strings.Split(conf.Kafka.Addresses, ","))
+	jq, err := jq.New(conf.NATS.URL, logger)
 	if err != nil {
 		return nil, err
 	}
-	w.kfkProducer = producer
-
-	fmt.Println(strings.Split(conf.Kafka.Addresses, ","), w.config.Kafka.Topic)
+	w.jq = jq
 
 	w.config = conf
 	w.logger = logger
@@ -151,26 +139,27 @@ func InitializeWorker(
 func (w *Worker) Run() error {
 	defer func() {
 		if r := recover(); r != nil {
-			w.logger.Error("paniced with error", zap.Error(fmt.Errorf("%v", r)))
+			w.logger.Error("panic happened with error", zap.Error(fmt.Errorf("%v", r)))
 		}
 	}()
 
+	if err := w.jq.Stream(context.Background(), StreamName, "analytics jobs", []string{JobQueueTopic, JobResultQueueTopic}); err != nil {
+		return err
+	}
+
 	w.logger.Info("Starting analytics worker")
 
-	msgs := w.jobQueue.Consume(context.TODO(), w.logger, 100)
-
-	err := steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAWS)
-	if err != nil {
+	if err := steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAWS); err != nil {
 		w.logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
 		return err
 	}
-	err = steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAzure)
-	if err != nil {
+
+	if err := steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAzure); err != nil {
 		w.logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
 		return err
 	}
-	err = steampipe.PopulateKaytuPluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe)
-	if err != nil {
+
+	if err := steampipe.PopulateKaytuPluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe); err != nil {
 		w.logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
 		return err
 	}
@@ -185,58 +174,45 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Reading messages from the queue")
 
-	for msg := range msgs {
+	w.jq.Consume(context.Background(), "analytics", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("Parsing job")
 
 		var job Job
-		if err := json.Unmarshal(msg.Value, &job); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err), zap.String("value", string(msg.Value)))
+		if err := json.Unmarshal(msg.Data(), &job); err != nil {
+			w.logger.Error("Failed to unmarshal task", zap.Error(err), zap.ByteString("value", msg.Data()))
 
-			err2 := w.jobQueue.Commit(msg)
-			if err2 != nil {
+			if err := msg.Ack(); err != nil {
 				w.logger.Error("Failed to commit message", zap.Error(err))
 			}
 
-			return err
+			return
 		}
 
-		w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
+		w.logger.Info("Running the job", zap.Uint("id", job.JobID))
 
-		result := job.Do(w.db, steampipeConn, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger, w.config)
+		result := job.Do(w.jq, w.db, steampipeConn, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger, w.config)
 
 		w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
 		resultJson, err := json.Marshal(result)
 		if err != nil {
 			w.logger.Error("Failed to marshal result", zap.Error(err))
-			return err
+			return
 		}
 
-		err = kafka.SyncSendWithRetry(w.logger, w.kfkProducer, []*confluent_kafka.Message{
-			{
-				TopicPartition: confluent_kafka.TopicPartition{
-					Topic:     utils.GetPointer(JobResultQueueTopic),
-					Partition: confluent_kafka.PartitionAny,
-				},
-				Value: resultJson,
-			},
-		}, nil, 5)
-		if err != nil {
+		if err := w.jq.Produce(context.Background(), JobQueueTopic, resultJson, fmt.Sprintf("job-%d", job.JobID)); err != nil {
 			w.logger.Error("Failed to send job result", zap.Error(err))
-			return err
+			return
 		}
 
 		w.logger.Info("A job is done and result is published into the result queue", zap.String("result", fmt.Sprintf("%v", result)))
-		err = w.jobQueue.Commit(msg)
-		if err != nil {
+		if err := msg.Ack(); err != nil {
 			w.logger.Error("Failed to commit message", zap.Error(err))
 		}
-	}
+	})
 
 	return nil
 }
 
 func (w *Worker) Stop() {
-	w.jobQueue.Close()
-	w.kfkProducer.Close()
 }

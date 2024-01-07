@@ -4,11 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
-	"go.opentelemetry.io/otel"
 	"net/http"
 	"strings"
 	"time"
@@ -17,11 +12,16 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,7 +32,7 @@ import (
 type GRPCDescribeServer struct {
 	db                        db.Database
 	producer                  *confluent_kafka.Producer
-	conf                      config2.SchedulerConfig
+	conf                      config.SchedulerConfig
 	topic                     string
 	logger                    *zap.Logger
 	DoProcessReceivedMessages bool
@@ -41,7 +41,7 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db db.Database, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger, conf config2.SchedulerConfig) *GRPCDescribeServer {
+func NewDescribeServer(db db.Database, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger, conf config.SchedulerConfig) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		producer:                  producer,
@@ -75,7 +75,6 @@ func (s *GRPCDescribeServer) checkGRPCAuth(ctx context.Context) error {
 			},
 		},
 	})
-
 	if err != nil {
 		return status.Errorf(codes.Unauthenticated, "authentication failed: %v", err)
 	}
@@ -103,7 +102,7 @@ func (s *GRPCDescribeServer) grpcStreamAuthInterceptor(srv interface{}, ss grpc.
 
 func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetInProgressRequest) (*golang.ResponseOK, error) {
 	s.logger.Info("changing job to in progress", zap.Uint("jobId", uint(req.JobId)))
-	err := s.db.UpdateDescribeConnectionJobToInProgress(uint(req.JobId)) //TODO this is called too much
+	err := s.db.UpdateDescribeConnectionJobToInProgress(uint(req.JobId)) // TODO this is called too much
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +120,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		var description any
 		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
 		if err != nil {
-			//ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+			// ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			return nil, err
 		}
@@ -163,10 +162,10 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 				zap.String("json", string(kmsg)),
 			)
 		}
-		//kmsg, _ := json.Marshal(kafkaResource)
-		//keys, _ := kafkaResource.KeysAndIndex()
-		//id := kafka.HashOf(keys...)
-		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
+		// kmsg, _ := json.Marshal(kafkaResource)
+		// keys, _ := kafkaResource.KeysAndIndex()
+		// id := kafka.HashOf(keys...)
+		// s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
 		lookupResource := es2.LookupResource{
 			ResourceID:    resource.UniqueId,
@@ -192,14 +191,14 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 				zap.String("json", string(kmsg)),
 			)
 		}
-		//kmsg, _ = json.Marshal(lookupResource)
-		//keys, _ = lookupResource.KeysAndIndex()
-		//id = kafka.HashOf(keys...)
-		//s.logger.Warn(fmt.Sprintf("sending lookup id=%s : %s", id, string(kmsg)))
+		// kmsg, _ = json.Marshal(lookupResource)
+		// keys, _ = lookupResource.KeysAndIndex()
+		// id = kafka.HashOf(keys...)
+		// s.logger.Warn(fmt.Sprintf("sending lookup id=%s : %s", id, string(kmsg)))
 
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
-		//ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
+		// ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
 
 	if !s.DoProcessReceivedMessages {
@@ -239,7 +238,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		var description any
 		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
 		if err != nil {
-			//ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
+			// ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			return nil, err
 		}
@@ -281,9 +280,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 				zap.String("json", string(kmsg)),
 			)
 		}
-		//keys, _ := kafkaResource.KeysAndIndex()
-		//id := kafka.HashOf(keys...)
-		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
+		// keys, _ := kafkaResource.KeysAndIndex()
+		// id := kafka.HashOf(keys...)
+		// s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
 		lookupResource := es2.LookupResource{
 			ResourceID:    resource.UniqueId,
@@ -310,13 +309,13 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 				zap.String("json", string(kmsg)),
 			)
 		}
-		//keys, _ = lookupResource.KeysAndIndex()
-		//id = kafka.HashOf(keys...)
-		//s.logger.Warn(fmt.Sprintf("sending lookup id=%s : %s", id, string(kmsg)))
+		// keys, _ = lookupResource.KeysAndIndex()
+		// id = kafka.HashOf(keys...)
+		// s.logger.Warn(fmt.Sprintf("sending lookup id=%s : %s", id, string(kmsg)))
 
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
-		//ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
+		// ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
 
 	i := 0
@@ -377,7 +376,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 	docs = append(docs, result)
 
 	err := kafka.DoSend(s.producer, "kaytu-describe-results-queue", -1, docs, s.logger, nil)
-	//err := s.describeJobResultQueue.Publish(result)
+	// err := s.describeJobResultQueue.Publish(result)
 	if err != nil {
 		s.logger.Error("Failed to publish into rabbitMQ",
 			zap.Uint("jobID", result.JobID),

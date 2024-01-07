@@ -2,6 +2,8 @@ package describe
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -10,7 +12,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"strings"
 )
 
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {
@@ -111,7 +112,7 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		}
 
 		if !found {
-			//s.logger.Error("resource type " + resourceType + " not found!")
+			// s.logger.Error("resource type " + resourceType + " not found!")
 		}
 	}
 
