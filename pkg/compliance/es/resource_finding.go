@@ -141,29 +141,26 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 		})
 	}
 
+	if len(nestedFilters) > 0 {
+		filters = append(filters, map[string]any{"nested": map[string]any{
+			"path": "findings",
+			"query": map[string]any{
+				"bool": map[string]any{
+					"filter": nestedFilters,
+				},
+			},
+		}})
+	}
+
 	requestMap := map[string]any{
 		"query": map[string]any{
 			"bool": map[string]any{
 				"filter": filters,
 			},
-			"nested": map[string]any{
-				"path": "findings",
-				"query": map[string]any{
-					"bool": map[string]any{
-						"filter": nestedFilters,
-					},
-				},
-			},
 		},
 		"size": pageSizeLimit,
 	}
 	if len(filters) == 0 {
-		delete(requestMap["query"].(map[string]any), "bool")
-	}
-	if len(nestedFilters) == 0 {
-		delete(requestMap["query"].(map[string]any), "nested")
-	}
-	if len(requestMap["query"].(map[string]any)) == 0 {
 		delete(requestMap, "query")
 	}
 	if len(searchAfter) > 0 {
@@ -294,10 +291,12 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 
 	requestQuery := make(map[string]any, 0)
 	if len(nestedFilters) > 0 {
-		requestQuery["nested"] = map[string]any{
-			"path":  "findings",
-			"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
-		}
+		filters = append(filters, map[string]any{
+			"nested": map[string]any{
+				"path":  "findings",
+				"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
+			},
+		})
 	}
 	if len(filters) > 0 {
 		requestQuery["bool"] = map[string]any{
