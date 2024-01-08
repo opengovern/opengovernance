@@ -841,7 +841,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, nil, esCount)
+	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, nil, 10000)
 	if err != nil {
 		h.logger.Error("failed to get top field total", zap.Error(err))
 		return err
@@ -1014,6 +1014,12 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			if !ok {
 				continue
 			}
+			if record.ControlCount == nil {
+				record.ControlCount = utils.GetPointer(0)
+			}
+			if record.ControlTotalCount == nil {
+				record.ControlTotalCount = utils.GetPointer(0)
+			}
 			for _, control := range item.ControlCount.Buckets {
 				isFailed := false
 				for _, conformanceStatus := range control.ConformanceStatuses.Buckets {
@@ -1063,7 +1069,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			response.Records = append(response.Records, record)
 		}
 
-		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
+		response.TotalCount = topFieldTotalResponse.Aggregations.BucketCount.Value
 	case "controlid":
 		resControlIDs := make([]string, 0, len(topFieldTotalResponse.Aggregations.FieldFilter.Buckets))
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
@@ -1141,7 +1147,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			response.Records = append(response.Records, record)
 		}
 
-		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
+		response.TotalCount = topFieldTotalResponse.Aggregations.BucketCount.Value
 	default:
 		totalCountMap := make(map[string]int)
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
