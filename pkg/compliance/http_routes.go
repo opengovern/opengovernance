@@ -191,6 +191,10 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if len(req.AfterSortKey) != 0 && len(req.Sort) != (len(req.AfterSortKey)-1) {
+		return echo.NewHTTPError(http.StatusBadRequest, "sort key length should be zero or match sort modifiers")
+	}
+
 	var response api.GetFindingsResponse
 
 	if len(req.Filters.ConformanceStatus) == 0 {
@@ -1458,6 +1462,10 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 	var req api.ListResourceFindingsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if len(req.AfterSortKey) != 0 && len(req.Sort) != (len(req.AfterSortKey)-1) {
+		return echo.NewHTTPError(http.StatusBadRequest, "sort key length should be zero or match sort modifiers")
 	}
 
 	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
