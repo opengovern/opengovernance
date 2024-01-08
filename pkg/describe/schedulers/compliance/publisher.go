@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -27,6 +28,17 @@ func (s *JobScheduler) runPublisher() error {
 		connectionsMap[connection.ID.String()] = &connection
 	}
 
+	queries, err := s.complianceClient.ListQueries(ctx)
+	if err != nil {
+		s.logger.Error("failed to get queries", zap.Error(err))
+		return err
+	}
+	queriesMap := make(map[string]*complianceApi.Query)
+	for _, query := range queries {
+		query := query
+		queriesMap[query.ID] = &query
+	}
+
 	for i := 0; i < 10; i++ {
 		err := s.db.UpdateTimedOutRunners()
 		if err != nil {
@@ -43,12 +55,8 @@ func (s *JobScheduler) runPublisher() error {
 		}
 
 		for _, it := range runners {
-			query, err := s.complianceClient.GetQuery(ctx, it.QueryID)
-			if err != nil {
-				s.logger.Error("failed to get query", zap.Error(err), zap.String("queryId", it.QueryID), zap.Uint("runnerId", it.ID))
-				continue
-			}
-			if query == nil {
+			query, ok := queriesMap[it.QueryID]
+			if !ok || query == nil {
 				s.logger.Error("query not found", zap.String("queryId", it.QueryID), zap.Uint("runnerId", it.ID))
 				continue
 			}
