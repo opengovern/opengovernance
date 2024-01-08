@@ -2,15 +2,17 @@ package insight
 
 import (
 	"errors"
+	"os"
+
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"os"
 )
 
 const (
 	InsightJobsQueueName    = "insight-jobs-queue"
 	InsightResultsQueueName = "insight-results-queue"
+	InsightStreamName       = "insight"
 )
 
 var (
@@ -49,7 +51,7 @@ func WorkerCommand() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			w, err := InitializeWorker(
+			w, err := NewWorker(
 				id,
 				cnf,
 				InsightJobsQueueName,

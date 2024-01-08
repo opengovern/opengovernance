@@ -5,21 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
-	"go.opentelemetry.io/otel"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -27,12 +21,18 @@ import (
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/meta"
 )
@@ -42,9 +42,7 @@ const (
 	MaxIn10Minutes = 5000
 )
 
-var (
-	ErrJobInProgress = errors.New("job already in progress")
-)
+var ErrJobInProgress = errors.New("job already in progress")
 
 type CloudNativeCall struct {
 	dc  model.DescribeConnectionJob
@@ -473,8 +471,8 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		if (connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
 			connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
 			connection.HealthState != source.HealthStatusHealthy {
-			//DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			//return errors.New("connection is not healthy or disabled")
+			// DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+			// return errors.New("connection is not healthy or disabled")
 			return nil, nil
 		}
 	}
@@ -576,7 +574,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		Payload:        lambdaRequest,
 		InvocationType: types.InvocationTypeEvent,
 	})
-
 	if err != nil {
 		s.logger.Error("failed to invoke lambda function",
 			zap.Uint("jobID", dc.ID),
@@ -929,13 +926,11 @@ func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 		job := newInsightJob(insight, stack.SourceType, stack.StackID, stack.AccountIDs[0], nil)
 		job.IsStack = true
 
-		err = s.db.AddInsightJob(&job)
-		if err != nil {
+		if err := s.db.AddInsightJob(&job); err != nil {
 			return err
 		}
 
-		err = enqueueInsightJobs(s.insightJobQueue, job, insight)
-		if err != nil {
+		if err := enqueueInsightJobs(s.jq, job, insight); err != nil {
 			job.Status = apiInsight.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
 			s.db.UpdateInsightJobStatus(job)

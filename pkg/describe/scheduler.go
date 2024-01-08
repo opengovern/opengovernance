@@ -11,6 +11,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
+	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
@@ -20,33 +27,21 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
-	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
-
-	"go.uber.org/zap"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (

@@ -1,12 +1,11 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/insight"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/insight"
+	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )
 
@@ -16,55 +15,41 @@ import (
 func (s *Scheduler) RunInsightJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the InsightJobResultQueue queue")
 
-	msgs, err := s.insightJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
+	s.jq.Consume(context.Background(), "insight-scheduler", insight.InsightStreamName, []string{insight.InsightResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
+		var result insight.JobResult
 
-	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
-	defer t.Stop()
+		if err := json.Unmarshal(msg.Data(), &result); err != nil {
+			s.logger.Error("Failed to unmarshal InsightJobResult results", zap.Error(err))
+
+			if err := msg.Nak(); err != nil {
+				s.logger.Error("Failed nak message", zap.Error(err))
+			}
+
+			return
+		}
+
+		s.logger.Info("Processing InsightJobResult for Job",
+			zap.Uint("jobId", result.JobID),
+			zap.String("status", string(result.Status)),
+		)
+
+		if err := s.db.UpdateInsightJob(result.JobID, result.Status, result.Error); err != nil {
+			s.logger.Error("Failed to update the status of InsightJob",
+				zap.Uint("jobId", result.JobID),
+				zap.Error(err))
+
+			if err := msg.Nak(); err != nil {
+				s.logger.Error("Failed not ack a message", zap.Error(err))
+			}
+
+			return
+		}
+
+		if err := msg.Ack(); err != nil {
+			s.logger.Error("Failed to ack a message", zap.Error(err))
+		}
+	})
 
 	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result insight.JobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal InsightJobResult results", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing InsightJobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateInsightJob(result.JobID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of InsightJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err))
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateInsightJobsTimedOut(s.insightIntervalHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out InsightJob", zap.Error(err))
-			}
-		}
 	}
 }
