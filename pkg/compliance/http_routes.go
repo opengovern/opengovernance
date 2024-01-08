@@ -804,7 +804,7 @@ func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
 //	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
 //	@Param			controlId			query		[]string						false	"ControlID"
 //	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]kaytuTypes.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
@@ -830,10 +830,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
 	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
-	conformanceStatuses := kaytuTypes.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
 
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = []kaytuTypes.ConformanceStatus{
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	for _, status := range conformanceStatuses {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+	if len(esConformanceStatuses) == 0 {
+		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
 			kaytuTypes.ConformanceStatusERROR,
 			kaytuTypes.ConformanceStatusINFO,
@@ -842,7 +846,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, conformanceStatuses, esCount)
+	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, esConformanceStatuses, esCount)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
@@ -967,22 +971,23 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 		recordMap := make(map[string]api.TopFieldRecord)
 
-		for _, connection := range connections {
-			connection := connection
-			if _, ok := recordMap[connection.ID.String()]; !ok {
-				recordMap[connection.ID.String()] = api.TopFieldRecord{
-					Connection: &connection,
-				}
-			}
-		}
-
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				continue
+				record = api.TopFieldRecord{}
 			}
 			record.TotalCount += item.DocCount
 			recordMap[item.Key] = record
+		}
+
+		for _, connection := range connections {
+			connection := connection
+			record, ok := recordMap[connection.ID.String()]
+			if !ok {
+				continue
+			}
+			record.Connection = &connection
+			recordMap[connection.ID.String()] = record
 		}
 
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
@@ -1038,15 +1043,12 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
 			for _, conformanceStatus := range conformanceStatuses {
 				switch conformanceStatus {
-				case kaytuTypes.ConformanceStatusALARM:
+				case api.ConformanceStatusFailed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.AlarmCount)
-				case kaytuTypes.ConformanceStatusERROR:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.ErrorCount)
-				case kaytuTypes.ConformanceStatusINFO:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.InfoCount)
-				case kaytuTypes.ConformanceStatusSKIP:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.SkipCount)
-				case kaytuTypes.ConformanceStatusOK:
+				case api.ConformanceStatusPassed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.OkCount)
 				}
 			}
@@ -1070,22 +1072,24 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 
 		recordMap := make(map[string]api.TopFieldRecord)
-		for _, control := range controls {
-			control := control
-			if _, ok := recordMap[control.ID]; !ok {
-				recordMap[control.ID] = api.TopFieldRecord{
-					Control: utils.GetPointer(control.ToApi()),
-				}
-			}
-		}
 
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				continue
+				record = api.TopFieldRecord{}
 			}
 			record.TotalCount += item.DocCount
 			recordMap[item.Key] = record
+		}
+
+		for _, control := range controls {
+			control := control
+			record, ok := recordMap[control.ID]
+			if !ok {
+				continue
+			}
+			record.Control = utils.GetPointer(control.ToApi())
+			recordMap[control.ID] = record
 		}
 
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
@@ -1113,15 +1117,12 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
 			for _, conformanceStatus := range conformanceStatuses {
 				switch conformanceStatus {
-				case kaytuTypes.ConformanceStatusALARM:
+				case api.ConformanceStatusFailed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.AlarmCount)
-				case kaytuTypes.ConformanceStatusERROR:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.ErrorCount)
-				case kaytuTypes.ConformanceStatusINFO:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.InfoCount)
-				case kaytuTypes.ConformanceStatusSKIP:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.SkipCount)
-				case kaytuTypes.ConformanceStatusOK:
+				case api.ConformanceStatusPassed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.OkCount)
 				}
 			}

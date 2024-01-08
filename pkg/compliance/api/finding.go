@@ -4,6 +4,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"strings"
 )
 
 type FindingFilters struct {
@@ -85,6 +86,19 @@ func (cs ConformanceStatus) GetEsConformanceStatuses() []types.ConformanceStatus
 		return []types.ConformanceStatus{types.ConformanceStatusOK}
 	}
 	return nil
+}
+
+func ParseConformanceStatuses(conformanceStatuses []string) []ConformanceStatus {
+	var result []ConformanceStatus
+	for _, cs := range conformanceStatuses {
+		switch strings.ToLower(cs) {
+		case strings.ToLower(string(ConformanceStatusFailed)):
+			result = append(result, ConformanceStatusFailed)
+		case strings.ToLower(string(ConformanceStatusPassed)):
+			result = append(result, ConformanceStatusPassed)
+		}
+	}
+	return result
 }
 
 type Finding struct {

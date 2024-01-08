@@ -1964,11 +1964,8 @@ const docTemplate = `{
                         "type": "array",
                         "items": {
                             "enum": [
-                                "ok",
-                                "alarm",
-                                "info",
-                                "skip",
-                                "error"
+                                "failed",
+                                "passed"
                             ],
                             "type": "string"
                         },

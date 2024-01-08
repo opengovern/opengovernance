@@ -5316,11 +5316,8 @@ paths:
         in: query
         items:
           enum:
-          - ok
-          - alarm
-          - info
-          - skip
-          - error
+          - failed
+          - passed
           type: string
         name: conformanceStatus
         type: array
