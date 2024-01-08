@@ -32,6 +32,7 @@ type Config struct {
 	OIDCProvider               string `yaml:"oidc_provider"`
 	SecurityGroupID            string `yaml:"security_group_id"`
 	SubnetID                   string `yaml:"subnet_id"`
+	DoReserve                  bool   `yaml:"do_reserve"`
 
 	OpenSearchRegion string `yaml:"open_search_region"`
 }

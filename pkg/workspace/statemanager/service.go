@@ -152,7 +152,7 @@ func (s *Service) StartReconciler() {
 				s.logger.Error(fmt.Sprintf("syncing helm values: %v", err))
 			}
 		}
-		if s.cfg.EnvType == config.EnvTypeProd {
+		if s.cfg.EnvType == config.EnvTypeProd && s.cfg.DoReserve {
 			err = s.handleReservation()
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("reservation: %v", err))
