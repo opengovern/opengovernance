@@ -307,8 +307,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		}
 	}
 
-	err = s.retryFailedJobs()
-	if err != nil {
+	if err := s.retryFailedJobs(); err != nil {
 		s.logger.Error("failed to retry failed jobs", zap.String("spot", "retryFailedJobs"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
@@ -319,7 +318,9 @@ func (s *Scheduler) scheduleDescribeJob() {
 
 func (s *Scheduler) retryFailedJobs() error {
 	ctx := context.Background()
-	ctx, failedsSpan := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
+
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
+	defer span.End()
 
 	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
 	if err != nil {
@@ -367,7 +368,7 @@ func (s *Scheduler) retryFailedJobs() error {
 	}
 
 	s.logger.Info(fmt.Sprintf("retrying %v failed jobs", retryCount))
-	failedsSpan.End()
+	span.End()
 	return nil
 }
 
@@ -539,10 +540,12 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			RetryCounter: 0,
 		},
 	}
+
 	lambdaRequest, err := json.Marshal(input)
 	if err != nil {
 		s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
+
+		return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 	}
 
 	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
@@ -632,8 +635,8 @@ func (s *Scheduler) scheduleStackJobs() error {
 
 	kubeClient, err := s.httpServer.newKubeClient()
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("failt to make new kube client: %s", err.Error()))
-		return fmt.Errorf("failt to make new kube client: %w", err)
+		s.logger.Error(fmt.Sprintf("fail to make new kube client: %s", err.Error()))
+		return fmt.Errorf("fail to make new kube client: %w", err)
 	}
 	s.httpServer.kubeClient = kubeClient
 
