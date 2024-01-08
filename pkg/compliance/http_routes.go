@@ -293,7 +293,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			ControlTitle:                "",
 			ProviderConnectionID:        "",
 			ProviderConnectionName:      "",
-			NoOfOccurrences:             1,
+			NoOfOccurrences:             0,
 			SortKey:                     h.Sort,
 		}
 
