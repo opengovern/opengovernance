@@ -39,7 +39,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			tableName = query.ListOfTables[0]
 		}
 		if tableName != "" {
-			queryResourceType = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.QueryConnector)
+			queryResourceType = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.Connector)
 		}
 	}
 
@@ -63,7 +63,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			connectionId = v
 		}
 		if v, ok := recordValue["kaytu_table_name"].(string); ok && resourceType == "" {
-			resourceType = GetResourceTypeFromTableName(v, w.ExecutionPlan.QueryConnector)
+			resourceType = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.Connector)
 		}
 		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
 			resourceID = v
@@ -99,8 +99,8 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			StateActive:           true,
 			ConformanceStatus:     status,
 			Severity:              severity,
-			Evaluator:             w.ExecutionPlan.QueryEngine,
-			Connector:             w.ExecutionPlan.QueryConnector,
+			Evaluator:             w.ExecutionPlan.Query.Engine,
+			Connector:             w.ExecutionPlan.Query.Connector,
 			KaytuResourceID:       kaytuResourceId,
 			ResourceID:            resourceID,
 			ResourceName:          resourceName,

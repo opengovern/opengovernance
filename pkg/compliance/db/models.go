@@ -334,7 +334,7 @@ func (q Query) ToApi() api.Query {
 	return api.Query{
 		ID:             q.ID,
 		QueryToExecute: q.QueryToExecute,
-		Connector:      q.Connector,
+		Connector:      source.Type(q.Connector),
 		ListOfTables:   q.ListOfTables,
 		PrimaryTable:   q.PrimaryTable,
 		Engine:         q.Engine,

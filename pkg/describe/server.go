@@ -276,53 +276,6 @@ func UniqueArray(arr []string) []string {
 	return resp
 }
 
-func (h HttpServer) extractBenchmarkResourceTypes(ctx *httpclient.Context, benchmarkID string) ([]string, int64, int64, int64, error) {
-	var waitingForAPI1Time, waitingForAPI2Time, waitingForAPI3Time int64
-
-	start := time.Now().UnixMilli()
-	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(ctx, benchmarkID)
-	if err != nil {
-		return nil, 0, 0, 0, err
-	}
-	waitingForAPI1Time += time.Now().UnixMilli() - start
-
-	var response []string
-	for _, child := range benchmark.Children {
-		rts, waitingForAPI1, waitingForAPI2, waitingForAPI3, err := h.extractBenchmarkResourceTypes(ctx, child)
-		if err != nil {
-			return nil, 0, 0, 0, err
-		}
-		waitingForAPI1Time += waitingForAPI1
-		waitingForAPI2Time += waitingForAPI2
-		waitingForAPI3Time += waitingForAPI3
-		response = append(response, rts...)
-	}
-
-	for _, controlID := range benchmark.Controls {
-		start := time.Now().UnixMilli()
-		control, err := h.Scheduler.complianceClient.GetControl(ctx, controlID)
-		if err != nil {
-			return nil, 0, 0, 0, err
-		}
-		waitingForAPI2Time += time.Now().UnixMilli() - start
-
-		if control.ManualVerification || control.Query == nil {
-			continue
-		}
-
-		start = time.Now().UnixMilli()
-		query, err := h.Scheduler.complianceClient.GetQuery(ctx, control.Query.ID)
-		if err != nil {
-			return nil, 0, 0, 0, err
-		}
-		waitingForAPI3Time += time.Now().UnixMilli() - start
-
-		response = append(response, extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))...)
-	}
-
-	return response, waitingForAPI1Time, waitingForAPI2Time, waitingForAPI3Time, nil
-}
-
 // GetDiscoveryResourceTypeList godoc
 //
 //	@Summary	List all resource types that will be discovered

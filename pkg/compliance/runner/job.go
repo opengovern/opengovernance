@@ -3,21 +3,18 @@ package runner
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"io"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 )
@@ -30,13 +27,11 @@ type Caller struct {
 }
 
 type ExecutionPlan struct {
-	Callers        []Caller
-	QueryID        string
-	QueryEngine    string
-	QueryConnector source.Type
+	Callers []Caller
+	Query   complianceApi.Query
 
 	ConnectionID         *string
-	ResourceCollectionID *string
+	ProviderConnectionID *string
 }
 
 type Job struct {
@@ -57,15 +52,9 @@ type JobConfig struct {
 
 func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	providerAccountID := "all"
-	if j.ExecutionPlan.ConnectionID != nil &&
-		*j.ExecutionPlan.ConnectionID != "" &&
-		*j.ExecutionPlan.ConnectionID != "all" {
-		conn, err := w.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ConnectionID)
-		if err != nil {
-			w.logger.Error("failed to get source", zap.Error(err), zap.String("connection_id", *j.ExecutionPlan.ConnectionID))
-			return err
-		}
-		providerAccountID = conn.ConnectionID
+	if j.ExecutionPlan.ProviderConnectionID != nil &&
+		*j.ExecutionPlan.ProviderConnectionID != "" {
+		providerAccountID = *j.ExecutionPlan.ProviderConnectionID
 	}
 
 	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, providerAccountID)
@@ -79,33 +68,14 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 		return err
 	}
 
-	if j.ExecutionPlan.ResourceCollectionID != nil {
-		rc, err := w.inventoryClient.GetResourceCollectionMetadata(&httpclient.Context{UserRole: api.InternalRole}, *j.ExecutionPlan.ResourceCollectionID)
-		if err != nil {
-			w.logger.Error("failed to get resource collection", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
-			return err
-		}
-		filtersJson, err := json.Marshal(rc.Filters)
-		if err != nil {
-			w.logger.Error("failed to marshal resource collection filters", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
-			return err
-		}
-		err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters, base64.StdEncoding.EncodeToString(filtersJson))
-		if err != nil {
-			w.logger.Error("failed to set resource collection filters", zap.Error(err), zap.String("rc_id", *j.ExecutionPlan.ResourceCollectionID))
-			return err
-		}
-	}
-
 	return nil
 }
 
 func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
-		zap.String("query_id", j.ExecutionPlan.QueryID),
+		zap.String("query_id", j.ExecutionPlan.Query.ID),
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
-		zap.Stringp("rc_id", j.ExecutionPlan.ResourceCollectionID),
 	)
 
 	if err := w.Initialize(ctx, j); err != nil {
@@ -115,12 +85,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 
-	query, err := w.complianceClient.GetQuery(&httpclient.Context{UserRole: api.InternalRole}, j.ExecutionPlan.QueryID)
-	if err != nil {
-		return 0, err
-	}
-
-	res, err := w.steampipeConn.QueryAll(ctx, query.QueryToExecute)
+	res, err := w.steampipeConn.QueryAll(ctx, j.ExecutionPlan.Query.QueryToExecute)
 	if err != nil {
 		return 0, err
 	}
@@ -132,7 +97,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	)
 	totalFindingCountMap := make(map[string]int)
 	for _, caller := range j.ExecutionPlan.Callers {
-		findings, err := j.ExtractFindings(w.logger, caller, res, *query)
+		findings, err := j.ExtractFindings(w.logger, caller, res, j.ExecutionPlan.Query)
 		if err != nil {
 			return 0, err
 		}
@@ -169,9 +134,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 	w.logger.Info("Finished job",
 		zap.Uint("job_id", j.ID),
-		zap.String("query_id", j.ExecutionPlan.QueryID),
+		zap.String("query_id", j.ExecutionPlan.Query.ID),
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
-		zap.Stringp("rc_id", j.ExecutionPlan.ResourceCollectionID),
 	)
 	return totalFindingCount, nil
 }
