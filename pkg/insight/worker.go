@@ -107,7 +107,9 @@ func (w *Worker) Run() error {
 
 			return
 		}
-		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
+
+		w.logger.Info("Processing job", zap.Uint("jobID", job.JobID))
+
 		result := job.Do(w.config.ElasticSearch,
 			w.config.SteampipePg,
 			w.onboardClient,
@@ -117,10 +119,15 @@ func (w *Worker) Run() error {
 			CurrentWorkspaceID, w.logger,
 		)
 
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
+		w.logger.Info("Publishing job result", zap.Uint("jobID", job.JobID))
 
-		if err := w.jq.Produce(context.Background(), "", result, ""); err != nil {
-			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+		bytes, err := json.Marshal(result)
+		if err != nil {
+			w.logger.Error("failed to marshal result as json", zap.Error(err))
+		}
+
+		if err := w.jq.Produce(context.Background(), InsightResultsQueueName, bytes, fmt.Sprintf("job-%d", job.JobID)); err != nil {
+			w.logger.Error("Failed to send results to queue", zap.Error(err))
 		}
 
 		if err := msg.Ack(); err != nil {
