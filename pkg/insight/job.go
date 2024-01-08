@@ -5,35 +5,31 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"strconv"
 	"strings"
 	"time"
 
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-errors/errors"
-	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
-
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -72,13 +68,18 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres,
-	onboardClient client.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient,
-	schedulerClient client2.SchedulerServiceClient,
-	producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket,
-	currentWorkspaceID string,
-	topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(
+	esConfig config.ElasticSearch,
+	steampipePgConfig config.Postgres,
+	onboardClient client.OnboardServiceClient,
+	inventoryClient inventoryClient.InventoryServiceClient,
+	schedulerClient describeClient.SchedulerServiceClient,
+	uploader *s3manager.Uploader,
+	bucket string, currentWorkspaceID string,
+	logger *zap.Logger,
+) (r JobResult) {
 	startTime := time.Now().Unix()
+
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("paniced with error:", err)
@@ -94,10 +95,10 @@ func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres
 		}
 	}()
 
-	ierr := schedulerClient.InsightJobInProgress(&httpclient.Context{UserRole: authApi.InternalRole}, j.JobID)
-	if ierr != nil {
-		logger.Error("failed to update job status", zap.Error(ierr))
+	if err := schedulerClient.InsightJobInProgress(&httpclient.Context{UserRole: authApi.InternalRole}, j.JobID); err != nil {
+		logger.Error("failed to update job status", zap.Error(err))
 	}
+
 	// Assume it succeeded unless it fails somewhere
 	var (
 		status         = api.InsightJobSucceeded
@@ -324,14 +325,10 @@ func (j Job) Do(esConfig config.ElasticSearch, steampipePgConfig config.Postgres
 					resources = append(resources, item)
 				}
 
-				logger.Info("sending docs to kafka", zap.Any("producer", producer), zap.String("topic", topic), zap.Int("count", len(resources)))
+				logger.Info("sending docs to nats", zap.Int("count", len(resources)))
 
 				if esConfig.IsOpenSearch {
 					if err := pipeline.SendToPipeline(esConfig.IngestionEndpoint, resources); err != nil {
-						fail(fmt.Errorf("send to kafka: %w", err))
-					}
-				} else {
-					if err := kafka.DoSend(producer, topic, -1, resources, logger, nil); err != nil {
 						fail(fmt.Errorf("send to kafka: %w", err))
 					}
 				}
