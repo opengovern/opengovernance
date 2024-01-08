@@ -4,17 +4,28 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
 
 func (s *JobScheduler) runPublisher() error {
 	s.logger.Info("runPublisher")
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
+
+	connectionsMap := make(map[string]*onboardApi.Connection)
+	connections, err := s.onboardClient.ListSources(ctx, nil)
+	if err != nil {
+		s.logger.Error("failed to get connections", zap.Error(err))
+		return err
+	}
+	for _, connection := range connections {
+		connection := connection
+		connectionsMap[connection.ID.String()] = &connection
+	}
 
 	for i := 0; i < 10; i++ {
 		err := s.db.UpdateTimedOutRunners()
@@ -37,24 +48,29 @@ func (s *JobScheduler) runPublisher() error {
 				s.logger.Error("failed to get query", zap.Error(err), zap.String("queryId", it.QueryID), zap.Uint("runnerId", it.ID))
 				continue
 			}
+			if query == nil {
+				s.logger.Error("query not found", zap.String("queryId", it.QueryID), zap.Uint("runnerId", it.ID))
+				continue
+			}
 
 			callers, err := it.GetCallers()
 			if err != nil {
 				s.logger.Error("failed to get callers", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
-
+			var providerConnectionID *string
+			if it.ConnectionID != nil && *it.ConnectionID != "" {
+				providerConnectionID = &connectionsMap[*it.ConnectionID].ConnectionID
+			}
 			job := runner.Job{
 				ID:          it.ID,
 				ParentJobID: it.ParentJobID,
 				CreatedAt:   it.CreatedAt,
 				ExecutionPlan: runner.ExecutionPlan{
 					Callers:              callers,
-					QueryID:              it.QueryID,
-					QueryEngine:          query.Engine,
-					QueryConnector:       source.Type(query.Connector),
+					Query:                *query,
 					ConnectionID:         it.ConnectionID,
-					ResourceCollectionID: it.ResourceCollectionID,
+					ProviderConnectionID: providerConnectionID,
 				},
 			}
 
@@ -75,7 +91,7 @@ func (s *JobScheduler) runPublisher() error {
 		}
 	}
 
-	err := s.db.RetryFailedRunners()
+	err = s.db.RetryFailedRunners()
 	if err != nil {
 		s.logger.Error("failed to retry failed runners", zap.Error(err))
 		return err

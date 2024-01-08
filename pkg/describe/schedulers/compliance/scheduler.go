@@ -17,9 +17,18 @@ func (s *JobScheduler) runScheduler() error {
 		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 
+	allConnections, err := s.onboardClient.ListSources(clientCtx, nil)
+	if err != nil {
+		return fmt.Errorf("error while listing allConnections: %v", err)
+	}
+	connectionsMap := make(map[string]*onboardApi.Connection)
+	for _, connection := range allConnections {
+		connection := connection
+		connectionsMap[connection.ID.String()] = &connection
+	}
+
 	for _, benchmark := range benchmarks {
 		var connections []onboardApi.Connection
-		var resourceCollections []string
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
 			return fmt.Errorf("error while listing assignments: %v", err)
@@ -30,10 +39,7 @@ func (s *JobScheduler) runScheduler() error {
 				continue
 			}
 
-			connection, err := s.onboardClient.GetSource(clientCtx, assignment.ConnectionID)
-			if err != nil {
-				return fmt.Errorf("error while get source: %v", err)
-			}
+			connection := connectionsMap[assignment.ConnectionID]
 
 			if !connection.IsEnabled() {
 				continue
@@ -42,14 +48,7 @@ func (s *JobScheduler) runScheduler() error {
 			connections = append(connections, *connection)
 		}
 
-		for _, assignment := range assignments.ResourceCollections {
-			if !assignment.Status {
-				continue
-			}
-			resourceCollections = append(resourceCollections, assignment.ResourceCollectionID)
-		}
-
-		if len(connections) == 0 && len(resourceCollections) == 0 {
+		if len(connections) == 0 {
 			continue
 		}
 
