@@ -3,10 +3,10 @@ package describe
 import (
 	"context"
 	"errors"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"os"
 
+	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -65,9 +65,7 @@ var (
 )
 
 func SchedulerCommand() *cobra.Command {
-	var (
-		id string
-	)
+	var id string
 	var conf config2.SchedulerConfig
 	config.ReadFromEnv(&conf, nil)
 

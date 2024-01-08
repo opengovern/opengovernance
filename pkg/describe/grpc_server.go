@@ -2,16 +2,16 @@ package describe
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
@@ -25,7 +25,7 @@ import (
 
 type GRPCDescribeServer struct {
 	db                        db.Database
-	producer                  *confluent_kafka.Producer
+	jq                        *jq.JobQueue
 	conf                      config.SchedulerConfig
 	topic                     string
 	logger                    *zap.Logger
@@ -35,10 +35,17 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db db.Database, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger, conf config.SchedulerConfig) *GRPCDescribeServer {
+func NewDescribeServer(
+	db db.Database,
+	jq *jq.JobQueue,
+	topic string,
+	authGrpcClient envoyauth.AuthorizationClient,
+	logger *zap.Logger,
+	conf config.SchedulerConfig,
+) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
-		producer:                  producer,
+		jq:                        jq,
 		topic:                     topic,
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
@@ -105,7 +112,8 @@ func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetI
 
 func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
 	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.SourceType).Inc()
-	result := DescribeJobResult{
+
+	result, err := json.Marshal(DescribeJobResult{
 		JobID:       uint(req.JobId),
 		ParentJobID: uint(req.ParentJobId),
 		Status:      api.DescribeResourceJobStatus(req.Status),
@@ -125,32 +133,30 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			RetryCounter:  uint(req.DescribeJob.RetryCounter),
 		},
 		DescribedResourceIDs: req.DescribedResourceIds,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	s.logger.Info("Result delivered",
-		zap.Uint("jobID", result.JobID),
-		zap.String("status", string(result.Status)),
+		zap.Uint("jobID", uint(req.JobId)),
+		zap.String("status", string(req.Status)),
 	)
 
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	var docs []kafka.Doc
-	docs = append(docs, result)
-
-	err := kafka.DoSend(s.producer, "kaytu-describe-results-queue", -1, docs, s.logger, nil)
-	// err := s.describeJobResultQueue.Publish(result)
-	if err != nil {
+	if err := s.jq.Produce(ctx, "kaytu-describe-results-queue", result, ""); err != nil {
 		s.logger.Error("Failed to publish into rabbitMQ",
-			zap.Uint("jobID", result.JobID),
+			zap.Uint("jobID", uint(req.JobId)),
 			zap.Error(err),
 		)
 		return nil, err
 	}
 
 	s.logger.Info("Publish finished",
-		zap.Uint("jobID", result.JobID),
-		zap.String("status", string(result.Status)),
+		zap.Uint("jobID", uint(req.JobId)),
+		zap.String("status", string(req.Status)),
 	)
 	return &golang.ResponseOK{}, nil
 }
