@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/google/uuid"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	api "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
@@ -192,17 +193,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	var response api.GetFindingsResponse
 
+	if len(req.Filters.ConformanceStatus) == 0 {
+		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
 	for _, status := range req.Filters.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-	}
-	if len(esConformanceStatuses) == 0 {
-		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
-		}
 	}
 
 	if len(req.Sort) == 0 {
@@ -564,17 +561,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if len(req.ConformanceStatus) == 0 {
+		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
 	for _, status := range req.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-	}
-	if len(esConformanceStatuses) == 0 {
-		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
-		}
 	}
 
 	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
@@ -831,18 +824,15 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	controlIDs := httpserver2.QueryArrayParam(ctx, "controlId")
 	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = []api.ConformanceStatus{
+			api.ConformanceStatusFailed,
+		}
+	}
 
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-	}
-	if len(esConformanceStatuses) == 0 {
-		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
-		}
 	}
 
 	var response api.GetTopFieldResponse
@@ -974,7 +964,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{}
+				id, err := uuid.Parse(item.Key)
+				if err != nil {
+					h.logger.Error("failed to parse connection id", zap.Error(err))
+					return err
+				}
+				record = api.TopFieldRecord{
+					Connection: &onboardApi.Connection{ID: id},
+				}
 			}
 			record.TotalCount += item.DocCount
 			recordMap[item.Key] = record
@@ -1076,7 +1073,9 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
-				record = api.TopFieldRecord{}
+				record = api.TopFieldRecord{
+					Control: &api.Control{ID: item.Key},
+				}
 			}
 			record.TotalCount += item.DocCount
 			recordMap[item.Key] = record
@@ -1468,17 +1467,15 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		resourceTypeMap[strings.ToLower(rt.ResourceType)] = &rt
 	}
 
+	if len(req.Filters.ConformanceStatus) == 0 {
+		req.Filters.ConformanceStatus = []api.ConformanceStatus{
+			api.ConformanceStatusFailed,
+		}
+	}
+
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
 	for _, status := range req.Filters.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-	}
-	if len(esConformanceStatuses) == 0 {
-		esConformanceStatuses = []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
-		}
 	}
 
 	resourceFindings, totalCount, err := es.ResourceFindingsQuery(h.logger, h.client,
