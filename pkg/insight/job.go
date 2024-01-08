@@ -82,7 +82,7 @@ func (j Job) Do(
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("paniced with error:", err)
+			fmt.Println("panic with error:", err)
 			fmt.Println(errors.Wrap(err, 2).ErrorStack())
 
 			DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.InsightID)), "failure").Observe(float64(time.Now().Unix() - startTime))
@@ -90,7 +90,7 @@ func (j Job) Do(
 			r = JobResult{
 				JobID:  j.JobID,
 				Status: api.InsightJobFailed,
-				Error:  fmt.Sprintf("paniced: %s", err),
+				Error:  fmt.Sprintf("panic: %s", err),
 			}
 		}
 	}()
@@ -99,7 +99,7 @@ func (j Job) Do(
 		logger.Error("failed to update job status", zap.Error(err))
 	}
 
-	// Assume it succeeded unless it fails somewhere
+	// Assume it succeeded unless it fails somewhere.
 	var (
 		status         = api.InsightJobSucceeded
 		firstErr error = nil
@@ -122,7 +122,7 @@ func (j Job) Do(
 	var err error
 	var res *steampipe.Result
 
-	srcs, err := onboardClient.ListSources(&httpclient.Context{
+	connections, err := onboardClient.ListSources(&httpclient.Context{
 		UserRole: authApi.InternalRole,
 	}, []source.Type{j.SourceType})
 	if err != nil {
@@ -130,17 +130,17 @@ func (j Job) Do(
 		fail(fmt.Errorf("listing sources: %w", err))
 		return
 	}
-	if len(srcs) == 0 {
+	if len(connections) == 0 {
 		return JobResult{
 			JobID:  j.JobID,
 			Status: status,
 		}
 	}
-	for _, src := range srcs {
-		if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
+	for _, conn := range connections {
+		if conn.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
 			continue
 		}
-		connectionsMap[src.ID.String()] = src.ConnectionID
+		connectionsMap[conn.ID.String()] = conn.ConnectionID
 	}
 
 	steampipeSourceId := "all"
@@ -171,8 +171,7 @@ func (j Job) Do(
 		encodedResourceCollectionFilter = &filtersEncoded
 	}
 
-	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType)
-	if err != nil {
+	if err := steampipe.PopulateSteampipeConfig(esConfig, j.SourceType); err != nil {
 		logger.Error("failed to populate steampipe config", zap.Error(err))
 		fail(fmt.Errorf("populating steampipe config: %w", err))
 		return

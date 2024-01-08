@@ -1,21 +1,21 @@
 package describe
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"strings"
 	"time"
 
+	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	complianceAPI "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	insightAPI "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-
+	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
 )
 
@@ -31,21 +31,21 @@ func (s *Scheduler) RunInsightJobScheduler() {
 }
 
 func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
-	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: api2.ViewerRole}, nil)
+	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: authAPI.ViewerRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of insights", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.InternalRole}, nil)
+	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of sources", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	if len(srcs) == 0 {
+	if len(connections) == 0 {
 		return
 	}
 
@@ -59,27 +59,9 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 		}
 		InsightJobsCount.WithLabelValues("successful").Inc()
 	}
-
-	//resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api2.InternalRole})
-	//if err != nil {
-	//	s.logger.Error("Failed to list resource collections", zap.Error(err))
-	//	return
-	//}
-	//for _, resourceCollection := range resourceCollections {
-	//	for _, ins := range insights {
-	//		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-	//		err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector, &resourceCollection.ID)
-	//		if err != nil {
-	//			s.logger.Error("Failed to run InsightJob for resourceCollection", zap.Error(err))
-	//			InsightJobsCount.WithLabelValues("failure").Inc()
-	//			continue
-	//		}
-	//		InsightJobsCount.WithLabelValues("successful").Inc()
-	//	}
-	//}
 }
 
-func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) (uint, error) {
+func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceAPI.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) (uint, error) {
 	lastJob, err := s.db.GetLastInsightJobForResourceCollection(ins.ID, srcID, resourceCollectionId)
 	if err != nil {
 		return 0, err
@@ -94,9 +76,8 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 			return 0, err
 		}
 
-		err = enqueueInsightJobs(s.insightJobQueue, job, ins)
-		if err != nil {
-			job.Status = insightapi.InsightJobFailed
+		if err := enqueueInsightJobs(s.jq, job, ins); err != nil {
+			job.Status = insightAPI.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
 			s.db.UpdateInsightJobStatus(job)
 			return 0, err
@@ -106,8 +87,8 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 	return 0, nil
 }
 
-func enqueueInsightJobs(q queue.Interface, job model.InsightJob, ins complianceapi.Insight) error {
-	if err := q.Publish(insight.Job{
+func enqueueInsightJobs(jq *jq.JobQueue, job model.InsightJob, ins complianceAPI.Insight) error {
+	bytes, err := json.Marshal(insight.Job{
 		JobID:                job.ID,
 		InsightID:            job.InsightID,
 		SourceID:             job.SourceID,
@@ -119,19 +100,29 @@ func enqueueInsightJobs(q queue.Interface, job model.InsightJob, ins compliancea
 		ExecutedAt:           job.CreatedAt.UnixMilli(),
 		IsStack:              job.IsStack,
 		ResourceCollectionId: job.ResourceCollection,
-	}); err != nil {
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := jq.Produce(
+		context.Background(),
+		insight.InsightJobsQueueName,
+		bytes,
+		fmt.Sprintf("job-%d", job.ID),
+	); err != nil {
 		return err
 	}
 	return nil
 }
 
-func newInsightJob(insight complianceapi.Insight, sourceType source.Type, sourceId, accountId string, resourceCollectionId *string) model.InsightJob {
+func newInsightJob(insight complianceAPI.Insight, sourceType source.Type, sourceId, accountId string, resourceCollectionId *string) model.InsightJob {
 	return model.InsightJob{
 		InsightID:          insight.ID,
 		SourceType:         sourceType,
 		SourceID:           sourceId,
 		AccountID:          accountId,
-		Status:             insightapi.InsightJobCreated,
+		Status:             insightAPI.InsightJobCreated,
 		FailureMessage:     "",
 		IsStack:            false,
 		ResourceCollection: resourceCollectionId,

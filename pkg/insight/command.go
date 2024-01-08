@@ -12,6 +12,7 @@ import (
 const (
 	InsightJobsQueueName    = "insight-jobs-queue"
 	InsightResultsQueueName = "insight-results-queue"
+	InsightStreamName       = "insight"
 )
 
 var (

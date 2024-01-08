@@ -88,15 +88,25 @@ func NewWorker(
 		}
 	}
 
-	sess := session.Must(session.NewSession(awsConfig))
-	w.uploader = s3manager.NewUploader(sess)
+	session := session.Must(session.NewSession(awsConfig))
+	w.uploader = s3manager.NewUploader(session)
 	w.s3Bucket = s3Bucket
+
+	jq, err := jq.New(workerConfig.NATS.URL, w.logger)
+	if err != nil {
+		return nil, err
+	}
+	w.jq = jq
+
+	if err := w.jq.Stream(context.Background(), InsightStreamName, "insight jobs", []string{InsightResultsQueueName, InsightJobsQueueName}); err != nil {
+		return nil, err
+	}
 
 	return w, nil
 }
 
 func (w *Worker) Run() error {
-	w.jq.Consume(context.Background(), "insight-service", "insight", []string{InsightJobsQueueName}, "", func(msg jetstream.Msg) {
+	w.jq.Consume(context.Background(), "insight-service", InsightStreamName, []string{InsightJobsQueueName}, "insight-service", func(msg jetstream.Msg) {
 		var job Job
 		if err := json.Unmarshal(msg.Data(), &job); err != nil {
 			w.logger.Error("Failed to unmarshal task", zap.Error(err))
