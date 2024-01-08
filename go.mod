@@ -9,9 +9,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/aws/aws-sdk-go v1.49.10
-	github.com/aws/aws-sdk-go-v2 v1.24.0
+	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/config v1.26.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.13
+	github.com/aws/aws-sdk-go-v2/service/firehose v1.23.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/kms v1.27.7
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5
@@ -202,8 +203,8 @@ require (
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.9 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.10 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.26.5 // indirect
@@ -260,7 +261,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/emr v1.35.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.26.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/firehose v1.23.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/fms v1.29.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/fsx v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.19.5 // indirect
