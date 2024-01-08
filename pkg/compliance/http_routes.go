@@ -949,7 +949,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 		response.TotalCount = len(serviceCountList)
 	case "connectionid":
-		resConnectionIDs := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+		resConnectionIDs := make([]string, 0, len(topFieldTotalResponse.Aggregations.FieldFilter.Buckets))
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
@@ -1058,7 +1058,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
 	case "controlid":
-		resControlIDs := make([]string, 0, len(topFieldResponse.Aggregations.FieldFilter.Buckets))
+		resControlIDs := make([]string, 0, len(topFieldTotalResponse.Aggregations.FieldFilter.Buckets))
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			resControlIDs = append(resControlIDs, item.Key)
 		}
