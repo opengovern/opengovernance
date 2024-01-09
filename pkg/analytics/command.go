@@ -216,6 +216,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 	consumeCtx.Stop()
+
+	return nil
 }
 
 func (w *Worker) Stop() {
