@@ -464,43 +464,43 @@ func (s *Scheduler) Run(ctx context.Context) error {
 
 	s.logger.Info("starting scheduler")
 	// --------- describe
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunDescribeJobScheduler()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunDescribeResourceJobs(ctx)
 	})
 	s.discoveryScheduler.Run()
 	// ---------
 
 	// --------- describe
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunStackScheduler()
 	})
 	// ---------
 
 	// --------- inventory summarizer
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunAnalyticsJobScheduler()
 	})
 
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
 	})
 	// ---------
 
 	// --------- compliance
 	s.complianceScheduler.Run()
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunJobSequencer()
 	})
 	// ---------
 
 	// --------- insights
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunInsightJobScheduler()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
 	})
 	// ---------
@@ -509,26 +509,26 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	//	s.RunScheduleJobCompletionUpdater()
 	//})
 
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunDisabledConnectionCleanup()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunScheduledJobCleanup()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.UpdateDescribedResourceCountScheduler()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.UpdateDescribedResourceCountScheduler()
 	})
 
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 	})
 	s.logger.Info("starting receiver")

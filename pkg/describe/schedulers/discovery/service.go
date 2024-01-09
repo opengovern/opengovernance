@@ -35,7 +35,7 @@ func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient clie
 }
 
 func (s *Scheduler) Run() {
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.OldResourceDeleter()
 	})
 }
