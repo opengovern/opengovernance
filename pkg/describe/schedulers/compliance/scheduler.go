@@ -2,10 +2,11 @@ package compliance
 
 import (
 	"fmt"
+	"time"
+
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"time"
 )
 
 func (s *JobScheduler) runScheduler() error {

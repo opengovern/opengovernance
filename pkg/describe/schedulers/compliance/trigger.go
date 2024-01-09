@@ -1,12 +1,13 @@
 package compliance
 
 import (
+	"time"
+
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"go.uber.org/zap"
-	"time"
 )
 
 func (s *JobScheduler) buildRunners(
