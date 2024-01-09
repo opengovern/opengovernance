@@ -137,6 +137,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 	consumeCtx.Stop()
+
+	return nil
 }
 
 func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit bool, requeue bool, err error) {
