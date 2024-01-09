@@ -2104,6 +2104,18 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 		return nil, errors.New("multiple sort items not supported")
 	}
 
+	for i := 0; i < 10; i++ {
+		err = h.steampipeConn.Conn().Ping(ctx)
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	if err != nil {
+		h.logger.Error("failed to ping steampipe", zap.Error(err))
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	h.logger.Info("executing smart query", zap.String("query", query))
 	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, orderBy, steampipe.DirectionType(direction))
 	if err != nil {
