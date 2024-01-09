@@ -214,14 +214,8 @@ func (w *Worker) Run(ctx context.Context) error {
 		return err
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			consumeCtx.Stop()
-		default:
-			continue
-		}
-	}
+	<-ctx.Done()
+	consumeCtx.Stop()
 }
 
 func (w *Worker) Stop() {

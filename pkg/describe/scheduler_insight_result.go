@@ -15,7 +15,9 @@ import (
 func (s *Scheduler) RunInsightJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the InsightJobResultQueue queue")
 
-	s.jq.Consume(context.Background(), "insight-scheduler", insight.InsightStreamName, []string{insight.InsightResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
+	ctx := context.Background()
+
+	s.jq.Consume(ctx, "insight-scheduler", insight.InsightStreamName, []string{insight.InsightResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
 		var result insight.JobResult
 
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
@@ -50,6 +52,6 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 		}
 	})
 
-	for {
-	}
+	<-ctx.Done()
+	return nil
 }

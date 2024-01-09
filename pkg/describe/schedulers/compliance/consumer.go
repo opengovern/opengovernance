@@ -52,8 +52,8 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 		return err
 	}
 
-	for {
-	}
+	<-ctx.Done()
+	return nil
 }
 
 func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
@@ -94,6 +94,6 @@ func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
 		return err
 	}
 
-	for {
-	}
+	<-ctx.Done()
+	return nil
 }
