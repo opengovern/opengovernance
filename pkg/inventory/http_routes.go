@@ -11,7 +11,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/describe"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -143,24 +142,6 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 
 	return connectionIds, nil
 }
-
-type ExistFilter struct {
-	field string
-}
-
-func NewExistFilter(field string) kaytu.BoolFilter {
-	return ExistFilter{
-		field: field,
-	}
-}
-func (t ExistFilter) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"exists": map[string]string{
-			"field": t.field,
-		},
-	})
-}
-func (t ExistFilter) IsBoolFilter() {}
 
 func bindValidate(ctx echo.Context, i interface{}) error {
 	if err := ctx.Bind(i); err != nil {
