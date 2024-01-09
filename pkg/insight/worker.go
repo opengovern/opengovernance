@@ -106,6 +106,8 @@ func NewWorker(
 }
 
 func (w *Worker) Run() error {
+	ctx := context.Background()
+
 	w.jq.Consume(context.Background(), "insight-service", InsightStreamName, []string{InsightJobsQueueName}, "insight-service", func(msg jetstream.Msg) {
 		var job Job
 		if err := json.Unmarshal(msg.Data(), &job); err != nil {
@@ -149,8 +151,8 @@ func (w *Worker) Run() error {
 		}
 	})
 
-	for {
-	}
+	<-ctx.Done()
+	return nil
 }
 
 func (w *Worker) Stop() {

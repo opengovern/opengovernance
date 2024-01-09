@@ -135,13 +135,10 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	w.logger.Info("consuming")
 
-	for {
-		select {
-		case <-ctx.Done():
-			consumeCtx.Stop()
-		default:
-		}
-	}
+	<-ctx.Done()
+	consumeCtx.Stop()
+
+	return nil
 }
 
 func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit bool, requeue bool, err error) {

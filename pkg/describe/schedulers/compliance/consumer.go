@@ -52,14 +52,14 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 		return err
 	}
 
-	for {
-	}
+	<-ctx.Done()
+	return nil
 }
 
 func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
 	ctx := context.Background()
 
-	if _, err := s.jq.Consume(ctx, "scheduler-summarizer-compliance", runner.StreamName, []string{runner.ResultQueueTopic}, "scheduler-summarizer-compliance", func(msg jetstream.Msg) {
+	if _, err := s.jq.Consume(ctx, "scheduler-summarizer-compliance", summarizer.StreamName, []string{summarizer.ResultQueueTopic}, "scheduler-summarizer-compliance", func(msg jetstream.Msg) {
 		var result summarizer.JobResult
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
 			s.logger.Error("Failed to unmarshal ComplianceSummarizer results", zap.Error(err))
@@ -94,6 +94,6 @@ func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
 		return err
 	}
 
-	for {
-	}
+	<-ctx.Done()
+	return nil
 }
