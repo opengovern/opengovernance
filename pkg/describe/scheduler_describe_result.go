@@ -353,12 +353,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				key := kafka.HashOf(keys...)
 				resource.EsID = key
 				resource.EsIndex = idx
-				if s.conf.ElasticSearch.IsOpenSearch {
-					err = s.es.Delete(key, idx)
-					if err != nil {
-						s.logger.Error("failed to delete resource from open-search", zap.Error(err))
-						return
-					}
+				err = s.es.Delete(key, idx)
+				if err != nil {
+					s.logger.Error("failed to delete resource from open-search", zap.Error(err))
+					return
 				}
 
 				lookupResource := es2.LookupResource{
@@ -372,12 +370,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				key = kafka.HashOf(keys...)
 				lookupResource.EsID = key
 				lookupResource.EsIndex = idx
-				if s.conf.ElasticSearch.IsOpenSearch {
-					err = s.es.Delete(key, idx)
-					if err != nil {
-						s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
-						return
-					}
+				err = s.es.Delete(key, idx)
+				if err != nil {
+					s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
+					return
 				}
 			}
 
