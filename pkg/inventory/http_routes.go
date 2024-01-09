@@ -955,13 +955,11 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	for category, resourceTypes := range categoryResourceTypeMapMap {
 		for resourceType, _ := range resourceTypes {
 			if count, _ := resourceTypeCountMap[strings.ToLower(resourceType)]; count < minCount {
-				h.logger.Info("removing resource type from category", zap.String("category", category), zap.String("resourceType", resourceType))
 				delete(resourceTypes, resourceType)
 			}
 		}
 		categoryResourceTypeMapMap[category] = resourceTypes
 		if len(resourceTypes) == 0 {
-			h.logger.Info("removing category", zap.String("category", category))
 			delete(categoryResourceTypeMapMap, category)
 		}
 	}
