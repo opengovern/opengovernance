@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"

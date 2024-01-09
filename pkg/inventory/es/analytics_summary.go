@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"go.uber.org/zap"
 	"math"
 	"strconv"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.uber.org/zap"
 )
 
 const timeAtMaxSearchFrame = 5 * 24 * time.Hour // 5 days
@@ -173,7 +173,8 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 }
 
 func FetchConnectorAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client,
-	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
+	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int,
+) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -279,7 +280,8 @@ func FetchConnectorAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Cl
 }
 
 func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client,
-	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]map[string]CountWithTime, error) {
+	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int,
+) (map[string]map[string]CountWithTime, error) {
 	idx := resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -758,7 +760,8 @@ type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
 }
 
 func FetchConnectionAnalyticsResourcesCountAtTime(logger *zap.Logger, client kaytu.Client, connectors []source.Type, connectionIDs []string,
-	resourceCollections []string, metricIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
+	resourceCollections []string, metricIDs []string, t time.Time, size int,
+) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	if len(resourceCollections) > 0 {
 		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
@@ -1012,7 +1015,6 @@ func FetchAssetTableByDimension(logger *zap.Logger, client kaytu.Client, metricI
 					mt.Trend[dateBucket.Key] += float64(hit.Source.Connections.TotalResourceCount)
 					resultMap[hit.Source.MetricID] = mt
 				}
-
 			}
 		}
 	}
@@ -1077,5 +1079,4 @@ return res;
 	}
 
 	return &response, nil
-
 }

@@ -5,16 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"io"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
-
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 )
@@ -47,7 +45,6 @@ type JobConfig struct {
 	logger        *zap.Logger
 	steampipeConn *steampipe.Database
 	esClient      kaytu.Client
-	kafkaProducer *confluent_kafka.Producer
 }
 
 func (w *Worker) Initialize(ctx context.Context, j Job) error {

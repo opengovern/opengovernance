@@ -12,20 +12,19 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/jq"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 )
