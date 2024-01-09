@@ -74,34 +74,67 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	s.jq.Consume(context.Background(), "describe-receiver", DescribeStreamName, []string{DescribeResultsQueueName}, "describe-receiver", func(msg jetstream.Msg) {
-		var result DescribeJobResult
-		if err := json.Unmarshal(msg.Data(), &result); err != nil {
-			ResultsProcessedCount.WithLabelValues("", "failure").Inc()
+	s.jq.Consume(
+		context.Background(),
+		"describe-receiver",
+		DescribeStreamName,
+		[]string{DescribeResultsQueueName},
+		"describe-receiver",
+		func(msg jetstream.Msg) {
+			var result DescribeJobResult
+			if err := json.Unmarshal(msg.Data(), &result); err != nil {
+				ResultsProcessedCount.WithLabelValues("", "failure").Inc()
 
-			s.logger.Error("failed to consume message from describeJobResult", zap.Error(err))
+				s.logger.Error("failed to consume message from describeJobResult", zap.Error(err))
 
-			// the job cannot be parsed into json, so send ack and throw message away.
-			if err := msg.Ack(); err != nil {
-				s.logger.Error("failure while sending ack for message", zap.Error(err))
+				// the job cannot be parsed into json, so send ack and throw message away.
+				if err := msg.Ack(); err != nil {
+					s.logger.Error("failure while sending ack for message", zap.Error(err))
+				}
+
+				return
 			}
 
-			return
-		}
+			s.logger.Info("Processing JobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
 
-		s.logger.Info("Processing JobResult for Job",
-			zap.Uint("jobId", result.JobID),
-			zap.String("status", string(result.Status)),
-		)
+			var deletedCount int64
+			if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
+				result.Status = api.DescribeResourceJobOldResourceDeletion
 
-		var deletedCount int64
-		if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
-			result.Status = api.DescribeResourceJobOldResourceDeletion
+				dlc, err := s.cleanupOldResources(result)
+				if err != nil {
+					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
+					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
 
-			dlc, err := s.cleanupOldResources(result)
-			if err != nil {
+					if err := msg.Nak(); err != nil {
+						s.logger.Error("failure while sending not-ack for message", zap.Error(err))
+					}
+
+					return
+				}
+
+				deletedCount = dlc
+			}
+
+			errStr := strings.ReplaceAll(result.Error, "\x00", "")
+			errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
+			if errCodeStr == "" {
+				if strings.Contains(errStr, "exceeded maximum number of attempts") {
+					errCodeStr = "TooManyRequestsException"
+				} else if strings.Contains(errStr, "context deadline exceeded") {
+					errCodeStr = "ContextDeadlineExceeded"
+				}
+			}
+
+			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
+
+			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
-				s.logger.Error("failed to cleanupOldResources", zap.Error(err))
+
+				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 
 				if err := msg.Nak(); err != nil {
 					s.logger.Error("failure while sending not-ack for message", zap.Error(err))
@@ -110,45 +143,24 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				return
 			}
 
-			deletedCount = dlc
-		}
+			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
 
-		errStr := strings.ReplaceAll(result.Error, "\x00", "")
-		errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
-		if errCodeStr == "" {
-			if strings.Contains(errStr, "exceeded maximum number of attempts") {
-				errCodeStr = "TooManyRequestsException"
-			} else if strings.Contains(errStr, "context deadline exceeded") {
-				errCodeStr = "ContextDeadlineExceeded"
+			if err := msg.Ack(); err != nil {
+				s.logger.Error("failure while sending ack for message", zap.Error(err))
 			}
-		}
+		},
+	)
 
-		s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
-
-		if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
-			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
-
-			s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
-
-			if err := msg.Nak(); err != nil {
-				s.logger.Error("failure while sending not-ack for message", zap.Error(err))
-			}
-
-			return
-		}
-
-		ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
-
-		if err := msg.Ack(); err != nil {
-			s.logger.Error("failure while sending ack for message", zap.Error(err))
-		}
-	})
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
+	defer t.Stop()
 
 	for {
+		<-t.C
+		s.handleTimeoutForDiscoveryJobs()
 	}
 }
 
-func (s *Scheduler) handleTimedoutDiscoveryJobs() {
+func (s *Scheduler) handleTimeoutForDiscoveryJobs() {
 	awsResources := aws.ListResourceTypes()
 	for _, r := range awsResources {
 		var interval time.Duration

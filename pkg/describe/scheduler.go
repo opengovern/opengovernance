@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
@@ -130,7 +130,7 @@ type Scheduler struct {
 	complianceClient client.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
-	authGrpcClient   envoyauth.AuthorizationClient
+	authGrpcClient   envoyAuth.AuthorizationClient
 	es               kaytu.Client
 
 	jq *jq.JobQueue
@@ -348,7 +348,7 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-	s.authGrpcClient = envoyauth.NewAuthorizationClient(authGRPCConn)
+	s.authGrpcClient = envoyAuth.NewAuthorizationClient(authGRPCConn)
 
 	describeServer := NewDescribeServer(s.db, s.jq, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
