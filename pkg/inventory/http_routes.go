@@ -5,16 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
-	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-util/pkg/describe"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"math"
 	"net/http"
 	"sort"
@@ -22,18 +12,28 @@ import (
 	"strings"
 	"time"
 
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -184,13 +184,13 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string,
 	connectorTypes []source.Type, connectionIDs []string, resourceCollections []string,
-	minCount int, timeAt time.Time) (*int, []inventoryApi.Metric, error) {
+	minCount int, timeAt time.Time,
+) (*int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	// tracer :
 	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
-
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -936,7 +936,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	}
 
 	for category, resourceTypes := range categoryResourceTypeMapMap {
-		for resourceType, _ := range resourceTypes {
+		for resourceType := range resourceTypes {
 			if count, _ := resourceTypeCountMap[strings.ToLower(resourceType)]; count < minCount {
 				delete(resourceTypes, resourceType)
 			}
@@ -949,7 +949,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 
 	categoryResourceTypeMap := make(map[string][]string)
 	for category, resourceTypes := range categoryResourceTypeMapMap {
-		for resourceType, _ := range resourceTypes {
+		for resourceType := range resourceTypes {
 			categoryResourceTypeMap[category] = append(categoryResourceTypeMap[category], resourceType)
 		}
 	}
@@ -2208,7 +2208,7 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 		return err
 	}
 
-	for insightId, _ := range firstAvailable {
+	for insightId := range firstAvailable {
 		if results, ok := insightValues[insightId]; ok && len(results) > 0 {
 			continue
 		}
@@ -2253,7 +2253,7 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 		return err
 	}
 
-	for insightId, _ := range firstAvailable {
+	for insightId := range firstAvailable {
 		if results, ok := insightResults[insightId]; ok && len(results) > 0 {
 			continue
 		}
@@ -2600,8 +2600,8 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		}
 	}
 
-	var awsLandscapesSubcategories = make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
-	var azureLandscapesSubcategories = make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
+	awsLandscapesSubcategories := make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
+	azureLandscapesSubcategories := make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
 	for _, resourceType := range includedResourceTypes {
 		category := "Other"
 		if resourceType.GetTags() != nil && len(resourceType.GetTags()["category"]) > 0 {
@@ -2610,8 +2610,8 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		item := inventoryApi.ResourceCollectionLandscapeItem{
 			ID:          resourceType.GetResourceName(),
 			Name:        resourceType.GetResourceLabel(),
-			Description: "", //TODO
-			LogoURI:     "", //TODO
+			Description: "", // TODO
+			LogoURI:     "", // TODO
 		}
 		if resourceType.GetTags() != nil && len(resourceType.GetTags()["logo_uri"]) > 0 {
 			item.LogoURI = resourceType.GetTags()["logo_uri"][0]
@@ -2650,7 +2650,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		}
 	}
 
-	var awsLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
+	awsLandscapesCategory := inventoryApi.ResourceCollectionLandscapeCategory{
 		ID:            source.CloudAWS.String(),
 		Name:          "AWS",
 		Description:   "AWS resources",
@@ -2659,7 +2659,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 	for _, subcategory := range awsLandscapesSubcategories {
 		awsLandscapesCategory.Subcategories = append(awsLandscapesCategory.Subcategories, subcategory)
 	}
-	var azureLandscapesCategory = inventoryApi.ResourceCollectionLandscapeCategory{
+	azureLandscapesCategory := inventoryApi.ResourceCollectionLandscapeCategory{
 		ID:            source.CloudAzure.String(),
 		Name:          "Azure",
 		Description:   "Azure resources",

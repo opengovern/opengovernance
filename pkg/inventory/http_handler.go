@@ -2,24 +2,19 @@ package inventory
 
 import (
 	"fmt"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"strings"
-
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-
-	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-
-	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +27,6 @@ type HttpHandler struct {
 	schedulerClient  describeClient.SchedulerServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	complianceClient complianceClient.ComplianceServiceClient
-	kafkaProducer    *confluent_kafka.Producer
 
 	logger *zap.Logger
 
@@ -43,11 +37,9 @@ func InitializeHttpHandler(
 	esConf config.ElasticSearch,
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
-	KafkaService string,
 	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
-
 	h = &HttpHandler{}
 
 	fmt.Println("Initializing http handler")
@@ -117,17 +109,5 @@ func InitializeHttpHandler(
 	h.azurePlg = azureSteampipe.Plugin()
 	h.azureADPlg = azureSteampipe.ADPlugin()
 
-	kafkaProducer, err := confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
-		"bootstrap.servers":            strings.Join(strings.Split(KafkaService, ","), ","),
-		"linger.ms":                    100,
-		"compression.type":             "lz4",
-		"message.timeout.ms":           10000,
-		"queue.buffering.max.messages": 100000,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	h.kafkaProducer = kafkaProducer
 	return h, nil
 }

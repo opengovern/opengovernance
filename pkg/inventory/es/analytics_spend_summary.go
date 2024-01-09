@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
-	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
-	"strconv"
-	"time"
 )
 
 const EsFetchPageSize = 10000
@@ -397,7 +398,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -417,9 +418,9 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Tab
 	})
 
 	granularityField := "date"
-	if granularity == inventoryApi.TableGranularityTypeMonthly {
+	if granularity == inventoryAPI.TableGranularityTypeMonthly {
 		granularityField = "month"
-	} else if granularity == inventoryApi.TableGranularityTypeYearly {
+	} else if granularity == inventoryAPI.TableGranularityTypeYearly {
 		granularityField = "year"
 	}
 
@@ -509,7 +510,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -528,9 +529,9 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Tabl
 	})
 
 	granularityField := "date"
-	if granularity == inventoryApi.TableGranularityTypeMonthly {
+	if granularity == inventoryAPI.TableGranularityTypeMonthly {
 		granularityField = "month"
-	} else if granularity == inventoryApi.TableGranularityTypeYearly {
+	} else if granularity == inventoryAPI.TableGranularityTypeYearly {
 		granularityField = "year"
 	}
 
@@ -843,7 +844,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -918,9 +919,9 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Dime
 				}
 				key := ""
 				switch dimension {
-				case inventoryApi.DimensionTypeConnection:
+				case inventoryAPI.DimensionTypeConnection:
 					key = connectionResult.ConnectionID
-				case inventoryApi.DimensionTypeMetric:
+				case inventoryAPI.DimensionTypeMetric:
 					key = hit.Source.MetricID
 				}
 				mt, ok := result[key]
@@ -931,9 +932,9 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Dime
 						Trend:       make(map[string]float64),
 					}
 					switch dimension {
-					case inventoryApi.DimensionTypeConnection:
+					case inventoryAPI.DimensionTypeConnection:
 						mt.DimensionName = connectionResult.ConnectionName
-					case inventoryApi.DimensionTypeMetric:
+					case inventoryAPI.DimensionTypeMetric:
 						mt.DimensionName = hit.Source.MetricName
 					default:
 						return nil, errors.New("dimension is not supported")

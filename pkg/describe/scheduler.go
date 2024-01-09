@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
@@ -135,11 +133,6 @@ type Scheduler struct {
 
 	jq *jq.JobQueue
 
-	kafkaProducer       *confluent_kafka.Producer
-	kafkaResourcesTopic string
-	kafkaConsumer       *confluent_kafka.Consumer
-	kafkaServers        []string
-
 	describeEndpoint string
 	keyARN           string
 	keyRegion        string
@@ -197,12 +190,11 @@ func InitializeScheduler(
 	}
 
 	s = &Scheduler{
-		id:                  id,
-		OperationMode:       OperationMode(OperationModeConfig),
-		describeEndpoint:    DescribeDeliverEndpoint,
-		keyARN:              KeyARN,
-		keyRegion:           KeyRegion,
-		kafkaResourcesTopic: conf.Kafka.Topic,
+		id:               id,
+		OperationMode:    OperationMode(OperationModeConfig),
+		describeEndpoint: DescribeDeliverEndpoint,
+		keyARN:           KeyARN,
+		keyRegion:        KeyRegion,
 	}
 	defer func() {
 		if err != nil && s != nil {
@@ -272,19 +264,6 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-
-	s.kafkaServers = strings.Split(conf.Kafka.Addresses, ",")
-
-	kafkaProducer, err := newKafkaProducer(s.kafkaServers)
-	if err != nil {
-		return nil, err
-	}
-	s.kafkaProducer = kafkaProducer
-	kafkaResourceSinkConsumer, err := newKafkaConsumer(s.kafkaServers, s.kafkaResourcesTopic)
-	if err != nil {
-		return nil, err
-	}
-	s.kafkaConsumer = kafkaResourceSinkConsumer
 
 	helmConfig := HelmConfig{
 		KaytuHelmChartLocation: kaytuHelmChartLocation,
@@ -396,7 +375,6 @@ func InitializeScheduler(
 		s.complianceClient,
 		s.onboardClient,
 		s.db,
-		s.kafkaProducer,
 		s.es,
 		s.complianceIntervalHours,
 	)
@@ -409,10 +387,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		return err
 	}
 
-	httpctx := &httpclient.Context{
+	httpCtx := &httpclient.Context{
 		UserRole: api2.ViewerRole,
 	}
-	describeJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyDescribeJobInterval)
+	describeJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyDescribeJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
@@ -424,7 +402,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	fullDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyFullDiscoveryJobInterval)
+	fullDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyFullDiscoveryJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
@@ -436,7 +414,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	costDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyCostDiscoveryJobInterval)
+	costDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyCostDiscoveryJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
@@ -448,7 +426,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	insightJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyInsightJobInterval)
+	insightJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyInsightJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
@@ -460,7 +438,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	analyticsJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyMetricsJobInterval)
+	analyticsJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyMetricsJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
@@ -472,7 +450,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	complianceJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyComplianceJobInterval)
+	complianceJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyComplianceJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
@@ -760,34 +738,4 @@ func newCheckupJob() model.CheckupJob {
 	return model.CheckupJob{
 		Status: checkupapi.CheckupJobInProgress,
 	}
-}
-
-func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
-	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
-		"bootstrap.servers":            strings.Join(brokers, ","),
-		"linger.ms":                    100,
-		"compression.type":             "lz4",
-		"message.timeout.ms":           10000,
-		"queue.buffering.max.messages": 100000,
-		"message.max.bytes":            104857600,
-	})
-}
-
-func newKafkaConsumer(brokers []string, topic string) (*confluent_kafka.Consumer, error) {
-	consumer, err := confluent_kafka.NewConsumer(&confluent_kafka.ConfigMap{
-		"bootstrap.servers":  strings.Join(brokers, ","),
-		"group.id":           "describe-receiver",
-		"auto.offset.reset":  "earliest",
-		"enable.auto.commit": false,
-		"fetch.min.bytes":    10000000,
-		"fetch.wait.max.ms":  5000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = consumer.Subscribe(topic, nil)
-	if err != nil {
-		return nil, err
-	}
-	return consumer, nil
 }

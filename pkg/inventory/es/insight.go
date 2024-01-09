@@ -9,11 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
-
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 var MAX_INSIGHTS = 10000
@@ -50,7 +48,8 @@ type InsightResultQueryHits struct {
 }
 
 func BuildFindInsightResultsQuery(connectors []source.Type, resourceCollections []string,
-	startTimeFilter *time.Time, endTimeFilter *time.Time, insightIDFilter []uint, useHistoricalData bool) map[string]any {
+	startTimeFilter *time.Time, endTimeFilter *time.Time, insightIDFilter []uint, useHistoricalData bool,
+) map[string]any {
 	boolQuery := map[string]any{}
 	var filters []any
 
@@ -122,7 +121,8 @@ func BuildFindInsightResultsQuery(connectors []source.Type, resourceCollections 
 }
 
 func FetchInsightValueAtTime(client kaytu.Client, t time.Time,
-	connectors []source.Type, connectionIDs, resourceCollections []string, insightIds []uint, useHistoricalData bool) (map[uint][]es.InsightResource, error) {
+	connectors []source.Type, connectionIDs, resourceCollections []string, insightIds []uint, useHistoricalData bool,
+) (map[uint][]es.InsightResource, error) {
 	idx := es.InsightsIndex
 	if len(resourceCollections) > 0 {
 		idx = es.ResourceCollectionsInsightsIndex
@@ -416,7 +416,7 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client kaytu.Client, start
 		}
 		for _, rangeBucket := range insightIDBucket.ExecutedAtRangeGroup.Buckets {
 			rangeBucketKey := int(rangeBucket.To) / 1000 // convert to seconds
-			//rangeBucketKey := int((rangeBucket.From+rangeBucket.To)/2) / 1000 // convert to seconds
+			// rangeBucketKey := int((rangeBucket.From+rangeBucket.To)/2) / 1000 // convert to seconds
 			for _, sourceIDBucket := range rangeBucket.SourceIDGroup.Buckets {
 				for _, hit := range sourceIDBucket.LatestGroup.Hits.Hits {
 					insightResult := hit.Source

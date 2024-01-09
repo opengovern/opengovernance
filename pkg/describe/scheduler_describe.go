@@ -198,7 +198,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 				dc: dc,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, cred.Secret, s.WorkspaceName, dc.ConnectionID)
+				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, cred.Secret, s.WorkspaceName)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure", "enqueue_stack").Inc()
@@ -213,7 +213,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 				src: src,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
+				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
@@ -508,7 +508,7 @@ func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, trig
 	}
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string, workspaceName string, kafkaTopic string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string, workspaceName string) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -526,7 +526,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		UseOpenSearch:             s.conf.ElasticSearch.IsOpenSearch,
 		KeyARN:                    s.keyARN,
 		KeyRegion:                 s.keyRegion,
-		KafkaTopic:                kafkaTopic,
+		KafkaTopic:                "", // it is not used by lambda functions
 		DescribeJob: DescribeJob{
 			JobID:        dc.ID,
 			ResourceType: dc.ResourceType,
@@ -669,17 +669,17 @@ func (s *Scheduler) scheduleStackJobs() error {
 					helmRelease.Spec.Suspend = true
 					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
 					if err != nil {
-						s.logger.Error(fmt.Sprintf("failed to suspend helmrelease for stack: %s", stack.StackID), zap.Error(err))
+						s.logger.Error(fmt.Sprintf("failed to suspend helm-release for stack: %s", stack.StackID), zap.Error(err))
 						s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to suspend helmrelease: %s", err.Error()))
+						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to suspend helm-release: %s", err.Error()))
 					}
 				} else {
 					helmRelease.Spec.Suspend = false
 					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
 					if err != nil {
-						s.logger.Error(fmt.Sprintf("failed to unsuspend helmrelease for stack: %s", stack.StackID), zap.Error(err))
+						s.logger.Error(fmt.Sprintf("failed to unsuspend helm-release for stack: %s", stack.StackID), zap.Error(err))
 						s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to unsuspend helmrelease: %s", err.Error()))
+						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to unsuspend helm-release: %s", err.Error()))
 					}
 				}
 			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
@@ -767,9 +767,9 @@ func (s *Scheduler) scheduleStackJobs() error {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
 			err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+				s.logger.Error(fmt.Sprintf("Failed to delete helm-release for stack: %s", stack.StackID), zap.Error(err))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helm-release: %s", err.Error()))
 			}
 		}
 	}
@@ -782,9 +782,9 @@ func (s *Scheduler) scheduleStackJobs() error {
 	for _, stack := range stacks {
 		err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+			s.logger.Error(fmt.Sprintf("Failed to delete helm-release for stack: %s", stack.StackID), zap.Error(err))
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helm-release: %s", err.Error()))
 		} else {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompletedWithFailure)
 		}

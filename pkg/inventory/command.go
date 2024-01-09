@@ -3,12 +3,13 @@ package inventory
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config3 "github.com/kaytu-io/kaytu-engine/pkg/inventory/config"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"os"
 )
 
 var (
@@ -25,8 +26,6 @@ var (
 	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
-	KafkaService = os.Getenv("KAFKA_SERVICE")
-
 	SchedulerBaseUrl  = os.Getenv("SCHEDULER_BASE_URL")
 	OnboardBaseUrl    = os.Getenv("ONBOARD_BASE_URL")
 	ComplianceBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
@@ -37,9 +36,7 @@ var (
 func Command() *cobra.Command {
 	return &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var (
-				cnf config3.InventoryConfig
-			)
+			var cnf config3.InventoryConfig
 			config.ReadFromEnv(&cnf, nil)
 
 			return start(cmd.Context(), cnf)
@@ -57,7 +54,6 @@ func start(ctx context.Context, cnf config3.InventoryConfig) error {
 		cnf.ElasticSearch,
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
-		KafkaService,
 		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl,
 		logger,
 	)

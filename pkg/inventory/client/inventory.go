@@ -2,18 +2,17 @@ package client
 
 import (
 	"fmt"
-	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"net/http"
-	url2 "net/url"
+	"net/url"
 	"strconv"
 	"time"
 
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
-	"github.com/labstack/echo/v4"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/labstack/echo/v4"
 )
 
 type InventoryServiceClient interface {
@@ -226,9 +225,16 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 	return response, nil
 }
 
-func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectionIds, resourceCollections []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error) {
+func (s *inventoryClient) ListConnectionsData(
+	ctx *httpclient.Context,
+	connectionIds, resourceCollections []string,
+	startTime, endTime *time.Time,
+	needCost, needResourceCount bool,
+) (map[string]api.ConnectionData, error) {
+	params := url.Values{}
+
 	url := fmt.Sprintf("%s/api/v2/connections/data", s.baseURL)
-	params := url2.Values{}
+
 	if len(connectionIds) > 0 {
 		for _, connectionId := range connectionIds {
 			params.Add("connectionId", connectionId)
