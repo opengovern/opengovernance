@@ -112,11 +112,6 @@ type Scheduler struct {
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
 
-	// insightJobQueue is used to publish insight jobs to be performed by the workers.
-	insightJobQueue queue.Interface
-	// insightJobResultQueue is used to consume the insight job results returned by the workers.
-	insightJobResultQueue queue.Interface
-
 	// checkupJobQueue is used to publish checkup jobs to be performed by the workers.
 	checkupJobQueue queue.Interface
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
@@ -185,8 +180,6 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 func InitializeScheduler(
 	id string,
 	conf config2.SchedulerConfig,
-	insightJobQueueName string,
-	insightJobResultQueueName string,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
 	sourceQueueName string,
@@ -233,17 +226,6 @@ func InitializeScheduler(
 	}
 
 	s.logger.Info("Initializing the scheduler")
-
-	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
-	if err != nil {
-		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", insightJobQueueName))
-		return nil, err
-	}
-
-	s.insightJobResultQueue, err = initRabbitQueue(insightJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
 
 	s.checkupJobQueue, err = initRabbitQueue(checkupJobQueueName)
 	if err != nil {
@@ -352,6 +334,7 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+
 	s.mustSummarizeIntervalHours, err = strconv.ParseInt(mustSummarizeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -376,12 +359,18 @@ func InitializeScheduler(
 	}
 	s.authGrpcClient = envoyauth.NewAuthorizationClient(authGRPCConn)
 
-	describeServer := NewDescribeServer(s.db, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger, conf)
+	describeServer := NewDescribeServer(s.db, s.jq, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
 		grpc.StreamInterceptor(describeServer.grpcStreamAuthInterceptor),
 	)
+
+	// TODO(parham): find a better place for creating describe stream
+	if err := s.jq.Stream(context.Background(), "describe", "describe job results", []string{"kaytu-describe-results-queue"}); err != nil {
+		return nil, err
+	}
+
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
@@ -668,8 +657,6 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
 		s.sourceQueue,
-		s.insightJobQueue,
-		s.insightJobResultQueue,
 	}
 
 	for _, openQueues := range queues {

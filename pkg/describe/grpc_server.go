@@ -3,9 +3,10 @@ package describe
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
@@ -30,7 +31,7 @@ type GRPCDescribeServer struct {
 	topic                     string
 	logger                    *zap.Logger
 	DoProcessReceivedMessages bool
-	authGrpcClient            envoyauth.AuthorizationClient
+	authGrpcClient            envoyAuth.AuthorizationClient
 
 	golang.DescribeServiceServer
 }
@@ -38,15 +39,13 @@ type GRPCDescribeServer struct {
 func NewDescribeServer(
 	db db.Database,
 	jq *jq.JobQueue,
-	topic string,
-	authGrpcClient envoyauth.AuthorizationClient,
+	authGrpcClient envoyAuth.AuthorizationClient,
 	logger *zap.Logger,
 	conf config.SchedulerConfig,
 ) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		jq:                        jq,
-		topic:                     topic,
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
 		authGrpcClient:            authGrpcClient,
@@ -67,10 +66,10 @@ func (s *GRPCDescribeServer) checkGRPCAuth(ctx context.Context) error {
 		}
 	}
 
-	result, err := s.authGrpcClient.Check(ctx, &envoyauth.CheckRequest{
-		Attributes: &envoyauth.AttributeContext{
-			Request: &envoyauth.AttributeContext_Request{
-				Http: &envoyauth.AttributeContext_HttpRequest{
+	result, err := s.authGrpcClient.Check(ctx, &envoyAuth.CheckRequest{
+		Attributes: &envoyAuth.AttributeContext{
+			Request: &envoyAuth.AttributeContext_Request{
+				Http: &envoyAuth.AttributeContext_HttpRequest{
 					Headers: mdHeaders,
 				},
 			},
@@ -146,7 +145,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	if err := s.jq.Produce(ctx, "kaytu-describe-results-queue", result, ""); err != nil {
+	if err := s.jq.Produce(ctx, "kaytu-describe-results-queue", result, fmt.Sprintf("job-%d", req.JobId)); err != nil {
 		s.logger.Error("Failed to publish into rabbitMQ",
 			zap.Uint("jobID", uint(req.JobId)),
 			zap.Error(err),

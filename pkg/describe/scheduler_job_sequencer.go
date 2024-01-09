@@ -2,11 +2,12 @@ package describe
 
 import (
 	"fmt"
+	"time"
+
 	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
-	"time"
 )
 
 func (s *Scheduler) RunJobSequencer() {

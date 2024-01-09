@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	InsightJobsQueueName    = "insight-jobs-queue"
-	InsightResultsQueueName = "insight-results-queue"
 	CheckupJobsQueueName    = "checkup-jobs-queue"
 	CheckupResultsQueueName = "checkup-results-queue"
 	SourceEventsQueueName   = "source-events-queue"
@@ -84,8 +82,6 @@ func SchedulerCommand() *cobra.Command {
 			s, err := InitializeScheduler(
 				id,
 				conf,
-				InsightJobsQueueName,
-				InsightResultsQueueName,
 				CheckupJobsQueueName,
 				CheckupResultsQueueName,
 				SourceEventsQueueName,
