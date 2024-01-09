@@ -552,6 +552,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
 //	@Success		200					{object}	api.CountFindingsResponse
+//	@Router			/compliance/api/v1/findings/count [get]
 func (h *HttpHandler) CountFindings(ctx echo.Context) error {
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {

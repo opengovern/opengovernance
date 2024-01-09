@@ -3553,6 +3553,11 @@ definitions:
         additionalProperties: {}
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse:
+    properties:
+      count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest:
     properties:
       config:
@@ -5177,6 +5182,35 @@ paths:
       summary: Get services findings summary
       tags:
       - compliance
+  /compliance/api/v1/findings/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving all compliance run findings count with respect to filters.
+      parameters:
+      - collectionFormat: csv
+        description: ConformanceStatus to filter by defaults to all conformanceStatus
+          except passed
+        in: query
+        items:
+          enum:
+          - failed
+          - passed
+          type: string
+        name: conformanceStatus
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings count
+      tags:
+      - compliance
   /compliance/api/v1/findings/filters:
     post:
       consumes:
@@ -5946,6 +5980,27 @@ paths:
       summary: Create AWS connection [standalone]
       tags:
       - onboard
+  /integration/api/v1/connections/count:
+    get:
+      description: Counting connections either for the given connection type or all
+        types if not specified.
+      parameters:
+      - description: Connector
+        in: query
+        name: connector
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse'
+      security:
+      - BearerToken: []
+      summary: Count connections
+      tags:
+      - connections
   /integration/api/v1/connections/summaries:
     get:
       consumes:
