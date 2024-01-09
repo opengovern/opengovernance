@@ -27,7 +27,7 @@ import (
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
@@ -788,7 +788,7 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 				return err
 			}
 
-			var items []kafka.Doc
+			var items []es2.Doc
 			for _, hit := range res.Hits.Hits {
 				item := hit.Source
 				item["es_id"] = hit.ID

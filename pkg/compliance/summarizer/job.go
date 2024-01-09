@@ -12,7 +12,6 @@ import (
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"go.uber.org/zap"
 )
@@ -110,14 +109,14 @@ func (w *Worker) RunJob(j types2.Job) error {
 			jd.AddFinding(w.logger, j, f, lookupResourcesMap[f.KaytuResourceID])
 		}
 
-		var docs []kafka.Doc
+		var docs []es2.Doc
 		for resourceId, isReady := range jd.ResourcesFindingsIsDone {
 			if !isReady {
 				continue
 			}
 			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceId])
 			keys, idx := resourceFinding.KeysAndIndex()
-			resourceFinding.EsID = kafka.HashOf(keys...)
+			resourceFinding.EsID = es2.HashOf(keys...)
 			resourceFinding.EsIndex = idx
 			docs = append(docs, resourceFinding)
 			delete(jd.ResourcesFindings, resourceId)
@@ -146,16 +145,16 @@ func (w *Worker) RunJob(j types2.Job) error {
 	w.logger.Info("Summarize done", zap.Any("summary", jd))
 
 	keys, idx := jd.BenchmarkSummary.KeysAndIndex()
-	jd.BenchmarkSummary.EsID = kafka.HashOf(keys...)
+	jd.BenchmarkSummary.EsID = es2.HashOf(keys...)
 	jd.BenchmarkSummary.EsIndex = idx
 
-	docs := make([]kafka.Doc, 0, len(jd.ResourcesFindings)+1)
+	docs := make([]es2.Doc, 0, len(jd.ResourcesFindings)+1)
 	docs = append(docs, jd.BenchmarkSummary)
 	resourceIds := make([]string, 0, len(jd.ResourcesFindings))
 	for resourceId, rf := range jd.ResourcesFindings {
 		resourceIds = append(resourceIds, resourceId)
 		keys, idx := rf.KeysAndIndex()
-		rf.EsID = kafka.HashOf(keys...)
+		rf.EsID = es2.HashOf(keys...)
 		rf.EsIndex = idx
 		docs = append(docs, rf)
 	}

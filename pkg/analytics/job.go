@@ -23,7 +23,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
@@ -371,14 +371,14 @@ func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, en
 	}
 
 	keys, idx := connectionMetricTrendSummary.KeysAndIndex()
-	connectionMetricTrendSummary.EsID = kafka.HashOf(keys...)
+	connectionMetricTrendSummary.EsID = es.HashOf(keys...)
 	connectionMetricTrendSummary.EsIndex = idx
 
 	keys, idx = connectorMetricTrendSummary.KeysAndIndex()
-	connectorMetricTrendSummary.EsID = kafka.HashOf(keys...)
+	connectorMetricTrendSummary.EsID = es.HashOf(keys...)
 	connectorMetricTrendSummary.EsIndex = idx
 
-	msgs := []kafka.Doc{
+	msgs := []es.Doc{
 		connectionMetricTrendSummary,
 		connectorMetricTrendSummary,
 	}
@@ -557,13 +557,13 @@ func (j *Job) DoSpendMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, on
 			connectorResultMap[date] = vn
 		}
 	}
-	var msgs []kafka.Doc
+	var msgs []es.Doc
 	for _, item := range connectionResultMap {
 		for _, v := range item.ConnectionsMap {
 			item.Connections = append(item.Connections, v)
 		}
 		keys, idx := item.KeysAndIndex()
-		item.EsID = kafka.HashOf(keys...)
+		item.EsID = es.HashOf(keys...)
 		item.EsIndex = idx
 
 		msgs = append(msgs, item)
@@ -573,7 +573,7 @@ func (j *Job) DoSpendMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, on
 			item.Connectors = append(item.Connectors, v)
 		}
 		keys, idx := item.KeysAndIndex()
-		item.EsID = kafka.HashOf(keys...)
+		item.EsID = es.HashOf(keys...)
 		item.EsIndex = idx
 
 		msgs = append(msgs, item)
