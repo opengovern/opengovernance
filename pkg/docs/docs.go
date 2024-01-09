@@ -2948,88 +2948,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/cost_estimator/api/v1/cost/aws": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Get AWS cost for each resource",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "cost-estimator"
-                ],
-                "summary": "Get AWS cost",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Connection ID",
-                        "name": "resourceId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "ResourceType",
-                        "name": "resourceType",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
-        "/cost_estimator/api/v1/cost/azure": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Get Azure cost for each resource",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "cost-estimator"
-                ],
-                "summary": "Get Azure cost",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Connection ID",
-                        "name": "resourceId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "ResourceType",
-                        "name": "resourceType",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
         "/integration/api/v1/connections/aws": {
             "post": {
                 "security": [
@@ -10214,6 +10132,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostStackedItem": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "cost": {
                     "type": "number"
                 },
