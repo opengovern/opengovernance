@@ -1107,6 +1107,11 @@ definitions:
       totalResourcesCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse:
+    properties:
+      count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
       benchmarkID:
@@ -1621,8 +1626,9 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
       connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
         example: Azure
-        type: string
       createdAt:
         example: "2023-06-07T14:00:15.677558Z"
         type: string

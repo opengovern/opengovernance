@@ -23,7 +23,7 @@ type ComplianceServiceClient interface {
 	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
 	ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error)
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
-	CountFindings(ctx *httpclient.Context) (int64, error)
+	CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error)
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
 	ListControl(ctx *httpclient.Context) ([]compliance.Control, error)
 }
@@ -134,15 +134,30 @@ func (s *complianceClient) GetFindings(ctx *httpclient.Context, req compliance.G
 	return response, nil
 }
 
-func (s *complianceClient) CountFindings(ctx *httpclient.Context) (int64, error) {
+func (s *complianceClient) CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/findings/count", s.baseURL)
 
-	var response int64
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		return 0, err
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = compliance.ListConformanceStatuses()
 	}
 
-	return response, nil
+	isFirstParamAttached := false
+	for _, conformanceStatus := range conformanceStatuses {
+		if !isFirstParamAttached {
+			url += "?"
+			isFirstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("conformanceStatus=%s", conformanceStatus)
+	}
+
+	var response compliance.CountFindingsResponse
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }
 
 func (s *complianceClient) GetInsight(ctx *httpclient.Context, insightId string, connectionIDs []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error) {

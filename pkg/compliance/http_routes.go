@@ -542,13 +542,37 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
+// CountFindings godoc
+//
+//	@Summary		Get findings count
+//	@Description	Retrieving all compliance run findings count with respect to filters.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Success		200					{object}	api.CountFindingsResponse
 func (h *HttpHandler) CountFindings(ctx echo.Context) error {
-	totalCount, err := es.FindingsCount(h.client)
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	for _, status := range conformanceStatuses {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	totalCount, err := es.FindingsCount(h.client, esConformanceStatuses)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, totalCount)
+	response := api.CountFindingsResponse{
+		Count: totalCount,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetFindingFilterValues godoc

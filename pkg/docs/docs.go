@@ -8583,6 +8583,14 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding": {
             "type": "object",
             "properties": {
@@ -9332,7 +9340,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
                     "example": "Azure"
                 },
                 "createdAt": {
