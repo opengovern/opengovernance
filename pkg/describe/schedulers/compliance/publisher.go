@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"go.uber.org/zap"
 )
 
