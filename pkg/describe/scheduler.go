@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
@@ -109,14 +109,6 @@ type Scheduler struct {
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
 
-	// sourceQueue is used to consume source updates by the onboarding service.
-	sourceQueue queue.Interface
-
-	// insightJobQueue is used to publish insight jobs to be performed by the workers.
-	insightJobQueue queue.Interface
-	// insightJobResultQueue is used to consume the insight job results returned by the workers.
-	insightJobResultQueue queue.Interface
-
 	// checkupJobQueue is used to publish checkup jobs to be performed by the workers.
 	checkupJobQueue queue.Interface
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
@@ -138,7 +130,7 @@ type Scheduler struct {
 	complianceClient client.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
-	authGrpcClient   envoyauth.AuthorizationClient
+	authGrpcClient   envoyAuth.AuthorizationClient
 	es               kaytu.Client
 
 	jq *jq.JobQueue
@@ -185,11 +177,8 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 func InitializeScheduler(
 	id string,
 	conf config2.SchedulerConfig,
-	insightJobQueueName string,
-	insightJobResultQueueName string,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
-	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
 	postgresHost string,
@@ -234,28 +223,12 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
-	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
-	if err != nil {
-		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", insightJobQueueName))
-		return nil, err
-	}
-
-	s.insightJobResultQueue, err = initRabbitQueue(insightJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
 	s.checkupJobQueue, err = initRabbitQueue(checkupJobQueueName)
 	if err != nil {
 		return nil, err
 	}
 
 	s.checkupJobResultQueue, err = initRabbitQueue(checkupJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.sourceQueue, err = initRabbitQueue(sourceQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -352,6 +325,7 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+
 	s.mustSummarizeIntervalHours, err = strconv.ParseInt(mustSummarizeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -374,14 +348,20 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-	s.authGrpcClient = envoyauth.NewAuthorizationClient(authGRPCConn)
+	s.authGrpcClient = envoyAuth.NewAuthorizationClient(authGRPCConn)
 
-	describeServer := NewDescribeServer(s.db, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger, conf)
+	describeServer := NewDescribeServer(s.db, s.jq, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
 		grpc.StreamInterceptor(describeServer.grpcStreamAuthInterceptor),
 	)
+
+	// TODO(parham): find a better place for creating describe stream
+	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job results", []string{DescribeResultsQueueName}); err != nil {
+		return nil, err
+	}
+
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
@@ -558,9 +538,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDisabledConnectionCleanup()
 	})
 	utils.EnsureRunGoroutin(func() {
-		s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
-	})
-	utils.EnsureRunGoroutin(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 	})
 	utils.EnsureRunGoroutin(func() {
@@ -636,45 +613,7 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	}
 }
 
-// RunSourceEventsConsumer Consume events from the source queue. Based on the action of the event,
-// update the list of sources that need to be described. Either create a source
-// or update/delete the source.
-func (s *Scheduler) RunSourceEventsConsumer() error {
-	s.logger.Info("Consuming messages from SourceEvents queue")
-	msgs, err := s.sourceQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	for msg := range msgs {
-		var event SourceEvent
-		if err := json.Unmarshal(msg.Body, &event); err != nil {
-			s.logger.Error("Failed to unmarshal SourceEvent", zap.Error(err))
-			err = msg.Nack(false, false)
-			if err != nil {
-				s.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
-		}
-
-		if err := msg.Ack(false); err != nil {
-			s.logger.Error("Failed acking message", zap.Error(err))
-		}
-	}
-
-	return fmt.Errorf("source events queue channel is closed")
-}
-
 func (s *Scheduler) Stop() {
-	queues := []queue.Interface{
-		s.sourceQueue,
-		s.insightJobQueue,
-		s.insightJobResultQueue,
-	}
-
-	for _, openQueues := range queues {
-		openQueues.Close()
-	}
 }
 
 func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {

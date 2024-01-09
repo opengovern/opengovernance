@@ -3,19 +3,19 @@ package describe
 import (
 	"context"
 	"errors"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"os"
 
+	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 const (
-	InsightJobsQueueName    = "insight-jobs-queue"
-	InsightResultsQueueName = "insight-results-queue"
 	CheckupJobsQueueName    = "checkup-jobs-queue"
 	CheckupResultsQueueName = "checkup-results-queue"
-	SourceEventsQueueName   = "source-events-queue"
+
+	DescribeResultsQueueName = "kaytu-describe-results-queue"
+	DescribeStreamName       = "describe"
 )
 
 var (
@@ -65,9 +65,7 @@ var (
 )
 
 func SchedulerCommand() *cobra.Command {
-	var (
-		id string
-	)
+	var id string
 	var conf config2.SchedulerConfig
 	config.ReadFromEnv(&conf, nil)
 
@@ -86,11 +84,8 @@ func SchedulerCommand() *cobra.Command {
 			s, err := InitializeScheduler(
 				id,
 				conf,
-				InsightJobsQueueName,
-				InsightResultsQueueName,
 				CheckupJobsQueueName,
 				CheckupResultsQueueName,
-				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,
 				PostgreSQLHost,

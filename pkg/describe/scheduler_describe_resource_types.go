@@ -85,12 +85,10 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	}
 
 	for _, resourceType := range resourceTypes {
-		found := false
 		resourceType = strings.ToLower(resourceType)
 		if strings.HasPrefix(resourceType, "aws") {
 			for _, awsResourceType := range awsResourceTypes {
 				if strings.ToLower(awsResourceType) == resourceType {
-					found = true
 					resourceType = awsResourceType
 					break
 				}
@@ -99,7 +97,6 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		} else if strings.HasPrefix(resourceType, "microsoft") {
 			for _, azureResourceType := range azureResourceTypes {
 				if strings.ToLower(azureResourceType) == resourceType {
-					found = true
 					resourceType = azureResourceType
 					break
 				}
@@ -109,10 +106,6 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 			result.AzureResourceTypes = append(result.AzureResourceTypes, resourceType)
 		} else {
 			return result, errors.New("invalid resource type:" + resourceType)
-		}
-
-		if !found {
-			// s.logger.Error("resource type " + resourceType + " not found!")
 		}
 	}
 
