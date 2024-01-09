@@ -23,7 +23,7 @@ import (
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -296,7 +296,7 @@ func (j Job) Do(
 					}
 				}
 
-				var resources []kafka.Doc
+				var resources []es2.Doc
 				resourceTypeList := []es.InsightResourceType{es.InsightResourceProviderHistory, es.InsightResourceProviderLast}
 				for _, resourceType := range resourceTypeList {
 					item := es.InsightResource{
@@ -318,7 +318,7 @@ func (j Job) Do(
 						ResourceCollection:  j.ResourceCollectionId,
 					}
 					keys, idx := item.KeysAndIndex()
-					item.EsID = kafka.HashOf(keys...)
+					item.EsID = es2.HashOf(keys...)
 					item.EsIndex = idx
 
 					resources = append(resources, item)

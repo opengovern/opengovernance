@@ -12,7 +12,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
@@ -273,7 +272,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 				keys, idx := resource.KeysAndIndex()
 				deletedCount += 1
 				task.DeletingResources = append(task.DeletingResources, es.DeletingResource{
-					Key:        []byte(kafka.HashOf(keys...)),
+					Key:        []byte(es2.HashOf(keys...)),
 					ResourceID: esResourceID,
 					Index:      idx,
 				})
@@ -287,7 +286,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 				lookUpKeys, lookUpIdx := lookupResource.KeysAndIndex()
 				deletedCount += 1
 				task.DeletingResources = append(task.DeletingResources, es.DeletingResource{
-					Key:        []byte(kafka.HashOf(lookUpKeys...)),
+					Key:        []byte(es2.HashOf(lookUpKeys...)),
 					ResourceID: esResourceID,
 					Index:      lookUpIdx,
 				})
@@ -304,10 +303,10 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 		i := 0
 		for {
 			taskKeys, taskIdx := task.KeysAndIndex()
-			task.EsID = kafka.HashOf(taskKeys...)
+			task.EsID = es2.HashOf(taskKeys...)
 			task.EsIndex = taskIdx
 			if len(task.DeletingResources) > 0 {
-				err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []kafka.Doc{task})
+				err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []es2.Doc{task})
 			}
 
 			if err != nil {
@@ -362,7 +361,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				}
 				keys, idx := resource.KeysAndIndex()
 				deletedCount += 1
-				key := kafka.HashOf(keys...)
+				key := es2.HashOf(keys...)
 				resource.EsID = key
 				resource.EsIndex = idx
 				err = s.es.Delete(key, idx)
@@ -379,7 +378,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				}
 				deletedCount += 1
 				keys, idx = lookupResource.KeysAndIndex()
-				key = kafka.HashOf(keys...)
+				key = es2.HashOf(keys...)
 				lookupResource.EsID = key
 				lookupResource.EsIndex = idx
 				err = s.es.Delete(key, idx)

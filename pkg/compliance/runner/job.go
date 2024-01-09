@@ -10,7 +10,7 @@ import (
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -104,10 +104,10 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			totalFindingCountMap[mapKey] = len(findings)
 		}
 
-		var docs []kafka.Doc
+		var docs []es.Doc
 		for _, f := range findings {
 			keys, idx := f.KeysAndIndex()
-			f.EsID = kafka.HashOf(keys...)
+			f.EsID = es.HashOf(keys...)
 			f.EsIndex = idx
 
 			docs = append(docs, f)
