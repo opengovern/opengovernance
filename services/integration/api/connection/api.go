@@ -52,7 +52,7 @@ func New(
 	}
 }
 
-// DeleteConnection godoc
+// Delete godoc
 //
 //	@Summary		Delete connection
 //	@Description	Deleting a single connection either AWS / Azure for the given connection id. it will delete its parent credential too, if it doesn't have any other child.
@@ -164,6 +164,16 @@ func (h API) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+// Count godoc
+//
+//	@Summary		Count connections
+//	@Description	Counting connections either for the given connection type or all types if not specified.
+//	@Security		BearerToken
+//	@Tags			connections
+//	@Produce		json
+//	@Param			connector	query		string	false	"Connector"
+//	@Success		200			{object}	entity.CountConnectionsResponse
+//	@Router			/integration/api/v1/connections/count [get]
 func (h API) Count(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
@@ -189,7 +199,11 @@ func (h API) Count(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	return c.JSON(http.StatusOK, count)
+	resp := entity.CountConnectionsResponse{
+		Count: count,
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 // Summaries godoc

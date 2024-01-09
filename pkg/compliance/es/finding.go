@@ -258,11 +258,29 @@ type FindingsCountHits struct {
 	Total kaytu.SearchTotal `json:"total"`
 }
 
-func FindingsCount(client kaytu.Client) (int64, error) {
+func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus) (int64, error) {
 	idx := types.FindingsIndex
+
+	filters := make([]map[string]any, 0)
+	if len(conformanceStatuses) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"conformanceStatus": conformanceStatuses,
+			},
+		})
+	}
 
 	query := make(map[string]any)
 	query["size"] = 0
+
+	if len(filters) > 0 {
+		query["query"] = map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		}
+	}
+
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return 0, err

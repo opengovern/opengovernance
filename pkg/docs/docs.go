@@ -1742,6 +1742,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/findings/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving all compliance run findings count with respect to filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get findings count",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "failed",
+                                "passed"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
+                        "name": "conformanceStatus",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings/filters": {
             "post": {
                 "security": [
@@ -3022,6 +3066,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/api/v1/connections/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Counting connections either for the given connection type or all types if not specified.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "Count connections",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connector",
+                        "name": "connector",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/integration/api/v1/connections/summaries": {
             "get": {
                 "security": [
@@ -3993,6 +4070,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the count of resources and connections with respect to specified filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Count analytics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/metric": {
             "get": {
                 "security": [
@@ -4313,6 +4418,34 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/analytics/spend/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the count of resources and connections with respect to specified filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Count analytics spend",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse"
                         }
                     }
                 }
@@ -8583,6 +8716,14 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding": {
             "type": "object",
             "properties": {
@@ -9332,7 +9473,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
                     "example": "Azure"
                 },
                 "createdAt": {
@@ -10101,6 +10246,28 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "totalSuccessfulDescribedConnectionCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "connectionCount": {
+                    "type": "integer"
+                },
+                "metricCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse": {
+            "type": "object",
+            "properties": {
+                "connectionCount": {
+                    "type": "integer"
+                },
+                "metricCount": {
                     "type": "integer"
                 }
             }
@@ -12066,6 +12233,14 @@ const docTemplate = `{
                 "tags": {
                     "type": "object",
                     "additionalProperties": {}
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
                 }
             }
         },

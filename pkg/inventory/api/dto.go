@@ -151,3 +151,13 @@ type ConnectionData struct {
 	DailyCostAtStartTime *float64   `json:"dailyCostAtStartTime"`
 	DailyCostAtEndTime   *float64   `json:"dailyCostAtEndTime"`
 }
+
+type CountAnalyticsMetricsResponse struct {
+	ConnectionCount int `json:"connectionCount"`
+	MetricCount     int `json:"metricCount"`
+}
+
+type CountAnalyticsSpendResponse struct {
+	ConnectionCount int `json:"connectionCount"`
+	MetricCount     int `json:"metricCount"`
+}

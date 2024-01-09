@@ -125,6 +125,10 @@ type CreateAWSConnectionRequest struct {
 	Config      *AWSCredentialConfig `json:"config,omitempty"`
 }
 
+type CountConnectionsResponse struct {
+	Count int64 `json:"count"`
+}
+
 // NewConnection creates API compatible connection from model connection.
 func NewConnection(s model.Connection) Connection {
 	metadata := make(map[string]any)

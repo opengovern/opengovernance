@@ -121,7 +121,7 @@ func (svc MeteringService) generateTotalFindingsMeter(workspaceId string, usageD
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	complianceClient := client4.NewComplianceClient(strings.ReplaceAll(svc.cnf.Compliance.BaseURL, "%NAMESPACE%", workspaceId))
 
-	count, err := complianceClient.CountFindings(ctx)
+	count, err := complianceClient.CountFindings(ctx, nil)
 	if err != nil {
 		svc.logger.Error("failed to count findings", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 		return err
@@ -132,7 +132,7 @@ func (svc MeteringService) generateTotalFindingsMeter(workspaceId string, usageD
 		UsageDate:   usageDate,
 		MeterType:   meterType,
 		CreatedAt:   time.Now(),
-		Value:       count,
+		Value:       count.Count,
 		Published:   false,
 	}
 

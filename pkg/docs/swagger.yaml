@@ -1107,6 +1107,11 @@ definitions:
       totalResourcesCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse:
+    properties:
+      count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
       benchmarkID:
@@ -1621,8 +1626,9 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
       connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
         example: Azure
-        type: string
       createdAt:
         example: "2023-06-07T14:00:15.677558Z"
         type: string
@@ -2155,6 +2161,20 @@ definitions:
       totalConnectionCount:
         type: integer
       totalSuccessfulDescribedConnectionCount:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse:
+    properties:
+      connectionCount:
+        type: integer
+      metricCount:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse:
+    properties:
+      connectionCount:
+        type: integer
+      metricCount:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
@@ -3546,6 +3566,11 @@ definitions:
       tags:
         additionalProperties: {}
         type: object
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse:
+    properties:
+      count:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CreateAWSConnectionRequest:
     properties:
@@ -5171,6 +5196,35 @@ paths:
       summary: Get services findings summary
       tags:
       - compliance
+  /compliance/api/v1/findings/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving all compliance run findings count with respect to filters.
+      parameters:
+      - collectionFormat: csv
+        description: ConformanceStatus to filter by defaults to all conformanceStatus
+          except passed
+        in: query
+        items:
+          enum:
+          - failed
+          - passed
+          type: string
+        name: conformanceStatus
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings count
+      tags:
+      - compliance
   /compliance/api/v1/findings/filters:
     post:
       consumes:
@@ -5940,6 +5994,27 @@ paths:
       summary: Create AWS connection [standalone]
       tags:
       - onboard
+  /integration/api/v1/connections/count:
+    get:
+      description: Counting connections either for the given connection type or all
+        types if not specified.
+      parameters:
+      - description: Connector
+        in: query
+        name: connector
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse'
+      security:
+      - BearerToken: []
+      summary: Count connections
+      tags:
+      - connections
   /integration/api/v1/connections/summaries:
     get:
       consumes:
@@ -6502,6 +6577,24 @@ paths:
       summary: List analytics composition
       tags:
       - analytics
+  /inventory/api/v2/analytics/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the count of resources and connections with respect
+        to specified filters.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse'
+      security:
+      - BearerToken: []
+      summary: Count analytics
+      tags:
+      - analytics
   /inventory/api/v2/analytics/metric:
     get:
       consumes:
@@ -6719,6 +6812,24 @@ paths:
       security:
       - BearerToken: []
       summary: List cost composition
+      tags:
+      - analytics
+  /inventory/api/v2/analytics/spend/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the count of resources and connections with respect
+        to specified filters.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse'
+      security:
+      - BearerToken: []
+      summary: Count analytics spend
       tags:
       - analytics
   /inventory/api/v2/analytics/spend/metric:

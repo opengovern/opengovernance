@@ -9,6 +9,7 @@ import (
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.uber.org/zap"
 	"strconv"
 	"time"
 )
@@ -950,4 +951,58 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Dime
 	}
 
 	return resultList, nil
+}
+
+type CountAnalyticsSpendResponse struct {
+	Aggregations struct {
+		MetricCount struct {
+			Value int `json:"value"`
+		} `json:"metric_count"`
+		ConnectionCount struct {
+			Value int `json:"value"`
+		} `json:"connection_count"`
+	} `json:"aggregations"`
+}
+
+func CountAnalyticsSpend(logger *zap.Logger, client kaytu.Client) (*CountAnalyticsSpendResponse, error) {
+	query := make(map[string]any)
+	query["size"] = 0
+
+	connectionScript := `
+String[] res = new String[params['_source']['connections'].length];
+for (int i=0; i<params['_source']['connections'].length;++i) { 
+  res[i] = params['_source']['connections'][i]['connection_id'];
+} 
+return res;
+`
+	query["aggs"] = map[string]any{
+		"metric_count": map[string]any{
+			"cardinality": map[string]any{
+				"field": "metric_id",
+			},
+		},
+		"connection_count": map[string]any{
+			"cardinality": map[string]any{
+				"script": map[string]any{
+					"lang":   "painless",
+					"source": connectionScript,
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("CountAnalyticsSpend", zap.String("query", string(queryJson)))
+
+	var response CountAnalyticsSpendResponse
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
+	if err != nil {
+		logger.Error("CountAnalyticsSpend", zap.Error(err), zap.String("query", string(queryJson)))
+		return nil, err
+	}
+
+	return &response, nil
 }

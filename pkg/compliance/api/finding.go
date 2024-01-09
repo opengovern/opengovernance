@@ -78,6 +78,10 @@ const (
 	ConformanceStatusPassed ConformanceStatus = "passed"
 )
 
+func ListConformanceStatuses() []ConformanceStatus {
+	return []ConformanceStatus{ConformanceStatusFailed, ConformanceStatusPassed}
+}
+
 func (cs ConformanceStatus) GetEsConformanceStatuses() []types.ConformanceStatus {
 	switch cs {
 	case ConformanceStatusFailed:
@@ -174,4 +178,8 @@ type GetFieldCountResponse struct {
 type GetTopFieldResponse struct {
 	TotalCount int              `json:"totalCount" example:"100"`
 	Records    []TopFieldRecord `json:"records"`
+}
+
+type CountFindingsResponse struct {
+	Count int64 `json:"count"`
 }

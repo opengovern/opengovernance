@@ -68,6 +68,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/count", httpserver2.AuthorizeHandler(h.CountResources, authApi.ViewerRole))
 
 	analyticsV2 := v2.Group("/analytics")
+	analyticsV2.GET("/count", httpserver2.AuthorizeHandler(h.CountAnalytics, authApi.ViewerRole))
 	analyticsV2.GET("/metrics/list", httpserver2.AuthorizeHandler(h.ListMetrics, authApi.ViewerRole))
 	analyticsV2.GET("/metrics/:metric_id", httpserver2.AuthorizeHandler(h.GetMetric, authApi.ViewerRole))
 
@@ -79,6 +80,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/table", httpserver2.AuthorizeHandler(h.GetAssetsTable, authApi.ViewerRole))
 
 	analyticsSpend := analyticsV2.Group("/spend")
+	analyticsSpend.GET("/count", httpserver2.AuthorizeHandler(h.CountAnalyticsSpend, authApi.ViewerRole))
 	analyticsSpend.GET("/metric", httpserver2.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
 	analyticsSpend.GET("/composition", httpserver2.AuthorizeHandler(h.ListAnalyticsSpendComposition, authApi.ViewerRole))
 	analyticsSpend.GET("/trend", httpserver2.AuthorizeHandler(h.GetAnalyticsSpendTrend, authApi.ViewerRole))
@@ -1271,6 +1273,56 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 		TotalCost:  totalCost,
 		Metrics:    utils.Paginate(pageNumber, pageSize, costMetrics),
 	})
+}
+
+// CountAnalyticsSpend godoc
+//
+//	@Summary		Count analytics spend
+//	@Description	Retrieving the count of resources and connections with respect to specified filters.
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	inventoryApi.CountAnalyticsSpendResponse
+//	@Router			/inventory/api/v2/analytics/spend/count [get]
+func (h *HttpHandler) CountAnalyticsSpend(ctx echo.Context) error {
+	counts, err := es.CountAnalyticsSpend(h.logger, h.client)
+	if err != nil {
+		h.logger.Error("failed to count analytics spend", zap.Error(err))
+		return err
+	}
+
+	response := inventoryApi.CountAnalyticsSpendResponse{
+		ConnectionCount: counts.Aggregations.ConnectionCount.Value,
+		MetricCount:     counts.Aggregations.MetricCount.Value,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// CountAnalytics godoc
+//
+//	@Summary		Count analytics
+//	@Description	Retrieving the count of resources and connections with respect to specified filters.
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	inventoryApi.CountAnalyticsMetricsResponse
+//	@Router			/inventory/api/v2/analytics/count [get]
+func (h *HttpHandler) CountAnalytics(ctx echo.Context) error {
+	counts, err := es.CountAnalyticsMetrics(h.logger, h.client)
+	if err != nil {
+		h.logger.Error("failed to count analytics metrics", zap.Error(err))
+		return err
+	}
+
+	response := inventoryApi.CountAnalyticsMetricsResponse{
+		ConnectionCount: counts.Aggregations.ConnectionCount.Value,
+		MetricCount:     counts.Aggregations.MetricCount.Value,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // ListMetrics godoc
