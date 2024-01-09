@@ -59,38 +59,45 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
 	ctx := context.Background()
 
-	if _, err := s.jq.Consume(ctx, "scheduler-summarizer-compliance", summarizer.StreamName, []string{summarizer.ResultQueueTopic}, "scheduler-summarizer-compliance", func(msg jetstream.Msg) {
-		var result summarizer.JobResult
-		if err := json.Unmarshal(msg.Data(), &result); err != nil {
-			s.logger.Error("Failed to unmarshal ComplianceSummarizer results", zap.Error(err))
+	if _, err := s.jq.Consume(
+		ctx,
+		"scheduler-summarizer-compliance",
+		summarizer.StreamName,
+		[]string{summarizer.ResultQueueTopic},
+		"scheduler-summarizer-compliance",
+		func(msg jetstream.Msg) {
+			var result summarizer.JobResult
+			if err := json.Unmarshal(msg.Data(), &result); err != nil {
+				s.logger.Error("Failed to unmarshal ComplianceSummarizer results", zap.Error(err))
 
-			if err := msg.Ack(); err != nil {
-				s.logger.Error("Failed committing message", zap.Error(err))
+				if err := msg.Ack(); err != nil {
+					s.logger.Error("Failed committing message", zap.Error(err))
+				}
+				return
 			}
-			return
-		}
 
-		s.logger.Info("Processing SummarizerResult for Job",
-			zap.Uint("jobId", result.Job.ID),
-			zap.String("status", string(result.Status)),
-		)
-		err := s.db.UpdateSummarizerJob(result.Job.ID, result.Status, result.StartedAt, result.Error)
-		if err != nil {
-			s.logger.Error("Failed to update the status of Summarizer",
+			s.logger.Info("Processing SummarizerResult for Job",
 				zap.Uint("jobId", result.Job.ID),
-				zap.Error(err))
+				zap.String("status", string(result.Status)),
+			)
+			err := s.db.UpdateSummarizerJob(result.Job.ID, result.Status, result.StartedAt, result.Error)
+			if err != nil {
+				s.logger.Error("Failed to update the status of Summarizer",
+					zap.Uint("jobId", result.Job.ID),
+					zap.Error(err))
+
+				if err := msg.Ack(); err != nil {
+					s.logger.Error("Failed committing message", zap.Error(err))
+				}
+
+				return
+			}
 
 			if err := msg.Ack(); err != nil {
 				s.logger.Error("Failed committing message", zap.Error(err))
 			}
-
-			return
-		}
-
-		if err := msg.Ack(); err != nil {
-			s.logger.Error("Failed committing message", zap.Error(err))
-		}
-	}); err != nil {
+		},
+	); err != nil {
 		return err
 	}
 
