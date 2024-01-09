@@ -4070,6 +4070,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the count of resources and connections with respect to specified filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Count analytics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/metric": {
             "get": {
                 "security": [
@@ -4390,6 +4418,34 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/analytics/spend/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the count of resources and connections with respect to specified filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "Count analytics spend",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse"
                         }
                     }
                 }
@@ -10190,6 +10246,28 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "totalSuccessfulDescribedConnectionCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "connectionCount": {
+                    "type": "integer"
+                },
+                "metricCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse": {
+            "type": "object",
+            "properties": {
+                "connectionCount": {
+                    "type": "integer"
+                },
+                "metricCount": {
                     "type": "integer"
                 }
             }

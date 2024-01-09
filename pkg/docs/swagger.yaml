@@ -2163,6 +2163,20 @@ definitions:
       totalSuccessfulDescribedConnectionCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse:
+    properties:
+      connectionCount:
+        type: integer
+      metricCount:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse:
+    properties:
+      connectionCount:
+        type: integer
+      metricCount:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
     properties:
       count:
@@ -6563,6 +6577,24 @@ paths:
       summary: List analytics composition
       tags:
       - analytics
+  /inventory/api/v2/analytics/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the count of resources and connections with respect
+        to specified filters.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsMetricsResponse'
+      security:
+      - BearerToken: []
+      summary: Count analytics
+      tags:
+      - analytics
   /inventory/api/v2/analytics/metric:
     get:
       consumes:
@@ -6780,6 +6812,24 @@ paths:
       security:
       - BearerToken: []
       summary: List cost composition
+      tags:
+      - analytics
+  /inventory/api/v2/analytics/spend/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the count of resources and connections with respect
+        to specified filters.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountAnalyticsSpendResponse'
+      security:
+      - BearerToken: []
+      summary: Count analytics spend
       tags:
       - analytics
   /inventory/api/v2/analytics/spend/metric:

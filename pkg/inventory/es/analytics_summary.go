@@ -40,8 +40,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client, metricIDs []string,
-	connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
+func FetchConnectionAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.Client, metricIDs []string, connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -103,8 +102,6 @@ func FetchConnectionAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.C
 		includeResourceCollectionMap[resourceCollection] = true
 	}
 
-	result := make(map[string]CountWithTime)
-
 	b, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
@@ -120,6 +117,8 @@ func FetchConnectionAnalyticMetricCountAtTime(logger *zap.Logger, client kaytu.C
 		logger.Error("FetchConnectionAnalyticMetricCountAtTime", zap.Error(err), zap.String("query", query), zap.String("index", idx))
 		return nil, err
 	}
+
+	result := make(map[string]CountWithTime)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
 		for _, hit := range metricBucket.Latest.Hits.Hits {
 			handleConnResults := func(connResults resource.ConnectionMetricTrendSummaryResult) {
@@ -1023,4 +1022,60 @@ func FetchAssetTableByDimension(logger *zap.Logger, client kaytu.Client, metricI
 	}
 
 	return result, nil
+}
+
+type CountAnalyticsMetricsResponse struct {
+	Aggregations struct {
+		MetricCount struct {
+			Value int `json:"value"`
+		} `json:"metric_count"`
+		ConnectionCount struct {
+			Value int `json:"value"`
+		} `json:"connection_count"`
+	} `json:"aggregations"`
+}
+
+func CountAnalyticsMetrics(logger *zap.Logger, client kaytu.Client) (*CountAnalyticsMetricsResponse, error) {
+	query := make(map[string]any)
+	query["size"] = 0
+
+	connectionScript := `
+String[] res = new String[params['_source']['connections']['connections'].length];
+for (int i=0; i<params['_source']['connections']['connections'].length;++i) { 
+  res[i] = params['_source']['connections']['connections'][i]['connection_id'];
+} 
+return res;
+`
+	query["aggs"] = map[string]any{
+		"metric_count": map[string]any{
+			"cardinality": map[string]any{
+				"field": "metric_id",
+			},
+		},
+		"connection_count": map[string]any{
+			"cardinality": map[string]any{
+				"script": map[string]any{
+					"lang":   "painless",
+					"source": connectionScript,
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("CountAnalyticsMetrics", zap.String("query", string(queryJson)))
+
+	var response CountAnalyticsMetricsResponse
+	err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, string(queryJson), &response)
+	if err != nil {
+		logger.Error("CountAnalyticsMetrics", zap.Error(err), zap.String("query", string(queryJson)))
+		return nil, err
+	}
+
+	return &response, nil
+
 }
