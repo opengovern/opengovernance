@@ -924,7 +924,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	}
 	span.End()
 
-	categoryResourceTypeMap := map[string][]string{}
+	categoryResourceTypeMapMap := make(map[string]map[string]bool)
 	for _, metric := range metrics {
 		if metric.Type != metricType {
 			continue
@@ -933,20 +933,14 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		for _, tag := range metric.Tags {
 			if tag.Key == "category" {
 				for _, category := range tag.GetValue() {
-					currentList := categoryResourceTypeMap[category]
-					for _, table := range metric.Tables {
-						found := false
-						for _, current := range currentList {
-							if current == table {
-								found = true
-								break
-							}
-						}
-						if !found {
-							currentList = append(currentList, table)
-						}
+					resourceTypeMap, ok := categoryResourceTypeMapMap[category]
+					if !ok {
+						resourceTypeMap = make(map[string]bool)
 					}
-					categoryResourceTypeMap[category] = currentList
+					for _, table := range metric.Tables {
+						resourceTypeMap[table] = true
+					}
+					categoryResourceTypeMapMap[category] = resourceTypeMap
 				}
 			}
 		}
@@ -958,37 +952,25 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		return err
 	}
 
-	for category, resourceTypes := range categoryResourceTypeMap {
-		for i, resourceType := range resourceTypes {
+	for category, resourceTypes := range categoryResourceTypeMapMap {
+		for resourceType, _ := range resourceTypes {
 			if count, _ := resourceTypeCountMap[strings.ToLower(resourceType)]; count < minCount {
-				// delete resource type from category
-				if len(categoryResourceTypeMap[category]) == 1 {
-					delete(categoryResourceTypeMap, category)
-				} else {
-					if i < len(categoryResourceTypeMap[category])-1 {
-						categoryResourceTypeMap[category] = append(
-							categoryResourceTypeMap[category][:i],
-							categoryResourceTypeMap[category][i+1:]...,
-						)
-					} else {
-						categoryResourceTypeMap[category] = categoryResourceTypeMap[category][:i]
-					}
-				}
+				h.logger.Info("removing resource type from category", zap.String("category", category), zap.String("resourceType", resourceType))
+				delete(resourceTypes, resourceType)
 			}
+		}
+		categoryResourceTypeMapMap[category] = resourceTypes
+		if len(resourceTypes) == 0 {
+			h.logger.Info("removing category", zap.String("category", category))
+			delete(categoryResourceTypeMapMap, category)
 		}
 	}
 
-	// remove duplicates
-	for category, resourceTypes := range categoryResourceTypeMap {
-		resourceTypeMap := map[string]bool{}
-		for _, resourceType := range resourceTypes {
-			resourceTypeMap[resourceType] = true
+	categoryResourceTypeMap := make(map[string][]string)
+	for category, resourceTypes := range categoryResourceTypeMapMap {
+		for resourceType, _ := range resourceTypes {
+			categoryResourceTypeMap[category] = append(categoryResourceTypeMap[category], resourceType)
 		}
-		resourceTypes = make([]string, 0, len(resourceTypeMap))
-		for resourceType := range resourceTypeMap {
-			resourceTypes = append(resourceTypes, resourceType)
-		}
-		categoryResourceTypeMap[category] = resourceTypes
 	}
 
 	return ctx.JSON(http.StatusOK, inventoryApi.AnalyticsCategoriesResponse{
