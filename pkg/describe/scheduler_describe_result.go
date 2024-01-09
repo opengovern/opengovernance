@@ -74,7 +74,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	s.jq.Consume(context.Background(), "describe-receiver", "describe", []string{"kaytu-describe-results-queue"}, "describe-receiver", func(msg jetstream.Msg) {
+	s.jq.Consume(context.Background(), "describe-receiver", DescribeStreamName, []string{DescribeResultsQueueName}, "describe-receiver", func(msg jetstream.Msg) {
 		var result DescribeJobResult
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
 			ResultsProcessedCount.WithLabelValues("", "failure").Inc()
@@ -356,7 +356,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				if s.conf.ElasticSearch.IsOpenSearch {
 					err = s.es.Delete(key, idx)
 					if err != nil {
-						s.logger.Error("failed to delete resource from opensearch", zap.Error(err))
+						s.logger.Error("failed to delete resource from open-search", zap.Error(err))
 						return
 					}
 				}
@@ -375,7 +375,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				if s.conf.ElasticSearch.IsOpenSearch {
 					err = s.es.Delete(key, idx)
 					if err != nil {
-						s.logger.Error("failed to delete lookup from opensearch", zap.Error(err))
+						s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
 						return
 					}
 				}

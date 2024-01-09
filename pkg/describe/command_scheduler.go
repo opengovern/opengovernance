@@ -13,7 +13,9 @@ import (
 const (
 	CheckupJobsQueueName    = "checkup-jobs-queue"
 	CheckupResultsQueueName = "checkup-results-queue"
-	SourceEventsQueueName   = "source-events-queue"
+
+	DescribeResultsQueueName = "kaytu-describe-results-queue"
+	DescribeStreamName       = "describe"
 )
 
 var (
@@ -84,7 +86,6 @@ func SchedulerCommand() *cobra.Command {
 				conf,
 				CheckupJobsQueueName,
 				CheckupResultsQueueName,
-				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,
 				PostgreSQLHost,

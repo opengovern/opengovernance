@@ -109,9 +109,6 @@ type Scheduler struct {
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
 
-	// sourceQueue is used to consume source updates by the onboarding service.
-	sourceQueue queue.Interface
-
 	// checkupJobQueue is used to publish checkup jobs to be performed by the workers.
 	checkupJobQueue queue.Interface
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
@@ -182,7 +179,6 @@ func InitializeScheduler(
 	conf config2.SchedulerConfig,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
-	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
 	postgresHost string,
@@ -233,11 +229,6 @@ func InitializeScheduler(
 	}
 
 	s.checkupJobResultQueue, err = initRabbitQueue(checkupJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.sourceQueue, err = initRabbitQueue(sourceQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +358,7 @@ func InitializeScheduler(
 	)
 
 	// TODO(parham): find a better place for creating describe stream
-	if err := s.jq.Stream(context.Background(), "describe", "describe job results", []string{"kaytu-describe-results-queue"}); err != nil {
+	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job results", []string{DescribeResultsQueueName}); err != nil {
 		return nil, err
 	}
 
@@ -547,9 +538,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDisabledConnectionCleanup()
 	})
 	utils.EnsureRunGoroutin(func() {
-		s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
-	})
-	utils.EnsureRunGoroutin(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 	})
 	utils.EnsureRunGoroutin(func() {
@@ -625,43 +613,7 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	}
 }
 
-// RunSourceEventsConsumer Consume events from the source queue. Based on the action of the event,
-// update the list of sources that need to be described. Either create a source
-// or update/delete the source.
-func (s *Scheduler) RunSourceEventsConsumer() error {
-	s.logger.Info("Consuming messages from SourceEvents queue")
-	msgs, err := s.sourceQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	for msg := range msgs {
-		var event SourceEvent
-		if err := json.Unmarshal(msg.Body, &event); err != nil {
-			s.logger.Error("Failed to unmarshal SourceEvent", zap.Error(err))
-			err = msg.Nack(false, false)
-			if err != nil {
-				s.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
-		}
-
-		if err := msg.Ack(false); err != nil {
-			s.logger.Error("Failed acking message", zap.Error(err))
-		}
-	}
-
-	return fmt.Errorf("source events queue channel is closed")
-}
-
 func (s *Scheduler) Stop() {
-	queues := []queue.Interface{
-		s.sourceQueue,
-	}
-
-	for _, openQueues := range queues {
-		openQueues.Close()
-	}
 }
 
 func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {

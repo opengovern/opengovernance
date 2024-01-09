@@ -14,7 +14,6 @@ import (
 	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -986,36 +985,4 @@ func (s *Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // 
 		}
 	}
 	return isAllDone, nil
-}
-
-func (s *Scheduler) getKafkaLag(topic string) (int, error) {
-	err := s.kafkaConsumer.Subscribe(topic, nil)
-	if err != nil {
-		return 0, err
-	}
-
-	metadata, err := s.kafkaConsumer.GetMetadata(&topic, false, 5000)
-	if err != nil {
-		return 0, err
-	}
-
-	numPartitions := len(metadata.Topics[topic].Partitions)
-	sum := 0
-	for partition := 0; partition < numPartitions; partition++ {
-		committed, err := s.kafkaConsumer.Committed([]kafka.TopicPartition{{Topic: &topic, Partition: int32(partition)}}, 5000)
-		if err != nil {
-			continue
-		}
-
-		_, high, err := s.kafkaConsumer.QueryWatermarkOffsets(topic, int32(partition), 5000)
-		if err != nil {
-			continue
-		}
-
-		offset := committed[0].Offset
-
-		lag := high - int64(offset)
-		sum = sum + int(lag)
-	}
-	return sum, nil
 }
