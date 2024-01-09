@@ -16,9 +16,10 @@ type CostTrendDatapoint struct {
 }
 
 type CostStackedItem struct {
-	MetricID   string  `json:"metricID"`
-	MetricName string  `json:"metricName"`
-	Cost       float64 `json:"cost"`
+	MetricID   string   `json:"metricID"`
+	MetricName string   `json:"metricName"`
+	Category   []string `json:"category"`
+	Cost       float64  `json:"cost"`
 }
 
 type ListServicesCostTrendDatapoint struct {

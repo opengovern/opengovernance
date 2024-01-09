@@ -2139,6 +2139,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostStackedItem:
     properties:
+      category:
+        items:
+          type: string
+        type: array
       cost:
         type: number
       metricID:
@@ -5850,58 +5854,6 @@ paths:
       summary: List resource findings
       tags:
       - compliance
-  /cost_estimator/api/v1/cost/aws:
-    get:
-      description: Get AWS cost for each resource
-      parameters:
-      - description: Connection ID
-        in: query
-        name: resourceId
-        required: true
-        type: string
-      - description: ResourceType
-        in: query
-        name: resourceType
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Get AWS cost
-      tags:
-      - cost-estimator
-  /cost_estimator/api/v1/cost/azure:
-    get:
-      description: Get Azure cost for each resource
-      parameters:
-      - description: Connection ID
-        in: query
-        name: resourceId
-        required: true
-        type: string
-      - description: ResourceType
-        in: query
-        name: resourceType
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Get Azure cost
-      tags:
-      - cost-estimator
   /integration/api/v1/connections/{connectionId}:
     delete:
       description: Deleting a single connection either AWS / Azure for the given connection

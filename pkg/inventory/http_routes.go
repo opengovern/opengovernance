@@ -1640,15 +1640,22 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 		dt, _ := time.Parse(format, timeAt)
 		var cost []inventoryApi.CostStackedItem
 		for k, v := range costVal.CostStacked {
-			metricName := ""
+			var metricName string
+			var category []string
 			for _, v := range metrics {
 				if v.ID == k {
 					metricName = v.Name
+					for _, tag := range v.Tags {
+						if tag.GetKey() == "category" {
+							category = tag.GetValue()
+						}
+					}
 				}
 			}
 			cost = append(cost, inventoryApi.CostStackedItem{
 				MetricID:   k,
 				MetricName: metricName,
+				Category:   category,
 				Cost:       v,
 			})
 		}
