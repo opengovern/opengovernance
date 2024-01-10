@@ -98,15 +98,21 @@ func (s *Server) UpdateLastLoginLoop() {
 }
 
 func (s *Server) UpdateLastLogin(claim *userClaim) {
-	timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
+	timeNow := time.Now().Format("2006-01-02 15:04:05 MST")
 	doUpdate := false
 	if claim.MemberSince == nil {
 		claim.MemberSince = &timeNow
 		doUpdate = true
 	}
-	if claim.UserLastLogin == nil || *claim.UserLastLogin != timeNow {
+	if claim.UserLastLogin == nil {
 		claim.UserLastLogin = &timeNow
 		doUpdate = true
+	} else {
+		tim, _ := time.Parse("2006-01-02 15:04:05 MST", *claim.UserLastLogin)
+		if time.Now().After(tim.Add(15 * time.Minute)) {
+			claim.UserLastLogin = &timeNow
+			doUpdate = true
+		}
 	}
 
 	if doUpdate {
