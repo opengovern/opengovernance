@@ -12,10 +12,13 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
+	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupAPI "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
@@ -23,6 +26,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/discovery"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/insight"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
@@ -213,6 +217,30 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
+	if err := s.jq.Stream(context.Background(), insight.StreamName, "insight job queue", []string{insight.ResultsQueueName, insight.JobsQueueName}); err != nil {
+		return nil, err
+	}
+
+	if err := s.jq.Stream(context.Background(), summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}); err != nil {
+		return nil, err
+	}
+
+	if err := s.jq.Stream(context.Background(), runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}); err != nil {
+		return nil, err
+	}
+
+	if err := s.jq.Stream(context.Background(), analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}); err != nil {
+		return nil, err
+	}
+
+	if err := s.jq.Stream(context.Background(), checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}); err != nil {
+		return nil, err
+	}
+
+	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}); err != nil {
+		return nil, err
+	}
+
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = db.Database{ORM: orm}
 
@@ -299,15 +327,10 @@ func InitializeScheduler(
 		grpc.StreamInterceptor(describeServer.grpcStreamAuthInterceptor),
 	)
 
-	// TODO(parham): find a better place for creating describe stream
-	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job results", []string{DescribeResultsQueueName}); err != nil {
-		return nil, err
-	}
-
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
-		UserRole: api2.InternalRole,
+		UserRole: authAPI.InternalRole,
 	}, CurrentWorkspaceID)
 	if err != nil {
 		return nil, err
@@ -351,7 +374,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	}
 
 	httpCtx := &httpclient.Context{
-		UserRole: api2.ViewerRole,
+		UserRole: authAPI.ViewerRole,
 	}
 	describeJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyDescribeJobInterval)
 	if err != nil {
@@ -514,7 +537,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.InternalRole}, nil)
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue

@@ -21,13 +21,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	JobQueueTopic       = "analytics-jobs-queue"
-	JobResultQueueTopic = "analytics-results-queue"
-	consumerGroup       = "analytics-worker"
-	StreamName          = "analytics-worker"
-)
-
 func WorkerCommand() *cobra.Command {
 	var (
 		id  string
@@ -142,10 +135,6 @@ func (w *Worker) Run(ctx context.Context) error {
 			w.logger.Error("panic happened with error", zap.Error(fmt.Errorf("%v", r)))
 		}
 	}()
-
-	if err := w.jq.Stream(context.Background(), StreamName, "analytics jobs", []string{JobQueueTopic, JobResultQueueTopic}); err != nil {
-		return err
-	}
 
 	w.logger.Info("Starting analytics worker")
 
