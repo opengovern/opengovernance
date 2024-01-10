@@ -161,19 +161,23 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	authServer := &Server{
-		host:            kaytuHost,
-		kaytuPublicKey:  pub.(*rsa.PublicKey),
-		verifier:        verifier,
-		verifierNative:  verifierNative,
-		logger:          logger,
-		workspaceClient: workspaceClient,
-		db:              adb,
-	}
-	go authServer.WorkspaceMapUpdater()
-
 	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
 		auth0Connection, int(inviteTTL))
+
+	authServer := &Server{
+		host:                kaytuHost,
+		kaytuPublicKey:      pub.(*rsa.PublicKey),
+		verifier:            verifier,
+		verifierNative:      verifierNative,
+		logger:              logger,
+		workspaceClient:     workspaceClient,
+		db:                  adb,
+		auth0Service:        auth0Service,
+		updateLoginUserList: nil,
+		updateLogin:         make(chan User),
+	}
+	go authServer.WorkspaceMapUpdater()
+	go authServer.UpdateLastLoginLoop()
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
