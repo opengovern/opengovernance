@@ -290,6 +290,9 @@ func (s *Scheduler) scheduleDescribeJob() {
 		}
 
 		for _, resourceType := range resourceTypes {
+			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
+				continue
+			}
 			_, err = s.describe(connection, resourceType, true, false)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
