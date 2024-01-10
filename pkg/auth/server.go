@@ -93,7 +93,7 @@ func (s *Server) UpdateLastLoginLoop() {
 				s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
 			}
 		}
-		time.Sleep(time.Minute)
+		time.Sleep(time.Second)
 	}
 }
 
@@ -180,7 +180,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-	//s.UpdateLastLogin(user)
+	s.UpdateLastLogin(user)
 
 	return &envoyauth.CheckResponse{
 		Status: &status.Status{

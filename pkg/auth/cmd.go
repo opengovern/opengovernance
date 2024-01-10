@@ -174,7 +174,7 @@ func start(ctx context.Context) error {
 		db:                  adb,
 		auth0Service:        auth0Service,
 		updateLoginUserList: nil,
-		updateLogin:         make(chan User),
+		updateLogin:         make(chan User, 100000),
 	}
 	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()
