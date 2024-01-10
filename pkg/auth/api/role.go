@@ -87,8 +87,8 @@ type WorkspaceRoleBinding struct {
 	Email        string       `json:"email" example:"johndoe@example.com"`                  // Email address of the user
 	RoleName     Role         `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 	Status       InviteStatus `json:"status" enums:"accepted,pending" example:"accepted"`   // Invite status
-	LastActivity time.Time    `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
-	CreatedAt    time.Time    `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
+	LastActivity *string      `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
+	CreatedAt    *string      `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
 }
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects

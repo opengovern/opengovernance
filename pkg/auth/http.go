@@ -256,8 +256,8 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 			Email:        u.Email,
 			RoleName:     u.AppMetadata.WorkspaceAccess[workspaceID],
 			Status:       status,
-			LastActivity: u.LastLogin,
-			CreatedAt:    u.CreatedAt,
+			LastActivity: u.AppMetadata.LastLogin,
+			CreatedAt:    u.AppMetadata.MemberSince,
 		})
 	}
 
