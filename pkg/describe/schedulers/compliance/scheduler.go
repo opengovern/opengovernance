@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	onboardAPI "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 )
 
 func (s *JobScheduler) runScheduler() error {
 	s.logger.Info("scheduleComplianceJob")
-	clientCtx := &httpclient.Context{UserRole: api2.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authAPI.InternalRole}
 
 	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx)
 	if err != nil {
@@ -22,14 +22,14 @@ func (s *JobScheduler) runScheduler() error {
 	if err != nil {
 		return fmt.Errorf("error while listing allConnections: %v", err)
 	}
-	connectionsMap := make(map[string]*onboardApi.Connection)
+	connectionsMap := make(map[string]*onboardAPI.Connection)
 	for _, connection := range allConnections {
 		connection := connection
 		connectionsMap[connection.ID.String()] = &connection
 	}
 
 	for _, benchmark := range benchmarks {
-		var connections []onboardApi.Connection
+		var connections []onboardAPI.Connection
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
 			return fmt.Errorf("error while listing assignments: %v", err)

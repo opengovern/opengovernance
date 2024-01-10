@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
-	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	checkupAPI "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
@@ -32,9 +32,9 @@ import (
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -104,14 +104,6 @@ type Scheduler struct {
 	httpServer *HttpServer
 	grpcServer *grpc.Server
 
-	// describeJobResultQueue is used to consume the describe job results returned by the workers.
-	describeJobResultQueue queue.Interface
-
-	// checkupJobQueue is used to publish checkup jobs to be performed by the workers.
-	checkupJobQueue queue.Interface
-	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
-	checkupJobResultQueue queue.Interface
-
 	describeIntervalHours      time.Duration
 	fullDiscoveryIntervalHours time.Duration
 	costDiscoveryIntervalHours time.Duration
@@ -147,29 +139,12 @@ type Scheduler struct {
 
 	complianceScheduler *compliance.JobScheduler
 	discoveryScheduler  *discovery.Scheduler
-	conf                config2.SchedulerConfig
-}
-
-func initRabbitQueue(queueName string) (queue.Interface, error) {
-	qCfg := queue.Config{}
-	qCfg.Server.Username = RabbitMQUsername
-	qCfg.Server.Password = RabbitMQPassword
-	qCfg.Server.Host = RabbitMQService
-	qCfg.Server.Port = RabbitMQPort
-	qCfg.Queue.Name = queueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = "describe-scheduler"
-	insightQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return insightQueue, nil
+	conf                config.SchedulerConfig
 }
 
 func InitializeScheduler(
 	id string,
-	conf config2.SchedulerConfig,
+	conf config.SchedulerConfig,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
 	postgresUsername string,
@@ -202,25 +177,13 @@ func InitializeScheduler(
 		}
 	}()
 
-	lambdaCfg, err := config.LoadDefaultConfig(context.Background())
+	lambdaCfg, err := awsConfig.LoadDefaultConfig(context.Background())
 	lambdaCfg.Region = KeyRegion
 
 	s.conf = conf
 	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
-	if err != nil {
-		return nil, err
-	}
-
-	s.logger.Info("Initializing the scheduler")
-
-	s.checkupJobQueue, err = initRabbitQueue(checkupJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.checkupJobResultQueue, err = initRabbitQueue(checkupJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -594,21 +557,6 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 func (s *Scheduler) Stop() {
 }
 
-func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
-	count, err := queue.Len()
-	if err != nil {
-		logger.Error("Failed to get queue len", zap.String("queueName", queue.Name()), zap.Error(err))
-		DescribePublishingBlocked.WithLabelValues(queue.Name()).Set(0)
-		return false
-	}
-	if count >= MaxJobInQueue {
-		DescribePublishingBlocked.WithLabelValues(queue.Name()).Set(1)
-		return true
-	}
-	DescribePublishingBlocked.WithLabelValues(queue.Name()).Set(0)
-	return false
-}
-
 func (s *Scheduler) RunCheckupJobScheduler() {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
@@ -630,12 +578,6 @@ func (s *Scheduler) scheduleCheckupJob() {
 
 	if checkupJob == nil ||
 		checkupJob.CreatedAt.Add(time.Duration(s.checkupIntervalHours)*time.Hour).Before(time.Now()) {
-		if isPublishingBlocked(s.logger, s.checkupJobQueue) {
-			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
-			CheckupJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
 		job := newCheckupJob()
 		err = s.db.AddCheckupJob(&job)
 		if err != nil {
@@ -645,14 +587,23 @@ func (s *Scheduler) scheduleCheckupJob() {
 				zap.Error(err),
 			)
 		}
-		err = enqueueCheckupJobs(s.db, s.checkupJobQueue, job)
+
+		bytes, err := json.Marshal(checkup.Job{
+			JobID:      job.ID,
+			ExecutedAt: job.CreatedAt.UnixMilli(),
+		})
 		if err != nil {
+			CheckupJobsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("Failed to marshal a checkup job as json", zap.Error(err), zap.Uint("jobId", job.ID))
+		}
+
+		if err := s.jq.Produce(context.Background(), checkup.JobsQueueName, bytes, fmt.Sprintf("job-%d", job.ID)); err != nil {
 			CheckupJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to enqueue CheckupJob",
 				zap.Uint("jobId", job.ID),
 				zap.Error(err),
 			)
-			job.Status = checkupapi.CheckupJobFailed
+			job.Status = checkupAPI.CheckupJobFailed
 			err = s.db.UpdateCheckupJobStatus(job)
 			if err != nil {
 				s.logger.Error("Failed to update CheckupJob status",
@@ -665,24 +616,54 @@ func (s *Scheduler) scheduleCheckupJob() {
 	}
 }
 
-func enqueueCheckupJobs(_ db.Database, q queue.Interface, job model.CheckupJob) error {
-	if err := q.Publish(checkup.Job{
-		JobID:      job.ID,
-		ExecutedAt: job.CreatedAt.UnixMilli(),
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
 // RunCheckupJobResultsConsumer consumes messages from the checkupJobResultQueue queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
 func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the CheckupJobResultQueue queue")
 
-	msgs, err := s.checkupJobResultQueue.Consume()
-	if err != nil {
+	if _, err := s.jq.Consume(
+		context.Background(),
+		"checkup-scheduler",
+		checkup.StreamName,
+		[]string{checkup.ResultsQueueName},
+		"checkup-scheduler",
+		func(msg jetstream.Msg) {
+			var result checkup.JobResult
+
+			if err := json.Unmarshal(msg.Data(), &result); err != nil {
+				s.logger.Error("Failed to unmarshal CheckupJobResult results", zap.Error(err))
+
+				// when message cannot be unmarshal, there is no need to consume it again.
+				if err := msg.Ack(); err != nil {
+					s.logger.Error("Failed to ack the message", zap.Error(err))
+				}
+
+				return
+			}
+
+			s.logger.Info("Processing CheckupJobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
+
+			if err := s.db.UpdateCheckupJob(result.JobID, result.Status, result.Error); err != nil {
+				s.logger.Error("Failed to update the status of CheckupJob",
+					zap.Uint("jobId", result.JobID),
+					zap.Error(err))
+
+				if err = msg.Nak(); err != nil {
+					s.logger.Error("Failed to not ack the message", zap.Error(err))
+				}
+
+				return
+			}
+
+			if err := msg.Ack(); err != nil {
+				s.logger.Error("Failed to ack the message", zap.Error(err))
+			}
+		},
+	); err != nil {
 		return err
 	}
 
@@ -690,52 +671,16 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 	defer t.Stop()
 
 	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result checkup.JobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal CheckupJobResult results", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing CheckupJobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateCheckupJob(result.JobID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of CheckupJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err))
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
-			}
+		<-t.C
+		err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours)
+		if err != nil {
+			s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
 		}
 	}
 }
 
 func newCheckupJob() model.CheckupJob {
 	return model.CheckupJob{
-		Status: checkupapi.CheckupJobInProgress,
+		Status: checkupAPI.CheckupJobInProgress,
 	}
 }

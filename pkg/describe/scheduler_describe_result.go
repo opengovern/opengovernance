@@ -305,23 +305,23 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 			taskKeys, taskIdx := task.KeysAndIndex()
 			task.EsID = es2.HashOf(taskKeys...)
 			task.EsIndex = taskIdx
+
 			if len(task.DeletingResources) > 0 {
-				err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []es2.Doc{task})
+				if err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []es2.Doc{task}); err != nil {
+					s.logger.Error("failed to send delete message to elastic",
+						zap.Uint("jobId", res.JobID),
+						zap.String("connection_id", res.DescribeJob.SourceID),
+						zap.String("resource_type", res.DescribeJob.ResourceType),
+						zap.Error(err))
+					if i > 10 {
+						CleanupJobCount.WithLabelValues("failure").Inc()
+						return 0, err
+					}
+					i++
+					continue
+				}
 			}
 
-			if err != nil {
-				s.logger.Error("failed to send delete message to kafka",
-					zap.Uint("jobId", res.JobID),
-					zap.String("connection_id", res.DescribeJob.SourceID),
-					zap.String("resource_type", res.DescribeJob.ResourceType),
-					zap.Error(err))
-				if i > 10 {
-					CleanupJobCount.WithLabelValues("failure").Inc()
-					return 0, err
-				}
-				i++
-				continue
-			}
 			break
 		}
 	}
@@ -388,10 +388,6 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 				}
 			}
 
-			if err != nil {
-				s.logger.Error("failed to send delete message to kafka", zap.Error(err))
-				break
-			}
 			s.logger.Info("deleted old resources", zap.Int("deleted_count", deletedCount), zap.String("connection_id", connectionId))
 		}
 	}

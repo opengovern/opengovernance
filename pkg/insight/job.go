@@ -328,7 +328,7 @@ func (j Job) Do(
 
 				if esConfig.IsOpenSearch {
 					if err := pipeline.SendToPipeline(esConfig.IngestionEndpoint, resources); err != nil {
-						fail(fmt.Errorf("send to kafka: %w", err))
+						fail(fmt.Errorf("send to elastic: %w", err))
 					}
 				}
 			} else {

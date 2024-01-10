@@ -1,9 +1,10 @@
 package api
 
 import (
+	"time"
+
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"time"
 )
 
 type ResourceCollectionStatus string

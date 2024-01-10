@@ -2875,7 +2875,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("invalid key: ", key)
+			return nil, fmt.Errorf("invalid key: %s", key)
 		}
 	}
 	return connections, nil

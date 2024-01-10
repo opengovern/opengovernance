@@ -1,10 +1,11 @@
 package api
 
 import (
+	"time"
+
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"time"
 )
 
 type Metric struct {

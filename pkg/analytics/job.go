@@ -387,7 +387,8 @@ func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, en
 		return err
 	}
 
-	logger.Info("done sending result to kafka", zap.String("metric", metric.ID), zap.Bool("isOpenSearch", conf.ElasticSearch.IsOpenSearch))
+	logger.Info("done sending result to elastic", zap.String("metric", metric.ID), zap.Bool("isOpenSearch", conf.ElasticSearch.IsOpenSearch))
+
 	return nil
 }
 

@@ -1,12 +1,11 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type DirectionType string
