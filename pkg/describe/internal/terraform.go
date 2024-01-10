@@ -1,17 +1,17 @@
 package internal
 
 import (
+	"io"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/kaytu-io/terraform-package/external/backend"
 	azurem "github.com/kaytu-io/terraform-package/external/backend/remote-state/azure"
 	"github.com/kaytu-io/terraform-package/external/backend/remote-state/s3"
 	"github.com/kaytu-io/terraform-package/external/states"
-	"github.com/kaytu-io/terraform-package/external/tfdiags"
-	"io"
-	"strings"
-
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
+	"github.com/kaytu-io/terraform-package/external/tfdiags"
 )
 
 type Config struct {
@@ -58,7 +58,7 @@ func GetResourceIDFromArn(arns []string) ([]string, error) {
 	haveResource := make(map[string]bool)
 	var resources []string
 	for _, arn := range arns {
-		if arn[0] == '/' { //Azure
+		if arn[0] == '/' { // Azure
 			resources = append(resources, arn)
 		} else { // AWS
 			splitArn := strings.Split(arn, ":")
@@ -73,7 +73,6 @@ func GetResourceIDFromArn(arns []string) ([]string, error) {
 }
 
 func GetRemoteState(config Config) *states.State {
-
 	c := backend.TestWrapConfig(config.Config)
 
 	var b backend.Backend

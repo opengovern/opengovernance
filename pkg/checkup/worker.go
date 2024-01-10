@@ -1,33 +1,28 @@
 package checkup
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
 
 type Worker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	logger         *zap.Logger
-	pusher         *push.Pusher
-	onboardClient  client.OnboardServiceClient
+	id            string
+	jq            *jq.JobQueue
+	logger        *zap.Logger
+	pusher        *push.Pusher
+	onboardClient client.OnboardServiceClient
 }
 
-func InitializeWorker(
+func NewWorker(
 	id string,
-	rabbitMQUsername string,
-	rabbitMQPassword string,
-	rabbitMQHost string,
-	rabbitMQPort int,
-	checkupJobQueue string,
-	checkupJobResultQueue string,
+	natsURL string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
 	onboardBaseURL string,
@@ -43,35 +38,11 @@ func InitializeWorker(
 		}
 	}()
 
-	qCfg := queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = checkupJobQueue
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = w.id
-	checkupQueue, err := queue.New(qCfg)
+	jq, err := jq.New(natsURL, logger)
 	if err != nil {
 		return nil, err
 	}
-
-	w.jobQueue = checkupQueue
-
-	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = checkupJobResultQueue
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = w.id
-	checkupResultsQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	w.jobResultQueue = checkupResultsQueue
+	w.jq = jq
 
 	w.logger = logger
 
@@ -84,53 +55,61 @@ func InitializeWorker(
 }
 
 func (w *Worker) Run() error {
-	msgs, err := w.jobQueue.Consume()
-	if err != nil {
+	ctx := context.Background()
+
+	if _, err := w.jq.Consume(
+		ctx,
+		"checkup-service",
+		StreamName,
+		[]string{JobsQueueName},
+		"checkup-service",
+		func(msg jetstream.Msg) {
+			var job Job
+			if err := json.Unmarshal(msg.Data(), &job); err != nil {
+				w.logger.Error("Failed to unmarshal task", zap.Error(err))
+
+				// sending ack for message because we cannot do anything
+				// more by repeating the process.
+				if err = msg.Ack(); err != nil {
+					w.logger.Error("Failed to ack the message", zap.Error(err))
+				}
+
+				return
+			}
+
+			w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
+
+			result := job.Do(w.onboardClient, w.logger)
+
+			bytes, err := json.Marshal(result)
+			if err != nil {
+				return
+			}
+
+			w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
+
+			if err := w.jq.Produce(context.Background(), ResultsQueueName, bytes, fmt.Sprintf("job-%d", result.JobID)); err != nil {
+				w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
+			}
+
+			if err := msg.Ack(); err != nil {
+				w.logger.Error("Failed to ack the message", zap.Error(err))
+			}
+
+			err = w.pusher.Push()
+			if err != nil {
+				w.logger.Error("Failed to push metrics", zap.Error(err))
+			}
+		},
+	); err != nil {
 		return err
 	}
 
-	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
-	for msg := range msgs {
-		var job Job
-		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err))
-			err = msg.Nack(false, false)
-			if err != nil {
-				w.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
-		}
-		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.onboardClient, w.logger)
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
-		err := w.jobResultQueue.Publish(result)
-		if err != nil {
-			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
-		}
-
-		if err := msg.Ack(false); err != nil {
-			w.logger.Error("Failed acking message", zap.Error(err))
-		}
-
-		err = w.pusher.Push()
-		if err != nil {
-			w.logger.Error("Failed to push metrics", zap.Error(err))
-		}
-	}
-
-	return fmt.Errorf("checkup jobs channel is closed")
+	w.logger.Error("Waiting indefinitely for messages. To exit press CTRL+C")
+	<-ctx.Done()
+	return nil
 }
 
 func (w *Worker) Stop() {
 	w.pusher.Push()
-
-	if w.jobQueue != nil {
-		w.jobQueue.Close() //nolint,gosec
-		w.jobQueue = nil
-	}
-
-	if w.jobResultQueue != nil {
-		w.jobResultQueue.Close() //nolint,gosec
-		w.jobResultQueue = nil
-	}
 }

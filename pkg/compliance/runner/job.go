@@ -87,7 +87,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		return 0, err
 	}
 
-	w.logger.Info("Extracting and pushing to kafka",
+	w.logger.Info("Extracting and pushing to nats",
 		zap.Uint("job_id", j.ID),
 		zap.Int("res_count", len(res.Data)),
 		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),

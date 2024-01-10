@@ -2,20 +2,17 @@ package checkup
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"strconv"
 	"time"
 
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/go-errors/errors"
+	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-
-	"github.com/go-errors/errors"
 	"go.uber.org/zap"
 )
 
@@ -80,7 +77,7 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 	// Healthcheck
 	logger.Info("starting healthcheck")
 	connections, err := onboardClient.ListSources(&httpclient.Context{
-		UserRole: api2.EditorRole,
+		UserRole: authAPI.EditorRole,
 	}, nil)
 	if err != nil {
 		logger.Error("failed to get connections list from onboard service", zap.Error(err))
@@ -93,7 +90,7 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 			}
 			logger.Info("checking source health", zap.String("source_id", connectionObj.ID.String()))
 			_, err := onboardClient.GetSourceHealthcheck(&httpclient.Context{
-				UserRole: api2.EditorRole,
+				UserRole: authAPI.EditorRole,
 			}, connectionObj.ID.String(), true)
 			if err != nil {
 				logger.Error("failed to check source health", zap.String("source_id", connectionObj.ID.String()), zap.Error(err))
@@ -105,7 +102,7 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 	// Auto Onboard
 	logger.Info("starting auto onboard")
 	credentials, err := onboardClient.ListCredentials(&httpclient.Context{
-		UserRole: api2.EditorRole,
+		UserRole: authAPI.EditorRole,
 	}, nil, nil, utils.GetPointer("healthy"), 10000, 1)
 	if err != nil {
 		logger.Error("failed to get credentials list from onboard service", zap.Error(err))
@@ -117,7 +114,7 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 		}
 		logger.Info("triggering auto onboard", zap.String("credential_id", cred.ID))
 		_, err := onboardClient.TriggerAutoOnboard(&httpclient.Context{
-			UserRole: api2.EditorRole,
+			UserRole: authAPI.EditorRole,
 		}, cred.ID)
 		if err != nil {
 			logger.Error("failed to trigger auto onboard", zap.String("credential_id", cred.ID), zap.Error(err))
