@@ -3,6 +3,9 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,6 +77,8 @@ type Connection struct {
 
 	Metadata           map[string]any `json:"metadata"`
 	DescribeJobRunning bool
+
+	supportedResourceTypes map[string]bool
 }
 
 func (c Connection) IsEnabled() bool {
@@ -161,4 +166,47 @@ func NewConnection(s model.Connection) Connection {
 		LastInventory: nil,
 	}
 	return conn
+}
+
+func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
+	if c.supportedResourceTypes != nil {
+		return c.supportedResourceTypes
+	} else {
+		c.supportedResourceTypes = make(map[string]bool)
+	}
+	switch c.Connector {
+	case source.CloudAWS:
+		rts := kaytuAws.GetResourceTypesMap()
+		for rt := range rts {
+			c.supportedResourceTypes[strings.ToLower(rt)] = true
+		}
+		return c.supportedResourceTypes
+	case source.CloudAzure:
+		rts := kaytuAzure.GetResourceTypesMap()
+
+		// Remove cost resources if quota is not supported so we don't describe em
+		if subscriptionPolicies, ok := c.Metadata["subscriptionPolicies"]; ok {
+			if subscriptionPoliciesMap, ok := subscriptionPolicies.(map[string]any); ok {
+				if quotaId, ok := subscriptionPoliciesMap["quotaId"]; ok {
+					if quotaIdString, ok := quotaId.(string); ok {
+						unsupportedQuotas := kaytuAzure.GetUnsupportedCostQuotaIds()
+						for _, unsupportedQuota := range unsupportedQuotas {
+							if strings.ToLower(quotaIdString) == strings.ToLower(unsupportedQuota) {
+								delete(rts, "Microsoft.CostManagement/CostBySubscription")
+								delete(rts, "Microsoft.CostManagement/CostByResourceType")
+							}
+						}
+					}
+				}
+			}
+		}
+
+		for rt := range rts {
+			c.supportedResourceTypes[strings.ToLower(rt)] = true
+		}
+
+		return c.supportedResourceTypes
+	}
+
+	return nil
 }
