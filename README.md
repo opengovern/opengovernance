@@ -29,7 +29,7 @@ Start using the CLI by running command
 
 ## Generating Swagger UI
 
-Before generating docs, you need to install [`sway`](https://github.com/swaggo/echo-swagger#start-using-it) CLI tool.
+Before generating docs, you need to install [`swag`](https://github.com/swaggo/echo-swagger#start-using-it) CLI tool.
 To generate the Swagger documentation, run:
 
 ```bash

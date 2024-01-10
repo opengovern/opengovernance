@@ -50,19 +50,19 @@ func New(
 }
 
 func (s *JobScheduler) Run() {
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunScheduler()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunPublisher()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.RunSummarizer()
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 	})
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("ComplianceSummarizerResult consumer exited", zap.Error(s.RunComplianceSummarizerResultsConsumer()))
 	})
 }

@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
@@ -13,7 +15,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/subscription/config"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/db"
 	"go.uber.org/zap"
-	"time"
 )
 
 type MeteringService struct {
@@ -48,7 +49,7 @@ func NewMeteringService(
 }
 
 func (svc MeteringService) Start() {
-	utils.EnsureRunGoroutin(func() {
+	utils.EnsureRunGoroutine(func() {
 		svc.RunEnsurePublishing()
 	})
 }

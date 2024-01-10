@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func EnsureRunGoroutin(f func(), tryCount ...int) {
+func EnsureRunGoroutine(f func(), tryCount ...int) {
 	try := 0
 	if len(tryCount) > 0 {
 		try = tryCount[0]
@@ -22,7 +22,7 @@ func EnsureRunGoroutin(f func(), tryCount ...int) {
 				if try > 10 {
 					os.Exit(1)
 				}
-				EnsureRunGoroutin(f, try+1)
+				EnsureRunGoroutine(f, try+1)
 			}
 		}()
 
