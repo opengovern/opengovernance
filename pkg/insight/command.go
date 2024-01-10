@@ -9,12 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	InsightJobsQueueName    = "insight-jobs-queue"
-	InsightResultsQueueName = "insight-results-queue"
-	InsightStreamName       = "insight"
-)
-
 var (
 	SteampipeHost = os.Getenv("STEAMPIPE_HOST")
 
@@ -54,8 +48,6 @@ func WorkerCommand() *cobra.Command {
 			w, err := NewWorker(
 				id,
 				cnf,
-				InsightJobsQueueName,
-				InsightResultsQueueName,
 				logger,
 				S3Endpoint, S3AccessKey,
 				S3AccessSecret, S3Region,

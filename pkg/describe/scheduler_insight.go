@@ -107,7 +107,7 @@ func enqueueInsightJobs(jq *jq.JobQueue, job model.InsightJob, ins complianceAPI
 
 	if err := jq.Produce(
 		context.Background(),
-		insight.InsightJobsQueueName,
+		insight.JobsQueueName,
 		bytes,
 		fmt.Sprintf("job-%d", job.ID),
 	); err != nil {

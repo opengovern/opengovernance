@@ -17,14 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	JobQueueTopic    = "compliance-summarizer-job-queue"
-	ResultQueueTopic = "compliance-summarizer-job-result"
-	ConsumerGroup    = "compliance-summarizer"
-
-	StreamName = "compliance-summarizer"
-)
-
 type Config struct {
 	ElasticSearch         config.ElasticSearch
 	NATS                  config.NATS
@@ -62,10 +54,6 @@ func NewWorker(
 
 	jq, err := jq.New(config.NATS.URL, logger)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := jq.Stream(context.Background(), StreamName, "compliance summarizer job queues", []string{JobQueueTopic, ResultQueueTopic}); err != nil {
 		return nil, err
 	}
 

@@ -50,7 +50,6 @@ type WorkerConfig struct {
 func NewWorker(
 	id string,
 	workerConfig WorkerConfig,
-	insightJobQueue string, insightJobResultQueue string,
 	logger *zap.Logger,
 	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 ) (*Worker, error) {
@@ -98,17 +97,13 @@ func NewWorker(
 	}
 	w.jq = jq
 
-	if err := w.jq.Stream(context.Background(), InsightStreamName, "insight jobs", []string{InsightResultsQueueName, InsightJobsQueueName}); err != nil {
-		return nil, err
-	}
-
 	return w, nil
 }
 
 func (w *Worker) Run() error {
 	ctx := context.Background()
 
-	w.jq.Consume(context.Background(), "insight-service", InsightStreamName, []string{InsightJobsQueueName}, "insight-service", func(msg jetstream.Msg) {
+	w.jq.Consume(context.Background(), "insight-service", StreamName, []string{JobsQueueName}, "insight-service", func(msg jetstream.Msg) {
 		var job Job
 		if err := json.Unmarshal(msg.Data(), &job); err != nil {
 			w.logger.Error("Failed to unmarshal task", zap.Error(err))
@@ -138,7 +133,7 @@ func (w *Worker) Run() error {
 			w.logger.Error("failed to marshal result as json", zap.Error(err))
 		}
 
-		if err := w.jq.Produce(context.Background(), InsightResultsQueueName, bytes, fmt.Sprintf("job-%d", job.JobID)); err != nil {
+		if err := w.jq.Produce(context.Background(), ResultsQueueName, bytes, fmt.Sprintf("job-%d", job.JobID)); err != nil {
 			w.logger.Error("Failed to send results to queue", zap.Error(err))
 		}
 

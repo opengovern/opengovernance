@@ -8,12 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	JobsQueueName    = "checkup-jobs-queue"
-	ResultsQueueName = "checkup-results-queue"
-	StreamName       = "checkup"
-)
-
 var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 	OnboardBaseURL        = os.Getenv("ONBOARD_BASE_URL")

@@ -17,7 +17,7 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 
 	ctx := context.Background()
 
-	s.jq.Consume(ctx, "insight-scheduler", insight.InsightStreamName, []string{insight.InsightResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
+	s.jq.Consume(ctx, "insight-scheduler", insight.StreamName, []string{insight.ResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
 		var result insight.JobResult
 
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
