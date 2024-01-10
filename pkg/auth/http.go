@@ -199,7 +199,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		}
 		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
 
-		timeNow := time.Now().Format("2006-01-02")
+		timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
 		doUpdate := false
 		if usr.AppMetadata.MemberSince == nil {
 			usr.AppMetadata.MemberSince = &timeNow
