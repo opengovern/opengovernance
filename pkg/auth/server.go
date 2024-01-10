@@ -12,6 +12,7 @@ import (
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang-jwt/jwt"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
@@ -22,7 +23,13 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"strings"
+	"time"
 )
+
+type User struct {
+	UserID   string
+	Metadata auth0.Metadata
+}
 
 type Server struct {
 	host string
@@ -33,6 +40,10 @@ type Server struct {
 	logger          *zap.Logger
 	workspaceClient client.WorkspaceServiceClient
 	db              db.Database
+	auth0Service    *auth0.Service
+
+	updateLoginUserList []User
+	updateLogin         chan User
 }
 
 func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
@@ -46,6 +57,71 @@ func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
 		}
 	}
 	return workspaceMap.ID, nil
+}
+
+func (s *Server) UpdateLastLoginLoop() {
+	for {
+		finished := false
+		for !finished {
+			select {
+			case userId := <-s.updateLogin:
+				alreadyExists := false
+				for _, user := range s.updateLoginUserList {
+					if user.UserID == userId.UserID {
+						alreadyExists = true
+					}
+				}
+
+				if !alreadyExists {
+					s.updateLoginUserList = append(s.updateLoginUserList, userId)
+				}
+			default:
+				finished = true
+			}
+		}
+
+		for _, user := range s.updateLoginUserList {
+			err := s.auth0Service.PatchUserAppMetadata(user.UserID, auth0.Metadata{
+				WorkspaceAccess: user.Metadata.WorkspaceAccess,
+				GlobalAccess:    user.Metadata.GlobalAccess,
+				ColorBlindMode:  user.Metadata.ColorBlindMode,
+				Theme:           user.Metadata.Theme,
+				MemberSince:     user.Metadata.MemberSince,
+				LastLogin:       user.Metadata.LastLogin,
+			})
+			if err != nil {
+				s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
+			}
+		}
+		time.Sleep(time.Minute)
+	}
+}
+
+func (s *Server) UpdateLastLogin(claim *userClaim) {
+	timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
+	doUpdate := false
+	if claim.MemberSince == nil {
+		claim.MemberSince = &timeNow
+		doUpdate = true
+	}
+	if claim.UserLastLogin == nil || *claim.UserLastLogin != timeNow {
+		claim.UserLastLogin = &timeNow
+		doUpdate = true
+	}
+
+	if doUpdate {
+		s.updateLogin <- User{
+			UserID: claim.ExternalUserID,
+			Metadata: auth0.Metadata{
+				WorkspaceAccess: claim.WorkspaceAccess,
+				GlobalAccess:    claim.GlobalAccess,
+				ColorBlindMode:  claim.ColorBlindMode,
+				Theme:           claim.Theme,
+				MemberSince:     claim.MemberSince,
+				LastLogin:       claim.UserLastLogin,
+			},
+		}
+	}
 }
 
 func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoyauth.CheckResponse, error) {
@@ -104,6 +180,8 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
+	s.UpdateLastLogin(user)
+
 	return &envoyauth.CheckResponse{
 		Status: &status.Status{
 			Code: int32(rpc.OK),
@@ -146,7 +224,12 @@ type userClaim struct {
 	WorkspaceAccess map[string]api.Role `json:"https://app.kaytu.io/workspaceAccess"`
 	GlobalAccess    *api.Role           `json:"https://app.kaytu.io/globalAccess"`
 	Email           string              `json:"https://app.kaytu.io/email"`
-	ExternalUserID  string              `json:"sub"`
+	MemberSince     *string             `json:"https://app.kaytu.io/memberSince"`
+	UserLastLogin   *string             `json:"https://app.kaytu.io/userLastLogin"`
+	ColorBlindMode  *bool               `json:"https://app.kaytu.io/colorBlindMode"`
+	Theme           *api.Theme          `json:"https://app.kaytu.io/theme"`
+
+	ExternalUserID string `json:"sub"`
 }
 
 func (u userClaim) Valid() error {
