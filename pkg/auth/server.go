@@ -82,12 +82,20 @@ func (s *Server) UpdateLastLoginLoop() {
 
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
-			s.logger.Error("updating metadata", zap.String("userId", user.UserID))
-			err := s.auth0Service.PatchUserAppMetadata(user.UserID, auth0.Metadata{
-				LastLogin: user.Metadata.LastLogin,
-			})
+			usr, err := s.auth0Service.GetUser(user.UserID)
 			if err != nil {
-				s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
+				s.logger.Error("failed to get user metadata", zap.String("userId", user.UserID), zap.Error(err))
+				continue
+			}
+
+			tim, _ := time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+			if time.Now().After(tim.Add(15 * time.Minute)) {
+				s.logger.Error("updating metadata", zap.String("userId", user.UserID))
+				usr.AppMetadata.LastLogin = user.Metadata.LastLogin
+				err = s.auth0Service.PatchUserAppMetadata(user.UserID, usr.AppMetadata)
+				if err != nil {
+					s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
+				}
 			}
 
 			s.updateLoginUserList = append(s.updateLoginUserList[:i], s.updateLoginUserList[i+1:]...)
