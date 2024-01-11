@@ -80,7 +80,8 @@ func (s *Server) UpdateLastLoginLoop() {
 			}
 		}
 
-		for _, user := range s.updateLoginUserList {
+		for i := 0; i < len(s.updateLoginUserList); i++ {
+			user := s.updateLoginUserList[i]
 			err := s.auth0Service.PatchUserAppMetadata(user.UserID, auth0.Metadata{
 				WorkspaceAccess: user.Metadata.WorkspaceAccess,
 				GlobalAccess:    user.Metadata.GlobalAccess,
@@ -91,6 +92,9 @@ func (s *Server) UpdateLastLoginLoop() {
 			})
 			if err != nil {
 				s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
+			} else {
+				s.updateLoginUserList = append(s.updateLoginUserList[:i], s.updateLoginUserList[i+1:]...)
+				i--
 			}
 		}
 		time.Sleep(time.Second)
