@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
@@ -16,7 +15,6 @@ import (
 type Worker struct {
 	id               string
 	logger           *zap.Logger
-	jobQueue         queue.Interface
 	db               *Database
 	pusher           *push.Pusher
 	onboardClient    client.OnboardServiceClient
@@ -25,7 +23,6 @@ type Worker struct {
 
 func InitializeWorker(
 	id string,
-	rabbitMQUsername string, rabbitMQPassword string, rabbitMQHost string, rabbitMQPort int,
 	reporterJobQueue string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
@@ -40,7 +37,6 @@ func InitializeWorker(
 	w := &Worker{
 		id:               id,
 		logger:           logger,
-		jobQueue:         nil,
 		db:               nil,
 		pusher:           nil,
 		onboardClient:    nil,
@@ -69,21 +65,6 @@ func InitializeWorker(
 		return nil, err
 	}
 
-	qCfg := queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = reporterJobQueue
-	qCfg.Queue.Durable = true
-	qCfg.Consumer.ID = w.id
-	reporterQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	w.jobQueue = reporterQueue
-
 	// setup steampipe connection
 	steampipeOption := steampipe.Option{
 		Host: steampipeHost,
@@ -107,22 +88,18 @@ func InitializeWorker(
 }
 
 func (w *Worker) Run(ctx context.Context) error {
-	msgs, err := w.jobQueue.Consume()
-	if err != nil {
-		return err
-	}
+	// TODO read from queueing system
 
-	w.logger.Info("Waiting for job")
-	msg := <-msgs
-	w.logger.Info("Received job")
+	// temporary solution to not crash
+	msgBody := []byte("{}")
 
 	var job Job
-	if err := json.Unmarshal(msg.Body, &job); err != nil {
+	if err := json.Unmarshal(msgBody, &job); err != nil {
 		w.logger.Error("Failed to unmarshal task", zap.Error(err))
-		err = msg.Nack(false, false)
-		if err != nil {
-			w.logger.Error("Failed nacking message", zap.Error(err))
-		}
+		//err = msg.Nack(false, false)
+		//if err != nil {
+		//	w.logger.Error("Failed nacking message", zap.Error(err))
+		//}
 		return err
 	}
 	w.logger.Info("Processing job", zap.String("connection id", job.ConnectionId), zap.Int("query count", len(job.Queries)))
@@ -164,9 +141,9 @@ func (w *Worker) Run(ctx context.Context) error {
 		}
 	}
 
-	if err := msg.Ack(false); err != nil {
-		w.logger.Error("Failed acking message", zap.Error(err))
-	}
+	//if err := msg.Ack(false); err != nil {
+	//	w.logger.Error("Failed acking message", zap.Error(err))
+	//}
 
 	err = w.pusher.Push()
 	if err != nil {
@@ -178,11 +155,6 @@ func (w *Worker) Run(ctx context.Context) error {
 
 func (w *Worker) Stop() {
 	w.pusher.Push()
-
-	if w.jobQueue != nil {
-		w.jobQueue.Close() //nolint,gosec
-		w.jobQueue = nil
-	}
 
 	if w.db != nil {
 		w.db.Close()

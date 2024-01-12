@@ -14,11 +14,6 @@ import (
 var HttpAddress = os.Getenv("HTTP_ADDRESS")
 
 var (
-	RabbitMQService  = os.Getenv("RABBITMQ_SERVICE")
-	RabbitMQPort     = 5672
-	RabbitMQUsername = os.Getenv("RABBITMQ_USERNAME")
-	RabbitMQPassword = os.Getenv("RABBITMQ_PASSWORD")
-
 	ReporterQueueName = "reporter-jobs-queue"
 
 	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
@@ -63,7 +58,6 @@ func ReporterCommand() *cobra.Command {
 					}
 				}()
 				worker, err := InitializeWorker(id,
-					RabbitMQUsername, RabbitMQPassword, RabbitMQService, RabbitMQPort,
 					ReporterQueueName,
 					logger,
 					PrometheusPushAddress,

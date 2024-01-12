@@ -14,12 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -33,8 +31,6 @@ type HttpHandler struct {
 	logger *zap.Logger
 
 	s3Client *s3.Client
-
-	syncJobsQueue queue.Interface
 
 	schedulerClient describeClient.SchedulerServiceClient
 	onboardClient   onboardClient.OnboardServiceClient
@@ -123,20 +119,6 @@ func InitializeHttpHandler(
 		}
 	}
 	h.s3Client = s3.NewFromConfig(awsConfig)
-
-	qCfg := queue.Config{}
-	qCfg.Server.Username = conf.RabbitMq.Username
-	qCfg.Server.Password = conf.RabbitMq.Password
-	qCfg.Server.Host = conf.RabbitMq.Service
-	qCfg.Server.Port = 5672
-	qCfg.Queue.Name = conf.MigratorJobQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = "compliance"
-	syncJobsQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, fmt.Errorf("new queue: %w", err)
-	}
-	h.syncJobsQueue = syncJobsQueue
 
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)

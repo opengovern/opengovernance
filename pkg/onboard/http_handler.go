@@ -7,7 +7,6 @@ import (
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 
@@ -20,7 +19,6 @@ import (
 type HttpHandler struct {
 	db                               db.Database
 	steampipeConn                    *steampipe.Database
-	sourceEventsQueue                queue.Interface
 	kms                              *vault.KMSVaultSourceConfig
 	awsPermissionCheckURL            string
 	inventoryClient                  inventory.InventoryServiceClient
@@ -33,7 +31,6 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
-	rabbitMQUsername string, rabbitMQPassword string, rabbitMQHost string, rabbitMQPort int,
 	sourceEventsQueueName string,
 	postgresUsername string, postgresPassword string, postgresHost string, postgresPort string, postgresDb string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
@@ -46,22 +43,6 @@ func InitializeHttpHandler(
 ) (*HttpHandler, error) {
 
 	logger.Info("Initializing http handler")
-
-	// setup source events queue
-	qCfg := queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
-	qCfg.Queue.Name = sourceEventsQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = "onboard-service"
-	sourceEventsQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info("Connected to the source queue", zap.String("name", sourceEventsQueueName))
 
 	cfg := postgres.Config{
 		Host:    postgresHost,
@@ -109,7 +90,6 @@ func InitializeHttpHandler(
 	return &HttpHandler{
 		db:                    onboardDB,
 		steampipeConn:         steampipeConn,
-		sourceEventsQueue:     sourceEventsQueue,
 		kms:                   kms,
 		awsPermissionCheckURL: awsPermissionCheckURL,
 		inventoryClient:       inventoryClient,
