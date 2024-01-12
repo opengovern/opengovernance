@@ -15,11 +15,6 @@ const (
 )
 
 var (
-	RabbitMQService  = os.Getenv("RABBITMQ_SERVICE")
-	RabbitMQPort     = 5672
-	RabbitMQUsername = os.Getenv("RABBITMQ_USERNAME")
-	RabbitMQPassword = os.Getenv("RABBITMQ_PASSWORD")
-
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
@@ -61,7 +56,6 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
-		RabbitMQUsername, RabbitMQPassword, RabbitMQService, RabbitMQPort,
 		SourceEventsQueueName,
 		PostgreSQLUser, PostgreSQLPassword, PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,

@@ -11,7 +11,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -77,7 +76,6 @@ type TriggerQueryResponse struct {
 
 type ServiceConfig struct {
 	Database        config.Postgres
-	RabbitMQ        config.RabbitMQ
 	Steampipe       config.Postgres
 	SteampipeES     config.Postgres
 	Onboard         config.KaytuService
@@ -88,7 +86,6 @@ type Service struct {
 	steampipe       *steampipe.Database
 	esSteampipe     *steampipe.Database
 	db              *Database
-	jobsQueue       queue.Interface
 	onboardClient   onboardClient.OnboardServiceClient
 	logger          *zap.Logger
 	ScheduleMinutes int
@@ -158,19 +155,6 @@ func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
 		return nil, err
 	}
 
-	qCfg := queue.Config{}
-	qCfg.Server.Username = config.RabbitMQ.Username
-	qCfg.Server.Password = config.RabbitMQ.Password
-	qCfg.Server.Host = config.RabbitMQ.Service
-	qCfg.Server.Port = 5672
-	qCfg.Queue.Name = ReporterQueueName
-	qCfg.Queue.Durable = true
-	qCfg.Producer.ID = "reporter-service"
-	reporterQueue, err := queue.New(qCfg)
-	if err != nil {
-		return nil, err
-	}
-
 	onboard := onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL)
 
 	if config.ScheduleMinutes <= 0 {
@@ -181,7 +165,6 @@ func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
 		steampipe:       nil,
 		esSteampipe:     s2,
 		db:              db,
-		jobsQueue:       reporterQueue,
 		onboardClient:   onboard,
 		logger:          logger,
 		ScheduleMinutes: config.ScheduleMinutes,
@@ -249,15 +232,12 @@ func (s *Service) TriggerJob(connectionId string, queries []Query) (*DatabaseWor
 		return nil, err
 	}
 
-	job := Job{
-		ID:           dbJob.ID,
-		ConnectionId: connectionId,
-		Queries:      queries,
-	}
-	if err := s.jobsQueue.Publish(job); err != nil {
-		s.logger.Error("failed to publish job", zap.Error(err))
-		return nil, err
-	}
+	//job := Job{
+	//	ID:           dbJob.ID,
+	//	ConnectionId: connectionId,
+	//	Queries:      queries,
+	//}
+	// TODO add job to queueing system
 
 	return &dbJob, nil
 }

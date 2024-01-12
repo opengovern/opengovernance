@@ -1957,15 +1957,6 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			span3.End()
 		}
 
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceDeleted,
-			SourceID:   src.ID,
-			SourceType: src.Type,
-			Secret:     src.Credential.Secret,
-		}); err != nil {
-			return err
-		}
-
 		return nil
 	})
 	if err != nil {

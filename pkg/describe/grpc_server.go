@@ -146,7 +146,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 	defer span.End()
 
 	if err := s.jq.Produce(ctx, DescribeResultsQueueName, result, fmt.Sprintf("job-%d", req.JobId)); err != nil {
-		s.logger.Error("Failed to publish into rabbitMQ",
+		s.logger.Error("Failed to publish into nats",
 			zap.Uint("jobID", uint(req.JobId)),
 			zap.Error(err),
 		)

@@ -30,7 +30,6 @@ type ServerConfig struct {
 	Inventory     config.KaytuService
 	Metadata      config.KaytuService
 	OpenAI        OpenAI
-	RabbitMq      config.RabbitMQ
 	Http          config.HttpServer
 
 	MigratorJobQueueName string `yaml:"migrator_job_queue_name"`
