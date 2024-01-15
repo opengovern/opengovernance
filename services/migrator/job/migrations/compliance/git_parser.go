@@ -178,32 +178,22 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var benchmarks []Benchmark
 	err := filepath.WalkDir(complianceBenchmarksPath, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Base(path) == "children.yaml" {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			var objs []Benchmark
-			err = yaml.Unmarshal(content, &objs)
-			if err != nil {
-				return err
-			}
-			benchmarks = append(benchmarks, objs...)
+		if !strings.HasSuffix(filepath.Base(path), ".yaml") {
+			return nil
 		}
-		if filepath.Base(path) == "root.yaml" {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
 
-			var obj Benchmark
-			err = yaml.Unmarshal(content, &obj)
-			if err != nil {
-				return err
-			}
-			benchmarks = append(benchmarks, obj)
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
 		}
+
+		var obj Benchmark
+		err = yaml.Unmarshal(content, &obj)
+		if err != nil {
+			return err
+		}
+		benchmarks = append(benchmarks, obj)
+
 		return nil
 	})
 
