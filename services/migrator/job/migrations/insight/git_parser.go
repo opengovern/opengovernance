@@ -68,7 +68,7 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 			})
 
 			g.queries = append(g.queries, db.Query{
-				ID:             insight.Query.ID,
+				ID:             fmt.Sprintf("insight_%d_%s", insight.ID, insight.Query.ID),
 				QueryToExecute: insight.Query.QueryToExecute,
 				Connector:      insight.Connector.String(),
 				PrimaryTable:   insight.Query.PrimaryTable,
