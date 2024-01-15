@@ -39,11 +39,6 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	p := GitParser{
 		logger: logger,
 	}
-	if err := p.ExtractQueries(config.QueriesGitPath); err != nil {
-		logger.Error("failed to extract queries", zap.Error(err))
-		return err
-	}
-	logger.Info("extracted queries", zap.Int("count", len(p.queries)))
 	if err := p.ExtractCompliance(config.ComplianceGitPath, config.ControlEnrichmentGitPath); err != nil {
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
 		return err

@@ -17,12 +17,12 @@ import (
 )
 
 type ResourceCollection struct {
-	ID          string                             `json:"id"`
-	Name        string                             `json:"name"`
-	Tags        map[string][]string                `json:"tags"`
-	Filters     []kaytu.ResourceCollectionFilter   `json:"filters"`
-	Description string                             `json:"description"`
-	Status      inventory.ResourceCollectionStatus `json:"status"`
+	ID          string                             `json:"id" yaml:"id"`
+	Name        string                             `json:"name" yaml:"name"`
+	Tags        map[string][]string                `json:"tags" yaml:"tags"`
+	Filters     []kaytu.ResourceCollectionFilter   `json:"filters" yaml:"filters"`
+	Description string                             `json:"description" yaml:"description"`
+	Status      inventory.ResourceCollectionStatus `json:"status" yaml:"status"`
 }
 
 type Migration struct {

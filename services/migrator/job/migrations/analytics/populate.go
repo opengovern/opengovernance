@@ -2,8 +2,8 @@ package analytics
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/goccy/go-yaml"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
@@ -44,7 +44,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	}
 
 	err = filepath.Walk(config.AnalyticsGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			return populateItem(logger, orm, path, info, true)
 		}
 		return nil
@@ -54,7 +54,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	}
 
 	err = filepath.Walk(config.AnalyticsGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			return populateItem(logger, orm, path, info, false)
 		}
 		return nil
@@ -64,7 +64,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	}
 
 	err = filepath.Walk(config.AnalyticsGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			return populateFinderItem(logger, orm, path, info, true)
 		}
 		return nil
@@ -74,7 +74,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	}
 
 	err = filepath.Walk(config.AnalyticsGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			return populateFinderItem(logger, orm, path, info, false)
 		}
 		return nil
@@ -87,7 +87,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 }
 
 func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isAsset bool) error {
-	id := strings.TrimSuffix(info.Name(), ".json")
+	id := strings.TrimSuffix(info.Name(), ".yaml")
 	if !isAsset {
 		id = "spend_" + id
 	}
@@ -98,7 +98,7 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	}
 
 	var metric Metric
-	err = json.Unmarshal(content, &metric)
+	err = yaml.Unmarshal(content, &metric)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
 
 	context.Background()
-	id := strings.TrimSuffix(info.Name(), ".json")
+	id := strings.TrimSuffix(info.Name(), ".yaml")
 
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -198,7 +198,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	}
 
 	var item SmartQuery
-	err = json.Unmarshal(content, &item)
+	err = yaml.Unmarshal(content, &item)
 	if err != nil {
 		return err
 	}

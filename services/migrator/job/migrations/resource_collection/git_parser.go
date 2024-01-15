@@ -1,7 +1,7 @@
 package resource_collection
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-yaml"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,7 +11,7 @@ import (
 func ExtractResourceCollections(baseDirectory string) ([]ResourceCollection, error) {
 	var resourceCollections []ResourceCollection
 	err := filepath.WalkDir(baseDirectory, func(path string, d fs.DirEntry, err error) error {
-		if !strings.HasSuffix(path, ".json") {
+		if !strings.HasSuffix(path, ".yaml") {
 			return nil
 		}
 
@@ -20,7 +20,7 @@ func ExtractResourceCollections(baseDirectory string) ([]ResourceCollection, err
 			return err
 		}
 		var resourceCollection ResourceCollection
-		err = json.Unmarshal(content, &resourceCollection)
+		err = yaml.Unmarshal(content, &resourceCollection)
 		if err != nil {
 			return err
 		}
