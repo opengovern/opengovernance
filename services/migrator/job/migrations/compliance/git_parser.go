@@ -1,8 +1,8 @@
 package compliance
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/goccy/go-yaml"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -20,34 +20,6 @@ type GitParser struct {
 	benchmarks []db.Benchmark
 	controls   []db.Control
 	queries    []db.Query
-}
-
-func (g *GitParser) ExtractQueries(queryPath string) error {
-	return filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasSuffix(path, ".json") {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			var query Query
-			err = json.Unmarshal(content, &query)
-			if err != nil {
-				return err
-			}
-
-			g.queries = append(g.queries, db.Query{
-				ID:             query.ID,
-				QueryToExecute: query.QueryToExecute,
-				Connector:      query.Connector,
-				ListOfTables:   query.ListOfTables,
-				Engine:         query.Engine,
-				PrimaryTable:   query.PrimaryTable,
-			})
-		}
-
-		return nil
-	})
 }
 
 func populateMdMapFromPath(path string) (map[string]string, error) {
@@ -107,14 +79,14 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 	}
 
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
 
 			var control Control
-			err = json.Unmarshal(content, &control)
+			err = yaml.Unmarshal(content, &control)
 			if err != nil {
 				return err
 			}
@@ -206,27 +178,27 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var benchmarks []Benchmark
 	err := filepath.WalkDir(complianceBenchmarksPath, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Base(path) == "children.json" {
+		if filepath.Base(path) == "children.yaml" {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
 
 			var objs []Benchmark
-			err = json.Unmarshal(content, &objs)
+			err = yaml.Unmarshal(content, &objs)
 			if err != nil {
 				return err
 			}
 			benchmarks = append(benchmarks, objs...)
 		}
-		if filepath.Base(path) == "root.json" {
+		if filepath.Base(path) == "root.yaml" {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
 
 			var obj Benchmark
-			err = json.Unmarshal(content, &obj)
+			err = yaml.Unmarshal(content, &obj)
 			if err != nil {
 				return err
 			}

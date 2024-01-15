@@ -1,33 +1,41 @@
 package insight
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/goccy/go-yaml"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"gorm.io/gorm"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"gorm.io/gorm"
 )
 
 type GitParser struct {
+	queries       []db.Query
 	insights      []db.Insight
 	insightGroups []db.InsightGroup
 }
 
+func (g *GitParser) queryIDs() []string {
+	var queryIDs []string
+	for _, query := range g.queries {
+		queryIDs = append(queryIDs, query.ID)
+	}
+	return queryIDs
+}
+
 func (g *GitParser) ExtractInsights(queryPath string) error {
 	return filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return fmt.Errorf("failure in reading file: %v", err)
 			}
 
 			var insight Insight
-			err = json.Unmarshal(content, &insight)
+			err = yaml.Unmarshal(content, &insight)
 			if err != nil {
 				return err
 			}
@@ -47,7 +55,7 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 				Model: gorm.Model{
 					ID: insight.ID,
 				},
-				QueryID:     insight.QueryID,
+				QueryID:     insight.Query.ID,
 				Connector:   insight.Connector,
 				ShortTitle:  insight.ShortTitle,
 				LongTitle:   insight.LongTitle,
@@ -58,6 +66,15 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 				Enabled:     insight.Enabled,
 				Internal:    insight.Internal,
 			})
+
+			g.queries = append(g.queries, db.Query{
+				ID:             insight.Query.ID,
+				QueryToExecute: insight.Query.QueryToExecute,
+				Connector:      insight.Connector.String(),
+				PrimaryTable:   insight.Query.PrimaryTable,
+				ListOfTables:   insight.Query.ListOfTables,
+				Engine:         insight.Query.Engine,
+			})
 		}
 
 		return nil
@@ -66,14 +83,14 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 
 func (g *GitParser) ExtractInsightGroups(queryPath string) error {
 	return filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return fmt.Errorf("failure in reading file: %v", err)
 			}
 
 			var insightGroup InsightGroup
-			err = json.Unmarshal(content, &insightGroup)
+			err = yaml.Unmarshal(content, &insightGroup)
 			if err != nil {
 				return err
 			}
