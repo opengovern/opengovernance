@@ -2,11 +2,14 @@ package summarizer
 
 import (
 	"context"
+	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
+	es3 "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
@@ -30,6 +33,11 @@ func (w *Worker) RunJob(j types2.Job) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := paginator.Close(context.Background()); err != nil {
+			w.logger.Error("failed to close paginator", zap.Error(err))
+		}
+	}()
 
 	w.logger.Info("FindingsIndex paginator ready")
 
@@ -164,8 +172,9 @@ func (w *Worker) RunJob(j types2.Job) error {
 	}
 
 	// Delete old resource findings
-	err = es.DeleteOtherResourceFindingsExcept(w.logger, w.esClient, resourceIds, j.ID)
+	err = w.deleteOldResourceFindings(j, resourceIds)
 	if err != nil {
+		w.logger.Error("failed to delete old resource findings", zap.Error(err))
 		return err
 	}
 
@@ -174,5 +183,57 @@ func (w *Worker) RunJob(j types2.Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 		zap.Int("resource_count", len(jd.ResourcesFindings)),
 	)
+	return nil
+}
+
+func (w *Worker) deleteOldResourceFindings(j types2.Job, currentResourceIds []string) error {
+	// Delete old resource findings
+	filters := make([]kaytu.BoolFilter, 0, 2)
+	filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("kaytuResourceID", currentResourceIds)))
+	filters = append(filters, kaytu.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
+	paginator, err := es.NewResourceFindingPaginator(w.esClient, types.ResourceFindingsIndex, filters, nil, []map[string]any{{"kaytuResourceID": "asc"}})
+	if err != nil {
+		w.logger.Error("failed to create paginator", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err := paginator.Close(context.Background()); err != nil {
+			w.logger.Error("failed to close paginator", zap.Error(err))
+		}
+	}()
+
+	task := es3.DeleteTask{
+		DiscoveryJobID: j.ID,
+		ConnectionID:   j.BenchmarkID,
+		ResourceType:   "resource-finding",
+		Connector:      "",
+	}
+	for i := 0; paginator.HasNext(); i++ {
+		page, err := paginator.NextPage(context.Background())
+		if err != nil {
+			w.logger.Error("failed to fetch next page", zap.Error(err), zap.Int("page", i))
+			return err
+		}
+		w.logger.Info("Deleting old resource findings", zap.Int("page", i), zap.Int("pageSize", len(page)))
+		for _, f := range page {
+			keys, idx := f.KeysAndIndex()
+			key := es2.HashOf(keys...)
+			task.DeletingResources = append(task.DeletingResources, es3.DeletingResource{
+				Key:   []byte(key),
+				Index: idx,
+			})
+		}
+	}
+
+	if len(task.DeletingResources) > 0 {
+		keys, idx := task.KeysAndIndex()
+		task.EsID = es2.HashOf(keys...)
+		task.EsIndex = idx
+		if err = pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, []es2.Doc{task}); err != nil {
+			w.logger.Error("failed to send delete message to elastic",
+				zap.Error(err))
+		}
+	}
+
 	return nil
 }
