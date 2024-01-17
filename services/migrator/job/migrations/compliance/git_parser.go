@@ -57,6 +57,20 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
+	guardrailRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "guardrail"))
+	if err != nil {
+		g.logger.Warn("failed to load cli remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+	}
+
+	programmaticRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "programmatic"))
+	if err != nil {
+		g.logger.Warn("failed to load cli remediation", zap.Error(err))
+	} else {
+		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+	}
+
 	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "noncompliance-cost"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
@@ -113,6 +127,24 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
 						Key:   "x-kaytu-cli-remediation",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+			if v, ok := guardrailRemediationMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-guardrail-remediation",
+						Value: []string{v},
+					},
+					ControlID: control.ID,
+				})
+			}
+			if v, ok := programmaticRemediationMap[strings.ToLower(control.ID)]; ok {
+				tags = append(tags, db.ControlTag{
+					Tag: model.Tag{
+						Key:   "x-kaytu-programmatic-remediation",
 						Value: []string{v},
 					},
 					ControlID: control.ID,

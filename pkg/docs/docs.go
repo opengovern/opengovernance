@@ -8523,6 +8523,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Multi-factor authentication adds an additional layer of security by requiring users to enter a code from a mobile device or phone in addition to their username and password when signing into Azure."
                 },
+                "guardrailRemediation": {
+                    "type": "string",
+                    "example": "To enable multi-factor authentication for a user, run the following command..."
+                },
                 "id": {
                     "type": "string",
                     "example": "azure_cis_v140_1_1"
@@ -8542,6 +8546,10 @@ const docTemplate = `{
                 "nonComplianceCost": {
                     "type": "string",
                     "example": "Non-compliance to this control could result in several costs including..."
+                },
+                "programmaticRemediation": {
+                    "type": "string",
+                    "example": "To enable multi-factor authentication for a user, run the following command..."
                 },
                 "query": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query"
