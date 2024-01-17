@@ -28,8 +28,10 @@ type Control struct {
 	NonComplianceCost string `json:"nonComplianceCost" example:"Non-compliance to this control could result in several costs including..."`
 	UsefulExample     string `json:"usefulExample" example:"Access to resources must be closely controlled to prevent malicious activity like data theft..."`
 
-	CliRemediation    string `json:"cliRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
-	ManualRemediation string `json:"manualRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
+	CliRemediation          string `json:"cliRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
+	ManualRemediation       string `json:"manualRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
+	GuardrailRemediation    string `json:"guardrailRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
+	ProgrammaticRemediation string `json:"programmaticRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 
 	Connector          source.Type           `json:"connector" example:"Azure"`
 	Enabled            bool                  `json:"enabled" example:"true"`

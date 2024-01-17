@@ -1029,6 +1029,10 @@ definitions:
           by requiring users to enter a code from a mobile device or phone in addition
           to their username and password when signing into Azure.
         type: string
+      guardrailRemediation:
+        example: To enable multi-factor authentication for a user, run the following
+          command...
+        type: string
       id:
         example: azure_cis_v140_1_1
         type: string
@@ -1044,6 +1048,10 @@ definitions:
         type: boolean
       nonComplianceCost:
         example: Non-compliance to this control could result in several costs including...
+        type: string
+      programmaticRemediation:
+        example: To enable multi-factor authentication for a user, run the following
+          command...
         type: string
       query:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query'
