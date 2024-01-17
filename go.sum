@@ -1657,8 +1657,8 @@ github.com/jackc/pgx/v4 v4.0.0-pre1.0.20190824185557-6972a5742186/go.mod h1:X+GQ
 github.com/jackc/pgx/v4 v4.12.1-0.20210724153913-640aa07df17c/go.mod h1:1QD0+tgSXP7iUjYm9C1NxKhny7lq6ee99u/z+IHFcgs=
 github.com/jackc/pgx/v4 v4.18.1 h1:YP7G1KABtKpB5IHrO9vYwSrCOhs7p3uqhvhhQBptya0=
 github.com/jackc/pgx/v4 v4.18.1/go.mod h1:FydWkUyadDmdNH/mHnGob881GawxeEm7TcMCzkb+qQE=
-github.com/jackc/pgx/v5 v5.5.1 h1:5I9etrGkLrN+2XPCsi6XLlV5DITbSL/xBZdmAxFcXPI=
-github.com/jackc/pgx/v5 v5.5.1/go.mod h1:Ig06C2Vu0t5qXC60W8sqIthScaEnFvojjj9dSljmHRA=
+github.com/jackc/pgx/v5 v5.5.2 h1:iLlpgp4Cp/gC9Xuscl7lFL1PhhW+ZLtXZcrfCt4C3tA=
+github.com/jackc/pgx/v5 v5.5.2/go.mod h1:ez9gk+OAat140fv9ErkZDYFWmXLfV+++K0uAOiwgm1A=
 github.com/jackc/puddle v0.0.0-20190413234325-e4ced69a3a2b/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/jackc/puddle v0.0.0-20190608224051-11cab39313c9/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/jackc/puddle v1.1.3/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
@@ -1711,8 +1711,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.29.0 h1:oCPrs85ErC5kMXl/RivOYSEV0PNAy
 github.com/kaytu-io/kaytu-aws-describer v0.29.0/go.mod h1:kmLlv8UKA62e3VFb1q/eAjdqgnaTV994uhr7yZZuXvw=
 github.com/kaytu-io/kaytu-azure-describer v0.21.1 h1:jK0T8NnDxfgD08JfEiVLTocERd7EHKm20P2o6o+EuZg=
 github.com/kaytu-io/kaytu-azure-describer v0.21.1/go.mod h1:DO2ntGDGKBLt3LYZQEATAUzMw9CQLa2+b6qrL32jgig=
-github.com/kaytu-io/kaytu-util v0.0.0-20240109163725-605dc676513e h1:RQzYnvWWmlmI7wXTyeo+bYQ0k0Cnsc44qh8KIwXBLYc=
-github.com/kaytu-io/kaytu-util v0.0.0-20240109163725-605dc676513e/go.mod h1:yjwBJtG63916GXtnQ4wNDRi+unHeuHh361vMAMKZyBI=
+github.com/kaytu-io/kaytu-util v0.0.0-20240117123647-cdbbf7bb4665 h1:qVceYWfIU6GgBuCI9KRmGAPuEC961kjZdzAmpDVAuyc=
+github.com/kaytu-io/kaytu-util v0.0.0-20240117123647-cdbbf7bb4665/go.mod h1:cGMSCZhs7I81ikKrKQE5LqxfFR+8VRxTsSIANw0BXJs=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762/go.mod h1:EPUNW7l/wmL4bCCJgUmViGr5mS7cLmo+y/DPEb3azaU=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=

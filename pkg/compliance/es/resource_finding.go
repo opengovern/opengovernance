@@ -1,7 +1,6 @@
 package es
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,49 +28,54 @@ type ResourceFindingsQueryResponse struct {
 		Total kaytu.SearchTotal          `json:"total"`
 		Hits  []ResourceFindingsQueryHit `json:"hits"`
 	} `json:"hits"`
+	PitID string `json:"pit_id"`
 }
 
-func DeleteOtherResourceFindingsExcept(logger *zap.Logger, client kaytu.Client, kaytuResourceIDs []string, lessThanJobId uint) error {
-	queryMap := map[string]any{
-		"query": map[string]any{
-			"bool": map[string]any{
-				"must_not": map[string]any{
-					"terms": map[string]any{
-						"kaytuResourceID": kaytuResourceIDs,
-					},
-				},
-				"filter": map[string]any{
-					"range": map[string]any{
-						"jobId": map[string]any{
-							"lt": lessThanJobId,
-						},
-					},
-				},
-			},
-		},
-	}
-	if len(kaytuResourceIDs) == 0 {
-		delete(queryMap["query"].(map[string]any)["bool"].(map[string]any), "must_not")
-	}
+type ResourceFindingPaginator struct {
+	paginator *kaytu.BaseESPaginator
+}
 
-	query, err := json.Marshal(queryMap)
+func NewResourceFindingPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64, sort []map[string]any) (ResourceFindingPaginator, error) {
+	paginator, err := kaytu.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
 	if err != nil {
-		logger.Error("failed to marshal query", zap.Error(err))
-		return err
+		return ResourceFindingPaginator{}, err
 	}
 
-	es := client.ES()
-	_, err = es.DeleteByQuery(
-		[]string{types.ResourceFindingsIndex},
-		bytes.NewReader(query),
-		es.DeleteByQuery.WithContext(context.TODO()),
-	)
+	p := ResourceFindingPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ResourceFindingPaginator) HasNext() bool {
+	return !p.paginator.Done()
+}
+
+func (p ResourceFindingPaginator) Close(ctx context.Context) error {
+	return p.paginator.Deallocate(ctx)
+}
+
+func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.ResourceFinding, error) {
+	var response ResourceFindingsQueryResponse
+	err := p.paginator.SearchWithLog(ctx, &response, true)
 	if err != nil {
-		logger.Error("failed to delete old resource findings", zap.Error(err), zap.String("query", string(query)), zap.Uint("lessThanJobId", lessThanJobId))
-		return err
+		return nil, err
 	}
 
-	return nil
+	var values []types.ResourceFinding
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.UpdateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.UpdateState(hits, nil, "")
+	}
+
+	return values, nil
 }
 
 func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
