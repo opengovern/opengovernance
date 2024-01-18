@@ -89,7 +89,7 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 	case source.CloudAzure:
 		rts := kaytuAzure.GetResourceTypesMap()
 		jsonC, _ := json.Marshal(c)
-		fmt.Printf("checking azure supported resource types: %v\n", jsonC)
+		fmt.Printf("checking azure supported resource types: %v\n", string(jsonC))
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
 			fmt.Printf("subscription model: %v\n", subscriptionModel)
@@ -106,13 +106,13 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 						}
 					}
 				} else {
-					fmt.Printf("subscription model obj quota id not found for connection: %v\n", jsonC)
+					fmt.Printf("subscription model obj quota id not found for connection: %v\n", string(jsonC))
 				}
 			} else {
-				fmt.Printf("subscription model obj not found for connection: %v\n", jsonC)
+				fmt.Printf("subscription model obj not found for connection: %v\n", string(jsonC))
 			}
 		} else {
-			fmt.Printf("subscription model not found for connection: %v\n", jsonC)
+			fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
 		}
 
 		for rt := range rts {
