@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"math"
 	"strconv"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
@@ -528,7 +528,7 @@ func FetchConnectionMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Clie
 							continue
 						}
 						v.Count += connectionResults.ResourceCount
-						v.CountStacked[connectionResults.ConnectionID] += connectionResults.ResourceCount
+						v.CountStacked[metricBucket.Key] += connectionResults.ResourceCount
 						if _, ok := v.connectionSuccess[connectionResults.ConnectionID]; !ok {
 							v.connectionSuccess[connectionResults.ConnectionID] = connectionResults.IsJobSuccessful
 						} else {
@@ -700,7 +700,7 @@ func FetchConnectorMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Clien
 							continue
 						}
 						v.Count += connectorResults.ResourceCount
-						v.CountStacked[string(connectorResults.Connector)] += connectorResults.ResourceCount
+						v.CountStacked[metricBucket.Key] += connectorResults.ResourceCount
 						v.connectorTotal[connectorResults.Connector.String()] = max(v.connectorTotal[connectorResults.Connector.String()], connectorResults.TotalConnections)
 						if _, ok := v.connectorSuccess[connectorResults.Connector.String()]; !ok {
 							v.connectorSuccess[connectorResults.Connector.String()] = connectorResults.TotalSuccessfulConnections
