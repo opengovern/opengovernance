@@ -22,6 +22,13 @@ type CostStackedItem struct {
 	Cost       float64  `json:"cost"`
 }
 
+type ResourceCountStackedItem struct {
+	MetricID   string   `json:"metricID"`
+	MetricName string   `json:"metricName"`
+	Category   []string `json:"category"`
+	Count      int      `json:"count"`
+}
+
 type ListServicesCostTrendDatapoint struct {
 	ServiceName string               `json:"serviceName" example:"EC2-Service-Example"`
 	CostTrend   []CostTrendDatapoint `json:"costTrend"`

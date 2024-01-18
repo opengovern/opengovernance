@@ -384,6 +384,7 @@ type DatapointWithFailures struct {
 	Cost                       float64
 	CostStacked                map[string]float64
 	Count                      int
+	CountStacked               map[string]int
 	TotalSuccessfulConnections int64
 	TotalConnections           int64
 
@@ -516,6 +517,7 @@ func FetchConnectionMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Clie
 				if !ok {
 					v = DatapointWithFailures{
 						connectionSuccess: map[string]bool{},
+						CountStacked:      map[string]int{},
 					}
 				}
 
@@ -526,6 +528,7 @@ func FetchConnectionMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Clie
 							continue
 						}
 						v.Count += connectionResults.ResourceCount
+						v.CountStacked[connectionResults.ConnectionID] += connectionResults.ResourceCount
 						if _, ok := v.connectionSuccess[connectionResults.ConnectionID]; !ok {
 							v.connectionSuccess[connectionResults.ConnectionID] = connectionResults.IsJobSuccessful
 						} else {
@@ -686,6 +689,7 @@ func FetchConnectorMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Clien
 					v = DatapointWithFailures{
 						connectorTotal:   map[string]int64{},
 						connectorSuccess: map[string]int64{},
+						CountStacked:     map[string]int{},
 					}
 					hits[rangeKey] = v
 				}
@@ -696,6 +700,7 @@ func FetchConnectorMetricTrendSummaryPage(logger *zap.Logger, client kaytu.Clien
 							continue
 						}
 						v.Count += connectorResults.ResourceCount
+						v.CountStacked[string(connectorResults.Connector)] += connectorResults.ResourceCount
 						v.connectorTotal[connectorResults.Connector.String()] = max(v.connectorTotal[connectorResults.Connector.String()], connectorResults.TotalConnections)
 						if _, ok := v.connectorSuccess[connectorResults.Connector.String()]; !ok {
 							v.connectorSuccess[connectorResults.Connector.String()] = connectorResults.TotalSuccessfulConnections
