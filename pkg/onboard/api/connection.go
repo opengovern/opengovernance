@@ -93,7 +93,10 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
 			fmt.Printf("subscription model: %v\n", subscriptionModel)
-			if subscriptionModelObj, ok := subscriptionModel.(armsubscription.Subscription); ok {
+			jsonSubModel, _ := json.Marshal(subscriptionModel)
+			var subscriptionModelObj armsubscription.Subscription
+			err := json.Unmarshal(jsonSubModel, &subscriptionModelObj)
+			if err == nil {
 				fmt.Printf("subscription model obj: %v\n", subscriptionModelObj)
 				if subscriptionModelObj.SubscriptionPolicies != nil && subscriptionModelObj.SubscriptionPolicies.QuotaID != nil {
 					fmt.Printf("subscription model obj quota id: %v\n", *subscriptionModelObj.SubscriptionPolicies.QuotaID)
@@ -109,7 +112,7 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 					fmt.Printf("subscription model obj quota id not found for connection: %v\n", string(jsonC))
 				}
 			} else {
-				fmt.Printf("subscription model obj not found for connection: %v\n", string(jsonC))
+				fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
 			}
 		} else {
 			fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
