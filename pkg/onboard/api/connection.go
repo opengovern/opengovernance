@@ -89,10 +89,8 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 	case source.CloudAzure:
 		rts := kaytuAzure.GetResourceTypesMap()
 		jsonC, _ := json.Marshal(c)
-		fmt.Printf("checking azure supported resource types: %v\n", string(jsonC))
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
-			fmt.Printf("subscription model: %v\n", subscriptionModel)
 			jsonSubModel, _ := json.Marshal(subscriptionModel)
 			var subscriptionModelObj armsubscription.Subscription
 			err := json.Unmarshal(jsonSubModel, &subscriptionModelObj)
