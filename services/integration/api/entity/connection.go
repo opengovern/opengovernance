@@ -184,10 +184,13 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 		return c.supportedResourceTypes
 	case source.CloudAzure:
 		rts := kaytuAzure.GetResourceTypesMap()
-
+		jsonC, _ := json.Marshal(c)
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
-			if subscriptionModelObj, ok := subscriptionModel.(armsubscription.Subscription); ok {
+			jsonSubModel, _ := json.Marshal(subscriptionModel)
+			var subscriptionModelObj armsubscription.Subscription
+			err := json.Unmarshal(jsonSubModel, &subscriptionModelObj)
+			if err == nil {
 				if subscriptionModelObj.SubscriptionPolicies != nil && subscriptionModelObj.SubscriptionPolicies.QuotaID != nil {
 					quotaId := *subscriptionModelObj.SubscriptionPolicies.QuotaID
 					unsupportedQuotas := kaytuAzure.GetUnsupportedCostQuotaIds()
@@ -197,8 +200,14 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 							delete(rts, "Microsoft.CostManagement/CostByResourceType")
 						}
 					}
+				} else {
+					fmt.Printf("subscription model obj quota id not found for connection: %v\n", string(jsonC))
 				}
+			} else {
+				fmt.Printf("subscription model obj not found for connection: %v\n", string(jsonC))
 			}
+		} else {
+			fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
 		}
 
 		for rt := range rts {
