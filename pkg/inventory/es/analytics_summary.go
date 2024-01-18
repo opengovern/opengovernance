@@ -1002,6 +1002,7 @@ func FetchAssetTableByDimension(logger *zap.Logger, client kaytu.Client, metricI
 							mt = DimensionTrend{
 								DimensionID:   connectionResults.ConnectionID,
 								DimensionName: connectionResults.ConnectionName,
+								Connector:     connectionResults.Connector,
 								Trend:         make(map[string]float64),
 							}
 						}
