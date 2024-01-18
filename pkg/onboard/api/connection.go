@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -87,7 +88,8 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 		return c.supportedResourceTypes
 	case source.CloudAzure:
 		rts := kaytuAzure.GetResourceTypesMap()
-		fmt.Printf("checking azure supported resource types: %v\n", c)
+		jsonC, _ := json.Marshal(c)
+		fmt.Printf("checking azure supported resource types: %v\n", jsonC)
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
 			fmt.Printf("subscription model: %v\n", subscriptionModel)
@@ -104,13 +106,13 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 						}
 					}
 				} else {
-					fmt.Printf("subscription model obj quota id not found for connection: %v\n", c)
+					fmt.Printf("subscription model obj quota id not found for connection: %v\n", jsonC)
 				}
 			} else {
-				fmt.Printf("subscription model obj not found for connection: %v\n", c)
+				fmt.Printf("subscription model obj not found for connection: %v\n", jsonC)
 			}
 		} else {
-			fmt.Printf("subscription model not found for connection: %v\n", c)
+			fmt.Printf("subscription model not found for connection: %v\n", jsonC)
 		}
 
 		for rt := range rts {
