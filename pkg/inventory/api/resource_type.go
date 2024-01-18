@@ -42,10 +42,11 @@ type ListResourceTypeCompositionResponse struct {
 }
 
 type ResourceTypeTrendDatapoint struct {
-	Count                                   int       `json:"count" example:"100" minimum:"0"`
-	TotalDescribedConnectionCount           int64     `json:"totalConnectionCount"`
-	TotalSuccessfulDescribedConnectionCount int64     `json:"totalSuccessfulDescribedConnectionCount"`
-	Date                                    time.Time `json:"date" format:"date-time"`
+	Count                                   int                        `json:"count" example:"100" minimum:"0"`
+	CountStacked                            []ResourceCountStackedItem `json:"countStacked"`
+	TotalDescribedConnectionCount           int64                      `json:"totalConnectionCount"`
+	TotalSuccessfulDescribedConnectionCount int64                      `json:"totalSuccessfulDescribedConnectionCount"`
+	Date                                    time.Time                  `json:"date" format:"date-time"`
 }
 
 type LocationResponse struct {

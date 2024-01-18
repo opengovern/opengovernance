@@ -666,8 +666,31 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 
 	apiDatapoints := make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
 	for timeAt, val := range timeToCountMap {
+		var stackedCount []inventoryApi.ResourceCountStackedItem
+		for k, v := range val.CountStacked {
+			var metricName string
+			var category []string
+			for _, v := range metrics {
+				if v.ID == k {
+					metricName = v.Name
+					for _, tag := range v.Tags {
+						if tag.GetKey() == "category" {
+							category = tag.GetValue()
+						}
+					}
+				}
+			}
+			stackedCount = append(stackedCount, inventoryApi.ResourceCountStackedItem{
+				MetricID:   k,
+				MetricName: metricName,
+				Category:   category,
+				Count:      v,
+			})
+		}
+
 		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{
 			Count:                                   val.Count,
+			CountStacked:                            stackedCount,
 			TotalDescribedConnectionCount:           val.TotalConnections,
 			TotalSuccessfulDescribedConnectionCount: val.TotalSuccessfulConnections,
 			Date:                                    time.UnixMilli(int64(timeAt)),

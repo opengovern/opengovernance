@@ -2413,6 +2413,19 @@ definitions:
     - ResourceCollectionStatusUnknown
     - ResourceCollectionStatusActive
     - ResourceCollectionStatusInactive
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCountStackedItem:
+    properties:
+      category:
+        items:
+          type: string
+        type: array
+      count:
+        type: integer
+      metricID:
+        type: string
+      metricName:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType:
     properties:
       attributes:
@@ -2490,6 +2503,10 @@ definitions:
         example: 100
         minimum: 0
         type: integer
+      countStacked:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCountStackedItem'
+        type: array
       date:
         format: date-time
         type: string

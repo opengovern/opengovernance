@@ -10528,6 +10528,26 @@ const docTemplate = `{
                 "ResourceCollectionStatusInactive"
             ]
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCountStackedItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "metricID": {
+                    "type": "string"
+                },
+                "metricName": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType": {
             "type": "object",
             "properties": {
@@ -10626,6 +10646,12 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 0,
                     "example": 100
+                },
+                "countStacked": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCountStackedItem"
+                    }
                 },
                 "date": {
                     "type": "string",
