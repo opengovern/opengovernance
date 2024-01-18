@@ -98,4 +98,5 @@ type AssetTableRow struct {
 	DimensionID   string             `json:"dimensionId" example:"compute"`
 	DimensionName string             `json:"dimensionName" example:"Compute"`
 	ResourceCount map[string]float64 `json:"resourceCount"`
+	Connector     source.Type        `json:"connector"`
 }

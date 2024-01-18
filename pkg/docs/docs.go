@@ -10078,6 +10078,9 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow": {
             "type": "object",
             "properties": {
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
                 "dimensionId": {
                     "type": "string",
                     "example": "compute"

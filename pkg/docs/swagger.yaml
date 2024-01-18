@@ -2103,6 +2103,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow:
     properties:
+      connector:
+        $ref: '#/definitions/source.Type'
       dimensionId:
         example: compute
         type: string
