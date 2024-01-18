@@ -95,9 +95,7 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 			var subscriptionModelObj armsubscription.Subscription
 			err := json.Unmarshal(jsonSubModel, &subscriptionModelObj)
 			if err == nil {
-				fmt.Printf("subscription model obj: %v\n", subscriptionModelObj)
 				if subscriptionModelObj.SubscriptionPolicies != nil && subscriptionModelObj.SubscriptionPolicies.QuotaID != nil {
-					fmt.Printf("subscription model obj quota id: %v\n", *subscriptionModelObj.SubscriptionPolicies.QuotaID)
 					quotaId := *subscriptionModelObj.SubscriptionPolicies.QuotaID
 					unsupportedQuotas := kaytuAzure.GetUnsupportedCostQuotaIds()
 					for _, unsupportedQuota := range unsupportedQuotas {
