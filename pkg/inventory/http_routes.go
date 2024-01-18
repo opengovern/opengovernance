@@ -1049,6 +1049,7 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 		table = append(table, inventoryApi.AssetTableRow{
 			DimensionID:   m.DimensionID,
 			DimensionName: m.DimensionName,
+			Connector:     m.Connector,
 			ResourceCount: resourceCount,
 		})
 	}
