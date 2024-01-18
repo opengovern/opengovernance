@@ -110,7 +110,7 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 					fmt.Printf("subscription model obj quota id not found for connection: %v\n", string(jsonC))
 				}
 			} else {
-				fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
+				fmt.Printf("subscription model obj not found for connection: %v\n", string(jsonC))
 			}
 		} else {
 			fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
