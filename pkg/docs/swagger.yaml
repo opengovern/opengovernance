@@ -1150,6 +1150,10 @@ definitions:
       evaluator:
         example: steampipe-v0.5
         type: string
+      history:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingHistory'
+        type: array
       kaytuResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
@@ -1319,6 +1323,19 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingHistory:
+    properties:
+      complianceJobID:
+        example: 1
+        type: integer
+      conformanceStatus:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
+        example: alarm
+      evaluatedAt:
+        example: 1589395200000
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingKPIResponse:
     properties:

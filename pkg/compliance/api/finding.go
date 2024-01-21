@@ -105,6 +105,12 @@ func ParseConformanceStatuses(conformanceStatuses []string) []ConformanceStatus 
 	return result
 }
 
+type FindingHistory struct {
+	ComplianceJobID   uint              `json:"complianceJobID" example:"1"`
+	ConformanceStatus ConformanceStatus `json:"conformanceStatus" example:"alarm"`
+	EvaluatedAt       int64             `json:"evaluatedAt" example:"1589395200000"`
+}
+
 type Finding struct {
 	BenchmarkID           string                `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID             string                `json:"controlID" example:"azure_cis_v140_7_5"`
@@ -124,6 +130,7 @@ type Finding struct {
 	ComplianceJobID       uint                  `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID uint                  `json:"parentComplianceJobID" example:"1"`
 	ParentBenchmarks      []string              `json:"parentBenchmarks"`
+	History               []FindingHistory      `json:"history"`
 
 	ResourceTypeName            string   `json:"resourceTypeName" example:"Virtual Machine"`
 	ParentBenchmarkNames        []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
@@ -134,6 +141,53 @@ type Finding struct {
 	NoOfOccurrences             int      `json:"noOfOccurrences" example:"1"`
 
 	SortKey []any `json:"sortKey"`
+}
+
+func GetAPIFindingFromESFinding(finding types.Finding) Finding {
+	f := Finding{
+		BenchmarkID:           finding.BenchmarkID,
+		ControlID:             finding.ControlID,
+		ConnectionID:          finding.ConnectionID,
+		EvaluatedAt:           finding.EvaluatedAt,
+		StateActive:           finding.StateActive,
+		ConformanceStatus:     "",
+		Severity:              finding.Severity,
+		Evaluator:             finding.Evaluator,
+		Connector:             finding.Connector,
+		KaytuResourceID:       finding.KaytuResourceID,
+		ResourceID:            finding.ResourceID,
+		ResourceName:          finding.ResourceName,
+		ResourceLocation:      finding.ResourceLocation,
+		ResourceType:          finding.ResourceType,
+		Reason:                finding.Reason,
+		ComplianceJobID:       finding.ComplianceJobID,
+		ParentComplianceJobID: finding.ParentComplianceJobID,
+		ParentBenchmarks:      finding.ParentBenchmarks,
+	}
+	if finding.ConformanceStatus.IsPassed() {
+		f.ConformanceStatus = ConformanceStatusPassed
+	} else {
+		f.ConformanceStatus = ConformanceStatusFailed
+	}
+	if f.ResourceType == "" {
+		f.ResourceType = "Unknown"
+		f.ResourceTypeName = "Unknown"
+	}
+
+	for _, h := range finding.History {
+		fh := FindingHistory{
+			ComplianceJobID:   h.ComplianceJobID,
+			ConformanceStatus: "",
+			EvaluatedAt:       h.EvaluatedAt,
+		}
+		if h.ConformanceStatus.IsPassed() {
+			fh.ConformanceStatus = ConformanceStatusPassed
+		} else {
+			fh.ConformanceStatus = ConformanceStatusFailed
+		}
+		f.History = append(f.History, fh)
+	}
+	return f
 }
 
 type GetFindingsResponse struct {
