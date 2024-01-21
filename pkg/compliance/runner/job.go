@@ -105,7 +105,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			findingsIDs = append(findingsIDs, es.HashOf(keys...))
 		}
 
-		oldFindings, err := w.FetchFindingsByIDs(ctx, findingsIDs)
+		oldFindings, err := w.FetchFindingsNeededHistoryByIDs(ctx, findingsIDs)
 
 		newFindings := make([]types.Finding, 0, len(findings))
 		for _, f := range findings {
@@ -180,7 +180,7 @@ type FindingsMultiGetResponse struct {
 	}
 }
 
-func (w *Worker) FetchFindingsByIDs(ctx context.Context, ids []string) (map[string]types.Finding, error) {
+func (w *Worker) FetchFindingsNeededHistoryByIDs(ctx context.Context, ids []string) (map[string]types.Finding, error) {
 	request := map[string]any{
 		"ids": ids,
 	}
@@ -194,6 +194,13 @@ func (w *Worker) FetchFindingsByIDs(ctx context.Context, ids []string) (map[stri
 		bytes.NewReader(query),
 		es.Mget.WithIndex(types.FindingsIndex),
 		es.Mget.WithContext(ctx),
+		es.Mget.WithFilterPath(
+			"docs._source.es_id",
+			"docs._source.history",
+			"docs._source.complianceJobID",
+			"docs._source.conformanceStatus",
+			"docs._source.evaluatedAt",
+		),
 	)
 	defer kaytu.CloseSafe(res)
 	if err != nil {
