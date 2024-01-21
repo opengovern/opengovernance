@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+type FindingHistory struct {
+	ComplianceJobID   uint              `json:"jobId"`
+	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
+	EvaluatedAt       int64             `json:"evaluatedAt"`
+}
+
 type Finding struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
@@ -26,6 +32,8 @@ type Finding struct {
 	Reason                string            `json:"reason" example:"The VM is not using managed disks"`
 	ComplianceJobID       uint              `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID uint              `json:"parentComplianceJobID" example:"1"`
+
+	History []FindingHistory `json:"history"`
 
 	ParentBenchmarks []string `json:"parentBenchmarks"`
 }

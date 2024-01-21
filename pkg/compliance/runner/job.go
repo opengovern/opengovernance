@@ -99,13 +99,50 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			return 0, err
 		}
 
+		var findingsIDs []string
+		for _, f := range findings {
+			keys, _ := f.KeysAndIndex()
+			findingsIDs = append(findingsIDs, es.HashOf(keys...))
+		}
+
+		oldFindings, err := w.FetchFindingsNeededHistoryByIDs(ctx, findingsIDs)
+
+		newFindings := make([]types.Finding, 0, len(findings))
+		for _, f := range findings {
+			if oldFinding, ok := oldFindings[f.EsID]; ok {
+				f.History = oldFinding.History
+				if len(f.History) == 0 {
+					f.History = append(f.History, types.FindingHistory{
+						ComplianceJobID:   oldFinding.ComplianceJobID,
+						ConformanceStatus: oldFinding.ConformanceStatus,
+						EvaluatedAt:       oldFinding.EvaluatedAt,
+					})
+				}
+				if oldFinding.ConformanceStatus != f.ConformanceStatus {
+					f.History = append(f.History, types.FindingHistory{
+						ComplianceJobID:   f.ComplianceJobID,
+						ConformanceStatus: f.ConformanceStatus,
+						EvaluatedAt:       f.EvaluatedAt,
+					})
+				}
+			}
+			if len(f.History) == 0 {
+				f.History = append(f.History, types.FindingHistory{
+					ComplianceJobID:   f.ComplianceJobID,
+					ConformanceStatus: f.ConformanceStatus,
+					EvaluatedAt:       f.EvaluatedAt,
+				})
+			}
+			newFindings = append(newFindings, f)
+		}
+
 		mapKey := fmt.Sprintf("%s---___---%s", caller.RootBenchmark, caller.ControlID)
 		if _, ok := totalFindingCountMap[mapKey]; !ok {
-			totalFindingCountMap[mapKey] = len(findings)
+			totalFindingCountMap[mapKey] = len(newFindings)
 		}
 
 		var docs []es.Doc
-		for _, f := range findings {
+		for _, f := range newFindings {
 			keys, idx := f.KeysAndIndex()
 			f.EsID = es.HashOf(keys...)
 			f.EsIndex = idx
@@ -135,6 +172,65 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
 	)
 	return totalFindingCount, nil
+}
+
+type FindingsMultiGetResponse struct {
+	Docs []struct {
+		Source types.Finding `json:"_source"`
+	} `json:"docs"`
+}
+
+func (w *Worker) FetchFindingsNeededHistoryByIDs(ctx context.Context, ids []string) (map[string]types.Finding, error) {
+	request := map[string]any{
+		"ids": ids,
+	}
+	query, err := json.Marshal(request)
+	if err != nil {
+		w.logger.Error("failed to create es query", zap.Error(err))
+		return nil, err
+	}
+	es := w.esClient.ES()
+	res, err := es.Mget(
+		bytes.NewReader(query),
+		es.Mget.WithIndex(types.FindingsIndex),
+		es.Mget.WithContext(ctx),
+		es.Mget.WithFilterPath(
+			"docs._source.es_id",
+			"docs._source.history",
+			"docs._source.complianceJobID",
+			"docs._source.conformanceStatus",
+			"docs._source.evaluatedAt",
+		),
+	)
+	defer kaytu.CloseSafe(res)
+	if err != nil {
+		w.logger.Error("failure while querying es", zap.Error(err))
+		return nil, err
+	} else if err := kaytu.CheckError(res); err != nil {
+		if kaytu.IsIndexNotFoundErr(err) {
+			return nil, nil
+		}
+		b, _ := io.ReadAll(res.Body)
+		w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
+		return nil, err
+	}
+
+	var response FindingsMultiGetResponse
+	resBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		w.logger.Error("failed to read response", zap.Error(err))
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+	if err := json.Unmarshal(resBytes, &response); err != nil {
+		w.logger.Error("failed to unmarshal response", zap.Error(err))
+		return nil, fmt.Errorf("unmarshal response: %w", err)
+	}
+
+	findings := make(map[string]types.Finding)
+	for _, doc := range response.Docs {
+		findings[doc.Source.EsID] = doc.Source
+	}
+	return findings, nil
 }
 
 func (w *Worker) RemoveOldFindings(jobID uint,
@@ -202,10 +298,6 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 		bytes.NewReader(query),
 		es.DeleteByQuery.WithContext(ctx),
 	)
-	if err != nil {
-		w.logger.Error("failed to delete old findings", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("control_id", controlID))
-		return err
-	}
 	defer kaytu.CloseSafe(res)
 	if err != nil {
 		b, _ := io.ReadAll(res.Body)
