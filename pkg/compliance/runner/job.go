@@ -177,7 +177,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 type FindingsMultiGetResponse struct {
 	Docs []struct {
 		Source types.Finding `json:"_source"`
-	}
+	} `json:"docs"`
 }
 
 func (w *Worker) FetchFindingsNeededHistoryByIDs(ctx context.Context, ids []string) (map[string]types.Finding, error) {
