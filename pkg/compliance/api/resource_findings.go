@@ -52,32 +52,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 		}
 		connectionIds[finding.ConnectionID] = true
 		apiRf.ConnectionID = finding.ConnectionID
-		f := Finding{
-			BenchmarkID:           finding.BenchmarkID,
-			ControlID:             finding.ControlID,
-			ConnectionID:          finding.ConnectionID,
-			EvaluatedAt:           finding.EvaluatedAt,
-			StateActive:           finding.StateActive,
-			ConformanceStatus:     "",
-			Severity:              finding.Severity,
-			Evaluator:             finding.Evaluator,
-			Connector:             finding.Connector,
-			KaytuResourceID:       finding.KaytuResourceID,
-			ResourceID:            finding.ResourceID,
-			ResourceName:          finding.ResourceName,
-			ResourceLocation:      finding.ResourceLocation,
-			ResourceType:          finding.ResourceType,
-			Reason:                finding.Reason,
-			ComplianceJobID:       finding.ComplianceJobID,
-			ParentComplianceJobID: finding.ParentComplianceJobID,
-			ParentBenchmarks:      finding.ParentBenchmarks,
-		}
-		if finding.ConformanceStatus.IsPassed() {
-			f.ConformanceStatus = ConformanceStatusPassed
-		} else {
-			f.ConformanceStatus = ConformanceStatusFailed
-		}
-		apiRf.Findings = append(apiRf.Findings, f)
+		apiRf.Findings = append(apiRf.Findings, GetAPIFindingFromESFinding(finding))
 	}
 
 	if len(connectionIds) > 1 {

@@ -271,46 +271,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	}
 
 	for _, h := range res {
-		finding := api.Finding{
-			BenchmarkID:           h.Source.BenchmarkID,
-			ControlID:             h.Source.ControlID,
-			ConnectionID:          h.Source.ConnectionID,
-			EvaluatedAt:           h.Source.EvaluatedAt,
-			StateActive:           h.Source.StateActive,
-			ConformanceStatus:     "",
-			Severity:              h.Source.Severity,
-			Evaluator:             h.Source.Evaluator,
-			Connector:             h.Source.Connector,
-			KaytuResourceID:       h.Source.KaytuResourceID,
-			ResourceID:            h.Source.ResourceID,
-			ResourceName:          h.Source.ResourceName,
-			ResourceLocation:      h.Source.ResourceLocation,
-			ResourceType:          h.Source.ResourceType,
-			Reason:                h.Source.Reason,
-			ComplianceJobID:       h.Source.ComplianceJobID,
-			ParentComplianceJobID: h.Source.ParentComplianceJobID,
-			ParentBenchmarks:      h.Source.ParentBenchmarks,
-
-			ResourceTypeName:            h.Source.ResourceID,
-			ParentBenchmarkNames:        make([]string, 0, len(h.Source.ParentBenchmarks)),
-			ParentBenchmarkDisplayCodes: make([]string, 0, len(h.Source.ParentBenchmarks)),
-			ControlTitle:                "",
-			ProviderConnectionID:        "",
-			ProviderConnectionName:      "",
-			NoOfOccurrences:             0,
-			SortKey:                     h.Sort,
-		}
-
-		if h.Source.ConformanceStatus.IsPassed() {
-			finding.ConformanceStatus = api.ConformanceStatusPassed
-		} else {
-			finding.ConformanceStatus = api.ConformanceStatusFailed
-		}
-
-		if finding.ResourceType == "" {
-			finding.ResourceType = "Unknown"
-			finding.ResourceTypeName = "Unknown"
-		}
+		finding := api.GetAPIFindingFromESFinding(h.Source)
 
 		for _, parentBenchmark := range h.Source.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
@@ -476,45 +437,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		controlFinding := controlFinding
 		controlFinding.ResourceName = lookupResource.Name
 		controlFinding.ResourceLocation = lookupResource.Location
-		finding := api.Finding{
-			BenchmarkID:           controlFinding.BenchmarkID,
-			ControlID:             controlFinding.ControlID,
-			ConnectionID:          controlFinding.ConnectionID,
-			EvaluatedAt:           controlFinding.EvaluatedAt,
-			StateActive:           controlFinding.StateActive,
-			ConformanceStatus:     "",
-			Severity:              controlFinding.Severity,
-			Evaluator:             controlFinding.Evaluator,
-			Connector:             controlFinding.Connector,
-			KaytuResourceID:       controlFinding.KaytuResourceID,
-			ResourceID:            controlFinding.ResourceID,
-			ResourceName:          controlFinding.ResourceName,
-			ResourceLocation:      controlFinding.ResourceLocation,
-			ResourceType:          controlFinding.ResourceType,
-			Reason:                controlFinding.Reason,
-			ComplianceJobID:       controlFinding.ComplianceJobID,
-			ParentComplianceJobID: controlFinding.ParentComplianceJobID,
-			ParentBenchmarks:      controlFinding.ParentBenchmarks,
-
-			ResourceTypeName:            "",
-			ParentBenchmarkNames:        nil,
-			ParentBenchmarkDisplayCodes: nil,
-			ControlTitle:                "",
-			ProviderConnectionID:        "",
-			ProviderConnectionName:      "",
-			NoOfOccurrences:             len(controlFindings),
-		}
-
-		if controlFinding.ConformanceStatus.IsPassed() {
-			finding.ConformanceStatus = api.ConformanceStatusPassed
-		} else {
-			finding.ConformanceStatus = api.ConformanceStatusFailed
-		}
-
-		if finding.ResourceType == "" {
-			finding.ResourceType = "Unknown"
-			finding.ResourceTypeName = "Unknown"
-		}
+		finding := api.GetAPIFindingFromESFinding(controlFinding)
 
 		for _, parentBenchmark := range finding.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
