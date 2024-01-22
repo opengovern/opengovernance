@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
+	"time"
 )
 
 type FindingFilters struct {
@@ -130,6 +131,7 @@ type Finding struct {
 	ComplianceJobID       uint                  `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID uint                  `json:"parentComplianceJobID" example:"1"`
 	ParentBenchmarks      []string              `json:"parentBenchmarks"`
+	LastTransition        time.Time             `json:"lastTransition" example:"1589395200"`
 	History               []FindingHistory      `json:"history"`
 
 	ResourceTypeName            string   `json:"resourceTypeName" example:"Virtual Machine"`
@@ -163,6 +165,7 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 		ComplianceJobID:       finding.ComplianceJobID,
 		ParentComplianceJobID: finding.ParentComplianceJobID,
 		ParentBenchmarks:      finding.ParentBenchmarks,
+		LastTransition:        time.UnixMilli(finding.LastTransition),
 	}
 	if finding.ConformanceStatus.IsPassed() {
 		f.ConformanceStatus = ConformanceStatusPassed

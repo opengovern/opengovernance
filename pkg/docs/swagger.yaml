@@ -1157,6 +1157,9 @@ definitions:
       kaytuResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
+      lastTransition:
+        example: "1589395200"
+        type: string
       noOfOccurrences:
         example: 1
         type: integer

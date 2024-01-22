@@ -110,6 +110,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 			ComplianceJobID:       w.ID,
 			ParentComplianceJobID: w.ParentJobID,
 			ParentBenchmarks:      caller.ParentBenchmarkIDs,
+			LastTransition:        w.CreatedAt.UnixMilli(),
 		})
 	}
 	return findings, nil

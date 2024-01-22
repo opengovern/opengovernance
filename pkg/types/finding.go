@@ -32,6 +32,7 @@ type Finding struct {
 	Reason                string            `json:"reason" example:"The VM is not using managed disks"`
 	ComplianceJobID       uint              `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID uint              `json:"parentComplianceJobID" example:"1"`
+	LastTransition        int64             `json:"lastTransition" example:"1589395200"`
 
 	History []FindingHistory `json:"history"`
 
