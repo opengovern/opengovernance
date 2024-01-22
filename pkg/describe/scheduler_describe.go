@@ -51,7 +51,7 @@ type CloudNativeCall struct {
 func (s *Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
-	t := ticker.NewTicker(30*time.Second, time.Second*10)
+	t := ticker.NewTicker(60*time.Second, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
