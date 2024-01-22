@@ -162,7 +162,7 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 }
 
 func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the analyticsJobResultQueue queue")
+	s.logger.Info("Consuming messages from the analytics Job Result Queue queue")
 
 	ctx := context.Background()
 	if _, err := s.jq.Consume(ctx, "analytics-scheduler", analytics.StreamName, []string{analytics.JobResultQueueTopic}, "analytics-scheduler", func(msg jetstream.Msg) {
@@ -213,8 +213,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	for {
 		select {
 		case <-tick.C:
-			err := s.db.UpdateAnalyticsJobsTimedOut()
-			if err != nil {
+			if err := s.db.UpdateAnalyticsJobsTimedOut(); err != nil {
 				s.logger.Error("failed to update analytics job timeout", zap.Error(err))
 			}
 		case <-ctx.Done():
