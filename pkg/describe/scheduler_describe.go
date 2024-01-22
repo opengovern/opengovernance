@@ -272,19 +272,17 @@ func (s *Scheduler) scheduleDescribeJob() {
 		var resourceTypes []string
 		switch connection.Connector {
 		case source.CloudAWS:
-			for _, rt := range aws.ListResourceTypes() {
-				for _, rt2 := range rts.AWSResourceTypes {
-					if rt2 == rt {
-						resourceTypes = append(resourceTypes, rt)
-					}
+			awsRts := aws.GetResourceTypesMap()
+			for _, rt := range rts.AWSResourceTypes {
+				if _, ok := awsRts[rt]; ok {
+					resourceTypes = append(resourceTypes, rt)
 				}
 			}
 		case source.CloudAzure:
-			for _, rt := range azure.ListResourceTypes() {
-				for _, rt2 := range rts.AzureResourceTypes {
-					if rt2 == rt {
-						resourceTypes = append(resourceTypes, rt)
-					}
+			azureRts := azure.GetResourceTypesMap()
+			for _, rt := range rts.AzureResourceTypes {
+				if _, ok := azureRts[rt]; ok {
+					resourceTypes = append(resourceTypes, rt)
 				}
 			}
 		}
