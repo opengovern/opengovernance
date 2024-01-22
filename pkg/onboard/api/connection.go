@@ -73,7 +73,7 @@ type Connection struct {
 	supportedResourceTypes map[string]bool
 }
 
-func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
+func (c *Connection) GetSupportedResourceTypeMap() map[string]bool {
 	if c.supportedResourceTypes != nil {
 		return c.supportedResourceTypes
 	} else {
