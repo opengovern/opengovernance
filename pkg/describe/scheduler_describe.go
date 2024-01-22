@@ -270,6 +270,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 	}
 
 	for _, connection := range connections {
+		s.logger.Info("running describe job scheduler for connection", zap.String("connection_id", connection.ID.String()))
 		var resourceTypes []string
 		switch connection.Connector {
 		case source.CloudAWS:
