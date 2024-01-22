@@ -77,11 +77,11 @@ func (db Database) UpdateAnalyticsJobStatus(job model.AnalyticsJob) error {
 	return nil
 }
 
-func (db Database) UpdateAnalyticsJobsTimedOut(analyticsIntervalHours time.Duration) error {
+func (db Database) UpdateAnalyticsJobsTimedOut() error {
 	tx := db.ORM.
 		Model(&model.AnalyticsJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", int(analyticsIntervalHours.Hours()*2))).
-		Where("status IN ?", []string{string(api.JobInProgress)}).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", 2*time.Hour)).
+		Where("status IN ?", []string{string(api.JobCreated), string(api.JobInProgress)}).
 		Updates(model.AnalyticsJob{Status: api.JobCompletedWithFailure, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
