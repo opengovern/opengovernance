@@ -8706,6 +8706,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
+                "lastTransition": {
+                    "type": "string",
+                    "example": "1589395200"
+                },
                 "noOfOccurrences": {
                     "type": "integer",
                     "example": 1

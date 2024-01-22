@@ -124,6 +124,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ConformanceStatus: f.ConformanceStatus,
 						EvaluatedAt:       f.EvaluatedAt,
 					})
+				} else {
+					f.LastTransition = oldFinding.LastTransition
 				}
 			}
 			if len(f.History) == 0 {
