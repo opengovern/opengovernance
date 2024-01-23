@@ -96,7 +96,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.POST("/describer/trigger", httpserver2.AuthorizeHandler(h.TriggerStackDescriber, apiAuth.AdminRole))
 	stacks.GET("/:stackId/insights", httpserver2.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
 
-	// v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
+	v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
 }
 
 // ListJobs godoc
