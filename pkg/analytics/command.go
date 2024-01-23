@@ -204,6 +204,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 
 	<-ctx.Done()
+	consumeCtx.Drain()
 	consumeCtx.Stop()
 
 	return nil
