@@ -534,6 +534,8 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 		terms["connector"] = connectors
 	}
 
+	terms["stateActive"] = []bool{true}
+
 	root := map[string]any{}
 	root["size"] = 0
 
@@ -621,6 +623,12 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 			},
 		})
 	}
+
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"stateActive": true,
+		},
+	})
 
 	request := map[string]any{
 		"aggs": map[string]any{
@@ -719,6 +727,8 @@ func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
 	}
+
+	terms["stateActive"] = []bool{true}
 
 	root := map[string]any{}
 	root["size"] = 0
@@ -835,6 +845,8 @@ func FindingsConformanceStatusCountByControlPerConnection(logger *zap.Logger, cl
 		terms["connector"] = connectors
 	}
 
+	terms["stateActive"] = []bool{true}
+
 	root := map[string]any{}
 	root["size"] = 0
 
@@ -936,6 +948,11 @@ func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Clien
 			},
 		})
 	}
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"stateActive": true,
+		},
+	})
 
 	request := map[string]any{
 		"aggs": map[string]any{

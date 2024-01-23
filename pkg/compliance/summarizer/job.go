@@ -29,7 +29,9 @@ func (w *Worker) RunJob(j types2.Job) error {
 
 	// We have to sort by kaytuResourceID to be able to optimize memory usage for resourceFinding generations
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
-	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, nil, nil, []map[string]any{{"kaytuResourceID": "asc"}})
+	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []kaytu.BoolFilter{
+		kaytu.NewTermFilter("stateActive", "true"),
+	}, nil, []map[string]any{{"kaytuResourceID": "asc"}})
 	if err != nil {
 		return err
 	}
