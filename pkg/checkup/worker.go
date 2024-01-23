@@ -57,7 +57,7 @@ func NewWorker(
 func (w *Worker) Run() error {
 	ctx := context.Background()
 
-	if _, err := w.jq.Consume(
+	consumeCtx, err := w.jq.Consume(
 		ctx,
 		"checkup-service",
 		StreamName,
@@ -101,12 +101,16 @@ func (w *Worker) Run() error {
 				w.logger.Error("Failed to push metrics", zap.Error(err))
 			}
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
 	w.logger.Error("Waiting indefinitely for messages. To exit press CTRL+C")
 	<-ctx.Done()
+	consumeCtx.Drain()
+	consumeCtx.Stop()
+
 	return nil
 }
 
