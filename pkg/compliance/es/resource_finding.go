@@ -234,19 +234,21 @@ return total;`, types.ConformanceStatusOK)
 type GetPerBenchmarkResourceSeverityResultResponse struct {
 	Aggregations struct {
 		Findings struct {
-			BenchmarkGroup struct {
-				Buckets []struct {
-					Key           string `json:"key"`
-					SeverityGroup struct {
-						Buckets []struct {
-							Key           string `json:"key"`
-							ResourceCount struct {
-								DocCount int `json:"doc_count"`
-							} `json:"resourceCount"`
-						} `json:"buckets"`
-					} `json:"severityGroup"`
-				} `json:"buckets"`
-			} `json:"benchmarkGroup"`
+			ConformanceFilter struct {
+				BenchmarkGroup struct {
+					Buckets []struct {
+						Key           string `json:"key"`
+						SeverityGroup struct {
+							Buckets []struct {
+								Key           string `json:"key"`
+								ResourceCount struct {
+									DocCount int `json:"doc_count"`
+								} `json:"resourceCount"`
+							} `json:"buckets"`
+						} `json:"severityGroup"`
+					} `json:"buckets"`
+				} `json:"benchmarkGroup"`
+			} `json:"conformanceFilter"`
 		} `json:"findings"`
 	} `json:"aggregations"`
 }
@@ -285,13 +287,14 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 			},
 		})
 	}
-	if len(conformanceStatuses) > 0 {
-		nestedFilters = append(nestedFilters, map[string]any{
-			"terms": map[string]any{
-				"findings.conformanceStatus": conformanceStatuses,
-			},
-		})
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = types.GetConformanceStatuses()
 	}
+	nestedFilters = append(nestedFilters, map[string]any{
+		"terms": map[string]any{
+			"findings.conformanceStatus": conformanceStatuses,
+		},
+	})
 
 	requestQuery := make(map[string]any, 0)
 	if len(nestedFilters) > 0 {
@@ -318,20 +321,29 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 				"path": "findings",
 			},
 			"aggs": map[string]any{
-				"benchmarkGroup": map[string]any{
-					"terms": map[string]any{
-						"field": "findings.benchmarkID",
-						"size":  10000,
+				"conformanceFilter": map[string]any{
+					"filter": map[string]any{
+						"terms": map[string]any{
+							"findings.conformanceStatus": conformanceStatuses,
+						},
 					},
 					"aggs": map[string]any{
-						"severityGroup": map[string]any{
+						"benchmarkGroup": map[string]any{
 							"terms": map[string]any{
-								"field": "findings.severity",
+								"field": "findings.benchmarkID",
 								"size":  10000,
 							},
 							"aggs": map[string]any{
-								"resourceCount": map[string]any{
-									"reverse_nested": map[string]any{},
+								"severityGroup": map[string]any{
+									"terms": map[string]any{
+										"field": "findings.severity",
+										"size":  10000,
+									},
+									"aggs": map[string]any{
+										"resourceCount": map[string]any{
+											"reverse_nested": map[string]any{},
+										},
+									},
 								},
 							},
 						},
@@ -355,7 +367,7 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 	}
 
 	result := make(map[string]types.SeverityResultWithTotal)
-	for _, benchmarkBucket := range response.Aggregations.Findings.BenchmarkGroup.Buckets {
+	for _, benchmarkBucket := range response.Aggregations.Findings.ConformanceFilter.BenchmarkGroup.Buckets {
 		severityResult := types.SeverityResultWithTotal{}
 		for _, severityBucket := range benchmarkBucket.SeverityGroup.Buckets {
 			severityResult.TotalCount += severityBucket.ResourceCount.DocCount
@@ -382,19 +394,21 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 type GetPerFieldResourceConformanceResultResponse struct {
 	Aggregations struct {
 		Findings struct {
-			FieldGroup struct {
-				Buckets []struct {
-					Key              string `json:"key"`
-					ConformanceGroup struct {
-						Buckets []struct {
-							Key           string `json:"key"`
-							ResourceCount struct {
-								DocCount int `json:"doc_count"`
-							} `json:"resourceCount"`
-						} `json:"buckets"`
-					} `json:"conformanceGroup"`
-				} `json:"buckets"`
-			} `json:"fieldGroup"`
+			ConformanceFilter struct {
+				FieldGroup struct {
+					Buckets []struct {
+						Key              string `json:"key"`
+						ConformanceGroup struct {
+							Buckets []struct {
+								Key           string `json:"key"`
+								ResourceCount struct {
+									DocCount int `json:"doc_count"`
+								} `json:"resourceCount"`
+							} `json:"buckets"`
+						} `json:"conformanceGroup"`
+					} `json:"buckets"`
+				} `json:"fieldGroup"`
+			} `json:"conformanceFilter"`
 		} `json:"findings"`
 	} `json:"aggregations"`
 }
@@ -447,13 +461,14 @@ func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Clien
 			},
 		})
 	}
-	if len(conformanceStatuses) > 0 {
-		nestedFilters = append(nestedFilters, map[string]any{
-			"terms": map[string]any{
-				"findings.conformanceStatus": conformanceStatuses,
-			},
-		})
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = types.GetConformanceStatuses()
 	}
+	nestedFilters = append(nestedFilters, map[string]any{
+		"terms": map[string]any{
+			"findings.conformanceStatus": conformanceStatuses,
+		},
+	})
 
 	requestQuery := make(map[string]any, 0)
 	if len(nestedFilters) > 0 {
@@ -478,20 +493,29 @@ func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Clien
 				"path": "findings",
 			},
 			"aggs": map[string]any{
-				"fieldGroup": map[string]any{
-					"terms": map[string]any{
-						"field": fmt.Sprintf("findings.%s", field),
-						"size":  10000,
+				"conformanceFilter": map[string]any{
+					"filter": map[string]any{
+						"terms": map[string]any{
+							"findings.conformanceStatus": conformanceStatuses,
+						},
 					},
 					"aggs": map[string]any{
-						"conformanceGroup": map[string]any{
+						"fieldGroup": map[string]any{
 							"terms": map[string]any{
-								"field": "findings.conformanceStatus",
+								"field": fmt.Sprintf("findings.%s", field),
 								"size":  10000,
 							},
 							"aggs": map[string]any{
-								"resourceCount": map[string]any{
-									"reverse_nested": map[string]any{},
+								"conformanceGroup": map[string]any{
+									"terms": map[string]any{
+										"field": "findings.conformanceStatus",
+										"size":  10000,
+									},
+									"aggs": map[string]any{
+										"resourceCount": map[string]any{
+											"reverse_nested": map[string]any{},
+										},
+									},
 								},
 							},
 						},
@@ -516,7 +540,7 @@ func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Clien
 	}
 
 	result := make(map[string]types.ConformanceStatusSummaryWithTotal)
-	for _, connectionBucket := range response.Aggregations.Findings.FieldGroup.Buckets {
+	for _, connectionBucket := range response.Aggregations.Findings.ConformanceFilter.FieldGroup.Buckets {
 		conformanceStatusSummary := types.ConformanceStatusSummaryWithTotal{}
 		for _, conformanceBucket := range connectionBucket.ConformanceGroup.Buckets {
 			conformanceStatusSummary.TotalCount += conformanceBucket.ResourceCount.DocCount
