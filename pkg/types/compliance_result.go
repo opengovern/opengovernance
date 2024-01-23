@@ -12,6 +12,10 @@ const (
 	ConformanceStatusERROR ConformanceStatus = "error"
 )
 
+func GetConformanceStatuses() []ConformanceStatus {
+	return conformanceStatuses
+}
+
 func (r ConformanceStatus) IsPassed() bool {
 	return r == ConformanceStatusOK
 }
