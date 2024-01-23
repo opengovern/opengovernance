@@ -8969,6 +8969,10 @@ const docTemplate = `{
                 "evaluatedAt": {
                     "type": "integer",
                     "example": 1589395200000
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "The VM is not using managed disks"
                 }
             }
         },

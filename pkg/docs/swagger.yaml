@@ -1339,6 +1339,9 @@ definitions:
       evaluatedAt:
         example: 1589395200000
         type: integer
+      reason:
+        example: The VM is not using managed disks
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingKPIResponse:
     properties:

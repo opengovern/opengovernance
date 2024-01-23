@@ -116,6 +116,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ComplianceJobID:   oldFinding.ComplianceJobID,
 						ConformanceStatus: oldFinding.ConformanceStatus,
 						EvaluatedAt:       oldFinding.EvaluatedAt,
+						Reason:            oldFinding.Reason,
 					})
 				}
 				if oldFinding.ConformanceStatus != f.ConformanceStatus {
@@ -123,6 +124,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ComplianceJobID:   f.ComplianceJobID,
 						ConformanceStatus: f.ConformanceStatus,
 						EvaluatedAt:       f.EvaluatedAt,
+						Reason:            f.Reason,
 					})
 				} else {
 					f.LastTransition = oldFinding.LastTransition
@@ -133,6 +135,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					ComplianceJobID:   f.ComplianceJobID,
 					ConformanceStatus: f.ConformanceStatus,
 					EvaluatedAt:       f.EvaluatedAt,
+					Reason:            f.Reason,
 				})
 			}
 			newFindings = append(newFindings, f)
@@ -157,7 +160,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			return 0, err
 		}
 
-		if err := w.RemoveOldFindings(j.ID, j.ExecutionPlan.ConnectionID, caller.RootBenchmark, caller.ControlID); err != nil {
+		if err := w.SetOldFindingsInactive(j.ID, j.ExecutionPlan.ConnectionID, caller.RootBenchmark, caller.ControlID); err != nil {
 			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}
@@ -235,7 +238,7 @@ func (w *Worker) FetchFindingsNeededHistoryByIDs(ctx context.Context, ids []stri
 	return findings, nil
 }
 
-func (w *Worker) RemoveOldFindings(jobID uint,
+func (w *Worker) SetOldFindingsInactive(jobID uint,
 	connectionId *string,
 	benchmarkID,
 	controlID string,
@@ -252,6 +255,13 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 	mustFilters = append(mustFilters, map[string]any{
 		"term": map[string]any{
 			"controlID": controlID,
+		},
+	})
+	mustFilters = append(mustFilters, map[string]any{
+		"range": map[string]any{
+			"complianceJobID": map[string]any{
+				"lt": jobID,
+			},
 		},
 	})
 	if connectionId != nil {
@@ -289,16 +299,20 @@ func (w *Worker) RemoveOldFindings(jobID uint,
 			"filter": filters,
 		},
 	}
+	request["doc"] = map[string]any{
+		"stateActive": false,
+	}
+
 	query, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
 
 	es := w.esClient.ES()
-	res, err := es.DeleteByQuery(
+	res, err := es.UpdateByQuery(
 		[]string{idx},
-		bytes.NewReader(query),
-		es.DeleteByQuery.WithContext(ctx),
+		es.UpdateByQuery.WithContext(ctx),
+		es.UpdateByQuery.WithBody(bytes.NewReader(query)),
 	)
 	defer kaytu.CloseSafe(res)
 	if err != nil {
