@@ -100,10 +100,8 @@ func NewWorker(
 	return w, nil
 }
 
-func (w *Worker) Run() error {
-	ctx := context.Background()
-
-	w.jq.Consume(context.Background(), "insight-service", StreamName, []string{JobsQueueName}, "insight-service", func(msg jetstream.Msg) {
+func (w *Worker) Run(ctx context.Context) error {
+	consumerCtx, err := w.jq.Consume(context.Background(), "insight-service", StreamName, []string{JobsQueueName}, "insight-service", func(msg jetstream.Msg) {
 		var job Job
 		if err := json.Unmarshal(msg.Data(), &job); err != nil {
 			w.logger.Error("Failed to unmarshal task", zap.Error(err))
@@ -145,8 +143,14 @@ func (w *Worker) Run() error {
 			w.logger.Error("Failed to push metrics", zap.Error(err))
 		}
 	})
+	if err != nil {
+		return err
+	}
 
 	<-ctx.Done()
+	consumerCtx.Drain()
+	consumerCtx.Stop()
+
 	return nil
 }
 

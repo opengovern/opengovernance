@@ -59,7 +59,7 @@ func WorkerCommand() *cobra.Command {
 
 			defer w.Stop()
 
-			return w.Run()
+			return w.Run(cmd.Context())
 		},
 	}
 
