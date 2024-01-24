@@ -1270,6 +1270,15 @@ definitions:
         items:
           type: string
         type: array
+      lastTransition:
+        properties:
+          from:
+            example: "2020-05-13T00:00:00Z"
+            type: string
+          to:
+            example: "2020-05-13T00:00:00Z"
+            type: string
+        type: object
       resourceID:
         description: Resource unique identifier
         example:
@@ -1290,6 +1299,12 @@ definitions:
         - low
         items:
           $ref: '#/definitions/types.FindingSeverity'
+        type: array
+      stateActive:
+        example:
+        - true
+        items:
+          type: boolean
         type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
@@ -1323,6 +1338,10 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
       severity:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
+        type: array
+      stateActive:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata'
         type: array
@@ -1373,6 +1392,8 @@ definitions:
       resourceTypeID:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
       severity:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      stateActive:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:

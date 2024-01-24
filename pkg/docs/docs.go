@@ -8866,6 +8866,19 @@ const docTemplate = `{
                         "azure_cis_v140_7_5"
                     ]
                 },
+                "lastTransition": {
+                    "type": "object",
+                    "properties": {
+                        "from": {
+                            "type": "string",
+                            "example": "2020-05-13T00:00:00Z"
+                        },
+                        "to": {
+                            "type": "string",
+                            "example": "2020-05-13T00:00:00Z"
+                        }
+                    }
+                },
                 "resourceID": {
                     "description": "Resource unique identifier",
                     "type": "array",
@@ -8894,6 +8907,15 @@ const docTemplate = `{
                     },
                     "example": [
                         "low"
+                    ]
+                },
+                "stateActive": {
+                    "type": "array",
+                    "items": {
+                        "type": "boolean"
+                    },
+                    "example": [
+                        true
                     ]
                 }
             }
@@ -8944,6 +8966,12 @@ const docTemplate = `{
                     }
                 },
                 "severity": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
+                    }
+                },
+                "stateActive": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
@@ -9021,6 +9049,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
                 },
                 "severity": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
+                "stateActive": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
                 }
             }
