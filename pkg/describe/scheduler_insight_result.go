@@ -12,12 +12,10 @@ import (
 // RunInsightJobResultsConsumer consumes messages from the insightJobResultQueue queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunInsightJobResultsConsumer() error {
+func (s *Scheduler) RunInsightJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the InsightJobResultQueue queue")
 
-	ctx := context.Background()
-
-	s.jq.Consume(ctx, "insight-scheduler", insight.StreamName, []string{insight.ResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
+	consumeCtx, err := s.jq.Consume(ctx, "insight-scheduler", insight.StreamName, []string{insight.ResultsQueueName}, "insight-scheduler", func(msg jetstream.Msg) {
 		var result insight.JobResult
 
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
@@ -51,7 +49,13 @@ func (s *Scheduler) RunInsightJobResultsConsumer() error {
 			s.logger.Error("Failed to ack a message", zap.Error(err))
 		}
 	})
+	if err != nil {
+		return err
+	}
 
 	<-ctx.Done()
+	consumeCtx.Drain()
+	consumeCtx.Stop()
+
 	return nil
 }
