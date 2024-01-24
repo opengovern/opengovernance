@@ -110,6 +110,7 @@ type FindingHistory struct {
 	ComplianceJobID   uint              `json:"complianceJobID" example:"1"`
 	ConformanceStatus ConformanceStatus `json:"conformanceStatus" example:"alarm"`
 	EvaluatedAt       int64             `json:"evaluatedAt" example:"1589395200000"`
+	Reason            string            `json:"reason" example:"The VM is not using managed disks"`
 }
 
 type Finding struct {
@@ -182,6 +183,7 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 			ComplianceJobID:   h.ComplianceJobID,
 			ConformanceStatus: "",
 			EvaluatedAt:       h.EvaluatedAt,
+			Reason:            h.Reason,
 		}
 		if h.ConformanceStatus.IsPassed() {
 			fh.ConformanceStatus = ConformanceStatusPassed

@@ -9,6 +9,7 @@ type FindingHistory struct {
 	ComplianceJobID   uint              `json:"jobId"`
 	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
 	EvaluatedAt       int64             `json:"evaluatedAt"`
+	Reason            string            `json:"reason"`
 }
 
 type Finding struct {

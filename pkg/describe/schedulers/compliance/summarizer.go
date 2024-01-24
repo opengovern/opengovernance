@@ -33,6 +33,11 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJ
 	})
 	filters = append(filters, map[string]any{
 		"term": map[string]any{
+			"stateActive": true,
+		},
+	})
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
 			"parentComplianceJobID": parentJobID,
 		},
 	})
