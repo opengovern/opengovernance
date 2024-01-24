@@ -17,6 +17,11 @@ type FindingFilters struct {
 	ControlID         []string                `json:"controlID" example:"azure_cis_v140_7_5"`                                                                       // Control ID
 	Severity          []types.FindingSeverity `json:"severity" example:"low"`                                                                                       // Severity
 	ConformanceStatus []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
+	StateActive       []bool                  `json:"stateActive" example:"true"`
+	LastTransition    struct {
+		From *time.Time `json:"from" example:"2020-05-13T00:00:00Z"`
+		To   *time.Time `json:"to" example:"2020-05-13T00:00:00Z"`
+	} `json:"lastTransition"`
 }
 
 type FindingFilterWithMetadata struct {
@@ -34,6 +39,7 @@ type FindingFiltersWithMetadata struct {
 	ResourceCollection []FindingFilterWithMetadata `json:"resourceCollection"`
 	Severity           []FindingFilterWithMetadata `json:"severity"`
 	ConformanceStatus  []FindingFilterWithMetadata `json:"conformanceStatus"`
+	StateActive        []FindingFilterWithMetadata `json:"stateActive"`
 }
 
 type FindingsSort struct {
@@ -46,6 +52,7 @@ type FindingsSort struct {
 	ControlID         *SortDirection `json:"controlID"`
 	Severity          *SortDirection `json:"severity"`
 	ConformanceStatus *SortDirection `json:"conformanceStatus"`
+	StateActive       *SortDirection `json:"stateActive"`
 }
 
 type GetFindingsRequest struct {

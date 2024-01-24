@@ -218,8 +218,9 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceTypeID,
-		req.Filters.BenchmarkID, req.Filters.ControlID,
-		req.Filters.Severity, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
+		req.Filters.LastTransition.From, req.Filters.LastTransition.To,
+		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
@@ -582,9 +583,11 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
-		req.ResourceID, req.Connector, req.ConnectionID,
+		req.ResourceID, req.Connector, req.ConnectionID, req.ResourceTypeID,
 		req.BenchmarkID, req.ControlID,
-		req.Severity, esConformanceStatuses)
+		req.Severity,
+		req.LastTransition.From, req.LastTransition.To,
+		req.StateActive, esConformanceStatuses)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
@@ -685,6 +688,14 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 
 	for _, item := range possibleFilters.Aggregations.SeverityFilter.Buckets {
 		response.Severity = append(response.Severity, api.FindingFilterWithMetadata{
+			Key:         item.Key,
+			DisplayName: item.Key,
+			Count:       utils.GetPointer(item.DocCount),
+		})
+	}
+
+	for _, item := range possibleFilters.Aggregations.StateActiveFilter.Buckets {
+		response.StateActive = append(response.StateActive, api.FindingFilterWithMetadata{
 			Key:         item.Key,
 			DisplayName: item.Key,
 			Count:       utils.GetPointer(item.DocCount),
