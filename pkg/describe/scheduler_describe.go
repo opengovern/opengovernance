@@ -238,11 +238,16 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
 	t := ticker.NewTicker(time.Second*30, time.Second*10)
 	defer t.Stop()
-	for ; ; <-t.C {
-		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
-			s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
+	for {
+		select {
+		case <-t.C:
+			if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
+				s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
+			}
+			t.Reset(time.Second*30, time.Second*10)
+		case <-ctx.Done():
+			return
 		}
-		t.Reset(time.Second*30, time.Second*10)
 	}
 }
 

@@ -4,9 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -373,6 +376,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		return err
 	}
 
+	var wg sync.WaitGroup
+
 	httpCtx := &httpclient.Context{
 		UserRole: authAPI.ViewerRole,
 	}
@@ -469,8 +474,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunAnalyticsJobScheduler()
 	})
 
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer(ctx)))
+		wg.Done()
 	})
 
 	// Compliance
@@ -483,8 +490,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.RunInsightJobScheduler()
 	})
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer(ctx)))
+		wg.Done()
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler()
@@ -492,8 +501,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.RunDisabledConnectionCleanup()
 	})
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer(ctx)))
+		s.logger.Fatal("CheckupJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer(ctx)))
+		wg.Done()
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunScheduledJobCleanup()
@@ -504,15 +515,17 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.UpdateDescribedResourceCountScheduler()
 	})
-
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer(ctx)))
+		wg.Done()
 	})
 	s.logger.Info("starting receiver")
 	lis, err := net.Listen("tcp", GRPCServerAddress)
 	if err != nil {
 		s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
 	}
+
 	go func() {
 		err := s.grpcServer.Serve(lis)
 		if err != nil {
@@ -520,7 +533,15 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}()
 
-	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
+	go func() {
+		if err := httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.logger.Fatal("failed to serve http server", zap.Error(err))
+		}
+	}()
+
+	wg.Wait()
+
+	return nil
 }
 
 func (s *Scheduler) RunDisabledConnectionCleanup() {
@@ -637,7 +658,7 @@ func (s *Scheduler) RunCheckupJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the CheckupJobResultQueue queue")
 
 	consumeCtx, err := s.jq.Consume(
-		context.Background(),
+		ctx,
 		"checkup-scheduler",
 		checkup.StreamName,
 		[]string{checkup.ResultsQueueName},
