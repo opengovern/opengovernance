@@ -4,9 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -373,6 +376,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		return err
 	}
 
+	var wg sync.WaitGroup
+
 	httpCtx := &httpclient.Context{
 		UserRole: authAPI.ViewerRole,
 	}
@@ -449,7 +454,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	}
 
 	s.logger.Info("starting scheduler")
-	// --------- describe
+
+	// Describe
 	utils.EnsureRunGoroutine(func() {
 		s.RunDescribeJobScheduler()
 	})
@@ -457,52 +463,48 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDescribeResourceJobs(ctx)
 	})
 	s.discoveryScheduler.Run()
-	// ---------
 
-	// --------- describe
+	// Describe
 	utils.EnsureRunGoroutine(func() {
 		s.RunStackScheduler()
 	})
-	// ---------
 
-	// --------- inventory summarizer
+	// Inventory summarizer
 	utils.EnsureRunGoroutine(func() {
 		s.RunAnalyticsJobScheduler()
 	})
 
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
+		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer(ctx)))
+		wg.Done()
 	})
-	// ---------
 
-	// --------- compliance
+	// Compliance
 	s.complianceScheduler.Run()
 	utils.EnsureRunGoroutine(func() {
 		s.RunJobSequencer()
 	})
-	// ---------
 
-	// --------- insights
+	// Insights
 	utils.EnsureRunGoroutine(func() {
 		s.RunInsightJobScheduler()
 	})
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer(ctx)))
+		wg.Done()
 	})
-	// ---------
-
-	//EnsureRunGoroutin(func() {
-	//	s.RunScheduleJobCompletionUpdater()
-	//})
-
 	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler()
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunDisabledConnectionCleanup()
 	})
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
+		s.logger.Fatal("CheckupJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer(ctx)))
+		wg.Done()
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunScheduledJobCleanup()
@@ -513,15 +515,17 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.UpdateDescribedResourceCountScheduler()
 	})
-
+	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer(ctx)))
+		wg.Done()
 	})
 	s.logger.Info("starting receiver")
 	lis, err := net.Listen("tcp", GRPCServerAddress)
 	if err != nil {
 		s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
 	}
+
 	go func() {
 		err := s.grpcServer.Serve(lis)
 		if err != nil {
@@ -529,7 +533,15 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}()
 
-	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
+	go func() {
+		if err := httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.logger.Fatal("failed to serve http server", zap.Error(err))
+		}
+	}()
+
+	wg.Wait()
+
+	return nil
 }
 
 func (s *Scheduler) RunDisabledConnectionCleanup() {
@@ -642,11 +654,11 @@ func (s *Scheduler) scheduleCheckupJob() {
 // RunCheckupJobResultsConsumer consumes messages from the checkupJobResultQueue queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunCheckupJobResultsConsumer() error {
+func (s *Scheduler) RunCheckupJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the CheckupJobResultQueue queue")
 
-	if _, err := s.jq.Consume(
-		context.Background(),
+	consumeCtx, err := s.jq.Consume(
+		ctx,
 		"checkup-scheduler",
 		checkup.StreamName,
 		[]string{checkup.ResultsQueueName},
@@ -686,7 +698,8 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 				s.logger.Error("Failed to ack the message", zap.Error(err))
 			}
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
@@ -694,10 +707,15 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 	defer t.Stop()
 
 	for {
-		<-t.C
-		err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours)
-		if err != nil {
-			s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
+		select {
+		case <-t.C:
+			if err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours); err != nil {
+				s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
+			}
+		case <-ctx.Done():
+			consumeCtx.Drain()
+			consumeCtx.Stop()
+			return nil
 		}
 	}
 }

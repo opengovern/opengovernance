@@ -16,7 +16,7 @@ func EnsureRunGoroutine(f func(), tryCount ...int) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("paniced: %v", r)
+				fmt.Printf("panic: %v", r)
 				fmt.Printf("%s", string(debug.Stack()))
 				time.Sleep(1 * time.Second)
 				if try > 10 {

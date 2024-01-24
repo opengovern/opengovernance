@@ -70,11 +70,11 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 	ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
 }
 
-func (s *Scheduler) RunDescribeJobResultsConsumer() error {
+func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	s.jq.Consume(
-		context.Background(),
+	consumeCtx, err := s.jq.Consume(
+		ctx,
 		"describe-receiver",
 		DescribeStreamName,
 		[]string{DescribeResultsQueueName},
@@ -149,13 +149,23 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			}
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
 	defer t.Stop()
 
 	for {
-		<-t.C
-		s.handleTimeoutForDiscoveryJobs()
+		select {
+		case <-t.C:
+			s.handleTimeoutForDiscoveryJobs()
+		case <-ctx.Done():
+			consumeCtx.Drain()
+			consumeCtx.Stop()
+
+			return nil
+		}
 	}
 }
 

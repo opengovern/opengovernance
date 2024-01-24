@@ -90,6 +90,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("consuming")
 
 	<-ctx.Done()
+	consumeCtx.Drain()
 	consumeCtx.Stop()
 
 	return nil
