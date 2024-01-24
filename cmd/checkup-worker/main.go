@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 )
@@ -14,7 +15,7 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	defer func() {
 		signal.Stop(c)
 		cancel()
