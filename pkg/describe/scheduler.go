@@ -449,7 +449,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	}
 
 	s.logger.Info("starting scheduler")
-	// --------- describe
+
+	// Describe
 	utils.EnsureRunGoroutine(func() {
 		s.RunDescribeJobScheduler()
 	})
@@ -457,15 +458,13 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDescribeResourceJobs(ctx)
 	})
 	s.discoveryScheduler.Run()
-	// ---------
 
-	// --------- describe
+	// Describe
 	utils.EnsureRunGoroutine(func() {
 		s.RunStackScheduler()
 	})
-	// ---------
 
-	// --------- inventory summarizer
+	// Inventory summarizer
 	utils.EnsureRunGoroutine(func() {
 		s.RunAnalyticsJobScheduler()
 	})
@@ -473,28 +472,20 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
 	})
-	// ---------
 
-	// --------- compliance
+	// Compliance
 	s.complianceScheduler.Run()
 	utils.EnsureRunGoroutine(func() {
 		s.RunJobSequencer()
 	})
-	// ---------
 
-	// --------- insights
+	// Insights
 	utils.EnsureRunGoroutine(func() {
 		s.RunInsightJobScheduler()
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
 	})
-	// ---------
-
-	//EnsureRunGoroutin(func() {
-	//	s.RunScheduleJobCompletionUpdater()
-	//})
-
 	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler()
 	})
@@ -502,7 +493,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDisabledConnectionCleanup()
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
+		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer(ctx)))
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunScheduledJobCleanup()
@@ -642,10 +633,10 @@ func (s *Scheduler) scheduleCheckupJob() {
 // RunCheckupJobResultsConsumer consumes messages from the checkupJobResultQueue queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunCheckupJobResultsConsumer() error {
+func (s *Scheduler) RunCheckupJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the CheckupJobResultQueue queue")
 
-	if _, err := s.jq.Consume(
+	consumeCtx, err := s.jq.Consume(
 		context.Background(),
 		"checkup-scheduler",
 		checkup.StreamName,
@@ -686,7 +677,8 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 				s.logger.Error("Failed to ack the message", zap.Error(err))
 			}
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
@@ -694,10 +686,15 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 	defer t.Stop()
 
 	for {
-		<-t.C
-		err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours)
-		if err != nil {
-			s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
+		select {
+		case <-t.C:
+			if err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours); err != nil {
+				s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
+			}
+		case <-ctx.Done():
+			consumeCtx.Drain()
+			consumeCtx.Stop()
+			return nil
 		}
 	}
 }
