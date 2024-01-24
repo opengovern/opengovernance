@@ -161,11 +161,10 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 	}
 }
 
-func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
+func (s *Scheduler) RunAnalyticsJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the analytics Job Result Queue queue")
 
-	ctx := context.Background()
-	if _, err := s.jq.Consume(ctx, "analytics-scheduler", analytics.StreamName, []string{analytics.JobResultQueueTopic}, "analytics-scheduler", func(msg jetstream.Msg) {
+	consumeCtx, err := s.jq.Consume(ctx, "analytics-scheduler", analytics.StreamName, []string{analytics.JobResultQueueTopic}, "analytics-scheduler", func(msg jetstream.Msg) {
 		var result analytics.JobResult
 
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
@@ -204,7 +203,8 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 			AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to commit message", zap.Error(err))
 		}
-	}); err != nil {
+	})
+	if err != nil {
 		s.logger.Error("Failed to create nats consumer", zap.Error(err))
 		return err
 	}
@@ -217,6 +217,9 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				s.logger.Error("failed to update analytics job timeout", zap.Error(err))
 			}
 		case <-ctx.Done():
+			consumeCtx.Drain()
+			consumeCtx.Stop()
+			tick.Stop()
 			return nil
 		}
 	}

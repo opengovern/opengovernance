@@ -470,7 +470,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	})
 
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
+		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer(ctx)))
 	})
 
 	// Compliance
@@ -484,7 +484,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunInsightJobScheduler()
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer(ctx)))
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler()
