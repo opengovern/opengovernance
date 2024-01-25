@@ -352,7 +352,14 @@ type FindingFiltersAggregationResponse struct {
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
 		ResourceCollectionFilter AggregationResult `json:"resource_collection_filter"`
 		ConformanceStatusFilter  AggregationResult `json:"conformance_status_filter"`
-		StateActiveFilter        AggregationResult `json:"state_active_filter"`
+		StateActiveFilter        struct {
+			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
+			SumOtherDocCount        int `json:"sum_other_doc_count"`
+			Buckets                 []struct {
+				KeyAsString string `json:"key_as_string"`
+				DocCount    int    `json:"doc_count"`
+			} `json:"buckets"`
+		} `json:"state_active_filter"`
 	} `json:"aggregations"`
 }
 

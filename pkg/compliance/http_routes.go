@@ -696,8 +696,8 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 
 	for _, item := range possibleFilters.Aggregations.StateActiveFilter.Buckets {
 		response.StateActive = append(response.StateActive, api.FindingFilterWithMetadata{
-			Key:         item.Key,
-			DisplayName: item.Key,
+			Key:         item.KeyAsString,
+			DisplayName: item.KeyAsString,
 			Count:       utils.GetPointer(item.DocCount),
 		})
 	}
