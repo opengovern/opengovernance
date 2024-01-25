@@ -145,7 +145,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	if err := s.jq.Produce(ctx, DescribeResultsQueueName, result, fmt.Sprintf("job-%d", req.JobId)); err != nil {
+	if err := s.jq.Produce(ctx, DescribeResultsQueueName, result, fmt.Sprintf("job-result-%d", req.JobId)); err != nil {
 		s.logger.Error("Failed to publish into nats",
 			zap.Uint("jobID", uint(req.JobId)),
 			zap.Error(err),
