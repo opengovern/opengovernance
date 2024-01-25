@@ -3,10 +3,11 @@ package db
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"gorm.io/gorm"
-	"time"
 )
 
 func (db Database) CountAnalyticsJobsByDate(start time.Time, end time.Time) (int64, error) {
@@ -80,7 +81,7 @@ func (db Database) UpdateAnalyticsJobStatus(job model.AnalyticsJob) error {
 func (db Database) UpdateAnalyticsJobsTimedOut() error {
 	tx := db.ORM.
 		Model(&model.AnalyticsJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", 2*time.Hour)).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", 2)).
 		Where("status IN ?", []string{string(api.JobCreated), string(api.JobInProgress)}).
 		Updates(model.AnalyticsJob{Status: api.JobCompletedWithFailure, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
