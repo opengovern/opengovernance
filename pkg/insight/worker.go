@@ -131,7 +131,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			w.logger.Error("failed to marshal result as json", zap.Error(err))
 		}
 
-		if err := w.jq.Produce(context.Background(), ResultsQueueName, bytes, fmt.Sprintf("job-%d", job.JobID)); err != nil {
+		if err := w.jq.Produce(context.Background(), ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
 			w.logger.Error("Failed to send results to queue", zap.Error(err))
 		}
 
