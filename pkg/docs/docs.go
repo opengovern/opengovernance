@@ -8696,12 +8696,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "steampipe-v0.5"
                 },
-                "history": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingHistory"
-                    }
-                },
                 "kaytuResourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
@@ -8976,31 +8970,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata"
                     }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingHistory": {
-            "type": "object",
-            "properties": {
-                "complianceJobID": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "conformanceStatus": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus"
-                        }
-                    ],
-                    "example": "alarm"
-                },
-                "evaluatedAt": {
-                    "type": "integer",
-                    "example": 1589395200000
-                },
-                "reason": {
-                    "type": "string",
-                    "example": "The VM is not using managed disks"
                 }
             }
         },
