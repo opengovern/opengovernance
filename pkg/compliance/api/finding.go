@@ -140,7 +140,6 @@ type Finding struct {
 	ParentComplianceJobID uint                  `json:"parentComplianceJobID" example:"1"`
 	ParentBenchmarks      []string              `json:"parentBenchmarks"`
 	LastTransition        time.Time             `json:"lastTransition" example:"1589395200"`
-	History               []FindingHistory      `json:"history"`
 
 	ResourceTypeName            string   `json:"resourceTypeName" example:"Virtual Machine"`
 	ParentBenchmarkNames        []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
@@ -185,20 +184,6 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 		f.ResourceTypeName = "Unknown"
 	}
 
-	for _, h := range finding.History {
-		fh := FindingHistory{
-			ComplianceJobID:   h.ComplianceJobID,
-			ConformanceStatus: "",
-			EvaluatedAt:       h.EvaluatedAt,
-			Reason:            h.Reason,
-		}
-		if h.ConformanceStatus.IsPassed() {
-			fh.ConformanceStatus = ConformanceStatusPassed
-		} else {
-			fh.ConformanceStatus = ConformanceStatusFailed
-		}
-		f.History = append(f.History, fh)
-	}
 	return f
 }
 

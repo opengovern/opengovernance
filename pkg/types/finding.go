@@ -1,15 +1,38 @@
 package types
 
 import (
+	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 )
 
-type FindingHistory struct {
-	ComplianceJobID   uint              `json:"jobId"`
+type FindingSignal struct {
+	EsID    string `json:"es_id"`
+	EsIndex string `json:"es_index"`
+
+	FindingEsID       string            `json:"findingEsID"`
+	ComplianceJobID   uint              `json:"complianceJobID"`
 	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
+	StateActive       bool              `json:"stateActive"`
 	EvaluatedAt       int64             `json:"evaluatedAt"`
 	Reason            string            `json:"reason"`
+
+	BenchmarkID     string          `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID       string          `json:"controlID" example:"azure_cis_v140_7_5"`
+	ConnectionID    string          `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	Connector       source.Type     `json:"connector" example:"Azure"`
+	Severity        FindingSeverity `json:"severity" example:"low"`
+	KaytuResourceID string          `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID      string          `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType    string          `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+}
+
+func (r FindingSignal) KeysAndIndex() ([]string, string) {
+	return []string{
+		r.FindingEsID,
+		fmt.Sprintf("%d", r.ComplianceJobID),
+		fmt.Sprintf("%d", r.EvaluatedAt),
+	}, FindingSignalsIndex
 }
 
 type Finding struct {
@@ -34,8 +57,6 @@ type Finding struct {
 	ComplianceJobID       uint              `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID uint              `json:"parentComplianceJobID" example:"1"`
 	LastTransition        int64             `json:"lastTransition" example:"1589395200"`
-
-	History []FindingHistory `json:"history"`
 
 	ParentBenchmarks []string `json:"parentBenchmarks"`
 }
