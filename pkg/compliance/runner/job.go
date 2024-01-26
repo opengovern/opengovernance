@@ -108,70 +108,98 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			findingsMap[f.EsID] = f
 		}
 
-		oldFindings, err := w.FetchOldFindingsByIDs(ctx, j, caller.RootBenchmark, caller.ControlID, j.ExecutionPlan.ConnectionID)
+		filters := make([]kaytu.BoolFilter, 0)
+		filters = append(filters, kaytu.NewTermFilter("benchmarkID", caller.RootBenchmark))
+		filters = append(filters, kaytu.NewTermFilter("controlID", caller.ControlID))
+		filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
+		if j.ExecutionPlan.ConnectionID != nil {
+			filters = append(filters, kaytu.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
+		} else {
+			filters = append(filters, kaytu.NewTermFilter("connectionID", "all"))
+		}
 
 		newFindings := make([]types.Finding, 0, len(findings))
 		findingsSignals := make([]types.FindingSignal, 0, len(findings))
-		for _, f := range oldFindings {
-			newFinding, ok := findingsMap[f.EsID]
-			if !ok {
-				if f.StateActive {
-					f.StateActive = false
-					f.LastTransition = j.CreatedAt.UnixMilli()
-					f.ComplianceJobID = j.ID
-					f.EvaluatedAt = j.CreatedAt.UnixMilli()
-					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
-					f.Reason = reason
+
+		paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
+		if err != nil {
+			w.logger.Error("failed to create paginator", zap.Error(err))
+			return 0, err
+		}
+		defer func() {
+			if err := paginator.Close(context.Background()); err != nil {
+				w.logger.Error("failed to close paginator", zap.Error(err))
+			}
+		}()
+		for paginator.HasNext() {
+			oldFindings, err := paginator.NextPage(ctx)
+			if err != nil {
+				w.logger.Error("failed to get next page", zap.Error(err))
+				return 0, err
+			}
+
+			for _, f := range oldFindings {
+				newFinding, ok := findingsMap[f.EsID]
+				if !ok {
+					if f.StateActive {
+						f.StateActive = false
+						f.LastTransition = j.CreatedAt.UnixMilli()
+						f.ComplianceJobID = j.ID
+						f.EvaluatedAt = j.CreatedAt.UnixMilli()
+						reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
+						f.Reason = reason
+						fs := types.FindingSignal{
+							FindingEsID:       f.EsID,
+							ComplianceJobID:   j.ID,
+							ConformanceStatus: f.ConformanceStatus,
+							StateActive:       f.StateActive,
+							EvaluatedAt:       j.CreatedAt.UnixMilli(),
+							Reason:            reason,
+
+							BenchmarkID:     f.BenchmarkID,
+							ControlID:       f.ControlID,
+							ConnectionID:    f.ConnectionID,
+							Connector:       f.Connector,
+							Severity:        f.Severity,
+							KaytuResourceID: f.KaytuResourceID,
+							ResourceID:      f.ResourceID,
+							ResourceType:    f.ResourceType,
+						}
+						findingsSignals = append(findingsSignals, fs)
+						newFindings = append(newFindings, f)
+					}
+					continue
+				}
+
+				if f.ConformanceStatus != newFinding.ConformanceStatus {
+					newFinding.LastTransition = j.CreatedAt.UnixMilli()
 					fs := types.FindingSignal{
 						FindingEsID:       f.EsID,
 						ComplianceJobID:   j.ID,
-						ConformanceStatus: f.ConformanceStatus,
-						StateActive:       f.StateActive,
+						ConformanceStatus: newFinding.ConformanceStatus,
+						StateActive:       newFinding.StateActive,
 						EvaluatedAt:       j.CreatedAt.UnixMilli(),
-						Reason:            reason,
+						Reason:            newFinding.Reason,
 
-						BenchmarkID:     f.BenchmarkID,
-						ControlID:       f.ControlID,
-						ConnectionID:    f.ConnectionID,
-						Connector:       f.Connector,
-						Severity:        f.Severity,
-						KaytuResourceID: f.KaytuResourceID,
-						ResourceID:      f.ResourceID,
-						ResourceType:    f.ResourceType,
+						BenchmarkID:     newFinding.BenchmarkID,
+						ControlID:       newFinding.ControlID,
+						ConnectionID:    newFinding.ConnectionID,
+						Connector:       newFinding.Connector,
+						Severity:        newFinding.Severity,
+						KaytuResourceID: newFinding.KaytuResourceID,
+						ResourceID:      newFinding.ResourceID,
+						ResourceType:    newFinding.ResourceType,
 					}
 					findingsSignals = append(findingsSignals, fs)
-					newFindings = append(newFindings, f)
+				} else {
+					newFinding.LastTransition = f.LastTransition
 				}
-				continue
+
+				newFindings = append(newFindings, newFinding)
+				delete(findingsMap, newFinding.EsID)
 			}
-
-			if f.ConformanceStatus != newFinding.ConformanceStatus {
-				newFinding.LastTransition = j.CreatedAt.UnixMilli()
-				fs := types.FindingSignal{
-					FindingEsID:       f.EsID,
-					ComplianceJobID:   j.ID,
-					ConformanceStatus: newFinding.ConformanceStatus,
-					StateActive:       newFinding.StateActive,
-					EvaluatedAt:       j.CreatedAt.UnixMilli(),
-					Reason:            newFinding.Reason,
-
-					BenchmarkID:     newFinding.BenchmarkID,
-					ControlID:       newFinding.ControlID,
-					ConnectionID:    newFinding.ConnectionID,
-					Connector:       newFinding.Connector,
-					Severity:        newFinding.Severity,
-					KaytuResourceID: newFinding.KaytuResourceID,
-					ResourceID:      newFinding.ResourceID,
-					ResourceType:    newFinding.ResourceType,
-				}
-				findingsSignals = append(findingsSignals, fs)
-			} else {
-				newFinding.LastTransition = f.LastTransition
-			}
-
-			newFindings = append(newFindings, newFinding)
-			delete(findingsMap, newFinding.EsID)
 		}
+
 		for _, newFinding := range findingsMap {
 			newFinding.LastTransition = j.CreatedAt.UnixMilli()
 			fs := types.FindingSignal{
@@ -239,44 +267,6 @@ type FindingsMultiGetResponse struct {
 	Docs []struct {
 		Source types.Finding `json:"_source"`
 	} `json:"docs"`
-}
-
-func (w *Worker) FetchOldFindingsByIDs(ctx context.Context, j Job, benchmarkID string, controlID string, connectionID *string) ([]types.Finding, error) {
-	filters := make([]kaytu.BoolFilter, 0)
-	filters = append(filters, kaytu.NewTermFilter("benchmarkID", benchmarkID))
-	filters = append(filters, kaytu.NewTermFilter("controlID", controlID))
-	filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
-	if connectionID != nil {
-		filters = append(filters, kaytu.NewTermFilter("connectionID", *connectionID))
-	} else {
-		filters = append(filters, kaytu.NewTermFilter("connectionID", "all"))
-	}
-
-	paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
-	if err != nil {
-		w.logger.Error("failed to create paginator", zap.Error(err))
-		return nil, err
-	}
-	defer func() {
-		if err := paginator.Close(context.Background()); err != nil {
-			w.logger.Error("failed to close paginator", zap.Error(err))
-		}
-	}()
-
-	findings := make([]types.Finding, 0)
-	for paginator.HasNext() {
-		values, err := paginator.NextPage(ctx)
-		if err != nil {
-			w.logger.Error("failed to get next page", zap.Error(err))
-			return nil, err
-		}
-
-		for _, f := range values {
-			findings = append(findings, f)
-		}
-	}
-
-	return findings, nil
 }
 
 func (w *Worker) setOldFindingsInactive(jobID uint,
