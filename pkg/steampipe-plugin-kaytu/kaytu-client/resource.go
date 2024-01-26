@@ -3,6 +3,7 @@ package kaytu_client
 import (
 	"context"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
@@ -126,7 +127,7 @@ func ResourceTypeToESIndex(t string) string {
 
 func ListResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Trace("ListResources 1", d)
-
+	runtime.GC()
 	// create service
 	cfg := config.GetConfig(d.Connection)
 

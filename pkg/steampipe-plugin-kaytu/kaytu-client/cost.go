@@ -3,6 +3,7 @@ package kaytu_client
 import (
 	"context"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	"runtime"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -94,7 +95,7 @@ var costColumnMapping = map[string]string{
 
 func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Warn("ListCostSummary", d)
-
+	runtime.GC()
 	// create service
 	cfg := config.GetConfig(d.Connection)
 	ke, err := config.NewClientCached(cfg, d.ConnectionCache, ctx)

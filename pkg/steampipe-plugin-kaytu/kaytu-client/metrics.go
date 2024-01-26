@@ -7,11 +7,12 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"gorm.io/gorm/clause"
+	"runtime"
 )
 
 func ListMetrics(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Trace("ListMetrics")
-
+	runtime.GC()
 	cfg := config.GetConfig(d.Connection)
 	ke, err := pg.NewInventoryClientCached(cfg, d.ConnectionCache, ctx)
 	if err != nil {

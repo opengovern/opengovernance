@@ -3,6 +3,7 @@ package kaytu_client
 import (
 	"context"
 	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"runtime"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -127,7 +128,7 @@ var lookupMapping = map[string]string{
 
 func ListLookupResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Trace("ListLookupResources", d)
-
+	runtime.GC()
 	// create service
 	cfg := config.GetConfig(d.Connection)
 	ke, err := config.NewClientCached(cfg, d.ConnectionCache, ctx)

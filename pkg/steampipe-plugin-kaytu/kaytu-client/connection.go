@@ -3,6 +3,7 @@ package kaytu_client
 import (
 	"context"
 	"encoding/json"
+	"runtime"
 	"strings"
 
 	onboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
@@ -103,6 +104,7 @@ func getConnectionRowFromConnection(ctx context.Context, connection onboard.Sour
 
 func ListConnections(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Trace("ListConnections")
+	runtime.GC()
 	cfg := config.GetConfig(d.Connection)
 	ke, err := pg.NewClientCached(cfg, d.ConnectionCache, ctx)
 	if err != nil {
@@ -129,6 +131,7 @@ func ListConnections(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 
 func GetConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Trace("ListConnections")
+	runtime.GC()
 	cfg := config.GetConfig(d.Connection)
 	ke, err := pg.NewClientCached(cfg, d.ConnectionCache, ctx)
 	if err != nil {

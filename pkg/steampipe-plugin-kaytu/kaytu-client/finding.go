@@ -2,6 +2,7 @@ package kaytu_client
 
 import (
 	"context"
+	"runtime"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -99,7 +100,7 @@ var listFindingFilters = map[string]string{
 
 func ListFindings(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Trace("ListFindings")
-
+	runtime.GC()
 	// create service
 	cfg := config.GetConfig(d.Connection)
 	ke, err := config.NewClientCached(cfg, d.ConnectionCache, ctx)
