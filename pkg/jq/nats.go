@@ -57,7 +57,7 @@ func (jq *JobQueue) closeHandler(nc *nats.Conn) {
 	jq.logger.Fatal("connection lost", zap.Error(nc.LastError()))
 }
 
-func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics []string) error {
+func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics []string, maxMsgs int64) error {
 	// https://docs.nats.io/nats-concepts/jetstream/streams
 	if _, err := jq.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:         name,
@@ -65,9 +65,9 @@ func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics
 		Subjects:     topics,
 		Retention:    jetstream.WorkQueuePolicy,
 		MaxConsumers: -1,
-		MaxMsgs:      1000,
-		MaxBytes:     10 * 1000 * 1000, // we are considering around 50MB for each stream
-		Discard:      jetstream.DiscardOld,
+		MaxMsgs:      maxMsgs,
+		MaxBytes:     1000 * maxMsgs, // we are considering around 50MB for each stream
+		Discard:      jetstream.DiscardNew,
 		Duplicates:   15 * time.Minute,
 		Replicas:     1,
 		Storage:      jetstream.MemoryStorage,

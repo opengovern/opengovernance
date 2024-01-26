@@ -220,27 +220,27 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
-	if err := s.jq.Stream(context.Background(), insight.StreamName, "insight job queue", []string{insight.ResultsQueueName, insight.JobsQueueName}); err != nil {
+	if err := s.jq.Stream(context.Background(), insight.StreamName, "insight job queue", []string{insight.ResultsQueueName, insight.JobsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}); err != nil {
+	if err := s.jq.Stream(context.Background(), summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}); err != nil {
+	if err := s.jq.Stream(context.Background(), runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}, 1000000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}); err != nil {
+	if err := s.jq.Stream(context.Background(), analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}); err != nil {
+	if err := s.jq.Stream(context.Background(), checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}); err != nil {
+	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
 		return nil, err
 	}
 
