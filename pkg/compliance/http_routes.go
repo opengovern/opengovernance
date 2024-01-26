@@ -764,6 +764,7 @@ func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
 //	@Param			controlId			query		[]string						false	"ControlID"
 //	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
@@ -801,13 +802,27 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
+	stateActives := []bool{true}
+	if stateActiveStr := httpserver2.QueryArrayParam(ctx, "stateActive"); len(stateActiveStr) > 0 {
+		stateActives = make([]bool, 0, len(stateActiveStr))
+		for _, item := range stateActiveStr {
+			stateActive, err := strconv.ParseBool(item)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid stateActive")
+			}
+			stateActives = append(stateActives, stateActive)
+		}
+	}
+
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, esConformanceStatuses, esCount)
+	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors,
+		nil, connectionIDs, benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount))
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, controlIDs, severities, nil, 10000)
+	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors,
+		nil, connectionIDs, benchmarkIDs, controlIDs, severities, nil, stateActives, 10000)
 	if err != nil {
 		h.logger.Error("failed to get top field total", zap.Error(err))
 		return err
@@ -1159,6 +1174,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
 //	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
@@ -1178,6 +1194,16 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(ctx, "severities"))
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = []api.ConformanceStatus{
+			api.ConformanceStatusFailed,
+		}
+	}
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	for _, status := range conformanceStatuses {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -1195,12 +1221,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 
 	var response api.GetFieldCountResponse
 	res, err := es.FindingsFieldCountByControl(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
-		[]kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
-		})
+		esConformanceStatuses)
 	if err != nil {
 		return err
 	}
@@ -1734,7 +1755,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				kaytuTypes.ConformanceStatusERROR,
 				kaytuTypes.ConformanceStatusINFO,
 				kaytuTypes.ConformanceStatusSKIP,
-			}, topAccountCount)
+			}, []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
@@ -1745,7 +1766,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				kaytuTypes.ConformanceStatusINFO,
 				kaytuTypes.ConformanceStatusSKIP,
 				kaytuTypes.ConformanceStatusOK,
-			}, topAccountCount)
+			}, []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -1961,7 +1982,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 			kaytuTypes.ConformanceStatusERROR,
 			kaytuTypes.ConformanceStatusINFO,
 			kaytuTypes.ConformanceStatusSKIP,
-		}, topAccountCount)
+		}, []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
@@ -1972,7 +1993,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 			kaytuTypes.ConformanceStatusERROR,
 			kaytuTypes.ConformanceStatusINFO,
 			kaytuTypes.ConformanceStatusSKIP,
-		}, topAccountCount)
+		}, []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err

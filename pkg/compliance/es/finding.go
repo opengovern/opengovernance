@@ -563,7 +563,7 @@ type FindingsTopFieldResponse struct {
 
 func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
+	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
 	size int) (*FindingsTopFieldResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
@@ -595,7 +595,11 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 		terms["connector"] = connectors
 	}
 
-	terms["stateActive"] = []bool{true}
+	if len(stateActives) > 0 {
+		terms["stateActive"] = stateActives
+	} else {
+		terms["stateActive"] = []bool{true}
+	}
 
 	root := map[string]any{}
 	root["size"] = 0

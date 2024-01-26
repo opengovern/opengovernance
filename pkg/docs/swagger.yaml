@@ -5163,6 +5163,16 @@ paths:
           type: string
         name: severities
         type: array
+      - collectionFormat: csv
+        description: ConformanceStatus to filter by defaults to failed
+        in: query
+        items:
+          enum:
+          - failed
+          - passed
+          type: string
+        name: conformanceStatus
+        type: array
       produces:
       - application/json
       responses:
@@ -5429,6 +5439,13 @@ paths:
           - passed
           type: string
         name: conformanceStatus
+        type: array
+      - collectionFormat: csv
+        description: StateActive to filter by defaults to true
+        in: query
+        items:
+          type: boolean
+        name: stateActive
         type: array
       produces:
       - application/json
