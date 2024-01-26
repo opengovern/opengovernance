@@ -108,7 +108,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			findingsMap[f.EsID] = f
 		}
 
-		oldFindings, err := w.FetchOldFindingsByIDs(ctx, caller.RootBenchmark, caller.ControlID, j.ExecutionPlan.ConnectionID)
+		oldFindings, err := w.FetchOldFindingsByIDs(ctx, j, caller.RootBenchmark, caller.ControlID, j.ExecutionPlan.ConnectionID)
 
 		newFindings := make([]types.Finding, 0, len(findings))
 		findingsSignals := make([]types.FindingSignal, 0, len(findings))
@@ -118,13 +118,17 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				if f.StateActive {
 					f.StateActive = false
 					f.LastTransition = j.CreatedAt.UnixMilli()
+					f.ComplianceJobID = j.ID
+					f.EvaluatedAt = j.CreatedAt.UnixMilli()
+					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
+					f.Reason = reason
 					fs := types.FindingSignal{
 						FindingEsID:       f.EsID,
 						ComplianceJobID:   j.ID,
 						ConformanceStatus: f.ConformanceStatus,
 						StateActive:       f.StateActive,
 						EvaluatedAt:       j.CreatedAt.UnixMilli(),
-						Reason:            fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID),
+						Reason:            reason,
 
 						BenchmarkID:     f.BenchmarkID,
 						ControlID:       f.ControlID,
@@ -216,11 +220,6 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}
-
-		if err := w.SetOldFindingsInactive(j.ID, j.ExecutionPlan.ConnectionID, caller.RootBenchmark, caller.ControlID); err != nil {
-			w.logger.Error("failed to remove old findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
-			return 0, err
-		}
 	}
 
 	totalFindingCount := 0
@@ -242,10 +241,11 @@ type FindingsMultiGetResponse struct {
 	} `json:"docs"`
 }
 
-func (w *Worker) FetchOldFindingsByIDs(ctx context.Context, benchmarkID string, controlID string, connectionID *string) ([]types.Finding, error) {
+func (w *Worker) FetchOldFindingsByIDs(ctx context.Context, j Job, benchmarkID string, controlID string, connectionID *string) ([]types.Finding, error) {
 	filters := make([]kaytu.BoolFilter, 0)
 	filters = append(filters, kaytu.NewTermFilter("benchmarkID", benchmarkID))
 	filters = append(filters, kaytu.NewTermFilter("controlID", controlID))
+	filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
 	if connectionID != nil {
 		filters = append(filters, kaytu.NewTermFilter("connectionID", *connectionID))
 	} else {
@@ -279,7 +279,7 @@ func (w *Worker) FetchOldFindingsByIDs(ctx context.Context, benchmarkID string, 
 	return findings, nil
 }
 
-func (w *Worker) SetOldFindingsInactive(jobID uint,
+func (w *Worker) setOldFindingsInactive(jobID uint,
 	connectionId *string,
 	benchmarkID,
 	controlID string,
