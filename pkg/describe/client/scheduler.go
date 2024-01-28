@@ -30,6 +30,7 @@ type SchedulerServiceClient interface {
 	GetJobsByInsightID(ctx *httpclient.Context, insightID uint) ([]model.InsightJob, error)
 	InsightJobInProgress(ctx *httpclient.Context, jobID uint) error
 	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
+	SetComplianceRunnerInProgress(ctx *httpclient.Context, jobID uint) error
 }
 
 type schedulerClient struct {
@@ -210,4 +211,16 @@ func (s *schedulerClient) CountJobsByDate(ctx *httpclient.Context, includeCost *
 		return 0, err
 	}
 	return resp, nil
+}
+
+func (s *schedulerClient) SetComplianceRunnerInProgress(ctx *httpclient.Context, jobID uint) error {
+	url := fmt.Sprintf("%s/api/v1/compliance/runner/in_progress/%d", s.baseURL, jobID)
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
 }

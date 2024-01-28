@@ -90,13 +90,13 @@ func (s *JobScheduler) runPublisher() error {
 
 			jobJson, err := json.Marshal(job)
 			if err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
+				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, &job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to marshal job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
 
 			if err := s.jq.Produce(context.Background(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
+				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, &job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
@@ -112,4 +112,8 @@ func (s *JobScheduler) runPublisher() error {
 	}
 
 	return nil
+}
+
+func (s *JobScheduler) SetRunnerInProgress(runnerID uint) error {
+	return s.db.UpdateRunnerJob(runnerID, runner.ComplianceRunnerInProgress, nil, nil, "")
 }

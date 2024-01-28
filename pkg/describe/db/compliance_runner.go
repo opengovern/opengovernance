@@ -68,7 +68,10 @@ func (db Database) UpdateTimedOutInProgressRunners() error {
 }
 
 func (db Database) RetryFailedRunners() error {
-	tx := db.ORM.Exec("UPDATE compliance_runners SET retry_count = retry_count + 1, status = 'CREATED', updated_at = NOW() WHERE status = 'FAILED' AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'")
+	tx := db.ORM.Exec(`UPDATE compliance_runners 
+SET retry_count = retry_count + 1, status = 'CREATED', updated_at = NOW() 
+WHERE status IN ? 
+AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'`, []string{string(runner.ComplianceRunnerFailed), string(runner.ComplianceRunnerTimeout)})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -77,16 +80,19 @@ func (db Database) RetryFailedRunners() error {
 }
 
 func (db Database) UpdateRunnerJob(
-	id uint, status runner.ComplianceRunnerStatus, startedAt time.Time, totalFindingCount *int, failureMsg string) error {
+	id uint, status runner.ComplianceRunnerStatus, startedAt *time.Time, totalFindingCount *int, failureMsg string) error {
+	crunner := model.ComplianceRunner{
+		Status:            status,
+		FailureMessage:    failureMsg,
+		TotalFindingCount: totalFindingCount,
+	}
+	if startedAt != nil {
+		crunner.StartedAt = *startedAt
+	}
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
 		Where("id = ?", id).
-		Updates(model.ComplianceRunner{
-			Status:            status,
-			StartedAt:         startedAt,
-			FailureMessage:    failureMsg,
-			TotalFindingCount: totalFindingCount,
-		})
+		Updates(crunner)
 	if tx.Error != nil {
 		return tx.Error
 	}

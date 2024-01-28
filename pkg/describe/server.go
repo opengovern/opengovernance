@@ -74,6 +74,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/insight/:insight_id/jobs", httpserver2.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver2.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
+	v1.POST("/compliance/runner/in_progress/:runner_id", httpserver2.AuthorizeHandler(h.SetComplianceRunnerInProgress, apiAuth.InternalRole))
 	v1.PUT("/analytics/trigger", httpserver2.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
 	v1.GET("/analytics/job/:job_id", httpserver2.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
 	v1.GET("/describe/status/:resource_type", httpserver2.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
@@ -577,6 +578,20 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, nil)
 	}
 	return ctx.JSON(http.StatusOK, lastComplianceJob.ToApi())
+}
+
+func (h HttpServer) SetComplianceRunnerInProgress(ctx echo.Context) error {
+	runnerID, err := strconv.ParseUint(ctx.Param("runner_id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid runner_id")
+	}
+
+	err = h.Scheduler.complianceScheduler.SetRunnerInProgress(uint(runnerID))
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (h HttpServer) GetAnalyticsJob(ctx echo.Context) error {

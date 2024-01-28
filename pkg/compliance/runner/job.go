@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"io"
 	"time"
 
@@ -82,6 +84,12 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
+
+	err := w.schedulerClient.SetComplianceRunnerInProgress(&httpclient.Context{UserRole: api.InternalRole}, j.ID)
+	if err != nil {
+		w.logger.Error("failed to set compliance runner in progress", zap.Error(err))
+		return 0, err
+	}
 
 	res, err := w.steampipeConn.QueryAll(ctx, j.ExecutionPlan.Query.QueryToExecute)
 	if err != nil {

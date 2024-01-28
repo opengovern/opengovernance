@@ -7,6 +7,7 @@ import (
 	"time"
 
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	schedulerClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
@@ -24,6 +25,7 @@ type Config struct {
 	Compliance            config.KaytuService
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
+	Scheduler             config.KaytuService
 	Steampipe             config.Postgres
 	PrometheusPushAddress string
 }
@@ -37,6 +39,7 @@ type Worker struct {
 	complianceClient complianceClient.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
+	schedulerClient  schedulerClient.SchedulerServiceClient
 }
 
 func NewWorker(
@@ -84,6 +87,7 @@ func NewWorker(
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
 		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
+		schedulerClient:  schedulerClient.NewSchedulerServiceClient(config.Scheduler.BaseURL),
 	}
 
 	return w, nil
