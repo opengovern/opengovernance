@@ -3,8 +3,8 @@ package compliance
 import (
 	"time"
 
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	runnerTypes "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"go.uber.org/zap"
@@ -18,7 +18,7 @@ func (s *JobScheduler) buildRunners(
 	parentBenchmarkIDs []string,
 	benchmarkID string,
 ) ([]*model.ComplianceRunner, error) {
-	ctx := &httpclient.Context{UserRole: api2.InternalRole}
+	ctx := &httpclient.Context{UserRole: authApi.InternalRole}
 	var runners []*model.ComplianceRunner
 
 	benchmark, err := s.complianceClient.GetBenchmark(ctx, benchmarkID)
@@ -45,7 +45,7 @@ func (s *JobScheduler) buildRunners(
 			continue
 		}
 
-		callers := runner.Caller{
+		callers := runnerTypes.Caller{
 			RootBenchmark:      rootBenchmarkID,
 			ParentBenchmarkIDs: append(parentBenchmarkIDs, benchmarkID),
 			ControlID:          control.ID,
@@ -60,10 +60,10 @@ func (s *JobScheduler) buildRunners(
 			ParentJobID:          parentJobID,
 			StartedAt:            time.Time{},
 			RetryCount:           0,
-			Status:               runner.ComplianceRunnerCreated,
+			Status:               runnerTypes.ComplianceRunnerCreated,
 			FailureMessage:       "",
 		}
-		err = runnerJob.SetCallers([]runner.Caller{callers})
+		err = runnerJob.SetCallers([]runnerTypes.Caller{callers})
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func (s *JobScheduler) buildRunners(
 }
 
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, error) {
-	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
+	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: authApi.InternalRole}, benchmarkID)
 	if err != nil {
 		return 0, err
 	}

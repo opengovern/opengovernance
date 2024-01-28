@@ -6,42 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"io"
-	"time"
-
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
+	runnerTypes "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
+	"io"
 )
-
-type Caller struct {
-	RootBenchmark      string
-	ParentBenchmarkIDs []string
-	ControlID          string
-	ControlSeverity    types.FindingSeverity
-}
-
-type ExecutionPlan struct {
-	Callers []Caller
-	Query   complianceApi.Query
-
-	ConnectionID         *string
-	ProviderConnectionID *string
-}
-
-type Job struct {
-	ID          uint
-	ParentJobID uint
-	CreatedAt   time.Time
-
-	ExecutionPlan ExecutionPlan
-}
 
 type JobConfig struct {
 	config        Config
@@ -50,7 +25,7 @@ type JobConfig struct {
 	esClient      kaytu.Client
 }
 
-func (w *Worker) Initialize(ctx context.Context, j Job) error {
+func (w *Worker) Initialize(ctx context.Context, j runnerTypes.Job) error {
 	providerAccountID := "all"
 	if j.ExecutionPlan.ProviderConnectionID != nil &&
 		*j.ExecutionPlan.ProviderConnectionID != "" {
@@ -71,7 +46,7 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	return nil
 }
 
-func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
+func (w *Worker) RunJob(ctx context.Context, j runnerTypes.Job) (int, error) {
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
@@ -103,7 +78,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	)
 	totalFindingCountMap := make(map[string]int)
 	for _, caller := range j.ExecutionPlan.Callers {
-		findings, err := j.ExtractFindings(w.logger, caller, res, j.ExecutionPlan.Query)
+		findings, err := ExtractFindings(w.logger, j, caller, res, j.ExecutionPlan.Query)
 		if err != nil {
 			return 0, err
 		}

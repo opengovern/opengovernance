@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"time"
 
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
@@ -135,13 +136,13 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit bool, requeue bool, err error) {
-	var job Job
+	var job types.Job
 
 	if err := json.Unmarshal(msg.Data(), &job); err != nil {
 		return true, false, err
 	}
 
-	result := JobResult{
+	result := types.JobResult{
 		Job:               job,
 		StartedAt:         time.Now(),
 		Status:            ComplianceRunnerInProgress,

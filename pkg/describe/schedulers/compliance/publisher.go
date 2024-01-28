@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"go.uber.org/zap"
@@ -76,11 +76,11 @@ func (s *JobScheduler) runPublisher() error {
 			if it.ConnectionID != nil && *it.ConnectionID != "" {
 				providerConnectionID = &connectionsMap[*it.ConnectionID].ConnectionID
 			}
-			job := runner.Job{
+			job := types.Job{
 				ID:          it.ID,
 				ParentJobID: it.ParentJobID,
 				CreatedAt:   it.CreatedAt,
-				ExecutionPlan: runner.ExecutionPlan{
+				ExecutionPlan: types.ExecutionPlan{
 					Callers:              callers,
 					Query:                *query,
 					ConnectionID:         it.ConnectionID,
@@ -90,13 +90,13 @@ func (s *JobScheduler) runPublisher() error {
 
 			jobJson, err := json.Marshal(job)
 			if err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, &job.CreatedAt, nil, err.Error())
+				_ = s.db.UpdateRunnerJob(job.ID, types.ComplianceRunnerFailed, &job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to marshal job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
 
 			if err := s.jq.Produce(context.Background(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, &job.CreatedAt, nil, err.Error())
+				_ = s.db.UpdateRunnerJob(job.ID, types.ComplianceRunnerFailed, &job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
@@ -121,5 +121,5 @@ func (s *JobScheduler) runPublisher() error {
 }
 
 func (s *JobScheduler) SetRunnerInProgress(runnerID uint) error {
-	return s.db.UpdateRunnerJob(runnerID, runner.ComplianceRunnerInProgress, nil, nil, "")
+	return s.db.UpdateRunnerJob(runnerID, types.ComplianceRunnerInProgress, nil, nil, "")
 }

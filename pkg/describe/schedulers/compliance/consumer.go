@@ -3,6 +3,7 @@ package compliance
 import (
 	"context"
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"

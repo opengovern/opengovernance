@@ -2,7 +2,7 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"gorm.io/gorm"
@@ -53,18 +53,18 @@ type ComplianceRunner struct {
 
 	StartedAt         time.Time
 	TotalFindingCount *int
-	Status            runner.ComplianceRunnerStatus
+	Status            types.ComplianceRunnerStatus
 	FailureMessage    string
 	RetryCount        int
 }
 
-func (cr *ComplianceRunner) GetCallers() ([]runner.Caller, error) {
-	var res []runner.Caller
+func (cr *ComplianceRunner) GetCallers() ([]types.Caller, error) {
+	var res []types.Caller
 	err := json.Unmarshal([]byte(cr.Callers), &res)
 	return res, err
 }
 
-func (cr *ComplianceRunner) SetCallers(callers []runner.Caller) error {
+func (cr *ComplianceRunner) SetCallers(callers []types.Caller) error {
 	b, err := json.Marshal(callers)
 	if err != nil {
 		return err

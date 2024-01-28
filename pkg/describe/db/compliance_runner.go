@@ -2,7 +2,7 @@ package db
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"gorm.io/gorm"
 	"time"
@@ -44,7 +44,7 @@ func (db Database) DeleteOldRunnerJob(parentJobId *uint) error {
 func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 	var jobs []model.ComplianceRunner
 	tx := db.ORM.Model(&model.ComplianceRunner{}).
-		Where("status = ?", runner.ComplianceRunnerCreated).Order("created_at ASC").Limit(1000).Find(&jobs)
+		Where("status = ?", types.ComplianceRunnerCreated).Order("created_at ASC").Limit(1000).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -57,7 +57,7 @@ func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 func (db Database) UpdateTimedOutInProgressRunners() error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
-		Where("status = ?", runner.ComplianceRunnerInProgress).
+		Where("status = ?", types.ComplianceRunnerInProgress).
 		Where("updated_at < NOW() - INTERVAL '1 HOURS'").
 		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
@@ -71,7 +71,7 @@ func (db Database) RetryFailedRunners() error {
 	tx := db.ORM.Exec(`UPDATE compliance_runners 
 SET retry_count = retry_count + 1, status = 'CREATED', updated_at = NOW() 
 WHERE status IN ? 
-AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'`, []string{string(runner.ComplianceRunnerFailed), string(runner.ComplianceRunnerTimeout)})
+AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'`, []string{string(types.ComplianceRunnerFailed), string(types.ComplianceRunnerTimeout)})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -80,7 +80,7 @@ AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'`, []string{str
 }
 
 func (db Database) UpdateRunnerJob(
-	id uint, status runner.ComplianceRunnerStatus, startedAt *time.Time, totalFindingCount *int, failureMsg string) error {
+	id uint, status types.ComplianceRunnerStatus, startedAt *time.Time, totalFindingCount *int, failureMsg string) error {
 	crunner := model.ComplianceRunner{
 		Status:            status,
 		FailureMessage:    failureMsg,
@@ -126,7 +126,7 @@ func (db Database) ListRunnersWithID(ids []int64) ([]model.ComplianceRunner, err
 func (db Database) ListFailedRunnersWithParentID(id uint) ([]model.ComplianceRunner, error) {
 	var jobs []model.ComplianceRunner
 	tx := db.ORM.Model(&model.ComplianceRunner{}).
-		Where("status = ?", runner.ComplianceRunnerFailed).
+		Where("status = ?", types.ComplianceRunnerFailed).
 		Where("parent_job_id = ?", id).
 		Find(&jobs)
 	if tx.Error != nil {

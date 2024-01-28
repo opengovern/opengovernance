@@ -6,6 +6,7 @@ import (
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	runnerTypes "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -27,7 +28,7 @@ func GetResourceTypeFromTableName(tableName string, queryConnector source.Type) 
 	}
 }
 
-func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
+func ExtractFindings(_ *zap.Logger, w runnerTypes.Job, caller runnerTypes.Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
 
 	queryResourceType := ""
