@@ -140,7 +140,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	result := JobResult{
 		Job:               job,
 		StartedAt:         time.Now(),
-		Status:            ComplianceRunnerSucceeded,
+		Status:            ComplianceRunnerInProgress,
 		Error:             "",
 		TotalFindingCount: nil,
 	}
@@ -149,6 +149,8 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 		if err != nil {
 			result.Error = err.Error()
 			result.Status = ComplianceRunnerFailed
+		} else {
+			result.Status = ComplianceRunnerSucceeded
 		}
 
 		resultJson, err := json.Marshal(result)
@@ -162,6 +164,16 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 		}
 	}()
 
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		w.logger.Error("failed to create job in progress json", zap.Error(err))
+		return true, false, err
+	}
+
+	if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.ID)); err != nil {
+		w.logger.Error("failed to publish job in progress", zap.String("jobInProgress", string(resultJson)), zap.Error(err))
+	}
+
 	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
 
 	totalFindingCount, err := w.RunJob(ctx, job)
@@ -170,7 +182,6 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	}
 
 	result.TotalFindingCount = &totalFindingCount
-
 	return true, false, nil
 }
 

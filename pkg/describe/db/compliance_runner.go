@@ -54,12 +54,12 @@ func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 	return jobs, nil
 }
 
-func (db Database) UpdateTimedOutRunners() error {
+func (db Database) UpdateTimedOutInProgressRunners() error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
 		Where("status = ?", runner.ComplianceRunnerInProgress).
 		Where("updated_at < NOW() - INTERVAL '1 HOURS'").
-		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerFailed, FailureMessage: "Job timed out"})
+		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -94,12 +94,12 @@ func (db Database) UpdateRunnerJob(
 	return nil
 }
 
-func (db Database) UpdateRunnerJobsTimedOut() error {
+func (db Database) UpdateTimeoutQueuedRunnerJobs() error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
-		Where("created_at < NOW() - INTERVAL '6 HOURS'").
-		Where("status IN ?", []string{string(runner.ComplianceRunnerCreated), string(runner.ComplianceRunnerInProgress)}).
-		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerFailed, FailureMessage: "Job timed out"})
+		Where("created_at < NOW() - INTERVAL '12 HOURS'").
+		Where("status IN ?", []string{string(runner.ComplianceRunnerCreated), string(runner.ComplianceRunnerQueued)}).
+		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}

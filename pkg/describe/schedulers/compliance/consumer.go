@@ -17,14 +17,13 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 	ctx := context.Background()
 
 	if _, err := s.jq.Consume(ctx, "scheduler-runner-compliance", runner.StreamName, []string{runner.ResultQueueTopic}, "scheduler-runner-compliance", func(msg jetstream.Msg) {
+		if err := msg.Ack(); err != nil {
+			s.logger.Error("Failed committing message", zap.Error(err))
+		}
+
 		var result runner.JobResult
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
 			s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
-
-			if err := msg.Ack(); err != nil {
-				s.logger.Error("Failed committing message", zap.Error(err))
-			}
-
 			return
 		}
 
@@ -37,16 +36,7 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 			s.logger.Error("Failed to update the status of ComplianceReportJob",
 				zap.Uint("jobId", result.Job.ID),
 				zap.Error(err))
-
-			if err := msg.Ack(); err != nil {
-				s.logger.Error("Failed committing message", zap.Error(err))
-			}
-
 			return
-		}
-
-		if err := msg.Ack(); err != nil {
-			s.logger.Error("Failed committing message", zap.Error(err))
 		}
 	}); err != nil {
 		return err

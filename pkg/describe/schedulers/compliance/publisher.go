@@ -40,10 +40,16 @@ func (s *JobScheduler) runPublisher() error {
 	}
 
 	for i := 0; i < 10; i++ {
-		err := s.db.UpdateTimedOutRunners()
+		err := s.db.UpdateTimeoutQueuedRunnerJobs()
 		if err != nil {
 			s.logger.Error("failed to update timed out runners", zap.Error(err))
 		}
+
+		err = s.db.UpdateTimedOutInProgressRunners()
+		if err != nil {
+			s.logger.Error("failed to update timed out runners", zap.Error(err))
+		}
+
 		runners, err := s.db.FetchCreatedRunners()
 		if err != nil {
 			s.logger.Error("failed to fetch created runners", zap.Error(err))
@@ -95,7 +101,7 @@ func (s *JobScheduler) runPublisher() error {
 				continue
 			}
 
-			_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerInProgress, job.CreatedAt, nil, "")
+			_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerQueued, job.CreatedAt, nil, "")
 		}
 	}
 
