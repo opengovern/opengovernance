@@ -111,6 +111,12 @@ func (s *JobScheduler) runPublisher() error {
 		return err
 	}
 
+	err = s.db.UpdateRunnerQueueTimedOut()
+	if err != nil {
+		s.logger.Error("failed to update timed out runners", zap.Error(err))
+		return err
+	}
+
 	return nil
 }
 
