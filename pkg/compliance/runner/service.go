@@ -11,7 +11,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/nats-io/nats.go/jetstream"
@@ -159,7 +158,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 			return
 		}
 
-		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.ID)); err != nil {
+		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("compliance-runner-result-%d", job.ID)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
@@ -170,7 +169,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 		return true, false, err
 	}
 
-	if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.ID)); err != nil {
+	if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("compliance-runner-inprogress-%d", job.ID)); err != nil {
 		w.logger.Error("failed to publish job in progress", zap.String("jobInProgress", string(resultJson)), zap.Error(err))
 	}
 
