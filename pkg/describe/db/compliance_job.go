@@ -134,7 +134,7 @@ func (db Database) ListJobsWithRunnersCompleted() ([]model.ComplianceJob, error)
 	tx := db.ORM.Raw(`
 SELECT * FROM compliance_jobs j WHERE status = 'RUNNERS_IN_PROGRESS' AND
 	(select count(*) from compliance_runners where parent_job_id = j.id AND 
-	                                               NOT (status = 'SUCCEEDED' OR (status = 'FAILED' and retry_count >= 3))
+	                                               NOT (status = 'SUCCEEDED' OR status = 'TIMEOUT' OR (status = 'FAILED' and retry_count >= 3))
 	                                         ) = 0
 `).Find(&jobs)
 	if tx.Error != nil {
