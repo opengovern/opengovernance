@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type FindingSignal struct {
+type FindingEvent struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
@@ -27,12 +27,12 @@ type FindingSignal struct {
 	ResourceType    string          `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 }
 
-func (r FindingSignal) KeysAndIndex() ([]string, string) {
+func (r FindingEvent) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.FindingEsID,
 		fmt.Sprintf("%d", r.ComplianceJobID),
 		fmt.Sprintf("%d", r.EvaluatedAt),
-	}, FindingSignalsIndex
+	}, FindingEventsIndex
 }
 
 type Finding struct {

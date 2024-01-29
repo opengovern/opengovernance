@@ -2,7 +2,7 @@ package types
 
 const (
 	FindingsIndex         = "findings"
-	FindingSignalsIndex   = "finding_signals"
+	FindingEventsIndex    = "finding_events"
 	ResourceFindingsIndex = "resource_findings"
 	StackFindingsIndex    = "stacks-findings"
 	BenchmarkSummaryIndex = "benchmark_summary"

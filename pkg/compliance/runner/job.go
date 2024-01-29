@@ -119,7 +119,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		}
 
 		newFindings := make([]types.Finding, 0, len(findings))
-		findingsSignals := make([]types.FindingSignal, 0, len(findings))
+		findingsEvents := make([]types.FindingEvent, 0, len(findings))
 
 		paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
 		if err != nil {
@@ -148,7 +148,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						f.EvaluatedAt = j.CreatedAt.UnixMilli()
 						reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
 						f.Reason = reason
-						fs := types.FindingSignal{
+						fs := types.FindingEvent{
 							FindingEsID:       f.EsID,
 							ComplianceJobID:   j.ID,
 							ConformanceStatus: f.ConformanceStatus,
@@ -165,7 +165,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 							ResourceID:      f.ResourceID,
 							ResourceType:    f.ResourceType,
 						}
-						findingsSignals = append(findingsSignals, fs)
+						findingsEvents = append(findingsEvents, fs)
 						newFindings = append(newFindings, f)
 					}
 					continue
@@ -173,7 +173,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 				if f.ConformanceStatus != newFinding.ConformanceStatus {
 					newFinding.LastTransition = j.CreatedAt.UnixMilli()
-					fs := types.FindingSignal{
+					fs := types.FindingEvent{
 						FindingEsID:       f.EsID,
 						ComplianceJobID:   j.ID,
 						ConformanceStatus: newFinding.ConformanceStatus,
@@ -190,7 +190,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ResourceID:      newFinding.ResourceID,
 						ResourceType:    newFinding.ResourceType,
 					}
-					findingsSignals = append(findingsSignals, fs)
+					findingsEvents = append(findingsEvents, fs)
 				} else {
 					newFinding.LastTransition = f.LastTransition
 				}
@@ -202,7 +202,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 		for _, newFinding := range findingsMap {
 			newFinding.LastTransition = j.CreatedAt.UnixMilli()
-			fs := types.FindingSignal{
+			fs := types.FindingEvent{
 				FindingEsID:       newFinding.EsID,
 				ComplianceJobID:   j.ID,
 				ConformanceStatus: newFinding.ConformanceStatus,
@@ -219,7 +219,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				ResourceID:      newFinding.ResourceID,
 				ResourceType:    newFinding.ResourceType,
 			}
-			findingsSignals = append(findingsSignals, fs)
+			findingsEvents = append(findingsEvents, fs)
 			newFindings = append(newFindings, newFinding)
 		}
 
@@ -229,7 +229,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		}
 
 		var docs []es.Doc
-		for _, fs := range findingsSignals {
+		for _, fs := range findingsEvents {
 			keys, idx := fs.KeysAndIndex()
 			fs.EsID = es.HashOf(keys...)
 			fs.EsIndex = idx
