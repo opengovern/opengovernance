@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	XKaytuWorkspaceIDHeader   = "X-Kaytu-WorkspaceID"
-	XKaytuWorkspaceNameHeader = "X-Kaytu-WorkspaceName"
-	XKaytuUserIDHeader        = "X-Kaytu-UserId"
-	XKaytuUserRoleHeader      = "X-Kaytu-UserRole"
+	XKaytuWorkspaceIDHeader    = "X-Kaytu-WorkspaceID"
+	XKaytuWorkspaceNameHeader  = "X-Kaytu-WorkspaceName"
+	XKaytuUserIDHeader         = "X-Kaytu-UserId"
+	XKaytuUserRoleHeader       = "X-Kaytu-UserRole"
+	XKaytuUserConnectionsScope = "X-Kaytu-UserConnectionsScope"
 )
 
 func AuthorizeHandler(h echo.HandlerFunc, minRole api.Role) echo.HandlerFunc {
@@ -70,6 +71,51 @@ func GetUserID(ctx echo.Context) string {
 	}
 
 	return id
+}
+
+func CheckAccessToConnectionID(ctx echo.Context, connectionID string) error {
+	connectionIDsStr := ctx.Request().Header.Get(XKaytuUserConnectionsScope)
+	arr := strings.Split(connectionIDsStr, ",")
+	if len(arr) == 0 {
+		return nil
+	}
+
+	for _, item := range arr {
+		if item == connectionID {
+			return nil
+		}
+	}
+	return echo.NewHTTPError(http.StatusForbidden, "Invalid connection ID")
+}
+
+func ResolveConnectionIDs(ctx echo.Context, connectionIDs []string) ([]string, error) {
+	connectionIDsStr := ctx.Request().Header.Get(XKaytuUserConnectionsScope)
+	arr := strings.Split(connectionIDsStr, ",")
+	if len(arr) == 0 {
+		return connectionIDs, nil
+	}
+
+	if len(connectionIDs) == 0 {
+		return arr, nil
+	} else {
+		var res []string
+		for _, connID := range connectionIDs {
+			allowed := false
+			for _, item := range arr {
+				if item == connID {
+					allowed = true
+				}
+			}
+
+			if allowed {
+				res = append(res, connID)
+			}
+		}
+		if len(res) == 0 {
+			return nil, echo.NewHTTPError(http.StatusForbidden, "invalid connection ids")
+		}
+		return res, nil
+	}
 }
 
 func roleToPriority(role api.Role) int {

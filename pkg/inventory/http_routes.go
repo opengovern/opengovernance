@@ -111,6 +111,11 @@ var tracer = otel.Tracer("new_inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver2.QueryArrayParam(ctx, ConnectionIdParam)
+	connectionIds, err := httpserver2.ResolveConnectionIDs(ctx, connectionIds)
+	if err != nil {
+		return nil, err
+	}
+
 	connectionGroup := httpserver2.QueryArrayParam(ctx, ConnectionGroupParam)
 	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
