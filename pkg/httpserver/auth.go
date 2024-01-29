@@ -90,6 +90,10 @@ func CheckAccessToConnectionID(ctx echo.Context, connectionID string) error {
 
 func ResolveConnectionIDs(ctx echo.Context, connectionIDs []string) ([]string, error) {
 	connectionIDsStr := ctx.Request().Header.Get(XKaytuUserConnectionsScope)
+	if len(connectionIDsStr) == 0 {
+		return connectionIDs, nil
+	}
+
 	arr := strings.Split(connectionIDsStr, ",")
 	if len(arr) == 0 {
 		return connectionIDs, nil
