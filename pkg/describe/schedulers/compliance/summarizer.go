@@ -99,10 +99,13 @@ func (s *JobScheduler) runSummarizer() error {
 			return err
 		}
 
-		if time.Now().Add(-1*time.Hour).Before(lastUpdatedRunner.UpdatedAt) &&
-			(float64(sankDocCount) < float64(totalDocCount)*0.9) {
+		if sankDocCount != totalDocCount &&
+			(float64(sankDocCount) < float64(totalDocCount)*0.9 || time.Now().Add(-1*time.Hour).Before(lastUpdatedRunner.UpdatedAt)) {
+			// do not summarize if all docs are not sank
+			// do not summarize if either less than 90% of the docs are sank or last job update is in less than an hour ago
 			continue
 		}
+
 		err = s.createSummarizer(job)
 		if err != nil {
 			s.logger.Error("failed to create summarizer", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
