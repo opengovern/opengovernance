@@ -3111,6 +3111,13 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		ResourceCollections: assignedResourceCollections,
 	}
 
+	for _, item := range assignedConnections {
+		if httpserver2.CheckAccessToConnectionID(ctx, item.ConnectionID) != nil {
+			continue
+		}
+		resp.Connections = append(resp.Connections, item)
+	}
+
 	for idx, conn := range resp.Connections {
 		conn.ProviderConnectionID = demo.EncodeResponseData(ctx, conn.ProviderConnectionID)
 		conn.ProviderConnectionName = demo.EncodeResponseData(ctx, conn.ProviderConnectionName)

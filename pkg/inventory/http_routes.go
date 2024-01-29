@@ -1051,6 +1051,10 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 		for dateKey, costItem := range m.Trend {
 			resourceCount[dateKey] = costItem
 		}
+		if dimension == inventoryApi.DimensionTypeConnection &&
+			httpserver2.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
+			continue
+		}
 		table = append(table, inventoryApi.AssetTableRow{
 			DimensionID:   m.DimensionID,
 			DimensionName: m.DimensionName,
@@ -1834,6 +1838,10 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 				}
 			}
 		} else if dimension == inventoryApi.DimensionTypeConnection {
+			if httpserver2.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
+				continue
+			}
+
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
 				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
