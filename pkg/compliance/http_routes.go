@@ -134,6 +134,10 @@ func bindValidate(ctx echo.Context, i any) error {
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver2.QueryArrayParam(ctx, ConnectionIdParam)
+	connectionIds, err := httpserver2.ResolveConnectionIDs(ctx, connectionIds)
+	if err != nil {
+		return nil, err
+	}
 	connectionGroup := httpserver2.QueryArrayParam(ctx, ConnectionGroupParam)
 	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
@@ -189,6 +193,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	var req api.GetFindingsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var err error
+	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(ctx, req.Filters.ConnectionID)
+	if err != nil {
+		return err
 	}
 
 	var response api.GetFindingsResponse
@@ -515,6 +525,12 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	var req api.FindingFilters
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var err error
+	req.ConnectionID, err = httpserver2.ResolveConnectionIDs(ctx, req.ConnectionID)
+	if err != nil {
+		return err
 	}
 
 	if len(req.ConformanceStatus) == 0 {
@@ -1445,6 +1461,12 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 	var req api.ListResourceFindingsRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var err error
+	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(ctx, req.Filters.ConnectionID)
+	if err != nil {
+		return err
 	}
 
 	if len(req.AfterSortKey) != 0 {
@@ -2865,6 +2887,10 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	connectionId := ctx.Param("connection_id")
 	if connectionId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
+	}
+
+	if err := httpserver2.CheckAccessToConnectionID(ctx, connectionId); err != nil {
+		return err
 	}
 
 	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))

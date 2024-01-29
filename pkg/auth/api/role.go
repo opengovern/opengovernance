@@ -142,10 +142,11 @@ type InviteRequest struct {
 	RoleName Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"`          // Name of the role
 }
 type RoleBinding struct {
-	UserID        string `json:"userId" example:"auth|123456789"`                      // Unique identifier for the user
-	WorkspaceID   string `json:"workspaceID" example:"ws123456789"`                    // Unique identifier for the workspace
-	WorkspaceName string `json:"workspaceName" example:"demo"`                         // Name of the workspace
-	RoleName      Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the binding role
+	UserID              string   `json:"userId" example:"auth|123456789"`                      // Unique identifier for the user
+	WorkspaceID         string   `json:"workspaceID" example:"ws123456789"`                    // Unique identifier for the workspace
+	WorkspaceName       string   `json:"workspaceName" example:"demo"`                         // Name of the workspace
+	RoleName            Role     `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the binding role
+	ScopedConnectionIDs []string `json:"scopedConnectionIDs"`
 }
 
 type Theme string

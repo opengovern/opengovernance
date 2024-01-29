@@ -1792,6 +1792,12 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
+
+	err = httpserver2.CheckAccessToConnectionID(ctx, sourceUUID.String())
+	if err != nil {
+		return err
+	}
+
 	updateMetadata := true
 	if strings.ToLower(ctx.QueryParam("updateMetadata")) == "false" {
 		updateMetadata = false
@@ -2251,6 +2257,10 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := httpserver2.ResolveConnectionIDs(ctx, connectionIDs)
+	if err != nil {
+		return err
+	}
 	connectionGroups := httpserver2.QueryArrayParam(ctx, "connectionGroups")
 	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	endTimeStr := ctx.QueryParam("endTime")

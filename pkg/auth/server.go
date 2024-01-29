@@ -228,6 +228,12 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 							Value: string(rb.RoleName),
 						},
 					},
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XKaytuUserConnectionsScope,
+							Value: strings.Join(rb.ScopedConnectionIDs, ","),
+						},
+					},
 				},
 			},
 		},
@@ -242,6 +248,7 @@ type userClaim struct {
 	UserLastLogin   *string             `json:"https://app.kaytu.io/userLastLogin"`
 	ColorBlindMode  *bool               `json:"https://app.kaytu.io/colorBlindMode"`
 	Theme           *api.Theme          `json:"https://app.kaytu.io/theme"`
+	ConnectionIDs   []string            `json:"https://app.kaytu.io/connectionIDs"`
 
 	ExternalUserID string `json:"sub"`
 }
@@ -298,10 +305,11 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 	}
 
 	rb = api.RoleBinding{
-		UserID:        user.ExternalUserID,
-		WorkspaceID:   "",
-		WorkspaceName: "",
-		RoleName:      api.EditorRole,
+		UserID:              user.ExternalUserID,
+		WorkspaceID:         "",
+		WorkspaceName:       "",
+		RoleName:            api.EditorRole,
+		ScopedConnectionIDs: user.ConnectionIDs,
 	}
 
 	if workspaceName != "kaytu" {
