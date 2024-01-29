@@ -1963,7 +1963,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		for _, connectionID := range connectionIDs {
 			csResult.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
-			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+			for controlId, controlResult := range summaryAtTime.Connections.Connections[connectionID].Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
 			}
@@ -1972,7 +1972,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		for _, resourceCollection := range resourceCollections {
 			csResult.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
 			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
-			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+			for controlId, controlResult := range summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
 			}
