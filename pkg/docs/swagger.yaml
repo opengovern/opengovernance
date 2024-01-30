@@ -1266,6 +1266,15 @@ definitions:
         items:
           type: string
         type: array
+      evaluatedAt:
+        properties:
+          from:
+            example: "2020-05-13T00:00:00Z"
+            type: string
+          to:
+            example: "2020-05-13T00:00:00Z"
+            type: string
+        type: object
       lastTransition:
         properties:
           from:
@@ -1275,6 +1284,13 @@ definitions:
             example: "2020-05-13T00:00:00Z"
             type: string
         type: object
+      notConnectionID:
+        description: Not Connection ID
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
       resourceID:
         description: Resource unique identifier
         example:
@@ -1760,6 +1776,21 @@ definitions:
       controlID:
         example:
         - azure_cis_v140_7_5
+        items:
+          type: string
+        type: array
+      evaluatedAt:
+        properties:
+          from:
+            example: "2020-05-13T00:00:00Z"
+            type: string
+          to:
+            example: "2020-05-13T00:00:00Z"
+            type: string
+        type: object
+      notConnectionID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
           type: string
         type: array
@@ -5378,11 +5409,18 @@ paths:
         required: true
         type: integer
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by (inclusive)
         in: query
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by (exclusive)
+        in: query
+        items:
+          type: string
+        name: notConnectionId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '

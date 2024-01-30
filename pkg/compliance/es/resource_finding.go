@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 	"strings"
+	"time"
 )
 
 type ResourceFindingsQueryHit struct {
@@ -79,10 +80,12 @@ func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.Resourc
 }
 
 func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
-	connector []source.Type, connectionID []string, resourceCollection []string,
-	resourceTypes []string,
+	connector []source.Type, connectionID []string, notConnectionID []string,
+	resourceCollection []string, resourceTypes []string,
 	benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
+	severity []types.FindingSeverity,
+	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
+	conformanceStatuses []types.ConformanceStatus,
 	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any) ([]ResourceFindingsQueryHit, int64, error) {
 
 	nestedFilters := make([]map[string]any, 0)
@@ -97,6 +100,19 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
 				"findings.connectionID": connectionID,
+			},
+		})
+	}
+	if len(notConnectionID) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"bool": map[string]any{
+				"must_not": []map[string]any{
+					{
+						"terms": map[string]any{
+							"findings.connectionID": notConnectionID,
+						},
+					},
+				},
 			},
 		})
 	}
@@ -141,6 +157,32 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 		filters = append(filters, map[string]any{
 			"terms": map[string]any{
 				"resourceCollection": resourceCollection,
+			},
+		})
+	}
+	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+					"lte": fmt.Sprintf("%d", evaluatedAtTo.UnixMilli()),
+				},
+			},
+		})
+	} else if evaluatedAtFrom != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+				},
+			},
+		})
+	} else if evaluatedAtTo != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"lte": fmt.Sprintf("%d", evaluatedAtTo.UnixMilli()),
+				},
 			},
 		})
 	}
@@ -417,7 +459,8 @@ type GetPerFieldResourceConformanceResultResponse struct {
 // field could be: connectionID, benchmarkID, controlID, severity, conformanceStatus
 func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Client,
 	field string,
-	connectionIDs []string, resourceCollections []string,
+	connectionIDs []string, notConnectionIDs []string,
+	resourceCollections []string,
 	controlIDs []string, benchmarkIDs []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
 	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" {
@@ -430,6 +473,19 @@ func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Clien
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
 				"findings.connectionID": connectionIDs,
+			},
+		})
+	}
+	if len(notConnectionIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"bool": map[string]any{
+				"must_not": []map[string]any{
+					{
+						"terms": map[string][]string{
+							"findings.connectionID": notConnectionIDs,
+						},
+					},
+				},
 			},
 		})
 	}
