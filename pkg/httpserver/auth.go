@@ -75,6 +75,10 @@ func GetUserID(ctx echo.Context) string {
 
 func CheckAccessToConnectionID(ctx echo.Context, connectionID string) error {
 	connectionIDsStr := ctx.Request().Header.Get(XKaytuUserConnectionsScope)
+	if len(connectionIDsStr) == 0 {
+		return nil
+	}
+
 	arr := strings.Split(connectionIDsStr, ",")
 	if len(arr) == 0 {
 		return nil
