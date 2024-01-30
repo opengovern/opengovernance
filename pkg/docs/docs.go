@@ -8893,7 +8893,7 @@ const docTemplate = `{
                     "example": "azure_cis_v140_7_5"
                 },
                 "evaluatedAt": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "findingEsID": {
                     "type": "string"

@@ -201,7 +201,7 @@ type FindingEvent struct {
 	ComplianceJobID   uint              `json:"complianceJobID"`
 	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
 	StateActive       bool              `json:"stateActive"`
-	EvaluatedAt       int64             `json:"evaluatedAt"`
+	EvaluatedAt       time.Time         `json:"evaluatedAt"`
 	Reason            string            `json:"reason"`
 
 	BenchmarkID     string                `json:"benchmarkID" example:"azure_cis_v140"`
@@ -221,7 +221,7 @@ func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) Findi
 		ComplianceJobID:   findingEvent.ComplianceJobID,
 		ConformanceStatus: "",
 		StateActive:       findingEvent.StateActive,
-		EvaluatedAt:       findingEvent.EvaluatedAt,
+		EvaluatedAt:       time.UnixMilli(findingEvent.EvaluatedAt),
 		Reason:            findingEvent.Reason,
 
 		BenchmarkID:     findingEvent.BenchmarkID,
