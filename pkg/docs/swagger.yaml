@@ -1218,6 +1218,50 @@ definitions:
         example: true
         type: boolean
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent:
+    properties:
+      benchmarkID:
+        example: azure_cis_v140
+        type: string
+      complianceJobID:
+        type: integer
+      conformanceStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
+      connectionID:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      controlID:
+        example: azure_cis_v140_7_5
+        type: string
+      evaluatedAt:
+        type: integer
+      findingEsID:
+        type: string
+      id:
+        example: 8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8
+        type: string
+      kaytuResourceID:
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+      reason:
+        type: string
+      resourceID:
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+      resourceType:
+        example: Microsoft.Compute/virtualMachines
+        type: string
+      severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
+        example: low
+      stateActive:
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata:
     properties:
       count:
@@ -1412,6 +1456,13 @@ definitions:
         $ref: '#/definitions/types.SeverityResult'
       totalConformanceStatusSummary:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsByFindingIDResponse:
+    properties:
+      findingEvents:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
@@ -5322,6 +5373,29 @@ paths:
       security:
       - BearerToken: []
       summary: Get findings count
+      tags:
+      - compliance
+  /compliance/api/v1/findings/events/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving all compliance run finding events with respect to filters.
+      parameters:
+      - description: Finding ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsByFindingIDResponse'
+      security:
+      - BearerToken: []
+      summary: Get finding events by finding ID
       tags:
       - compliance
   /compliance/api/v1/findings/filters:

@@ -194,10 +194,58 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 	return f
 }
 
+type FindingEvent struct {
+	ID                string            `json:"id" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
+	FindingEsID       string            `json:"findingEsID"`
+	ComplianceJobID   uint              `json:"complianceJobID"`
+	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
+	StateActive       bool              `json:"stateActive"`
+	EvaluatedAt       int64             `json:"evaluatedAt"`
+	Reason            string            `json:"reason"`
+
+	BenchmarkID     string                `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID       string                `json:"controlID" example:"azure_cis_v140_7_5"`
+	ConnectionID    string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	Connector       source.Type           `json:"connector" example:"Azure"`
+	Severity        types.FindingSeverity `json:"severity" example:"low"`
+	KaytuResourceID string                `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID      string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType    string                `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+}
+
+func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) FindingEvent {
+	f := FindingEvent{
+		ID:                findingEvent.EsID,
+		FindingEsID:       findingEvent.FindingEsID,
+		ComplianceJobID:   findingEvent.ComplianceJobID,
+		ConformanceStatus: "",
+		StateActive:       findingEvent.StateActive,
+		EvaluatedAt:       findingEvent.EvaluatedAt,
+		Reason:            findingEvent.Reason,
+
+		BenchmarkID:     findingEvent.BenchmarkID,
+		ControlID:       findingEvent.ControlID,
+		ConnectionID:    findingEvent.ConnectionID,
+		Connector:       findingEvent.Connector,
+		Severity:        findingEvent.Severity,
+		KaytuResourceID: findingEvent.KaytuResourceID,
+		ResourceID:      findingEvent.ResourceID,
+		ResourceType:    findingEvent.ResourceType,
+	}
+	if findingEvent.ConformanceStatus.IsPassed() {
+		f.ConformanceStatus = ConformanceStatusPassed
+	} else {
+		f.ConformanceStatus = ConformanceStatusFailed
+	}
+
+	return f
+}
+
 type GetFindingsResponse struct {
 	Findings   []Finding `json:"findings"`
 	TotalCount int64     `json:"totalCount" example:"100"`
 }
+
 type FindingKPIResponse struct {
 	FailedFindingsCount   int64 `json:"failedFindingsCount"`
 	FailedResourceCount   int64 `json:"failedResourceCount"`
@@ -240,4 +288,8 @@ type GetTopFieldResponse struct {
 
 type CountFindingsResponse struct {
 	Count int64 `json:"count"`
+}
+
+type GetFindingEventsByFindingIDResponse struct {
+	FindingEvents []FindingEvent `json:"findingEvents"`
 }
