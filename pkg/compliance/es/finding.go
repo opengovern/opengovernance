@@ -81,10 +81,11 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 }
 
 func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
-	provider []source.Type, connectionID []string,
+	provider []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
+	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
 	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
@@ -210,6 +211,9 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	if len(connectionID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
 	}
+	if len(notConnectionID) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+	}
 	if len(provider) > 0 {
 		var connectors []string
 		for _, p := range provider {
@@ -236,6 +240,19 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
+	}
+	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
+	} else if evaluatedAtFrom != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+			"", ""))
+	} else if evaluatedAtTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", "",
+			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}
 
 	isStack := false
@@ -364,9 +381,10 @@ type FindingFiltersAggregationResponse struct {
 }
 
 func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
-	resourceIDs []string, connector []source.Type, connectionID []string, resourceTypes []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity,
+	resourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
+	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
+	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
 ) (*FindingFiltersAggregationResponse, error) {
 	idx := types.FindingsIndex
@@ -401,6 +419,9 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	if len(connectionID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
 	}
+	if len(notConnectionID) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+	}
 	if len(connector) > 0 {
 		var connectors []string
 		for _, p := range connector {
@@ -427,6 +448,19 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
+	}
+	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
+	} else if evaluatedAtFrom != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+			"", ""))
+	} else if evaluatedAtTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", "",
+			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}
 
 	root := map[string]any{}
@@ -562,43 +596,64 @@ type FindingsTopFieldResponse struct {
 }
 
 func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
 	size int) (*FindingsTopFieldResponse, error) {
-	terms := make(map[string]any)
+	filters := make([]kaytu.BoolFilter, 0)
+
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
-		terms["benchmarkID"] = benchmarkID
+		filters = append(filters, kaytu.NewTermsFilter("benchmarkID", benchmarkID))
 	}
 
 	if len(controlID) > 0 {
-		terms["controlID"] = controlID
+		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
 	}
 
 	if len(conformanceStatuses) > 0 {
-		terms["conformanceStatus"] = conformanceStatuses
+		cfStrs := make([]string, 0, len(conformanceStatuses))
+		for _, cf := range conformanceStatuses {
+			cfStrs = append(cfStrs, string(cf))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", cfStrs))
 	}
 
 	if len(severity) > 0 {
-		terms["severity"] = severity
+		sevStrs := make([]string, 0, len(severity))
+		for _, s := range severity {
+			sevStrs = append(sevStrs, string(s))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("severity", sevStrs))
 	}
 
 	if len(connectionIDs) > 0 {
-		terms["connectionID"] = connectionIDs
+		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionIDs))
+	}
+
+	if len(notConnectionIDs) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionIDs)))
 	}
 
 	if len(resourceTypeID) > 0 {
-		terms["resourceType"] = resourceTypeID
+		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypeID))
 	}
 
 	if len(connectors) > 0 {
-		terms["connector"] = connectors
+		var connectorsStr []string
+		for _, c := range connectors {
+			connectorsStr = append(connectorsStr, c.String())
+		}
+		filters = append(filters, kaytu.NewTermsFilter("connector", connectorsStr))
 	}
 
 	if len(stateActives) > 0 {
-		terms["stateActive"] = stateActives
+		strStateActive := make([]string, 0)
+		for _, s := range stateActives {
+			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
 	} else {
-		terms["stateActive"] = []bool{true}
+		filters = append(filters, kaytu.NewTermFilter("stateActive", "true"))
 	}
 
 	root := map[string]any{}
@@ -618,22 +673,11 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 		},
 	}
 
-	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]any
-		for k, vs := range terms {
-			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
-				},
-			})
-		}
-
-		boolQuery["filter"] = filters
-	}
-	if len(boolQuery) > 0 {
+	if len(filters) > 0 {
 		root["query"] = map[string]any{
-			"bool": boolQuery,
+			"bool": map[string]any{
+				"filter": filters,
+			},
 		}
 	}
 

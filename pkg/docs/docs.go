@@ -1938,8 +1938,18 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by (inclusive)",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by (exclusive)",
+                        "name": "notConnectionId",
                         "in": "query"
                     },
                     {
@@ -8884,6 +8894,19 @@ const docTemplate = `{
                         "azure_cis_v140_7_5"
                     ]
                 },
+                "evaluatedAt": {
+                    "type": "object",
+                    "properties": {
+                        "from": {
+                            "type": "string",
+                            "example": "2020-05-13T00:00:00Z"
+                        },
+                        "to": {
+                            "type": "string",
+                            "example": "2020-05-13T00:00:00Z"
+                        }
+                    }
+                },
                 "lastTransition": {
                     "type": "object",
                     "properties": {
@@ -8896,6 +8919,16 @@ const docTemplate = `{
                             "example": "2020-05-13T00:00:00Z"
                         }
                     }
+                },
+                "notConnectionID": {
+                    "description": "Not Connection ID",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
                 },
                 "resourceID": {
                     "description": "Resource unique identifier",
@@ -9603,6 +9636,28 @@ const docTemplate = `{
                     },
                     "example": [
                         "azure_cis_v140_7_5"
+                    ]
+                },
+                "evaluatedAt": {
+                    "type": "object",
+                    "properties": {
+                        "from": {
+                            "type": "string",
+                            "example": "2020-05-13T00:00:00Z"
+                        },
+                        "to": {
+                            "type": "string",
+                            "example": "2020-05-13T00:00:00Z"
+                        }
+                    }
+                },
+                "notConnectionID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                     ]
                 },
                 "resourceCollection": {
