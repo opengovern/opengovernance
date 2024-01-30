@@ -31,7 +31,7 @@ require (
 	github.com/goccy/go-yaml v1.11.2
 	github.com/gogo/googleapis v1.4.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/jackc/pgconn v1.14.1
@@ -39,7 +39,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/kaytu-io/kaytu-aws-describer v0.31.0
 	github.com/kaytu-io/kaytu-azure-describer v0.22.0
-	github.com/kaytu-io/kaytu-util v0.0.0-20240126195006-8c959872b6f0
+	github.com/kaytu-io/kaytu-util v0.0.0-20240130074941-0b4f2ecfbdef
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
@@ -68,14 +68,14 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.19.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0
-	google.golang.org/grpc v1.60.1
+	google.golang.org/grpc v1.61.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/datatypes v1.1.0
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.6
 	k8s.io/api v0.29.1
 	k8s.io/apiextensions-apiserver v0.29.0
 	k8s.io/apimachinery v0.29.1
-	sigs.k8s.io/controller-runtime v0.16.3
+	sigs.k8s.io/controller-runtime v0.17.0
 )
 
 require (
@@ -345,7 +345,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cjlapao/common-go v0.0.25 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
-	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 // indirect
+	github.com/cncf/xds/go v0.0.0-20231109132714-523115ebc101 // indirect
 	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0 // indirect
 	github.com/containerd/continuity v0.4.3 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
@@ -368,7 +368,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
-	github.com/evanphx/json-patch/v5 v5.7.0 // indirect
+	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
