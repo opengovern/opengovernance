@@ -105,6 +105,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
+	findings.GET("/events/:id", httpserver2.AuthorizeHandler(h.GetFindingEventsByFindingID, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
 	findings.GET("/kpi", httpserver2.AuthorizeHandler(h.GetFindingKPIs, authApi.ViewerRole))
@@ -347,6 +348,36 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		if findingCount, ok := findingCountPerKaytuResourceIds[finding.KaytuResourceID]; ok {
 			response.Findings[i].NoOfOccurrences = findingCount
 		}
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingEventsByFindingID godoc
+//
+//	@Summary		Get finding events by finding ID
+//	@Description	Retrieving all compliance run finding events with respect to filters.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path	string	true	"Finding ID"
+//	@Success		200		{object}	api.GetFindingEventsByFindingIDResponse
+//	@Router			/compliance/api/v1/findings/events/{id} [get]
+func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
+	findingID := ctx.Param("id")
+
+	findingEvents, err := es.FetchFindingEventsByFindingID(h.logger, h.client, findingID)
+	if err != nil {
+		h.logger.Error("failed to fetch finding by id", zap.Error(err))
+		return err
+	}
+
+	response := api.GetFindingEventsByFindingIDResponse{
+		FindingEvents: make([]api.FindingEvent, 0, len(findingEvents)),
+	}
+	for _, findingEvent := range findingEvents {
+		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
 	}
 
 	return ctx.JSON(http.StatusOK, response)

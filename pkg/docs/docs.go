@@ -1786,6 +1786,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/findings/events/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving all compliance run finding events with respect to filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get finding events by finding ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Finding ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsByFindingIDResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings/filters": {
             "post": {
                 "security": [
@@ -8826,6 +8863,73 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent": {
+            "type": "object",
+            "properties": {
+                "benchmarkID": {
+                    "type": "string",
+                    "example": "azure_cis_v140"
+                },
+                "complianceJobID": {
+                    "type": "integer"
+                },
+                "conformanceStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus"
+                },
+                "connectionID": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "connector": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "controlID": {
+                    "type": "string",
+                    "example": "azure_cis_v140_7_5"
+                },
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "findingEsID": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"
+                },
+                "kaytuResourceID": {
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "resourceID": {
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "resourceType": {
+                    "type": "string",
+                    "example": "Microsoft.Compute/virtualMachines"
+                },
+                "severity": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FindingSeverity"
+                        }
+                    ],
+                    "example": "low"
+                },
+                "stateActive": {
+                    "type": "boolean"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilterWithMetadata": {
             "type": "object",
             "properties": {
@@ -9111,6 +9215,17 @@ const docTemplate = `{
                 },
                 "totalConformanceStatusSummary": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsByFindingIDResponse": {
+            "type": "object",
+            "properties": {
+                "findingEvents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent"
+                    }
                 }
             }
         },
