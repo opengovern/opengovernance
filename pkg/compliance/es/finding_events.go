@@ -47,6 +47,7 @@ func FetchFindingEventsByFindingIDs(logger *zap.Logger, client kaytu.Client, fin
 		logger.Error("Failed to fetch finding events", zap.Error(err), zap.String("request", string(jsonReq)), zap.String("index", types.FindingEventsIndex))
 		return nil, err
 	}
+	logger.Info("Fetched finding events", zap.Any("response", resp))
 	result := make([]types.FindingEvent, 0, len(resp.Hits.Hits))
 	for _, hit := range resp.Hits.Hits {
 		result = append(result, hit.Source)

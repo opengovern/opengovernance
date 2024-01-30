@@ -379,6 +379,7 @@ func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 	for _, findingEvent := range findingEvents {
 		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
 	}
+	h.logger.Info("fetched finding events", zap.Any("response", response))
 
 	return ctx.JSON(http.StatusOK, response)
 }
