@@ -150,9 +150,6 @@ func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
 //	@Router			/auth/api/v1/user/role/binding [delete]
 func (r *httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	userId := ctx.QueryParam("userId")
-	// The WorkspaceManager service will call this API to set the AdminRole
-	// for the admin user on behalf of him. Allow for the Admin to only set its
-	// role to admin for that user case
 	if httpserver.GetUserID(ctx) == userId {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
@@ -164,6 +161,10 @@ func (r *httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 	}
 
 	delete(auth0User.AppMetadata.WorkspaceAccess, workspaceID)
+	if len(auth0User.AppMetadata.WorkspaceAccess) == 0 {
+		auth0User.AppMetadata.WorkspaceAccess = nil
+	}
+
 	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata)
 	if err != nil {
 		return err
