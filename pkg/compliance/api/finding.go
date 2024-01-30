@@ -126,6 +126,7 @@ type FindingHistory struct {
 }
 
 type Finding struct {
+	ID                    string                `json:"id" example:"1"`
 	BenchmarkID           string                `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID             string                `json:"controlID" example:"azure_cis_v140_7_5"`
 	ConnectionID          string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
@@ -159,6 +160,7 @@ type Finding struct {
 
 func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 	f := Finding{
+		ID:                    finding.EsID,
 		BenchmarkID:           finding.BenchmarkID,
 		ControlID:             finding.ControlID,
 		ConnectionID:          finding.ConnectionID,

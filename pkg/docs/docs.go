@@ -8730,6 +8730,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "steampipe-v0.5"
                 },
+                "id": {
+                    "type": "string",
+                    "example": "1"
+                },
                 "kaytuResourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
