@@ -9295,6 +9295,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding"
                     }
                 },
+                "findingEvents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent"
+                    }
+                },
                 "resource": {
                     "$ref": "#/definitions/es.Resource"
                 }

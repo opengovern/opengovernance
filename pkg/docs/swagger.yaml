@@ -1508,6 +1508,10 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding'
         type: array
+      findingEvents:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent'
+        type: array
       resource:
         $ref: '#/definitions/es.Resource'
     type: object

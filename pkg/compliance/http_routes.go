@@ -367,7 +367,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 	findingID := ctx.Param("id")
 
-	findingEvents, err := es.FetchFindingEventsByFindingID(h.logger, h.client, findingID)
+	findingEvents, err := es.FetchFindingEventsByFindingIDs(h.logger, h.client, []string{findingID})
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
@@ -476,7 +476,9 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
+	findingsIDs := make([]string, 0, len(controlFindings))
 	for _, controlFinding := range controlFindings {
+		findingsIDs = append(findingsIDs, controlFinding.EsID)
 		controlFinding := controlFinding
 		controlFinding.ResourceName = lookupResource.Name
 		controlFinding.ResourceLocation = lookupResource.Location
@@ -503,6 +505,17 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		}
 
 		response.ControlFindings = append(response.ControlFindings, finding)
+	}
+
+	findingEvents, err := es.FetchFindingEventsByFindingIDs(h.logger, h.client, findingsIDs)
+	if err != nil {
+		h.logger.Error("failed to fetch finding events", zap.Error(err))
+		return err
+	}
+
+	response.FindingEvents = make([]api.FindingEvent, 0, len(findingEvents))
+	for _, findingEvent := range findingEvents {
+		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
 	}
 
 	return ctx.JSON(http.StatusOK, response)
