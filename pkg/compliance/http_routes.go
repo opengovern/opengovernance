@@ -373,7 +373,9 @@ func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 		return err
 	}
 
-	response := api.GetFindingEventsByFindingIDResponse{}
+	response := api.GetFindingEventsByFindingIDResponse{
+		FindingEvents: make([]api.FindingEvent, 0, len(findingEvents)),
+	}
 	for _, findingEvent := range findingEvents {
 		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
 	}
