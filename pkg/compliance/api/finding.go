@@ -80,8 +80,9 @@ type GetSingleResourceFindingRequest struct {
 }
 
 type GetSingleResourceFindingResponse struct {
-	Resource        es.Resource `json:"resource"`
-	ControlFindings []Finding   `json:"controls"`
+	Resource        es.Resource    `json:"resource"`
+	FindingEvents   []FindingEvent `json:"findingEvents"`
+	ControlFindings []Finding      `json:"controls"`
 }
 
 type ConformanceStatus string
