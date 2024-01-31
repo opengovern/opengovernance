@@ -31,6 +31,8 @@ type FindingEvent struct {
 	ResourceID                string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceType              string                `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 	ParentBenchmarkReferences []string              `json:"parentBenchmarkReferences"`
+
+	SortKey []any `json:"sortKey"`
 }
 
 func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) FindingEvent {
@@ -78,4 +80,40 @@ type FindingEventFilters struct {
 		From *time.Time `json:"from" example:"2020-05-13T00:00:00Z"`
 		To   *time.Time `json:"to" example:"2020-05-13T00:00:00Z"`
 	} `json:"evaluatedAt"`
+}
+
+type FindingEventFiltersWithMetadata struct {
+	Connector          []FilterWithMetadata `json:"connector"`
+	BenchmarkID        []FilterWithMetadata `json:"benchmarkID"`
+	ControlID          []FilterWithMetadata `json:"controlID"`
+	ResourceTypeID     []FilterWithMetadata `json:"resourceTypeID"`
+	ConnectionID       []FilterWithMetadata `json:"connectionID"`
+	ResourceCollection []FilterWithMetadata `json:"resourceCollection"`
+	Severity           []FilterWithMetadata `json:"severity"`
+	ConformanceStatus  []FilterWithMetadata `json:"conformanceStatus"`
+	StateActive        []FilterWithMetadata `json:"stateActive"`
+}
+
+type FindingEventsSort struct {
+	Connector         *SortDirection `json:"connector"`
+	KaytuResourceID   *SortDirection `json:"kaytuResourceID"`
+	ResourceType      *SortDirection `json:"resourceType"`
+	ConnectionID      *SortDirection `json:"connectionID"`
+	BenchmarkID       *SortDirection `json:"benchmarkID"`
+	ControlID         *SortDirection `json:"controlID"`
+	Severity          *SortDirection `json:"severity"`
+	ConformanceStatus *SortDirection `json:"conformanceStatus"`
+	StateActive       *SortDirection `json:"stateActive"`
+}
+
+type GetFindingEventsRequest struct {
+	Filters      FindingEventFilters `json:"filters"`
+	Sort         []FindingEventsSort `json:"sort"`
+	Limit        int                 `json:"limit" example:"100"`
+	AfterSortKey []any               `json:"afterSortKey"`
+}
+
+type GetFindingEventsResponse struct {
+	FindingEvents []FindingEvent `json:"findingEvents"`
+	TotalCount    int64          `json:"totalCount" example:"100"`
 }

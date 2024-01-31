@@ -28,22 +28,16 @@ type FindingFilters struct {
 	} `json:"evaluatedAt"`
 }
 
-type FindingFilterWithMetadata struct {
-	Key         string `json:"key" example:"key"`                 // Key
-	DisplayName string `json:"displayName" example:"displayName"` // Display Name
-	Count       *int   `json:"count" example:"10"`                // Count
-}
-
 type FindingFiltersWithMetadata struct {
-	Connector          []FindingFilterWithMetadata `json:"connector"`
-	BenchmarkID        []FindingFilterWithMetadata `json:"benchmarkID"`
-	ControlID          []FindingFilterWithMetadata `json:"controlID"`
-	ResourceTypeID     []FindingFilterWithMetadata `json:"resourceTypeID"`
-	ConnectionID       []FindingFilterWithMetadata `json:"connectionID"`
-	ResourceCollection []FindingFilterWithMetadata `json:"resourceCollection"`
-	Severity           []FindingFilterWithMetadata `json:"severity"`
-	ConformanceStatus  []FindingFilterWithMetadata `json:"conformanceStatus"`
-	StateActive        []FindingFilterWithMetadata `json:"stateActive"`
+	Connector          []FilterWithMetadata `json:"connector"`
+	BenchmarkID        []FilterWithMetadata `json:"benchmarkID"`
+	ControlID          []FilterWithMetadata `json:"controlID"`
+	ResourceTypeID     []FilterWithMetadata `json:"resourceTypeID"`
+	ConnectionID       []FilterWithMetadata `json:"connectionID"`
+	ResourceCollection []FilterWithMetadata `json:"resourceCollection"`
+	Severity           []FilterWithMetadata `json:"severity"`
+	ConformanceStatus  []FilterWithMetadata `json:"conformanceStatus"`
+	StateActive        []FilterWithMetadata `json:"stateActive"`
 }
 
 type FindingsSort struct {
@@ -112,13 +106,6 @@ func ParseConformanceStatuses(conformanceStatuses []string) []ConformanceStatus 
 	return result
 }
 
-type FindingHistory struct {
-	ComplianceJobID   uint              `json:"complianceJobID" example:"1"`
-	ConformanceStatus ConformanceStatus `json:"conformanceStatus" example:"alarm"`
-	EvaluatedAt       int64             `json:"evaluatedAt" example:"1589395200000"`
-	Reason            string            `json:"reason" example:"The VM is not using managed disks"`
-}
-
 type Finding struct {
 	ID                        string                `json:"id" example:"1"`
 	BenchmarkID               string                `json:"benchmarkID" example:"azure_cis_v140"`
@@ -142,13 +129,12 @@ type Finding struct {
 	ParentBenchmarks          []string              `json:"parentBenchmarks"`
 	LastEvent                 time.Time             `json:"lastEvent" example:"1589395200"`
 
-	ResourceTypeName            string   `json:"resourceTypeName" example:"Virtual Machine"`
-	ParentBenchmarkNames        []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
-	ParentBenchmarkDisplayCodes []string `json:"parentBenchmarkDisplayCodes" example:"Azure CIS v1.4.0"`
-	ControlTitle                string   `json:"controlTitle"`
-	ProviderConnectionID        string   `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
-	ProviderConnectionName      string   `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	NoOfOccurrences             int      `json:"noOfOccurrences" example:"1"`
+	ResourceTypeName       string   `json:"resourceTypeName" example:"Virtual Machine"`
+	ParentBenchmarkNames   []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
+	ControlTitle           string   `json:"controlTitle"`
+	ProviderConnectionID   string   `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
+	ProviderConnectionName string   `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	NoOfOccurrences        int      `json:"noOfOccurrences" example:"1"`
 
 	SortKey []any `json:"sortKey"`
 }

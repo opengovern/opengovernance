@@ -115,6 +115,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
 
+	findingEvents := v1.Group("/finding_events")
+	findingEvents.POST("", httpserver2.AuthorizeHandler(h.GetFindingEvents, authApi.ViewerRole))
+	findingEvents.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingEventFilterValues, authApi.ViewerRole))
+
 	resourceFindings := v1.Group("/resource_findings")
 	resourceFindings.POST("", httpserver2.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
 
@@ -290,7 +294,6 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		for _, parentBenchmark := range h.Source.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
-				finding.ParentBenchmarkDisplayCodes = append(finding.ParentBenchmarkDisplayCodes, benchmark.DisplayCode)
 			}
 		}
 
@@ -488,7 +491,6 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		for _, parentBenchmark := range finding.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
-				finding.ParentBenchmarkDisplayCodes = append(finding.ParentBenchmarkDisplayCodes, benchmark.DisplayCode)
 			}
 		}
 
@@ -659,13 +661,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	response := api.FindingFiltersWithMetadata{}
 	for _, item := range possibleFilters.Aggregations.BenchmarkIDFilter.Buckets {
 		if benchmark, ok := benchmarkMetadataMap[item.Key]; ok {
-			response.BenchmarkID = append(response.BenchmarkID, api.FindingFilterWithMetadata{
+			response.BenchmarkID = append(response.BenchmarkID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: benchmark.Title,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
-			response.BenchmarkID = append(response.BenchmarkID, api.FindingFilterWithMetadata{
+			response.BenchmarkID = append(response.BenchmarkID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: item.Key,
 				Count:       utils.GetPointer(item.DocCount),
@@ -674,13 +676,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 	for _, item := range possibleFilters.Aggregations.ControlIDFilter.Buckets {
 		if control, ok := controlMetadataMap[item.Key]; ok {
-			response.ControlID = append(response.ControlID, api.FindingFilterWithMetadata{
+			response.ControlID = append(response.ControlID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: control.Title,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
-			response.ControlID = append(response.ControlID, api.FindingFilterWithMetadata{
+			response.ControlID = append(response.ControlID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: item.Key,
 				Count:       utils.GetPointer(item.DocCount),
@@ -690,7 +692,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
 		for _, bucket := range possibleFilters.Aggregations.ConnectorFilter.Buckets {
 			connector, _ := source.ParseType(bucket.Key)
-			response.Connector = append(response.Connector, api.FindingFilterWithMetadata{
+			response.Connector = append(response.Connector, api.FilterWithMetadata{
 				Key:         connector.String(),
 				DisplayName: connector.String(),
 				Count:       utils.GetPointer(bucket.DocCount),
@@ -699,18 +701,18 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 	for _, item := range possibleFilters.Aggregations.ResourceTypeFilter.Buckets {
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(item.Key)]; ok {
-			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: rtMetadata.ResourceLabel,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else if item.Key == "" {
-			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: "Unknown",
 			})
 		} else {
-			response.ResourceTypeID = append(response.ResourceTypeID, api.FindingFilterWithMetadata{
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: item.Key,
 				Count:       utils.GetPointer(item.DocCount),
@@ -720,13 +722,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 
 	for _, item := range possibleFilters.Aggregations.ConnectionIDFilter.Buckets {
 		if connection, ok := connectionMetadataMap[item.Key]; ok {
-			response.ConnectionID = append(response.ConnectionID, api.FindingFilterWithMetadata{
+			response.ConnectionID = append(response.ConnectionID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: connection.ConnectionName,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
-			response.ConnectionID = append(response.ConnectionID, api.FindingFilterWithMetadata{
+			response.ConnectionID = append(response.ConnectionID, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: item.Key,
 				Count:       utils.GetPointer(item.DocCount),
@@ -736,13 +738,13 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 
 	for _, item := range possibleFilters.Aggregations.ResourceCollectionFilter.Buckets {
 		if resourceCollection, ok := resourceCollectionMetadataMap[item.Key]; ok {
-			response.ResourceCollection = append(response.ResourceCollection, api.FindingFilterWithMetadata{
+			response.ResourceCollection = append(response.ResourceCollection, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: resourceCollection.Name,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
-			response.ResourceCollection = append(response.ResourceCollection, api.FindingFilterWithMetadata{
+			response.ResourceCollection = append(response.ResourceCollection, api.FilterWithMetadata{
 				Key:         item.Key,
 				DisplayName: item.Key,
 				Count:       utils.GetPointer(item.DocCount),
@@ -751,7 +753,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 
 	for _, item := range possibleFilters.Aggregations.SeverityFilter.Buckets {
-		response.Severity = append(response.Severity, api.FindingFilterWithMetadata{
+		response.Severity = append(response.Severity, api.FilterWithMetadata{
 			Key:         item.Key,
 			DisplayName: item.Key,
 			Count:       utils.GetPointer(item.DocCount),
@@ -759,7 +761,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 
 	for _, item := range possibleFilters.Aggregations.StateActiveFilter.Buckets {
-		response.StateActive = append(response.StateActive, api.FindingFilterWithMetadata{
+		response.StateActive = append(response.StateActive, api.FilterWithMetadata{
 			Key:         item.KeyAsString,
 			DisplayName: item.KeyAsString,
 			Count:       utils.GetPointer(item.DocCount),
@@ -776,7 +778,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 	}
 	for status, count := range apiConformanceStatuses {
 		count := count
-		response.ConformanceStatus = append(response.ConformanceStatus, api.FindingFilterWithMetadata{
+		response.ConformanceStatus = append(response.ConformanceStatus, api.FilterWithMetadata{
 			Key:         string(status),
 			DisplayName: string(status),
 			Count:       &count,
@@ -1493,6 +1495,304 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 			},
 		}
 		response.Services = append(response.Services, service)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingEvents godoc
+//
+//	@Summary		Get finding events
+//	@Description	Retrieving all compliance finding events with respect to filters.
+//	@Tags			compliance
+//	@Security		BearerToken
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.GetFindingEventsRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetFindingEventsResponse
+//	@Router			/compliance/api/v1/finding_events [post]
+func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
+	var req api.GetFindingEventsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var err error
+	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(ctx, req.Filters.ConnectionID)
+	if err != nil {
+		return err
+	}
+
+	var response api.GetFindingEventsResponse
+
+	if len(req.Filters.ConformanceStatus) == 0 {
+		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	for _, status := range req.Filters.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	if len(req.Sort) == 0 {
+		req.Sort = []api.FindingEventsSort{
+			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
+		}
+	}
+
+	if len(req.AfterSortKey) != 0 {
+		expectedLen := len(req.Sort) + 1
+		if len(req.AfterSortKey) != expectedLen {
+			return echo.NewHTTPError(http.StatusBadRequest, "sort key length should be zero or match a returned sort key from previous response")
+		}
+	}
+
+	res, totalCount, err := es.FindingEventsQuery(h.logger, h.client,
+		req.Filters.FindingID, req.Filters.KaytuResourceID,
+		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
+		req.Filters.ResourceType,
+		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
+		req.Filters.EvaluatedAt.From, req.Filters.EvaluatedAt.To,
+		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+	if err != nil {
+		h.logger.Error("failed to get findings", zap.Error(err))
+		return err
+	}
+
+	for _, h := range res {
+		findingEvent := api.GetAPIFindingEventFromESFindingEvent(h.Source)
+		findingEvent.SortKey = h.Sort
+		response.FindingEvents = append(response.FindingEvents, findingEvent)
+	}
+	response.TotalCount = totalCount
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingEventFilterValues godoc
+//
+//	@Summary		Get possible values for finding event filters
+//	@Description	Retrieving possible values for finding event filters.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.FindingEventFilters	true	"Request Body"
+//	@Success		200		{object}	api.FindingEventFiltersWithMetadata
+//	@Router			/compliance/api/v1/finding_event/filters [post]
+func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
+	var req api.FindingEventFilters
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var err error
+	req.ConnectionID, err = httpserver2.ResolveConnectionIDs(ctx, req.ConnectionID)
+	if err != nil {
+		return err
+	}
+
+	if len(req.ConformanceStatus) == 0 {
+		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
+	for _, status := range req.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+	}
+
+	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(ctx))
+	if err != nil {
+		h.logger.Error("failed to get resource collection metadata", zap.Error(err))
+		return err
+	}
+	resourceCollectionMetadataMap := make(map[string]*inventoryApi.ResourceCollection)
+	for _, item := range resourceCollectionMetadata {
+		item := item
+		resourceCollectionMetadataMap[item.ID] = &item
+	}
+
+	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		h.logger.Error("failed to get connections", zap.Error(err))
+		return err
+	}
+	connectionMetadataMap := make(map[string]*onboardApi.Connection)
+	for _, item := range connectionMetadata {
+		item := item
+		connectionMetadataMap[item.ID.String()] = &item
+	}
+
+	benchmarkMetadata, err := h.db.ListBenchmarksBare()
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarkMetadataMap := make(map[string]*db.Benchmark)
+	for _, item := range benchmarkMetadata {
+		item := item
+		benchmarkMetadataMap[item.ID] = &item
+	}
+
+	controlMetadata, err := h.db.ListControlsBare()
+	if err != nil {
+		h.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	controlMetadataMap := make(map[string]*db.Control)
+	for _, item := range controlMetadata {
+		item := item
+		controlMetadataMap[item.ID] = &item
+	}
+
+	possibleFilters, err := es.FindingEventsFiltersQuery(h.logger, h.client,
+		req.FindingID, req.KaytuResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
+		req.ResourceType,
+		req.BenchmarkID, req.ControlID,
+		req.Severity,
+		req.EvaluatedAt.From, req.EvaluatedAt.To,
+		req.StateActive, esConformanceStatuses)
+	if err != nil {
+		h.logger.Error("failed to get possible filters", zap.Error(err))
+		return err
+	}
+	response := api.FindingFiltersWithMetadata{}
+	for _, item := range possibleFilters.Aggregations.BenchmarkIDFilter.Buckets {
+		if benchmark, ok := benchmarkMetadataMap[item.Key]; ok {
+			response.BenchmarkID = append(response.BenchmarkID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: benchmark.Title,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		} else {
+			response.BenchmarkID = append(response.BenchmarkID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		}
+	}
+	for _, item := range possibleFilters.Aggregations.ControlIDFilter.Buckets {
+		if control, ok := controlMetadataMap[item.Key]; ok {
+			response.ControlID = append(response.ControlID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: control.Title,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		} else {
+			response.ControlID = append(response.ControlID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		}
+	}
+	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
+		for _, bucket := range possibleFilters.Aggregations.ConnectorFilter.Buckets {
+			connector, _ := source.ParseType(bucket.Key)
+			response.Connector = append(response.Connector, api.FilterWithMetadata{
+				Key:         connector.String(),
+				DisplayName: connector.String(),
+				Count:       utils.GetPointer(bucket.DocCount),
+			})
+		}
+	}
+	for _, item := range possibleFilters.Aggregations.ResourceTypeFilter.Buckets {
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(item.Key)]; ok {
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: rtMetadata.ResourceLabel,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		} else if item.Key == "" {
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: "Unknown",
+			})
+		} else {
+			response.ResourceTypeID = append(response.ResourceTypeID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		}
+	}
+
+	for _, item := range possibleFilters.Aggregations.ConnectionIDFilter.Buckets {
+		if connection, ok := connectionMetadataMap[item.Key]; ok {
+			response.ConnectionID = append(response.ConnectionID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: connection.ConnectionName,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		} else {
+			response.ConnectionID = append(response.ConnectionID, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		}
+	}
+
+	for _, item := range possibleFilters.Aggregations.ResourceCollectionFilter.Buckets {
+		if resourceCollection, ok := resourceCollectionMetadataMap[item.Key]; ok {
+			response.ResourceCollection = append(response.ResourceCollection, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: resourceCollection.Name,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		} else {
+			response.ResourceCollection = append(response.ResourceCollection, api.FilterWithMetadata{
+				Key:         item.Key,
+				DisplayName: item.Key,
+				Count:       utils.GetPointer(item.DocCount),
+			})
+		}
+	}
+
+	for _, item := range possibleFilters.Aggregations.SeverityFilter.Buckets {
+		response.Severity = append(response.Severity, api.FilterWithMetadata{
+			Key:         item.Key,
+			DisplayName: item.Key,
+			Count:       utils.GetPointer(item.DocCount),
+		})
+	}
+
+	for _, item := range possibleFilters.Aggregations.StateActiveFilter.Buckets {
+		response.StateActive = append(response.StateActive, api.FilterWithMetadata{
+			Key:         item.KeyAsString,
+			DisplayName: item.KeyAsString,
+			Count:       utils.GetPointer(item.DocCount),
+		})
+	}
+
+	apiConformanceStatuses := make(map[api.ConformanceStatus]int)
+	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
+		if kaytuTypes.ParseConformanceStatus(item.Key).IsPassed() {
+			apiConformanceStatuses[api.ConformanceStatusPassed] += item.DocCount
+		} else {
+			apiConformanceStatuses[api.ConformanceStatusFailed] += item.DocCount
+		}
+	}
+	for status, count := range apiConformanceStatuses {
+		count := count
+		response.ConformanceStatus = append(response.ConformanceStatus, api.FilterWithMetadata{
+			Key:         string(status),
+			DisplayName: string(status),
+			Count:       &count,
+		})
 	}
 
 	return ctx.JSON(http.StatusOK, response)
