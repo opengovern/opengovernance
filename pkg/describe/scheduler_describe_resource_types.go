@@ -17,6 +17,12 @@ import (
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {
 	var result api.ListDiscoveryResourceTypes
 
+	assetDiscoveryEnabledMetadata, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAssetDiscoveryEnabled)
+	if err != nil {
+		return result, err
+	}
+	assetDiscoveryEnabled := assetDiscoveryEnabledMetadata.GetValue().(bool)
+
 	azureDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAzureDiscoveryRequiredOnly)
 	if err != nil {
 		return result, err
@@ -31,6 +37,27 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	awsRequiredOnly := awsDiscoveryType.GetValue().(bool)
 
 	awsResourceTypes, azureResourceTypes := aws.ListResourceTypes(), azure.ListResourceTypes()
+	if !assetDiscoveryEnabled {
+		var rts []string
+
+		for _, rt := range awsResourceTypes {
+			if !strings.Contains(rt, "Cost") {
+				continue
+			}
+			rts = append(rts, rt)
+		}
+		awsResourceTypes = rts
+
+		rts = nil
+		for _, rt := range azureResourceTypes {
+			if !strings.Contains(rt, "Cost") {
+				continue
+			}
+			rts = append(rts, rt)
+		}
+		azureResourceTypes = rts
+	}
+
 	if !azureRequiredOnly && !awsRequiredOnly {
 		result.AzureResourceTypes = azureResourceTypes
 		result.AWSResourceTypes = awsResourceTypes

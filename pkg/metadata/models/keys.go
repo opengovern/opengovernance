@@ -62,6 +62,7 @@ const (
 	MetadataKeyCustomizationEnabled        MetadataKey = "customization_enabled"
 	MetadataKeyAWSDiscoveryRequiredOnly    MetadataKey = "aws_discovery_required_only"
 	MetadataKeyAzureDiscoveryRequiredOnly  MetadataKey = "azure_discovery_required_only"
+	MetadataKeyAssetDiscoveryEnabled       MetadataKey = "asset_discovery_enabled"
 )
 
 var MetadataKeys = []MetadataKey{
@@ -101,6 +102,7 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyCustomizationEnabled,
 	MetadataKeyAWSDiscoveryRequiredOnly,
 	MetadataKeyAzureDiscoveryRequiredOnly,
+	MetadataKeyAssetDiscoveryEnabled,
 }
 
 func (k MetadataKey) String() string {
@@ -181,6 +183,8 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeBool
 	case MetadataKeyAzureDiscoveryRequiredOnly:
 		return ConfigMetadataTypeBool
+	case MetadataKeyAssetDiscoveryEnabled:
+		return ConfigMetadataTypeBool
 	}
 	return ""
 }
@@ -259,6 +263,8 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 		return api.AdminRole
 	case MetadataKeyAzureDiscoveryRequiredOnly:
 		return api.AdminRole
+	case MetadataKeyAssetDiscoveryEnabled:
+		return api.KaytuAdminRole
 	}
 	return ""
 }
