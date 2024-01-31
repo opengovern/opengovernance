@@ -64,7 +64,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 	return apiRf
 }
 
-type ResourceFindingsFilters struct {
+type ResourceFindingFilters struct {
 	Connector          []source.Type           `json:"connector" example:"Azure"`
 	ResourceID         []string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceTypeID     []string                `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
@@ -76,8 +76,8 @@ type ResourceFindingsFilters struct {
 	Severity           []types.FindingSeverity `json:"severity" example:"low"`
 	ConformanceStatus  []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
 	EvaluatedAt        struct {
-		From *time.Time `json:"from" example:"2020-05-13T00:00:00Z"`
-		To   *time.Time `json:"to" example:"2020-05-13T00:00:00Z"`
+		From *int64 `json:"from" example:"2020-05-13T00:00:00Z"`
+		To   *int64 `json:"to" example:"2020-05-13T00:00:00Z"`
 	}
 }
 
@@ -90,10 +90,10 @@ type ResourceFindingsSort struct {
 }
 
 type ListResourceFindingsRequest struct {
-	Filters      ResourceFindingsFilters `json:"filters"`
-	Sort         []ResourceFindingsSort  `json:"sort"`
-	Limit        int                     `json:"limit" example:"100"`
-	AfterSortKey []any                   `json:"afterSortKey"`
+	Filters      ResourceFindingFilters `json:"filters"`
+	Sort         []ResourceFindingsSort `json:"sort"`
+	Limit        int                    `json:"limit" example:"100"`
+	AfterSortKey []any                  `json:"afterSortKey"`
 }
 
 type ListResourceFindingsResponse struct {

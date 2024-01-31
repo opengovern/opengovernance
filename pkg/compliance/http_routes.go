@@ -231,12 +231,26 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		}
 	}
 
+	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+	if req.Filters.LastEvent.From != nil && *req.Filters.LastEvent.From != 0 {
+		lastEventFrom = utils.GetPointer(time.Unix(*req.Filters.LastEvent.From, 0))
+	}
+	if req.Filters.LastEvent.To != nil && *req.Filters.LastEvent.To != 0 {
+		lastEventTo = utils.GetPointer(time.Unix(*req.Filters.LastEvent.To, 0))
+	}
+	if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
+		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
+	}
+	if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
+		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+	}
+
 	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		req.Filters.LastEvent.From, req.Filters.LastEvent.To,
-		req.Filters.EvaluatedAt.From, req.Filters.EvaluatedAt.To,
+		lastEventFrom, lastEventTo,
+		evaluatedAtFrom, evaluatedAtTo,
 		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
@@ -646,13 +660,27 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		controlMetadataMap[item.ID] = &item
 	}
 
+	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+	if req.LastEvent.From != nil && *req.LastEvent.From != 0 {
+		lastEventFrom = utils.GetPointer(time.Unix(*req.LastEvent.From, 0))
+	}
+	if req.LastEvent.To != nil && *req.LastEvent.To != 0 {
+		lastEventTo = utils.GetPointer(time.Unix(*req.LastEvent.To, 0))
+	}
+	if req.EvaluatedAt.From != nil && *req.EvaluatedAt.From != 0 {
+		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.EvaluatedAt.From, 0))
+	}
+	if req.EvaluatedAt.To != nil && *req.EvaluatedAt.To != 0 {
+		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
+	}
+
 	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceTypeID,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
-		req.LastEvent.From, req.LastEvent.To,
-		req.EvaluatedAt.From, req.EvaluatedAt.To,
+		lastEventFrom, lastEventTo,
+		evaluatedAtFrom, evaluatedAtTo,
 		req.StateActive, esConformanceStatuses)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
@@ -1547,12 +1575,20 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		}
 	}
 
+	var evaluatedAtFrom, evaluatedAtTo *time.Time
+	if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
+		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
+	}
+	if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
+		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+	}
+
 	res, totalCount, err := es.FindingEventsQuery(h.logger, h.client,
 		req.Filters.FindingID, req.Filters.KaytuResourceID,
 		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceType,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		req.Filters.EvaluatedAt.From, req.Filters.EvaluatedAt.To,
+		evaluatedAtFrom, evaluatedAtTo,
 		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
@@ -1599,6 +1635,14 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
 	for _, status := range req.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	var evaluatedAtFrom, evaluatedAtTo *time.Time
+	if req.EvaluatedAt.From != nil && *req.EvaluatedAt.From != 0 {
+		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.EvaluatedAt.From, 0))
+	}
+	if req.EvaluatedAt.To != nil && *req.EvaluatedAt.To != 0 {
+		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
 	}
 
 	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
@@ -1662,7 +1706,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
-		req.EvaluatedAt.From, req.EvaluatedAt.To,
+		evaluatedAtFrom, evaluatedAtTo,
 		req.StateActive, esConformanceStatuses)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
@@ -1828,6 +1872,14 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		}
 	}
 
+	var evaluatedAtFrom, evaluatedAtTo *time.Time
+	if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
+		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
+	}
+	if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
+		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+	}
+
 	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
@@ -1865,7 +1917,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceCollection, req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		req.Filters.EvaluatedAt.From, req.Filters.EvaluatedAt.To,
+		evaluatedAtFrom, evaluatedAtTo,
 		esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get resource findings", zap.Error(err))

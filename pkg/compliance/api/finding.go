@@ -19,12 +19,12 @@ type FindingFilters struct {
 	ConformanceStatus []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
 	StateActive       []bool                  `json:"stateActive" example:"true"`
 	LastEvent         struct {
-		From *time.Time `json:"from" example:"2020-05-13T00:00:00Z"`
-		To   *time.Time `json:"to" example:"2020-05-13T00:00:00Z"`
+		From *int64 `json:"from" example:"2020-05-13T00:00:00Z"`
+		To   *int64 `json:"to" example:"2020-05-13T00:00:00Z"`
 	} `json:"lastEvent"`
 	EvaluatedAt struct {
-		From *time.Time `json:"from" example:"2020-05-13T00:00:00Z"`
-		To   *time.Time `json:"to" example:"2020-05-13T00:00:00Z"`
+		From *int64 `json:"from" example:"2020-05-13T00:00:00Z"`
+		To   *int64 `json:"to" example:"2020-05-13T00:00:00Z"`
 	} `json:"evaluatedAt"`
 }
 
