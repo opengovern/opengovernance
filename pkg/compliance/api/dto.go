@@ -92,3 +92,9 @@ const (
 	SortDirectionAscending  SortDirection = "asc"
 	SortDirectionDescending SortDirection = "desc"
 )
+
+type FilterWithMetadata struct {
+	Key         string `json:"key" example:"key"`
+	DisplayName string `json:"displayName" example:"displayName"`
+	Count       *int   `json:"count" example:"10"`
+}

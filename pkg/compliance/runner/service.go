@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"time"
 
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
@@ -37,6 +40,8 @@ type Worker struct {
 	complianceClient complianceClient.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
+
+	benchmarkCache map[string]complianceApi.Benchmark
 }
 
 func NewWorker(
@@ -84,6 +89,16 @@ func NewWorker(
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
 		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
+		benchmarkCache:   make(map[string]complianceApi.Benchmark),
+	}
+
+	benchmarks, err := w.complianceClient.ListBenchmarks(&httpclient.Context{UserRole: authApi.InternalRole})
+	if err != nil {
+		logger.Error("failed to get benchmarks", zap.Error(err))
+		return nil, err
+	}
+	for _, benchmark := range benchmarks {
+		w.benchmarkCache[benchmark.ID] = benchmark
 	}
 
 	return w, nil

@@ -95,7 +95,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	)
 	totalFindingCountMap := make(map[string]int)
 	for _, caller := range j.ExecutionPlan.Callers {
-		findings, err := j.ExtractFindings(w.logger, caller, res, j.ExecutionPlan.Query)
+		findings, err := j.ExtractFindings(w.logger, w.benchmarkCache, caller, res, j.ExecutionPlan.Query)
 		if err != nil {
 			return 0, err
 		}
@@ -159,14 +159,15 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 							EvaluatedAt:       j.CreatedAt.UnixMilli(),
 							Reason:            reason,
 
-							BenchmarkID:     f.BenchmarkID,
-							ControlID:       f.ControlID,
-							ConnectionID:    f.ConnectionID,
-							Connector:       f.Connector,
-							Severity:        f.Severity,
-							KaytuResourceID: f.KaytuResourceID,
-							ResourceID:      f.ResourceID,
-							ResourceType:    f.ResourceType,
+							BenchmarkID:               f.BenchmarkID,
+							ControlID:                 f.ControlID,
+							ConnectionID:              f.ConnectionID,
+							Connector:                 f.Connector,
+							Severity:                  f.Severity,
+							KaytuResourceID:           f.KaytuResourceID,
+							ResourceID:                f.ResourceID,
+							ResourceType:              f.ResourceType,
+							ParentBenchmarkReferences: f.ParentBenchmarkReferences,
 						}
 						findingsEvents = append(findingsEvents, fs)
 						newFindings = append(newFindings, f)
@@ -184,14 +185,15 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						EvaluatedAt:       j.CreatedAt.UnixMilli(),
 						Reason:            newFinding.Reason,
 
-						BenchmarkID:     newFinding.BenchmarkID,
-						ControlID:       newFinding.ControlID,
-						ConnectionID:    newFinding.ConnectionID,
-						Connector:       newFinding.Connector,
-						Severity:        newFinding.Severity,
-						KaytuResourceID: newFinding.KaytuResourceID,
-						ResourceID:      newFinding.ResourceID,
-						ResourceType:    newFinding.ResourceType,
+						BenchmarkID:               newFinding.BenchmarkID,
+						ControlID:                 newFinding.ControlID,
+						ConnectionID:              newFinding.ConnectionID,
+						Connector:                 newFinding.Connector,
+						Severity:                  newFinding.Severity,
+						KaytuResourceID:           newFinding.KaytuResourceID,
+						ResourceID:                newFinding.ResourceID,
+						ResourceType:              newFinding.ResourceType,
+						ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
 					}
 					findingsEvents = append(findingsEvents, fs)
 				} else {
@@ -213,14 +215,15 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				EvaluatedAt:       j.CreatedAt.UnixMilli(),
 				Reason:            newFinding.Reason,
 
-				BenchmarkID:     newFinding.BenchmarkID,
-				ControlID:       newFinding.ControlID,
-				ConnectionID:    newFinding.ConnectionID,
-				Connector:       newFinding.Connector,
-				Severity:        newFinding.Severity,
-				KaytuResourceID: newFinding.KaytuResourceID,
-				ResourceID:      newFinding.ResourceID,
-				ResourceType:    newFinding.ResourceType,
+				BenchmarkID:               newFinding.BenchmarkID,
+				ControlID:                 newFinding.ControlID,
+				ConnectionID:              newFinding.ConnectionID,
+				Connector:                 newFinding.Connector,
+				Severity:                  newFinding.Severity,
+				KaytuResourceID:           newFinding.KaytuResourceID,
+				ResourceID:                newFinding.ResourceID,
+				ResourceType:              newFinding.ResourceType,
+				ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
 			}
 			findingsEvents = append(findingsEvents, fs)
 			newFindings = append(newFindings, newFinding)
