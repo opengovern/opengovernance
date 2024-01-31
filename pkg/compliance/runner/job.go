@@ -126,15 +126,16 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			w.logger.Error("failed to create paginator", zap.Error(err))
 			return 0, err
 		}
-		defer func() {
+		closePaginator := func() {
 			if err := paginator.Close(context.Background()); err != nil {
 				w.logger.Error("failed to close paginator", zap.Error(err))
 			}
-		}()
+		}
 		for paginator.HasNext() {
 			oldFindings, err := paginator.NextPage(ctx)
 			if err != nil {
 				w.logger.Error("failed to get next page", zap.Error(err))
+				closePaginator()
 				return 0, err
 			}
 
@@ -201,7 +202,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				delete(findingsMap, newFinding.EsID)
 			}
 		}
-
+		closePaginator()
 		for _, newFinding := range findingsMap {
 			newFinding.LastTransition = j.CreatedAt.UnixMilli()
 			fs := types.FindingEvent{
