@@ -27,7 +27,7 @@ func GetResourceTypeFromTableName(tableName string, queryConnector source.Type) 
 	}
 }
 
-func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
+func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Benchmark, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
 
 	queryResourceType := ""
@@ -91,26 +91,33 @@ func (w *Job) ExtractFindings(_ *zap.Logger, caller Caller, res *steampipe.Resul
 		if (connectionId == "" || connectionId == "null") && w.ExecutionPlan.ConnectionID != nil {
 			connectionId = *w.ExecutionPlan.ConnectionID
 		}
+
+		benchmarkReferences := make([]string, 0, len(caller.ParentBenchmarkIDs))
+		for _, parentBenchmarkID := range caller.ParentBenchmarkIDs {
+			benchmarkReferences = append(benchmarkReferences, benchmarkCache[parentBenchmarkID].DisplayCode)
+		}
+
 		findings = append(findings, types.Finding{
-			BenchmarkID:           caller.RootBenchmark,
-			ControlID:             caller.ControlID,
-			ConnectionID:          connectionId,
-			EvaluatedAt:           w.CreatedAt.UnixMilli(),
-			StateActive:           true,
-			ConformanceStatus:     status,
-			Severity:              severity,
-			Evaluator:             w.ExecutionPlan.Query.Engine,
-			Connector:             w.ExecutionPlan.Query.Connector,
-			KaytuResourceID:       kaytuResourceId,
-			ResourceID:            resourceID,
-			ResourceName:          resourceName,
-			ResourceLocation:      resourceLocation,
-			ResourceType:          resourceType,
-			Reason:                reason,
-			ComplianceJobID:       w.ID,
-			ParentComplianceJobID: w.ParentJobID,
-			ParentBenchmarks:      caller.ParentBenchmarkIDs,
-			LastTransition:        w.CreatedAt.UnixMilli(),
+			BenchmarkID:               caller.RootBenchmark,
+			ControlID:                 caller.ControlID,
+			ConnectionID:              connectionId,
+			EvaluatedAt:               w.CreatedAt.UnixMilli(),
+			StateActive:               true,
+			ConformanceStatus:         status,
+			Severity:                  severity,
+			Evaluator:                 w.ExecutionPlan.Query.Engine,
+			Connector:                 w.ExecutionPlan.Query.Connector,
+			KaytuResourceID:           kaytuResourceId,
+			ResourceID:                resourceID,
+			ResourceName:              resourceName,
+			ResourceLocation:          resourceLocation,
+			ResourceType:              resourceType,
+			Reason:                    reason,
+			ComplianceJobID:           w.ID,
+			ParentComplianceJobID:     w.ParentJobID,
+			ParentBenchmarkReferences: benchmarkReferences,
+			ParentBenchmarks:          caller.ParentBenchmarkIDs,
+			LastTransition:            w.CreatedAt.UnixMilli(),
 		})
 	}
 	return findings, nil

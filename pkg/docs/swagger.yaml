@@ -1156,7 +1156,7 @@ definitions:
       kaytuResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
-      lastTransition:
+      lastEvent:
         example: "1589395200"
         type: string
       noOfOccurrences:
@@ -1171,6 +1171,10 @@ definitions:
       parentBenchmarkNames:
         example:
         - Azure CIS v1.4.0
+        items:
+          type: string
+        type: array
+      parentBenchmarkReferences:
         items:
           type: string
         type: array
@@ -1239,7 +1243,7 @@ definitions:
         type: string
       evaluatedAt:
         type: string
-      findingEsID:
+      findingID:
         type: string
       id:
         example: 8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8
@@ -1247,6 +1251,10 @@ definitions:
       kaytuResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
+      parentBenchmarkReferences:
+        items:
+          type: string
+        type: array
       reason:
         type: string
       resourceID:
@@ -1280,7 +1288,6 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
       benchmarkID:
-        description: Benchmark ID
         example:
         - azure_cis_v140
         items:
@@ -1293,21 +1300,18 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
         type: array
       connectionID:
-        description: Connection ID
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
           type: string
         type: array
       connector:
-        description: Clout Provider
         example:
         - Azure
         items:
           $ref: '#/definitions/source.Type'
         type: array
       controlID:
-        description: Control ID
         example:
         - azure_cis_v140_7_5
         items:
@@ -1322,7 +1326,7 @@ definitions:
             example: "2020-05-13T00:00:00Z"
             type: string
         type: object
-      lastTransition:
+      lastEvent:
         properties:
           from:
             example: "2020-05-13T00:00:00Z"
@@ -1332,28 +1336,24 @@ definitions:
             type: string
         type: object
       notConnectionID:
-        description: Not Connection ID
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
           type: string
         type: array
       resourceID:
-        description: Resource unique identifier
         example:
         - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         items:
           type: string
         type: array
       resourceTypeID:
-        description: Resource type
         example:
         - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines
         items:
           type: string
         type: array
       severity:
-        description: Severity
         example:
         - low
         items:

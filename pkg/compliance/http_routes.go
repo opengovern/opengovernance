@@ -60,6 +60,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks := v1.Group("/benchmarks")
 
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
+	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.InternalRole))
 	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
 	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
@@ -230,7 +231,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		req.Filters.LastTransition.From, req.Filters.LastTransition.To,
+		req.Filters.LastEvent.From, req.Filters.LastEvent.To,
 		req.Filters.EvaluatedAt.From, req.Filters.EvaluatedAt.To,
 		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
@@ -648,7 +649,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		req.ResourceTypeID,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
-		req.LastTransition.From, req.LastTransition.To,
+		req.LastEvent.From, req.LastEvent.To,
 		req.EvaluatedAt.From, req.EvaluatedAt.To,
 		req.StateActive, esConformanceStatuses)
 	if err != nil {
@@ -3335,6 +3336,41 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 		response = append(response, b.ToApi())
 	}
 	span2.End()
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+func (h *HttpHandler) ListAllBenchmarks(ctx echo.Context) error {
+	isBare := true
+	if bare := ctx.QueryParam("bare"); bare != "" {
+		var err error
+		isBare, err = strconv.ParseBool(bare)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid bare value")
+		}
+	}
+
+	var response []api.Benchmark
+	// trace :
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListBenchmarks")
+	var benchmarks []db.Benchmark
+	var err error
+	if isBare {
+		benchmarks, err = h.db.ListBenchmarksBare()
+	} else {
+		benchmarks, err = h.db.ListBenchmarks()
+	}
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.End()
+
+	for _, b := range benchmarks {
+		response = append(response, b.ToApi())
+	}
 
 	return ctx.JSON(http.StatusOK, response)
 }

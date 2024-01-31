@@ -8770,7 +8770,7 @@
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
-                "lastTransition": {
+                "lastEvent": {
                     "type": "string",
                     "example": "1589395200"
                 },
@@ -8795,6 +8795,12 @@
                     "example": [
                         "Azure CIS v1.4.0"
                     ]
+                },
+                "parentBenchmarkReferences": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "parentBenchmarks": {
                     "type": "array",
@@ -8890,7 +8896,7 @@
                 "evaluatedAt": {
                     "type": "string"
                 },
-                "findingEsID": {
+                "findingID": {
                     "type": "string"
                 },
                 "id": {
@@ -8900,6 +8906,12 @@
                 "kaytuResourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "parentBenchmarkReferences": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "reason": {
                     "type": "string"
@@ -8949,7 +8961,6 @@
             "type": "object",
             "properties": {
                 "benchmarkID": {
-                    "description": "Benchmark ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8968,7 +8979,6 @@
                     ]
                 },
                 "connectionID": {
-                    "description": "Connection ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8978,7 +8988,6 @@
                     ]
                 },
                 "connector": {
-                    "description": "Clout Provider",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/source.Type"
@@ -8988,7 +8997,6 @@
                     ]
                 },
                 "controlID": {
-                    "description": "Control ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9010,7 +9018,7 @@
                         }
                     }
                 },
-                "lastTransition": {
+                "lastEvent": {
                     "type": "object",
                     "properties": {
                         "from": {
@@ -9024,7 +9032,6 @@
                     }
                 },
                 "notConnectionID": {
-                    "description": "Not Connection ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9034,7 +9041,6 @@
                     ]
                 },
                 "resourceID": {
-                    "description": "Resource unique identifier",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9044,7 +9050,6 @@
                     ]
                 },
                 "resourceTypeID": {
-                    "description": "Resource type",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9054,7 +9059,6 @@
                     ]
                 },
                 "severity": {
-                    "description": "Severity",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.FindingSeverity"

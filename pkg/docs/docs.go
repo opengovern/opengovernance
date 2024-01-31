@@ -8775,7 +8775,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
-                "lastTransition": {
+                "lastEvent": {
                     "type": "string",
                     "example": "1589395200"
                 },
@@ -8800,6 +8800,12 @@ const docTemplate = `{
                     "example": [
                         "Azure CIS v1.4.0"
                     ]
+                },
+                "parentBenchmarkReferences": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "parentBenchmarks": {
                     "type": "array",
@@ -8895,7 +8901,7 @@ const docTemplate = `{
                 "evaluatedAt": {
                     "type": "string"
                 },
-                "findingEsID": {
+                "findingID": {
                     "type": "string"
                 },
                 "id": {
@@ -8905,6 +8911,12 @@ const docTemplate = `{
                 "kaytuResourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "parentBenchmarkReferences": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "reason": {
                     "type": "string"
@@ -8954,7 +8966,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "benchmarkID": {
-                    "description": "Benchmark ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8973,7 +8984,6 @@ const docTemplate = `{
                     ]
                 },
                 "connectionID": {
-                    "description": "Connection ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -8983,7 +8993,6 @@ const docTemplate = `{
                     ]
                 },
                 "connector": {
-                    "description": "Clout Provider",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/source.Type"
@@ -8993,7 +9002,6 @@ const docTemplate = `{
                     ]
                 },
                 "controlID": {
-                    "description": "Control ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9015,7 +9023,7 @@ const docTemplate = `{
                         }
                     }
                 },
-                "lastTransition": {
+                "lastEvent": {
                     "type": "object",
                     "properties": {
                         "from": {
@@ -9029,7 +9037,6 @@ const docTemplate = `{
                     }
                 },
                 "notConnectionID": {
-                    "description": "Not Connection ID",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9039,7 +9046,6 @@ const docTemplate = `{
                     ]
                 },
                 "resourceID": {
-                    "description": "Resource unique identifier",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9049,7 +9055,6 @@ const docTemplate = `{
                     ]
                 },
                 "resourceTypeID": {
-                    "description": "Resource type",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9059,7 +9064,6 @@ const docTemplate = `{
                     ]
                 },
                 "severity": {
-                    "description": "Severity",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.FindingSeverity"
