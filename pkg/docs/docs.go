@@ -1703,45 +1703,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/finding_event/filters": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving possible values for finding event filters.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get possible values for finding event filters",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFilters"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFiltersWithMetadata"
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/finding_events": {
             "post": {
                 "security": [
@@ -1776,6 +1737,45 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/finding_events/filters": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving possible values for finding event filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get possible values for finding event filters",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFilters"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFiltersWithMetadata"
                         }
                     }
                 }
@@ -11465,7 +11465,8 @@ const docTemplate = `{
                 "spend_discovery_azure_role_ids",
                 "customization_enabled",
                 "aws_discovery_required_only",
-                "azure_discovery_required_only"
+                "azure_discovery_required_only",
+                "asset_discovery_enabled"
             ],
             "x-enum-varnames": [
                 "MetadataKeyWorkspaceOwnership",
@@ -11503,7 +11504,8 @@ const docTemplate = `{
                 "MetadataKeySpendDiscoveryAzureRoleIDs",
                 "MetadataKeyCustomizationEnabled",
                 "MetadataKeyAWSDiscoveryRequiredOnly",
-                "MetadataKeyAzureDiscoveryRequiredOnly"
+                "MetadataKeyAzureDiscoveryRequiredOnly",
+                "MetadataKeyAssetDiscoveryEnabled"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig": {

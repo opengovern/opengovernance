@@ -1579,7 +1579,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body		api.FindingEventFilters	true	"Request Body"
 //	@Success		200		{object}	api.FindingEventFiltersWithMetadata
-//	@Router			/compliance/api/v1/finding_event/filters [post]
+//	@Router			/compliance/api/v1/finding_events/filters [post]
 func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 	var req api.FindingEventFilters
 	if err := bindValidate(ctx, &req); err != nil {

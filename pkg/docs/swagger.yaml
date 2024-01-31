@@ -2962,6 +2962,7 @@ definitions:
     - customization_enabled
     - aws_discovery_required_only
     - azure_discovery_required_only
+    - asset_discovery_enabled
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -3000,6 +3001,7 @@ definitions:
     - MetadataKeyCustomizationEnabled
     - MetadataKeyAWSDiscoveryRequiredOnly
     - MetadataKeyAzureDiscoveryRequiredOnly
+    - MetadataKeyAssetDiscoveryEnabled
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
     properties:
       accessKey:
@@ -5319,30 +5321,6 @@ paths:
       summary: List controls summaries
       tags:
       - compliance
-  /compliance/api/v1/finding_event/filters:
-    post:
-      consumes:
-      - application/json
-      description: Retrieving possible values for finding event filters.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFilters'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFiltersWithMetadata'
-      security:
-      - BearerToken: []
-      summary: Get possible values for finding event filters
-      tags:
-      - compliance
   /compliance/api/v1/finding_events:
     post:
       consumes:
@@ -5365,6 +5343,30 @@ paths:
       security:
       - BearerToken: []
       summary: Get finding events
+      tags:
+      - compliance
+  /compliance/api/v1/finding_events/filters:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving possible values for finding event filters.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFilters'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFiltersWithMetadata'
+      security:
+      - BearerToken: []
+      summary: Get possible values for finding event filters
       tags:
       - compliance
   /compliance/api/v1/findings:
