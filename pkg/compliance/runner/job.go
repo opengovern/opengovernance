@@ -142,9 +142,11 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				newFinding, ok := findingsMap[f.EsID]
 				if !ok {
 					if f.StateActive {
+						f := f
 						f.StateActive = false
 						f.LastTransition = j.CreatedAt.UnixMilli()
 						f.ComplianceJobID = j.ID
+						f.ParentComplianceJobID = j.ParentJobID
 						f.EvaluatedAt = j.CreatedAt.UnixMilli()
 						reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
 						f.Reason = reason
