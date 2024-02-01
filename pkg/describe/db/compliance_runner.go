@@ -22,7 +22,7 @@ func (db Database) CreateRunnerJobs(runners []*model.ComplianceRunner) error {
 func (db Database) DeleteOldRunnerJob(parentJobId *uint) error {
 	tx := db.ORM.Model(&model.ComplianceRunner{})
 	if parentJobId != nil {
-		tx = tx.Where("parent_job_id < ?", *parentJobId)
+		tx = tx.Where("parent_job_id = ?", *parentJobId)
 	} else {
 		tx = tx.Where("created_at < ?", time.Now().Add(-time.Hour*24*2))
 	}
