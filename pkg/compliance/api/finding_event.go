@@ -16,6 +16,7 @@ type GetSingleResourceFindingResponse struct {
 type FindingEvent struct {
 	ID                        string            `json:"id" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
 	FindingID                 string            `json:"findingID"`
+	ParentComplianceJobID     uint              `json:"parentComplianceJobID"`
 	ComplianceJobID           uint              `json:"complianceJobID"`
 	PreviousConformanceStatus ConformanceStatus `json:"previousConformanceStatus"`
 	ConformanceStatus         ConformanceStatus `json:"conformanceStatus"`
@@ -46,6 +47,7 @@ func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) Findi
 	f := FindingEvent{
 		ID:                        findingEvent.EsID,
 		FindingID:                 findingEvent.FindingEsID,
+		ParentComplianceJobID:     findingEvent.ParentComplianceJobID,
 		ComplianceJobID:           findingEvent.ComplianceJobID,
 		PreviousConformanceStatus: "",
 		ConformanceStatus:         "",

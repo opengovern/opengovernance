@@ -771,23 +771,6 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection'
         type: array
-      resourceCollections:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection'
-        type: array
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection:
-    properties:
-      resourceCollectionID:
-        description: Resource Collection ID
-        type: string
-      resourceCollectionName:
-        description: Resource Collection Name
-        type: string
-      status:
-        description: Status
-        example: true
-        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
@@ -1261,6 +1244,8 @@ definitions:
         items:
           type: string
         type: array
+      parentComplianceJobID:
+        type: integer
       previousConformanceStatus:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
       previousStateActive:

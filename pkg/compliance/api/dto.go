@@ -35,8 +35,7 @@ type BenchmarkAssignedResourceCollection struct {
 }
 
 type BenchmarkAssignedEntities struct {
-	Connections         []BenchmarkAssignedConnection         `json:"connections"`
-	ResourceCollections []BenchmarkAssignedResourceCollection `json:"resourceCollections"`
+	Connections []BenchmarkAssignedConnection `json:"connections"`
 }
 
 type TopFieldRecord struct {
