@@ -23,12 +23,14 @@ func (s *JobScheduler) buildRunners(
 
 	benchmark, err := s.complianceClient.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
+		s.logger.Error("error while getting benchmark", zap.Error(err))
 		return nil, err
 	}
 
 	for _, child := range benchmark.Children {
 		childRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child)
 		if err != nil {
+			s.logger.Error("error while building child runners", zap.Error(err))
 			return nil, err
 		}
 
@@ -38,6 +40,7 @@ func (s *JobScheduler) buildRunners(
 	for _, controlID := range benchmark.Controls {
 		control, err := s.complianceClient.GetControl(ctx, controlID)
 		if err != nil {
+			s.logger.Error("error while getting control", zap.Error(err))
 			return nil, err
 		}
 
@@ -76,17 +79,20 @@ func (s *JobScheduler) buildRunners(
 		if ok {
 			cr, err := r.GetCallers()
 			if err != nil {
+				s.logger.Error("error while getting callers", zap.Error(err))
 				return nil, err
 			}
 
 			cv, err := v.GetCallers()
 			if err != nil {
+				s.logger.Error("error while getting callers", zap.Error(err))
 				return nil, err
 			}
 
 			cv = append(cv, cr...)
 			err = v.SetCallers(cv)
 			if err != nil {
+				s.logger.Error("error while setting callers", zap.Error(err))
 				return nil, err
 			}
 		} else {
