@@ -2644,6 +2644,10 @@ func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
 	}
 
 	controlSummary, err := h.getControlSummary(controlID, &benchmarkID, connectionIDs)
+	if err != nil {
+		h.logger.Error("failed to get control summary", zap.Error(err))
+		return err
+	}
 
 	return ctx.JSON(http.StatusOK, controlSummary)
 }
@@ -2935,6 +2939,9 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	if err != nil {
 		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 		return nil, err
+	}
+	if control == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("control %s not found", controlID))
 	}
 	apiControl := control.ToApi()
 	if benchmarkID != nil {
