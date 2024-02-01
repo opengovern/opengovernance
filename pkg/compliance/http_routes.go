@@ -324,6 +324,8 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			finding.ResourceTypeName = rtMetadata.ResourceLabel
 		}
 
+		finding.SortKey = h.Sort
+
 		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = totalCount
@@ -1595,8 +1597,38 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		return err
 	}
 
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		h.logger.Error("failed to get sources", zap.Error(err))
+		return err
+	}
+	allConnectionsMap := make(map[string]*onboardApi.Connection)
+	for _, src := range allSources {
+		src := src
+		allConnectionsMap[src.ID.String()] = &src
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+	}
+
 	for _, h := range res {
 		findingEvent := api.GetAPIFindingEventFromESFindingEvent(h.Source)
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(h.Source.ResourceType)]; ok {
+			findingEvent.ResourceType = rtMetadata.ResourceLabel
+		}
+		if connection, ok := allConnectionsMap[h.Source.ConnectionID]; ok {
+			findingEvent.ProviderConnectionID = connection.ConnectionID
+			findingEvent.ProviderConnectionName = connection.ConnectionName
+		}
 		findingEvent.SortKey = h.Sort
 		response.FindingEvents = append(response.FindingEvents, findingEvent)
 	}

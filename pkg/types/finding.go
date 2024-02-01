@@ -10,12 +10,14 @@ type FindingEvent struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	FindingEsID       string            `json:"findingEsID"`
-	ComplianceJobID   uint              `json:"complianceJobID"`
-	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
-	StateActive       bool              `json:"stateActive"`
-	EvaluatedAt       int64             `json:"evaluatedAt"`
-	Reason            string            `json:"reason"`
+	FindingEsID               string            `json:"findingEsID"`
+	ComplianceJobID           uint              `json:"complianceJobID"`
+	PreviousConformanceStatus ConformanceStatus `json:"previousConformanceStatus"`
+	ConformanceStatus         ConformanceStatus `json:"conformanceStatus"`
+	PreviousStateActive       bool              `json:"previousStateActive"`
+	StateActive               bool              `json:"stateActive"`
+	EvaluatedAt               int64             `json:"evaluatedAt"`
+	Reason                    string            `json:"reason"`
 
 	BenchmarkID               string          `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                 string          `json:"controlID" example:"azure_cis_v140_7_5"`

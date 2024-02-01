@@ -1261,6 +1261,16 @@ definitions:
         items:
           type: string
         type: array
+      previousConformanceStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
+      previousStateActive:
+        type: boolean
+      providerConnectionID:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      providerConnectionName:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
       reason:
         type: string
       resourceID:
@@ -1268,6 +1278,10 @@ definitions:
         type: string
       resourceType:
         example: Microsoft.Compute/virtualMachines
+        type: string
+      resourceTypeName:
+        description: Fake fields (won't be stored in ES)
+        example: Virtual Machine
         type: string
       severity:
         allOf:
