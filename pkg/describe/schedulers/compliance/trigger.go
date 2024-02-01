@@ -108,7 +108,7 @@ func (s *JobScheduler) buildRunners(
 	return jobs, nil
 }
 
-func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, error) {
+func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string, lastJob *model.ComplianceJob) (uint, error) {
 	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
 	if err != nil {
 		s.logger.Error("error while listing assignments", zap.Error(err))
@@ -127,10 +127,18 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 	}
 
 	// delete old runners
-	err = s.db.DeleteOldRunnerJob(&job.ID)
-	if err != nil {
-		s.logger.Error("error while deleting old runners", zap.Error(err))
-		return 0, err
+	if lastJob != nil {
+		err = s.db.DeleteOldRunnerJob(&lastJob.ID)
+		if err != nil {
+			s.logger.Error("error while deleting old runners", zap.Error(err))
+			return 0, err
+		}
+	} else {
+		err = s.db.DeleteOldRunnerJob(nil)
+		if err != nil {
+			s.logger.Error("error while deleting old runners", zap.Error(err))
+			return 0, err
+		}
 	}
 
 	var allRunners []*model.ComplianceRunner
