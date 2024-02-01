@@ -11,6 +11,7 @@ type FindingEvent struct {
 	EsIndex string `json:"es_index"`
 
 	FindingEsID               string            `json:"findingEsID"`
+	ParentComplianceJobID     uint              `json:"parentComplianceJobID"`
 	ComplianceJobID           uint              `json:"complianceJobID"`
 	PreviousConformanceStatus ConformanceStatus `json:"previousConformanceStatus"`
 	ConformanceStatus         ConformanceStatus `json:"conformanceStatus"`

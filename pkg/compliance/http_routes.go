@@ -3491,7 +3491,6 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
 
 	var assignedConnections []api.BenchmarkAssignedConnection
-	var assignedResourceCollections []api.BenchmarkAssignedResourceCollection
 
 	connections, err := h.onboardClient.ListSources(hctx, []source.Type{benchmark.Connector})
 	if err != nil {
@@ -3533,6 +3532,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 			assignedConnections[idx] = r
 		}
 	}
+
 	for _, assignment := range dbAssignments {
 		if assignment.ConnectionId != nil && !benchmark.AutoAssign {
 			for idx, r := range assignedConnections {
@@ -3542,18 +3542,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 				}
 			}
 		}
-		if assignment.ResourceCollection != nil {
-			assignedResourceCollections = append(assignedResourceCollections, api.BenchmarkAssignedResourceCollection{
-				ResourceCollectionID: *assignment.ResourceCollection,
-				Status:               true,
-			})
-		}
 	}
 
-	resp := api.BenchmarkAssignedEntities{
-		Connections:         assignedConnections,
-		ResourceCollections: assignedResourceCollections,
-	}
+	resp := api.BenchmarkAssignedEntities{}
 
 	for _, item := range assignedConnections {
 		if httpserver2.CheckAccessToConnectionID(ctx, item.ConnectionID) != nil {
