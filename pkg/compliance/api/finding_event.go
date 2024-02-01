@@ -14,13 +14,15 @@ type GetSingleResourceFindingResponse struct {
 }
 
 type FindingEvent struct {
-	ID                string            `json:"id" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
-	FindingID         string            `json:"findingID"`
-	ComplianceJobID   uint              `json:"complianceJobID"`
-	ConformanceStatus ConformanceStatus `json:"conformanceStatus"`
-	StateActive       bool              `json:"stateActive"`
-	EvaluatedAt       time.Time         `json:"evaluatedAt"`
-	Reason            string            `json:"reason"`
+	ID                        string            `json:"id" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
+	FindingID                 string            `json:"findingID"`
+	ComplianceJobID           uint              `json:"complianceJobID"`
+	PreviousConformanceStatus ConformanceStatus `json:"previousConformanceStatus"`
+	ConformanceStatus         ConformanceStatus `json:"conformanceStatus"`
+	PreviousStateActive       bool              `json:"previousStateActive"`
+	StateActive               bool              `json:"stateActive"`
+	EvaluatedAt               time.Time         `json:"evaluatedAt"`
+	Reason                    string            `json:"reason"`
 
 	BenchmarkID               string                `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                 string                `json:"controlID" example:"azure_cis_v140_7_5"`
@@ -32,18 +34,25 @@ type FindingEvent struct {
 	ResourceType              string                `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 	ParentBenchmarkReferences []string              `json:"parentBenchmarkReferences"`
 
+	// Fake fields (won't be stored in ES)
+	ResourceTypeName       string `json:"resourceTypeName" example:"Virtual Machine"`
+	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+
 	SortKey []any `json:"sortKey"`
 }
 
 func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) FindingEvent {
 	f := FindingEvent{
-		ID:                findingEvent.EsID,
-		FindingID:         findingEvent.FindingEsID,
-		ComplianceJobID:   findingEvent.ComplianceJobID,
-		ConformanceStatus: "",
-		StateActive:       findingEvent.StateActive,
-		EvaluatedAt:       time.UnixMilli(findingEvent.EvaluatedAt),
-		Reason:            findingEvent.Reason,
+		ID:                        findingEvent.EsID,
+		FindingID:                 findingEvent.FindingEsID,
+		ComplianceJobID:           findingEvent.ComplianceJobID,
+		PreviousConformanceStatus: "",
+		ConformanceStatus:         "",
+		PreviousStateActive:       findingEvent.PreviousStateActive,
+		StateActive:               findingEvent.StateActive,
+		EvaluatedAt:               time.UnixMilli(findingEvent.EvaluatedAt),
+		Reason:                    findingEvent.Reason,
 
 		BenchmarkID:               findingEvent.BenchmarkID,
 		ControlID:                 findingEvent.ControlID,
@@ -54,6 +63,11 @@ func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) Findi
 		ResourceID:                findingEvent.ResourceID,
 		ResourceType:              findingEvent.ResourceType,
 		ParentBenchmarkReferences: findingEvent.ParentBenchmarkReferences,
+	}
+	if findingEvent.PreviousConformanceStatus.IsPassed() {
+		f.PreviousConformanceStatus = ConformanceStatusPassed
+	} else {
+		f.PreviousConformanceStatus = ConformanceStatusFailed
 	}
 	if findingEvent.ConformanceStatus.IsPassed() {
 		f.ConformanceStatus = ConformanceStatusPassed

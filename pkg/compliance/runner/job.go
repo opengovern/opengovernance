@@ -153,12 +153,14 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
 						f.Reason = reason
 						fs := types.FindingEvent{
-							FindingEsID:       f.EsID,
-							ComplianceJobID:   j.ID,
-							ConformanceStatus: f.ConformanceStatus,
-							StateActive:       f.StateActive,
-							EvaluatedAt:       j.CreatedAt.UnixMilli(),
-							Reason:            reason,
+							FindingEsID:               f.EsID,
+							ComplianceJobID:           j.ID,
+							PreviousConformanceStatus: f.ConformanceStatus,
+							ConformanceStatus:         f.ConformanceStatus,
+							PreviousStateActive:       true,
+							StateActive:               f.StateActive,
+							EvaluatedAt:               j.CreatedAt.UnixMilli(),
+							Reason:                    reason,
 
 							BenchmarkID:               f.BenchmarkID,
 							ControlID:                 f.ControlID,
@@ -179,12 +181,14 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				if f.ConformanceStatus != newFinding.ConformanceStatus {
 					newFinding.LastTransition = j.CreatedAt.UnixMilli()
 					fs := types.FindingEvent{
-						FindingEsID:       f.EsID,
-						ComplianceJobID:   j.ID,
-						ConformanceStatus: newFinding.ConformanceStatus,
-						StateActive:       newFinding.StateActive,
-						EvaluatedAt:       j.CreatedAt.UnixMilli(),
-						Reason:            newFinding.Reason,
+						FindingEsID:               f.EsID,
+						ComplianceJobID:           j.ID,
+						PreviousConformanceStatus: f.ConformanceStatus,
+						ConformanceStatus:         newFinding.ConformanceStatus,
+						PreviousStateActive:       f.StateActive,
+						StateActive:               newFinding.StateActive,
+						EvaluatedAt:               j.CreatedAt.UnixMilli(),
+						Reason:                    newFinding.Reason,
 
 						BenchmarkID:               newFinding.BenchmarkID,
 						ControlID:                 newFinding.ControlID,
@@ -206,6 +210,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				delete(findingsMap, newFinding.EsID)
 			}
 		}
+		w.logger.Info("new findings", zap.Int("with history", len(newFindings)), zap.Int("without hisotry", len(findingsMap)), zap.Int("with history events", len(findingsEvents)))
 		closePaginator()
 		for _, newFinding := range findingsMap {
 			newFinding.LastTransition = j.CreatedAt.UnixMilli()
@@ -230,6 +235,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			findingsEvents = append(findingsEvents, fs)
 			newFindings = append(newFindings, newFinding)
 		}
+		w.logger.Info("total new findings", zap.Int("new_findings_count", len(newFindings)), zap.Int("findings_events_count", len(findingsEvents)))
 
 		var docs []es.Doc
 		for _, fs := range findingsEvents {

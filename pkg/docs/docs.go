@@ -9004,6 +9004,20 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "previousConformanceStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus"
+                },
+                "previousStateActive": {
+                    "type": "boolean"
+                },
+                "providerConnectionID": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "providerConnectionName": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
                 "reason": {
                     "type": "string"
                 },
@@ -9014,6 +9028,11 @@ const docTemplate = `{
                 "resourceType": {
                     "type": "string",
                     "example": "Microsoft.Compute/virtualMachines"
+                },
+                "resourceTypeName": {
+                    "description": "Fake fields (won't be stored in ES)",
+                    "type": "string",
+                    "example": "Virtual Machine"
                 },
                 "severity": {
                     "allOf": [
