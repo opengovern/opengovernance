@@ -8215,11 +8215,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
-                "displayCode": {
-                    "description": "Benchmark display code",
-                    "type": "string",
-                    "example": "CIS 1.4.0"
-                },
                 "documentURI": {
                     "description": "Benchmark document URI",
                     "type": "string",
@@ -8243,6 +8238,11 @@ const docTemplate = `{
                     "description": "Whether the benchmark is managed or not",
                     "type": "boolean",
                     "example": true
+                },
+                "referenceCode": {
+                    "description": "Benchmark display code",
+                    "type": "string",
+                    "example": "CIS 1.4.0"
                 },
                 "tags": {
                     "description": "Benchmark tags",
@@ -8484,11 +8484,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
-                "displayCode": {
-                    "description": "Benchmark display code",
-                    "type": "string",
-                    "example": "CIS 1.4.0"
-                },
                 "documentURI": {
                     "description": "Benchmark document URI",
                     "type": "string",
@@ -8522,6 +8517,11 @@ const docTemplate = `{
                     "description": "Whether the benchmark is managed or not",
                     "type": "boolean",
                     "example": true
+                },
+                "referenceCode": {
+                    "description": "Benchmark display code",
+                    "type": "string",
+                    "example": "CIS 1.4.0"
                 },
                 "resourcesSeverityStatus": {
                     "description": "Resource severity status",

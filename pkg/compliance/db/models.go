@@ -52,20 +52,20 @@ type Benchmark struct {
 
 func (b Benchmark) ToApi() api.Benchmark {
 	ba := api.Benchmark{
-		ID:          b.ID,
-		Title:       b.Title,
-		DisplayCode: b.DisplayCode,
-		Description: b.Description,
-		LogoURI:     b.LogoURI,
-		Category:    b.Category,
-		DocumentURI: b.DocumentURI,
-		Enabled:     b.Enabled,
-		Managed:     b.Managed,
-		AutoAssign:  b.AutoAssign,
-		Baseline:    b.Baseline,
-		CreatedAt:   b.CreatedAt,
-		UpdatedAt:   b.UpdatedAt,
-		Tags:        b.GetTagsMap(),
+		ID:            b.ID,
+		Title:         b.Title,
+		ReferenceCode: b.DisplayCode,
+		Description:   b.Description,
+		LogoURI:       b.LogoURI,
+		Category:      b.Category,
+		DocumentURI:   b.DocumentURI,
+		Enabled:       b.Enabled,
+		Managed:       b.Managed,
+		AutoAssign:    b.AutoAssign,
+		Baseline:      b.Baseline,
+		CreatedAt:     b.CreatedAt,
+		UpdatedAt:     b.UpdatedAt,
+		Tags:          b.GetTagsMap(),
 	}
 	if b.Connector != source.Nil {
 		ba.Connectors = []source.Type{b.Connector}

@@ -703,10 +703,6 @@ definitions:
           guidance for establishing a secure baseline configuration for Microsoft
           Azure.
         type: string
-      displayCode:
-        description: Benchmark display code
-        example: CIS 1.4.0
-        type: string
       documentURI:
         description: Benchmark document URI
         example: benchmarks/azure_cis_v140.md
@@ -726,6 +722,10 @@ definitions:
         description: Whether the benchmark is managed or not
         example: true
         type: boolean
+      referenceCode:
+        description: Benchmark display code
+        example: CIS 1.4.0
+        type: string
       tags:
         additionalProperties:
           items:
@@ -893,10 +893,6 @@ definitions:
           guidance for establishing a secure baseline configuration for Microsoft
           Azure.
         type: string
-      displayCode:
-        description: Benchmark display code
-        example: CIS 1.4.0
-        type: string
       documentURI:
         description: Benchmark document URI
         example: benchmarks/azure_cis_v140.md
@@ -924,6 +920,10 @@ definitions:
         description: Whether the benchmark is managed or not
         example: true
         type: boolean
+      referenceCode:
+        description: Benchmark display code
+        example: CIS 1.4.0
+        type: string
       resourcesSeverityStatus:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus'
