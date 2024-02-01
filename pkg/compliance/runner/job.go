@@ -101,10 +101,12 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		}
 
 		findingsMap := make(map[string]types.Finding)
-		for _, f := range findings {
+		for i, f := range findings {
+			f := f
 			keys, idx := f.KeysAndIndex()
 			f.EsID = es.HashOf(keys...)
 			f.EsIndex = idx
+			findings[i] = f
 			findingsMap[f.EsID] = f
 		}
 
@@ -202,6 +204,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 				newFindings = append(newFindings, newFinding)
 				delete(findingsMap, f.EsID)
+				delete(findingsMap, newFinding.EsID)
 			}
 		}
 		closePaginator()
