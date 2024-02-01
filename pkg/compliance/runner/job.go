@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/axiomhq/hyperloglog"
 	"io"
 	"time"
 
@@ -240,17 +239,15 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 			docs = append(docs, fs)
 		}
-		hllSketch := hyperloglog.New16()
 		for _, f := range newFindings {
 			keys, idx := f.KeysAndIndex()
 			f.EsID = es.HashOf(keys...)
 			f.EsIndex = idx
-			hllSketch.Insert([]byte(f.EsID))
 			docs = append(docs, f)
 		}
 		mapKey := fmt.Sprintf("%s---___---%s", caller.RootBenchmark, caller.ControlID)
 		if _, ok := totalFindingCountMap[mapKey]; !ok {
-			totalFindingCountMap[mapKey] = int(hllSketch.Estimate())
+			totalFindingCountMap[mapKey] = len(newFindings)
 		}
 
 		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
