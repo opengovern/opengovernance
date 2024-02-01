@@ -832,9 +832,7 @@ definitions:
         description: Benchmark category
         type: string
       checks:
-        allOf:
-        - $ref: '#/definitions/types.SeverityResult'
-        description: Checks summary
+        $ref: '#/definitions/types.SeverityResult'
       children:
         description: Benchmark children
         example:
@@ -844,9 +842,7 @@ definitions:
           type: string
         type: array
       conformanceStatusSummary:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
-        description: Compliance result summary
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
       connectors:
         description: Benchmark connectors
         example:
@@ -863,9 +859,7 @@ definitions:
           type: string
         type: array
       controlsSeverityStatus:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
-        description: Controls severity status
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
       createdAt:
         description: Benchmark creation date
         example: "2020-01-01T00:00:00Z"
@@ -885,7 +879,6 @@ definitions:
         example: true
         type: boolean
       evaluatedAt:
-        description: Evaluated at
         example: "2020-01-01T00:00:00Z"
         type: string
       id:
@@ -893,7 +886,6 @@ definitions:
         example: azure_cis_v140
         type: string
       lastJobStatus:
-        description: Last job status
         example: success
         type: string
       logoURI:
@@ -908,9 +900,7 @@ definitions:
         example: CIS 1.4.0
         type: string
       resourcesSeverityStatus:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus'
-        description: Resource severity status
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus'
       tags:
         additionalProperties:
           items:
@@ -923,7 +913,6 @@ definitions:
         example: Azure CIS v1.4.0
         type: string
       topConnections:
-        description: Top connections
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
         type: array
@@ -961,12 +950,15 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
     properties:
-      securityScore:
-        type: number
+      checks:
+        $ref: '#/definitions/types.SeverityResult'
+      conformanceStatusSummary:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
+      controlsSeverityStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
       timestamp:
-        description: Time
-        example: 1686346668
-        type: integer
+        example: "1686346668"
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus:
     enum:

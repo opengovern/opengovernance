@@ -2806,23 +2806,37 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return err
 	}
 
+	controls, err := h.db.ListControlsByBenchmarkID(benchmarkID)
+	if err != nil {
+		h.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	controlsMap := make(map[string]*db.Control)
+	for _, control := range controls {
+		control := control
+		controlsMap[strings.ToLower(control.ID)] = &control
+	}
+
 	var response []api.BenchmarkTrendDatapoint
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
-		////totalResultCount := datapoint.ConformanceStatusSummary.OkCount + datapoint.ConformanceStatusSummary.ErrorCount +
-		////	datapoint.ConformanceStatusSummary.AlarmCount + datapoint.ConformanceStatusSummary.InfoCount + datapoint.ConformanceStatusSummary.SkipCount
-		////totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
-		////	datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.NoneCount +
-		////	datapoint.SeverityResult.PassedCount
-		//if (totalResultCount + totalChecksCount) > 0 {
-		response = append(response, api.BenchmarkTrendDatapoint{
-			Timestamp:     int(datapoint.DateEpoch),
-			SecurityScore: datapoint.Score,
-		})
-		//}
+		apiDataPoint := api.BenchmarkTrendDatapoint{
+			Timestamp:                time.Unix(datapoint.DateEpoch, 0),
+			ConformanceStatusSummary: api.ConformanceStatusSummary{},
+			Checks:                   kaytuTypes.SeverityResult{},
+			ControlsSeverityStatus:   api.BenchmarkControlsSeverityStatus{},
+		}
+		apiDataPoint.ConformanceStatusSummary.AddESConformanceStatusMap(datapoint.QueryResult)
+		apiDataPoint.Checks.AddResultMap(datapoint.SeverityResult)
+		for controlId, controlResult := range datapoint.Controls {
+			control := controlsMap[strings.ToLower(controlId)]
+			apiDataPoint.ControlsSeverityStatus = addToControlSeverityResult(apiDataPoint.ControlsSeverityStatus, control, controlResult)
+		}
+
+		response = append(response, apiDataPoint)
 	}
 
 	sort.Slice(response, func(i, j int) bool {
-		return response[i].Timestamp < response[j].Timestamp
+		return response[i].Timestamp.Before(response[j].Timestamp)
 	})
 
 	return ctx.JSON(http.StatusOK, response)

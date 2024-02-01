@@ -28,8 +28,10 @@ type Benchmark struct {
 }
 
 type BenchmarkTrendDatapoint struct {
-	Timestamp     int     `json:"timestamp" example:"1686346668"` // Time
-	SecurityScore float64 `json:"securityScore"`
+	Timestamp                time.Time                       `json:"timestamp" example:"1686346668"`
+	ConformanceStatusSummary ConformanceStatusSummary        `json:"conformanceStatusSummary"`
+	Checks                   types.SeverityResult            `json:"checks"`
+	ControlsSeverityStatus   BenchmarkControlsSeverityStatus `json:"controlsSeverityStatus"`
 }
 
 type GetBenchmarksSummaryResponse struct {
@@ -79,13 +81,13 @@ func (c *ConformanceStatusSummary) AddESConformanceStatusMap(summary map[types.C
 
 type BenchmarkEvaluationSummary struct {
 	Benchmark
-	ConformanceStatusSummary ConformanceStatusSummary         `json:"conformanceStatusSummary"`                   // Compliance result summary
-	Checks                   types.SeverityResult             `json:"checks"`                                     // Checks summary
-	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`                     // Controls severity status
-	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`                    // Resource severity status
-	EvaluatedAt              *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"` // Evaluated at
-	LastJobStatus            string                           `json:"lastJobStatus" example:"success"`            // Last job status
-	TopConnections           []TopFieldRecord                 `json:"topConnections"`                             // Top connections
+	ConformanceStatusSummary ConformanceStatusSummary         `json:"conformanceStatusSummary"`
+	Checks                   types.SeverityResult             `json:"checks"`
+	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`
+	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`
+	EvaluatedAt              *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
+	LastJobStatus            string                           `json:"lastJobStatus" example:"success"`
+	TopConnections           []TopFieldRecord                 `json:"topConnections"`
 }
 
 type BenchmarkControlSummary struct {

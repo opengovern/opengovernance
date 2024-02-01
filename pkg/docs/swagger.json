@@ -8390,12 +8390,7 @@
                     "type": "string"
                 },
                 "checks": {
-                    "description": "Checks summary",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.SeverityResult"
-                        }
-                    ]
+                    "$ref": "#/definitions/types.SeverityResult"
                 },
                 "children": {
                     "description": "Benchmark children",
@@ -8409,12 +8404,7 @@
                     ]
                 },
                 "conformanceStatusSummary": {
-                    "description": "Compliance result summary",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary"
-                        }
-                    ]
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary"
                 },
                 "connectors": {
                     "description": "Benchmark connectors",
@@ -8438,12 +8428,7 @@
                     ]
                 },
                 "controlsSeverityStatus": {
-                    "description": "Controls severity status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus"
-                        }
-                    ]
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus"
                 },
                 "createdAt": {
                     "description": "Benchmark creation date",
@@ -8466,7 +8451,6 @@
                     "example": true
                 },
                 "evaluatedAt": {
-                    "description": "Evaluated at",
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
                 },
@@ -8476,7 +8460,6 @@
                     "example": "azure_cis_v140"
                 },
                 "lastJobStatus": {
-                    "description": "Last job status",
                     "type": "string",
                     "example": "success"
                 },
@@ -8495,12 +8478,7 @@
                     "example": "CIS 1.4.0"
                 },
                 "resourcesSeverityStatus": {
-                    "description": "Resource severity status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus"
-                        }
-                    ]
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus"
                 },
                 "tags": {
                     "description": "Benchmark tags",
@@ -8518,7 +8496,6 @@
                     "example": "Azure CIS v1.4.0"
                 },
                 "topConnections": {
-                    "description": "Top connections",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
@@ -8576,13 +8553,18 @@
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint": {
             "type": "object",
             "properties": {
-                "securityScore": {
-                    "type": "number"
+                "checks": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
+                "conformanceStatusSummary": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary"
+                },
+                "controlsSeverityStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus"
                 },
                 "timestamp": {
-                    "description": "Time",
-                    "type": "integer",
-                    "example": 1686346668
+                    "type": "string",
+                    "example": "1686346668"
                 }
             }
         },
