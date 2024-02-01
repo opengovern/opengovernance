@@ -201,7 +201,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				}
 
 				newFindings = append(newFindings, newFinding)
-				delete(findingsMap, newFinding.EsID)
+				delete(findingsMap, f.EsID)
 			}
 		}
 		closePaginator()
