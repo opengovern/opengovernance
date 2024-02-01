@@ -23,7 +23,7 @@ func (s *JobScheduler) buildRunners(
 
 	benchmark, err := s.complianceClient.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
-		s.logger.Error("error while getting benchmark", zap.Error(err))
+		s.logger.Error("error while getting benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return nil, err
 	}
 
@@ -40,7 +40,7 @@ func (s *JobScheduler) buildRunners(
 	for _, controlID := range benchmark.Controls {
 		control, err := s.complianceClient.GetControl(ctx, controlID)
 		if err != nil {
-			s.logger.Error("error while getting control", zap.Error(err))
+			s.logger.Error("error while getting control", zap.Error(err), zap.String("controlID", controlID))
 			return nil, err
 		}
 
