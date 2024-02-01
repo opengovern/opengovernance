@@ -105,6 +105,7 @@ func (s *JobScheduler) buildRunners(
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, error) {
 	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
 	if err != nil {
+		s.logger.Error("error while listing assignments", zap.Error(err))
 		return 0, err
 	}
 
@@ -115,6 +116,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 	}
 	err = s.db.CreateComplianceJob(&job)
 	if err != nil {
+		s.logger.Error("error while creating compliance job", zap.Error(err))
 		return 0, err
 	}
 
@@ -130,6 +132,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 		connection := it
 		runners, err := s.buildRunners(job.ID, &connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
 		if err != nil {
+			s.logger.Error("error while building runners", zap.Error(err))
 			return 0, err
 		}
 		allRunners = append(allRunners, runners...)
@@ -147,6 +150,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 
 	err = s.db.CreateRunnerJobs(allRunners)
 	if err != nil {
+		s.logger.Error("error while creating runners", zap.Error(err))
 		return 0, err
 	}
 

@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -15,11 +16,13 @@ func (s *JobScheduler) runScheduler() error {
 
 	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx)
 	if err != nil {
+		s.logger.Error("error while listing benchmarks", zap.Error(err))
 		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 
 	allConnections, err := s.onboardClient.ListSources(clientCtx, nil)
 	if err != nil {
+		s.logger.Error("error while listing allConnections", zap.Error(err))
 		return fmt.Errorf("error while listing allConnections: %v", err)
 	}
 	connectionsMap := make(map[string]*onboardAPI.Connection)
@@ -32,6 +35,7 @@ func (s *JobScheduler) runScheduler() error {
 		var connections []onboardAPI.Connection
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
+			s.logger.Error("error while listing assignments", zap.Error(err))
 			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
@@ -55,6 +59,7 @@ func (s *JobScheduler) runScheduler() error {
 
 		complianceJob, err := s.db.GetLastComplianceJob(benchmark.ID)
 		if err != nil {
+			s.logger.Error("error while getting last compliance job", zap.Error(err))
 			return err
 		}
 
@@ -64,6 +69,7 @@ func (s *JobScheduler) runScheduler() error {
 
 			_, err := s.CreateComplianceReportJobs(benchmark.ID)
 			if err != nil {
+				s.logger.Error("error while creating compliance job", zap.Error(err))
 				return err
 			}
 
