@@ -349,6 +349,19 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		lookupResourcesMap[r.ResourceID] = &r
 	}
 
+	for i, finding := range response.Findings {
+		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {
+			response.Findings[i].ResourceName = lookupResource.Name
+			response.Findings[i].ResourceLocation = lookupResource.Location
+		} else {
+			h.logger.Warn("lookup resource not found",
+				zap.String("kaytu_resource_id", finding.KaytuResourceID),
+				zap.String("resource_id", finding.ResourceID),
+				zap.String("controlId", finding.ControlID),
+			)
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
