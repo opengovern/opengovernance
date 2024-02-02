@@ -168,9 +168,9 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 				resources = append(resources, hit)
 
 				var provider schema.ProviderName
-				if hit.SourceType == source.CloudAWS {
+				if hit.SourceType == source.CloudAWS.String() {
 					provider = schema.AWSProvider
-				} else if hit.SourceType == source.CloudAzure {
+				} else if hit.SourceType == source.CloudAzure.String() {
 					provider = schema.AzureProvider
 				}
 				req.Resources = append(req.Resources, schema.ResourceDef{
