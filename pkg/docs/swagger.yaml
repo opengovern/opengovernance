@@ -1146,9 +1146,6 @@ definitions:
       lastEvent:
         example: "1589395200"
         type: string
-      noOfOccurrences:
-        example: 1
-        type: integer
       parentBenchmarkNames:
         example:
         - Azure CIS v1.4.0
@@ -5029,6 +5026,29 @@ paths:
       summary: Get possible values for finding event filters
       tags:
       - compliance
+  /compliance/api/v1/finding_events/single/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving single finding event
+      parameters:
+      - description: FindingID
+        in: path
+        name: findingID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent'
+      security:
+      - BearerToken: []
+      summary: Get single finding event
+      tags:
+      - compliance
   /compliance/api/v1/findings:
     post:
       consumes:
@@ -5332,6 +5352,29 @@ paths:
       security:
       - BearerToken: []
       summary: Get finding
+      tags:
+      - compliance
+  /compliance/api/v1/findings/single/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving a single finding by finding ID
+      parameters:
+      - description: Finding ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding'
+      security:
+      - BearerToken: []
+      summary: Get single finding by finding ID
       tags:
       - compliance
   /compliance/api/v1/findings/top/{field}/{count}:

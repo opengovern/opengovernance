@@ -1170,3 +1170,32 @@ func FetchFindingsPerControlForResourceId(logger *zap.Logger, client kaytu.Clien
 
 	return findings, nil
 }
+
+func FetchFindingByID(logger *zap.Logger, client kaytu.Client, findingID string) (*types.Finding, error) {
+	query := map[string]any{
+		"query": map[string]any{
+			"term": map[string]any{
+				"es_id": findingID,
+			},
+		},
+		"size": 1,
+	}
+
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("FetchFindingByID", zap.String("query", string(queryBytes)))
+	var resp FindingsQueryResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Hits.Hits) == 0 {
+		return nil, nil
+	}
+
+	return &resp.Hits.Hits[0].Source, nil
+}

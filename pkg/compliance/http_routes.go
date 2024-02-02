@@ -106,6 +106,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
+	findings.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleFindingByFindingID, authApi.ViewerRole))
 	findings.GET("/events/:id", httpserver2.AuthorizeHandler(h.GetFindingEventsByFindingID, authApi.ViewerRole))
 	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
 	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
@@ -118,6 +119,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findingEvents := v1.Group("/finding_events")
 	findingEvents.POST("", httpserver2.AuthorizeHandler(h.GetFindingEvents, authApi.ViewerRole))
 	findingEvents.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingEventFilterValues, authApi.ViewerRole))
+	findingEvents.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleFindingEvent, authApi.ViewerRole))
 
 	resourceFindings := v1.Group("/resource_findings")
 	resourceFindings.POST("", httpserver2.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
@@ -347,29 +349,6 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		lookupResourcesMap[r.ResourceID] = &r
 	}
 
-	findingCountPerKaytuResourceIds, err := es.FetchFindingCountPerKaytuResourceIds(h.logger, h.client, kaytuResourceIds, nil, []kaytuTypes.ConformanceStatus{
-		kaytuTypes.ConformanceStatusALARM,
-		kaytuTypes.ConformanceStatusERROR,
-		kaytuTypes.ConformanceStatusINFO,
-		kaytuTypes.ConformanceStatusSKIP,
-	})
-
-	for i, finding := range response.Findings {
-		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {
-			response.Findings[i].ResourceName = lookupResource.Name
-			response.Findings[i].ResourceLocation = lookupResource.Location
-		} else {
-			h.logger.Warn("lookup resource not found",
-				zap.String("kaytu_resource_id", finding.KaytuResourceID),
-				zap.String("resource_id", finding.ResourceID),
-				zap.String("controlId", finding.ControlID),
-			)
-		}
-		if findingCount, ok := findingCountPerKaytuResourceIds[finding.KaytuResourceID]; ok {
-			response.Findings[i].NoOfOccurrences = findingCount
-		}
-	}
-
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -381,8 +360,8 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path	string	true	"Finding ID"
-//	@Success		200		{object}	api.GetFindingEventsByFindingIDResponse
+//	@Param			id	path		string	true	"Finding ID"
+//	@Success		200	{object}	api.GetFindingEventsByFindingIDResponse
 //	@Router			/compliance/api/v1/findings/events/{id} [get]
 func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 	findingID := ctx.Param("id")
@@ -538,6 +517,77 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetSingleFindingByFindingID
+//
+//	@Summary		Get single finding by finding ID
+//	@Description	Retrieving a single finding by finding ID
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		string	true	"Finding ID"
+//	@Success		200	{object}	api.Finding
+//	@Router			/compliance/api/v1/findings/single/{id} [get]
+func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
+	findingID := ctx.Param("id")
+
+	finding, err := es.FetchFindingByID(h.logger, h.client, findingID)
+	if err != nil {
+		h.logger.Error("failed to fetch finding by id", zap.Error(err))
+		return err
+	}
+	if finding == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "finding not found")
+	}
+
+	apiFinding := api.GetAPIFindingFromESFinding(*finding)
+
+	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), finding.ConnectionID)
+	if err != nil {
+		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", finding.ConnectionID))
+		return err
+	}
+	apiFinding.ProviderConnectionID = connection.ConnectionID
+	apiFinding.ProviderConnectionName = connection.ConnectionName
+
+	if len(finding.ResourceType) > 0 {
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+			nil, nil,
+			[]string{finding.ResourceType}, false, nil, 10000, 1)
+		if err != nil {
+			h.logger.Error("failed to get resource type metadata", zap.Error(err))
+			return err
+		}
+		if len(resourceTypeMetadata.ResourceTypes) > 0 {
+			apiFinding.ResourceTypeName = resourceTypeMetadata.ResourceTypes[0].ResourceLabel
+		}
+	}
+
+	control, err := h.db.GetControl(finding.ControlID)
+	if err != nil {
+		h.logger.Error("failed to get control", zap.Error(err), zap.String("control_id", finding.ControlID))
+		return err
+	}
+	apiFinding.ControlTitle = control.Title
+
+	parentBenchmarks, err := h.db.GetBenchmarksBare(finding.ParentBenchmarks)
+	if err != nil {
+		h.logger.Error("failed to get parent benchmarks", zap.Error(err), zap.Strings("parent_benchmarks", finding.ParentBenchmarks))
+		return err
+	}
+	parentBenchmarksMap := make(map[string]db.Benchmark)
+	for _, benchmark := range parentBenchmarks {
+		parentBenchmarksMap[benchmark.ID] = benchmark
+	}
+	for _, parentBenchmark := range finding.ParentBenchmarks {
+		if benchmark, ok := parentBenchmarksMap[parentBenchmark]; ok {
+			apiFinding.ParentBenchmarkNames = append(apiFinding.ParentBenchmarkNames, benchmark.Title)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, apiFinding)
 }
 
 // CountFindings godoc
@@ -1872,6 +1922,55 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetSingleFindingEvent
+//
+//	@Summary		Get single finding event
+//	@Description	Retrieving single finding event
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			findingID	path		string	true	"FindingID"
+//	@Success		200			{object}	api.FindingEvent
+//	@Router			/compliance/api/v1/finding_events/single/{id} [get]
+func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
+	findingEventID := ctx.Param("id")
+
+	findingEvent, err := es.FetchFindingEventByID(h.logger, h.client, findingEventID)
+	if err != nil {
+		h.logger.Error("failed to fetch findingEvent by id", zap.Error(err))
+		return err
+	}
+	if findingEvent == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "findingEvent not found")
+	}
+
+	apiFindingEvent := api.GetAPIFindingEventFromESFindingEvent(*findingEvent)
+
+	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), findingEvent.ConnectionID)
+	if err != nil {
+		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", findingEvent.ConnectionID))
+		return err
+	}
+	apiFindingEvent.ProviderConnectionID = connection.ConnectionID
+	apiFindingEvent.ProviderConnectionName = connection.ConnectionName
+
+	if len(findingEvent.ResourceType) > 0 {
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+			nil, nil,
+			[]string{findingEvent.ResourceType}, false, nil, 10000, 1)
+		if err != nil {
+			h.logger.Error("failed to get resource type metadata", zap.Error(err))
+			return err
+		}
+		if len(resourceTypeMetadata.ResourceTypes) > 0 {
+			apiFindingEvent.ResourceTypeName = resourceTypeMetadata.ResourceTypes[0].ResourceLabel
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, apiFindingEvent)
 }
 
 // ListResourceFindings godoc
