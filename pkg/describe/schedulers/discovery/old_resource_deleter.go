@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
@@ -27,37 +26,32 @@ func (s *Scheduler) OldResourceDeleter() {
 func (s *Scheduler) runDeleter() error {
 	s.logger.Info("runDeleter")
 
-	deletingJobs, err := s.db.ListDescribeJobsByStatus(api.DescribeResourceJobOldResourceDeletion)
+	tasks, err := es.GetDeleteTasks(s.esClient)
 	if err != nil {
+		s.logger.Error("failed to get delete tasks", zap.Error(err))
 		return err
 	}
 
-	for _, job := range deletingJobs {
-		if job.DeletingCount > 0 {
-			tasks, err := es.GetDeleteTasks(s.esClient, job.ID)
+	for _, task := range tasks.Hits.Hits {
+		for _, resource := range task.Source.DeletingResources {
+			err = s.esClient.Delete(string(resource.Key), resource.Index)
 			if err != nil {
+				s.logger.Error("failed to delete resource", zap.Error(err))
 				return err
 			}
-
-			for _, task := range tasks.Hits.Hits {
-				for _, resource := range task.Source.DeletingResources {
-					err = s.esClient.Delete(string(resource.Key), resource.Index)
-					if err != nil {
-						return err
-					}
-				}
-				err = s.esClient.Delete(task.ID, es.DeleteTasksIndex)
-
-				if err != nil {
-					return err
-				}
-			}
+		}
+		err = s.esClient.Delete(task.ID, es.DeleteTasksIndex)
+		if err != nil {
+			s.logger.Error("failed to delete task", zap.Error(err))
+			return err
 		}
 
-		err = s.db.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobSucceeded, job.FailureMessage, job.ErrorCode, job.DescribedResourceCount, job.DeletingCount)
+		err := es.DeleteDeleteTask(s.esClient, task.ID)
 		if err != nil {
+			s.logger.Error("failed to delete delete task", zap.Error(err))
 			return err
 		}
 	}
+
 	return nil
 }

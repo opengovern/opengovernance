@@ -55,15 +55,8 @@ type GetDeleteTasksHit struct {
 	Sort    []any      `json:"sort"`
 }
 
-func GetDeleteTasks(client kaytu.Client, jobID uint) (*GetDeleteTasksResponse, error) {
+func GetDeleteTasks(client kaytu.Client) (*GetDeleteTasksResponse, error) {
 	root := map[string]any{}
-	root["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": append([]map[string]any{
-				{"term": map[string]any{"discovery_job_id": jobID}},
-			}),
-		},
-	}
 	root["size"] = 10000
 	root["sort"] = []map[string]any{
 		{"_id": "desc"},
@@ -83,4 +76,8 @@ func GetDeleteTasks(client kaytu.Client, jobID uint) (*GetDeleteTasksResponse, e
 	}
 
 	return &response, nil
+}
+
+func DeleteDeleteTask(client kaytu.Client, id string) error {
+	return client.Delete(id, DeleteTasksIndex)
 }

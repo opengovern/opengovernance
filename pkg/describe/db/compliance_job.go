@@ -107,6 +107,16 @@ func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
 	return job, nil
 }
 
+func (db Database) ListComplianceJobsByStatus(status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
+	var jobs []model.ComplianceJob
+	tx := db.ORM.Where("status = ?", status).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
 func (db Database) ListComplianceRunnersWithStatus(status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Where("status = ?", status).Find(&jobs)
