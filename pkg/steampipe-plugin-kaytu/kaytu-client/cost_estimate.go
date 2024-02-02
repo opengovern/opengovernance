@@ -8,9 +8,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	"github.com/kaytu-io/pennywise/pkg/submission"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"net/http"
 	"runtime"
@@ -32,7 +34,7 @@ func ResourceTypeConversion(resourceType string) string {
 	return resourceType
 }
 
-func GetValues(resource LookupResource) map[string]interface{} {
+func GetValues(resource Resource) map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -92,15 +94,51 @@ func FetchLookupByResourceIDType(client Client, ctx context.Context, d *plugin.Q
 func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
 	plugin.Logger(ctx).Warn("ListResourceCostEstimate", d)
 	runtime.GC()
-
 	// create service
 	cfg := config.GetConfig(d.Connection)
+
+	plugin.Logger(ctx).Trace("ListResourceCostEstimate 2", cfg)
 	ke, err := config.NewClientCached(cfg, d.ConnectionCache, ctx)
 	if err != nil {
-		plugin.Logger(ctx).Error("ListResourceCostEstimate NewClientCached", "error", err)
 		return nil, err
 	}
 	k := Client{ES: ke}
+
+	plugin.Logger(ctx).Trace("ListResourceCostEstimate 3", k)
+	sc, err := steampipesdk.NewSelfClientCached(ctx, d.ConnectionCache)
+	if err != nil {
+		plugin.Logger(ctx).Error("ListResourceCostEstimate NewSelfClientCached", "error", err)
+		return nil, err
+	}
+	plugin.Logger(ctx).Trace("ListResourceCostEstimate 4", sc)
+	encodedResourceCollectionFilters, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.KaytuConfigKeyResourceCollectionFilters)
+	if err != nil {
+		plugin.Logger(ctx).Error("ListResourceCostEstimate GetConfigTableValueOrNil for resource_collection_filters", "error", err)
+		return nil, err
+	}
+	plugin.Logger(ctx).Trace("ListResourceCostEstimate 5", encodedResourceCollectionFilters)
+	clientType, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.KaytuConfigKeyClientType)
+	if err != nil {
+		plugin.Logger(ctx).Error("ListResourceCostEstimate GetConfigTableValueOrNil for client_type", "error", err)
+		return nil, err
+	}
+
+	plugin.Logger(ctx).Trace("Columns", d.EqualsQuals)
+	var indexes []string
+	for column, q := range d.EqualsQuals {
+		if column == "resource_type" {
+			if s, ok := q.GetValue().(*proto.QualValue_StringValue); ok && s != nil {
+				indexes = []string{ResourceTypeToESIndex(s.StringValue)}
+			} else if l := q.GetListValue(); l != nil {
+				for _, v := range l.GetValues() {
+					if v == nil {
+						continue
+					}
+					indexes = append(indexes, v.GetStringValue())
+				}
+			}
+		}
+	}
 
 	req := submission.Submission{
 		ID:        "submittion-1",
@@ -108,27 +146,47 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 		Resources: []schema.ResourceDef{},
 	}
 
-	res, err := FetchLookupByResourceIDType(k, ctx, d)
-	if err != nil {
-		plugin.Logger(ctx).Error("ListResourceCostEstimate NewLookupResourcePaginator", "error", err)
-		return nil, err
-	}
+	var resources []Resource
 
-	for _, hit := range res.Hits.Hits {
-		var provider schema.ProviderName
-		if hit.Source.SourceType == source.CloudAWS {
-			provider = schema.AWSProvider
-		} else if hit.Source.SourceType == source.CloudAzure {
-			provider = schema.AzureProvider
+	for _, index := range indexes {
+		paginator, err := k.NewResourcePaginator(essdk.BuildFilterWithDefaultFieldName(ctx, d.QueryContext, resourceMapping,
+			"", nil, encodedResourceCollectionFilters, clientType, true), d.QueryContext.Limit, index)
+		if err != nil {
+			plugin.Logger(ctx).Error("ListResourceCostEstimate NewResourcePaginator", "error", err)
+			return nil, err
 		}
-		req.Resources = append(req.Resources, schema.ResourceDef{
-			Address:      hit.Source.ResourceID,
-			Type:         ResourceTypeConversion(hit.Source.ResourceType),
-			Name:         hit.Source.Name,
-			RegionCode:   "us-east-2",
-			ProviderName: provider,
-			Values:       GetValues(hit.Source),
-		})
+
+		for paginator.HasNext() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				plugin.Logger(ctx).Error("ListResourceCostEstimate NextPage", "error", err)
+				return nil, err
+			}
+			plugin.Logger(ctx).Trace("ListResourceCostEstimate", "next page")
+
+			for _, hit := range page {
+				resources = append(resources, hit)
+
+				var provider schema.ProviderName
+				if hit.SourceType == source.CloudAWS {
+					provider = schema.AWSProvider
+				} else if hit.SourceType == source.CloudAzure {
+					provider = schema.AzureProvider
+				}
+				req.Resources = append(req.Resources, schema.ResourceDef{
+					Address:      hit.ID,
+					Type:         ResourceTypeConversion(hit.ResourceType),
+					Name:         hit.Metadata.Name,
+					RegionCode:   hit.Metadata.Region,
+					ProviderName: provider,
+					Values:       GetValues(hit),
+				})
+			}
+		}
+		err = paginator.Close(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	reqBody, err := json.Marshal(req)
@@ -147,17 +205,15 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 		return nil, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
 	}
 
-	for _, hit := range res.Hits.Hits {
+	for _, hit := range resources {
 		resourceCost, err := response.Cost()
 		if err != nil {
 			return nil, err
 		}
 
-		_ = resourceCost
-		_ = hit
 		d.StreamListItem(ctx, ResourceCostEstimate{
-			ResourceID:   hit.Source.ResourceID,
-			ResourceType: hit.Source.ResourceType,
+			ResourceID:   hit.ID,
+			ResourceType: hit.ResourceType,
 			Cost:         resourceCost.Decimal.InexactFloat64(),
 		})
 	}
