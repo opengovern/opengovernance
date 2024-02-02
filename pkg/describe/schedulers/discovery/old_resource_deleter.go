@@ -45,12 +45,6 @@ func (s *Scheduler) runDeleter() error {
 			s.logger.Error("failed to delete task", zap.Error(err))
 			return err
 		}
-
-		err := es.DeleteDeleteTask(s.esClient, task.ID)
-		if err != nil {
-			s.logger.Error("failed to delete delete task", zap.Error(err))
-			return err
-		}
 	}
 
 	return nil
