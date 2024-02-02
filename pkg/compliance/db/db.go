@@ -167,6 +167,22 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
+func (db Database) GetBenchmarksBare(benchmarkIds []string) ([]Benchmark, error) {
+	var s []Benchmark
+	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+		Where("id in ?", benchmarkIds).
+		Find(&s)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) SetBenchmarkAutoAssign(benchmarkId string, autoAssign bool) error {
 	tx := db.Orm.Model(&Benchmark{}).Where("id = ?", benchmarkId).Update("auto_assign", autoAssign)
 	if tx.Error != nil {

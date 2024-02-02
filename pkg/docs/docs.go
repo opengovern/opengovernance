@@ -1781,6 +1781,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/finding_events/single/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving single finding event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get single finding event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "FindingID",
+                        "name": "findingID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings": {
             "post": {
                 "security": [
@@ -2002,6 +2039,43 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/findings/single/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving a single finding by finding ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get single finding by finding ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Finding ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding"
                         }
                     }
                 }
@@ -8831,10 +8905,6 @@ const docTemplate = `{
                 "lastEvent": {
                     "type": "string",
                     "example": "1589395200"
-                },
-                "noOfOccurrences": {
-                    "type": "integer",
-                    "example": 1
                 },
                 "parentBenchmarkNames": {
                     "type": "array",
