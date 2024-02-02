@@ -9,8 +9,8 @@ import (
 
 func tableKaytuCostEstimate(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_cost_estimate",
-		Description: "Kaytu Resource Cost Estimate",
+		Name:        "pennywise_cost_estimate",
+		Description: "Pennywise Resource Cost Estimate",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},

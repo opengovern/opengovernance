@@ -17,13 +17,13 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			Schema:      config.Schema(),
 		},
 		TableMap: map[string]*plugin.Table{
-			"kaytu_findings":      tableKaytuFindings(ctx),
-			"kaytu_resources":     tableKaytuResources(ctx),
-			"kaytu_lookup":        tableKaytuLookup(ctx),
-			"kaytu_cost":          tableKaytuCost(ctx),
-			"kaytu_cost_estimate": tableKaytuCostEstimate(ctx),
-			"kaytu_connections":   tableKaytuConnections(ctx),
-			"kaytu_metrics":       tableKaytuMetrics(ctx),
+			"kaytu_findings":          tableKaytuFindings(ctx),
+			"kaytu_resources":         tableKaytuResources(ctx),
+			"kaytu_lookup":            tableKaytuLookup(ctx),
+			"kaytu_cost":              tableKaytuCost(ctx),
+			"pennywise_cost_estimate": tableKaytuCostEstimate(ctx),
+			"kaytu_connections":       tableKaytuConnections(ctx),
+			"kaytu_metrics":           tableKaytuMetrics(ctx),
 		},
 	}
 	return p
