@@ -154,7 +154,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.steampipe == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: (needs.build.outputs.steampipe-plugin-kaytu == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -268,7 +268,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.compliance-report-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: (needs.build.outputs.steampipe-plugin-kaytu == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -495,7 +495,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.insight-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: (needs.build.outputs.steampipe-plugin-kaytu == 'true' || needs.build.outputs.insight-worker == 'true') && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -802,7 +802,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.analytics-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: (needs.build.outputs.steampipe-plugin-kaytu == 'true' || needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
