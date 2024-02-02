@@ -10,7 +10,7 @@ import (
 func tableKaytuCost(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_cost",
-		Description: "Kaytu Cost Lookup",
+		Description: "Account-level cost of connections onboarded into Kaytu platform",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},

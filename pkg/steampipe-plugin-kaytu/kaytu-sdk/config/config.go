@@ -21,6 +21,8 @@ type ClientConfig struct {
 	PgPassword *string `cty:"pg_password"`
 	PgDatabase *string `cty:"pg_database"`
 	PgSslMode  *string `cty:"pg_ssl_mode"`
+
+	PennywiseBaseURL *string `cty:"pennywise_baseurl"`
 }
 
 func Schema() map[string]*schema.Attribute {
@@ -59,6 +61,9 @@ func Schema() map[string]*schema.Attribute {
 			Type: schema.TypeString,
 		},
 		"pg_ssl_mode": {
+			Type: schema.TypeString,
+		},
+		"pennywise_baseurl": {
 			Type: schema.TypeString,
 		},
 	}
