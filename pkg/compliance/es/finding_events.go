@@ -431,3 +431,80 @@ func FetchFindingEventByID(logger *zap.Logger, client kaytu.Client, findingID st
 
 	return &resp.Hits.Hits[0].Source, nil
 }
+
+type FindingEventsCountResponse struct {
+	Hits struct {
+		Total kaytu.SearchTotal `json:"total"`
+	} `json:"hits"`
+	PitID string `json:"pit_id"`
+}
+
+func FindingEventsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
+	idx := types.FindingEventsIndex
+
+	filters := make([]map[string]any, 0)
+	if len(conformanceStatuses) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"conformanceStatus": conformanceStatuses,
+			},
+		})
+	}
+	if len(stateActives) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"stateActive": stateActives,
+			},
+		})
+	}
+	if endTime != nil && startTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": startTime.UnixMilli(),
+					"lte": endTime.UnixMilli(),
+				},
+			},
+		})
+	} else if endTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"lte": endTime.UnixMilli(),
+				},
+			},
+		})
+	} else if startTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": startTime.UnixMilli(),
+				},
+			},
+		})
+	}
+
+	query := make(map[string]any)
+	query["size"] = 0
+
+	if len(filters) > 0 {
+		query["query"] = map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		}
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return 0, err
+	}
+
+	var response FindingsCountResponse
+	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	if err != nil {
+		return 0, err
+	}
+
+	return response.Hits.Total.Value, err
+}

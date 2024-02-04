@@ -119,6 +119,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findingEvents := v1.Group("/finding_events")
 	findingEvents.POST("", httpserver2.AuthorizeHandler(h.GetFindingEvents, authApi.ViewerRole))
 	findingEvents.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingEventFilterValues, authApi.ViewerRole))
+	findingEvents.GET("/count", httpserver2.AuthorizeHandler(h.CountFindingEvents, authApi.ViewerRole))
 	findingEvents.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleFindingEvent, authApi.ViewerRole))
 
 	resourceFindings := v1.Group("/resource_findings")
@@ -1696,6 +1697,70 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		response.FindingEvents = append(response.FindingEvents, findingEvent)
 	}
 	response.TotalCount = totalCount
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// CountFindingEvents godoc
+//
+//	@Summary		Get finding events count
+//	@Description	Retrieving all compliance run finding events count with respect to filters.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to all stateActives"
+//	@Param			startTime			query		int64					false	"Start time to filter by"
+//	@Param			endTime				query		int64					false	"End time to filter by"
+//	@Success		200					{object}	api.CountFindingEventsResponse
+//	@Router			/compliance/api/v1/finding_events/count [get]
+func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(ctx, "conformanceStatus"))
+	if len(conformanceStatuses) == 0 {
+		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	for _, status := range conformanceStatuses {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	var stateActive []bool
+	stateActiveStr := httpserver2.QueryArrayParam(ctx, "stateActive")
+	for _, s := range stateActiveStr {
+		sa, err := strconv.ParseBool(s)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid stateActive")
+		}
+		stateActive = append(stateActive, sa)
+	}
+
+	var endTime *time.Time
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
+		}
+		endTime = utils.GetPointer(time.Unix(endTimeInt, 0))
+	}
+	var startTime *time.Time
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
+		}
+		startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
+	}
+
+	totalCount, err := es.FindingEventsCount(h.client, esConformanceStatuses, stateActive, startTime, endTime)
+	if err != nil {
+		return err
+	}
+
+	response := api.CountFindingEventsResponse{
+		Count: totalCount,
+	}
 
 	return ctx.JSON(http.StatusOK, response)
 }

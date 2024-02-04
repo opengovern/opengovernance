@@ -1092,6 +1092,11 @@ definitions:
       totalResourcesCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingEventsResponse:
+    properties:
+      count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingsResponse:
     properties:
       count:
@@ -5002,6 +5007,51 @@ paths:
       security:
       - BearerToken: []
       summary: Get finding events
+      tags:
+      - compliance
+  /compliance/api/v1/finding_events/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving all compliance run finding events count with respect
+        to filters.
+      parameters:
+      - collectionFormat: csv
+        description: ConformanceStatus to filter by defaults to all conformanceStatus
+          except passed
+        in: query
+        items:
+          enum:
+          - failed
+          - passed
+          type: string
+        name: conformanceStatus
+        type: array
+      - collectionFormat: csv
+        description: StateActive to filter by defaults to all stateActives
+        in: query
+        items:
+          type: boolean
+        name: stateActive
+        type: array
+      - description: Start time to filter by
+        in: query
+        name: startTime
+        type: integer
+      - description: End time to filter by
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingEventsResponse'
+      security:
+      - BearerToken: []
+      summary: Get finding events count
       tags:
       - compliance
   /compliance/api/v1/finding_events/filters:

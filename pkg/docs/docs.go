@@ -1742,6 +1742,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/finding_events/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving all compliance run finding events count with respect to filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get finding events count",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "failed",
+                                "passed"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
+                        "name": "conformanceStatus",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "boolean"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "StateActive to filter by defaults to all stateActives",
+                        "name": "stateActive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start time to filter by",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End time to filter by",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingEventsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/finding_events/filters": {
             "post": {
                 "security": [
@@ -8822,6 +8888,14 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "totalResourcesCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingEventsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
                     "type": "integer"
                 }
             }
