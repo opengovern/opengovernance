@@ -76,6 +76,10 @@ func (s *JobScheduler) runSummarizer() error {
 	}
 
 	jobs, err := s.db.ListJobsWithRunnersCompleted()
+	if err != nil {
+		s.logger.Error("failed to list jobs with runners completed", zap.Error(err))
+		return err
+	}
 	for _, job := range jobs {
 		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID, job.ID)
 		if err != nil {
@@ -115,12 +119,14 @@ func (s *JobScheduler) runSummarizer() error {
 
 	createds, err := s.db.FetchCreatedSummarizers()
 	if err != nil {
+		s.logger.Error("failed to fetch created summarizers", zap.Error(err))
 		return err
 	}
 
 	for _, job := range createds {
 		err = s.triggerSummarizer(job)
 		if err != nil {
+			s.logger.Error("failed to trigger summarizer", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
 		}
 	}
@@ -129,6 +135,7 @@ func (s *JobScheduler) runSummarizer() error {
 	for _, job := range jobs {
 		err = s.finishComplianceJob(job)
 		if err != nil {
+			s.logger.Error("failed to finish compliance job", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
 		}
 	}
