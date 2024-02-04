@@ -13,6 +13,18 @@ type Result struct {
 	SecurityScore  float64
 }
 
+func (r Result) IsFullyPassed() bool {
+	for status, count := range r.QueryResult {
+		if status.IsPassed() {
+			continue
+		}
+		if count > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 type ResultGroup struct {
 	Result        Result
 	ResourceTypes map[string]Result

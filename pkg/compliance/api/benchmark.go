@@ -41,29 +41,29 @@ type GetBenchmarksSummaryResponse struct {
 	TotalChecks                   types.SeverityResult     `json:"totalChecks"`
 }
 
-type BenchmarkSeverityStatusResult struct {
+type BenchmarkStatusResult struct {
 	PassedCount int `json:"passed"`
 	TotalCount  int `json:"total"`
 }
 
 type BenchmarkControlsSeverityStatus struct {
-	Total BenchmarkSeverityStatusResult `json:"total"`
+	Total BenchmarkStatusResult `json:"total"`
 
-	Critical BenchmarkSeverityStatusResult `json:"critical"`
-	High     BenchmarkSeverityStatusResult `json:"high"`
-	Medium   BenchmarkSeverityStatusResult `json:"medium"`
-	Low      BenchmarkSeverityStatusResult `json:"low"`
-	None     BenchmarkSeverityStatusResult `json:"none"`
+	Critical BenchmarkStatusResult `json:"critical"`
+	High     BenchmarkStatusResult `json:"high"`
+	Medium   BenchmarkStatusResult `json:"medium"`
+	Low      BenchmarkStatusResult `json:"low"`
+	None     BenchmarkStatusResult `json:"none"`
 }
 
 type BenchmarkResourcesSeverityStatus struct {
-	Total BenchmarkSeverityStatusResult `json:"total"`
+	Total BenchmarkStatusResult `json:"total"`
 
-	Critical BenchmarkSeverityStatusResult `json:"critical"`
-	High     BenchmarkSeverityStatusResult `json:"high"`
-	Medium   BenchmarkSeverityStatusResult `json:"medium"`
-	Low      BenchmarkSeverityStatusResult `json:"low"`
-	None     BenchmarkSeverityStatusResult `json:"none"`
+	Critical BenchmarkStatusResult `json:"critical"`
+	High     BenchmarkStatusResult `json:"high"`
+	Medium   BenchmarkStatusResult `json:"medium"`
+	Low      BenchmarkStatusResult `json:"low"`
+	None     BenchmarkStatusResult `json:"none"`
 }
 
 type ConformanceStatusSummary struct {
@@ -85,6 +85,7 @@ type BenchmarkEvaluationSummary struct {
 	Checks                   types.SeverityResult             `json:"checks"`
 	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`
 	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`
+	ConnectionsStatus        BenchmarkStatusResult            `json:"connectionsStatus"`
 	EvaluatedAt              *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
 	LastJobStatus            string                           `json:"lastJobStatus" example:"success"`
 	TopConnections           []TopFieldRecord                 `json:"topConnections"`
