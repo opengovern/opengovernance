@@ -257,6 +257,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 			ConnectionID:   res.DescribeJob.SourceID,
 			ResourceType:   res.DescribeJob.ResourceType,
 			Connector:      res.DescribeJob.SourceType,
+			TaskType:       es.DeleteTaskTypeResource,
 		}
 
 		for _, hit := range esResp.Hits.Hits {

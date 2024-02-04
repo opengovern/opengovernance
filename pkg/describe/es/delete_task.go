@@ -16,15 +16,25 @@ type DeletingResource struct {
 	Index      string
 }
 
+type DeleteTaskType string
+
+const (
+	DeleteTaskTypeResource DeleteTaskType = "resource"
+	DeleteTaskTypeQuery    DeleteTaskType = "query"
+)
+
 type DeleteTask struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
+	TaskType       DeleteTaskType `json:"task_type"`
+	DiscoveryJobID uint           `json:"discovery_job_id"`
+	ConnectionID   string         `json:"connection_id"`
+	ResourceType   string         `json:"resource_type"`
+	Connector      source.Type    `json:"connector"`
+
 	DeletingResources []DeletingResource `json:"deleting_resources"`
-	DiscoveryJobID    uint               `json:"discovery_job_id"`
-	ConnectionID      string             `json:"connection_id"`
-	ResourceType      string             `json:"resource_type"`
-	Connector         source.Type        `json:"connector"`
+	Query             string             `json:"query"`
 }
 
 func (d DeleteTask) KeysAndIndex() ([]string, string) {
@@ -35,6 +45,8 @@ func (d DeleteTask) KeysAndIndex() ([]string, string) {
 	}
 	ids = append(ids, d.ResourceType)
 	ids = append(ids, d.ConnectionID)
+	ids = append(ids, string(d.TaskType))
+	ids = append(ids, d.Query)
 	return ids, DeleteTasksIndex
 }
 

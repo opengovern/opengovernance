@@ -2,6 +2,7 @@ package summarizer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"strings"
@@ -193,48 +194,34 @@ func (w *Worker) deleteOldResourceFindings(j types2.Job, currentResourceIds []st
 	filters := make([]kaytu.BoolFilter, 0, 2)
 	filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("kaytuResourceID", currentResourceIds)))
 	filters = append(filters, kaytu.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
-	paginator, err := es.NewResourceFindingPaginator(w.esClient, types.ResourceFindingsIndex, filters, nil, []map[string]any{{"kaytuResourceID": "asc"}})
+
+	root := map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+	}
+	rootJson, err := json.Marshal(root)
 	if err != nil {
-		w.logger.Error("failed to create paginator", zap.Error(err))
+		w.logger.Error("failed to marshal root", zap.Error(err))
 		return err
 	}
-	defer func() {
-		if err := paginator.Close(context.Background()); err != nil {
-			w.logger.Error("failed to close paginator", zap.Error(err))
-		}
-	}()
 
 	task := es3.DeleteTask{
 		DiscoveryJobID: j.ID,
 		ConnectionID:   j.BenchmarkID,
 		ResourceType:   "resource-finding",
-		Connector:      "",
-	}
-	for i := 0; paginator.HasNext(); i++ {
-		page, err := paginator.NextPage(context.Background())
-		if err != nil {
-			w.logger.Error("failed to fetch next page", zap.Error(err), zap.Int("page", i))
-			return err
-		}
-		w.logger.Info("Deleting old resource findings", zap.Int("page", i), zap.Int("pageSize", len(page)))
-		for _, f := range page {
-			keys, idx := f.KeysAndIndex()
-			key := es2.HashOf(keys...)
-			task.DeletingResources = append(task.DeletingResources, es3.DeletingResource{
-				Key:   []byte(key),
-				Index: idx,
-			})
-		}
+		TaskType:       es3.DeleteTaskTypeQuery,
+		Query:          string(rootJson),
 	}
 
-	if len(task.DeletingResources) > 0 {
-		keys, idx := task.KeysAndIndex()
-		task.EsID = es2.HashOf(keys...)
-		task.EsIndex = idx
-		if err = pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, []es2.Doc{task}); err != nil {
-			w.logger.Error("failed to send delete message to elastic",
-				zap.Error(err))
-		}
+	keys, idx := task.KeysAndIndex()
+	task.EsID = es2.HashOf(keys...)
+	task.EsIndex = idx
+	if err = pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, []es2.Doc{task}); err != nil {
+		w.logger.Error("failed to send delete message to elastic",
+			zap.Error(err))
 	}
 
 	return nil
