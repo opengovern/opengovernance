@@ -51,7 +51,7 @@ func (s *Scheduler) runDeleter() error {
 				}
 			}
 		case es.DeleteTaskTypeQuery:
-			_, err = es2.DeleteByQuery(context.Background(), s.esClient.ES(), []string{task.Source.EsIndex}, task.Source.Query)
+			_, err = es2.DeleteByQuery(context.Background(), s.esClient.ES(), []string{task.Source.QueryIndex}, task.Source.Query)
 			if err != nil {
 				s.logger.Error("failed to delete by query", zap.Error(err))
 				return err

@@ -214,6 +214,7 @@ func (w *Worker) deleteOldResourceFindings(j types2.Job, currentResourceIds []st
 		ResourceType:   "resource-finding",
 		TaskType:       es3.DeleteTaskTypeQuery,
 		Query:          string(rootJson),
+		QueryIndex:     types.ResourceFindingsIndex,
 	}
 
 	keys, idx := task.KeysAndIndex()

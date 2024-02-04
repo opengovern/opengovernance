@@ -35,6 +35,7 @@ type DeleteTask struct {
 
 	DeletingResources []DeletingResource `json:"deleting_resources"`
 	Query             string             `json:"query"`
+	QueryIndex        string             `json:"query_index"`
 }
 
 func (d DeleteTask) KeysAndIndex() ([]string, string) {
