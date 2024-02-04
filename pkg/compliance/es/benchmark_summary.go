@@ -533,16 +533,17 @@ type ListBenchmarkSummariesAtTimeResponse struct {
 }
 
 func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
-	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
-	timeAt time.Time) (map[string]types2.BenchmarkSummary, error) {
+	benchmarkIDs []string,
+	connectionIDs []string, resourceCollections []string,
+	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
 
 	idx := types.BenchmarkSummaryIndex
 
 	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.BenchmarkResult.Controls"}
-	if len(connectionIDs) > 0 {
+	if len(connectionIDs) > 0 || fetchFullObject {
 		includes = append(includes, "Connections.Connections")
 	}
-	if len(resourceCollections) > 0 {
+	if len(resourceCollections) > 0 || fetchFullObject {
 		includes = append(includes, "ResourceCollections")
 	}
 	pathFilters := make([]string, 0, len(connectionIDs)+(len(resourceCollections)*(len(connectionIDs)+1))+2)
@@ -625,7 +626,11 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response ListBenchmarkSummariesAtTimeResponse
-	err = client.SearchWithFilterPath(context.Background(), idx, string(query), pathFilters, &response)
+	if fetchFullObject {
+		err = client.Search(context.Background(), idx, string(query), &response)
+	} else {
+		err = client.SearchWithFilterPath(context.Background(), idx, string(query), pathFilters, &response)
+	}
 	if err != nil {
 		return nil, err
 	}

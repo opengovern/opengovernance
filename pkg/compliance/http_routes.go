@@ -2252,7 +2252,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
 	}
 
-	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt, false)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
@@ -2285,38 +2285,30 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		csResult := api.ConformanceStatusSummary{}
 		sResult := kaytuTypes.SeverityResult{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
-
-		if len(connectionIDs) > 0 {
-			for _, connectionID := range connectionIDs {
-				csResult.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
-				sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
-				response.TotalConformanceStatusSummary.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
-				response.TotalChecks.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
-				for controlId, controlResult := range summaryAtTime.Connections.Connections[connectionID].Controls {
-					control := controlsMap[strings.ToLower(controlId)]
-					controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
-				}
-			}
-		} else if len(resourceCollections) > 0 {
-			for _, resourceCollection := range resourceCollections {
-				csResult.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
-				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
-				response.TotalConformanceStatusSummary.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
-				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
-				for controlId, controlResult := range summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Controls {
-					control := controlsMap[strings.ToLower(controlId)]
-					controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
-				}
-			}
-		} else {
-			csResult.AddESConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
-			sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
-			response.TotalConformanceStatusSummary.AddESConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
-			response.TotalChecks.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
-			for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
+		addToResults := func(resultGroup types.ResultGroup) {
+			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+			sResult.AddResultMap(resultGroup.Result.SeverityResult)
+			for controlId, controlResult := range resultGroup.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
 			}
+		}
+		if len(resourceCollections) > 0 {
+			for _, resourceCollection := range resourceCollections {
+				if len(connectionIDs) > 0 {
+					for _, connectionID := range connectionIDs {
+						addToResults(summaryAtTime.ResourceCollections[resourceCollection].Connections[connectionID])
+					}
+				} else {
+					addToResults(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult)
+				}
+			}
+		} else if len(connectionIDs) > 0 {
+			for _, connectionID := range connectionIDs {
+				addToResults(summaryAtTime.Connections.Connections[connectionID])
+			}
+		} else {
+			addToResults(summaryAtTime.Connections.BenchmarkResult)
 		}
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
@@ -2484,7 +2476,9 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		controlsMap[strings.ToLower(control.ID)] = &control
 	}
 
-	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, timeAt)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client,
+		[]string{benchmarkID}, connectionIDs, resourceCollections,
+		timeAt, true)
 	if err != nil {
 		return err
 	}
@@ -2508,30 +2502,50 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	csResult := api.ConformanceStatusSummary{}
 	sResult := kaytuTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
-	if len(connectionIDs) > 0 {
-		for _, connectionID := range connectionIDs {
-			csResult.AddESConformanceStatusMap(summaryAtTime.Connections.Connections[connectionID].Result.QueryResult)
-			sResult.AddResultMap(summaryAtTime.Connections.Connections[connectionID].Result.SeverityResult)
-			for controlId, controlResult := range summaryAtTime.Connections.Connections[connectionID].Controls {
-				control := controlsMap[strings.ToLower(controlId)]
-				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+	connectionsResult := api.BenchmarkStatusResult{}
+	addToResults := func(resultGroup types.ResultGroup) {
+		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+		sResult.AddResultMap(resultGroup.Result.SeverityResult)
+		for controlId, controlResult := range resultGroup.Controls {
+			control := controlsMap[strings.ToLower(controlId)]
+			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+		}
+	}
+	if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			if len(connectionIDs) > 0 {
+				for _, connectionID := range connectionIDs {
+					addToResults(summaryAtTime.ResourceCollections[resourceCollection].Connections[connectionID])
+					connectionsResult.TotalCount++
+					if summaryAtTime.ResourceCollections[resourceCollection].Connections[connectionID].Result.IsFullyPassed() {
+						connectionsResult.PassedCount++
+					}
+				}
+			} else {
+				addToResults(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult)
+				for _, connectionResult := range summaryAtTime.ResourceCollections[resourceCollection].Connections {
+					connectionsResult.TotalCount++
+					if connectionResult.Result.IsFullyPassed() {
+						connectionsResult.PassedCount++
+					}
+				}
 			}
 		}
-	} else if len(resourceCollections) > 0 {
-		for _, resourceCollection := range resourceCollections {
-			csResult.AddESConformanceStatusMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.QueryResult)
-			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Result.SeverityResult)
-			for controlId, controlResult := range summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult.Controls {
-				control := controlsMap[strings.ToLower(controlId)]
-				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+	} else if len(connectionIDs) > 0 {
+		for _, connectionID := range connectionIDs {
+			addToResults(summaryAtTime.Connections.Connections[connectionID])
+			connectionsResult.TotalCount++
+			if summaryAtTime.Connections.Connections[connectionID].Result.IsFullyPassed() {
+				connectionsResult.PassedCount++
 			}
 		}
 	} else {
-		csResult.AddESConformanceStatusMap(summaryAtTime.Connections.BenchmarkResult.Result.QueryResult)
-		sResult.AddResultMap(summaryAtTime.Connections.BenchmarkResult.Result.SeverityResult)
-		for controlId, controlResult := range summaryAtTime.Connections.BenchmarkResult.Controls {
-			control := controlsMap[strings.ToLower(controlId)]
-			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+		addToResults(summaryAtTime.Connections.BenchmarkResult)
+		for _, connectionResult := range summaryAtTime.Connections.Connections {
+			connectionsResult.TotalCount++
+			if connectionResult.Result.IsFullyPassed() {
+				connectionsResult.PassedCount++
+			}
 		}
 	}
 
