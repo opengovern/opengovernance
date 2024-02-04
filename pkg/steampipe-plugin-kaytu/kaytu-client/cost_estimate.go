@@ -28,8 +28,45 @@ type ResourceCostEstimate struct {
 func ResourceTypeConversion(resourceType string) string {
 	//TODO
 	switch resourceType {
+	// AWS
 	case "aws::elasticloadbalancing::loadbalancer":
 		return "aws_lb"
+	case "aws::elasticloadbalancingv2::loadbalancer":
+		return "aws_alb"
+	case "aws::ec2::instance":
+		return "aws_instance"
+	case "aws::autoscaling::autoscalinggroup":
+		return "aws_autoscaling_group"
+	case "aws::rds::dbinstance":
+		return "aws_db_instance"
+	case "aws::ec2::volume":
+		return "aws_ebs_volume"
+	case "aws::ec2::volumesnapshot":
+		return "aws_ebs_snapshot"
+	case "aws::efs::filesystem":
+		return "aws_efs_file_system"
+	case "aws::elasticache::cluster":
+		return "aws_elasticache_cluster"
+	case "aws::elasticache::replicationgroup":
+		return "aws_elasticache_replication_group"
+	case "aws::ec2::eip":
+		return "aws_eip"
+	case "aws::eks::cluster":
+		return "aws_eks_cluster"
+	case "aws::eks::nodegroup":
+		return "aws_eks_node_group"
+	case "aws::fsx::filesystem":
+		return "aws_fsx_ontap_file_system"
+	case "aws::ec2::natgateway":
+		return "aws_nat_gateway"
+	case "aws::ec2::host":
+		return "aws_ec2_host"
+	case "aws::lambda::function":
+		return "aws_lambda_function"
+	case "aws::elasticsearch::domain":
+		return "aws_elasticsearch_domain"
+	case "aws::opensearch::domain":
+		return "aws_opensearch_domain"
 	}
 	return resourceType
 }
