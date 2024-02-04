@@ -4,6 +4,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -36,6 +37,10 @@ func (s *Scheduler) runDeleter() error {
 		for _, resource := range task.Source.DeletingResources {
 			err = s.esClient.Delete(string(resource.Key), resource.Index)
 			if err != nil {
+				if strings.Contains(err.Error(), "[404 Not Found]") {
+					s.logger.Warn("resource not found", zap.String("resource", string(resource.Key)), zap.String("index", resource.Index), zap.Error(err))
+					continue
+				}
 				s.logger.Error("failed to delete resource", zap.Error(err))
 				return err
 			}
