@@ -2701,6 +2701,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Checks:                   sResult,
 		ControlsSeverityStatus:   controlSeverityResult,
 		ResourcesSeverityStatus:  resourcesSeverityResult,
+		ConnectionsStatus:        connectionsResult,
 		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:            lastJobStatus,
 	}
