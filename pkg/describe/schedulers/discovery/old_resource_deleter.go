@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
@@ -48,6 +49,16 @@ func (s *Scheduler) runDeleter() error {
 					}
 					s.logger.Error("failed to delete resource", zap.Error(err))
 					return err
+				}
+				job, err := s.db.GetDescribeConnectionJobByID(task.Source.DiscoveryJobID)
+				if err != nil {
+					s.logger.Error("failed to get describe connection job", zap.Error(err))
+					continue
+				}
+				err = s.db.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobSucceeded, job.FailureMessage, job.ErrorCode, job.DescribedResourceCount, job.DeletingCount)
+				if err != nil {
+					s.logger.Error("failed to update describe connection job status", zap.Error(err))
+					continue
 				}
 			}
 		case es.DeleteTaskTypeQuery:
