@@ -133,3 +133,7 @@ type GetFindingEventsResponse struct {
 	FindingEvents []FindingEvent `json:"findingEvents"`
 	TotalCount    int64          `json:"totalCount" example:"100"`
 }
+
+type CountFindingEventsResponse struct {
+	Count int64 `json:"count"`
+}
