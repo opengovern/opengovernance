@@ -80,6 +80,9 @@ func (s *JobScheduler) runSummarizer() error {
 		s.logger.Error("failed to list jobs with runners completed", zap.Error(err))
 		return err
 	}
+	if len(jobs) == 0 {
+		s.logger.Info("no jobs with runners completed, skipping this summarizer scheduling")
+	}
 	for _, job := range jobs {
 		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID, job.ID)
 		if err != nil {
