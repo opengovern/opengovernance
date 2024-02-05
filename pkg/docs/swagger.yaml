@@ -476,6 +476,11 @@ definitions:
     - InviteStatus_PENDING
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest:
     properties:
+      connectionIDs:
+        description: Name of the role
+        items:
+          type: string
+        type: array
       roleName:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
@@ -490,22 +495,8 @@ definitions:
         example: auth|123456789
         type: string
     required:
-    - roleName
-    - userId
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutUserScopedConnectionsRequest:
-    properties:
-      connectionIDs:
-        description: Name of the role
-        items:
-          type: string
-        type: array
-      userId:
-        description: Unique identifier for the User
-        example: auth|123456789
-        type: string
-    required:
     - connectionIDs
+    - roleName
     - userId
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role:
@@ -4368,26 +4359,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get User Roles
-      tags:
-      - users
-  /auth/api/v1/user/scoped/connections:
-    put:
-      description: Updates the scoped connections of a user in the workspace.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutUserScopedConnectionsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Update User Scoped Connections
       tags:
       - users
   /auth/api/v1/users:

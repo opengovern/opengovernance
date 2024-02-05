@@ -43,8 +43,9 @@ type PutUserScopedConnectionsRequest struct {
 }
 
 type PutRoleBindingRequest struct {
-	UserID   string `json:"userId" validate:"required" example:"auth|123456789"`                      // Unique identifier for the User
-	RoleName Role   `json:"roleName" validate:"required" enums:"admin,editor,viewer" example:"admin"` // Name of the role
+	UserID        string   `json:"userId" validate:"required" example:"auth|123456789"`                      // Unique identifier for the User
+	RoleName      Role     `json:"roleName" validate:"required" enums:"admin,editor,viewer" example:"admin"` // Name of the role
+	ConnectionIDs []string `json:"connectionIDs" validate:"required"`                                        // Name of the role
 }
 type RolesListResponse struct {
 	RoleName    Role   `json:"roleName" enums:"admin,editor,viewer" example:"admin"`                                                                                                                                                                                                      // Name of the role
