@@ -57,6 +57,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
+	v1.PUT("/user/scoped/connections", httpserver.AuthorizeHandler(r.PutUserScopedConnections, api.AdminRole))
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
 	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
@@ -99,10 +100,10 @@ func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
-	if httpserver.GetUserID(ctx) == req.UserID &&
-		req.RoleName != api.AdminRole {
+	if httpserver.GetUserID(ctx) == req.UserID {
 		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
 	}
+
 	// The WorkspaceManager service will call this API to set the AdminRole
 	// for the admin user on behalf of him. Allow for the Admin to only set its
 	// role to admin for that user case
@@ -131,6 +132,43 @@ func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	}
 
 	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
+	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
+}
+
+// PutUserScopedConnections godoc
+//
+//	@Summary		Update User Scoped Connections
+//	@Description	Updates the scoped connections of a user in the workspace.
+//	@Security		BearerToken
+//	@Tags			users
+//	@Produce		json
+//	@Param			request	body		api.PutUserScopedConnectionsRequest	true	"Request Body"
+//	@Success		200		{object}	nil
+//	@Router			/auth/api/v1/user/scoped/connections [put]
+func (r *httpRoutes) PutUserScopedConnections(ctx echo.Context) error {
+	var req api.PutUserScopedConnectionsRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+
+	if httpserver.GetUserID(ctx) == req.UserID {
+		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
+	}
+	// The WorkspaceManager service will call this API to set the AdminRole
+	// for the admin user on behalf of him. Allow for the Admin to only set its
+	// role to admin for that user case
+	auth0User, err := r.auth0Service.GetUser(req.UserID)
+	if err != nil {
+		return err
+	}
+
+	auth0User.AppMetadata.ConnectionIDs[workspaceID] = req.ConnectionIDs
 	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
 		return err
@@ -252,13 +290,14 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 		}
 
 		resp = append(resp, api.WorkspaceRoleBinding{
-			UserID:       u.UserId,
-			UserName:     u.Name,
-			Email:        u.Email,
-			RoleName:     u.AppMetadata.WorkspaceAccess[workspaceID],
-			Status:       status,
-			LastActivity: u.AppMetadata.LastLogin,
-			CreatedAt:    u.AppMetadata.MemberSince,
+			UserID:              u.UserId,
+			UserName:            u.Name,
+			Email:               u.Email,
+			RoleName:            u.AppMetadata.WorkspaceAccess[workspaceID],
+			Status:              status,
+			LastActivity:        u.AppMetadata.LastLogin,
+			CreatedAt:           u.AppMetadata.MemberSince,
+			ScopedConnectionIDs: u.AppMetadata.ConnectionIDs[workspaceID],
 		})
 	}
 

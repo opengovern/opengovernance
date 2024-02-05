@@ -27,6 +27,7 @@ type Metadata struct {
 	Theme           *api.Theme          `json:"theme,omitempty"`
 	MemberSince     *string             `json:"memberSince,omitempty"`
 	LastLogin       *string             `json:"userLastLogin,omitempty"`
+	ConnectionIDs   map[string][]string `json:"connectionIDs"`
 }
 
 type User struct {

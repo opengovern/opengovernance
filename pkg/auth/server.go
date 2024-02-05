@@ -248,7 +248,7 @@ type userClaim struct {
 	UserLastLogin   *string             `json:"https://app.kaytu.io/userLastLogin"`
 	ColorBlindMode  *bool               `json:"https://app.kaytu.io/colorBlindMode"`
 	Theme           *api.Theme          `json:"https://app.kaytu.io/theme"`
-	ConnectionIDs   []string            `json:"https://app.kaytu.io/connectionIDs"`
+	ConnectionIDs   map[string][]string `json:"https://app.kaytu.io/connectionIDs"`
 
 	ExternalUserID string `json:"sub"`
 }
@@ -305,11 +305,10 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 	}
 
 	rb = api.RoleBinding{
-		UserID:              user.ExternalUserID,
-		WorkspaceID:         "",
-		WorkspaceName:       "",
-		RoleName:            api.EditorRole,
-		ScopedConnectionIDs: user.ConnectionIDs,
+		UserID:        user.ExternalUserID,
+		WorkspaceID:   "",
+		WorkspaceName: "",
+		RoleName:      api.EditorRole,
 	}
 
 	if workspaceName != "kaytu" {
@@ -321,6 +320,7 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 		rb.UserID = user.ExternalUserID
 		rb.WorkspaceName = workspaceName
 		rb.WorkspaceID = workspaceID
+		rb.ScopedConnectionIDs = user.ConnectionIDs[workspaceID]
 
 		if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
 			rb.RoleName = rl

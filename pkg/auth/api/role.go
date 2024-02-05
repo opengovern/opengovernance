@@ -37,6 +37,11 @@ func GetRole(s string) Role {
 
 }
 
+type PutUserScopedConnectionsRequest struct {
+	UserID        string   `json:"userId" validate:"required" example:"auth|123456789"` // Unique identifier for the User
+	ConnectionIDs []string `json:"connectionIDs" validate:"required"`                   // Name of the role
+}
+
 type PutRoleBindingRequest struct {
 	UserID   string `json:"userId" validate:"required" example:"auth|123456789"`                      // Unique identifier for the User
 	RoleName Role   `json:"roleName" validate:"required" enums:"admin,editor,viewer" example:"admin"` // Name of the role
@@ -82,13 +87,14 @@ const (
 )
 
 type WorkspaceRoleBinding struct {
-	UserID       string       `json:"userId" example:"auth|123456789"`                      // Unique identifier for the user
-	UserName     string       `json:"userName" example:"John Doe"`                          // Username
-	Email        string       `json:"email" example:"johndoe@example.com"`                  // Email address of the user
-	RoleName     Role         `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
-	Status       InviteStatus `json:"status" enums:"accepted,pending" example:"accepted"`   // Invite status
-	LastActivity *string      `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
-	CreatedAt    *string      `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
+	UserID              string       `json:"userId" example:"auth|123456789"`                      // Unique identifier for the user
+	UserName            string       `json:"userName" example:"John Doe"`                          // Username
+	Email               string       `json:"email" example:"johndoe@example.com"`                  // Email address of the user
+	RoleName            Role         `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
+	Status              InviteStatus `json:"status" enums:"accepted,pending" example:"accepted"`   // Invite status
+	LastActivity        *string      `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
+	CreatedAt           *string      `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
+	ScopedConnectionIDs []string     `json:"scopedConnectionIDs"`
 }
 
 type GetWorkspaceRoleBindingResponse []WorkspaceRoleBinding // List of Workspace Role Binding objects

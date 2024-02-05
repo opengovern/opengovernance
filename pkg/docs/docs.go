@@ -703,6 +703,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/api/v1/user/scoped/connections": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Updates the scoped connections of a user in the workspace.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update User Scoped Connections",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutUserScopedConnectionsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/auth/api/v1/user/{userId}": {
             "get": {
                 "security": [
@@ -8061,6 +8094,27 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutUserScopedConnectionsRequest": {
+            "type": "object",
+            "required": [
+                "connectionIDs",
+                "userId"
+            ],
+            "properties": {
+                "connectionIDs": {
+                    "description": "Name of the role",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "userId": {
+                    "description": "Unique identifier for the User",
+                    "type": "string",
+                    "example": "auth|123456789"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role": {
             "type": "string",
             "enum": [
@@ -8200,6 +8254,12 @@ const docTemplate = `{
                         }
                     ],
                     "example": "admin"
+                },
+                "scopedConnectionIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "status": {
                     "description": "Invite status",
