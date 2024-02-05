@@ -156,31 +156,31 @@ func GetValues(resource Resource) (map[string]interface{}, error) {
 	switch resource.ResourceType {
 	// AWS
 	case "aws::elasticloadbalancing::loadbalancer":
-		return nil, nil
+		return getAwsLoadBalancerValues(resource)
 	case "aws::elasticloadbalancingv2::loadbalancer":
-		return nil, nil
+		return getAwsLoadBalancer2Values(resource)
 	case "aws::ec2::instance":
-		return nil, nil
+		return getAwsEc2InstanceValues(resource)
 	case "aws::autoscaling::autoscalinggroup":
 		return nil, nil
 	case "aws::rds::dbinstance":
-		return nil, nil
+		return getAwsRdsDbInstanceValues(resource)
 	case "aws::ec2::volume":
-		return nil, nil
+		return getAwsEbsVolumeValues(resource)
 	case "aws::ec2::volumesnapshot":
-		return nil, nil
+		return getAwsEbsSnapshotValues(resource)
 	case "aws::efs::filesystem":
-		return nil, nil
+		return getAwsEfsFileSystemValues(resource)
 	case "aws::elasticache::cluster":
-		return nil, nil
+		return getAwsElastiCacheClusterValues(resource)
 	case "aws::elasticache::replicationgroup":
-		return nil, nil
+		return getAwsElastiCacheReplicationGroupValues(resource)
 	case "aws::ec2::eip":
-		return nil, nil
+		return getAwsEc2EipValues(resource)
 	case "aws::eks::cluster":
-		return nil, nil
+		return getAwsEksClusterValues(resource)
 	case "aws::eks::nodegroup":
-		return nil, nil
+		return getAwsEksNodeGroupValues(resource)
 	case "aws::fsx::filesystem":
 		return getAwsFSXFileSystemValues(resource)
 	case "aws::ec2::natgateway":
