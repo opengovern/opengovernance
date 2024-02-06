@@ -8111,6 +8111,13 @@ paths:
         name: benchmark_id
         required: true
         type: string
+      - collectionFormat: csv
+        description: Connection ID
+        in: query
+        items:
+          type: string
+        name: connection_id
+        type: array
       produces:
       - application/json
       responses:

@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"time"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -108,11 +109,33 @@ func (s *JobScheduler) buildRunners(
 	return jobs, nil
 }
 
-func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string, lastJob *model.ComplianceJob) (uint, error) {
-	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
-	if err != nil {
-		s.logger.Error("error while listing assignments", zap.Error(err))
-		return 0, err
+func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
+	lastJob *model.ComplianceJob, connectionIDs []string) (uint, error) {
+	var assignments *complianceApi.BenchmarkAssignedEntities
+	var err error
+	if len(connectionIDs) > 0 {
+		connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api2.InternalRole}, connectionIDs)
+		if err != nil {
+			s.logger.Error("error while getting sources", zap.Error(err))
+			return 0, err
+		}
+		assignments = &complianceApi.BenchmarkAssignedEntities{}
+		for _, connection := range connections {
+			assignment := complianceApi.BenchmarkAssignedConnection{
+				ConnectionID:           connection.ID.String(),
+				ProviderConnectionID:   connection.ConnectionID,
+				ProviderConnectionName: connection.ConnectionName,
+				Connector:              connection.Connector,
+				Status:                 true,
+			}
+			assignments.Connections = append(assignments.Connections, assignment)
+		}
+	} else {
+		assignments, err = s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
+		if err != nil {
+			s.logger.Error("error while listing assignments", zap.Error(err))
+			return 0, err
+		}
 	}
 
 	job := model.ComplianceJob{
