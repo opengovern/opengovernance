@@ -535,7 +535,8 @@ func (h HttpServer) InsightJobInProgress(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
-//	@Param			benchmark_id	path	string	true	"Benchmark ID"
+//	@Param			benchmark_id	path	string		true	"Benchmark ID"
+//	@Param			connection_id	query	[]string	false	"Connection ID"
 //	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id} [put]
 func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
@@ -549,6 +550,8 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
+	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+
 	lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
@@ -559,7 +562,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 	}
 
-	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob)
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
