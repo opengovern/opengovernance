@@ -6455,6 +6455,16 @@ const docTemplate = `{
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection ID",
+                        "name": "connection_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
