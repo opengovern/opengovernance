@@ -1684,6 +1684,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
+	var kaytuResourceIds []string
 	for _, h := range res {
 		findingEvent := api.GetAPIFindingEventFromESFindingEvent(h.Source)
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(h.Source.ResourceType)]; ok {
@@ -1694,9 +1695,35 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 			findingEvent.ProviderConnectionName = connection.ConnectionName
 		}
 		findingEvent.SortKey = h.Sort
+		kaytuResourceIds = append(kaytuResourceIds, h.Source.KaytuResourceID)
 		response.FindingEvents = append(response.FindingEvents, findingEvent)
 	}
 	response.TotalCount = totalCount
+
+	lookupResources, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
+	if err != nil {
+		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
+		return err
+	}
+
+	lookupResourcesMap := make(map[string]*es2.LookupResource)
+	for _, r := range lookupResources {
+		r := r
+		lookupResourcesMap[r.ResourceID] = &r
+	}
+
+	for i, findingEvent := range response.FindingEvents {
+		if lookupResource, ok := lookupResourcesMap[findingEvent.KaytuResourceID]; ok {
+			response.FindingEvents[i].ResourceName = lookupResource.Name
+			response.FindingEvents[i].ResourceLocation = lookupResource.Location
+		} else {
+			h.logger.Warn("lookup resource not found",
+				zap.String("kaytu_resource_id", findingEvent.KaytuResourceID),
+				zap.String("resource_id", findingEvent.ResourceID),
+				zap.String("controlId", findingEvent.ControlID),
+			)
+		}
+	}
 
 	return ctx.JSON(http.StatusOK, response)
 }

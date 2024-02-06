@@ -39,6 +39,8 @@ type FindingEvent struct {
 	ResourceTypeName       string `json:"resourceTypeName" example:"Virtual Machine"`
 	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ResourceName           string `json:"resourceName" example:"vm-1"`
+	ResourceLocation       string `json:"resourceLocation" example:"eastus"`
 
 	SortKey []any `json:"sortKey"`
 }

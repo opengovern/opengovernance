@@ -9157,6 +9157,14 @@ const docTemplate = `{
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
+                "resourceLocation": {
+                    "type": "string",
+                    "example": "eastus"
+                },
+                "resourceName": {
+                    "type": "string",
+                    "example": "vm-1"
+                },
                 "resourceType": {
                     "type": "string",
                     "example": "Microsoft.Compute/virtualMachines"
