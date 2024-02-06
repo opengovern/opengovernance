@@ -129,8 +129,19 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 			}
 
 			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
+			if result.Status == api.DescribeResourceJobOldResourceDeletion {
+				if err := s.db.UpdateDescribeConnectionJobStatusToDescribeResourceJobOldResourceDeletion(result.JobID, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
+					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 
-			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
+					s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
+
+					if err := msg.Nak(); err != nil {
+						s.logger.Error("failure while sending not-ack for message", zap.Error(err))
+					}
+
+					return
+				}
+			} else if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))

@@ -425,6 +425,18 @@ func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.Describ
 	return nil
 }
 
+// UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
+// If the status if 'FAILED', msg could be used to indicate the failure reason
+func (db Database) UpdateDescribeConnectionJobStatusToDescribeResourceJobOldResourceDeletion(id uint, msg, errCode string, resourceCount, deletingCount int64) error {
+	tx := db.ORM.Exec("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ?, deleting_count = ? WHERE id = ? AND NOT status IN ?",
+		api.DescribeResourceJobOldResourceDeletion, msg, errCode, resourceCount, deletingCount, id, []string{string(api.DescribeResourceJobSucceeded), string(api.DescribeResourceJobFailed), string(api.DescribeResourceJobTimeout)})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 	tx := db.ORM.
 		Model(&model.DescribeConnectionJob{}).
