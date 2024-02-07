@@ -49,6 +49,7 @@ func (s *Scheduler) runDeleter() error {
 			if job.Status != api.DescribeResourceJobOldResourceDeletion {
 				continue
 			}
+			s.logger.Info("deleting resources", zap.String("task", task.ID), zap.Uint("job", job.ID), zap.String("connection", job.ConnectionID), zap.String("resourceType", task.Source.ResourceType))
 			for _, resource := range task.Source.DeletingResources {
 				err = s.esClient.Delete(string(resource.Key), resource.Index)
 				if err != nil {
