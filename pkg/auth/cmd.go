@@ -33,9 +33,10 @@ var (
 	mailSender     = os.Getenv("EMAIL_SENDER")
 	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
-	auth0Domain         = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID       = os.Getenv("AUTH0_CLIENT_ID")
-	auth0ClientIDNative = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
+	auth0Domain                  = os.Getenv("AUTH0_DOMAIN")
+	auth0ClientID                = os.Getenv("AUTH0_CLIENT_ID")
+	auth0ClientIDNative          = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
+	auth0ClientIDPennywiseNative = os.Getenv("AUTH0_CLIENT_ID_PENNYWISE_NATIVE")
 
 	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
 	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
@@ -92,6 +93,11 @@ func start(ctx context.Context) error {
 	verifierNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDNative)
 	if err != nil {
 		return fmt.Errorf("open id connect verifier: %w", err)
+	}
+
+	verifierPennywiseNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDPennywiseNative)
+	if err != nil {
+		return fmt.Errorf("open id connect verifier pennywise: %w", err)
 	}
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
@@ -165,16 +171,17 @@ func start(ctx context.Context) error {
 		auth0Connection, int(inviteTTL))
 
 	authServer := &Server{
-		host:                kaytuHost,
-		kaytuPublicKey:      pub.(*rsa.PublicKey),
-		verifier:            verifier,
-		verifierNative:      verifierNative,
-		logger:              logger,
-		workspaceClient:     workspaceClient,
-		db:                  adb,
-		auth0Service:        auth0Service,
-		updateLoginUserList: nil,
-		updateLogin:         make(chan User, 100000),
+		host:                    kaytuHost,
+		kaytuPublicKey:          pub.(*rsa.PublicKey),
+		verifier:                verifier,
+		verifierNative:          verifierNative,
+		verifierPennywiseNative: verifierPennywiseNative,
+		logger:                  logger,
+		workspaceClient:         workspaceClient,
+		db:                      adb,
+		auth0Service:            auth0Service,
+		updateLoginUserList:     nil,
+		updateLogin:             make(chan User, 100000),
 	}
 	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()

@@ -34,13 +34,14 @@ type User struct {
 type Server struct {
 	host string
 
-	kaytuPublicKey  *rsa.PublicKey
-	verifier        *oidc.IDTokenVerifier
-	verifierNative  *oidc.IDTokenVerifier
-	logger          *zap.Logger
-	workspaceClient client.WorkspaceServiceClient
-	db              db.Database
-	auth0Service    *auth0.Service
+	kaytuPublicKey          *rsa.PublicKey
+	verifier                *oidc.IDTokenVerifier
+	verifierNative          *oidc.IDTokenVerifier
+	verifierPennywiseNative *oidc.IDTokenVerifier
+	logger                  *zap.Logger
+	workspaceClient         client.WorkspaceServiceClient
+	db                      db.Database
+	auth0Service            *auth0.Service
 
 	updateLoginUserList []User
 	updateLogin         chan User
@@ -279,6 +280,15 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	t, err = s.verifier.Verify(context.Background(), token)
 	if err == nil {
 		if err := t.Claims(&u); err != nil {
+			return nil, err
+		}
+
+		return &u, nil
+	}
+
+	tp, err := s.verifierPennywiseNative.Verify(context.Background(), token)
+	if err == nil {
+		if err := tp.Claims(&u); err != nil {
 			return nil, err
 		}
 
