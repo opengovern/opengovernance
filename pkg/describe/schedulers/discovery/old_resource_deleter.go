@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -62,7 +63,13 @@ func (s *Scheduler) runDeleter() error {
 				}
 			}
 		case es.DeleteTaskTypeQuery:
-			_, err = es2.DeleteByQuery(context.Background(), s.esClient.ES(), []string{task.Source.QueryIndex}, task.Source.Query)
+			var query any
+			err = json.Unmarshal([]byte(task.Source.Query), &query)
+			if err != nil {
+				s.logger.Error("failed to unmarshal query", zap.Error(err))
+				return err
+			}
+			_, err = es2.DeleteByQuery(context.Background(), s.esClient.ES(), []string{task.Source.QueryIndex}, query)
 			if err != nil {
 				s.logger.Error("failed to delete by query", zap.Error(err))
 				return err
