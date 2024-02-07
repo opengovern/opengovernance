@@ -116,6 +116,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 				}
 
 				deletedCount = dlc
+				if deletedCount == 0 {
+					result.Status = api.DescribeResourceJobSucceeded
+				}
 			}
 
 			errStr := strings.ReplaceAll(result.Error, "\x00", "")
