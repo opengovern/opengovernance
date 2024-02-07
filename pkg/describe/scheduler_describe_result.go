@@ -227,7 +227,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 
 	deletedCount := 0
 
-	s.logger.Info("starting to delete old resources",
+	s.logger.Info("starting to schedule deleting old resources",
 		zap.Uint("jobId", res.JobID),
 		zap.String("connection_id", res.DescribeJob.SourceID),
 		zap.String("resource_type", res.DescribeJob.ResourceType),
@@ -336,7 +336,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 		}
 	}
 
-	s.logger.Info("deleted old resources",
+	s.logger.Info("scheduled deleting old resources",
 		zap.Uint("jobId", res.JobID),
 		zap.String("connection_id", res.DescribeJob.SourceID),
 		zap.String("resource_type", res.DescribeJob.ResourceType),
