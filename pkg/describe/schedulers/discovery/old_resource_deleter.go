@@ -41,15 +41,15 @@ func (s *Scheduler) runDeleter() error {
 	for _, task := range tasks.Hits.Hits {
 		switch task.Source.TaskType {
 		case es.DeleteTaskTypeResource:
+			job, err := s.db.GetDescribeConnectionJobByID(task.Source.DiscoveryJobID)
+			if err != nil {
+				s.logger.Error("failed to get describe connection job", zap.Error(err))
+				continue
+			}
+			if job.Status != api.DescribeResourceJobOldResourceDeletion {
+				continue
+			}
 			for _, resource := range task.Source.DeletingResources {
-				job, err := s.db.GetDescribeConnectionJobByID(task.Source.DiscoveryJobID)
-				if err != nil {
-					s.logger.Error("failed to get describe connection job", zap.Error(err))
-					continue
-				}
-				if job.Status != api.DescribeResourceJobOldResourceDeletion {
-					continue
-				}
 				err = s.esClient.Delete(string(resource.Key), resource.Index)
 				if err != nil {
 					if strings.Contains(err.Error(), "[404 Not Found]") {
@@ -59,11 +59,11 @@ func (s *Scheduler) runDeleter() error {
 					s.logger.Error("failed to delete resource", zap.Error(err))
 					return err
 				}
-				err = s.db.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobSucceeded, job.FailureMessage, job.ErrorCode, job.DescribedResourceCount, job.DeletingCount)
-				if err != nil {
-					s.logger.Error("failed to update describe connection job status", zap.Error(err))
-					continue
-				}
+			}
+			err = s.db.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobSucceeded, job.FailureMessage, job.ErrorCode, job.DescribedResourceCount, job.DeletingCount)
+			if err != nil {
+				s.logger.Error("failed to update describe connection job status", zap.Error(err))
+				continue
 			}
 		case es.DeleteTaskTypeQuery:
 			var query any
