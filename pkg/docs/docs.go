@@ -1778,6 +1778,16 @@ const docTemplate = `{
                     {
                         "type": "array",
                         "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "BenchmarkID to filter by",
+                        "name": "benchmarkID",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
                             "type": "boolean"
                         },
                         "collectionFormat": "csv",

@@ -439,7 +439,7 @@ type FindingEventsCountResponse struct {
 	PitID string `json:"pit_id"`
 }
 
-func FindingEventsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
+func FindingEventsCount(client kaytu.Client, benchmarkIDs []string, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
 	idx := types.FindingEventsIndex
 
 	filters := make([]map[string]any, 0)
@@ -480,6 +480,13 @@ func FindingEventsCount(client kaytu.Client, conformanceStatuses []types.Conform
 				"evaluatedAt": map[string]any{
 					"gte": startTime.UnixMilli(),
 				},
+			},
+		})
+	}
+	if len(benchmarkIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"benchmarkID": benchmarkIDs,
 			},
 		})
 	}

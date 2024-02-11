@@ -5044,6 +5044,13 @@ paths:
         name: conformanceStatus
         type: array
       - collectionFormat: csv
+        description: BenchmarkID to filter by
+        in: query
+        items:
+          type: string
+        name: benchmarkID
+        type: array
+      - collectionFormat: csv
         description: StateActive to filter by defaults to all stateActives
         in: query
         items:

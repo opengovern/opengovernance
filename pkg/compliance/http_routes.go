@@ -1737,6 +1737,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			benchmarkID			query		[]string				false	"BenchmarkID to filter by"
 //	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to all stateActives"
 //	@Param			startTime			query		int64					false	"Start time to filter by"
 //	@Param			endTime				query		int64					false	"End time to filter by"
@@ -1752,6 +1753,8 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
+
+	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmarkID")
 
 	var stateActive []bool
 	stateActiveStr := httpserver2.QueryArrayParam(ctx, "stateActive")
@@ -1780,7 +1783,7 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 		startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
 	}
 
-	totalCount, err := es.FindingEventsCount(h.client, esConformanceStatuses, stateActive, startTime, endTime)
+	totalCount, err := es.FindingEventsCount(h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
 	if err != nil {
 		return err
 	}
