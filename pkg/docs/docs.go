@@ -8764,10 +8764,10 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary": {
             "type": "object",
             "properties": {
-                "passed": {
+                "failed": {
                     "type": "integer"
                 },
-                "total": {
+                "passed": {
                     "type": "integer"
                 }
             }
