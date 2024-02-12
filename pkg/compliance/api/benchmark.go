@@ -68,7 +68,7 @@ type BenchmarkResourcesSeverityStatus struct {
 
 type ConformanceStatusSummary struct {
 	PassedCount int `json:"passed"`
-	FailedCount int `json:"total"`
+	FailedCount int `json:"failed"`
 }
 
 func (c *ConformanceStatusSummary) AddESConformanceStatusMap(summary map[types.ConformanceStatus]int) {
