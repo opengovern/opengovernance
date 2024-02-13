@@ -3014,14 +3014,6 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	datapointCount := int(endTime.Sub(startTime).Hours() / 24)
-	if datapointCount > 30 {
-		datapointCount = 30
-	}
-	if datapointCount < 1 {
-		datapointCount = 1
-	}
-
 	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {

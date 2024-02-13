@@ -179,6 +179,9 @@ func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
 			allDependencyResolved = false
 			break
 		}
+
+		//describeConnectionJob.DescribedResourceCount
+		//TODO check if the resources are sank in elastic search
 	}
 
 	if allDependencyResolved {
