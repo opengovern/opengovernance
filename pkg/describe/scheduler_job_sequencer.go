@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -161,6 +162,14 @@ func (s *Scheduler) resolveBenchmarkDependency(job model.JobSequencer) error {
 	return nil
 }
 
+type ResourceCountResponse struct {
+	Hits struct {
+		Total struct {
+			Value int `json:"value"`
+		} `json:"total"`
+	} `json:"hits"`
+}
+
 func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
@@ -180,8 +189,43 @@ func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
 			break
 		}
 
-		//describeConnectionJob.DescribedResourceCount
-		//TODO check if the resources are sank in elastic search
+		// Ignore sink count if the job is older than 24 hours
+		if describeConnectionJob.UpdatedAt.Before(time.Now().Add(-time.Hour * 24)) {
+			continue
+		}
+
+		root := make(map[string]any)
+		root["query"] = map[string]any{
+			"bool": map[string]any{
+				"filter": []any{
+					map[string]any{
+						"term": map[string]any{
+							"resource_job_id": id,
+						},
+					},
+				},
+			},
+		}
+		root["size"] = 0
+
+		rootJson, err := json.Marshal(root)
+		if err != nil {
+			s.logger.Error("failed to marshal root", zap.Error(err))
+			return err
+		}
+
+		var resourceCountResponse ResourceCountResponse
+		err = s.es.SearchWithTrackTotalHits(context.TODO(), InventorySummaryIndex, string(rootJson), nil, &resourceCountResponse, true)
+		if err != nil {
+			s.logger.Error("failed to search resource count", zap.Error(err))
+
+		}
+
+		if resourceCountResponse.Hits.Total.Value < int(float64(describeConnectionJob.DescribedResourceCount)*0.9) {
+			allDependencyResolved = false
+			break
+		}
+
 	}
 
 	if allDependencyResolved {
