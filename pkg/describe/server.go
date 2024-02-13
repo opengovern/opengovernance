@@ -671,7 +671,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 		Status:            model2.JobSequencerWaitingForDependencies,
 	})
 
-	return ctx.NoContent(http.StatusNotImplemented)
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
