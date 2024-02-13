@@ -271,7 +271,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	controls, err := h.db.ListControls()
+	controls, err := h.db.ListControls(nil)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -455,7 +455,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	controls, err := h.db.ListControls()
+	controls, err := h.db.ListControls(nil)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -3014,14 +3014,6 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	datapointCount := int(endTime.Sub(startTime).Hours() / 24)
-	if datapointCount > 30 {
-		datapointCount = 30
-	}
-	if datapointCount < 1 {
-		datapointCount = 1
-	}
-
 	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
@@ -4117,7 +4109,9 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) ListControls(ctx echo.Context) error {
-	controls, err := h.db.ListControls()
+	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
+
+	controls, err := h.db.ListControls(controlIDs)
 	if err != nil {
 		return err
 	}

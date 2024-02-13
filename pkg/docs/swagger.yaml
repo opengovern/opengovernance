@@ -8115,6 +8115,41 @@ paths:
       summary: Create connection credentials
       tags:
       - onboard
+  /schedule/api/v1/compliance/re-evaluate/{benchmark_id}:
+    put:
+      description: Triggers a discovery job to run immediately for the given connection
+        then triggers compliance job
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection ID
+        in: query
+        items:
+          type: string
+        name: connection_id
+        required: true
+        type: array
+      - collectionFormat: csv
+        description: Control ID
+        in: query
+        items:
+          type: string
+        name: control_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Re-evaluates compliance job
+      tags:
+      - describe
   /schedule/api/v1/compliance/trigger/{benchmark_id}:
     put:
       description: Triggers a compliance job to run immediately for the given benchmark

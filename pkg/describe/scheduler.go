@@ -142,7 +142,7 @@ type Scheduler struct {
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
 
-	LambdaClient *lambda.Client
+	lambdaClient *lambda.Client
 
 	complianceScheduler *compliance.JobScheduler
 	discoveryScheduler  *discovery.Scheduler
@@ -188,7 +188,7 @@ func InitializeScheduler(
 	lambdaCfg.Region = KeyRegion
 
 	s.conf = conf
-	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
+	s.lambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
 	if err != nil {

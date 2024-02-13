@@ -27,7 +27,7 @@ type ComplianceServiceClient interface {
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
 	CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error)
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
-	ListControl(ctx *httpclient.Context) ([]compliance.Control, error)
+	ListControl(ctx *httpclient.Context, controlIDs []string) ([]compliance.Control, error)
 }
 
 type complianceClient struct {
@@ -77,8 +77,21 @@ func (s *complianceClient) GetControl(ctx *httpclient.Context, controlID string)
 	return &response, nil
 }
 
-func (s *complianceClient) ListControl(ctx *httpclient.Context) ([]compliance.Control, error) {
+func (s *complianceClient) ListControl(ctx *httpclient.Context, controlIDs []string) ([]compliance.Control, error) {
 	url := fmt.Sprintf("%s/api/v1/benchmarks/controls", s.baseURL)
+
+	firstParamAttached := false
+	if len(controlIDs) > 0 {
+		for _, controlID := range controlIDs {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("control_id=%s", controlID)
+		}
+	}
 
 	var response []compliance.Control
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {

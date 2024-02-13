@@ -579,7 +579,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		}
 	}()
 
-	invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+	invokeOutput, err := s.lambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
 		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
 		LogType:        types.LogTypeTail,
 		Payload:        lambdaRequest,

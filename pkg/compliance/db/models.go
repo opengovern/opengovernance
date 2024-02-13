@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -111,6 +112,7 @@ type Control struct {
 	DocumentURI        string
 	Enabled            bool
 	QueryID            *string
+	Query              *Query      `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_controls;"`
 	Severity           types.FindingSeverity
 	ManualVerification bool
@@ -142,6 +144,9 @@ func (p Control) ToApi() api.Control {
 		pa.Query = &api.Query{
 			ID: *p.QueryID,
 		}
+	}
+	if p.Query != nil {
+		pa.Query = utils.GetPointer(p.Query.ToApi())
 	}
 
 	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"explanation"]; ok && len(v) > 0 {

@@ -93,13 +93,13 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 	query := make(map[string]any)
 
 	startTimeUnix := from.Truncate(24 * time.Hour).Unix()
-	endTimeUnix := to.Truncate(24*time.Hour).Add(24*time.Hour).Unix() - 1
+	endTimeUnix := to.Truncate(24 * time.Hour).Add(24 * time.Hour).Unix()
 	step := int64((time.Hour * 24).Seconds())
 	ranges := make([]map[string]any, 0, (endTimeUnix-startTimeUnix)/int64(step))
 	for i := int64(0); i*step < endTimeUnix-startTimeUnix; i++ {
 		ranges = append(ranges, map[string]any{
 			"from": startTimeUnix + i*step,
-			"to":   startTimeUnix + (i+1)*step,
+			"to":   startTimeUnix + (i+1)*step - 1,
 		})
 	}
 
@@ -231,7 +231,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 	for i := int64(0); i*step < endTimeUnix-startTimeUnix; i++ {
 		ranges = append(ranges, map[string]any{
 			"from": startTimeUnix + i*step,
-			"to":   startTimeUnix + (i+1)*step,
+			"to":   startTimeUnix + (i+1)*step - 1,
 		})
 	}
 
