@@ -2973,7 +2973,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
 	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
-	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
 		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return err
