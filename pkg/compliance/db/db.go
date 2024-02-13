@@ -645,10 +645,13 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 	return &res, nil
 }
 
-func (db Database) ListControls() ([]Control, error) {
+func (db Database) ListControls(controlIDs []string) ([]Control, error) {
 	var s []Control
-	tx := db.Orm.Model(&Control{}).Preload(clause.Associations).
-		Find(&s)
+	tx := db.Orm.Model(&Control{}).Preload(clause.Associations)
+	if len(controlIDs) > 0 {
+		tx = tx.Where("id IN ?", controlIDs)
+	}
+	tx = tx.Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

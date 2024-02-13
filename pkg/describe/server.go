@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgtype"
 	"io"
 	"net/http"
 	"regexp"
@@ -73,6 +74,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/insight/job/:job_id", httpserver2.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
 	v1.GET("/insight/:insight_id/jobs", httpserver2.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
+	v1.PUT("/compliance/re-evaluate/:benchmark_id", httpserver2.AuthorizeHandler(h.ReEvaluateComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver2.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
 	v1.PUT("/analytics/trigger", httpserver2.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
 	v1.GET("/analytics/job/:job_id", httpserver2.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
@@ -398,8 +400,8 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 
 	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
 		DependencyList:   dependencyIDs,
-		DependencySource: string(model2.JobSequencerJobTypeDescribe),
-		NextJob:          string(model2.JobSequencerJobTypeAnalytics),
+		DependencySource: model2.JobSequencerJobTypeDescribe,
+		NextJob:          model2.JobSequencerJobTypeAnalytics,
 		Status:           model2.JobSequencerWaitingForDependencies,
 	})
 	if err != nil {
@@ -567,6 +569,109 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
 	return ctx.JSON(http.StatusOK, "")
+}
+
+// ReEvaluateComplianceJob godoc
+//
+//	@Summary		Re-evaluates compliance job
+//	@Description	Triggers a discovery job to run immediately for the given connection then triggers compliance job
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param			benchmark_id	path	string		true	"Benchmark ID"
+//	@Param			connection_id	query	[]string	true	"Connection ID"
+//	@Param			control_id		query	[]string	false	"Control ID"
+//	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [put]
+func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
+
+	var controls []complianceapi.Control
+	if len(controlIDs) == 0 {
+		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
+			return err
+		}
+		controlIDs = make([]string, 0, len(benchmark.Controls))
+		for _, control := range benchmark.Controls {
+			controlIDs = append(controlIDs, control)
+		}
+	}
+	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	if len(controls) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid control_id")
+	}
+
+	requiredTables := make(map[string]bool)
+	for _, control := range controls {
+		for _, table := range control.Query.ListOfTables {
+			requiredTables[table] = true
+		}
+	}
+	requiredResourceTypes := make([]string, 0, len(requiredTables))
+	for table := range requiredTables {
+		for _, provider := range source.List {
+			resourceType := getResourceTypeFromTableName(table, provider)
+			if resourceType != "" {
+				requiredResourceTypes = append(requiredResourceTypes, resourceType)
+				break
+			}
+		}
+	}
+
+	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionIDs)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
+		return err
+	}
+	dependencyIDs := make([]int64, 0)
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
+		for _, resourceType := range requiredResourceTypes {
+			daj, err := h.Scheduler.describe(connection, resourceType, false, false)
+			if err != nil {
+				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			}
+			dependencyIDs = append(dependencyIDs, int64(daj.ID))
+		}
+	}
+
+	jobParameters := model2.JobSequencerJobTypeBenchmarkRunnerParameters{
+		BenchmarkID:   benchmarkID,
+		ControlIDs:    controlIDs,
+		ConnectionIDs: connectionIDs,
+	}
+	jobParametersJSON, err := json.Marshal(jobParameters)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to marshal job parameters", zap.Error(err))
+		return err
+	}
+
+	jp := pgtype.JSONB{}
+	err = jp.Set(jobParametersJSON)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to set job parameters", zap.Error(err))
+		return err
+	}
+
+	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
+		DependencyList:    dependencyIDs,
+		DependencySource:  model2.JobSequencerJobTypeDescribe,
+		NextJob:           model2.JobSequencerJobTypeBenchmarkRunner,
+		NextJobParameters: &jp,
+		Status:            model2.JobSequencerWaitingForDependencies,
+	})
+
+	return ctx.NoContent(http.StatusNotImplemented)
 }
 
 func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
