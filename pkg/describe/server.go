@@ -217,7 +217,7 @@ var (
 	azureTableReg, _ = regexp.Compile("azure_[a-z0-9_]+")
 )
 
-func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
+func getResourceTypeFromTableNameLower(tableName string, queryConnector source.Type) string {
 	switch queryConnector {
 	case source.CloudAWS:
 		return awsSteampipe.ExtractResourceType(tableName)
@@ -232,6 +232,47 @@ func getResourceTypeFromTableName(tableName string, queryConnector source.Type) 
 	}
 }
 
+func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
+	switch queryConnector {
+	case source.CloudAWS:
+		rt := awsSteampipe.GetResourceTypeByTableName(tableName)
+		if rt != "" {
+			for k, _ := range awsSteampipe.AWSDescriptionMap {
+				if strings.ToLower(k) == strings.ToLower(rt) {
+					return k
+				}
+			}
+		}
+	case source.CloudAzure:
+		rt := azureSteampipe.GetResourceTypeByTableName(tableName)
+		if rt != "" {
+			for k, _ := range azureSteampipe.AzureDescriptionMap {
+				if strings.ToLower(k) == strings.ToLower(rt) {
+					return k
+				}
+			}
+		}
+	default:
+		rt := awsSteampipe.GetResourceTypeByTableName(tableName)
+		if rt != "" {
+			for k, _ := range awsSteampipe.AWSDescriptionMap {
+				if strings.ToLower(k) == strings.ToLower(rt) {
+					return k
+				}
+			}
+		}
+		rt = azureSteampipe.GetResourceTypeByTableName(tableName)
+		if rt != "" {
+			for k, _ := range azureSteampipe.AzureDescriptionMap {
+				if strings.ToLower(k) == strings.ToLower(rt) {
+					return k
+				}
+			}
+		}
+	}
+	return ""
+}
+
 func extractResourceTypes(query string, connector source.Type) []string {
 	var result []string
 
@@ -241,7 +282,7 @@ func extractResourceTypes(query string, connector source.Type) []string {
 
 		awsTables = awsTableReg.FindAllString(query, -1)
 		for _, table := range awsTables {
-			resourceType := getResourceTypeFromTableName(table, source.CloudAWS)
+			resourceType := getResourceTypeFromTableNameLower(table, source.CloudAWS)
 			if resourceType == "" {
 				resourceType = table
 			}
@@ -252,7 +293,7 @@ func extractResourceTypes(query string, connector source.Type) []string {
 	if connector == source.CloudAzure {
 		azureTables := azureTableReg.FindAllString(query, -1)
 		for _, table := range azureTables {
-			resourceType := getResourceTypeFromTableName(table, source.CloudAzure)
+			resourceType := getResourceTypeFromTableNameLower(table, source.CloudAzure)
 			if resourceType == "" {
 				resourceType = table
 			}
@@ -624,6 +665,9 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 				break
 			}
 		}
+	}
+	if len(requiredResourceTypes) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "no resource type found for controls")
 	}
 
 	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionIDs)
