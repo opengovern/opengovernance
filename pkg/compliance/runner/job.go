@@ -142,6 +142,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 			for _, f := range oldFindings {
 				newFinding, ok := findingsMap[f.EsID]
+				f := f
 				if !ok {
 					if f.StateActive {
 						f := f
@@ -179,7 +180,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					continue
 				}
 
-				if f.ConformanceStatus != newFinding.ConformanceStatus {
+				if (f.ConformanceStatus != newFinding.ConformanceStatus) ||
+					(f.StateActive != newFinding.StateActive) {
+					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding))
 					newFinding.LastTransition = j.CreatedAt.UnixMilli()
 					fs := types.FindingEvent{
 						FindingEsID:               f.EsID,
