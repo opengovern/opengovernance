@@ -6,7 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
-func Includes[T string | source.Type](arr []T, item T) bool {
+func Includes[T string | source.Type | int64](arr []T, item T) bool {
 	for _, i := range arr {
 		if i == item {
 			return true
@@ -15,7 +15,7 @@ func Includes[T string | source.Type](arr []T, item T) bool {
 	return false
 }
 
-func IncludesAll[T string | source.Type](arr []T, items []T) bool {
+func IncludesAll[T string | source.Type | int64](arr []T, items []T) bool {
 	for _, item := range items {
 		if !Includes(arr, item) {
 			return false
