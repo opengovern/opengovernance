@@ -627,6 +627,9 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+	if len(connectionIDs) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
+	}
 	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
 
 	var controls []complianceapi.Control
