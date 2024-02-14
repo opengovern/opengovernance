@@ -687,6 +687,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 			daj, err := h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				continue
 			}
 			dependencyIDs = append(dependencyIDs, int64(daj.ID))
 		}
