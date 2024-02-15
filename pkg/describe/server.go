@@ -30,12 +30,10 @@ import (
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
-	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
@@ -801,6 +799,10 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 			//daj, err := h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				continue
+			}
+
+			if job == nil {
 				continue
 			}
 
