@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
+	runner2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
@@ -821,7 +822,7 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, true)
 	}
 
-	jobs, err := h.DB.ListWaitingJobSequencers()
+	jobs, err := h.DB.ListLast20JobSequencers()
 	if err != nil {
 		h.Scheduler.logger.Error("failed to list waiting job parameters", zap.Error(err))
 		return err
@@ -829,11 +830,29 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 
 	for _, job := range jobs {
 		if utils.IncludesAll(dependencyIDs, job.DependencyList) {
-			return ctx.JSON(http.StatusOK, false)
+			if len(job.NextJobIDs) == 0 {
+				return ctx.JSON(http.StatusOK, true)
+			}
+
+			var ids []int64
+			for _, i := range job.NextJobIDs {
+				ids = append(ids, int64(i))
+			}
+			runnerJobs, err := h.Scheduler.db.ListRunnersWithID(ids)
+			if err != nil {
+				return err
+			}
+			for _, runner := range runnerJobs {
+				if runner.Status != runner2.ComplianceRunnerSucceeded &&
+					runner.Status != runner2.ComplianceRunnerFailed &&
+					runner.Status != runner2.ComplianceRunnerTimeOut {
+					return ctx.JSON(http.StatusOK, true)
+				}
+			}
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, true)
+	return ctx.JSON(http.StatusOK, false)
 }
 
 func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {

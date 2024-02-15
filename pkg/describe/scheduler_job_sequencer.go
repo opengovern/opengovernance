@@ -66,12 +66,13 @@ func (s *Scheduler) checkJobSequences() error {
 func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 	switch job.NextJob {
 	case model.JobSequencerJobTypeAnalytics:
-		_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
+		jobID, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 		if err != nil {
 			return err
 		}
 
-		err = s.db.UpdateJobSequencerFinished(job.ID)
+		nextJobID := []uint{jobID}
+		err = s.db.UpdateJobSequencerFinished(job.ID, nextJobID)
 		if err != nil {
 			return err
 		}
@@ -124,7 +125,12 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 			return err
 		}
 
-		err = s.db.UpdateJobSequencerFinished(job.ID)
+		var runnerJobIDs []uint
+		for _, j := range runners {
+			runnerJobIDs = append(runnerJobIDs, j.ID)
+		}
+
+		err = s.db.UpdateJobSequencerFinished(job.ID, runnerJobIDs)
 		if err != nil {
 			s.logger.Error("error while updating job sequencer", zap.Error(err))
 			return err

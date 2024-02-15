@@ -36,5 +36,6 @@ type JobSequencer struct {
 	DependencySource  JobSequencerJobType
 	NextJob           JobSequencerJobType
 	NextJobParameters *pgtype.JSONB
+	NextJobIDs        []uint
 	Status            JobSequencerStatus
 }
