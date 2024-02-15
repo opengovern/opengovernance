@@ -38,12 +38,6 @@ type User struct {
 	FamilyName    string    `json:"family_name"`
 	GivenName     string    `json:"given_name"`
 	Locale        string    `json:"locale"`
-	Identities    []struct {
-		Connection string `json:"connection"`
-		Provider   string `json:"provider"`
-		UserId     string `json:"user_id"`
-		IsSocial   bool   `json:"isSocial"`
-	} `json:"identities"`
 	Name          string    `json:"name"`
 	Nickname      string    `json:"nickname"`
 	Picture       string    `json:"picture"`
