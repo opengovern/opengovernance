@@ -141,8 +141,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			}
 
 			for _, f := range oldFindings {
-				newFinding, ok := findingsMap[f.EsID]
 				f := f
+				newFinding, ok := findingsMap[f.EsID]
 				if !ok {
 					if f.StateActive {
 						f := f
@@ -174,6 +174,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 							ResourceType:              f.ResourceType,
 							ParentBenchmarkReferences: f.ParentBenchmarkReferences,
 						}
+						w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
 						findingsEvents = append(findingsEvents, fs)
 						newFindings = append(newFindings, f)
 					}
@@ -182,7 +183,6 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 				if (f.ConformanceStatus != newFinding.ConformanceStatus) ||
 					(f.StateActive != newFinding.StateActive) {
-					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding))
 					newFinding.LastTransition = j.CreatedAt.UnixMilli()
 					fs := types.FindingEvent{
 						FindingEsID:               f.EsID,
@@ -205,6 +205,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ResourceType:              newFinding.ResourceType,
 						ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
 					}
+					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
 					findingsEvents = append(findingsEvents, fs)
 				} else {
 					newFinding.LastTransition = f.LastTransition
@@ -237,6 +238,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				ResourceType:              newFinding.ResourceType,
 				ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
 			}
+			w.logger.Info("New finding", zap.Any("finding", newFinding), zap.Any("event", fs))
 			findingsEvents = append(findingsEvents, fs)
 			newFindings = append(newFindings, newFinding)
 		}
