@@ -798,7 +798,7 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 			continue
 		}
 		for _, resourceType := range requiredResourceTypes {
-			job, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ConnectionID, resourceType)
+			job, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
 			//daj, err := h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
@@ -830,15 +830,15 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 
 	for _, job := range jobs {
 		if utils.IncludesAll(dependencyIDs, job.DependencyList) {
-			if len(job.NextJobIDs) == 0 {
+			fmt.Println("+++", job)
+			if job.Status == model2.JobSequencerWaitingForDependencies {
 				return ctx.JSON(http.StatusOK, true)
 			}
-
-			var ids []int64
-			for _, i := range job.NextJobIDs {
-				ids = append(ids, int64(i))
+			if job.Status == model2.JobSequencerFailed || len(job.NextJobIDs) == 0 {
+				return ctx.JSON(http.StatusOK, false)
 			}
-			runnerJobs, err := h.Scheduler.db.ListRunnersWithID(ids)
+
+			runnerJobs, err := h.Scheduler.db.ListRunnersWithID(job.NextJobIDs)
 			if err != nil {
 				return err
 			}
@@ -846,6 +846,8 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 				if runner.Status != runner2.ComplianceRunnerSucceeded &&
 					runner.Status != runner2.ComplianceRunnerFailed &&
 					runner.Status != runner2.ComplianceRunnerTimeOut {
+					fmt.Println("+++ job status", runner.Status)
+
 					return ctx.JSON(http.StatusOK, true)
 				}
 			}

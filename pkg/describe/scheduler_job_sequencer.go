@@ -71,7 +71,7 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 			return err
 		}
 
-		nextJobID := []uint{jobID}
+		nextJobID := []int64{int64(jobID)}
 		err = s.db.UpdateJobSequencerFinished(job.ID, nextJobID)
 		if err != nil {
 			return err
@@ -125,9 +125,9 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 			return err
 		}
 
-		var runnerJobIDs []uint
+		var runnerJobIDs []int64
 		for _, j := range runners {
-			runnerJobIDs = append(runnerJobIDs, j.ID)
+			runnerJobIDs = append(runnerJobIDs, int64(j.ID))
 		}
 
 		err = s.db.UpdateJobSequencerFinished(job.ID, runnerJobIDs)

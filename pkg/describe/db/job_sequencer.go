@@ -26,7 +26,7 @@ func (db Database) ListWaitingJobSequencers() ([]model.JobSequencer, error) {
 
 func (db Database) ListLast20JobSequencers() ([]model.JobSequencer, error) {
 	var jobs []model.JobSequencer
-	tx := db.ORM.Model(&model.JobSequencer{}).Find(&jobs).Limit(20)
+	tx := db.ORM.Model(&model.JobSequencer{}).Limit(20).Order("created_at desc").Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -44,7 +44,7 @@ func (db Database) UpdateJobSequencerFailed(id uint) error {
 
 }
 
-func (db Database) UpdateJobSequencerFinished(id uint, nextJobIDs []uint) error {
+func (db Database) UpdateJobSequencerFinished(id uint, nextJobIDs []int64) error {
 	tx := db.ORM.Model(&model.JobSequencer{}).
 		Where("id = ?", id).
 		Update("status", model.JobSequencerFinished).
