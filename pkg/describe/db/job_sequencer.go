@@ -1,6 +1,10 @@
 package db
 
-import "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+import (
+	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"strings"
+)
 
 func (db Database) CreateJobSequencer(job *model.JobSequencer) error {
 	tx := db.ORM.
@@ -57,10 +61,14 @@ func (db Database) UpdateJobSequencerFailed(id uint) error {
 }
 
 func (db Database) UpdateJobSequencerFinished(id uint, nextJobIDs []int64) error {
+	var nid []string
+	for _, i := range nextJobIDs {
+		nid = append(nid, fmt.Sprintf("%d", i))
+	}
 	tx := db.ORM.Model(&model.JobSequencer{}).
 		Where("id = ?", id).
 		Update("status", model.JobSequencerFinished).
-		Update("next_job_ids", nextJobIDs)
+		Update("next_job_ids", strings.Join(nid, ","))
 	if tx.Error != nil {
 		return tx.Error
 	}

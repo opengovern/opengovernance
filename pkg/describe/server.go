@@ -615,7 +615,12 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, "")
 }
 
-func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, controlIDs []string) (*model2.JobSequencerJobTypeBenchmarkRunnerParameters, []int64, error) {
+type ReEvaluateDescribeJob struct {
+	Connection   onboardapi.Connection
+	ResourceType string
+}
+
+func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, controlIDs []string) (*model2.JobSequencerJobTypeBenchmarkRunnerParameters, []ReEvaluateDescribeJob, error) {
 	var controls []complianceapi.Control
 	if len(controlIDs) == 0 {
 		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
@@ -662,18 +667,16 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
 		return nil, nil, err
 	}
-	dependencyIDs := make([]int64, 0)
+	var describeJobs []ReEvaluateDescribeJob
 	for _, connection := range connections {
 		if !connection.IsEnabled() {
 			continue
 		}
 		for _, resourceType := range requiredResourceTypes {
-			daj, err := h.Scheduler.describe(connection, resourceType, false, false)
-			if err != nil {
-				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-				continue
-			}
-			dependencyIDs = append(dependencyIDs, int64(daj.ID))
+			describeJobs = append(describeJobs, ReEvaluateDescribeJob{
+				Connection:   connection,
+				ResourceType: resourceType,
+			})
 		}
 	}
 
@@ -681,7 +684,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 		BenchmarkID:   benchmarkID,
 		ControlIDs:    controlIDs,
 		ConnectionIDs: connectionIDs,
-	}, dependencyIDs, nil
+	}, describeJobs, nil
 }
 
 // ReEvaluateComplianceJob godoc
@@ -704,7 +707,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 	}
 	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
 
-	jobParameters, dependencyIDs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
 	if err != nil {
 		return err
 	}
@@ -720,6 +723,16 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 	if err != nil {
 		h.Scheduler.logger.Error("failed to set job parameters", zap.Error(err))
 		return err
+	}
+
+	var dependencyIDs []int64
+	for _, describeJob := range describeJobs {
+		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
+			continue
+		}
+		dependencyIDs = append(dependencyIDs, int64(daj.ID))
 	}
 
 	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
@@ -753,9 +766,19 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	}
 	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
 
-	jobParameters, dependencyIDs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
 	if err != nil {
 		return err
+	}
+
+	var dependencyIDs []int64
+	for _, describeJob := range describeJobs {
+		daj, err := h.Scheduler.db.GetLastDescribeConnectionJob(describeJob.Connection.ID.String(), describeJob.ResourceType)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
+			continue
+		}
+		dependencyIDs = append(dependencyIDs, int64(daj.ID))
 	}
 
 	jobs, err := h.Scheduler.db.ListJobSequencersOfTypeOfToday(model2.JobSequencerJobTypeDescribe, model2.JobSequencerJobTypeBenchmarkRunner)
@@ -772,6 +795,9 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 			return err
 		}
 
+		fmt.Println(">>>", job)
+		fmt.Println("<<<", params, dependencyIDs)
+
 		if params.BenchmarkID == jobParameters.BenchmarkID &&
 			utils.IncludesAll(params.ConnectionIDs, jobParameters.ConnectionIDs) &&
 			utils.IncludesAll(params.ControlIDs, jobParameters.ControlIDs) &&
@@ -781,18 +807,25 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	}
 
 	if theJob == nil || theJob.Status == model2.JobSequencerFailed {
+		fmt.Println("job not found/failed", theJob)
 		return ctx.JSON(http.StatusOK, api.JobSeqCheckResponse{
 			IsRunning: false,
 		})
 	}
 
 	if theJob.Status == model2.JobSequencerWaitingForDependencies {
+		fmt.Println("job waiting", theJob)
 		return ctx.JSON(http.StatusOK, api.JobSeqCheckResponse{
 			IsRunning: true,
 		})
 	}
 
-	runnerJobs, err := h.Scheduler.db.ListRunnersWithID(theJob.NextJobIDs)
+	var nid []int64
+	for _, m := range strings.Split(theJob.NextJobIDs, ",") {
+		i, _ := strconv.ParseInt(m, 10, 64)
+		nid = append(nid, i)
+	}
+	runnerJobs, err := h.Scheduler.db.ListRunnersWithID(nid)
 	if err != nil {
 		return err
 	}
@@ -802,11 +835,16 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 			runner.Status != runner2.ComplianceRunnerTimeOut {
 			fmt.Println("+++ job status", runner.Status)
 
-			return ctx.JSON(http.StatusOK, true)
+			return ctx.JSON(http.StatusOK, api.JobSeqCheckResponse{
+				IsRunning: true,
+			})
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, false)
+	fmt.Println("job finished", theJob)
+	return ctx.JSON(http.StatusOK, api.JobSeqCheckResponse{
+		IsRunning: false,
+	})
 }
 
 func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {

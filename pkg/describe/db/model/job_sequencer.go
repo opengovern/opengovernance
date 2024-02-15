@@ -36,6 +36,6 @@ type JobSequencer struct {
 	DependencySource  JobSequencerJobType
 	NextJob           JobSequencerJobType
 	NextJobParameters *pgtype.JSONB
-	NextJobIDs        pq.Int64Array `gorm:"type:bigint[]"`
+	NextJobIDs        string
 	Status            JobSequencerStatus
 }
