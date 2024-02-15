@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
 	"regexp"
