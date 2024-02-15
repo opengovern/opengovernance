@@ -99,6 +99,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		w.logger.Info("Extracted findings", zap.Int("count", len(findings)))
 
 		findingsMap := make(map[string]types.Finding)
 		for i, f := range findings {
