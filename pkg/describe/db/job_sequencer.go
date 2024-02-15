@@ -24,6 +24,18 @@ func (db Database) ListWaitingJobSequencers() ([]model.JobSequencer, error) {
 	return jobs, nil
 }
 
+func (db Database) ListJobSequencersOfTypeOfToday(dependencySource, nextJob model.JobSequencerJobType) ([]model.JobSequencer, error) {
+	var jobs []model.JobSequencer
+	tx := db.ORM.Model(&model.JobSequencer{}).
+		Where("dependency_source", dependencySource).
+		Where("next_job", nextJob).
+		Where("created_at > NOW() - interval '1 day'").Order("created_at desc").Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 func (db Database) ListLast20JobSequencers() ([]model.JobSequencer, error) {
 	var jobs []model.JobSequencer
 	tx := db.ORM.Model(&model.JobSequencer{}).Limit(20).Order("created_at desc").Find(&jobs)

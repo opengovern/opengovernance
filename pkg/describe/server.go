@@ -615,6 +615,75 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, "")
 }
 
+func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, controlIDs []string) (*model2.JobSequencerJobTypeBenchmarkRunnerParameters, []int64, error) {
+	var controls []complianceapi.Control
+	if len(controlIDs) == 0 {
+		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
+			return nil, nil, err
+		}
+		controlIDs = make([]string, 0, len(benchmark.Controls))
+		for _, control := range benchmark.Controls {
+			controlIDs = append(controlIDs, control)
+		}
+	}
+	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
+		return nil, nil, err
+	}
+	if len(controls) == 0 {
+		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "invalid control_id")
+	}
+
+	requiredTables := make(map[string]bool)
+	for _, control := range controls {
+		for _, table := range control.Query.ListOfTables {
+			requiredTables[table] = true
+		}
+	}
+	requiredResourceTypes := make([]string, 0, len(requiredTables))
+	for table := range requiredTables {
+		for _, provider := range source.List {
+			resourceType := getResourceTypeFromTableName(table, provider)
+			if resourceType != "" {
+				requiredResourceTypes = append(requiredResourceTypes, resourceType)
+				break
+			}
+		}
+	}
+	if len(requiredResourceTypes) == 0 {
+		return nil, nil, echo.NewHTTPError(http.StatusNotFound, "no resource type found for controls")
+	}
+
+	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionIDs)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
+		return nil, nil, err
+	}
+	dependencyIDs := make([]int64, 0)
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
+		for _, resourceType := range requiredResourceTypes {
+			daj, err := h.Scheduler.describe(connection, resourceType, false, false)
+			if err != nil {
+				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				continue
+			}
+			dependencyIDs = append(dependencyIDs, int64(daj.ID))
+		}
+	}
+
+	return &model2.JobSequencerJobTypeBenchmarkRunnerParameters{
+		BenchmarkID:   benchmarkID,
+		ControlIDs:    controlIDs,
+		ConnectionIDs: connectionIDs,
+	}, dependencyIDs, nil
+}
+
 // ReEvaluateComplianceJob godoc
 //
 //	@Summary		Re-evaluates compliance job
@@ -635,72 +704,11 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 	}
 	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
 
-	var controls []complianceapi.Control
-	if len(controlIDs) == 0 {
-		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
-		if err != nil {
-			h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
-			return err
-		}
-		controlIDs = make([]string, 0, len(benchmark.Controls))
-		for _, control := range benchmark.Controls {
-			controlIDs = append(controlIDs, control)
-		}
-	}
-	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs)
+	jobParameters, dependencyIDs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
 	if err != nil {
-		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
 		return err
 	}
-	if len(controls) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid control_id")
-	}
 
-	requiredTables := make(map[string]bool)
-	for _, control := range controls {
-		for _, table := range control.Query.ListOfTables {
-			requiredTables[table] = true
-		}
-	}
-	requiredResourceTypes := make([]string, 0, len(requiredTables))
-	for table := range requiredTables {
-		for _, provider := range source.List {
-			resourceType := getResourceTypeFromTableName(table, provider)
-			if resourceType != "" {
-				requiredResourceTypes = append(requiredResourceTypes, resourceType)
-				break
-			}
-		}
-	}
-	if len(requiredResourceTypes) == 0 {
-		return echo.NewHTTPError(http.StatusNotFound, "no resource type found for controls")
-	}
-
-	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionIDs)
-	if err != nil {
-		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
-		return err
-	}
-	dependencyIDs := make([]int64, 0)
-	for _, connection := range connections {
-		if !connection.IsEnabled() {
-			continue
-		}
-		for _, resourceType := range requiredResourceTypes {
-			daj, err := h.Scheduler.describe(connection, resourceType, false, false)
-			if err != nil {
-				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-				continue
-			}
-			dependencyIDs = append(dependencyIDs, int64(daj.ID))
-		}
-	}
-
-	jobParameters := model2.JobSequencerJobTypeBenchmarkRunnerParameters{
-		BenchmarkID:   benchmarkID,
-		ControlIDs:    controlIDs,
-		ConnectionIDs: connectionIDs,
-	}
 	jobParametersJSON, err := json.Marshal(jobParameters)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to marshal job parameters", zap.Error(err))
@@ -745,112 +753,56 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	}
 	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
 
-	var controls []complianceapi.Control
-	if len(controlIDs) == 0 {
-		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+	jobParameters, dependencyIDs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	if err != nil {
+		return err
+	}
+
+	jobs, err := h.Scheduler.db.ListJobSequencersOfTypeOfToday(model2.JobSequencerJobTypeDescribe, model2.JobSequencerJobTypeBenchmarkRunner)
+	if err != nil {
+		return err
+	}
+
+	var theJob *model2.JobSequencer
+	for _, job := range jobs {
+		var params model2.JobSequencerJobTypeBenchmarkRunnerParameters
+		err := json.Unmarshal(job.NextJobParameters.Bytes, &params)
 		if err != nil {
-			h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
+			h.Scheduler.logger.Error("failed to unmarshal job parameters", zap.Error(err))
 			return err
 		}
-		controlIDs = make([]string, 0, len(benchmark.Controls))
-		for _, control := range benchmark.Controls {
-			controlIDs = append(controlIDs, control)
+
+		if params.BenchmarkID == jobParameters.BenchmarkID &&
+			utils.IncludesAll(params.ConnectionIDs, jobParameters.ConnectionIDs) &&
+			utils.IncludesAll(params.ControlIDs, jobParameters.ControlIDs) &&
+			utils.IncludesAll(job.DependencyList, dependencyIDs) {
+			theJob = &job
 		}
 	}
-	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs)
+
+	if theJob == nil || theJob.Status == model2.JobSequencerFailed {
+		return ctx.JSON(http.StatusOK, api.JobSeqCheckResponse{
+			IsRunning: false,
+		})
+	}
+
+	if theJob.Status == model2.JobSequencerWaitingForDependencies {
+		return ctx.JSON(http.StatusOK, api.JobSeqCheckResponse{
+			IsRunning: true,
+		})
+	}
+
+	runnerJobs, err := h.Scheduler.db.ListRunnersWithID(theJob.NextJobIDs)
 	if err != nil {
-		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
 		return err
 	}
-	if len(controls) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid control_id")
-	}
+	for _, runner := range runnerJobs {
+		if runner.Status != runner2.ComplianceRunnerSucceeded &&
+			runner.Status != runner2.ComplianceRunnerFailed &&
+			runner.Status != runner2.ComplianceRunnerTimeOut {
+			fmt.Println("+++ job status", runner.Status)
 
-	requiredTables := make(map[string]bool)
-	for _, control := range controls {
-		for _, table := range control.Query.ListOfTables {
-			requiredTables[table] = true
-		}
-	}
-	requiredResourceTypes := make([]string, 0, len(requiredTables))
-	for table := range requiredTables {
-		for _, provider := range source.List {
-			resourceType := getResourceTypeFromTableName(table, provider)
-			if resourceType != "" {
-				requiredResourceTypes = append(requiredResourceTypes, resourceType)
-				break
-			}
-		}
-	}
-	if len(requiredResourceTypes) == 0 {
-		return echo.NewHTTPError(http.StatusNotFound, "no resource type found for controls")
-	}
-
-	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionIDs)
-	if err != nil {
-		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
-		return err
-	}
-	inProgress := false
-	dependencyIDs := make([]int64, 0)
-	for _, connection := range connections {
-		if !connection.IsEnabled() {
-			continue
-		}
-		for _, resourceType := range requiredResourceTypes {
-			job, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
-			//daj, err := h.Scheduler.describe(connection, resourceType, false, false)
-			if err != nil {
-				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-				continue
-			}
-
-			if job == nil {
-				continue
-			}
-
-			if job.Status != api.DescribeResourceJobSucceeded &&
-				job.Status != api.DescribeResourceJobFailed &&
-				job.Status != api.DescribeResourceJobTimeout {
-				inProgress = true
-			}
-			dependencyIDs = append(dependencyIDs, int64(job.ID))
-		}
-	}
-
-	if inProgress {
-		return ctx.JSON(http.StatusOK, true)
-	}
-
-	jobs, err := h.DB.ListLast20JobSequencers()
-	if err != nil {
-		h.Scheduler.logger.Error("failed to list waiting job parameters", zap.Error(err))
-		return err
-	}
-
-	for _, job := range jobs {
-		if utils.IncludesAll(dependencyIDs, job.DependencyList) {
-			fmt.Println("+++", job)
-			if job.Status == model2.JobSequencerWaitingForDependencies {
-				return ctx.JSON(http.StatusOK, true)
-			}
-			if job.Status == model2.JobSequencerFailed || len(job.NextJobIDs) == 0 {
-				return ctx.JSON(http.StatusOK, false)
-			}
-
-			runnerJobs, err := h.Scheduler.db.ListRunnersWithID(job.NextJobIDs)
-			if err != nil {
-				return err
-			}
-			for _, runner := range runnerJobs {
-				if runner.Status != runner2.ComplianceRunnerSucceeded &&
-					runner.Status != runner2.ComplianceRunnerFailed &&
-					runner.Status != runner2.ComplianceRunnerTimeOut {
-					fmt.Println("+++ job status", runner.Status)
-
-					return ctx.JSON(http.StatusOK, true)
-				}
-			}
+			return ctx.JSON(http.StatusOK, true)
 		}
 	}
 

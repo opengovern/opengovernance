@@ -127,3 +127,7 @@ type ListDiscoveryResourceTypes struct {
 	AWSResourceTypes   []string `json:"awsResourceTypes"`
 	AzureResourceTypes []string `json:"azureResourceTypes"`
 }
+
+type JobSeqCheckResponse struct {
+	IsRunning bool
+}
