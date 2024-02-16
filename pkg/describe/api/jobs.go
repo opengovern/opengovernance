@@ -129,5 +129,5 @@ type ListDiscoveryResourceTypes struct {
 }
 
 type JobSeqCheckResponse struct {
-	IsRunning bool
+	IsRunning bool `json:"isRunning"`
 }
