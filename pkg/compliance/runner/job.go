@@ -115,6 +115,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		filters := make([]kaytu.BoolFilter, 0)
 		filters = append(filters, kaytu.NewTermFilter("benchmarkID", caller.RootBenchmark))
 		filters = append(filters, kaytu.NewTermFilter("controlID", caller.ControlID))
+		for _, parentBenchmarkID := range caller.ParentBenchmarkIDs {
+			filters = append(filters, kaytu.NewTermFilter("parentBenchmarks", parentBenchmarkID))
+		}
 		filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
 		if j.ExecutionPlan.ConnectionID != nil {
 			filters = append(filters, kaytu.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
