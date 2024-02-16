@@ -26,8 +26,8 @@ require (
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/envoyproxy/go-control-plane v0.11.1
-	github.com/fluxcd/helm-controller/api v0.37.2
-	github.com/fluxcd/pkg/apis/meta v1.2.0
+	github.com/fluxcd/helm-controller/api v0.37.4
+	github.com/fluxcd/pkg/apis/meta v1.3.0
 	github.com/go-errors/errors v1.4.2
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccy/go-yaml v1.11.2
@@ -39,9 +39,9 @@ require (
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
-	github.com/kaytu-io/kaytu-aws-describer v0.31.0
-	github.com/kaytu-io/kaytu-azure-describer v0.22.0
-	github.com/kaytu-io/kaytu-util v0.0.0-20240204110154-9fc55b004a92
+	github.com/kaytu-io/kaytu-aws-describer v0.32.2
+	github.com/kaytu-io/kaytu-azure-describer v0.23.1
+	github.com/kaytu-io/kaytu-util v0.0.0-20240213202844-8fa49cd99f94
 	github.com/kaytu-io/pennywise v1.1.5
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
@@ -64,17 +64,17 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.8.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.45.0
-	go.opentelemetry.io/otel v1.22.0
+	go.opentelemetry.io/otel v1.23.1
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
-	go.opentelemetry.io/otel/sdk v1.22.0
-	go.opentelemetry.io/otel/trace v1.22.0
+	go.opentelemetry.io/otel/sdk v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.20.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0
 	google.golang.org/grpc v1.61.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/datatypes v1.1.0
-	gorm.io/gorm v1.25.6
+	gorm.io/gorm v1.25.7
 	k8s.io/api v0.29.1
 	k8s.io/apiextensions-apiserver v0.29.0
 	k8s.io/apimachinery v0.29.1
@@ -375,7 +375,7 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fluxcd/pkg/apis/kustomize v1.2.0 // indirect
+	github.com/fluxcd/pkg/apis/kustomize v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -391,6 +391,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -433,7 +434,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
-	github.com/jackc/pgx/v5 v5.5.2 // indirect
+	github.com/jackc/pgx/v5 v5.5.3 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
@@ -449,7 +450,7 @@ require (
 	github.com/knadh/koanf/providers/env v0.1.0 // indirect
 	github.com/knadh/koanf/providers/file v0.1.0 // indirect
 	github.com/knadh/koanf/providers/structs v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.0.1 // indirect
+	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -528,7 +529,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.22.0 // indirect
+	go.opentelemetry.io/otel/metric v1.23.1 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -556,7 +557,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.4.4 // indirect
-	gorm.io/driver/postgres v1.5.4 // indirect
+	gorm.io/driver/postgres v1.5.6 // indirect
 	gorm.io/plugin/prometheus v0.1.0 // indirect
 	k8s.io/client-go v0.29.0 // indirect
 	k8s.io/component-base v0.29.0 // indirect
