@@ -756,7 +756,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 //	@Param			benchmark_id	path		string		true	"Benchmark ID"
 //	@Param			connection_id	query		[]string	true	"Connection ID"
 //	@Param			control_id		query		[]string	false	"Control ID"
-//	@Success		200				{object}	boolean
+//	@Success		200				{object}	api.JobSeqCheckResponse
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [get]
 func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")

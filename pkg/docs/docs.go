@@ -6492,7 +6492,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSeqCheckResponse"
                         }
                     }
                 }
@@ -10093,6 +10093,14 @@ const docTemplate = `{
                 },
                 "updatedAt": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSeqCheckResponse": {
+            "type": "object",
+            "properties": {
+                "isRunning": {
+                    "type": "boolean"
                 }
             }
         },

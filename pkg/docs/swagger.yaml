@@ -1830,6 +1830,11 @@ definitions:
       updatedAt:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSeqCheckResponse:
+    properties:
+      isRunning:
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary:
     properties:
       count:
@@ -8145,7 +8150,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: boolean
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSeqCheckResponse'
       security:
       - BearerToken: []
       summary: Get re-evaluates compliance job
