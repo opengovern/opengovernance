@@ -797,12 +797,17 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 
 		fmt.Println(">>>", job)
 		fmt.Println("<<<", params, dependencyIDs)
+		fmt.Println("----", params.BenchmarkID, jobParameters.BenchmarkID)
+		fmt.Println("----", params.ConnectionIDs, jobParameters.ConnectionIDs)
+		fmt.Println("----", params.ControlIDs, jobParameters.ControlIDs)
+		fmt.Println("----", job.DependencyList, dependencyIDs)
 
 		if params.BenchmarkID == jobParameters.BenchmarkID &&
 			utils.IncludesAll(params.ConnectionIDs, jobParameters.ConnectionIDs) &&
 			utils.IncludesAll(params.ControlIDs, jobParameters.ControlIDs) &&
 			utils.IncludesAll(job.DependencyList, dependencyIDs) {
 			theJob = &job
+			break
 		}
 	}
 
