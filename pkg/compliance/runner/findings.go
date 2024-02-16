@@ -65,10 +65,8 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		if v, ok := recordValue["kaytu_table_name"].(string); ok && resourceType == "" {
 			resourceType = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.Connector)
 		}
-		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
+		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
-		} else {
-			continue
 		}
 		if v, ok := recordValue["name"].(string); ok {
 			resourceName = v
