@@ -74,6 +74,7 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.ControlID,
 		r.BenchmarkID,
 	}
+	keys = append(keys, r.ParentBenchmarks...)
 	if strings.HasPrefix(r.ConnectionID, "stack-") {
 		index = StackFindingsIndex
 	}

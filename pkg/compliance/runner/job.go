@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -258,9 +259,16 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			f.EsIndex = idx
 			docs = append(docs, f)
 		}
-		mapKey := fmt.Sprintf("%s---___---%s", caller.RootBenchmark, caller.ControlID)
-		if _, ok := totalFindingCountMap[mapKey]; !ok {
-			totalFindingCountMap[mapKey] = len(newFindings)
+		mapKey := strings.Builder{}
+		mapKey.WriteString(caller.RootBenchmark)
+		mapKey.WriteString("$$")
+		mapKey.WriteString(caller.ControlID)
+		for _, parentBenchmarkID := range caller.ParentBenchmarkIDs {
+			mapKey.WriteString("$$")
+			mapKey.WriteString(parentBenchmarkID)
+		}
+		if _, ok := totalFindingCountMap[mapKey.String()]; !ok {
+			totalFindingCountMap[mapKey.String()] = len(newFindings)
 		}
 
 		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
