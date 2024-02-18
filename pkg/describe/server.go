@@ -76,6 +76,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/insight/job/:job_id", httpserver2.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
 	v1.GET("/insight/:insight_id/jobs", httpserver2.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
+	v1.PUT("/compliance/trigger/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJobSummary, apiAuth.AdminRole))
 	v1.GET("/compliance/re-evaluate/:benchmark_id", httpserver2.AuthorizeHandler(h.CheckReEvaluateComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/re-evaluate/:benchmark_id", httpserver2.AuthorizeHandler(h.ReEvaluateComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver2.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
@@ -611,6 +612,35 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
+	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+// TriggerConnectionsComplianceJobSummary godoc
+//
+//	@Summary		Triggers compliance job
+//	@Description	Triggers a compliance job to run immediately for the given benchmark
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param			benchmark_id	path	string	true	"Benchmark ID"
+//	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id}/summary [put]
+func (h HttpServer) TriggerConnectionsComplianceJobSummary(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	benchmarkID := ctx.Param("benchmark_id")
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+	if err != nil {
+		return fmt.Errorf("error while getting benchmarks: %v", err)
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmarkID, nil)
+	if err != nil {
+		return fmt.Errorf("error while creating compliance job summarizer: %v", err)
 	}
 	return ctx.JSON(http.StatusOK, "")
 }

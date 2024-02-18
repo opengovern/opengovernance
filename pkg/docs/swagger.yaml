@@ -8216,6 +8216,25 @@ paths:
       summary: Triggers compliance job
       tags:
       - describe
+  /schedule/api/v1/compliance/trigger/{benchmark_id}/summary:
+    put:
+      description: Triggers a compliance job to run immediately for the given benchmark
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Triggers compliance job
+      tags:
+      - describe
   /schedule/api/v1/describe/connection/status:
     put:
       parameters:

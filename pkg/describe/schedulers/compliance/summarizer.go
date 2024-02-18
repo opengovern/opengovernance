@@ -115,7 +115,7 @@ func (s *JobScheduler) runSummarizer() error {
 		}
 		s.logger.Info("documents are sank, creating summarizer", zap.String("benchmarkId", job.BenchmarkID), zap.Int("sankDocCount", sankDocCount), zap.Int("totalDocCount", totalDocCount))
 
-		err = s.createSummarizer(job)
+		err = s.CreateSummarizer(job.BenchmarkID, &job.ID)
 		if err != nil {
 			s.logger.Error("failed to create summarizer", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
@@ -176,20 +176,24 @@ func (s *JobScheduler) finishComplianceJob(job model.ComplianceJob) error {
 	return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSucceeded, "")
 }
 
-func (s *JobScheduler) createSummarizer(job model.ComplianceJob) error {
+func (s *JobScheduler) CreateSummarizer(benchmarkId string, jobId *uint) error {
 	// run summarizer
 	dbModel := model.ComplianceSummarizer{
-		BenchmarkID: job.BenchmarkID,
-		ParentJobID: job.ID,
+		BenchmarkID: benchmarkId,
 		StartedAt:   time.Now(),
 		Status:      summarizer.ComplianceSummarizerCreated,
+	}
+	if jobId != nil {
+		dbModel.ParentJobID = *jobId
 	}
 	err := s.db.CreateSummarizerJob(&dbModel)
 	if err != nil {
 		return err
 	}
-
-	return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSummarizerInProgress, "")
+	if jobId != nil {
+		return s.db.UpdateComplianceJob(*jobId, model.ComplianceJobSummarizerInProgress, "")
+	}
+	return nil
 }
 
 func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {

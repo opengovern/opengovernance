@@ -6589,6 +6589,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/compliance/trigger/{benchmark_id}/summary": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a compliance job to run immediately for the given benchmark",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers compliance job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/describe/connection/status": {
             "put": {
                 "security": [
