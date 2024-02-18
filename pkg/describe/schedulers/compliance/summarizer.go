@@ -112,6 +112,7 @@ func (s *JobScheduler) runSummarizer() error {
 			)
 			continue
 		}
+		s.logger.Info("documents are sank, creating summarizer", zap.String("benchmarkId", job.BenchmarkID), zap.Int("sankDocCount", sankDocCount), zap.Int("totalDocCount", totalDocCount))
 
 		err = s.createSummarizer(job)
 		if err != nil {
