@@ -166,6 +166,9 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 
 	var allRunners []*model.ComplianceRunner
 	for _, it := range assignments.Connections {
+		if !it.Status {
+			continue
+		}
 		connection := it
 		runners, err := s.buildRunners(job.ID, &connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
 		if err != nil {
