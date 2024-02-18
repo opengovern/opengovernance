@@ -106,6 +106,7 @@ func (s *JobScheduler) runSummarizer() error {
 			// do not summarize if all docs are not sank
 			// do not summarize if either less than 90% of the docs are sank or last job update is in less than an hour ago
 			s.logger.Info("waiting for documents to sink",
+				zap.String("benchmarkId", job.BenchmarkID),
 				zap.Int("sankDocCount", sankDocCount),
 				zap.Int("totalDocCount", totalDocCount),
 				zap.Time("lastUpdatedRunner", lastUpdatedRunner.UpdatedAt),
