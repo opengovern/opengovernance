@@ -194,6 +194,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
 						findingsEvents = append(findingsEvents, fs)
 						newFindings = append(newFindings, f)
+					} else {
+						w.logger.Info("Old finding found, it's inactive. doing nothing", zap.Any("finding", f))
 					}
 					continue
 				}
@@ -229,6 +231,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
 					findingsEvents = append(findingsEvents, fs)
 				} else {
+					w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", f))
 					newFinding.LastTransition = f.LastTransition
 				}
 
