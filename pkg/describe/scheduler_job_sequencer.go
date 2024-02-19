@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"time"
@@ -61,6 +62,40 @@ func (s *Scheduler) checkJobSequences() error {
 		}
 	}
 	return nil
+}
+
+func path(benchmarkID, controlID string, benchmarks []api.Benchmark) []string {
+	for _, b := range benchmarks {
+		if b.ID != benchmarkID {
+			continue
+		}
+
+		paths := []string{b.ID}
+		for _, control := range b.Controls {
+			if control == controlID {
+				return paths
+			}
+		}
+
+		for _, child := range b.Children {
+			paths = append(paths, path(child, controlID, benchmarks)...)
+		}
+		return paths
+	}
+	return nil
+}
+
+func (s *Scheduler) getParentBenchmarkIDs(rootBenchmark, controlID string) ([]string, error) {
+	benchmarks, err := s.complianceClient.ListAllBenchmarks(&httpclient.Context{
+		UserRole: authApi.InternalRole,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	paths := path(rootBenchmark, controlID, benchmarks)
+	paths = UniqueArray(paths)
+	return paths, nil
 }
 
 func (s *Scheduler) runNextJob(job model.JobSequencer) error {
