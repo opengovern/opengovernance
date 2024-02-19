@@ -76,8 +76,8 @@ type ResourceFindingFilters struct {
 	Severity           []types.FindingSeverity `json:"severity" example:"low"`
 	ConformanceStatus  []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
 	EvaluatedAt        struct {
-		From *int64 `json:"from" example:"2020-05-13T00:00:00Z"`
-		To   *int64 `json:"to" example:"2020-05-13T00:00:00Z"`
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
 	}
 }
 
