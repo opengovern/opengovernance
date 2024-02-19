@@ -130,6 +130,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 		newFindings := make([]types.Finding, 0, len(findings))
 		findingsEvents := make([]types.FindingEvent, 0, len(findings))
+
+		filtersJSON, _ := json.Marshal(filters)
+		w.logger.Info("Old finding query", zap.Int("length", len(findings)), zap.String("filters", string(filtersJSON)))
 		paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
 		if err != nil {
 			w.logger.Error("failed to create paginator", zap.Error(err))
@@ -140,6 +143,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				w.logger.Error("failed to close paginator", zap.Error(err))
 			}
 		}
+
 		for paginator.HasNext() {
 			oldFindings, err := paginator.NextPage(ctx)
 			if err != nil {
