@@ -1291,6 +1291,80 @@ definitions:
         type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFilters:
+    properties:
+      benchmarkID:
+        example:
+        - azure_cis_v140
+        items:
+          type: string
+        type: array
+      conformanceStatus:
+        example:
+        - alarm
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
+        type: array
+      connectionID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      connector:
+        example:
+        - Azure
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      controlID:
+        example:
+        - azure_cis_v140_7_5
+        items:
+          type: string
+        type: array
+      evaluatedAt:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
+      findingID:
+        example:
+        - 8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      kaytuResourceID:
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        items:
+          type: string
+        type: array
+      notConnectionID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      resourceType:
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines
+        items:
+          type: string
+        type: array
+      severity:
+        example:
+        - low
+        items:
+          $ref: '#/definitions/types.FindingSeverity'
+        type: array
+      stateActive:
+        example:
+        - true
+        items:
+          type: boolean
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFiltersWithMetadata:
     properties:
@@ -1331,7 +1405,103 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FilterWithMetadata'
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventsSort:
+    properties:
+      benchmarkID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      conformanceStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      connectionID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      connector:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      controlID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      kaytuResourceID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resourceType:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      severity:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      stateActive:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
+    properties:
+      benchmarkID:
+        example:
+        - azure_cis_v140
+        items:
+          type: string
+        type: array
+      conformanceStatus:
+        example:
+        - alarm
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatus'
+        type: array
+      connectionID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      connector:
+        example:
+        - Azure
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      controlID:
+        example:
+        - azure_cis_v140_7_5
+        items:
+          type: string
+        type: array
+      evaluatedAt:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
+      lastEvent:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
+      notConnectionID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      resourceID:
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        items:
+          type: string
+        type: array
+      resourceTypeID:
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines
+        items:
+          type: string
+        type: array
+      severity:
+        example:
+        - low
+        items:
+          $ref: '#/definitions/types.FindingSeverity'
+        type: array
+      stateActive:
+        example:
+        - true
+        items:
+          type: boolean
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
     properties:
@@ -1383,6 +1553,29 @@ definitions:
       failedResourceCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSort:
+    properties:
+      benchmarkID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      conformanceStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      connectionID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      connector:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      controlID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      kaytuResourceID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resourceID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resourceTypeID:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      severity:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      stateActive:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -1409,6 +1602,19 @@ definitions:
         type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsRequest:
+    properties:
+      afterSortKey:
+        items: {}
+        type: array
+      filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventFilters'
+      limit:
+        example: 100
+        type: integer
+      sort:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingEventsSort'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsResponse:
     properties:
@@ -1421,6 +1627,19 @@ definitions:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
+    properties:
+      afterSortKey:
+        items: {}
+        type: array
+      filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      limit:
+        example: 100
+        type: integer
+      sort:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSort'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
     properties:
@@ -1764,6 +1983,14 @@ definitions:
             type: integer
         type: object
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection:
+    enum:
+    - asc
+    - desc
+    type: string
+    x-enum-varnames:
+    - SortDirectionAscending
+    - SortDirectionDescending
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       connection:

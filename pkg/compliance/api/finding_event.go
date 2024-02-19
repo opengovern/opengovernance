@@ -95,8 +95,8 @@ type FindingEventFilters struct {
 	FindingID         []string                `json:"findingID" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
 	KaytuResourceID   []string                `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	EvaluatedAt       struct {
-		From *int64 `json:"from" example:"2020-05-13T00:00:00Z"`
-		To   *int64 `json:"to" example:"2020-05-13T00:00:00Z"`
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
 	} `json:"evaluatedAt"`
 }
 
