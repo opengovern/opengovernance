@@ -33,7 +33,7 @@ func (db Database) FetchCreatedSummarizers() ([]model.ComplianceSummarizer, erro
 }
 
 func (db Database) RetryFailedSummarizers() error {
-	tx := db.ORM.Exec("UPDATE compliance_summarizers SET retry_count = retry_count + 1, status = 'CREATED' WHERE status = 'FAILED' AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'")
+	tx := db.ORM.Exec("UPDATE compliance_summarizers SET retry_count = retry_count + 1, status = 'CREATED' WHERE status = 'FAILED' AND retry_count < 3 AND updated_at < NOW() - interval '7 minutes'")
 	if tx.Error != nil {
 		return tx.Error
 	}
