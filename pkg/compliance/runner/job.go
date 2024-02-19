@@ -13,6 +13,7 @@ import (
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
