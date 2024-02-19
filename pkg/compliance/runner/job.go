@@ -152,6 +152,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				return 0, err
 			}
 
+			w.logger.Info("Old finding", zap.Int("length", len(oldFindings)))
 			for _, f := range oldFindings {
 				f := f
 				newFinding, ok := findingsMap[f.EsID]
