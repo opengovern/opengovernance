@@ -36,6 +36,7 @@ type ExecutionPlan struct {
 
 type Job struct {
 	ID          uint
+	RetryCount  int
 	ParentJobID uint
 	CreatedAt   time.Time
 
@@ -100,7 +101,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		w.logger.Info("Extracted findings", zap.Int("count", len(findings)))
+		w.logger.Info("Extracted findings", zap.Int("count", len(findings)),
+			zap.Uint("job_id", j.ID),
+			zap.String("benchmarkID", caller.RootBenchmark))
 
 		findingsMap := make(map[string]types.Finding)
 		for i, f := range findings {

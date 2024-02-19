@@ -78,6 +78,7 @@ func (s *JobScheduler) runPublisher() error {
 			}
 			job := runner.Job{
 				ID:          it.ID,
+				RetryCount:  it.RetryCount,
 				ParentJobID: it.ParentJobID,
 				CreatedAt:   it.CreatedAt,
 				ExecutionPlan: runner.ExecutionPlan{
@@ -95,7 +96,7 @@ func (s *JobScheduler) runPublisher() error {
 				continue
 			}
 
-			if err := s.jq.Produce(context.Background(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
+			if err := s.jq.Produce(context.Background(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue

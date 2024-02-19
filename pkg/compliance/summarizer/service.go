@@ -128,7 +128,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) error {
 			return
 		}
 
-		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.ID)); err != nil {
+		if err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d-%d", job.ID, job.RetryCount)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()

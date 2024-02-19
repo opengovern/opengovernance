@@ -199,6 +199,7 @@ func (s *JobScheduler) CreateSummarizer(benchmarkId string, jobId *uint) error {
 func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
 	summarizerJob := types2.Job{
 		ID:          job.ID,
+		RetryCount:  job.RetryCount,
 		BenchmarkID: job.BenchmarkID,
 		CreatedAt:   job.CreatedAt,
 	}
@@ -208,7 +209,7 @@ func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
 		return err
 	}
 
-	if err := s.jq.Produce(context.Background(), summarizer.JobQueueTopic, jobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
+	if err := s.jq.Produce(context.Background(), summarizer.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, job.RetryCount)); err != nil {
 		_ = s.db.UpdateSummarizerJob(job.ID, summarizer.ComplianceSummarizerFailed, job.CreatedAt, err.Error())
 		return err
 	}
