@@ -13,7 +13,6 @@ import (
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
@@ -179,6 +178,10 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 							ResourceType:              f.ResourceType,
 							ParentBenchmarkReferences: f.ParentBenchmarkReferences,
 						}
+						keys, idx := fs.KeysAndIndex()
+						fs.EsID = es.HashOf(keys...)
+						fs.EsIndex = idx
+
 						w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
 						findingsEvents = append(findingsEvents, fs)
 						newFindings = append(newFindings, f)
@@ -210,6 +213,10 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ResourceType:              newFinding.ResourceType,
 						ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
 					}
+					keys, idx := fs.KeysAndIndex()
+					fs.EsID = es.HashOf(keys...)
+					fs.EsIndex = idx
+
 					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
 					findingsEvents = append(findingsEvents, fs)
 				} else {
@@ -243,6 +250,10 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				ResourceType:              newFinding.ResourceType,
 				ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
 			}
+			keys, idx := fs.KeysAndIndex()
+			fs.EsID = es.HashOf(keys...)
+			fs.EsIndex = idx
+
 			w.logger.Info("New finding", zap.Any("finding", newFinding), zap.Any("event", fs))
 			findingsEvents = append(findingsEvents, fs)
 			newFindings = append(newFindings, newFinding)
