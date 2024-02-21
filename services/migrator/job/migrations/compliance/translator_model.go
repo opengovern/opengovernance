@@ -11,8 +11,8 @@ type Benchmark struct {
 	Children      []string            `json:"Children" yaml:"Children"`
 	Tags          map[string][]string `json:"Tags" yaml:"Tags"`
 	Managed       bool                `json:"Managed" yaml:"Managed"`
-	Enabled       bool                `json:"Enabled" json:"Enabled"`
-	AutoAssign    bool                `json:"AutoAssign" json:"AutoAssign"`
+	Enabled       bool                `json:"Enabled" yaml:"Enabled"`
+	AutoAssign    bool                `json:"AutoAssign" yaml:"AutoAssign"`
 	Baseline      bool                `json:"Baseline" yaml:"Baseline"`
 	Controls      []string            `json:"Controls" yaml:"Controls"`
 }
