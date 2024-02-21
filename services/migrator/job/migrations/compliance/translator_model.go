@@ -23,7 +23,7 @@ type Control struct {
 	Description        string              `json:"Description" yaml:"Description"`
 	Query              *shared.Query       `json:"Query" yaml:"Query"`
 	ManualVerification bool                `json:"ManualVerification" yaml:"ManualVerification"`
-	Severity           string              `json:"Severity" json:"Severity"`
-	Tags               map[string][]string `json:"Tags" json:"Tags"`
+	Severity           string              `json:"Severity" yaml:"Severity"`
+	Tags               map[string][]string `json:"Tags" yaml:"Tags"`
 	Managed            bool                `json:"Managed" yaml:"Managed"`
 }
