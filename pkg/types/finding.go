@@ -69,6 +69,7 @@ type Finding struct {
 func (r Finding) KeysAndIndex() ([]string, string) {
 	index := FindingsIndex
 	keys := []string{
+		r.KaytuResourceID,
 		r.ResourceID,
 		r.ConnectionID,
 		r.ControlID,
