@@ -199,7 +199,12 @@ func (h HttpHandler) SetQueryParameter(ctx echo.Context) error {
 
 	dbQueryParams := make([]*models.QueryParameter, 0, len(req.QueryParameters))
 	for _, apiParam := range req.QueryParameters {
+		key, err := models.ParseQueryParameterKey(apiParam.Key)
+		if err != nil {
+			return err
+		}
 		dbParam := models.QueryParameterFromAPI(apiParam)
+		dbParam.Key = key.String()
 		dbQueryParams = append(dbQueryParams, &dbParam)
 	}
 
