@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	_ "gorm.io/gorm"
 	"net/http"
@@ -21,10 +22,17 @@ import (
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
-	v1.POST("/filter", httpserver.AuthorizeHandler(h.AddFilter, api3.ViewerRole))
-	v1.GET("/filter", httpserver.AuthorizeHandler(h.GetFilters, api3.ViewerRole))
-	v1.GET("/metadata/:key", httpserver.AuthorizeHandler(h.GetConfigMetadata, api3.ViewerRole))
-	v1.POST("/metadata", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
+	filter := v1.Group("/filter")
+	filter.POST("", httpserver.AuthorizeHandler(h.AddFilter, api3.ViewerRole))
+	filter.GET("", httpserver.AuthorizeHandler(h.GetFilters, api3.ViewerRole))
+
+	metadata := v1.Group("/metadata")
+	metadata.GET("/:key", httpserver.AuthorizeHandler(h.GetConfigMetadata, api3.ViewerRole))
+	metadata.POST("", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
+
+	queryParameter := v1.Group("/query_parameter")
+	queryParameter.POST("", httpserver.AuthorizeHandler(h.SetQueryParameter, api3.AdminRole))
+	queryParameter.GET("", httpserver.AuthorizeHandler(h.ListQueryParameters, api3.ViewerRole))
 }
 
 var tracer = otel.Tracer("metadata")
@@ -167,4 +175,73 @@ func (h HttpHandler) GetFilters(ctx echo.Context) error {
 	}
 	span.End()
 	return ctx.JSON(http.StatusOK, filters)
+}
+
+// SetQueryParameter godoc
+//
+//	@Summary		Set query parameter
+//	@Description	Sets the query parameters from the request body
+//	@Security		BearerToken
+//	@Tags			metadata
+//	@Produce		json
+//	@Param			req	body	api.SetQueryParameterRequest	true	"Request Body"
+//	@Success		200
+//	@Router			/metadata/api/v1/metadata [post]
+func (h HttpHandler) SetQueryParameter(ctx echo.Context) error {
+	var req api.SetQueryParameterRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return err
+	}
+
+	dbQueryParams := make([]*models.QueryParameter, 0, len(req.QueryParameters))
+	for _, apiParam := range req.QueryParameters {
+		dbParam := models.QueryParameterFromAPI(apiParam)
+		dbQueryParams = append(dbQueryParams, &dbParam)
+	}
+
+	_, span := tracer.Start(ctx.Request().Context(), "new_SetQueryParameter", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_SetQueryParameter")
+	err := h.db.SetQueryParameters(dbQueryParams)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		h.logger.Error("error setting query parameters", zap.Error(err))
+		return err
+	}
+	span.End()
+
+	return ctx.JSON(http.StatusOK, nil)
+}
+
+// ListQueryParameters godoc
+//
+//	@Summary		List query parameters
+//	@Description	Returns the list of query parameters
+//	@Security		BearerToken
+//	@Tags			metadata
+//	@Produce		json
+//	@Success		200	{object}	api.ListQueryParametersResponse
+//	@Router			/metadata/api/v1/query_parameter [get]
+func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListQueryParameters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListQueryParameters")
+
+	queryParams, err := h.db.GetQueryParameters()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		h.logger.Error("error getting query parameters", zap.Error(err))
+		return err
+	}
+	span.End()
+
+	result := api.ListQueryParametersResponse{
+		QueryParameters: make([]api.QueryParameter, 0, len(queryParams)),
+	}
+	for _, dbParam := range queryParams {
+		apiParam := dbParam.ToAPI()
+		result.QueryParameters = append(result.QueryParameters, apiParam)
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }

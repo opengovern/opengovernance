@@ -8,7 +8,8 @@ import (
 )
 
 type HttpHandler struct {
-	db database.Database
+	db     database.Database
+	logger *zap.Logger
 }
 
 func InitializeHttpHandler(
@@ -35,16 +36,17 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
-	fmt.Println("Connected to the postgres database: ", postgresDb)
+	logger.Info("Connected to the postgres database", zap.String("database", postgresDb))
 
 	db := database.NewDatabase(orm)
 	err = db.Initialize()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Initialized postgres database: ", postgresDb)
+	logger.Info("Initialized database", zap.String("database", postgresDb))
 
 	return &HttpHandler{
-		db: db,
+		db:     db,
+		logger: logger,
 	}, nil
 }

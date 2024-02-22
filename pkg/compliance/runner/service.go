@@ -6,6 +6,7 @@ import (
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"time"
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -27,6 +28,7 @@ type Config struct {
 	Compliance            config.KaytuService
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
+	Metadata              config.KaytuService
 	Steampipe             config.Postgres
 	PrometheusPushAddress string
 }
@@ -40,6 +42,7 @@ type Worker struct {
 	complianceClient complianceClient.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
+	metadataClient   metadataClient.MetadataServiceClient
 
 	benchmarkCache map[string]complianceApi.Benchmark
 }
@@ -89,6 +92,7 @@ func NewWorker(
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
 		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
+		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
 

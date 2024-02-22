@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"io"
 	"strings"
+	"text/template"
 	"time"
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -85,7 +88,54 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 
-	res, err := w.steampipeConn.QueryAll(ctx, j.ExecutionPlan.Query.QueryToExecute)
+	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: authApi.InternalRole})
+	if err != nil {
+		w.logger.Error("failed to get query parameters", zap.Error(err))
+		return 0, err
+	}
+	queryParamMap := make(map[string]string)
+	for _, qp := range queryParams.QueryParameters {
+		queryParamMap[qp.Key] = qp.Value
+	}
+
+	for _, param := range j.ExecutionPlan.Query.Parameters {
+		if _, ok := queryParamMap[param.Key]; !ok && param.Required {
+			w.logger.Error("required query parameter not found",
+				zap.String("key", param.Key),
+				zap.String("query_id", j.ExecutionPlan.Query.ID),
+				zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+				zap.Uint("job_id", j.ID),
+			)
+			return 0, fmt.Errorf("required query parameter not found: %s for query: %s", param.Key, j.ExecutionPlan.Query.ID)
+		}
+		if _, ok := queryParamMap[param.Key]; !ok && !param.Required {
+			w.logger.Info("optional query parameter not found",
+				zap.String("key", param.Key),
+				zap.String("query_id", j.ExecutionPlan.Query.ID),
+				zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+				zap.Uint("job_id", j.ID),
+			)
+			queryParamMap[param.Key] = ""
+		}
+	}
+
+	queryTemplate, err := template.New(j.ExecutionPlan.Query.ID).Parse(j.ExecutionPlan.Query.QueryToExecute)
+	if err != nil {
+		w.logger.Error("failed to parse query template", zap.Error(err))
+		return 0, err
+	}
+	var queryOutput bytes.Buffer
+	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
+		w.logger.Error("failed to execute query template",
+			zap.Error(err),
+			zap.String("query_id", j.ExecutionPlan.Query.ID),
+			zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+			zap.Uint("job_id", j.ID),
+		)
+		return 0, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
+	}
+
+	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
 		return 0, err
 	}
