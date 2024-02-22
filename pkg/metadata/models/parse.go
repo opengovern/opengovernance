@@ -12,7 +12,7 @@ func (t ConfigMetadataType) SerializeValue(value any) (string, error) {
 	case ConfigMetadataTypeString:
 		valueStr, ok := value.(string)
 		if !ok {
-			return "", metadataErrors.ErrMetadataValueTypeMismatch
+			return "", metadataErrors.ErrorMetadataValueTypeMismatch
 		}
 		return valueStr, nil
 	case ConfigMetadataTypeInt:
@@ -26,7 +26,7 @@ func (t ConfigMetadataType) SerializeValue(value any) (string, error) {
 			}
 			return strconv.Itoa(int(valueM)), nil
 		default:
-			return "", metadataErrors.ErrMetadataValueTypeMismatch
+			return "", metadataErrors.ErrorMetadataValueTypeMismatch
 		}
 	case ConfigMetadataTypeBool:
 		switch value.(type) {
@@ -39,7 +39,7 @@ func (t ConfigMetadataType) SerializeValue(value any) (string, error) {
 			}
 			return strconv.FormatBool(valueM), nil
 		default:
-			return "", metadataErrors.ErrMetadataValueTypeMismatch
+			return "", metadataErrors.ErrorMetadataValueTypeMismatch
 		}
 	case ConfigMetadataTypeJSON:
 		valueJson, err := json.Marshal(value)
@@ -48,7 +48,7 @@ func (t ConfigMetadataType) SerializeValue(value any) (string, error) {
 		}
 		return string(valueJson), nil
 	}
-	return "", metadataErrors.ErrMetadataValueTypeMismatch
+	return "", metadataErrors.ErrorMetadataValueTypeMismatch
 }
 
 func (t ConfigMetadataType) DeserializeValue(value string) (any, error) {
@@ -75,7 +75,7 @@ func (t ConfigMetadataType) DeserializeValue(value string) (any, error) {
 		}
 		return valueJson, nil
 	}
-	return nil, metadataErrors.ErrMetadataValueTypeMismatch
+	return nil, metadataErrors.ErrorMetadataValueTypeMismatch
 }
 
 func (c *ConfigMetadata) ParseToType() (IConfigMetadata, error) {
@@ -94,5 +94,5 @@ func (c *ConfigMetadata) ParseToType() (IConfigMetadata, error) {
 		return &JSONConfigMetadata{ConfigMetadata: *c, Value: value}, nil
 	}
 
-	return nil, metadataErrors.ErrConfigMetadataTypeNotSupported
+	return nil, metadataErrors.ErrorConfigMetadataTypeNotSupported
 }
