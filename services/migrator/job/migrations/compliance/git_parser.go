@@ -191,14 +191,22 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			}
 
 			if control.Query != nil {
-				g.queries = append(g.queries, db.Query{
+				q := db.Query{
 					ID:             control.ID,
 					QueryToExecute: control.Query.QueryToExecute,
 					Connector:      control.Query.Connector,
 					PrimaryTable:   control.Query.PrimaryTable,
 					ListOfTables:   control.Query.ListOfTables,
 					Engine:         control.Query.Engine,
-				})
+				}
+				for _, parameter := range control.Query.Parameters {
+					q.Parameters = append(q.Parameters, db.QueryParameter{
+						QueryID:  control.ID,
+						Key:      parameter.Key,
+						Required: parameter.Required,
+					})
+				}
+				g.queries = append(g.queries, q)
 				p.QueryID = &control.ID
 			}
 			g.controls = append(g.controls, p)

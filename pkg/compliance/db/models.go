@@ -328,6 +328,19 @@ type InsightGroupInsight struct {
 	InsightID      uint `gorm:"primaryKey"`
 }
 
+type QueryParameter struct {
+	QueryID  string `gorm:"primaryKey"`
+	Key      string `gorm:"primaryKey"`
+	Required bool   `gorm:"not null"`
+}
+
+func (qp QueryParameter) ToApi() api.QueryParameter {
+	return api.QueryParameter{
+		Key:      qp.Key,
+		Required: qp.Required,
+	}
+}
+
 type Query struct {
 	ID             string `gorm:"primaryKey"`
 	QueryToExecute string
@@ -335,21 +348,27 @@ type Query struct {
 	PrimaryTable   *string
 	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
-	Controls       []Control `gorm:"foreignKey:QueryID"`
-	Insights       []Insight `gorm:"foreignKey:QueryID"`
+	Controls       []Control        `gorm:"foreignKey:QueryID"`
+	Insights       []Insight        `gorm:"foreignKey:QueryID"`
+	Parameters     []QueryParameter `gorm:"foreignKey:QueryID"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
 
 func (q Query) ToApi() api.Query {
-	return api.Query{
+	query := api.Query{
 		ID:             q.ID,
 		QueryToExecute: q.QueryToExecute,
 		Connector:      source.Type(q.Connector),
 		ListOfTables:   q.ListOfTables,
 		PrimaryTable:   q.PrimaryTable,
 		Engine:         q.Engine,
+		Parameters:     make([]api.QueryParameter, 0, len(q.Parameters)),
 		CreatedAt:      q.CreatedAt,
 		UpdatedAt:      q.UpdatedAt,
 	}
+	for _, p := range q.Parameters {
+		query.Parameters = append(query.Parameters, p.ToApi())
+	}
+	return query
 }

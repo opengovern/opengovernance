@@ -83,6 +83,15 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 				logger.Error("failure in insert", zap.Error(err))
 				return err
 			}
+			for _, param := range obj.Parameters {
+				err = tx.Clauses(clause.OnConflict{
+					Columns:   []clause.Column{{Name: "key"}, {Name: "query_id"}}, // key columns
+					DoUpdates: clause.AssignmentColumns([]string{"required"}),     // column needed to be updated
+				}).Create(&param).Error
+				if err != nil {
+					return fmt.Errorf("failure in query parameter insert: %v", err)
+				}
+			}
 		}
 
 		for _, obj := range p.insights {
