@@ -13,6 +13,7 @@ func (k QueryParameterKey) String() string {
 
 var QueryParameterKeys = []QueryParameterKey{
 	"eksClusterOldestVersionSupported",
+	"apiGatewayValidEndpointConfigurationTypes",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
