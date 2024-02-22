@@ -5569,14 +5569,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Sets the config metadata for the given key",
+                "description": "Sets the query parameters from the request body",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Set key metadata",
+                "summary": "Set query parameter",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -5584,7 +5584,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest"
                         }
                     }
                 ],
@@ -5624,6 +5624,31 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata"
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/api/v1/query_parameter": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns the list of query parameters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "List query parameters",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.ListQueryParametersResponse"
                         }
                     }
                 }
@@ -11680,6 +11705,28 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.ListQueryParametersResponse": {
+            "type": "object",
+            "properties": {
+                "queryParameters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.QueryParameter"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.QueryParameter": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest": {
             "type": "object",
             "properties": {
@@ -11687,6 +11734,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "value": {}
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest": {
+            "type": "object",
+            "properties": {
+                "queryParameters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.QueryParameter"
+                    }
+                }
             }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata": {

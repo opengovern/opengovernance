@@ -2896,11 +2896,32 @@ definitions:
         example: Compute
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_api.ListQueryParametersResponse:
+    properties:
+      queryParameters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.QueryParameter'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_api.QueryParameter:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest:
     properties:
       key:
         type: string
       value: {}
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest:
+    properties:
+      queryParameters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.QueryParameter'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata:
     properties:
@@ -7882,14 +7903,14 @@ paths:
       - metadata
   /metadata/api/v1/metadata:
     post:
-      description: Sets the config metadata for the given key
+      description: Sets the query parameters from the request body
       parameters:
       - description: Request Body
         in: body
         name: req
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest'
       produces:
       - application/json
       responses:
@@ -7897,7 +7918,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Set key metadata
+      summary: Set query parameter
       tags:
       - metadata
   /metadata/api/v1/metadata/{key}:
@@ -7919,6 +7940,21 @@ paths:
       security:
       - BearerToken: []
       summary: Get key metadata
+      tags:
+      - metadata
+  /metadata/api/v1/query_parameter:
+    get:
+      description: Returns the list of query parameters
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.ListQueryParametersResponse'
+      security:
+      - BearerToken: []
+      summary: List query parameters
       tags:
       - metadata
   /onboard/api/v1/catalog/metrics:

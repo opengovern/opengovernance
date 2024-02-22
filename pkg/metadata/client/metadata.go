@@ -18,6 +18,8 @@ var ErrConfigNotFound = errors.New("config not found")
 type MetadataServiceClient interface {
 	GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error)
 	SetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey, value any) error
+	ListQueryParameters(ctx *httpclient.Context) (api.ListQueryParametersResponse, error)
+	SetQueryParameter(ctx *httpclient.Context, request api.SetQueryParameterRequest) error
 }
 
 type metadataClient struct {
@@ -90,6 +92,35 @@ func (s *metadataClient) SetConfigMetadata(ctx *httpclient.Context, key models.M
 
 	var cnf models.ConfigMetadata
 	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), jsonReq, &cnf); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *metadataClient) ListQueryParameters(ctx *httpclient.Context) (api.ListQueryParametersResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/query_parameter", s.baseURL)
+	var resp api.ListQueryParametersResponse
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return resp, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return resp, err
+	}
+	return resp, nil
+}
+
+func (s *metadataClient) SetQueryParameter(ctx *httpclient.Context, request api.SetQueryParameterRequest) error {
+	url := fmt.Sprintf("%s/api/v1/query_parameter", s.baseURL)
+	jsonReq, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), jsonReq, nil); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return echo.NewHTTPError(statusCode, err.Error())
 		}
