@@ -15,6 +15,10 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsEksClusterOldestVersionSupported",
 	"awsApiGatewayValidEndpointConfigurationTypes",
 	"awsClassicLoadBalancerPredefinedPolicyName",
+	"awsLambdaFunctionAllowedRuntimes",
+	"awsLambdaFunctionAllowedRoles",
+	"awsLambdaFunctionAllowedTimeouts",
+	"awsLambdaFunctionAllowedMemorySizes",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
