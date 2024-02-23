@@ -12,8 +12,9 @@ func (k QueryParameterKey) String() string {
 }
 
 var QueryParameterKeys = []QueryParameterKey{
-	"eksClusterOldestVersionSupported",
-	"apiGatewayValidEndpointConfigurationTypes",
+	"awsEksClusterOldestVersionSupported",
+	"awsApiGatewayValidEndpointConfigurationTypes",
+	"awsClassicLoadBalancerPredefinedPolicyName",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
