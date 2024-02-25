@@ -116,13 +116,26 @@ func (w *Worker) Run(ctx context.Context) error {
 	consumeCtx, err := w.jq.Consume(ctx, "compliance-runner", StreamName, []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("received a new job")
 		w.logger.Info("committing")
-		if err := msg.Ack(); err != nil {
-			w.logger.Error("failed to send an ack message", zap.Error(err))
+		if err := msg.InProgress(); err != nil {
+			w.logger.Error("failed to send the initial in progress message", zap.Error(err), zap.Any("msg", msg))
 		}
+		ticker := time.NewTicker(15 * time.Second)
+		go func() {
+			for range ticker.C {
+				if err := msg.InProgress(); err != nil {
+					w.logger.Error("failed to send an in progress message", zap.Error(err), zap.Any("msg", msg))
+				}
+			}
+		}()
 
 		_, _, err := w.ProcessMessage(context.Background(), msg)
 		if err != nil {
 			w.logger.Error("failed to process message", zap.Error(err))
+		}
+		ticker.Stop()
+
+		if err := msg.Ack(); err != nil {
+			w.logger.Error("failed to send the ack message", zap.Error(err), zap.Any("msg", msg))
 		}
 
 		//if requeue {
