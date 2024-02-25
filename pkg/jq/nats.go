@@ -89,17 +89,36 @@ func (jq *JobQueue) Consume(
 	queue string,
 	handler func(jetstream.Msg),
 ) (jetstream.ConsumeContext, error) {
-	consumer, err := jq.js.CreateOrUpdateConsumer(ctx, stream, jetstream.ConsumerConfig{
+	return jq.ConsumeWithConfig(ctx, service, stream, topics, queue, jetstream.ConsumerConfig{
 		Name:              fmt.Sprintf("%s-service", service),
-		Durable:           "",
 		Description:       fmt.Sprintf("%s Service", strings.ToTitle(service)),
-		Replicas:          1,
 		FilterSubjects:    topics,
+		Durable:           "",
+		Replicas:          1,
 		AckPolicy:         jetstream.AckExplicitPolicy,
 		DeliverPolicy:     jetstream.DeliverAllPolicy,
 		MaxAckPending:     -1,
 		InactiveThreshold: time.Hour,
-	})
+	}, handler)
+}
+
+// ConsumeWithConfig consumes messages from the given topic using the specified consumer config
+// it creates pull consumer which is the only mode that is available in the new version
+// of nats.go library.
+func (jq *JobQueue) ConsumeWithConfig(
+	ctx context.Context,
+	service string,
+	stream string,
+	topics []string,
+	queue string,
+	config jetstream.ConsumerConfig,
+	handler func(jetstream.Msg),
+) (jetstream.ConsumeContext, error) {
+	config.Name = fmt.Sprintf("%s-service", service)
+	config.Description = fmt.Sprintf("%s Service", strings.ToTitle(service))
+	config.FilterSubjects = topics
+
+	consumer, err := jq.js.CreateOrUpdateConsumer(ctx, stream, config)
 	if err != nil {
 		return nil, err
 	}
