@@ -88,7 +88,7 @@ func getControlPaths(benchmarkID, controlID string, currentPath []string, allBen
 func (s *Scheduler) getParentBenchmarkPaths(rootBenchmark, controlID string) ([][]string, error) {
 	benchmarks, err := s.complianceClient.ListAllBenchmarks(&httpclient.Context{
 		UserRole: authApi.InternalRole,
-	})
+	}, false)
 	if err != nil {
 		return nil, err
 	}

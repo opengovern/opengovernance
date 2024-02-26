@@ -96,7 +96,7 @@ func NewWorker(
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
 
-	benchmarks, err := w.complianceClient.ListAllBenchmarks(&httpclient.Context{UserRole: authApi.InternalRole})
+	benchmarks, err := w.complianceClient.ListAllBenchmarks(&httpclient.Context{UserRole: authApi.InternalRole}, true)
 	if err != nil {
 		logger.Error("failed to get benchmarks", zap.Error(err))
 		return nil, err
