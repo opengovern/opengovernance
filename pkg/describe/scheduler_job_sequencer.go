@@ -163,6 +163,16 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 				}
 			}
 		}
+
+		if len(runners) == 0 {
+			s.logger.Error("no runners found", zap.String("benchmarkID", parameters.BenchmarkID), zap.Strings("controlIDs", parameters.ControlIDs))
+			err = s.db.UpdateJobSequencerFinished(job.ID, nil)
+			if err != nil {
+				s.logger.Error("error while updating job sequencer", zap.Error(err))
+				return err
+			}
+		}
+
 		err = s.db.CreateRunnerJobs(runners)
 		if err != nil {
 			s.logger.Error("error while creating runners", zap.Error(err))
