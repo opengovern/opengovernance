@@ -316,8 +316,10 @@ func UniqueArray[T any](arr []T) []T {
 	m := make(map[string]T)
 	for _, item := range arr {
 		// hash the item
-		hash, _ := sha1.New().Write([]byte(fmt.Sprintf("%v", item)))
-		m[fmt.Sprintf("%x", hash)] = item
+		hash := sha1.New()
+		hash.Write([]byte(fmt.Sprintf("%v", item)))
+		hashResult := hash.Sum(nil)
+		m[fmt.Sprintf("%x", hashResult)] = item
 	}
 	var resp []T
 	for _, v := range m {
