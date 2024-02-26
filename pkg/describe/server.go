@@ -2,6 +2,7 @@ package describe
 
 import (
 	"context"
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -311,14 +312,16 @@ func extractResourceTypes(query string, connector source.Type) []string {
 	return result
 }
 
-func UniqueArray(arr []string) []string {
-	m := map[string]interface{}{}
+func UniqueArray[T any](arr []T) []T {
+	m := make(map[string]T)
 	for _, item := range arr {
-		m[item] = struct{}{}
+		// hash the item
+		hash, _ := sha1.New().Write([]byte(fmt.Sprintf("%v", item)))
+		m[fmt.Sprintf("%x", hash)] = item
 	}
-	var resp []string
-	for k := range m {
-		resp = append(resp, k)
+	var resp []T
+	for _, v := range m {
+		resp = append(resp, v)
 	}
 	return resp
 }

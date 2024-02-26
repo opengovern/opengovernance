@@ -64,28 +64,28 @@ func (s *Scheduler) checkJobSequences() error {
 	return nil
 }
 
-func path(benchmarkID, controlID string, benchmarks []api.Benchmark) []string {
-	for _, b := range benchmarks {
+func getControlPaths(benchmarkID, controlID string, currentPath []string, allBenchmarksCache []api.Benchmark) [][]string {
+	for _, b := range allBenchmarksCache {
 		if b.ID != benchmarkID {
 			continue
 		}
-
-		paths := []string{b.ID}
+		paths := make([][]string, 0)
 		for _, control := range b.Controls {
 			if control == controlID {
-				return paths
+				paths = append(paths, append(currentPath, benchmarkID))
+				break
 			}
 		}
 
 		for _, child := range b.Children {
-			paths = append(paths, path(child, controlID, benchmarks)...)
+			paths = append(paths, getControlPaths(child, controlID, append(currentPath, benchmarkID), allBenchmarksCache)...)
 		}
 		return paths
 	}
 	return nil
 }
 
-func (s *Scheduler) getParentBenchmarkIDs(rootBenchmark, controlID string) ([]string, error) {
+func (s *Scheduler) getParentBenchmarkPaths(rootBenchmark, controlID string) ([][]string, error) {
 	benchmarks, err := s.complianceClient.ListAllBenchmarks(&httpclient.Context{
 		UserRole: authApi.InternalRole,
 	})
@@ -93,7 +93,7 @@ func (s *Scheduler) getParentBenchmarkIDs(rootBenchmark, controlID string) ([]st
 		return nil, err
 	}
 
-	paths := path(rootBenchmark, controlID, benchmarks)
+	paths := getControlPaths(rootBenchmark, controlID, nil, benchmarks)
 	paths = UniqueArray(paths)
 	return paths, nil
 }
@@ -126,12 +126,21 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 
 		runners := make([]*model.ComplianceRunner, 0, len(parameters.ConnectionIDs)*len(controls))
 		for _, control := range controls {
+			parentPaths, err := s.getParentBenchmarkPaths(parameters.BenchmarkID, control.ID)
+			if len(parentPaths) == 0 {
+				s.logger.Error("no parent paths found", zap.String("benchmarkID", parameters.BenchmarkID), zap.String("controlID", control.ID))
+				continue
+			}
 			for _, connectionID := range parameters.ConnectionIDs {
-				callers := runner.Caller{
-					RootBenchmark:      parameters.BenchmarkID,
-					ParentBenchmarkIDs: []string{parameters.BenchmarkID},
-					ControlID:          control.ID,
-					ControlSeverity:    control.Severity,
+				callers := make([]runner.Caller, 0, len(parentPaths))
+				for _, path := range parentPaths {
+					caller := runner.Caller{
+						RootBenchmark:      parameters.BenchmarkID,
+						ParentBenchmarkIDs: path,
+						ControlID:          control.ID,
+						ControlSeverity:    control.Severity,
+					}
+					callers = append(callers, caller)
 				}
 
 				runnerJob := model.ComplianceRunner{
@@ -143,7 +152,7 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 					Status:         runner.ComplianceRunnerCreated,
 					FailureMessage: "",
 				}
-				err = runnerJob.SetCallers([]runner.Caller{callers})
+				err = runnerJob.SetCallers(callers)
 				if err != nil {
 					s.logger.Error("failed to set callers", zap.Error(err))
 					return err
