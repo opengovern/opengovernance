@@ -2733,6 +2733,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		ControlsSeverityStatus:   controlSeverityResult,
 		ResourcesSeverityStatus:  resourcesSeverityResult,
 		ConnectionsStatus:        connectionsResult,
+		CostOptimization:         summaryAtTime.Connections.BenchmarkResult.Result.CostOptimization,
 		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:            lastJobStatus,
 	}
