@@ -1149,6 +1149,9 @@ definitions:
         type: string
       controlTitle:
         type: string
+      costOptimization:
+        example: 0.5
+        type: number
       evaluatedAt:
         example: 1589395200
         type: integer

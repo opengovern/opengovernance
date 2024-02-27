@@ -6,6 +6,7 @@ import (
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
@@ -87,6 +88,9 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			c, err := strconv.ParseFloat(v, 64)
 			if err == nil {
 				costOptimization = &c
+			} else {
+				fmt.Printf("error parsing cost_optimization: %s\n", err)
+				costOptimization = utils.GetPointer(0.0)
 			}
 		}
 		severity := caller.ControlSeverity

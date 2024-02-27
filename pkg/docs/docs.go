@@ -9191,6 +9191,10 @@ const docTemplate = `{
                 "controlTitle": {
                     "type": "string"
                 },
+                "costOptimization": {
+                    "type": "number",
+                    "example": 0.5
+                },
                 "evaluatedAt": {
                     "type": "integer",
                     "example": 1589395200
