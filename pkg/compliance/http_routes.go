@@ -2380,9 +2380,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		csResult := api.ConformanceStatusSummary{}
 		sResult := kaytuTypes.SeverityResult{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+		var costOptimization *float64
 		addToResults := func(resultGroup types.ResultGroup) {
 			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
 			sResult.AddResultMap(resultGroup.Result.SeverityResult)
+			costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
 			for controlId, controlResult := range resultGroup.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
@@ -2482,7 +2484,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Checks:                   sResult,
 			ControlsSeverityStatus:   controlSeverityResult,
 			ResourcesSeverityStatus:  resourcesSeverityResult,
-			CostOptimization:         summaryAtTime.Connections.BenchmarkResult.Result.CostOptimization,
+			CostOptimization:         costOptimization,
 			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 			LastJobStatus:            "",
 			TopConnections:           topConnections,
@@ -2599,9 +2601,11 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	sResult := kaytuTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 	connectionsResult := api.BenchmarkStatusResult{}
+	var costOptimization *float64
 	addToResults := func(resultGroup types.ResultGroup) {
 		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
 		sResult.AddResultMap(resultGroup.Result.SeverityResult)
+		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
 		for controlId, controlResult := range resultGroup.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
 			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
@@ -2733,7 +2737,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		ControlsSeverityStatus:   controlSeverityResult,
 		ResourcesSeverityStatus:  resourcesSeverityResult,
 		ConnectionsStatus:        connectionsResult,
-		CostOptimization:         summaryAtTime.Connections.BenchmarkResult.Result.CostOptimization,
+		CostOptimization:         costOptimization,
 		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:            lastJobStatus,
 	}
