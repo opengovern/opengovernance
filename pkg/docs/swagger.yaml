@@ -871,6 +871,8 @@ definitions:
         type: array
       controlsSeverityStatus:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
+      costOptimization:
+        type: number
       createdAt:
         description: Benchmark creation date
         example: "2020-01-01T00:00:00Z"

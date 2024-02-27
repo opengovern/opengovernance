@@ -2482,6 +2482,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Checks:                   sResult,
 			ControlsSeverityStatus:   controlSeverityResult,
 			ResourcesSeverityStatus:  resourcesSeverityResult,
+			CostOptimization:         summaryAtTime.Connections.BenchmarkResult.Result.CostOptimization,
 			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 			LastJobStatus:            "",
 			TopConnections:           topConnections,
