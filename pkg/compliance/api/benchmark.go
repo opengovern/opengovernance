@@ -86,6 +86,7 @@ type BenchmarkEvaluationSummary struct {
 	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`
 	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`
 	ConnectionsStatus        BenchmarkStatusResult            `json:"connectionsStatus"`
+	CostOptimization         *float64                         `json:"costOptimization"`
 	EvaluatedAt              *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
 	LastJobStatus            string                           `json:"lastJobStatus" example:"success"`
 	TopConnections           []TopFieldRecord                 `json:"topConnections"`

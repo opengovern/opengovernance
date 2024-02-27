@@ -8803,6 +8803,9 @@ const docTemplate = `{
                 "controlsSeverityStatus": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus"
                 },
+                "costOptimization": {
+                    "type": "number"
+                },
                 "createdAt": {
                     "description": "Benchmark creation date",
                     "type": "string",

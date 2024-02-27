@@ -2,15 +2,17 @@ package types
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 
 	"github.com/axiomhq/hyperloglog"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
 type Result struct {
-	QueryResult    map[types.ConformanceStatus]int
-	SeverityResult map[types.FindingSeverity]int
-	SecurityScore  float64
+	QueryResult      map[types.ConformanceStatus]int
+	SeverityResult   map[types.FindingSeverity]int
+	SecurityScore    float64
+	CostOptimization *float64 `json:"CostOptimization,omitempty"`
 }
 
 func (r Result) IsFullyPassed() bool {
@@ -47,6 +49,8 @@ type ControlResult struct {
 	// these are not exported fields so they are not marshalled
 	allConnections    *hyperloglog.Sketch
 	failedConnections *hyperloglog.Sketch
+
+	CostOptimization *float64 `json:"CostOptimization,omitempty"`
 }
 
 type BenchmarkSummaryResult struct {
@@ -75,6 +79,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 		r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
 	}
 	r.BenchmarkResult.Result.QueryResult[finding.ConformanceStatus]++
+	r.BenchmarkResult.Result.CostOptimization = utils.PAdd(r.BenchmarkResult.Result.CostOptimization, finding.CostOptimization)
 
 	connection, ok := r.Connections[finding.ConnectionID]
 	if !ok {
@@ -92,6 +97,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 		connection.Result.SeverityResult[finding.Severity]++
 	}
 	connection.Result.QueryResult[finding.ConformanceStatus]++
+	connection.Result.CostOptimization = utils.PAdd(connection.Result.CostOptimization, finding.CostOptimization)
 	r.Connections[finding.ConnectionID] = connection
 
 	resourceType, ok := r.BenchmarkResult.ResourceTypes[finding.ResourceType]
@@ -106,6 +112,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 		resourceType.SeverityResult[finding.Severity]++
 	}
 	resourceType.QueryResult[finding.ConformanceStatus]++
+	resourceType.CostOptimization = utils.PAdd(resourceType.CostOptimization, finding.CostOptimization)
 	r.BenchmarkResult.ResourceTypes[finding.ResourceType] = resourceType
 
 	connectionResourceType, ok := connection.ResourceTypes[finding.ResourceType]
@@ -120,6 +127,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 		connectionResourceType.SeverityResult[finding.Severity]++
 	}
 	connectionResourceType.QueryResult[finding.ConformanceStatus]++
+	connectionResourceType.CostOptimization = utils.PAdd(connectionResourceType.CostOptimization, finding.CostOptimization)
 	connection.ResourceTypes[finding.ResourceType] = connectionResourceType
 
 	control, ok := r.BenchmarkResult.Controls[finding.ControlID]
@@ -141,6 +149,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 	}
 	control.allResources.Insert([]byte(finding.ResourceID))
 	control.allConnections.Insert([]byte(finding.ConnectionID))
+	control.CostOptimization = utils.PAdd(control.CostOptimization, finding.CostOptimization)
 	r.BenchmarkResult.Controls[finding.ControlID] = control
 
 	connectionControl, ok := connection.Controls[finding.ControlID]
@@ -160,6 +169,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 	}
 	connectionControl.allResources.Insert([]byte(finding.ResourceID))
 	connectionControl.allConnections.Insert([]byte(finding.ConnectionID))
+	connectionControl.CostOptimization = utils.PAdd(connectionControl.CostOptimization, finding.CostOptimization)
 	connection.Controls[finding.ControlID] = connectionControl
 }
 

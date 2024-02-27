@@ -58,6 +58,7 @@ type Finding struct {
 	ResourceLocation      string            `json:"resourceLocation" example:"eastus"`
 	ResourceType          string            `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 	Reason                string            `json:"reason" example:"The VM is not using managed disks"`
+	CostOptimization      *float64          `json:"costOptimization"`
 	ComplianceJobID       uint              `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID uint              `json:"parentComplianceJobID" example:"1"`
 	LastTransition        int64             `json:"lastTransition" example:"1589395200"`
