@@ -8217,7 +8217,6 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest": {
             "type": "object",
             "required": [
-                "connectionIDs",
                 "roleName",
                 "userId"
             ],
@@ -10287,6 +10286,12 @@ const docTemplate = `{
                         "null"
                     ]
                 },
+                "parameters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter"
+                    }
+                },
                 "primaryTable": {
                     "type": "string",
                     "example": "null"
@@ -10298,6 +10303,19 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2023-06-16T14:58:08.759554Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "example": "key"
+                },
+                "required": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

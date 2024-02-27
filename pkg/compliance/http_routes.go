@@ -2407,7 +2407,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
-		if topAccountCount > 0 {
+		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
 			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
 				kaytuTypes.ConformanceStatusALARM,
 				kaytuTypes.ConformanceStatusERROR,

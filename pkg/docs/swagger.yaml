@@ -495,7 +495,6 @@ definitions:
         example: auth|123456789
         type: string
     required:
-    - connectionIDs
     - roleName
     - userId
     type: object
@@ -1912,6 +1911,10 @@ definitions:
         items:
           type: string
         type: array
+      parameters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter'
+        type: array
       primaryTable:
         example: "null"
         type: string
@@ -1926,6 +1929,15 @@ definitions:
       updatedAt:
         example: "2023-06-16T14:58:08.759554Z"
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter:
+    properties:
+      key:
+        example: key
+        type: string
+      required:
+        example: true
+        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding:
     properties:
