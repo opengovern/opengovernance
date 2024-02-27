@@ -392,7 +392,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 	}
 	tx = db.ORM.
 		Model(&model.DescribeConnectionJob{}).
-		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", int(describeIntervalHours.Hours()))).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '1 hours'")).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Where("resource_type = ?", resourceType).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run", ErrorCode: "JobTimeOut"})
