@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
+	"reflect"
 	"strconv"
 )
 
@@ -84,13 +85,44 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		if v, ok := recordValue["status"].(string); ok {
 			status = types.ConformanceStatus(v)
 		}
-		if v, ok := recordValue["cost_optimization"].(string); ok {
-			c, err := strconv.ParseFloat(v, 64)
-			if err == nil {
-				costOptimization = &c
-			} else {
-				fmt.Printf("error parsing cost_optimization: %s\n", err)
-				costOptimization = utils.GetPointer(0.0)
+		if v, ok := recordValue["cost_optimization"]; ok {
+			// cast to proper types
+			reflectValue := reflect.ValueOf(v)
+			switch reflectValue.Kind() {
+			case reflect.Float32:
+				costOptimization = utils.GetPointer(float64(v.(float32)))
+			case reflect.Float64:
+				costOptimization = utils.GetPointer(v.(float64))
+			case reflect.String:
+				c, err := strconv.ParseFloat(v.(string), 64)
+				if err == nil {
+					costOptimization = &c
+				} else {
+					fmt.Printf("error parsing cost_optimization: %s\n", err)
+					costOptimization = utils.GetPointer(0.0)
+				}
+			case reflect.Int:
+				costOptimization = utils.GetPointer(float64(v.(int)))
+			case reflect.Int8:
+				costOptimization = utils.GetPointer(float64(v.(int8)))
+			case reflect.Int16:
+				costOptimization = utils.GetPointer(float64(v.(int16)))
+			case reflect.Int32:
+				costOptimization = utils.GetPointer(float64(v.(int32)))
+			case reflect.Int64:
+				costOptimization = utils.GetPointer(float64(v.(int64)))
+			case reflect.Uint:
+				costOptimization = utils.GetPointer(float64(v.(uint)))
+			case reflect.Uint8:
+				costOptimization = utils.GetPointer(float64(v.(uint8)))
+			case reflect.Uint16:
+				costOptimization = utils.GetPointer(float64(v.(uint16)))
+			case reflect.Uint32:
+				costOptimization = utils.GetPointer(float64(v.(uint32)))
+			case reflect.Uint64:
+				costOptimization = utils.GetPointer(float64(v.(uint64)))
+			default:
+				fmt.Printf("error parsing cost_optimization: unknown type %s\n", reflectValue.Kind())
 			}
 		}
 		severity := caller.ControlSeverity
