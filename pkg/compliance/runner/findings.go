@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -10,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
+	"strconv"
 )
 
 func GetResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
@@ -55,6 +55,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		resourceType := queryResourceType
 
 		var kaytuResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
+		var costOptimization *float64
 		var status types.ConformanceStatus
 		if v, ok := recordValue["kaytu_resource_id"].(string); ok {
 			kaytuResourceId = v
@@ -82,7 +83,12 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		if v, ok := recordValue["status"].(string); ok {
 			status = types.ConformanceStatus(v)
 		}
-
+		if v, ok := recordValue["cost_optimization"].(string); ok {
+			c, err := strconv.ParseFloat(v, 64)
+			if err == nil {
+				costOptimization = &c
+			}
+		}
 		severity := caller.ControlSeverity
 		if severity == "" {
 			severity = types.FindingSeverityNone
@@ -113,6 +119,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			ResourceLocation:          resourceLocation,
 			ResourceType:              resourceType,
 			Reason:                    reason,
+			CostOptimization:          costOptimization,
 			ComplianceJobID:           w.ID,
 			ParentComplianceJobID:     w.ParentJobID,
 			ParentBenchmarkReferences: benchmarkReferences,
