@@ -348,7 +348,7 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 
 	tx = db.ORM.
 		Model(&model.DescribeConnectionJob{}).
-		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '1 hour'")).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
 	if tx.Error != nil {
