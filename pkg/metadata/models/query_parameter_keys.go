@@ -15,6 +15,21 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsEksClusterOldestVersionSupported",
 	"awsApiGatewayValidEndpointConfigurationTypes",
 	"awsClassicLoadBalancerPredefinedPolicyName",
+	"awsOpensearchLatestVersion"
+	"awsOpensearchAllowedDataInstanceTypes",
+	"awsOpensearchAllowedDedicatedMasterTypes",
+	"awsAllowedInstanceTypes",
+	"awsOpensearchClusterNodesLimit",
+	"awsEc2NamingPattern",
+	"awsTrustedEndpoints",
+	"awsTrustedAccounts",
+	"awsWebTierTags",
+	"awsAppTierTags",
+	"awsApprovedIPs",
+	"awsSafelistedIPs",
+	"azureAksLatestVersion",
+
+
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
