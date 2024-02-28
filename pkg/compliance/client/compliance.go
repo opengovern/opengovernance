@@ -21,7 +21,7 @@ type ComplianceServiceClient interface {
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
 	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
-	ListAllBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
+	ListAllBenchmarks(ctx *httpclient.Context, isBare bool) ([]compliance.Benchmark, error)
 	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
 	ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error)
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
@@ -260,8 +260,19 @@ func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context) ([]compliance
 	return benchmarks, nil
 }
 
-func (s *complianceClient) ListAllBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error) {
+func (s *complianceClient) ListAllBenchmarks(ctx *httpclient.Context, isBare bool) ([]compliance.Benchmark, error) {
 	url := fmt.Sprintf("%s/api/v1/benchmarks/all", s.baseURL)
+
+	isFirstParamAttached := false
+	if !isBare {
+		if isFirstParamAttached {
+			url += "&"
+		} else {
+			url += "?"
+			isFirstParamAttached = true
+		}
+		url += fmt.Sprintf("bare=%v", isBare)
+	}
 
 	var benchmarks []compliance.Benchmark
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {

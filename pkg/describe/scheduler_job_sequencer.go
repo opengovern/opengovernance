@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"time"
@@ -63,6 +64,40 @@ func (s *Scheduler) checkJobSequences() error {
 	return nil
 }
 
+func getControlPaths(benchmarkID, controlID string, currentPath []string, allBenchmarksCache []api.Benchmark) [][]string {
+	for _, b := range allBenchmarksCache {
+		if b.ID != benchmarkID {
+			continue
+		}
+		paths := make([][]string, 0)
+		for _, control := range b.Controls {
+			if control == controlID {
+				paths = append(paths, append(currentPath, benchmarkID))
+				break
+			}
+		}
+
+		for _, child := range b.Children {
+			paths = append(paths, getControlPaths(child, controlID, append(currentPath, benchmarkID), allBenchmarksCache)...)
+		}
+		return paths
+	}
+	return nil
+}
+
+func (s *Scheduler) getParentBenchmarkPaths(rootBenchmark, controlID string) ([][]string, error) {
+	benchmarks, err := s.complianceClient.ListAllBenchmarks(&httpclient.Context{
+		UserRole: authApi.InternalRole,
+	}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	paths := getControlPaths(rootBenchmark, controlID, nil, benchmarks)
+	paths = UniqueArray(paths)
+	return paths, nil
+}
+
 func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 	switch job.NextJob {
 	case model.JobSequencerJobTypeAnalytics:
@@ -91,12 +126,21 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 
 		runners := make([]*model.ComplianceRunner, 0, len(parameters.ConnectionIDs)*len(controls))
 		for _, control := range controls {
+			parentPaths, err := s.getParentBenchmarkPaths(parameters.BenchmarkID, control.ID)
+			if len(parentPaths) == 0 {
+				s.logger.Error("no parent paths found", zap.String("benchmarkID", parameters.BenchmarkID), zap.String("controlID", control.ID))
+				continue
+			}
 			for _, connectionID := range parameters.ConnectionIDs {
-				callers := runner.Caller{
-					RootBenchmark:      parameters.BenchmarkID,
-					ParentBenchmarkIDs: []string{parameters.BenchmarkID},
-					ControlID:          control.ID,
-					ControlSeverity:    control.Severity,
+				callers := make([]runner.Caller, 0, len(parentPaths))
+				for _, path := range parentPaths {
+					caller := runner.Caller{
+						RootBenchmark:      parameters.BenchmarkID,
+						ParentBenchmarkIDs: path,
+						ControlID:          control.ID,
+						ControlSeverity:    control.Severity,
+					}
+					callers = append(callers, caller)
 				}
 
 				runnerJob := model.ComplianceRunner{
@@ -108,7 +152,7 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 					Status:         runner.ComplianceRunnerCreated,
 					FailureMessage: "",
 				}
-				err = runnerJob.SetCallers([]runner.Caller{callers})
+				err = runnerJob.SetCallers(callers)
 				if err != nil {
 					s.logger.Error("failed to set callers", zap.Error(err))
 					return err
@@ -119,6 +163,16 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 				}
 			}
 		}
+
+		if len(runners) == 0 {
+			s.logger.Error("no runners found", zap.String("benchmarkID", parameters.BenchmarkID), zap.Strings("controlIDs", parameters.ControlIDs))
+			err = s.db.UpdateJobSequencerFinished(job.ID, nil)
+			if err != nil {
+				s.logger.Error("error while updating job sequencer", zap.Error(err))
+				return err
+			}
+		}
+
 		err = s.db.CreateRunnerJobs(runners)
 		if err != nil {
 			s.logger.Error("error while creating runners", zap.Error(err))

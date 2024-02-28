@@ -186,7 +186,7 @@ func (h HttpHandler) GetFilters(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			req	body	api.SetQueryParameterRequest	true	"Request Body"
 //	@Success		200
-//	@Router			/metadata/api/v1/metadata [post]
+//	@Router			/metadata/api/v1/query_parameter [post]
 func (h HttpHandler) SetQueryParameter(ctx echo.Context) error {
 	var req api.SetQueryParameterRequest
 	if err := bindValidate(ctx, &req); err != nil {

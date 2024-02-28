@@ -495,7 +495,6 @@ definitions:
         example: auth|123456789
         type: string
     required:
-    - connectionIDs
     - roleName
     - userId
     type: object
@@ -872,6 +871,8 @@ definitions:
         type: array
       controlsSeverityStatus:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
+      costOptimization:
+        type: number
       createdAt:
         description: Benchmark creation date
         example: "2020-01-01T00:00:00Z"
@@ -1148,6 +1149,9 @@ definitions:
         type: string
       controlTitle:
         type: string
+      costOptimization:
+        example: 0.5
+        type: number
       evaluatedAt:
         example: 1589395200
         type: integer
@@ -1912,6 +1916,10 @@ definitions:
         items:
           type: string
         type: array
+      parameters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter'
+        type: array
       primaryTable:
         example: "null"
         type: string
@@ -1926,6 +1934,15 @@ definitions:
       updatedAt:
         example: "2023-06-16T14:58:08.759554Z"
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter:
+    properties:
+      key:
+        example: key
+        type: string
+      required:
+        example: true
+        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFinding:
     properties:
@@ -7903,14 +7920,14 @@ paths:
       - metadata
   /metadata/api/v1/metadata:
     post:
-      description: Sets the query parameters from the request body
+      description: Sets the config metadata for the given key
       parameters:
       - description: Request Body
         in: body
         name: req
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest'
       produces:
       - application/json
       responses:
@@ -7918,7 +7935,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Set query parameter
+      summary: Set key metadata
       tags:
       - metadata
   /metadata/api/v1/metadata/{key}:
@@ -7955,6 +7972,25 @@ paths:
       security:
       - BearerToken: []
       summary: List query parameters
+      tags:
+      - metadata
+    post:
+      description: Sets the query parameters from the request body
+      parameters:
+      - description: Request Body
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Set query parameter
       tags:
       - metadata
   /onboard/api/v1/catalog/metrics:

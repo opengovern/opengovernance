@@ -5564,14 +5564,14 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Sets the query parameters from the request body",
+                "description": "Sets the config metadata for the given key",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Set query parameter",
+                "summary": "Set key metadata",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -5579,7 +5579,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest"
                         }
                     }
                 ],
@@ -5645,6 +5645,37 @@
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.ListQueryParametersResponse"
                         }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Sets the query parameters from the request body",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "Set query parameter",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetQueryParameterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -8212,7 +8243,6 @@
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest": {
             "type": "object",
             "required": [
-                "connectionIDs",
                 "roleName",
                 "userId"
             ],
@@ -8768,6 +8798,9 @@
                 "controlsSeverityStatus": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus"
                 },
+                "costOptimization": {
+                    "type": "number"
+                },
                 "createdAt": {
                     "description": "Benchmark creation date",
                     "type": "string",
@@ -9152,6 +9185,10 @@
                 },
                 "controlTitle": {
                     "type": "string"
+                },
+                "costOptimization": {
+                    "type": "number",
+                    "example": 0.5
                 },
                 "evaluatedAt": {
                     "type": "integer",
@@ -10282,6 +10319,12 @@
                         "null"
                     ]
                 },
+                "parameters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter"
+                    }
+                },
                 "primaryTable": {
                     "type": "string",
                     "example": "null"
@@ -10293,6 +10336,19 @@
                 "updatedAt": {
                     "type": "string",
                     "example": "2023-06-16T14:58:08.759554Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "example": "key"
+                },
+                "required": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

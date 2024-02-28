@@ -281,7 +281,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
 					findingsEvents = append(findingsEvents, fs)
 				} else {
-					w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", f))
+					w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", newFinding))
 					newFinding.LastTransition = f.LastTransition
 				}
 

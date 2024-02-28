@@ -2,14 +2,16 @@ package runner
 
 import (
 	"fmt"
-
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
+	"reflect"
+	"strconv"
 )
 
 func GetResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
@@ -55,6 +57,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		resourceType := queryResourceType
 
 		var kaytuResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
+		var costOptimization *float64
 		var status types.ConformanceStatus
 		if v, ok := recordValue["kaytu_resource_id"].(string); ok {
 			kaytuResourceId = v
@@ -82,7 +85,46 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		if v, ok := recordValue["status"].(string); ok {
 			status = types.ConformanceStatus(v)
 		}
-
+		if v, ok := recordValue["cost_optimization"]; ok {
+			// cast to proper types
+			reflectValue := reflect.ValueOf(v)
+			switch reflectValue.Kind() {
+			case reflect.Float32:
+				costOptimization = utils.GetPointer(float64(v.(float32)))
+			case reflect.Float64:
+				costOptimization = utils.GetPointer(v.(float64))
+			case reflect.String:
+				c, err := strconv.ParseFloat(v.(string), 64)
+				if err == nil {
+					costOptimization = &c
+				} else {
+					fmt.Printf("error parsing cost_optimization: %s\n", err)
+					costOptimization = utils.GetPointer(0.0)
+				}
+			case reflect.Int:
+				costOptimization = utils.GetPointer(float64(v.(int)))
+			case reflect.Int8:
+				costOptimization = utils.GetPointer(float64(v.(int8)))
+			case reflect.Int16:
+				costOptimization = utils.GetPointer(float64(v.(int16)))
+			case reflect.Int32:
+				costOptimization = utils.GetPointer(float64(v.(int32)))
+			case reflect.Int64:
+				costOptimization = utils.GetPointer(float64(v.(int64)))
+			case reflect.Uint:
+				costOptimization = utils.GetPointer(float64(v.(uint)))
+			case reflect.Uint8:
+				costOptimization = utils.GetPointer(float64(v.(uint8)))
+			case reflect.Uint16:
+				costOptimization = utils.GetPointer(float64(v.(uint16)))
+			case reflect.Uint32:
+				costOptimization = utils.GetPointer(float64(v.(uint32)))
+			case reflect.Uint64:
+				costOptimization = utils.GetPointer(float64(v.(uint64)))
+			default:
+				fmt.Printf("error parsing cost_optimization: unknown type %s\n", reflectValue.Kind())
+			}
+		}
 		severity := caller.ControlSeverity
 		if severity == "" {
 			severity = types.FindingSeverityNone
@@ -113,6 +155,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			ResourceLocation:          resourceLocation,
 			ResourceType:              resourceType,
 			Reason:                    reason,
+			CostOptimization:          costOptimization,
 			ComplianceJobID:           w.ID,
 			ParentComplianceJobID:     w.ParentJobID,
 			ParentBenchmarkReferences: benchmarkReferences,

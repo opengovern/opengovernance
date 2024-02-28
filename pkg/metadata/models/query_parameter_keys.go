@@ -28,8 +28,12 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsApprovedIPs",
 	"awsSafelistedIPs",
 	"azureAksLatestVersion",
-
-
+	"awsLambdaFunctionAllowedRuntimes",
+	"awsLambdaFunctionAllowedRoles",
+	"awsLambdaFunctionAllowedTimeouts",
+	"awsLambdaFunctionAllowedMemorySizes",
+	"awsIamBlacklistedPolicies",
+	"awsEc2InstanceValidInstanceTypes",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {

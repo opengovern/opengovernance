@@ -123,6 +123,7 @@ type Finding struct {
 	ResourceLocation          string                `json:"resourceLocation" example:"eastus"`
 	ResourceType              string                `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 	Reason                    string                `json:"reason" example:"The VM is not using managed disks"`
+	CostOptimization          *float64              `json:"costOptimization" example:"0.5"`
 	ComplianceJobID           uint                  `json:"complianceJobID" example:"1"`
 	ParentComplianceJobID     uint                  `json:"parentComplianceJobID" example:"1"`
 	ParentBenchmarkReferences []string              `json:"parentBenchmarkReferences"`
@@ -156,6 +157,7 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 		ResourceLocation:          finding.ResourceLocation,
 		ResourceType:              finding.ResourceType,
 		Reason:                    finding.Reason,
+		CostOptimization:          finding.CostOptimization,
 		ComplianceJobID:           finding.ComplianceJobID,
 		ParentBenchmarkReferences: finding.ParentBenchmarkReferences,
 		ParentComplianceJobID:     finding.ParentComplianceJobID,

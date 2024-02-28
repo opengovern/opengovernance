@@ -2380,9 +2380,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		csResult := api.ConformanceStatusSummary{}
 		sResult := kaytuTypes.SeverityResult{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+		var costOptimization *float64
 		addToResults := func(resultGroup types.ResultGroup) {
 			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
 			sResult.AddResultMap(resultGroup.Result.SeverityResult)
+			costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
 			for controlId, controlResult := range resultGroup.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
@@ -2407,7 +2409,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
-		if topAccountCount > 0 {
+		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
 			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
 				kaytuTypes.ConformanceStatusALARM,
 				kaytuTypes.ConformanceStatusERROR,
@@ -2482,6 +2484,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Checks:                   sResult,
 			ControlsSeverityStatus:   controlSeverityResult,
 			ResourcesSeverityStatus:  resourcesSeverityResult,
+			CostOptimization:         costOptimization,
 			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 			LastJobStatus:            "",
 			TopConnections:           topConnections,
@@ -2598,9 +2601,11 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	sResult := kaytuTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 	connectionsResult := api.BenchmarkStatusResult{}
+	var costOptimization *float64
 	addToResults := func(resultGroup types.ResultGroup) {
 		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
 		sResult.AddResultMap(resultGroup.Result.SeverityResult)
+		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
 		for controlId, controlResult := range resultGroup.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
 			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
@@ -2732,6 +2737,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		ControlsSeverityStatus:   controlSeverityResult,
 		ResourcesSeverityStatus:  resourcesSeverityResult,
 		ConnectionsStatus:        connectionsResult,
+		CostOptimization:         costOptimization,
 		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:            lastJobStatus,
 	}

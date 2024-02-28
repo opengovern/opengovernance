@@ -155,7 +155,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 		return err
 	}
 
-	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Second*10)
+	t := ticker.NewTicker(JobTimeoutCheckInterval, time.Minute*1)
 	defer t.Stop()
 
 	for {
