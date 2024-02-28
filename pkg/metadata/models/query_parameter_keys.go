@@ -15,7 +15,7 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsEksClusterOldestVersionSupported",
 	"awsApiGatewayValidEndpointConfigurationTypes",
 	"awsClassicLoadBalancerPredefinedPolicyName",
-	"awsOpensearchLatestVersion"
+	"awsOpensearchLatestVersion",
 	"awsOpensearchAllowedDataInstanceTypes",
 	"awsOpensearchAllowedDedicatedMasterTypes",
 	"awsAllowedInstanceTypes",
