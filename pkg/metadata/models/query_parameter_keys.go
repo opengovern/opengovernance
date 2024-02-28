@@ -34,6 +34,7 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsLambdaFunctionAllowedMemorySizes",
 	"awsIamBlacklistedPolicies",
 	"awsEc2InstanceValidInstanceTypes",
+	"awsEbsSnapshotAgeMaxDays",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
