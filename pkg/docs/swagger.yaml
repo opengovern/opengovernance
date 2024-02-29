@@ -8587,6 +8587,35 @@ paths:
       summary: Re-evaluates compliance job
       tags:
       - describe
+  /schedule/api/v1/compliance/trigger:
+    put:
+      description: Triggers a compliance job to run immediately for the given benchmark
+      parameters:
+      - collectionFormat: csv
+        description: Benchmark ID
+        in: query
+        items:
+          type: string
+        name: benchmark_id
+        required: true
+        type: array
+      - collectionFormat: csv
+        description: Connection ID
+        in: query
+        items:
+          type: string
+        name: connection_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Triggers compliance job
+      tags:
+      - describe
   /schedule/api/v1/compliance/trigger/{benchmark_id}:
     put:
       description: Triggers a compliance job to run immediately for the given benchmark

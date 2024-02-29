@@ -76,6 +76,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/insight/in_progress/:job_id", httpserver2.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
 	v1.GET("/insight/job/:job_id", httpserver2.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
 	v1.GET("/insight/:insight_id/jobs", httpserver2.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
+	v1.PUT("/compliance/trigger", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJobs, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJobSummary, apiAuth.AdminRole))
 	v1.GET("/compliance/re-evaluate/:benchmark_id", httpserver2.AuthorizeHandler(h.CheckReEvaluateComplianceJob, apiAuth.AdminRole))
@@ -617,6 +618,51 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
+	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+// TriggerConnectionsComplianceJobs godoc
+//
+//	@Summary		Triggers compliance job
+//	@Description	Triggers a compliance job to run immediately for the given benchmark
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param			benchmark_id	query	[]string	true	"Benchmark ID"
+//	@Param			connection_id	query	[]string	false	"Connection ID"
+//	@Router			/schedule/api/v1/compliance/trigger [put]
+func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmark_id")
+
+	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+
+	for _, benchmarkID := range benchmarkIDs {
+		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+		if err != nil {
+			return fmt.Errorf("error while getting benchmarks: %v", err)
+		}
+
+		if benchmark == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+		}
+
+		lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if lastJob != nil && (lastJob.Status == model2.ComplianceJobRunnersInProgress ||
+			lastJob.Status == model2.ComplianceJobSummarizerInProgress ||
+			lastJob.Status == model2.ComplianceJobCreated) {
+			return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
+		}
+
+		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job: %v", err)
+		}
 	}
 	return ctx.JSON(http.StatusOK, "")
 }
