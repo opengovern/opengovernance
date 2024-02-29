@@ -9075,6 +9075,9 @@ const docTemplate = `{
                 "control": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control"
                 },
+                "costOptimization": {
+                    "type": "number"
+                },
                 "evaluatedAt": {
                     "type": "integer"
                 },

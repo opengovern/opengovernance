@@ -800,9 +800,8 @@ type BenchmarksControlSummaryResponse struct {
 	Aggregations struct {
 		BenchmarkIDGroup struct {
 			Buckets []struct {
-				Key          string `json:"key"`
-				LatestResult any    `json:"latest_result"`
-				LastResult   struct {
+				Key        string `json:"key"`
+				LastResult struct {
 					Hits struct {
 						Hits []struct {
 							Source types2.BenchmarkSummary `json:"_source"`
