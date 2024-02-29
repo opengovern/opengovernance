@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -16,6 +17,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -30,11 +32,21 @@ func ResourceTypeConversion(resourceType string) string {
 	switch resourceType {
 	case "aws::elasticloadbalancing::loadbalancer":
 		return "aws_lb"
+	case "aws::ec2::volumesnapshot":
+		return "aws_ebs_snapshot"
 	}
 	return resourceType
 }
 
 func GetValues(resource Resource) map[string]interface{} {
+	switch strings.ToLower(resource.ResourceType) {
+	case "aws::ec2::volumesnapshot":
+		if v, ok := resource.Description.(kaytuAws.EC2VolumeSnapshot); ok {
+			return map[string]interface{}{
+				"volume_size": v.Description.Snapshot.VolumeSize,
+			}
+		}
+	}
 	return map[string]interface{}{}
 }
 
