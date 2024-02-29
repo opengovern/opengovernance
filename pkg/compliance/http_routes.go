@@ -2918,6 +2918,9 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 	if err != nil {
 		return err
 	}
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "invalid benchmarkID")
+	}
 
 	if baseControlsMap == nil {
 		return errors.New("baseControlsMap cannot be nil")
