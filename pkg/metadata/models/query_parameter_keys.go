@@ -35,6 +35,7 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsIamBlacklistedPolicies",
 	"awsEc2InstanceValidInstanceTypes",
 	"awsEbsSnapshotAgeMaxDays",
+	"azureComputeSnapshotAgeMaxDays",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
