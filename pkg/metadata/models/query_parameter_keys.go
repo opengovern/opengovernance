@@ -37,7 +37,7 @@ var QueryParameterKeys = []QueryParameterKey{
 	"awsEbsSnapshotAgeMaxDays",
 	"azureComputeSnapshotAgeMaxDays",
 	"awsRdsBaselineRestorableTimeInHrs",
-	"awsRdsBaselineRetentionPeriodDays"
+	"awsRdsBaselineRetentionPeriodDays",
 }
 
 func ParseQueryParameterKey(key string) (QueryParameterKey, error) {
