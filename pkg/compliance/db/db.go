@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
@@ -279,7 +280,7 @@ func (db Database) GetControlsTitle(ds []string) (map[string]string, error) {
 func (db Database) GetControl(id string) (*Control, error) {
 	var s Control
 	tx := db.Orm.Model(&Control{}).
-		Preload("Tags").
+		Preload(clause.Associations).
 		Where("id = ?", id).
 		First(&s)
 
@@ -288,6 +289,15 @@ func (db Database) GetControl(id string) (*Control, error) {
 			return nil, nil
 		}
 		return nil, tx.Error
+	}
+
+	if s.QueryID != nil {
+		var query Query
+		tx := db.Orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *s.QueryID).First(&query)
+		if tx.Error != nil {
+			return nil, tx.Error
+		}
+		s.Query = &query
 	}
 
 	return &s, nil
