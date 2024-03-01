@@ -176,7 +176,7 @@ func (j Job) Do(
 		fail(fmt.Errorf("populating steampipe config: %w", err))
 		return
 	}
-	err = steampipe.PopulateKaytuPluginSteampipeConfig(esConfig, steampipePgConfig)
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(esConfig, steampipePgConfig, "")
 
 	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {

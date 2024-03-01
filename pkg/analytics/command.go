@@ -148,7 +148,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := steampipe.PopulateKaytuPluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe); err != nil {
+	if err := steampipe.PopulateKaytuPluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe, w.config.PennywiseBaseURL); err != nil {
 		w.logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
 		return err
 	}

@@ -30,6 +30,7 @@ type Config struct {
 	Inventory             config.KaytuService
 	Metadata              config.KaytuService
 	Steampipe             config.Postgres
+	PennywiseBaseURL      string `yaml:"pennywise_base_url"`
 	PrometheusPushAddress string
 }
 
@@ -58,6 +59,10 @@ func NewWorker(
 	}
 	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := steampipe.PopulateKaytuPluginSteampipeConfig(config.ElasticSearch, config.Steampipe, config.PennywiseBaseURL); err != nil {
 		return nil, err
 	}
 
