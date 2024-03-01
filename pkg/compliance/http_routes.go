@@ -3128,16 +3128,10 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 	for _, control := range controls {
 		apiControl := control.ToApi()
 		var resourceType *inventoryApi.ResourceType
-		if control.QueryID != nil {
-			query, err := h.db.GetQuery(*control.QueryID)
-			if err != nil {
-				h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.String("controlID", control.ID))
-				return err
-			}
-			apiControl.Connector, _ = source.ParseType(query.Connector)
-			apiControl.Query = utils.GetPointer(query.ToApi())
-			if query.PrimaryTable != nil {
-				rtName := runner.GetResourceTypeFromTableName(*query.PrimaryTable, source.Type(query.Connector))
+		if control.Query != nil {
+			apiControl.Connector, _ = source.ParseType(control.Query.Connector)
+			if control.Query.PrimaryTable != nil {
+				rtName := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.Type(control.Query.Connector))
 				resourceType = resourceTypeMap[strings.ToLower(rtName)]
 			}
 		}
@@ -3237,16 +3231,10 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	}
 
 	var resourceType *inventoryApi.ResourceType
-	if control.QueryID != nil {
-		query, err := h.db.GetQuery(*control.QueryID)
-		if err != nil {
-			h.logger.Error("failed to fetch query", zap.Error(err), zap.String("queryID", *control.QueryID), zap.Stringp("benchmarkID", benchmarkID))
-			return nil, err
-		}
-		apiControl.Connector, _ = source.ParseType(query.Connector)
-		apiControl.Query = utils.GetPointer(query.ToApi())
-		if query.PrimaryTable != nil {
-			rtName := runner.GetResourceTypeFromTableName(*query.PrimaryTable, source.Type(query.Connector))
+	if control.Query != nil {
+		apiControl.Connector, _ = source.ParseType(control.Query.Connector)
+		if control.Query != nil {
+			rtName := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.Type(control.Query.Connector))
 			resourceType = resourceTypeMap[strings.ToLower(rtName)]
 		}
 	}

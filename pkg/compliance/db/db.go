@@ -225,7 +225,7 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 
 func (db Database) GetQuery(queryID string) (*Query, error) {
 	var s Query
-	tx := db.Orm.Model(&Query{}).
+	tx := db.Orm.Model(&Query{}).Preload(clause.Associations).
 		Where("id = ?", queryID).
 		First(&s)
 
