@@ -575,6 +575,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 			"summaries": map[string]any{
 				"terms": map[string]any{
 					"field": "BenchmarkID",
+					"size":  10000,
 				},
 				"aggs": map[string]any{
 					"last_result": map[string]any{
