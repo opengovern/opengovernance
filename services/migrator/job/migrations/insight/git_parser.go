@@ -50,7 +50,7 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 					InsightID: insight.ID,
 				})
 			}
-
+			insight.Query.ID = fmt.Sprintf("insight_%d", insight.ID)
 			g.insights = append(g.insights, db.Insight{
 				Model: gorm.Model{
 					ID: insight.ID,
@@ -66,7 +66,6 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 				Enabled:     insight.Enabled,
 				Internal:    insight.Internal,
 			})
-			insight.Query.ID = fmt.Sprintf("insight_%d", insight.ID)
 			q := db.Query{
 				ID:             insight.Query.ID,
 				QueryToExecute: insight.Query.QueryToExecute,
