@@ -312,6 +312,33 @@ func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, err
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+
+	queryIds := make([]string, 0, len(s))
+	for _, control := range s {
+		if control.QueryID != nil {
+			queryIds = append(queryIds, *control.QueryID)
+		}
+	}
+	var queriesMap map[string]Query
+	if len(queryIds) > 0 {
+		var queries []Query
+		qtx := db.Orm.Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
+		if qtx.Error != nil {
+			return nil, qtx.Error
+		}
+		queriesMap = make(map[string]Query)
+		for _, query := range queries {
+			queriesMap[query.ID] = query
+		}
+	}
+
+	for i, c := range s {
+		if c.QueryID != nil {
+			v := queriesMap[*c.QueryID]
+			s[i].Query = &v
+		}
+	}
+
 	return s, nil
 }
 
