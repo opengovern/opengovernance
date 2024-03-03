@@ -102,39 +102,35 @@ func getAwsEsDomainValues(resource Resource) (map[string]interface{}, error) {
 
 // getAwsOpenSearchDomainValues get resource values needed for cost estimate from model.OpenSearchDomainDescription
 func getAwsOpenSearchDomainValues(resource Resource) (map[string]interface{}, error) {
-	description := resource.Description
-	bytes, err := json.Marshal(description)
-	if err != nil {
-		return nil, err
-	}
-	var values model.OpenSearchDomainDescription
-	err = json.Unmarshal(bytes, &values)
-
 	var valuesMap map[string]interface{}
-	if values.Domain.ClusterConfig != nil {
-		valuesMap["cluster_config"] = []map[string]interface{}{
-			{
-				"instance_type":            values.Domain.ClusterConfig.InstanceType,
-				"instance_count":           ptrInt(values.Domain.ClusterConfig.InstanceCount),
-				"dedicated_master_enabled": ptrBool(values.Domain.ClusterConfig.DedicatedMasterEnabled),
-				"dedicated_master_type":    values.Domain.ClusterConfig.DedicatedMasterType,
-				"dedicated_master_count":   ptrInt(values.Domain.ClusterConfig.DedicatedMasterCount),
-				"warm_enabled":             ptrBool(values.Domain.ClusterConfig.WarmEnabled),
-				"warm_type":                values.Domain.ClusterConfig.WarmType,
-				"warm_count":               ptrInt(values.Domain.ClusterConfig.WarmCount),
-			},
-		}
-	}
 
-	if values.Domain.EBSOptions != nil {
-		valuesMap["ebs_options"] = []map[string]interface{}{
-			{
-				"ebs_enabled": ptrBool(values.Domain.EBSOptions.EBSEnabled),
-				"volume_type": values.Domain.EBSOptions.VolumeType,
-				"volume_size": ptrInt(values.Domain.EBSOptions.VolumeSize),
-				"iops":        ptrInt(values.Domain.EBSOptions.Iops),
-				"throughput":  ptrInt(values.Domain.EBSOptions.Throughput),
-			},
+	if v, ok := resource.Description.(kaytuAws.OpenSearchDomain); ok {
+
+		if v.Description.Domain.ClusterConfig != nil {
+			valuesMap["cluster_config"] = []map[string]interface{}{
+				{
+					"instance_type":            v.Description.Domain.ClusterConfig.InstanceType,
+					"instance_count":           ptrInt(v.Description.Domain.ClusterConfig.InstanceCount),
+					"dedicated_master_enabled": ptrBool(v.Description.Domain.ClusterConfig.DedicatedMasterEnabled),
+					"dedicated_master_type":    v.Description.Domain.ClusterConfig.DedicatedMasterType,
+					"dedicated_master_count":   ptrInt(v.Description.Domain.ClusterConfig.DedicatedMasterCount),
+					"warm_enabled":             ptrBool(v.Description.Domain.ClusterConfig.WarmEnabled),
+					"warm_type":                v.Description.Domain.ClusterConfig.WarmType,
+					"warm_count":               ptrInt(v.Description.Domain.ClusterConfig.WarmCount),
+				},
+			}
+		}
+
+		if v.Description.Domain.EBSOptions != nil {
+			valuesMap["ebs_options"] = []map[string]interface{}{
+				{
+					"ebs_enabled": ptrBool(v.Description.Domain.EBSOptions.EBSEnabled),
+					"volume_type": v.Description.Domain.EBSOptions.VolumeType,
+					"volume_size": ptrInt(v.Description.Domain.EBSOptions.VolumeSize),
+					"iops":        ptrInt(v.Description.Domain.EBSOptions.Iops),
+					"throughput":  ptrInt(v.Description.Domain.EBSOptions.Throughput),
+				},
+			}
 		}
 	}
 
@@ -222,21 +218,15 @@ func getAwsEksClusterValues(resource Resource) (map[string]interface{}, error) {
 
 // getAwsEc2EipValues get resource values needed for cost estimate from model.EC2EIPDescription
 func getAwsEc2EipValues(resource Resource) (map[string]interface{}, error) {
-	description := resource.Description
-	bytes, err := json.Marshal(description)
-	if err != nil {
-		return nil, err
+	if v, ok := resource.Description.(kaytuAws.EC2EIP); ok {
+		return map[string]interface{}{
+			"customer_owned_ipv4_pool": ptrStr2(v.Description.Address.CustomerOwnedIpv4Pool),
+			"instance":                 ptrStr2(v.Description.Address.InstanceId),
+			"network_interface":        ptrStr2(v.Description.Address.NetworkInterfaceId),
+		}, nil
 	}
-	var values model.EC2EIPDescription
-	err = json.Unmarshal(bytes, &values)
 
-	var valuesMap map[string]interface{}
-
-	valuesMap["customer_owned_ipv4_pool"] = ptrStr2(values.Address.CustomerOwnedIpv4Pool)
-	valuesMap["instance"] = ptrStr2(values.Address.InstanceId)
-	valuesMap["network_interface"] = ptrStr2(values.Address.NetworkInterfaceId)
-
-	return valuesMap, nil
+	return nil, nil
 }
 
 // getAwsElastiCacheReplicationGroupValues get resource values needed for cost estimate from model.ElastiCacheReplicationGroupDescription
@@ -323,22 +313,17 @@ func getAwsEbsSnapshotValues(resource Resource) (map[string]interface{}, error) 
 
 // getAwsEbsVolumeValues get resource values needed for cost estimate from model.EC2VolumeDescription
 func getAwsEbsVolumeValues(resource Resource) (map[string]interface{}, error) {
-	description := resource.Description
-	bytes, err := json.Marshal(description)
-	if err != nil {
-		return nil, err
+	if v, ok := resource.Description.(kaytuAws.EC2Volume); ok {
+		return map[string]interface{}{
+			"availability_zone": ptrStr2(v.Description.Volume.AvailabilityZone),
+			"type":              v.Description.Volume.VolumeType,
+			"size":              ptrInt2(v.Description.Volume.Size),
+			"iops":              ptrInt2(v.Description.Volume.Iops),
+			"throughput":        ptrInt2(v.Description.Volume.Throughput),
+		}, nil
 	}
-	var values model.EC2VolumeDescription
-	err = json.Unmarshal(bytes, &values)
 
-	var valuesMap map[string]interface{}
-
-	valuesMap["availability_zone"] = ptrStr2(values.Volume.AvailabilityZone)
-	valuesMap["type"] = values.Volume.VolumeType
-	valuesMap["size"] = ptrInt2(values.Volume.Size)
-	valuesMap["iops"] = ptrInt2(values.Volume.Iops)
-
-	return valuesMap, nil
+	return nil, nil
 }
 
 // getAwsRdsDbInstanceValues get resource values needed for cost estimate from model.RDSDBInstanceDescription
@@ -434,26 +419,20 @@ func getAwsLoadBalancerValues(resource Resource) (map[string]interface{}, error)
 
 // getAwsLoadBalancer2Values get resource values needed for cost estimate from model.ElasticLoadBalancingV2LoadBalancerDescription
 func getAwsLoadBalancer2Values(resource Resource) (map[string]interface{}, error) {
-	description := resource.Description
-	bytes, err := json.Marshal(description)
-	if err != nil {
-		return nil, err
+	if v, ok := resource.Description.(kaytuAzure.LoadBalancer); ok {
+		return map[string]interface{}{
+			"load_balancer_type": ptrStr2(v.Description.LoadBalancer.Type),
+		}, nil
 	}
-	var values model.ElasticLoadBalancingV2LoadBalancerDescription
-	err = json.Unmarshal(bytes, &values)
 
-	var valuesMap map[string]interface{}
-
-	valuesMap["load_balancer_type"] = values.LoadBalancer.Type
-
-	return valuesMap, nil
+	return nil, nil
 }
 
 func getAzureComputeSnapshotValues(resource Resource) (map[string]interface{}, error) {
 	if v, ok := resource.Description.(kaytuAzure.ComputeSnapshots); ok {
 		return map[string]interface{}{
-			"disk_size_gb": *v.Description.Snapshot.Properties.DiskSizeGB,
-			"location":     *v.Description.Snapshot.Location,
+			"disk_size_gb": ptrInt2(v.Description.Snapshot.Properties.DiskSizeGB),
+			"location":     ptrStr2(v.Description.Snapshot.Location),
 		}, nil
 	} else {
 		return nil, nil
@@ -464,11 +443,11 @@ func getAzureComputeDiskValues(resource Resource) (map[string]interface{}, error
 	if v, ok := resource.Description.(kaytuAzure.ComputeDisk); ok {
 		return map[string]interface{}{
 			"storage_account_type":       *v.Description.Disk.SKU.Name,
-			"location":                   *v.Description.Disk.Location,
-			"disk_size_gb":               *v.Description.Disk.Properties.DiskSizeGB,
-			"on_demand_bursting_enabled": *v.Description.Disk.Properties.BurstingEnabled,
-			"disk_mbps_read_write":       *v.Description.Disk.Properties.DiskMBpsReadWrite,
-			"disk_iops_read_write":       *v.Description.Disk.Properties.DiskIOPSReadWrite,
+			"location":                   ptrStr2(v.Description.Disk.Location),
+			"disk_size_gb":               ptrInt2(v.Description.Disk.Properties.DiskSizeGB),
+			"on_demand_bursting_enabled": ptrBool2(v.Description.Disk.Properties.BurstingEnabled),
+			"disk_mbps_read_write":       ptrInt642(v.Description.Disk.Properties.DiskMBpsReadWrite),
+			"disk_iops_read_write":       ptrInt642(v.Description.Disk.Properties.DiskIOPSReadWrite),
 		}, nil
 	} else {
 		return nil, nil
@@ -479,7 +458,7 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 	if v, ok := resource.Description.(kaytuAzure.LoadBalancer); ok {
 		return map[string]interface{}{
 			"sku":          *v.Description.LoadBalancer.SKU.Name,
-			"location":     *v.Description.LoadBalancer.Location,
+			"location":     ptrStr2(v.Description.LoadBalancer.Location),
 			"rules_number": len(v.Description.LoadBalancer.Properties.LoadBalancingRules),
 			"sku_tier":     *v.Description.LoadBalancer.SKU.Tier,
 		}, nil
