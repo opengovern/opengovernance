@@ -1718,6 +1718,8 @@ github.com/kaytu-io/kaytu-azure-describer v0.23.14 h1:IQJO8JLRJUasyWGBh8crLtdT34
 github.com/kaytu-io/kaytu-azure-describer v0.23.14/go.mod h1:3YEq0QLACgaOz9xrSPAa+3MmdOGqVNUYSR7n6XwXdOw=
 github.com/kaytu-io/kaytu-util v0.0.0-20240301114128-516ae612cf1b h1:gDF95/+K+Y3J2rUIbb7QBixXJ9JmWCk1vEJxhcorQ4A=
 github.com/kaytu-io/kaytu-util v0.0.0-20240301114128-516ae612cf1b/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
+github.com/kaytu-io/kaytu-util v0.0.0-20240303120740-a37b6ddfce01 h1:W/o9KDov+gHqroTMsV239pdgvTjZLLL/8IrPJc0/7Dg=
+github.com/kaytu-io/kaytu-util v0.0.0-20240303120740-a37b6ddfce01/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
 github.com/kaytu-io/pennywise v1.1.5/go.mod h1:hmfCDFdnQJdwjwqt5XpAi5tOHNvl4XhJuAkVm5kX+To=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
