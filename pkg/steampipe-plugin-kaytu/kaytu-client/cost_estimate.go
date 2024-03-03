@@ -187,7 +187,7 @@ func GetValues(resource Resource) (map[string]interface{}, error) {
 	case "aws::ec2::natgateway":
 		return getAwsNatGatewayValues(resource)
 	case "aws::ec2::host":
-		return getAwsEc2Values(resource)
+		return getAwsEc2HostValues(resource)
 	case "aws::lambda::function":
 		return getAwsLambdaFunctionValues(resource)
 	case "aws::elasticsearch::domain":
