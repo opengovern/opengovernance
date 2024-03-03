@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 )
 
 // getAwsEc2Values get resource values needed for cost estimate from model.EC2HostDescription
@@ -446,6 +447,45 @@ func getAwsLoadBalancer2Values(resource Resource) (map[string]interface{}, error
 	valuesMap["load_balancer_type"] = values.LoadBalancer.Type
 
 	return valuesMap, nil
+}
+
+func getAzureComputeSnapshotValues(resource Resource) (map[string]interface{}, error) {
+	if v, ok := resource.Description.(kaytuAzure.ComputeSnapshots); ok {
+		return map[string]interface{}{
+			"disk_size_gb": *v.Description.Snapshot.Properties.DiskSizeGB,
+			"location":     *v.Description.Snapshot.Location,
+		}, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func getAzureComputeDiskValues(resource Resource) (map[string]interface{}, error) {
+	if v, ok := resource.Description.(kaytuAzure.ComputeDisk); ok {
+		return map[string]interface{}{
+			"storage_account_type":       *v.Description.Disk.SKU.Name,
+			"location":                   *v.Description.Disk.Location,
+			"disk_size_gb":               *v.Description.Disk.Properties.DiskSizeGB,
+			"on_demand_bursting_enabled": *v.Description.Disk.Properties.BurstingEnabled,
+			"disk_mbps_read_write":       *v.Description.Disk.Properties.DiskMBpsReadWrite,
+			"disk_iops_read_write":       *v.Description.Disk.Properties.DiskIOPSReadWrite,
+		}, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, error) {
+	if v, ok := resource.Description.(kaytuAzure.LoadBalancer); ok {
+		return map[string]interface{}{
+			"sku":          *v.Description.LoadBalancer.SKU.Name,
+			"location":     *v.Description.LoadBalancer.Location,
+			"rules_number": len(v.Description.LoadBalancer.Properties.LoadBalancingRules),
+			"sku_tier":     *v.Description.LoadBalancer.SKU.Tier,
+		}, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func ptrBool(pointer *bool) interface{} {
