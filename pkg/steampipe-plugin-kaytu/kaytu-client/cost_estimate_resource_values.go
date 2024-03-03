@@ -337,9 +337,9 @@ func getAwsLoadBalancerValues(resource Resource) (map[string]interface{}, error)
 
 // getAwsLoadBalancer2Values get resource values needed for cost estimate from model.ElasticLoadBalancingV2LoadBalancerDescription
 func getAwsLoadBalancer2Values(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAzure.LoadBalancer); ok {
+	if v, ok := resource.Description.(kaytuAws.ElasticLoadBalancingV2LoadBalancer); ok {
 		return map[string]interface{}{
-			"load_balancer_type": ptrStr2(v.Description.LoadBalancer.Type),
+			"load_balancer_type": v.Description.LoadBalancer.Type,
 		}, nil
 	}
 
@@ -353,7 +353,7 @@ func getAzureComputeSnapshotValues(resource Resource) (map[string]interface{}, e
 			"location":     ptrStr2(v.Description.Snapshot.Location),
 		}, nil
 	} else {
-		return nil, nil
+		return resource.Description.(map[string]interface{}), nil
 	}
 }
 
@@ -367,9 +367,9 @@ func getAzureComputeDiskValues(resource Resource) (map[string]interface{}, error
 			"disk_mbps_read_write":       ptrInt642(v.Description.Disk.Properties.DiskMBpsReadWrite),
 			"disk_iops_read_write":       ptrInt642(v.Description.Disk.Properties.DiskIOPSReadWrite),
 		}, nil
-	} else {
-		return nil, nil
 	}
+
+	return resource.Description.(map[string]interface{}), nil
 }
 
 func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, error) {
@@ -377,12 +377,12 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 		return map[string]interface{}{
 			"sku":          *v.Description.LoadBalancer.SKU.Name,
 			"location":     ptrStr2(v.Description.LoadBalancer.Location),
-			"rules_number": len(v.Description.LoadBalancer.Properties.LoadBalancingRules),
+			"rules_number": len(v.Description.LoadBalancer.Properties.InboundNatRules) + len(v.Description.LoadBalancer.Properties.LoadBalancingRules) + len(v.Description.LoadBalancer.Properties.OutboundRules),
 			"sku_tier":     *v.Description.LoadBalancer.SKU.Tier,
 		}, nil
-	} else {
-		return nil, nil
 	}
+
+	return resource.Description.(map[string]interface{}), nil
 }
 
 func ptrBool(pointer *bool) interface{} {
