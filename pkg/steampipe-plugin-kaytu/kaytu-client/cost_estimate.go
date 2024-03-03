@@ -199,15 +199,15 @@ func GetValues(resource Resource) (map[string]interface{}, error) {
 	case "microsoft.compute/virtualmachines":
 		return nil, nil
 	case "microsoft.compute/disks":
-		return nil, nil
+		return getAzureComputeDiskValues(resource)
 	case "microsoft.compute/images":
 		return nil, nil
 	case "microsoft.compute/snapshots":
-		return nil, nil
+		return getAzureComputeSnapshotValues(resource)
 	case "microsoft.compute/virtualmachinescalesets":
 		return nil, nil
 	case "microsoft.network/loadbalancers":
-		return nil, nil
+		return getAzureLoadBalancerValues(resource)
 	case "microsoft.network/loadbalancers/loadbalancingeules":
 		return nil, nil
 	case "microsoft.network/loadbalancers/outboundrules":
