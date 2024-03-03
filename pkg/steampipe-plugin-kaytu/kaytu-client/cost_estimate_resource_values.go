@@ -352,9 +352,13 @@ func getAzureComputeSnapshotValues(resource Resource) (map[string]interface{}, e
 			"disk_size_gb": ptrInt2(v.Description.Snapshot.Properties.DiskSizeGB),
 			"location":     ptrStr2(v.Description.Snapshot.Location),
 		}, nil
-	} else {
-		return resource.Description.(map[string]interface{}), nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"disk_size_gb": v["Snapshot"].(map[string]interface{})["Properties"].(map[string]interface{})["DiskSizeGB"],
+			"location":     v["Snapshot"].(map[string]interface{})["Location"],
+		}, nil
 	}
+	return nil, nil
 }
 
 func getAzureComputeDiskValues(resource Resource) (map[string]interface{}, error) {
@@ -367,9 +371,18 @@ func getAzureComputeDiskValues(resource Resource) (map[string]interface{}, error
 			"disk_mbps_read_write":       ptrInt642(v.Description.Disk.Properties.DiskMBpsReadWrite),
 			"disk_iops_read_write":       ptrInt642(v.Description.Disk.Properties.DiskIOPSReadWrite),
 		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"storage_account_type":       v["Disk"].(map[string]interface{})["SKU"].(map[string]interface{})["Name"],
+			"location":                   v["Disk"].(map[string]interface{})["Location"],
+			"disk_size_gb":               v["Disk"].(map[string]interface{})["Properties"].(map[string]interface{})["DiskSizeGB"],
+			"on_demand_bursting_enabled": v["Disk"].(map[string]interface{})["Properties"].(map[string]interface{})["BurstingEnabled"],
+			"disk_mbps_read_write":       v["Disk"].(map[string]interface{})["Properties"].(map[string]interface{})["DiskMBpsReadWrite"],
+			"disk_iops_read_write":       v["Disk"].(map[string]interface{})["Properties"].(map[string]interface{})["DiskIOPSReadWrite"],
+		}, nil
 	}
 
-	return resource.Description.(map[string]interface{}), nil
+	return nil, nil
 }
 
 func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, error) {
@@ -379,6 +392,13 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 			"location":     ptrStr2(v.Description.LoadBalancer.Location),
 			"rules_number": len(v.Description.LoadBalancer.Properties.InboundNatRules) + len(v.Description.LoadBalancer.Properties.LoadBalancingRules) + len(v.Description.LoadBalancer.Properties.OutboundRules),
 			"sku_tier":     *v.Description.LoadBalancer.SKU.Tier,
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"sku":          v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Name"],
+			"location":     v["LoadBalancer"].(map[string]interface{})["Location"],
+			"rules_number": len(v["LoadBalancer"].(map[string]interface{})["InboundNatRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["LoadBalancingRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["OutboundRules"].([]interface{})),
+			"sku_tier":     v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Tier"],
 		}, nil
 	}
 
