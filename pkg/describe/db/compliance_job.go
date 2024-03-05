@@ -169,7 +169,7 @@ func (db Database) GetLastUpdatedRunnerForParent(jobId uint) (model.ComplianceRu
 
 func (db Database) FetchTotalFindingCountForComplianceJob(jobID uint) (int, error) {
 	var count int
-	tx := db.ORM.Raw(`SELECT sum(coalesce(total_finding_count,0)) FROM compliance_runners WHERE parent_job_id = ?`, jobID).Scan(&count)
+	tx := db.ORM.Raw(`SELECT coalesce(sum(coalesce(total_finding_count,0)), 0) FROM compliance_runners WHERE parent_job_id = ?`, jobID).Scan(&count)
 	if tx.Error != nil {
 		return 0, tx.Error
 	}
