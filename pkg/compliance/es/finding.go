@@ -534,8 +534,6 @@ func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIRespon
 		"terms": map[string]any{
 			"conformanceStatus": []types.ConformanceStatus{
 				types.ConformanceStatusALARM,
-				types.ConformanceStatusINFO,
-				types.ConformanceStatusSKIP,
 				types.ConformanceStatusERROR,
 			},
 		},

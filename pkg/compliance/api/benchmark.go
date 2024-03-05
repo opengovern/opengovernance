@@ -74,8 +74,8 @@ type ConformanceStatusSummary struct {
 func (c *ConformanceStatusSummary) AddESConformanceStatusMap(summary map[types.ConformanceStatus]int) {
 	c.PassedCount += summary[types.ConformanceStatusOK]
 	c.FailedCount += summary[types.ConformanceStatusALARM]
-	c.FailedCount += summary[types.ConformanceStatusINFO]
-	c.FailedCount += summary[types.ConformanceStatusSKIP]
+	c.PassedCount += summary[types.ConformanceStatusINFO]
+	c.PassedCount += summary[types.ConformanceStatusSKIP]
 	c.FailedCount += summary[types.ConformanceStatusERROR]
 }
 

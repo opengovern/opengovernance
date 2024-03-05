@@ -236,10 +236,10 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 			scriptSource :=
 				fmt.Sprintf(`int total = 0; 
 for (int i=0; i<params['_source']['findings'].length;++i) { 
-  if(params['_source']['findings'][i]['conformanceStatus'] != '%s') 
+  if(params['_source']['findings'][i]['conformanceStatus'] != '%s' && params['_source']['findings'][i]['conformanceStatus'] != '%s' && params['_source']['findings'][i]['conformanceStatus'] != '%s') 
     total+=1;
   } 
-return total;`, types.ConformanceStatusOK)
+return total;`, types.ConformanceStatusOK, types.ConformanceStatusINFO, types.ConformanceStatusSKIP)
 			requestSort = append(requestSort, map[string]any{
 				"_script": map[string]any{
 					"type": "number",

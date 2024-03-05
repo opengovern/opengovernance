@@ -75,7 +75,7 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 }
 
 func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
-	if finding.ConformanceStatus != types.ConformanceStatusOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK && finding.ConformanceStatus != types.ConformanceStatusSKIP && finding.ConformanceStatus != types.ConformanceStatusINFO {
 		r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
 	}
 	r.BenchmarkResult.Result.QueryResult[finding.ConformanceStatus]++
@@ -93,7 +93,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			Controls:      map[string]ControlResult{},
 		}
 	}
-	if finding.ConformanceStatus != types.ConformanceStatusOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK && finding.ConformanceStatus != types.ConformanceStatusSKIP && finding.ConformanceStatus != types.ConformanceStatusINFO {
 		connection.Result.SeverityResult[finding.Severity]++
 	}
 	connection.Result.QueryResult[finding.ConformanceStatus]++
@@ -108,7 +108,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			SecurityScore:  0,
 		}
 	}
-	if finding.ConformanceStatus != types.ConformanceStatusOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK && finding.ConformanceStatus != types.ConformanceStatusSKIP && finding.ConformanceStatus != types.ConformanceStatusINFO {
 		resourceType.SeverityResult[finding.Severity]++
 	}
 	resourceType.QueryResult[finding.ConformanceStatus]++
@@ -123,7 +123,7 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			SecurityScore:  0,
 		}
 	}
-	if finding.ConformanceStatus != types.ConformanceStatusOK {
+	if finding.ConformanceStatus != types.ConformanceStatusOK && finding.ConformanceStatus != types.ConformanceStatusSKIP && finding.ConformanceStatus != types.ConformanceStatusINFO {
 		connectionResourceType.SeverityResult[finding.Severity]++
 	}
 	connectionResourceType.QueryResult[finding.ConformanceStatus]++

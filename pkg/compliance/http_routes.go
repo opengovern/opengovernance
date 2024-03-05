@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/google/uuid"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	api "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/internal"
@@ -29,7 +29,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/labstack/echo/v4"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -1581,11 +1581,11 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 				Passed int `json:"passed"`
 				Failed int `json:"failed"`
 			}{
-				Passed: resMap[string(kaytuTypes.ConformanceStatusOK)],
-				Failed: resMap[string(kaytuTypes.ConformanceStatusALARM)] +
-					resMap[string(kaytuTypes.ConformanceStatusERROR)] +
+				Passed: resMap[string(kaytuTypes.ConformanceStatusOK)] +
 					resMap[string(kaytuTypes.ConformanceStatusINFO)] +
 					resMap[string(kaytuTypes.ConformanceStatusSKIP)],
+				Failed: resMap[string(kaytuTypes.ConformanceStatusALARM)] +
+					resMap[string(kaytuTypes.ConformanceStatusERROR)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -2358,6 +2358,8 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, []kaytuTypes.ConformanceStatus{
 		kaytuTypes.ConformanceStatusOK,
+		kaytuTypes.ConformanceStatusSKIP,
+		kaytuTypes.ConformanceStatusINFO,
 	})
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
@@ -2413,8 +2415,6 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
 				kaytuTypes.ConformanceStatusALARM,
 				kaytuTypes.ConformanceStatusERROR,
-				kaytuTypes.ConformanceStatusINFO,
-				kaytuTypes.ConformanceStatusSKIP,
 			}, []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
@@ -2583,6 +2583,8 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, []kaytuTypes.ConformanceStatus{
 		kaytuTypes.ConformanceStatusOK,
+		kaytuTypes.ConformanceStatusINFO,
+		kaytuTypes.ConformanceStatusSKIP,
 	})
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
@@ -2665,8 +2667,6 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
 			kaytuTypes.ConformanceStatusALARM,
 			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
 		}, []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))

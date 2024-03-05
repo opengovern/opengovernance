@@ -17,7 +17,7 @@ func GetConformanceStatuses() []ConformanceStatus {
 }
 
 func (r ConformanceStatus) IsPassed() bool {
-	return r == ConformanceStatusOK
+	return r == ConformanceStatusOK || r == ConformanceStatusINFO || r == ConformanceStatusSKIP
 }
 
 type ConformanceStatusSummaryWithTotal struct {
