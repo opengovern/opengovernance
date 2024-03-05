@@ -23,6 +23,12 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	}
 	assetDiscoveryEnabled := assetDiscoveryEnabledMetadata.GetValue().(bool)
 
+	spendDiscoveryEnabledMetadata, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeySpendDiscoveryEnabled)
+	if err != nil {
+		return result, err
+	}
+	spendDiscoveryEnabled := spendDiscoveryEnabledMetadata.GetValue().(bool)
+
 	azureDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAzureDiscoveryRequiredOnly)
 	if err != nil {
 		return result, err
@@ -51,6 +57,27 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		rts = nil
 		for _, rt := range azureResourceTypes {
 			if !strings.Contains(rt, "Cost") {
+				continue
+			}
+			rts = append(rts, rt)
+		}
+		azureResourceTypes = rts
+	}
+
+	if !spendDiscoveryEnabled {
+		var rts []string
+
+		for _, rt := range awsResourceTypes {
+			if strings.Contains(rt, "Cost") {
+				continue
+			}
+			rts = append(rts, rt)
+		}
+		awsResourceTypes = rts
+
+		rts = nil
+		for _, rt := range azureResourceTypes {
+			if strings.Contains(rt, "Cost") {
 				continue
 			}
 			rts = append(rts, rt)
