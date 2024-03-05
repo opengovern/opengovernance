@@ -490,11 +490,11 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	//utils.EnsureRunGoroutine(func() {
 	//	s.RunInsightJobScheduler()
 	//})
-	wg.Add(1)
-	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer(ctx)))
-		wg.Done()
-	})
+	//wg.Add(1)
+	//utils.EnsureRunGoroutine(func() {
+	//	s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer(ctx)))
+	//	wg.Done()
+	//})
 	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler()
 	})

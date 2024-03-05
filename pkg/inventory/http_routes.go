@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -2070,7 +2072,25 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_RunSmartQuery")
 
-	resp, err := h.RunSmartQuery(outputS, *req.Query, *req.Query, &req)
+	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: authApi.InternalRole})
+	if err != nil {
+		return err
+	}
+	queryParamMap := make(map[string]string)
+	for _, qp := range queryParams.QueryParameters {
+		queryParamMap[qp.Key] = qp.Value
+	}
+
+	queryTemplate, err := template.New("query").Parse(*req.Query)
+	if err != nil {
+		return err
+	}
+	var queryOutput bytes.Buffer
+	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
+		return fmt.Errorf("failed to execute query template: %w", err)
+	}
+
+	resp, err := h.RunSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"fmt"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
@@ -27,6 +28,7 @@ type HttpHandler struct {
 	schedulerClient  describeClient.SchedulerServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	complianceClient complianceClient.ComplianceServiceClient
+	metadataClient   metadataClient.MetadataServiceClient
 
 	logger *zap.Logger
 
@@ -37,7 +39,7 @@ func InitializeHttpHandler(
 	esConf config.ElasticSearch,
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
-	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
+	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string, metadataBaseUrl string,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
 	h = &HttpHandler{}
@@ -102,6 +104,7 @@ func InitializeHttpHandler(
 
 	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl)
 	h.complianceClient = complianceClient.NewComplianceClient(complianceBaseUrl)
+	h.metadataClient = metadataClient.NewMetadataServiceClient(metadataBaseUrl)
 
 	h.logger = logger
 

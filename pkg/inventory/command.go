@@ -29,6 +29,7 @@ var (
 	SchedulerBaseUrl  = os.Getenv("SCHEDULER_BASE_URL")
 	OnboardBaseUrl    = os.Getenv("ONBOARD_BASE_URL")
 	ComplianceBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
+	MetadataBaseUrl   = os.Getenv("METADATA_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -54,7 +55,7 @@ func start(ctx context.Context, cnf config3.InventoryConfig) error {
 		cnf.ElasticSearch,
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
-		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl,
+		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl, MetadataBaseUrl,
 		logger,
 	)
 	if err != nil {
