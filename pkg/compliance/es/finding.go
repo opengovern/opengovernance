@@ -532,10 +532,7 @@ func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIRespon
 	filters := make([]map[string]any, 0)
 	filters = append(filters, map[string]any{
 		"terms": map[string]any{
-			"conformanceStatus": []types.ConformanceStatus{
-				types.ConformanceStatusALARM,
-				types.ConformanceStatusERROR,
-			},
+			"conformanceStatus": types.GetFailedConformanceStatuses(),
 		},
 	})
 	root["query"] = map[string]any{

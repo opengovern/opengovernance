@@ -86,9 +86,9 @@ func ListConformanceStatuses() []ConformanceStatus {
 func (cs ConformanceStatus) GetEsConformanceStatuses() []types.ConformanceStatus {
 	switch cs {
 	case ConformanceStatusFailed:
-		return []types.ConformanceStatus{types.ConformanceStatusALARM, types.ConformanceStatusERROR}
+		return types.GetFailedConformanceStatuses()
 	case ConformanceStatusPassed:
-		return []types.ConformanceStatus{types.ConformanceStatusOK, types.ConformanceStatusINFO, types.ConformanceStatusSKIP}
+		return types.GetPassedConformanceStatuses()
 	}
 	return nil
 }

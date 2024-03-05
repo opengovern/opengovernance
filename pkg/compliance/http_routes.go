@@ -2356,11 +2356,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	_, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_PopulateConnectors(loop)")
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, []kaytuTypes.ConformanceStatus{
-		kaytuTypes.ConformanceStatusOK,
-		kaytuTypes.ConformanceStatusSKIP,
-		kaytuTypes.ConformanceStatusINFO,
-	})
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -2412,21 +2408,12 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
-			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-				kaytuTypes.ConformanceStatusALARM,
-				kaytuTypes.ConformanceStatusERROR,
-			}, []bool{true}, topAccountCount)
+			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-				kaytuTypes.ConformanceStatusALARM,
-				kaytuTypes.ConformanceStatusERROR,
-				kaytuTypes.ConformanceStatusINFO,
-				kaytuTypes.ConformanceStatusSKIP,
-				kaytuTypes.ConformanceStatusOK,
-			}, []bool{true}, topAccountCount)
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(), []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -2581,11 +2568,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, []kaytuTypes.ConformanceStatus{
-		kaytuTypes.ConformanceStatusOK,
-		kaytuTypes.ConformanceStatusINFO,
-		kaytuTypes.ConformanceStatusSKIP,
-	})
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -2664,21 +2647,13 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-		}, []bool{true}, topAccountCount)
+		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, []kaytuTypes.ConformanceStatus{
-			kaytuTypes.ConformanceStatusALARM,
-			kaytuTypes.ConformanceStatusERROR,
-			kaytuTypes.ConformanceStatusINFO,
-			kaytuTypes.ConformanceStatusSKIP,
-		}, []bool{true}, topAccountCount)
+		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err

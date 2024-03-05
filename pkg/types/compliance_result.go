@@ -16,6 +16,26 @@ func GetConformanceStatuses() []ConformanceStatus {
 	return conformanceStatuses
 }
 
+func GetPassedConformanceStatuses() []ConformanceStatus {
+	passed := make([]ConformanceStatus, 0)
+	for _, status := range conformanceStatuses {
+		if status.IsPassed() {
+			passed = append(passed, status)
+		}
+	}
+	return passed
+}
+
+func GetFailedConformanceStatuses() []ConformanceStatus {
+	failed := make([]ConformanceStatus, 0)
+	for _, status := range conformanceStatuses {
+		if !status.IsPassed() {
+			failed = append(failed, status)
+		}
+	}
+	return failed
+}
+
 func (r ConformanceStatus) IsPassed() bool {
 	return r == ConformanceStatusOK || r == ConformanceStatusINFO || r == ConformanceStatusSKIP
 }
