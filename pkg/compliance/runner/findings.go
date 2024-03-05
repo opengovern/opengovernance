@@ -139,6 +139,10 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			benchmarkReferences = append(benchmarkReferences, benchmarkCache[parentBenchmarkID].ReferenceCode)
 		}
 
+		if status != types.ConformanceStatusOK && status != types.ConformanceStatusALARM {
+			continue
+		}
+
 		findings = append(findings, types.Finding{
 			BenchmarkID:               caller.RootBenchmark,
 			ControlID:                 caller.ControlID,
