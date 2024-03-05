@@ -46,7 +46,7 @@ func (s *Scheduler) runDeleter() error {
 				s.logger.Error("failed to get describe connection job", zap.Error(err))
 				continue
 			}
-			if job.Status != api.DescribeResourceJobOldResourceDeletion {
+			if job == nil || job.Status != api.DescribeResourceJobOldResourceDeletion {
 				continue
 			}
 			s.logger.Info("deleting resources", zap.String("task", task.ID), zap.Uint("job", job.ID), zap.String("connection", job.ConnectionID), zap.String("resourceType", task.Source.ResourceType))
