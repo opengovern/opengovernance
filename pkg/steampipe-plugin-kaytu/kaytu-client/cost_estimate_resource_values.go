@@ -260,9 +260,17 @@ func getAwsEbsVolumeValues(resource Resource) (map[string]interface{}, error) {
 			"iops":              ptrInt2(v.Description.Volume.Iops),
 			"throughput":        ptrInt2(v.Description.Volume.Throughput),
 		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"availability_zone": v["Volume"].(map[string]interface{})["AvailabilityZone"],
+			"type":              v["Volume"].(map[string]interface{})["VolumeType"],
+			"size":              v["Volume"].(map[string]interface{})["Size"],
+			"iops":              v["Volume"].(map[string]interface{})["Iops"],
+			"throughput":        v["Volume"].(map[string]interface{})["Throughput"],
+		}, nil
 	}
 
-	return nil, nil
+	return resource.Description.(map[string]interface{}), nil
 }
 
 // getAwsRdsDbInstanceValues get resource values needed for cost estimate from model.RDSDBInstanceDescription
