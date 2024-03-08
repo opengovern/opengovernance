@@ -1,8 +1,6 @@
 package discovery
 
 import (
-	"time"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
@@ -13,24 +11,22 @@ import (
 )
 
 type Scheduler struct {
-	conf                    config2.SchedulerConfig
-	logger                  *zap.Logger
-	complianceClient        client.ComplianceServiceClient
-	onboardClient           onboardClient.OnboardServiceClient
-	db                      db.Database
-	esClient                kaytu.Client
-	complianceIntervalHours time.Duration
+	conf             config2.SchedulerConfig
+	logger           *zap.Logger
+	complianceClient client.ComplianceServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
+	db               db.Database
+	esClient         kaytu.Client
 }
 
-func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient client.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, db db.Database, esClient kaytu.Client, complianceIntervalHours time.Duration) *Scheduler {
+func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient client.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, db db.Database, esClient kaytu.Client) *Scheduler {
 	return &Scheduler{
-		conf:                    conf,
-		logger:                  logger,
-		complianceClient:        complianceClient,
-		onboardClient:           onboardClient,
-		db:                      db,
-		esClient:                esClient,
-		complianceIntervalHours: complianceIntervalHours,
+		conf:             conf,
+		logger:           logger,
+		complianceClient: complianceClient,
+		onboardClient:    onboardClient,
+		db:               db,
+		esClient:         esClient,
 	}
 }
 

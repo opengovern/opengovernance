@@ -12,6 +12,10 @@ import (
 
 func (s *JobScheduler) runScheduler() error {
 	s.logger.Info("scheduleComplianceJob")
+	if s.complianceIntervalHours <= 0 {
+		s.logger.Info("compliance interval is negative or zero, skipping compliance job scheduling")
+		return nil
+	}
 	clientCtx := &httpclient.Context{UserRole: authAPI.InternalRole}
 
 	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx)
