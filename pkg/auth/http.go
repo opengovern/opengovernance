@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/superset"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"net/http"
@@ -48,6 +49,7 @@ type httpRoutes struct {
 	kaytuPrivateKey *rsa.PrivateKey
 	db              db.Database
 	authServer      *Server
+	superset        *superset.SupersetService
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -67,6 +69,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
 
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api.InternalRole))
+
+	v1.POST("/dashboards/token", httpserver.AuthorizeHandler(r.GenerateDashboardToken, api.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -699,6 +703,53 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
+// GenerateDashboardToken godoc
+//
+//	@Summary		Generate dashboard token
+//	@Description	Generate dashboard token
+//	@Security		BearerToken
+//	@Tags			keys
+//	@Produce		json
+//	@Success		200	{object}	api.GenerateDashboardTokenResponse
+//	@Router			/auth/api/v1/dashboards/token [post]
+func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	userID := httpserver.GetUserID(ctx)
+
+	if userID != api.GodUserID {
+		usr, err := r.auth0Service.GetUser(userID)
+		if err != nil {
+			return err
+		}
+		if _, ok := usr.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
+			return errors.New("access denied")
+		}
+	}
+
+	token, err := r.superset.Login()
+	if err != nil {
+		return err
+	}
+
+	guestToken, err := r.superset.GuestToken(token, superset.GuestTokenRequest{
+		User: superset.GuestUser{
+			Username:  "dashboard-guest",
+			FirstName: "Guest",
+			LastName:  "Kaytu",
+		},
+		Resources: []superset.Resource{
+			{Type: "dashboard", Id: "86e05675-a118-4e1a-a25d-42259a855c20"},
+		},
+		Rls: []superset.RLS{},
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.GenerateDashboardTokenResponse{
+		Token: guestToken,
+	})
+}
 func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
 	err := r.authServer.updateWorkspaceMap()
 	if err != nil {

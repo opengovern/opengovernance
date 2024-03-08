@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	superset2 "github.com/kaytu-io/kaytu-engine/pkg/auth/superset"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/email"
@@ -67,8 +68,15 @@ func Command() *cobra.Command {
 	}
 }
 
+type SuperSet struct {
+	BaseURL  string
+	Username string
+	Password string
+}
+
 type ServerConfig struct {
 	PostgreSQL config2.Postgres
+	Superset   SuperSet
 }
 
 // start runs both HTTP and GRPC server.
@@ -189,6 +197,8 @@ func start(ctx context.Context) error {
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
 
+	superset := superset2.New(conf.Superset.BaseURL, conf.Superset.Username, conf.Superset.Password)
+
 	lis, err := net.Listen("tcp", grpcServerAddress)
 	if err != nil {
 		return fmt.Errorf("grpc listen: %w", err)
@@ -209,6 +219,7 @@ func start(ctx context.Context) error {
 			kaytuPrivateKey: pri.(*rsa.PrivateKey),
 			db:              adb,
 			authServer:      authServer,
+			superset:        superset,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()
