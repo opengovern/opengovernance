@@ -434,9 +434,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	} else {
 		if v, ok := analyticsJobIntM.GetValue().(int); ok {
 			s.analyticsIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set insight interval", zap.Int64("interval", int64(s.analyticsIntervalHours.Hours())))
+			s.logger.Info("set analytics interval", zap.Int64("interval", int64(s.analyticsIntervalHours.Hours())))
 		} else {
-			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(analyticsJobIntM.GetType())))
+			s.logger.Error("failed to set analytics interval due to invalid type", zap.String("type", string(analyticsJobIntM.GetType())))
 		}
 	}
 
@@ -446,9 +446,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	} else {
 		if v, ok := complianceJobIntM.GetValue().(int); ok {
 			s.complianceIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set insight interval", zap.Int64("interval", int64(s.complianceIntervalHours.Hours())))
+			s.logger.Info("set compliance interval", zap.Int64("interval", int64(s.complianceIntervalHours.Hours())))
 		} else {
-			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(complianceJobIntM.GetType())))
+			s.logger.Error("failed to set compliance interval due to invalid type", zap.String("type", string(complianceJobIntM.GetType())))
 		}
 	}
 
