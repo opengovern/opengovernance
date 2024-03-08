@@ -347,17 +347,6 @@ func InitializeScheduler(
 		s.MaxConcurrentCall = 5000
 	}
 
-	s.complianceScheduler = compliance.New(
-		conf,
-		s.logger,
-		s.complianceClient,
-		s.onboardClient,
-		s.db,
-		s.jq,
-		s.es,
-		s.complianceIntervalHours,
-	)
-
 	s.discoveryScheduler = discovery.New(
 		conf,
 		s.logger,
@@ -480,6 +469,16 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	})
 
 	// Compliance
+	s.complianceScheduler = compliance.New(
+		s.conf,
+		s.logger,
+		s.complianceClient,
+		s.onboardClient,
+		s.db,
+		s.jq,
+		s.es,
+		s.complianceIntervalHours,
+	)
 	s.complianceScheduler.Run()
 	utils.EnsureRunGoroutine(func() {
 		s.RunJobSequencer()
