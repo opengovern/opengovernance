@@ -449,6 +449,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/api/v1/dashboards/token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Generate dashboard token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Generate dashboard token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/api/v1/key/create": {
             "post": {
                 "security": [
@@ -8092,6 +8117,14 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse": {
             "type": "object",
             "properties": {
@@ -11933,7 +11966,8 @@ const docTemplate = `{
                 "customization_enabled",
                 "aws_discovery_required_only",
                 "azure_discovery_required_only",
-                "asset_discovery_enabled"
+                "asset_discovery_enabled",
+                "spend_discovery_enabled"
             ],
             "x-enum-varnames": [
                 "MetadataKeyWorkspaceOwnership",
@@ -11972,7 +12006,8 @@ const docTemplate = `{
                 "MetadataKeyCustomizationEnabled",
                 "MetadataKeyAWSDiscoveryRequiredOnly",
                 "MetadataKeyAzureDiscoveryRequiredOnly",
-                "MetadataKeyAssetDiscoveryEnabled"
+                "MetadataKeyAssetDiscoveryEnabled",
+                "MetadataKeySpendDiscoveryEnabled"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig": {

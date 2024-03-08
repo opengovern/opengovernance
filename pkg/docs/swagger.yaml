@@ -336,6 +336,11 @@ definitions:
         description: Token of the key
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse:
+    properties:
+      token:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
@@ -3011,6 +3016,7 @@ definitions:
     - aws_discovery_required_only
     - azure_discovery_required_only
     - asset_discovery_enabled
+    - spend_discovery_enabled
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -3050,6 +3056,7 @@ definitions:
     - MetadataKeyAWSDiscoveryRequiredOnly
     - MetadataKeyAzureDiscoveryRequiredOnly
     - MetadataKeyAssetDiscoveryEnabled
+    - MetadataKeySpendDiscoveryEnabled
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
     properties:
       accessKey:
@@ -4556,6 +4563,21 @@ paths:
       summary: List triggers
       tags:
       - alerting
+  /auth/api/v1/dashboards/token:
+    post:
+      description: Generate dashboard token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse'
+      security:
+      - BearerToken: []
+      summary: Generate dashboard token
+      tags:
+      - keys
   /auth/api/v1/key/{id}/delete:
     delete:
       description: Deletes the specified workspace key by ID.
