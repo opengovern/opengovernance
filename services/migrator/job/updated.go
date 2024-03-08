@@ -9,7 +9,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 )
@@ -60,7 +59,7 @@ func (w *Job) UpdateMigration(name string, mig types.Migration) error {
 }
 
 func (w *Job) FindFilesHashes(mig types.Migration) (string, error) {
-	var fileHashes []types.FileHash
+	h := sha256.New()
 	err := filepath.Walk(mig.AttachmentFolderPath(), func(path string, info fs.FileInfo, err error) error {
 		if info == nil || info.IsDir() || strings.HasPrefix(info.Name(), ".") {
 			return nil
@@ -71,24 +70,14 @@ func (w *Job) FindFilesHashes(mig types.Migration) (string, error) {
 			return err
 		}
 
-		h := sha256.New()
-		hash := h.Sum(content)
-
-		fileHashes = append(fileHashes, types.FileHash{
-			Filename: info.Name(),
-			Hash:     hash,
-		})
+		_, err = h.Write(content)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
 		return "", err
 	}
-	sort.Slice(fileHashes, func(i, j int) bool {
-		return fileHashes[i].Filename < fileHashes[j].Filename
-	})
-	var hashes []byte
-	for _, fh := range fileHashes {
-		hashes = append(hashes, fh.Hash...)
-	}
-	return base64.StdEncoding.EncodeToString(hashes), nil
+	return base64.StdEncoding.EncodeToString(h.Sum(nil)), nil
 }
