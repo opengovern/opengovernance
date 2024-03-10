@@ -70,5 +70,5 @@ func tableKaytuApiBenchmarkSummary(_ context.Context) *plugin.Table {
 }
 
 func getKaytuApiBenchmarkSummaryResult(_ context.Context, d *transform.TransformData) (any, error) {
-	return d.Value.(*compliance.BenchmarkEvaluationSummary), nil
+	return d.HydrateItem.(*compliance.BenchmarkEvaluationSummary), nil
 }
