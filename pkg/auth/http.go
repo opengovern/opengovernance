@@ -49,7 +49,7 @@ type httpRoutes struct {
 	kaytuPrivateKey *rsa.PrivateKey
 	db              db.Database
 	authServer      *Server
-	superset        *superset.SupersetService
+	supersetConfig  SuperSet
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -726,19 +726,20 @@ func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
 		}
 	}
 
-	token, err := r.superset.Login()
+	ss := superset.New(strings.ReplaceAll(r.supersetConfig.BaseURL, "%WORKSPACE_ID%", workspaceID), r.supersetConfig.Username, r.supersetConfig.Password)
+	token, err := ss.Login()
 	if err != nil {
 		return err
 	}
 
-	guestToken, err := r.superset.GuestToken(token, superset.GuestTokenRequest{
+	guestToken, err := ss.GuestToken(token, superset.GuestTokenRequest{
 		User: superset.GuestUser{
-			Username:  r.superset.GuestUsername,
-			FirstName: r.superset.GuestFirstName,
-			LastName:  r.superset.GuestLastName,
+			Username:  r.supersetConfig.GuestUsername,
+			FirstName: r.supersetConfig.GuestFirstName,
+			LastName:  r.supersetConfig.GuestLastName,
 		},
 		Resources: []superset.Resource{
-			{Type: "dashboard", Id: r.superset.DashboardID},
+			{Type: "dashboard", Id: r.supersetConfig.DashboardID},
 		},
 		Rls: []superset.RLS{},
 	})
@@ -746,8 +747,28 @@ func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
 		return err
 	}
 
+	var respDashboards []api.Dashboard
+
+	dashboards, err := ss.ListDashboards(token)
+	if err != nil {
+		return err
+	}
+
+	for _, d := range dashboards {
+		uid, err := ss.GetEmbeddedUUID(token, d.Id)
+		if err != nil {
+			return err
+		}
+
+		respDashboards = append(respDashboards, api.Dashboard{
+			ID:   uid,
+			Name: d.DashboardTitle,
+		})
+	}
+
 	return ctx.JSON(http.StatusOK, api.GenerateDashboardTokenResponse{
-		Token: guestToken,
+		Token:      guestToken,
+		Dashboards: respDashboards,
 	})
 }
 func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {

@@ -8127,9 +8127,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard": {
+            "type": "object",
+            "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "Name": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse": {
             "type": "object",
             "properties": {
+                "dashboards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard"
+                    }
+                },
                 "token": {
                     "type": "string"
                 }

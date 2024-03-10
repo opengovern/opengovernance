@@ -336,8 +336,19 @@ definitions:
         description: Token of the key
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard:
+    properties:
+      ID:
+        type: string
+      Name:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse:
     properties:
+      dashboards:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard'
+        type: array
       token:
         type: string
     type: object
