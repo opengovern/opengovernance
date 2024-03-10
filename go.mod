@@ -40,7 +40,7 @@ require (
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/kaytu-io/kaytu-aws-describer v0.32.27
-	github.com/kaytu-io/kaytu-azure-describer v0.23.14
+	github.com/kaytu-io/kaytu-azure-describer v0.23.16
 	github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee
 	github.com/kaytu-io/pennywise v1.1.5
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
@@ -166,6 +166,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/servicebus/armservicebus v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/servicefabric/armservicefabric v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/signalr/armsignalr v1.1.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/springappdiscovery/armspringappdiscovery v0.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sql/armsql v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sqlvirtualmachine/armsqlvirtualmachine v0.9.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.5.0 // indirect
