@@ -2300,7 +2300,7 @@ func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSever
 //	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
 //	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
-//	@Success		200					{object}	api.GetBenchmarksSummaryResponse
+//	@Success		200					{object}	api.ListBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
@@ -2331,7 +2331,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		topAccountCount = int(count)
 	}
 
-	var response api.GetBenchmarksSummaryResponse
+	var response api.ListBenchmarksSummaryResponse
 
 	// tracer :
 	outputS, span2 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))

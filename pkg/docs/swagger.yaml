@@ -1594,17 +1594,6 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AccountsFindingsSummary'
         type: array
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
-    properties:
-      benchmarkSummary:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary'
-        type: array
-      totalChecks:
-        $ref: '#/definitions/types.SeverityResult'
-      totalConformanceStatusSummary:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsByFindingIDResponse:
     properties:
       findingEvents:
@@ -1877,6 +1866,17 @@ definitions:
         description: Resource Count
         example: 1000
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListBenchmarksSummaryResponse:
+    properties:
+      benchmarkSummary:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary'
+        type: array
+      totalChecks:
+        $ref: '#/definitions/types.SeverityResult'
+      totalConformanceStatusSummary:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest:
     properties:
@@ -5255,7 +5255,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListBenchmarksSummaryResponse'
       security:
       - BearerToken: []
       summary: List benchmarks summaries

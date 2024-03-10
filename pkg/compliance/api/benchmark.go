@@ -34,7 +34,7 @@ type BenchmarkTrendDatapoint struct {
 	ControlsSeverityStatus   BenchmarkControlsSeverityStatus `json:"controlsSeverityStatus"`
 }
 
-type GetBenchmarksSummaryResponse struct {
+type ListBenchmarksSummaryResponse struct {
 	BenchmarkSummary []BenchmarkEvaluationSummary `json:"benchmarkSummary"`
 
 	TotalConformanceStatusSummary ConformanceStatusSummary `json:"totalConformanceStatusSummary"`
