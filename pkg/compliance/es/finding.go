@@ -314,6 +314,10 @@ func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceS
 			"terms": map[string]any{
 				"conformanceStatus": conformanceStatuses,
 			},
+		}, map[string]any{
+			"term": map[string]any{
+				"stateActive": "true",
+			},
 		})
 	}
 
