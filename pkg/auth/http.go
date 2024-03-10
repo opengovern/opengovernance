@@ -733,12 +733,12 @@ func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
 
 	guestToken, err := r.superset.GuestToken(token, superset.GuestTokenRequest{
 		User: superset.GuestUser{
-			Username:  "dashboard-guest",
-			FirstName: "Guest",
-			LastName:  "Kaytu",
+			Username:  r.superset.GuestUsername,
+			FirstName: r.superset.GuestFirstName,
+			LastName:  r.superset.GuestLastName,
 		},
 		Resources: []superset.Resource{
-			{Type: "dashboard", Id: "86e05675-a118-4e1a-a25d-42259a855c20"},
+			{Type: "dashboard", Id: r.superset.DashboardID},
 		},
 		Rls: []superset.RLS{},
 	})
