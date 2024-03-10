@@ -15,6 +15,87 @@ import (
 	"time"
 )
 
+func (s *Service) syncSupersetHttpProxy(workspace *db.Workspace) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	httpKey := types.NamespacedName{
+		Name:      fmt.Sprintf("proxy-ss-%s", workspace.ID),
+		Namespace: s.cfg.KaytuOctopusNamespace,
+	}
+	var httpProxy contourv1.HTTPProxy
+
+	httpExists := true
+	if err := s.kubeClient.Get(ctx, httpKey, &httpProxy); err != nil {
+		if apierrors.IsNotFound(err) {
+			httpExists = false
+		} else {
+			s.logger.Error("failed to get http proxy", zap.Error(err))
+			return err
+		}
+	}
+
+	httpResourceVersion := httpProxy.GetResourceVersion()
+	httpProxy = contourv1.HTTPProxy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HTTPProxy",
+			APIVersion: "projectcontour.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("proxy-ss-%s", workspace.ID),
+			Namespace: s.cfg.KaytuOctopusNamespace,
+		},
+		Spec: contourv1.HTTPProxySpec{
+			Includes: []contourv1.Include{
+				{
+					Name:      "http-proxy-route-ss",
+					Namespace: workspace.ID,
+					Conditions: []contourv1.MatchCondition{
+						{
+							Prefix: "/",
+							Header: nil,
+						},
+					},
+				},
+			},
+			VirtualHost: &contourv1.VirtualHost{
+				Fqdn: fmt.Sprintf("ss-%s.kaytu.io", workspace.ID),
+				TLS: &contourv1.TLS{
+					SecretName: "web-tls",
+				},
+				Authorization: nil,
+				CORSPolicy: &contourv1.CORSPolicy{
+					AllowCredentials: true,
+					AllowOrigin:      []string{"*"},
+					AllowMethods:     []contourv1.CORSHeaderValue{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+					AllowHeaders:     []contourv1.CORSHeaderValue{"authorization", "cache-control", "content-type", "data", "baggage"},
+					ExposeHeaders:    []contourv1.CORSHeaderValue{"Content-Length", "Content-Range"},
+					MaxAge:           "10m",
+				},
+				RateLimitPolicy: nil,
+			},
+		},
+		Status: contourv1.HTTPProxyStatus{},
+	}
+
+	if httpExists {
+		httpProxy.SetResourceVersion(httpResourceVersion)
+		err := s.kubeClient.Update(ctx, &httpProxy)
+		if err != nil {
+			s.logger.Error("failed to update http proxy", zap.Error(err), zap.Any("httpProxy", httpProxy))
+			return err
+		}
+	} else {
+		err := s.kubeClient.Create(ctx, &httpProxy)
+		if err != nil {
+			s.logger.Error("failed to create http proxy", zap.Error(err), zap.Any("httpProxy", httpProxy))
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -26,6 +107,12 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 			((w.Status == api.StateID_WaitingForCredential || w.Status == api.StateID_Provisioning) && w.IsCreated)) {
 			continue
 		}
+
+		err := s.syncSupersetHttpProxy(w)
+		if err != nil {
+			return err
+		}
+
 		httpIncludes = append(httpIncludes, contourv1.Include{
 			Name:      "http-proxy-route",
 			Namespace: w.ID,

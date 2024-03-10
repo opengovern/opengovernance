@@ -176,7 +176,7 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
-		return "", fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
+		return "", fmt.Errorf("[GuestToken] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := io.ReadAll(res.Body)
@@ -205,7 +205,7 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
+		return nil, fmt.Errorf("[ListDashboards] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := io.ReadAll(res.Body)
@@ -234,7 +234,7 @@ func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) 
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
-		return "", fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
+		return "", fmt.Errorf("[GetEmbeddedUUID] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
 	r, err := io.ReadAll(res.Body)
