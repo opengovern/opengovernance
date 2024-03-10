@@ -732,28 +732,11 @@ func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
 		return err
 	}
 
-	guestToken, err := ss.GuestToken(token, superset.GuestTokenRequest{
-		User: superset.GuestUser{
-			Username:  r.supersetConfig.GuestUsername,
-			FirstName: r.supersetConfig.GuestFirstName,
-			LastName:  r.supersetConfig.GuestLastName,
-		},
-		Resources: []superset.Resource{
-			{Type: "dashboard", Id: r.supersetConfig.DashboardID},
-		},
-		Rls: []superset.RLS{},
-	})
-	if err != nil {
-		return err
-	}
-
 	var respDashboards []api.Dashboard
-
 	dashboards, err := ss.ListDashboards(token)
 	if err != nil {
 		return err
 	}
-
 	for _, d := range dashboards {
 		uid, err := ss.GetEmbeddedUUID(token, d.Id)
 		if err != nil {
@@ -764,6 +747,26 @@ func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
 			ID:   uid,
 			Name: d.DashboardTitle,
 		})
+	}
+
+	var resources []superset.Resource
+	for _, d := range respDashboards {
+		resources = append(resources, superset.Resource{
+			Type: "dashboard",
+			Id:   d.ID,
+		})
+	}
+	guestToken, err := ss.GuestToken(token, superset.GuestTokenRequest{
+		User: superset.GuestUser{
+			Username:  r.supersetConfig.GuestUsername,
+			FirstName: r.supersetConfig.GuestFirstName,
+			LastName:  r.supersetConfig.GuestLastName,
+		},
+		Resources: resources,
+		Rls:       []superset.RLS{},
+	})
+	if err != nil {
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, api.GenerateDashboardTokenResponse{
