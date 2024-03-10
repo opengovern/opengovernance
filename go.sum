@@ -360,6 +360,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/servicefabric/armservicefa
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/servicefabric/armservicefabric v1.1.0/go.mod h1:A2/sPKLx4ug/C8X0Wa1SQN1ZESvw+V+y/ACW9hc2T5Q=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/signalr/armsignalr v1.1.1 h1:jKW5K2Q7FE9FSZcpTcC2Y0lAYw80oXRnOsJQ/LrC7iw=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/signalr/armsignalr v1.1.1/go.mod h1:ZwgPLPucO/eU8bqKMrPFeuRoErGQhsrv+kqE2I0qpYM=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/springappdiscovery/armspringappdiscovery v0.1.0 h1:C+ClArPw3XfT1OnumNJJWdThapfU2vnADDta/AP9XMs=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/springappdiscovery/armspringappdiscovery v0.1.0/go.mod h1:/sE2hbhoTkTXvztJbIC1NXb1XW+MGsBvTSy/H5sEH6w=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sql/armsql v1.1.0 h1:G2MvNS98bjXD7Vks+psbTU/uBiBH7gicij12Xc8q6lM=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sql/armsql v1.1.0/go.mod h1:f/IvRlQ/eFP31UXVUwh3BzTOOC2cEo6/u+7g9+KTzPk=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/sqlvirtualmachine/armsqlvirtualmachine v0.9.0 h1:eqDvuH51BlAL5NqTV/aD+u/kCU55upDf8ptwD9NyC68=
@@ -1714,12 +1716,12 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.32.17 h1:8g80q91BZUoy8opxRZnp1bCqg+j5UvOpGd37pkV3OJc=
-github.com/kaytu-io/kaytu-aws-describer v0.32.17/go.mod h1:nltfouNMZinykTsKw9LDbM/Ndd8ey7cWYAWG+RIimac=
 github.com/kaytu-io/kaytu-aws-describer v0.32.27 h1:f1WgagJnWYR3Kwoal7Gd3VAOdvdIyf5CnUKwL+J2ZqA=
 github.com/kaytu-io/kaytu-aws-describer v0.32.27/go.mod h1:nltfouNMZinykTsKw9LDbM/Ndd8ey7cWYAWG+RIimac=
-github.com/kaytu-io/kaytu-azure-describer v0.23.14 h1:IQJO8JLRJUasyWGBh8crLtdT34pfmmzWQGwcoa6uH1w=
-github.com/kaytu-io/kaytu-azure-describer v0.23.14/go.mod h1:3YEq0QLACgaOz9xrSPAa+3MmdOGqVNUYSR7n6XwXdOw=
+github.com/kaytu-io/kaytu-azure-describer v0.23.15 h1:Wk7KJ2rJ29+U4P3bTtfU31CFNj3nzRpSvaZsO2u/gd4=
+github.com/kaytu-io/kaytu-azure-describer v0.23.15/go.mod h1:wEmWqOXm14wclI+nhzzsw6RjWNA6ZdQ370nWpHRQlMA=
+github.com/kaytu-io/kaytu-azure-describer v0.23.16 h1:66wOjwiPVSaPdzIfiC4pVJ4mHN3ZMJASbuZhz+h35/s=
+github.com/kaytu-io/kaytu-azure-describer v0.23.16/go.mod h1:TfKCns+dMKkOirAl0Pawy5Zvl4b/m73Z/fUTCqIiyNM=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee h1:vWKE/SQIFXcOGekqmfPbUcAt5xepH1LHI06hefhRfGE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
