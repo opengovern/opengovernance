@@ -305,7 +305,7 @@ type FindingsCountHits struct {
 	Total kaytu.SearchTotal `json:"total"`
 }
 
-func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus) (int64, error) {
+func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
 	idx := types.FindingsIndex
 
 	filters := make([]map[string]any, 0)
@@ -314,9 +314,16 @@ func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceS
 			"terms": map[string]any{
 				"conformanceStatus": conformanceStatuses,
 			},
-		}, map[string]any{
-			"term": map[string]any{
-				"stateActive": "true",
+		})
+	}
+	if len(stateActive) > 0 {
+		strStateActive := make([]string, 0)
+		for _, s := range stateActive {
+			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"stateActive": strStateActive,
 			},
 		})
 	}

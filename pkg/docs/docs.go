@@ -1990,6 +1990,16 @@ const docTemplate = `{
                         "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
                         "name": "conformanceStatus",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "boolean"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "StateActive to filter by defaults to true",
+                        "name": "stateActive",
+                        "in": "query"
                     }
                 ],
                 "responses": {

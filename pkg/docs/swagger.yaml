@@ -5719,6 +5719,13 @@ paths:
           type: string
         name: conformanceStatus
         type: array
+      - collectionFormat: csv
+        description: StateActive to filter by defaults to true
+        in: query
+        items:
+          type: boolean
+        name: stateActive
+        type: array
       produces:
       - application/json
       responses:

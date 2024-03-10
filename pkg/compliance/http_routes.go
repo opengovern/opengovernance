@@ -613,6 +613,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to true"
 //	@Success		200					{object}	api.CountFindingsResponse
 //	@Router			/compliance/api/v1/findings/count [get]
 func (h *HttpHandler) CountFindings(ctx echo.Context) error {
@@ -621,12 +622,25 @@ func (h *HttpHandler) CountFindings(ctx echo.Context) error {
 		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
+	stateActives := httpserver2.QueryArrayParam(ctx, "stateActive")
+	if len(stateActives) == 0 {
+		stateActives = []string{"true"}
+	}
+	boolStateActives := make([]bool, 0, len(stateActives))
+	for _, stateActive := range stateActives {
+		stateActiveBool, err := strconv.ParseBool(stateActive)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid stateActive value")
+		}
+		boolStateActives = append(boolStateActives, stateActiveBool)
+	}
+
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	totalCount, err := es.FindingsCount(h.client, esConformanceStatuses)
+	totalCount, err := es.FindingsCount(h.client, esConformanceStatuses, boolStateActives)
 	if err != nil {
 		return err
 	}
