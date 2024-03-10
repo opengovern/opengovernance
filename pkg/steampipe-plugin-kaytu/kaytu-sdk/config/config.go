@@ -22,7 +22,8 @@ type ClientConfig struct {
 	PgDatabase *string `cty:"pg_database"`
 	PgSslMode  *string `cty:"pg_ssl_mode"`
 
-	PennywiseBaseURL *string `cty:"pennywise_baseurl"`
+	PennywiseBaseURL         *string `cty:"pennywise_baseurl"`
+	ComplianceServiceBaseURL *string `cty:"compliance_service_baseurl"`
 }
 
 func Schema() map[string]*schema.Attribute {
@@ -65,6 +66,10 @@ func Schema() map[string]*schema.Attribute {
 		},
 		"pennywise_baseurl": {
 			Type: schema.TypeString,
+		},
+		"compliance_service_baseurl": {
+			Type:     schema.TypeString,
+			Required: false,
 		},
 	}
 }
