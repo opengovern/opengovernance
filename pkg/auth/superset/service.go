@@ -13,13 +13,21 @@ import (
 type SupersetService struct {
 	BaseURL            string
 	username, password string
+	DashboardID        string
+	GuestUsername      string
+	GuestFirstName     string
+	GuestLastName      string
 }
 
-func New(baseURL, username, password string) *SupersetService {
+func New(baseURL, username, password, dashboardID, guestUserName, guestFirstName, guestLastName string) *SupersetService {
 	return &SupersetService{
-		BaseURL:  baseURL,
-		username: username,
-		password: password,
+		BaseURL:        baseURL,
+		username:       username,
+		password:       password,
+		DashboardID:    dashboardID,
+		GuestUsername:  guestUserName,
+		GuestLastName:  guestLastName,
+		GuestFirstName: guestFirstName,
 	}
 }
 

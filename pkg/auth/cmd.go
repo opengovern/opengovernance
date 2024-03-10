@@ -69,9 +69,13 @@ func Command() *cobra.Command {
 }
 
 type SuperSet struct {
-	BaseURL  string
-	Username string
-	Password string
+	BaseURL        string
+	Username       string
+	Password       string
+	DashboardID    string
+	GuestUsername  string
+	GuestFirstName string
+	GuestLastName  string
 }
 
 type ServerConfig struct {
@@ -197,7 +201,8 @@ func start(ctx context.Context) error {
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
 
-	superset := superset2.New(conf.Superset.BaseURL, conf.Superset.Username, conf.Superset.Password)
+	superset := superset2.New(conf.Superset.BaseURL, conf.Superset.Username, conf.Superset.Password,
+		conf.Superset.DashboardID, conf.Superset.GuestUsername, conf.Superset.GuestFirstName, conf.Superset.GuestLastName)
 
 	lis, err := net.Listen("tcp", grpcServerAddress)
 	if err != nil {
