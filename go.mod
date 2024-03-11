@@ -34,6 +34,7 @@ require (
 	github.com/gogo/googleapis v1.4.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/gruntwork-io/go-commons v0.17.1
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/jackc/pgconn v1.14.1
@@ -205,7 +206,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-lambda-go v1.42.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect

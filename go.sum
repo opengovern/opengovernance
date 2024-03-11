@@ -545,8 +545,6 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
-github.com/aws/aws-lambda-go v1.42.0 h1:U4QKkxLp/il15RJGAANxiT9VumQzimsUER7gokqA0+c=
-github.com/aws/aws-lambda-go v1.42.0/go.mod h1:dpMpZgvWx5vuQJfBt0zqBha60q7Dd7RfgJv23DymV8A=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -1500,6 +1498,8 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFb
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0/go.mod h1:hgWBS7lorOAVIJEQMi4ZsPv9hVvWI6+ch50m39Pf2Ks=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 h1:6UKoz5ujsI55KNpsJH3UwCq3T8kKbZwNZBNPuTTje8U=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1/go.mod h1:YvJ2f6MplWDhfxiUC3KpyTy76kYUZA4W3pTv/wdKQ9Y=
+github.com/gruntwork-io/go-commons v0.17.1 h1:2KS9wAqrgeOTWj33DSHzDNJ1FCprptWdLFqej+wB8x0=
+github.com/gruntwork-io/go-commons v0.17.1/go.mod h1:S98JcR7irPD1bcruSvnqupg+WSJEJ6xaM89fpUZVISk=
 github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542/go.mod h1:Ow0tF8D4Kplbc8s8sSb3V2oUCygFHVp8gC3Dn6U4MNI=
 github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24 h1:vPNUODmKt24jM7Ic81uEHVqWVTDbkNh8aWAQcJV62CE=
 github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24/go.mod h1:4JgxsapvLxqPmQ11eZm3McAbYNal0Q0F9nWrup6d9a8=
@@ -1718,14 +1718,6 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.32.27 h1:f1WgagJnWYR3Kwoal7Gd3VAOdvdIyf5CnUKwL+J2ZqA=
 github.com/kaytu-io/kaytu-aws-describer v0.32.27/go.mod h1:nltfouNMZinykTsKw9LDbM/Ndd8ey7cWYAWG+RIimac=
-github.com/kaytu-io/kaytu-azure-describer v0.23.15 h1:Wk7KJ2rJ29+U4P3bTtfU31CFNj3nzRpSvaZsO2u/gd4=
-github.com/kaytu-io/kaytu-azure-describer v0.23.15/go.mod h1:wEmWqOXm14wclI+nhzzsw6RjWNA6ZdQ370nWpHRQlMA=
-github.com/kaytu-io/kaytu-azure-describer v0.23.16 h1:66wOjwiPVSaPdzIfiC4pVJ4mHN3ZMJASbuZhz+h35/s=
-github.com/kaytu-io/kaytu-azure-describer v0.23.16/go.mod h1:TfKCns+dMKkOirAl0Pawy5Zvl4b/m73Z/fUTCqIiyNM=
-github.com/kaytu-io/kaytu-azure-describer v0.23.17 h1:E8Xsge5Fo2t+/0YraKwMgv5+LfSpJYrE8m3VLQ0kzkY=
-github.com/kaytu-io/kaytu-azure-describer v0.23.17/go.mod h1:X1gbPPSADEhRuiMWNLVWmuQQYZGRVEilQ80DhCrSx0s=
-github.com/kaytu-io/kaytu-azure-describer v0.23.18 h1:hqKVcIy1S6deR2q36EmHYIXCm6sfd3Q85mnk01NSF3k=
-github.com/kaytu-io/kaytu-azure-describer v0.23.18/go.mod h1:X1gbPPSADEhRuiMWNLVWmuQQYZGRVEilQ80DhCrSx0s=
 github.com/kaytu-io/kaytu-azure-describer v0.23.19 h1:WO2AJ8BEYGf17bu/Fgj1vCtqCEwqsbwjZaZ0aEeQrmM=
 github.com/kaytu-io/kaytu-azure-describer v0.23.19/go.mod h1:wEmWqOXm14wclI+nhzzsw6RjWNA6ZdQ370nWpHRQlMA=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee h1:vWKE/SQIFXcOGekqmfPbUcAt5xepH1LHI06hefhRfGE=
