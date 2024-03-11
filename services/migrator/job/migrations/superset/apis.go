@@ -42,7 +42,7 @@ func newSupersetWrapper(logger *zap.Logger, baseURL string, adminPassword string
 	return sw, nil
 }
 
-func (w supersetWrapper) doAuth() error {
+func (w *supersetWrapper) doAuth() error {
 	if w.AccessToken == "" && w.RefreshToken == "" {
 		response, err := w.securityLoginV1()
 		if err != nil {
@@ -60,7 +60,7 @@ func (w supersetWrapper) doAuth() error {
 	return nil
 }
 
-func (w supersetWrapper) doRequest(method, path string, auth bool, body any, response any) error {
+func (w *supersetWrapper) doRequest(method, path string, auth bool, body any, response any) error {
 	var jsonBody []byte
 	var err error
 	if body != nil {
@@ -120,7 +120,7 @@ type securityLoginV1Response struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-func (w supersetWrapper) securityLoginV1() (*securityLoginV1Response, error) {
+func (w *supersetWrapper) securityLoginV1() (*securityLoginV1Response, error) {
 	body := securityLoginV1Request{
 		Username: "admin",
 		Password: w.AdminPassword,
@@ -140,7 +140,7 @@ type securityRefreshV1Response struct {
 	AccessToken string `json:"access_token"`
 }
 
-func (w supersetWrapper) securityRefreshV1() (*securityRefreshV1Response, error) {
+func (w *supersetWrapper) securityRefreshV1() (*securityRefreshV1Response, error) {
 	var response securityRefreshV1Response
 
 	at := w.AccessToken
@@ -178,7 +178,7 @@ type createDatabaseV1Request struct {
 	MaskedEncryptedExtra string `json:"masked_encrypted_extra"`
 }
 
-func (w supersetWrapper) createDatabaseV1(request createDatabaseV1Request) error {
+func (w *supersetWrapper) createDatabaseV1(request createDatabaseV1Request) error {
 	response := make(map[string]any)
 	return w.doRequest(http.MethodPost, "/api/v1/database/", true, request, &response)
 }
@@ -222,7 +222,7 @@ type listDatabaseV1Response struct {
 	Result []database `json:"result"`
 }
 
-func (w supersetWrapper) listDatabaseV1() (*listDatabaseV1Response, error) {
+func (w *supersetWrapper) listDatabaseV1() (*listDatabaseV1Response, error) {
 	var response listDatabaseV1Response
 	err := w.doRequest(http.MethodGet, "/api/v1/database/", true, nil, &response)
 	if err != nil {
