@@ -174,7 +174,7 @@ type createDatabaseV1Request struct {
 		Database string `json:"database"`
 		Username string `json:"username"`
 		Password string `json:"password"`
-	}
+	} `json:"parameters"`
 	MaskedEncryptedExtra string `json:"masked_encrypted_extra"`
 }
 
