@@ -1728,6 +1728,8 @@ github.com/kaytu-io/kaytu-azure-describer v0.23.18 h1:hqKVcIy1S6deR2q36EmHYIXCm6
 github.com/kaytu-io/kaytu-azure-describer v0.23.18/go.mod h1:X1gbPPSADEhRuiMWNLVWmuQQYZGRVEilQ80DhCrSx0s=
 github.com/kaytu-io/kaytu-azure-describer v0.23.19 h1:WO2AJ8BEYGf17bu/Fgj1vCtqCEwqsbwjZaZ0aEeQrmM=
 github.com/kaytu-io/kaytu-azure-describer v0.23.19/go.mod h1:wEmWqOXm14wclI+nhzzsw6RjWNA6ZdQ370nWpHRQlMA=
+github.com/kaytu-io/kaytu-azure-describer v0.23.20 h1:Ce+sT8BsmpGoFWV/LKu/Bwc1CqokBPdh3xVwgtHnByY=
+github.com/kaytu-io/kaytu-azure-describer v0.23.20/go.mod h1:wEmWqOXm14wclI+nhzzsw6RjWNA6ZdQ370nWpHRQlMA=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee h1:vWKE/SQIFXcOGekqmfPbUcAt5xepH1LHI06hefhRfGE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
