@@ -399,7 +399,7 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 		return map[string]interface{}{
 			"sku":          *v.LoadBalancer.SKU.Name,
 			"location":     ptrStr2(v.LoadBalancer.Location),
-			"rules_number": len(v.LoadBalancer.Properties.InboundNatRules) + len(v.LoadBalancer.Properties.LoadBalancingRules) + len(v.Description.LoadBalancer.Properties.OutboundRules),
+			"rules_number": len(v.LoadBalancer.Properties.InboundNatRules) + len(v.LoadBalancer.Properties.LoadBalancingRules) + len(v.LoadBalancer.Properties.OutboundRules),
 			"sku_tier":     *v.LoadBalancer.SKU.Tier,
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
@@ -414,35 +414,35 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 	return resource.Description.(map[string]interface{}), nil
 }
 
-func getAzureVirtualMachineScaleSetValues(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(azure.ComputeVirtualMachineScaleSetDescription); ok {
-		var additionalCapabalities []map[string]bool
-		additionalCapabalities = append(additionalCapabalities, map[string]bool{
-			"ultra_ssd_enabled": *v.VirtualMachineScaleSet.Properties.AdditionalCapabilities.UltraSSDEnabled,
-		})
-		return map[string]interface{}{
-			"size":          *v.VirtualMachineScaleSet.Plan,
-			"location":     *v.VirtualMachineScaleSet.Location,
-			"sku": *v.VirtualMachineScaleSet.SKU,
-			"license_type":     *v.VirtualMachineScaleSet.Properties,
-			"additional_capabilities":     additionalCapabalities,
-			"os_disk":     *v.VirtualMachineScaleSet.,
-			"os_profile_windows_config":     *v.LoadBalancer.SKU.Tier,
-			"storage_profile_image_reference":     *v.LoadBalancer.SKU.Tier,
-			"storage_profile_os_disk":     *v.VirtualMachineScaleSetExtensions[0].Properties.VirtualMachineProfile.,
-			"storage_profile_data_disk":     *v.LoadBalancer.SKU.Tier,
-		}, nil
-	} else if v, ok := resource.Description.(map[string]interface{}); ok {
-		return map[string]interface{}{
-			"sku":          v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Name"],
-			"location":     v["LoadBalancer"].(map[string]interface{})["Location"],
-			"rules_number": len(v["LoadBalancer"].(map[string]interface{})["InboundNatRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["LoadBalancingRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["OutboundRules"].([]interface{})),
-			"sku_tier":     v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Tier"],
-		}, nil
-	}
-
-	return resource.Description.(map[string]interface{}), nil
-}
+//func getAzureVirtualMachineScaleSetValues(resource Resource) (map[string]interface{}, error) {
+//	if v, ok := resource.Description.(azure.ComputeVirtualMachineScaleSetDescription); ok {
+//		var additionalCapabalities []map[string]bool
+//		additionalCapabalities = append(additionalCapabalities, map[string]bool{
+//			"ultra_ssd_enabled": *v.VirtualMachineScaleSet.Properties.AdditionalCapabilities.UltraSSDEnabled,
+//		})
+//		return map[string]interface{}{
+//			"size":          *v.VirtualMachineScaleSet.Plan,
+//			"location":     *v.VirtualMachineScaleSet.Location,
+//			"sku": *v.VirtualMachineScaleSet.SKU,
+//			"license_type":     *v.VirtualMachineScaleSet.Properties,
+//			"additional_capabilities":     additionalCapabalities,
+//			"os_disk":     v.VirtualMachineScaleSet.Properties,
+//			"os_profile_windows_config":     *v.LoadBalancer.SKU.Tier,
+//			"storage_profile_image_reference":     *v.LoadBalancer.SKU.Tier,
+//			"storage_profile_os_disk":     *v.VirtualMachineScaleSetExtensions[0].Properties.VirtualMachineProfile.,
+//			"storage_profile_data_disk":     *v.LoadBalancer.SKU.Tier,
+//		}, nil
+//	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+//		return map[string]interface{}{
+//			"sku":          v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Name"],
+//			"location":     v["LoadBalancer"].(map[string]interface{})["Location"],
+//			"rules_number": len(v["LoadBalancer"].(map[string]interface{})["InboundNatRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["LoadBalancingRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["OutboundRules"].([]interface{})),
+//			"sku_tier":     v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Tier"],
+//		}, nil
+//	}
+//
+//	return resource.Description.(map[string]interface{}), nil
+//}
 
 func ptrBool(pointer *bool) interface{} {
 	if pointer == nil {
