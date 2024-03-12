@@ -209,7 +209,6 @@ func start(ctx context.Context) error {
 			kaytuPrivateKey: pri.(*rsa.PrivateKey),
 			db:              adb,
 			authServer:      authServer,
-			supersetConfig:  conf.Superset,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
 	}()

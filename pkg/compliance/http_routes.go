@@ -126,11 +126,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourceFindings := v1.Group("/resource_findings")
 	resourceFindings.POST("", httpserver.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
 
-	ai := v1.Group("/ai")
-	ai.POST("/control/:controlID/remediation", httpserver.AuthorizeHandler(h.GetControlRemediation, authApi.ViewerRole))
-
 	supersetGp := v1.Group("/superset")
 	supersetGp.POST("/dashboards/token", httpserver.AuthorizeHandler(h.GenerateSupersetDashboardToken, authApi.EditorRole))
+
+	ai := v1.Group("/ai")
+	ai.POST("/control/:controlID/remediation", httpserver.AuthorizeHandler(h.GetControlRemediation, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
