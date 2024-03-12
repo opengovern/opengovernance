@@ -47,7 +47,7 @@ func tableKaytuApiBenchmarkControls(_ context.Context) *plugin.Table {
 			},
 			{
 				Name:        "connection_id",
-				Type:        proto.ColumnType_JSON,
+				Type:        proto.ColumnType_STRING,
 				Description: "The connection IDs included in the benchmark controls",
 				Transform:   transform.FromQual("connection_id"),
 			},
