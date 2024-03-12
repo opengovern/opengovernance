@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -230,4 +233,60 @@ func (w *supersetWrapper) listDatabaseV1() (*listDatabaseV1Response, error) {
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (w *supersetWrapper) importDashboardV1(dashboardFilePath string, passwords string, overwrite bool) error {
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	file, errFile1 := os.Open(dashboardFilePath)
+	defer file.Close()
+	part1, errFile1 := writer.CreateFormFile("formData", filepath.Base(dashboardFilePath))
+	_, errFile1 = io.Copy(part1, file)
+	if errFile1 != nil {
+		w.logger.Error("failed to create form file", zap.Error(errFile1), zap.String("path", dashboardFilePath))
+		return errFile1
+	}
+	err := writer.WriteField("passwords", passwords)
+	if err != nil {
+		w.logger.Error("failed to write field", zap.Error(err), zap.String("path", dashboardFilePath))
+		return err
+	}
+	err = writer.WriteField("overwrite", fmt.Sprintf("%v", overwrite))
+	if err != nil {
+		w.logger.Error("failed to write field", zap.Error(err), zap.String("path", dashboardFilePath))
+		return err
+	}
+	err = writer.Close()
+	if err != nil {
+		w.logger.Error("failed to close writer", zap.Error(err), zap.String("path", dashboardFilePath))
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, w.BaseURL+"/api/v1/dashboard/import/", payload)
+	if err != nil {
+		w.logger.Error("failed to create http request", zap.Error(err), zap.String("path", dashboardFilePath))
+		return err
+	}
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+w.AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	res, err := w.httpClient.Do(req)
+	if err != nil {
+		w.logger.Error("failed to do http request", zap.Error(err), zap.String("path", dashboardFilePath))
+		return err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		w.logger.Error("failed to read response body", zap.Error(err), zap.String("path", dashboardFilePath))
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		w.logger.Error("invalid status code", zap.Int("status_code", res.StatusCode), zap.String("path", dashboardFilePath), zap.String("body", string(body)))
+		return fmt.Errorf("invalid status code: %d", res.StatusCode)
+	}
+
+	w.logger.Info("imported dashboard", zap.String("path", dashboardFilePath))
+	return nil
 }

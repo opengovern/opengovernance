@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"go.uber.org/zap"
 	"os"
+	"path/filepath"
 )
 
 type Migration struct {
@@ -67,6 +68,29 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	err = ssWrapper.createDatabaseV1(createDatabaseRequest)
 	if err != nil {
 		logger.Error("failed to create database", zap.Error(err))
+		return err
+	}
+
+	err = filepath.WalkDir(config.SuperSetGitPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			logger.Error("failed to walk path", zap.Error(err))
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		// check if it's a zip file
+		if filepath.Ext(path) == ".zip" {
+			err = ssWrapper.importDashboardV1(path, "{\"databases/Steampipe.yaml\": \"abcd\"}", true)
+			if err != nil {
+				logger.Error("failed to import", zap.Error(err), zap.String("path", path))
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to walk path", zap.Error(err))
 		return err
 	}
 

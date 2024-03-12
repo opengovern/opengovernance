@@ -43,7 +43,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	err = filepath.Walk(config.AnalyticsGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.ConfigzGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateItem(logger, orm, path, info, true)
 		}
@@ -53,7 +53,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = filepath.Walk(config.AnalyticsGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.ConfigzGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateItem(logger, orm, path, info, false)
 		}
@@ -63,7 +63,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = filepath.Walk(config.AnalyticsGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.ConfigzGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateFinderItem(logger, orm, path, info, true)
 		}
@@ -73,7 +73,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = filepath.Walk(config.AnalyticsGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.ConfigzGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateFinderItem(logger, orm, path, info, false)
 		}

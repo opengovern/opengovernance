@@ -39,8 +39,8 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 		Username: "abc123",
 		Password: gitConfig.githubToken,
 	}
-	os.RemoveAll(config.AnalyticsGitPath)
-	res, err := git.PlainClone(config.AnalyticsGitPath, false, &git.CloneOptions{
+	os.RemoveAll(config.ConfigzGitPath)
+	res, err := git.PlainClone(config.ConfigzGitPath, false, &git.CloneOptions{
 		Auth:     &gitAuth,
 		URL:      gitConfig.AnalyticsGitURL,
 		Progress: os.Stdout,

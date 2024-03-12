@@ -3,12 +3,12 @@ package config
 const (
 	ControlEnrichmentGitPath = "/tmp/loader-control-enrichment-git"
 
-	AnalyticsGitPath          = "/tmp/loader-analytics-git"
-	ComplianceGitPath         = AnalyticsGitPath + "/compliance"
-	QueriesGitPath            = AnalyticsGitPath + "/cloud-infrastructure-queries"
-	InsightsGitPath           = AnalyticsGitPath + "/insights"
-	ResourceCollectionGitPath = AnalyticsGitPath + "/resource-collections"
-	ConnectionGroupGitPath    = AnalyticsGitPath + "/connection_groups"
+	ConfigzGitPath            = "/tmp/loader-analytics-git"
+	ComplianceGitPath         = ConfigzGitPath + "/compliance"
+	InsightsGitPath           = ConfigzGitPath + "/insights"
+	ResourceCollectionGitPath = ConfigzGitPath + "/resource-collections"
+	ConnectionGroupGitPath    = ConfigzGitPath + "/connection_groups"
+	SuperSetGitPath           = ConfigzGitPath + "/superset"
 )
 
 const (
