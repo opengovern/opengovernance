@@ -61,7 +61,7 @@ func tableKaytuApiBenchmarkControls(_ context.Context) *plugin.Table {
 			},
 			{
 				Name:        "control_id",
-				Type:        proto.ColumnType_JSON,
+				Type:        proto.ColumnType_STRING,
 				Description: "Control id",
 				Transform:   transform.FromField("Control.ID"),
 			},
