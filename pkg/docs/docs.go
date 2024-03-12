@@ -1258,8 +1258,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection groups to filter by ",
+                        "description": "Connection groups to filter by",
                         "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for values in epoch seconds",
+                        "name": "timeAt",
                         "in": "query"
                     }
                 ],

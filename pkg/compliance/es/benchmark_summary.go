@@ -710,7 +710,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 	return nil, 0, nil
 }
 
-func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string, connectionIDs []string) (map[string]types2.ControlResult, int64, error) {
+func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string, connectionIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
 	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
@@ -746,6 +746,13 @@ func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkI
 					{
 						"term": map[string]any{
 							"BenchmarkID": benchmarkID,
+						},
+					},
+					{
+						"range": map[string]any{
+							"EvaluatedAtEpoch": map[string]any{
+								"lte": timeAt.Unix(),
+							},
 						},
 					},
 				},

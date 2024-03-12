@@ -2780,7 +2780,8 @@ func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*d
 //	@Produce	json
 //	@Param		benchmark_id	path		string		true	"Benchmark ID"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "//	@Success	200	{object}	[]api.ControlSummary
+//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by"
+//	@Param		timeAt			query		int			false	"timestamp for values in epoch seconds"
 //	@Success	200				{object}	api.BenchmarkControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls [get]
 func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
@@ -2791,6 +2792,14 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 		h.logger.Error("failed to get connection IDs", zap.Error(err))
 		return err
 	}
+	timeAt := time.Now()
+	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
+		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeAt")
+		}
+		timeAt = time.Unix(timeAtInt, 0)
+	}
 
 	controlsMap := make(map[string]api.Control)
 	err = h.populateControlsMap(benchmarkID, controlsMap)
@@ -2798,7 +2807,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 		return err
 	}
 
-	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(h.logger, h.client, benchmarkID, connectionIDs)
+	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(h.logger, h.client, benchmarkID, connectionIDs, timeAt)
 	if err != nil {
 		return err
 	}
@@ -3243,7 +3252,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	var evaluatedAt int64
 	var result types.ControlResult
 	if benchmarkID != nil {
-		controlResult, evAt, err := es.BenchmarkControlSummary(h.logger, h.client, *benchmarkID, connectionIDs)
+		controlResult, evAt, err := es.BenchmarkControlSummary(h.logger, h.client, *benchmarkID, connectionIDs, time.Now())
 		if err != nil {
 			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 			return nil, err

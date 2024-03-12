@@ -5016,12 +5016,16 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: 'Connection groups to filter by '
+        description: Connection groups to filter by
         in: query
         items:
           type: string
         name: connectionGroup
         type: array
+      - description: timestamp for values in epoch seconds
+        in: query
+        name: timeAt
+        type: integer
       produces:
       - application/json
       responses:
