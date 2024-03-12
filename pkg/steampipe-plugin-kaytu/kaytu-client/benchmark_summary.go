@@ -2,7 +2,6 @@ package kaytu_client
 
 import (
 	"context"
-	"encoding/json"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -10,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/services"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"
 	"runtime"
 	"time"
 )
@@ -30,12 +30,15 @@ func GetBenchmarkSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		timeAt = utils.GetPointer(d.EqualsQuals["time_at"].GetTimestampValue().AsTime())
 	}
 	var connectionIds []string
-	if d.Quals["connection_ids"] != nil {
-		jsonConnections := d.EqualsQuals["connection_ids"].GetJsonbValue()
-		err := json.Unmarshal([]byte(jsonConnections), &connectionIds)
-		if err != nil {
-			plugin.Logger(ctx).Error("GetBenchmarkSummary connection id json conversion", "error", err)
-			return nil, err
+	if d.Quals["connection_id"] != nil {
+		cidMap := make(map[string]bool)
+		for _, qual := range d.Quals["connection_ids"].Quals {
+			if qual.Operator == quals.QualOperatorEqual {
+				cidMap[qual.Value.GetStringValue()] = true
+			}
+		}
+		for k := range cidMap {
+			connectionIds = append(connectionIds, k)
 		}
 	}
 
@@ -73,12 +76,15 @@ func ListBenchmarkControls(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 		timeAt = utils.GetPointer(d.EqualsQuals["time_at"].GetTimestampValue().AsTime())
 	}
 	var connectionIds []string
-	if d.Quals["connection_ids"] != nil {
-		jsonConnections := d.EqualsQuals["connection_ids"].GetJsonbValue()
-		err := json.Unmarshal([]byte(jsonConnections), &connectionIds)
-		if err != nil {
-			plugin.Logger(ctx).Error("ListBenchmarkControls connection id json conversion", "error", err)
-			return nil, err
+	if d.Quals["connection_id"] != nil {
+		cidMap := make(map[string]bool)
+		for _, qual := range d.Quals["connection_ids"].Quals {
+			if qual.Operator == quals.QualOperatorEqual {
+				cidMap[qual.Value.GetStringValue()] = true
+			}
+		}
+		for k := range cidMap {
+			connectionIds = append(connectionIds, k)
 		}
 	}
 

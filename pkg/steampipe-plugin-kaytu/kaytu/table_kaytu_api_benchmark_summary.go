@@ -31,7 +31,7 @@ func tableKaytuApiBenchmarkSummary(_ context.Context) *plugin.Table {
 					Require:   plugin.Optional,
 				},
 				{
-					Name:      "connection_ids",
+					Name:      "connection_id",
 					Operators: []string{quals.QualOperatorEqual},
 					Require:   plugin.Optional,
 				},
@@ -46,11 +46,10 @@ func tableKaytuApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Transform:   transform.FromQual("benchmark_id"),
 			},
 			{
-				Name:        "connection_ids",
+				Name:        "connection_id",
 				Type:        proto.ColumnType_JSON,
 				Description: "The connection IDs included in the benchmark summary",
-				Transform:   transform.FromQual("connection_ids"),
-				Default:     "[]",
+				Transform:   transform.FromQual("connection_id"),
 			},
 			{
 				Name:        "time_at",
