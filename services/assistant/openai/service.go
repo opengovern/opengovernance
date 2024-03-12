@@ -26,6 +26,7 @@ type Service struct {
 
 func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
+	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
 
 	s := &Service{
