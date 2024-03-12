@@ -16,6 +16,7 @@ type ComplianceServiceClient interface {
 	ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.BenchmarkAssignedEntities, error)
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 	GetBenchmarkSummary(ctx *httpclient.Context, benchmarkID string, connectionId []string, timeAt *time.Time) (*compliance.BenchmarkEvaluationSummary, error)
+	GetBenchmarkControls(ctx *httpclient.Context, benchmarkID string, connectionId []string, timeAt *time.Time) (*compliance.BenchmarkControlSummary, error)
 	GetControl(ctx *httpclient.Context, controlID string) (*compliance.Control, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
 	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
@@ -91,6 +92,41 @@ func (s *complianceClient) GetBenchmarkSummary(ctx *httpclient.Context, benchmar
 	}
 
 	var response compliance.BenchmarkEvaluationSummary
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (s *complianceClient) GetBenchmarkControls(ctx *httpclient.Context, benchmarkID string, connectionId []string, timeAt *time.Time) (*compliance.BenchmarkControlSummary, error) {
+	url := fmt.Sprintf("%s/api/v1/benchmarks/%s/controls", s.baseURL, benchmarkID)
+
+	firstParamAttached := false
+	if len(connectionId) > 0 {
+		for _, connection := range connectionId {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connection)
+		}
+	}
+	if timeAt != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("timeAt=%d", timeAt.Unix())
+	}
+
+	var response compliance.BenchmarkControlSummary
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
