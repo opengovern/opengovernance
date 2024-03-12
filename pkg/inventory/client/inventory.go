@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 )
 
 type InventoryServiceClient interface {
+	RunQuery(ctx *httpclient.Context, req api.RunQueryRequest) (*api.RunQueryResponse, error)
 	CountResources(ctx *httpclient.Context) (int64, error)
 	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
 	GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
@@ -34,6 +36,24 @@ type inventoryClient struct {
 
 func NewInventoryServiceClient(baseURL string) InventoryServiceClient {
 	return &inventoryClient{baseURL: baseURL}
+}
+
+func (s *inventoryClient) RunQuery(ctx *httpclient.Context, req api.RunQueryRequest) (*api.RunQueryResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/query/run", s.baseURL)
+
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp api.RunQueryResponse
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), reqBytes, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &resp, nil
 }
 
 func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error) {

@@ -75,6 +75,7 @@ jobs:
       cost-estimator-service: ${{ steps.build_services.outputs.cost-estimator-service }}
       steampipe-plugin-kaytu: ${{ steps.build_services.outputs.steampipe-plugin-kaytu }}
       integration-service: ${{ steps.build_services.outputs.integration-service }}
+      assistant-service: ${{ steps.build_services.outputs.assistant-service }}
     #        gpt-service: ${{ steps.build_services.outputs.gpt-service }}
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
@@ -447,6 +448,43 @@ jobs:
           tags: |
             ${{ vars.DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/IntegrationServiceDockerfile
+          context: .
+  deploy-assistant-service:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - tag
+    permissions:
+      id-token: write
+      contents: read
+    environment: docker
+    if: needs.build.outputs.assistant-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar.gz
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: |
+            ${{ vars.DOCKER_REGISTRY }}/assistant:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/AssistantServiceDockerfile
           context: .
   deploy-reporter:
     runs-on: ubuntu-latest

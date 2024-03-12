@@ -55,7 +55,7 @@ require (
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/projectcontour/contour v1.22.0
 	github.com/prometheus/client_golang v1.18.0
-	github.com/sashabaranov/go-openai v1.15.4
+	github.com/sashabaranov/go-openai v1.20.3
 	github.com/shopspring/decimal v1.3.1
 	github.com/sony/sonyflake v1.2.0
 	github.com/spf13/afero v1.9.2
@@ -206,7 +206,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-lambda-go v1.42.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect

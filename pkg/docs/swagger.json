@@ -444,6 +444,76 @@
                 }
             }
         },
+        "/assistant/api/v1/thread": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Send a message [standalone]",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assistant"
+                ],
+                "summary": "Send a message [standalone]",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/assistant/api/v1/thread/{thread_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "List messages of a thread",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "assistant"
+                ],
+                "summary": "List messages of a thread",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Thread ID",
+                        "name": "thread_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/api/v1/key/create": {
             "post": {
                 "security": [
@@ -13001,6 +13071,44 @@
                 "SizeMD",
                 "SizeLG"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse": {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "thread_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse": {
+            "type": "object",
+            "properties": {
+                "thread_id": {
+                    "type": "string"
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig": {
             "type": "object",

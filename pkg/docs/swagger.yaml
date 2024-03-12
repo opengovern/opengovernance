@@ -3737,6 +3737,30 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
+  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message:
+    properties:
+      content:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest:
+    properties:
+      content:
+        type: string
+      thread_id:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse:
+    properties:
+      thread_id:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig:
     properties:
       accountID:
@@ -4574,6 +4598,49 @@ paths:
       summary: List triggers
       tags:
       - alerting
+  /assistant/api/v1/thread:
+    post:
+      description: Send a message [standalone]
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse'
+      security:
+      - BearerToken: []
+      summary: Send a message [standalone]
+      tags:
+      - assistant
+  /assistant/api/v1/thread/{thread_id}:
+    get:
+      description: List messages of a thread
+      parameters:
+      - description: Thread ID
+        in: path
+        name: thread_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse'
+      security:
+      - BearerToken: []
+      summary: List messages of a thread
+      tags:
+      - assistant
   /auth/api/v1/key/{id}/delete:
     delete:
       description: Deletes the specified workspace key by ID.
