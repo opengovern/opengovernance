@@ -43,33 +43,36 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
+	foundDB := false
 	for _, database := range databasesResult.Result {
 		if database.DatabaseName == "Steampipe" {
-			return nil
+			foundDB = true
+			break
 		}
 	}
+	if !foundDB {
+		createDatabaseRequest := createDatabaseV1Request{}
+		createDatabaseRequest.DatabaseName = "Steampipe"
+		createDatabaseRequest.Engine = "postgresql"
+		createDatabaseRequest.ConfigurationMethod = "dynamic_form"
+		createDatabaseRequest.EngineInformation.DisableSSHTunneling = false
+		createDatabaseRequest.EngineInformation.SupportsFileUpload = true
+		createDatabaseRequest.Driver = "psycopg2"
+		createDatabaseRequest.SqlAlchemyUriPlaceholder = "postgresql://user:password@host:port/dbname[?key=value&key=value...]"
+		createDatabaseRequest.Extra = "{\"allows_virtual_table_explore\":true}"
+		createDatabaseRequest.ExposeInSqllab = true
+		createDatabaseRequest.Parameters.Host = conf.Steampipe.Host
+		createDatabaseRequest.Parameters.Port = conf.Steampipe.Port
+		createDatabaseRequest.Parameters.Database = conf.Steampipe.DB
+		createDatabaseRequest.Parameters.Username = conf.Steampipe.Username
+		createDatabaseRequest.Parameters.Password = conf.Steampipe.Password
+		createDatabaseRequest.MaskedEncryptedExtra = "{}"
 
-	createDatabaseRequest := createDatabaseV1Request{}
-	createDatabaseRequest.DatabaseName = "Steampipe"
-	createDatabaseRequest.Engine = "postgresql"
-	createDatabaseRequest.ConfigurationMethod = "dynamic_form"
-	createDatabaseRequest.EngineInformation.DisableSSHTunneling = false
-	createDatabaseRequest.EngineInformation.SupportsFileUpload = true
-	createDatabaseRequest.Driver = "psycopg2"
-	createDatabaseRequest.SqlAlchemyUriPlaceholder = "postgresql://user:password@host:port/dbname[?key=value&key=value...]"
-	createDatabaseRequest.Extra = "{\"allows_virtual_table_explore\":true}"
-	createDatabaseRequest.ExposeInSqllab = true
-	createDatabaseRequest.Parameters.Host = conf.Steampipe.Host
-	createDatabaseRequest.Parameters.Port = conf.Steampipe.Port
-	createDatabaseRequest.Parameters.Database = conf.Steampipe.DB
-	createDatabaseRequest.Parameters.Username = conf.Steampipe.Username
-	createDatabaseRequest.Parameters.Password = conf.Steampipe.Password
-	createDatabaseRequest.MaskedEncryptedExtra = "{}"
-
-	err = ssWrapper.createDatabaseV1(createDatabaseRequest)
-	if err != nil {
-		logger.Error("failed to create database", zap.Error(err))
-		return err
+		err = ssWrapper.createDatabaseV1(createDatabaseRequest)
+		if err != nil {
+			logger.Error("failed to create database", zap.Error(err))
+			return err
+		}
 	}
 
 	err = filepath.WalkDir(config.SuperSetGitPath, func(path string, d os.DirEntry, err error) error {
