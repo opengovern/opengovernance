@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	_ "embed"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/sashabaranov/go-openai"
 )
@@ -57,12 +58,12 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Se
 	}
 	err := s.InitFiles()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to init files due to %v", err)
 	}
 
 	err = s.InitAssistant()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to init assistant due to %v", err)
 	}
 
 	return s, nil
@@ -71,7 +72,7 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Se
 func (s *Service) InitAssistant() error {
 	assistants, err := s.client.ListAssistants(context.Background(), nil, nil, nil, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list assistants due to %v", err)
 	}
 
 	var assistant *openai.Assistant
@@ -92,7 +93,7 @@ func (s *Service) InitAssistant() error {
 			Metadata:     nil,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create assistants due to %v", err)
 		}
 		assistant = &a
 	}
@@ -108,7 +109,7 @@ func (s *Service) InitAssistant() error {
 			Metadata:     nil,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to modify assistants due to %v", err)
 		}
 		assistant = &a
 	}
@@ -119,7 +120,7 @@ func (s *Service) InitAssistant() error {
 func (s *Service) InitFiles() error {
 	files, err := s.client.ListFiles(context.Background())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list files due to %v", err)
 	}
 
 	s.fileIDs = nil
@@ -140,7 +141,7 @@ func (s *Service) InitFiles() error {
 				Purpose: "",
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create file due to %v", err)
 			}
 
 			s.fileIDs = append(s.fileIDs, f.ID)
