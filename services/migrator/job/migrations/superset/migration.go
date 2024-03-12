@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Migration struct {
@@ -80,7 +81,8 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 			return nil
 		}
 		// check if it's a zip file
-		if filepath.Ext(path) == ".zip" {
+		if strings.HasSuffix(path, ".zip") {
+			logger.Info("importing dashboard", zap.String("path", path))
 			err = ssWrapper.importDashboardV1(path, fmt.Sprintf("{\"databases/Steampipe.yaml\": \"%s\"}", conf.Steampipe.Password), true)
 			if err != nil {
 				logger.Error("failed to import", zap.Error(err), zap.String("path", path))
