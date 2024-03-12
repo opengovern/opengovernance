@@ -81,7 +81,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		}
 		// check if it's a zip file
 		if filepath.Ext(path) == ".zip" {
-			err = ssWrapper.importDashboardV1(path, "{\"databases/Steampipe.yaml\": \"abcd\"}", true)
+			err = ssWrapper.importDashboardV1(path, fmt.Sprintf("{\"databases/Steampipe.yaml\": \"%s\"}", conf.Steampipe.Password), true)
 			if err != nil {
 				logger.Error("failed to import", zap.Error(err), zap.String("path", path))
 				return err
