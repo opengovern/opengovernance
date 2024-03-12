@@ -9,7 +9,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/services"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"
 	"runtime"
 	"time"
 )
@@ -30,15 +29,14 @@ func GetBenchmarkSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		timeAt = utils.GetPointer(d.EqualsQuals["time_at"].GetTimestampValue().AsTime())
 	}
 	var connectionIds []string
-	if d.Quals["connection_id"] != nil {
-		cidMap := make(map[string]bool)
-		for _, qual := range d.Quals["connection_ids"].Quals {
-			if qual.Operator == quals.QualOperatorEqual {
-				cidMap[qual.Value.GetStringValue()] = true
+	if d.EqualsQuals["connection_id"] != nil {
+		q := d.EqualsQuals["connection_id"]
+		if q.GetListValue() != nil {
+			for _, v := range q.GetListValue().Values {
+				connectionIds = append(connectionIds, v.GetStringValue())
 			}
-		}
-		for k := range cidMap {
-			connectionIds = append(connectionIds, k)
+		} else {
+			connectionIds = []string{d.EqualsQuals["connection_id"].GetStringValue()}
 		}
 	}
 
@@ -76,15 +74,14 @@ func ListBenchmarkControls(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 		timeAt = utils.GetPointer(d.EqualsQuals["time_at"].GetTimestampValue().AsTime())
 	}
 	var connectionIds []string
-	if d.Quals["connection_id"] != nil {
-		cidMap := make(map[string]bool)
-		for _, qual := range d.Quals["connection_ids"].Quals {
-			if qual.Operator == quals.QualOperatorEqual {
-				cidMap[qual.Value.GetStringValue()] = true
+	if d.EqualsQuals["connection_id"] != nil {
+		q := d.EqualsQuals["connection_id"]
+		if q.GetListValue() != nil {
+			for _, v := range q.GetListValue().Values {
+				connectionIds = append(connectionIds, v.GetStringValue())
 			}
-		}
-		for k := range cidMap {
-			connectionIds = append(connectionIds, k)
+		} else {
+			connectionIds = []string{d.EqualsQuals["connection_id"].GetStringValue()}
 		}
 	}
 
