@@ -26,6 +26,7 @@ import (
 )
 
 type HttpHandler struct {
+	conf   ServerConfig
 	client kaytu.Client
 	db     db.Database
 	logger *zap.Logger
@@ -63,6 +64,7 @@ func InitializeHttpHandler(
 	s3Region, s3AccessKey, s3AccessSecret string,
 	logger *zap.Logger) (h *HttpHandler, err error) {
 	h = &HttpHandler{
+		conf:   conf,
 		logger: logger,
 	}
 

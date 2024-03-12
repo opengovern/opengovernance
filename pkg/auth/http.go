@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/superset"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"net/http"
@@ -49,7 +48,6 @@ type httpRoutes struct {
 	kaytuPrivateKey *rsa.PrivateKey
 	db              db.Database
 	authServer      *Server
-	supersetConfig  SuperSet
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -69,8 +67,6 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
 
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api.InternalRole))
-
-	v1.POST("/dashboards/token", httpserver.AuthorizeHandler(r.GenerateDashboardToken, api.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -703,77 +699,6 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-// GenerateDashboardToken godoc
-//
-//	@Summary		Generate dashboard token
-//	@Description	Generate dashboard token
-//	@Security		BearerToken
-//	@Tags			keys
-//	@Produce		json
-//	@Success		200	{object}	api.GenerateDashboardTokenResponse
-//	@Router			/auth/api/v1/dashboards/token [post]
-func (r *httpRoutes) GenerateDashboardToken(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	userID := httpserver.GetUserID(ctx)
-
-	if userID != api.GodUserID {
-		usr, err := r.auth0Service.GetUser(userID)
-		if err != nil {
-			return err
-		}
-		if _, ok := usr.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
-			return errors.New("access denied")
-		}
-	}
-
-	ss := superset.New(strings.ReplaceAll(r.supersetConfig.BaseURL, "%WORKSPACE_ID%", workspaceID), r.supersetConfig.Username, r.supersetConfig.Password)
-	token, err := ss.Login()
-	if err != nil {
-		return err
-	}
-
-	var respDashboards []api.Dashboard
-	dashboards, err := ss.ListDashboards(token)
-	if err != nil {
-		return err
-	}
-	for _, d := range dashboards {
-		uid, err := ss.GetEmbeddedUUID(token, d.Id)
-		if err != nil {
-			return err
-		}
-
-		respDashboards = append(respDashboards, api.Dashboard{
-			ID:   uid,
-			Name: d.DashboardTitle,
-		})
-	}
-
-	var resources []superset.Resource
-	for _, d := range respDashboards {
-		resources = append(resources, superset.Resource{
-			Type: "dashboard",
-			Id:   d.ID,
-		})
-	}
-	guestToken, err := ss.GuestToken(token, superset.GuestTokenRequest{
-		User: superset.GuestUser{
-			Username:  r.supersetConfig.GuestUsername,
-			FirstName: r.supersetConfig.GuestFirstName,
-			LastName:  r.supersetConfig.GuestLastName,
-		},
-		Resources: resources,
-		Rls:       []superset.RLS{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, api.GenerateDashboardTokenResponse{
-		Token:      guestToken,
-		Dashboards: respDashboards,
-	})
-}
 func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
 	err := r.authServer.updateWorkspaceMap()
 	if err != nil {

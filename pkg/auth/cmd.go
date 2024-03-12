@@ -67,19 +67,8 @@ func Command() *cobra.Command {
 	}
 }
 
-type SuperSet struct {
-	BaseURL        string
-	Username       string
-	Password       string
-	DashboardID    string
-	GuestUsername  string
-	GuestFirstName string
-	GuestLastName  string
-}
-
 type ServerConfig struct {
 	PostgreSQL config2.Postgres
-	Superset   SuperSet
 }
 
 // start runs both HTTP and GRPC server.

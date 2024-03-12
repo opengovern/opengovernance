@@ -449,31 +449,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/dashboards/token": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Generate dashboard token",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "keys"
-                ],
-                "summary": "Generate dashboard token",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/api/v1/key/create": {
             "post": {
                 "security": [
@@ -3283,6 +3258,31 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/superset/dashboards/token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Generate dashboard token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Generate dashboard token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse"
                         }
                     }
                 }
@@ -8133,31 +8133,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard": {
-            "type": "object",
-            "properties": {
-                "ID": {
-                    "type": "string"
-                },
-                "Name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse": {
-            "type": "object",
-            "properties": {
-                "dashboards": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard"
-                    }
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse": {
             "type": "object",
             "properties": {
@@ -9947,6 +9922,20 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse": {
+            "type": "object",
+            "properties": {
+                "dashboards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard"
+                    }
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse": {
             "type": "object",
             "properties": {
@@ -10709,6 +10698,17 @@ const docTemplate = `{
                 "SortDirectionAscending",
                 "SortDirectionDescending"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard": {
+            "type": "object",
+            "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "Name": {
+                    "type": "string"
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",

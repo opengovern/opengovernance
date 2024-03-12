@@ -336,22 +336,6 @@ definitions:
         description: Token of the key
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard:
-    properties:
-      ID:
-        type: string
-      Name:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse:
-    properties:
-      dashboards:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Dashboard'
-        type: array
-      token:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
@@ -1598,6 +1582,15 @@ definitions:
       stateActive:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse:
+    properties:
+      dashboards:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard'
+        type: array
+      token:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -2122,6 +2115,13 @@ definitions:
     x-enum-varnames:
     - SortDirectionAscending
     - SortDirectionDescending
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard:
+    properties:
+      ID:
+        type: string
+      Name:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       connection:
@@ -4574,21 +4574,6 @@ paths:
       summary: List triggers
       tags:
       - alerting
-  /auth/api/v1/dashboards/token:
-    post:
-      description: Generate dashboard token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GenerateDashboardTokenResponse'
-      security:
-      - BearerToken: []
-      summary: Generate dashboard token
-      tags:
-      - keys
   /auth/api/v1/key/{id}/delete:
     delete:
       description: Deletes the specified workspace key by ID.
@@ -6438,6 +6423,21 @@ paths:
       summary: List resource findings
       tags:
       - compliance
+  /compliance/api/v1/superset/dashboards/token:
+    post:
+      description: Generate dashboard token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse'
+      security:
+      - BearerToken: []
+      summary: Generate dashboard token
+      tags:
+      - keys
   /integration/api/v1/connections/{connectionId}:
     delete:
       description: Deleting a single connection either AWS / Azure for the given connection

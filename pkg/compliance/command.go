@@ -22,6 +22,15 @@ type OpenAI struct {
 	Token string
 }
 
+type SuperSet struct {
+	BaseURL        string
+	Username       string
+	Password       string
+	GuestUsername  string
+	GuestFirstName string
+	GuestLastName  string
+}
+
 type ServerConfig struct {
 	ElasticSearch config.ElasticSearch
 	PostgreSQL    config.Postgres
@@ -31,6 +40,8 @@ type ServerConfig struct {
 	Metadata      config.KaytuService
 	OpenAI        OpenAI
 	Http          config.HttpServer
+
+	SuperSet SuperSet `yaml:"superset"`
 
 	MigratorJobQueueName string `yaml:"migrator_job_queue_name"`
 }
