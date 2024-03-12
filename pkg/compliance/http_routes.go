@@ -37,7 +37,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"io"
-	v1 "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
@@ -4204,7 +4204,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		return errors.New("current namespace lookup failed")
 	}
 
-	var migratorJob v1.Job
+	var migratorJob batchv1.Job
 	err = h.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
 		Namespace: currentNamespace,
 		Name:      "migrator-job",
@@ -4243,7 +4243,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	}
 	migratorJob.Spec.Selector = nil
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
-	migratorJob.Status = v1.JobStatus{}
+	migratorJob.Status = batchv1.JobStatus{}
 
 	err = h.kubeClient.Create(context.Background(), &migratorJob)
 	if err != nil {
@@ -4353,21 +4353,21 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetInsight")
 
-	insight, err := h.db.GetInsight(uint(id))
+	insightObj, err := h.db.GetInsight(uint(id))
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
 		}
 		return err
 	}
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("query ID", insight.QueryID),
+		attribute.String("query ID", insightObj.QueryID),
 	))
 	span1.End()
 
-	result := insight.ToApi()
+	result := insightObj.ToApi()
 
 	return ctx.JSON(200, result)
 }
