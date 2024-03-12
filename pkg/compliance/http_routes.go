@@ -2849,7 +2849,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 			FailedConnectionCount: result.FailedConnectionCount,
 			TotalConnectionCount:  result.TotalConnectionCount,
 			CostOptimization:      result.CostOptimization,
-			EvaluatedAt:           evaluatedAt,
+			EvaluatedAt:           time.Unix(evaluatedAt, 0),
 		}
 	}
 
@@ -3152,16 +3152,16 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 			FailedConnectionCount: result.FailedConnectionCount,
 			TotalConnectionCount:  result.TotalConnectionCount,
 			CostOptimization:      result.CostOptimization,
-			EvaluatedAt:           evaluatedAt,
+			EvaluatedAt:           time.Unix(evaluatedAt, 0),
 		}
 		results = append(results, controlSummary)
 	}
 
 	sort.Slice(results, func(i, j int) bool {
-		if results[i].EvaluatedAt == -1 {
+		if results[i].EvaluatedAt.Unix() == -1 {
 			return false
 		}
-		if results[j].EvaluatedAt == -1 {
+		if results[j].EvaluatedAt.Unix() == -1 {
 			return true
 		}
 		return results[i].FailedResourcesCount > results[j].FailedResourcesCount
@@ -3289,7 +3289,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 		FailedConnectionCount: result.FailedConnectionCount,
 		TotalConnectionCount:  result.TotalConnectionCount,
 		CostOptimization:      result.CostOptimization,
-		EvaluatedAt:           evaluatedAt,
+		EvaluatedAt:           time.Unix(evaluatedAt, 0),
 	}
 
 	return &controlSummary, nil

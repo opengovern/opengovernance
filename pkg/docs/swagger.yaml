@@ -1092,7 +1092,7 @@ definitions:
       costOptimization:
         type: number
       evaluatedAt:
-        type: integer
+        type: string
       failedConnectionCount:
         type: integer
       failedResourcesCount:

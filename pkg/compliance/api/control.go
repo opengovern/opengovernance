@@ -39,13 +39,13 @@ type ControlSummary struct {
 
 	Benchmarks []Benchmark `json:"benchmarks"`
 
-	Passed                bool     `json:"passed"`
-	FailedResourcesCount  int      `json:"failedResourcesCount"`
-	TotalResourcesCount   int      `json:"totalResourcesCount"`
-	FailedConnectionCount int      `json:"failedConnectionCount"`
-	TotalConnectionCount  int      `json:"totalConnectionCount"`
-	CostOptimization      *float64 `json:"costOptimization"`
-	EvaluatedAt           int64    `json:"evaluatedAt"`
+	Passed                bool      `json:"passed"`
+	FailedResourcesCount  int       `json:"failedResourcesCount"`
+	TotalResourcesCount   int       `json:"totalResourcesCount"`
+	FailedConnectionCount int       `json:"failedConnectionCount"`
+	TotalConnectionCount  int       `json:"totalConnectionCount"`
+	CostOptimization      *float64  `json:"costOptimization"`
+	EvaluatedAt           time.Time `json:"evaluatedAt"`
 }
 
 type ControlTrendDatapoint struct {

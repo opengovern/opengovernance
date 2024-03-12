@@ -9190,7 +9190,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "evaluatedAt": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "failedConnectionCount": {
                     "type": "integer"
