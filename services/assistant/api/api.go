@@ -28,6 +28,6 @@ func New(
 }
 
 func (api *API) Register(e *echo.Echo) {
-	thr := thread.New(api.logger, api.oc, repository.NewThreadSQL(api.database))
+	thr := thread.New(api.logger, api.oc, repository.NewRun(api.database))
 	thr.Register(e.Group("/api/v1/thread"))
 }
