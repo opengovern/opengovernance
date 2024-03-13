@@ -97,11 +97,9 @@ func (s API) SendMessage(c echo.Context) error {
 	defer span.End()
 
 	var req entity.SendMessageRequest
-
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
 	if err := c.Validate(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

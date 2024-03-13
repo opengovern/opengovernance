@@ -63,7 +63,7 @@ func (db Database) Ping() error {
 }
 
 func (db Database) Initialize() error {
-	if err := db.DB.AutoMigrate(&model.Thread{}); err != nil {
+	if err := db.DB.AutoMigrate(&model.Run{}); err != nil {
 		return err
 	}
 

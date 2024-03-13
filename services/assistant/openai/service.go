@@ -153,3 +153,7 @@ func (s *Service) InitFiles() error {
 
 	return nil
 }
+
+func (s *Service) Client() *openai.Client {
+	return s.client
+}
