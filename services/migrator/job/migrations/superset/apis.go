@@ -294,7 +294,7 @@ func (w *supersetWrapper) listDashboardsV1() (*listDashboardsV1Response, error) 
 func (w *supersetWrapper) enableEmbeddingV1(dashboardID int) error {
 	response := make(map[string]any)
 	request := map[string]any{
-		"allowed_domains": nil,
+		"allowed_domains": []string{},
 	}
 	return w.doRequest(http.MethodPost, fmt.Sprintf("/api/v1/dashboard/%d/embedded", dashboardID), true, request, &response)
 }
