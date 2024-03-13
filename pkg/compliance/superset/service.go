@@ -223,7 +223,7 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 }
 
 func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) {
-	url := fmt.Sprintf("%s/api/v1/dashboard/%d/embedded/", s.BaseURL, id)
+	url := fmt.Sprintf("%s/api/v1/dashboard/%d/embedded", s.BaseURL, id)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
