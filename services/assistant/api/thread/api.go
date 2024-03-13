@@ -2,6 +2,7 @@ package thread
 
 import (
 	"context"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/api/entity"
@@ -109,24 +110,24 @@ func (s API) SendMessage(c echo.Context) error {
 	if req.ThreadID != nil {
 		th, err := s.oc.NewThread()
 		if err != nil {
-			return err
+			return fmt.Errorf("newThread failed due to %v", err)
 		}
 		threadID = th.ID
 	}
 
 	_, err := s.oc.SendMessage(threadID, req.Content)
 	if err != nil {
-		return err
+		return fmt.Errorf("SendMessage failed due to %v", err)
 	}
 
 	run, err := s.oc.RunThread(threadID, req.RunID)
 	if err != nil {
-		return err
+		return fmt.Errorf("RunThread failed due to %v", err)
 	}
 
 	err = s.db.Create(context.Background(), model.Run{ID: run.ID, ThreadID: threadID, Status: openai2.RunStatusQueued, UpdatedAt: time.Now()})
 	if err != nil {
-		return err
+		return fmt.Errorf("db.Create failed due to %v", err)
 	}
 
 	return c.JSON(http.StatusOK, entity.SendMessageResponse{
