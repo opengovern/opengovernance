@@ -14,7 +14,7 @@ func (s *Service) NewThread() (openai.Thread, error) {
 
 func (s *Service) SendMessage(threadID, content string) (openai.Message, error) {
 	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
-		Role:     "",
+		Role:     openai.ChatMessageRoleUser,
 		Content:  content,
 		FileIds:  nil,
 		Metadata: nil,
