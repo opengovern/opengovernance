@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	"github.com/labstack/echo/v4"
+	openai2 "github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -41,6 +42,7 @@ func New(logger *zap.Logger, oc *openai.Service, db repository.Thread) API {
 //	@Produce		json
 //	@Success		200			{object}	entity.ListMessagesResponse
 //	@Param			thread_id	path		string	true	"Thread ID"
+//	@Param			run_id		query		string	false	"Run ID"
 //	@Router			/assistant/api/v1/thread/{thread_id} [get]
 func (s API) ListMessages(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -49,6 +51,8 @@ func (s API) ListMessages(c echo.Context) error {
 	defer span.End()
 
 	threadID := c.Param("thread_id")
+	runID := c.QueryParam("run_id")
+
 	msgs, err := s.oc.ListMessages(threadID)
 	if err != nil {
 		s.logger.Error("failed to read msgs from the service", zap.Error(err))
@@ -64,7 +68,16 @@ func (s API) ListMessages(c echo.Context) error {
 		}
 		respMsgs = append(respMsgs, entity.Message{Content: contentString})
 	}
-	return c.JSON(http.StatusOK, entity.ListMessagesResponse{Messages: respMsgs})
+
+	var status openai2.RunStatus
+	if len(runID) > 0 {
+		run, err := s.oc.RetrieveRun(threadID, runID)
+		if err != nil {
+			return err
+		}
+		status = run.Status
+	}
+	return c.JSON(http.StatusOK, entity.ListMessagesResponse{Messages: respMsgs, Status: status})
 }
 
 // SendMessage godoc
@@ -112,7 +125,13 @@ func (s API) SendMessage(c echo.Context) error {
 		return err
 	}
 
+	run, err := s.oc.RunThread(threadID)
+	if err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusOK, entity.SendMessageResponse{
+		RunID:    run.ID,
 		ThreadID: threadID,
 	})
 }

@@ -21,6 +21,16 @@ func (s *Service) SendMessage(threadID, content string) (openai.Message, error) 
 	})
 }
 
+func (s *Service) RunThread(threadID string) (openai.Run, error) {
+	return s.client.CreateRun(context.Background(), threadID, openai.RunRequest{
+		AssistantID: s.assistant.ID,
+	})
+}
+
+func (s *Service) RetrieveRun(threadID, runID string) (openai.Run, error) {
+	return s.client.RetrieveRun(context.Background(), threadID, runID)
+}
+
 func (s *Service) StopAllRun(threadID string) error {
 	runs, err := s.client.ListRuns(context.Background(), threadID, openai.Pagination{
 		Limit:  nil,

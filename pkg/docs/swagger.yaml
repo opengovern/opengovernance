@@ -3743,6 +3743,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message'
         type: array
+      status:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message:
     properties:
@@ -3758,6 +3760,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse:
     properties:
+      run_id:
+        type: string
       thread_id:
         type: string
     type: object
@@ -4628,6 +4632,10 @@ paths:
         in: path
         name: thread_id
         required: true
+        type: string
+      - description: Run ID
+        in: query
+        name: run_id
         type: string
       produces:
       - application/json

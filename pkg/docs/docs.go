@@ -507,6 +507,12 @@ const docTemplate = `{
                         "name": "thread_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Run ID",
+                        "name": "run_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -13085,6 +13091,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message"
                     }
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -13110,6 +13119,9 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse": {
             "type": "object",
             "properties": {
+                "run_id": {
+                    "type": "string"
+                },
                 "thread_id": {
                     "type": "string"
                 }

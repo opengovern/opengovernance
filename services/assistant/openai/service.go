@@ -22,6 +22,7 @@ type Service struct {
 
 	client          *openai.Client
 	inventoryClient client.InventoryServiceClient
+	assistant       *openai.Assistant
 }
 
 func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Service, error) {
@@ -115,6 +116,7 @@ func (s *Service) InitAssistant() error {
 		assistant = &a
 	}
 
+	s.assistant = assistant
 	return nil
 }
 

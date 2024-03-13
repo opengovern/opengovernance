@@ -7,6 +7,7 @@ type SendMessageRequest struct {
 
 type SendMessageResponse struct {
 	ThreadID string `json:"thread_id"`
+	RunID    string `json:"run_id"`
 }
 
 type Message struct {
@@ -15,4 +16,5 @@ type Message struct {
 
 type ListMessagesResponse struct {
 	Messages []Message `json:"messages"`
+	Status   string    `json:"status"`
 }
