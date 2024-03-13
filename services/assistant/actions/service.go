@@ -73,7 +73,7 @@ func (s *Service) run() error {
 					}
 					out, err := s.RunSQLQueryAction(call)
 					if err != nil {
-						return err
+						out = fmt.Sprintf("Failed to run due to %v", err)
 					}
 					output = append(output, openai2.ToolOutput{
 						ToolCallID: call.ID,
