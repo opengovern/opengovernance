@@ -119,7 +119,7 @@ func (s API) SendMessage(c echo.Context) error {
 		return err
 	}
 
-	run, err := s.oc.RunThread(threadID)
+	run, err := s.oc.RunThread(threadID, req.RunID)
 	if err != nil {
 		return err
 	}

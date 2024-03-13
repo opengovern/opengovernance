@@ -21,10 +21,14 @@ func (s *Service) SendMessage(threadID, content string) (openai.Message, error) 
 	})
 }
 
-func (s *Service) RunThread(threadID string) (openai.Run, error) {
-	return s.client.CreateRun(context.Background(), threadID, openai.RunRequest{
-		AssistantID: s.assistant.ID,
-	})
+func (s *Service) RunThread(threadID string, id *string) (openai.Run, error) {
+	if id == nil {
+		return s.client.CreateRun(context.Background(), threadID, openai.RunRequest{
+			AssistantID: s.assistant.ID,
+		})
+	}
+
+	return s.client.RetrieveRun(context.Background(), threadID, *id)
 }
 
 func (s *Service) RetrieveRun(threadID, runID string) (openai.Run, error) {

@@ -2,6 +2,7 @@ package entity
 
 type SendMessageRequest struct {
 	ThreadID *string `json:"thread_id"`
+	RunID    *string `json:"run_id"`
 	Content  string  `json:"content"`
 }
 

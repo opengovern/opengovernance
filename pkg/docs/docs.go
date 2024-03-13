@@ -13111,6 +13111,9 @@ const docTemplate = `{
                 "content": {
                     "type": "string"
                 },
+                "run_id": {
+                    "type": "string"
+                },
                 "thread_id": {
                     "type": "string"
                 }
