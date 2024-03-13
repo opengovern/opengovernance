@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
@@ -62,7 +63,7 @@ func (db Database) Ping() error {
 }
 
 func (db Database) Initialize() error {
-	if err := db.DB.AutoMigrate(); err != nil {
+	if err := db.DB.AutoMigrate(&model.Thread{}); err != nil {
 		return err
 	}
 
