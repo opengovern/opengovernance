@@ -77,7 +77,7 @@ func (s API) ListMessages(c echo.Context) error {
 		}
 		status = run.Status
 	}
-	return c.JSON(http.StatusOK, entity.ListMessagesResponse{Messages: respMsgs, Status: status})
+	return c.JSON(http.StatusOK, entity.ListMessagesResponse{Messages: respMsgs, Status: string(status)})
 }
 
 // SendMessage godoc
