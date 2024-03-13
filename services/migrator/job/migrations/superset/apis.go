@@ -235,6 +235,70 @@ func (w *supersetWrapper) listDatabaseV1() (*listDatabaseV1Response, error) {
 	return &response, nil
 }
 
+type listDashboardsItem struct {
+	CertificationDetails interface{} `json:"certification_details"`
+	CertifiedBy          interface{} `json:"certified_by"`
+	ChangedBy            struct {
+		FirstName string `json:"first_name"`
+		Id        int    `json:"id"`
+		LastName  string `json:"last_name"`
+	} `json:"changed_by"`
+	ChangedByName           string `json:"changed_by_name"`
+	ChangedOnDeltaHumanized string `json:"changed_on_delta_humanized"`
+	ChangedOnUtc            string `json:"changed_on_utc"`
+	CreatedBy               struct {
+		FirstName string `json:"first_name"`
+		Id        int    `json:"id"`
+		LastName  string `json:"last_name"`
+	} `json:"created_by"`
+	CreatedOnDeltaHumanized string      `json:"created_on_delta_humanized"`
+	Css                     interface{} `json:"css"`
+	DashboardTitle          string      `json:"dashboard_title"`
+	Id                      int         `json:"id"`
+	IsManagedExternally     bool        `json:"is_managed_externally"`
+	JsonMetadata            interface{} `json:"json_metadata"`
+	Owners                  []struct {
+		FirstName string `json:"first_name"`
+		Id        int    `json:"id"`
+		LastName  string `json:"last_name"`
+	} `json:"owners"`
+	PositionJson interface{}   `json:"position_json"`
+	Published    bool          `json:"published"`
+	Roles        []interface{} `json:"roles"`
+	Slug         interface{}   `json:"slug"`
+	Status       string        `json:"status"`
+	Tags         []interface{} `json:"tags"`
+	ThumbnailUrl string        `json:"thumbnail_url"`
+	Url          string        `json:"url"`
+}
+
+type listDashboardsV1Response struct {
+	Count        int                  `json:"count"`
+	Ids          []int                `json:"ids"`
+	ListColumns  []string             `json:"list_columns"`
+	ListTitle    string               `json:"list_title"`
+	OrderColumns []string             `json:"order_columns"`
+	Result       []listDashboardsItem `json:"result"`
+}
+
+func (w *supersetWrapper) listDashboardsV1() (*listDashboardsV1Response, error) {
+	var response listDashboardsV1Response
+	err := w.doRequest(http.MethodGet, "/api/v1/dashboard/", true, nil, &response)
+	if err != nil {
+		w.logger.Error("failed to list dashboards", zap.Error(err))
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (w *supersetWrapper) enableEmbeddingV1(dashboardID int) error {
+	response := make(map[string]any)
+	request := map[string]any{
+		"allowed_domains": nil,
+	}
+	return w.doRequest(http.MethodPost, fmt.Sprintf("/api/v1/dashboard/%d/embedded", dashboardID), true, request, &response)
+}
+
 func (w *supersetWrapper) importDashboardV1(dashboardFilePath string, passwords string, overwrite bool) error {
 	payload := &bytes.Buffer{}
 	writer := multipart.NewWriter(payload)

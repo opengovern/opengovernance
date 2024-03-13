@@ -99,5 +99,18 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
+	dashboardsRes, err := ssWrapper.listDashboardsV1()
+	if err != nil {
+		logger.Error("failed to list dashboards", zap.Error(err))
+		return err
+	}
+
+	for _, dashboard := range dashboardsRes.Result {
+		err = ssWrapper.enableEmbeddingV1(dashboard.Id)
+		if err != nil {
+			logger.Error("failed to enable embedding", zap.Error(err), zap.Any("dashboard", dashboard))
+		}
+	}
+
 	return nil
 }
