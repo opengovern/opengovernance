@@ -110,6 +110,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		if err != nil {
 			logger.Error("failed to enable embedding", zap.Error(err), zap.Any("dashboard", dashboard))
 		}
+		logger.Info("enabled embedding", zap.String("dashboard_title", dashboard.DashboardTitle))
 	}
 
 	return nil
