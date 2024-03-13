@@ -99,13 +99,12 @@ func (s API) SendMessage(c echo.Context) error {
 		if err != nil {
 			return err
 		}
+		threadID = th.ID
 
 		err = s.db.Create(context.Background(), model.Thread{ID: threadID})
 		if err != nil {
 			return err
 		}
-
-		threadID = th.ID
 	}
 
 	_, err := s.oc.SendMessage(threadID, req.Content)
