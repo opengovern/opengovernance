@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type SupersetService struct {
@@ -122,6 +123,9 @@ type GetEmbeddedDashboardResponse struct {
 }
 
 func (s *SupersetService) Login() (string, error) {
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
 	url := fmt.Sprintf("%s/api/v1/security/login", s.BaseURL)
 
 	request := LoginRequest{
@@ -140,7 +144,7 @@ func (s *SupersetService) Login() (string, error) {
 		return "", err
 	}
 	req.Header.Add("Content-Type", "application/json")
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -161,6 +165,9 @@ func (s *SupersetService) Login() (string, error) {
 }
 
 func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (string, error) {
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
 	url := fmt.Sprintf("%s/api/v1/security/guest_token/", s.BaseURL)
 	reqBody, err := json.Marshal(request)
 	if err != nil {
@@ -173,7 +180,7 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[GuestToken] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -194,6 +201,9 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 }
 
 func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, error) {
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
 	url := fmt.Sprintf("%s/api/v1/dashboard/", s.BaseURL)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -202,7 +212,7 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return nil, fmt.Errorf("[ListDashboards] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -223,6 +233,9 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 }
 
 func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) {
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
 	url := fmt.Sprintf("%s/api/v1/dashboard/%d/embedded", s.BaseURL, id)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -231,7 +244,7 @@ func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) 
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[GetEmbeddedUUID] invalid status code: %d, body=%s", res.StatusCode, string(r))
