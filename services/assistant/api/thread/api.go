@@ -15,16 +15,17 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type API struct {
 	tracer trace.Tracer
 	logger *zap.Logger
 	oc     *openai.Service
-	db     repository.Thread
+	db     repository.Run
 }
 
-func New(logger *zap.Logger, oc *openai.Service, db repository.Thread) API {
+func New(logger *zap.Logger, oc *openai.Service, db repository.Run) API {
 	return API{
 		tracer: otel.GetTracerProvider().Tracer("assistant.http.sources"),
 		logger: logger.Named("source"),
@@ -111,11 +112,6 @@ func (s API) SendMessage(c echo.Context) error {
 			return err
 		}
 		threadID = th.ID
-
-		err = s.db.Create(context.Background(), model.Thread{ID: threadID})
-		if err != nil {
-			return err
-		}
 	}
 
 	_, err := s.oc.SendMessage(threadID, req.Content)
@@ -124,6 +120,11 @@ func (s API) SendMessage(c echo.Context) error {
 	}
 
 	run, err := s.oc.RunThread(threadID)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.Create(context.Background(), model.Run{ID: run.ID, ThreadID: threadID, Status: openai2.RunStatusQueued, UpdatedAt: time.Now()})
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/sashabaranov/go-openai"
+	"time"
 
 	"github.com/kaytu-io/kaytu-engine/services/assistant/db"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
@@ -72,7 +73,7 @@ func (s RunSQL) UpdateStatus(ctx context.Context, id string, threadID string, st
 		Model(&model.Run{}).
 		Where("id = ?", id).
 		Where("thread_id = ?", threadID).
-		Update("status", status)
+		Updates(model.Run{ID: id, ThreadID: threadID, Status: status, UpdatedAt: time.Now()})
 
 	if tx.Error != nil {
 		return tx.Error
