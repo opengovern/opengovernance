@@ -121,7 +121,7 @@ func columnType(t proto.ColumnType) string {
 	case proto.ColumnType_DATETIME:
 		return "datetime"
 	case proto.ColumnType_IPADDR:
-		return "ip address"
+		return "ip_address"
 	case proto.ColumnType_CIDR:
 		return "CIDR"
 	case proto.ColumnType_TIMESTAMP:
