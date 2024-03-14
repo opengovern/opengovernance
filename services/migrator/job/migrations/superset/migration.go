@@ -88,13 +88,6 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		}
 	}
 
-	if steampipeDbId != -1 {
-		err = ssWrapper.deleteDatabaseV1(steampipeDbId)
-		if err != nil {
-			return err
-		}
-	}
-
 	createDatabaseRequest := createDatabaseV1Request{}
 	createDatabaseRequest.DatabaseName = "Steampipe"
 	createDatabaseRequest.Engine = "postgresql"
@@ -112,10 +105,20 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	createDatabaseRequest.Parameters.Password = conf.Steampipe.Password
 	createDatabaseRequest.MaskedEncryptedExtra = "{}"
 
-	err = ssWrapper.createDatabaseV1(createDatabaseRequest)
-	if err != nil {
-		logger.Error("failed to create database", zap.Error(err))
-		return err
+	if steampipeDbId == -1 {
+		err = ssWrapper.createDatabaseV1(createDatabaseRequest)
+		if err != nil {
+			logger.Error("failed to create database", zap.Error(err))
+			return err
+		}
+		logger.Info("created database", zap.String("database_name", "Steampipe"))
+	} else {
+		err = ssWrapper.updateDatabaseV1(steampipeDbId, createDatabaseRequest)
+		if err != nil {
+			logger.Error("failed to update database", zap.Error(err))
+			return err
+		}
+		logger.Info("updated database", zap.String("database_name", "Steampipe"))
 	}
 
 	return nil

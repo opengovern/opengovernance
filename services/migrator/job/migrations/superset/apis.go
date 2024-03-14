@@ -186,6 +186,11 @@ func (w *supersetWrapper) createDatabaseV1(request createDatabaseV1Request) erro
 	return w.doRequest(http.MethodPost, "/api/v1/database/", true, request, &response)
 }
 
+func (w *supersetWrapper) updateDatabaseV1(databaseID int, request createDatabaseV1Request) error {
+	response := make(map[string]any)
+	return w.doRequest(http.MethodPut, fmt.Sprintf("/api/v1/database/%d", databaseID), true, request, &response)
+}
+
 func (w *supersetWrapper) deleteDatabaseV1(databaseID int) error {
 	response := make(map[string]any)
 	return w.doRequest(http.MethodDelete, fmt.Sprintf("/api/v1/database/%d", databaseID), true, nil, &response)
