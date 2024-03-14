@@ -138,8 +138,8 @@ func extractTables(tableMap map[string]*plugin.Table, categories map[string][]st
 		tables = append(tables, Table{
 			Name:          def.Name,
 			Description:   def.Description,
-			Documentation: "",                   //TODO-Saleh
-			Categories:    categories[def.Name], //TODO-Saleh
+			Documentation: "", //TODO-Saleh
+			Categories:    categories[def.Name],
 			Columns:       columns,
 		})
 	}

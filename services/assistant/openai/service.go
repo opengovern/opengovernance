@@ -37,7 +37,7 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient, c cl
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
 
-	var files map[string]string
+	files := map[string]string{}
 	for k, v := range jsonmodels.ExtractJSONModels() {
 		files[k] = v
 	}
