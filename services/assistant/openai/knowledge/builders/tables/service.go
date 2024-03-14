@@ -55,30 +55,54 @@ func ExtractTableFiles() (map[string]string, error) {
 	}
 
 	files := map[string]string{}
+	var tableNames []string
 
-	t, err := yaml.Marshal(extractTables(kaytu.Plugin(context.Background()).TableMap, tableCategories))
+	tables := extractTables(kaytu.Plugin(context.Background()).TableMap, tableCategories)
+	t, err := yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
 	}
 	files["kaytu_tables.yaml"] = string(t)
+	for _, tb := range tables.Tables {
+		tableNames = append(tableNames, tb.Name)
+	}
 
-	t, err = yaml.Marshal(extractTables(aws.Plugin(context.Background()).TableMap, tableCategories))
+	tables = extractTables(aws.Plugin(context.Background()).TableMap, tableCategories)
+	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
 	}
 	files["aws_tables.yaml"] = string(t)
+	for _, tb := range tables.Tables {
+		tableNames = append(tableNames, tb.Name)
+	}
 
-	t, err = yaml.Marshal(extractTables(azure.Plugin(context.Background()).TableMap, tableCategories))
+	tables = extractTables(azure.Plugin(context.Background()).TableMap, tableCategories)
+	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
 	}
 	files["azure_tables.yaml"] = string(t)
+	for _, tb := range tables.Tables {
+		tableNames = append(tableNames, tb.Name)
+	}
 
-	t, err = yaml.Marshal(extractTables(azuread.Plugin(context.Background()).TableMap, tableCategories))
+	tables = extractTables(azuread.Plugin(context.Background()).TableMap, tableCategories)
+	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
 	}
 	files["azuread_tables.yaml"] = string(t)
+	for _, tb := range tables.Tables {
+		tableNames = append(tableNames, tb.Name)
+	}
+
+	yt, err := yaml.Marshal(tableNames)
+	if err != nil {
+		return nil, err
+	}
+
+	files["table_list.yaml"] = string(yt)
 	return files, nil
 }
 
