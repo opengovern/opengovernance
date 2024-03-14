@@ -13102,6 +13102,9 @@ const docTemplate = `{
             "properties": {
                 "content": {
                     "type": "string"
+                },
+                "role": {
+                    "type": "string"
                 }
             }
         },

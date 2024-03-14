@@ -66,9 +66,11 @@ func (s API) ListMessages(c echo.Context) error {
 	for _, msg := range msgs.Messages {
 		contentString := ""
 		for _, content := range msg.Content {
-			contentString += content.Text.Value + "\n"
+			if content.Text != nil {
+				contentString += content.Text.Value + "\n"
+			}
 		}
-		respMsgs = append(respMsgs, entity.Message{Content: contentString})
+		respMsgs = append(respMsgs, entity.Message{Content: contentString, Role: msg.Role})
 	}
 
 	var status openai2.RunStatus
