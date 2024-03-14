@@ -2786,9 +2786,11 @@ func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*d
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by"
 //	@Param		timeAt			query		int			false	"timestamp for values in epoch seconds"
+//	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Success	200				{object}	api.BenchmarkControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls [get]
 func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	benchmarkID := ctx.Param("benchmark_id")
 
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -2806,7 +2808,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 	}
 
 	controlsMap := make(map[string]api.Control)
-	err = h.populateControlsMap(benchmarkID, controlsMap)
+	err = h.populateControlsMap(benchmarkID, controlsMap, tagMap)
 	if err != nil {
 		return err
 	}
@@ -2915,7 +2917,7 @@ func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, controlSummary)
 }
 
-func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap map[string]api.Control) error {
+func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap map[string]api.Control, tags map[string][]string) error {
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
@@ -2929,7 +2931,7 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 	}
 
 	for _, child := range benchmark.Children {
-		err := h.populateControlsMap(child.ID, baseControlsMap)
+		err := h.populateControlsMap(child.ID, baseControlsMap, tags)
 		if err != nil {
 			return err
 		}
@@ -2942,7 +2944,7 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 		}
 	}
 	if len(missingControls) > 0 {
-		controls, err := h.db.GetControls(missingControls, nil)
+		controls, err := h.db.GetControls(missingControls, tags)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err

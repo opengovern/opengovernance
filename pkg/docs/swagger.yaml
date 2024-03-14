@@ -5090,6 +5090,13 @@ paths:
         in: query
         name: timeAt
         type: integer
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
+        in: query
+        items:
+          type: string
+        name: tag
+        type: array
       produces:
       - application/json
       responses:

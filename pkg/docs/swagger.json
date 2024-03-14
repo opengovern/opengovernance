@@ -1313,6 +1313,16 @@
                         "description": "timestamp for values in epoch seconds",
                         "name": "timeAt",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
                     }
                 ],
                 "responses": {
