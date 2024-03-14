@@ -7,29 +7,24 @@ import (
 )
 
 func (s *Service) NewThread() (openai.Thread, error) {
-	return s.client.CreateThread(context.Background(), openai.ThreadRequest{
-		Messages: nil,
-		Metadata: nil,
-	})
+	return s.client.CreateThread(context.Background(), openai.ThreadRequest{})
 }
 
 func (s *Service) SendMessage(threadID, content string) (openai.Message, error) {
 	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
-		Role:     openai.ChatMessageRoleUser,
-		Content:  content,
-		FileIds:  nil,
-		Metadata: nil,
+		Role:    openai.ChatMessageRoleUser,
+		Content: content,
 	})
 }
 
 func (s *Service) RunThread(threadID string, id *string) (openai.Run, error) {
-	if id == nil {
-		fmt.Println("creating new")
+	if id == nil || len(*id) == 0 {
+		fmt.Println("creating new", threadID)
 		return s.client.CreateRun(context.Background(), threadID, openai.RunRequest{
 			AssistantID: s.assistant.ID,
 		})
 	}
-	fmt.Println("RetrieveRun")
+	fmt.Println("RetrieveRun", threadID, *id)
 	return s.client.RetrieveRun(context.Background(), threadID, *id)
 }
 
@@ -38,12 +33,7 @@ func (s *Service) RetrieveRun(threadID, runID string) (openai.Run, error) {
 }
 
 func (s *Service) StopAllRun(threadID string) error {
-	runs, err := s.client.ListRuns(context.Background(), threadID, openai.Pagination{
-		Limit:  nil,
-		Order:  nil,
-		After:  nil,
-		Before: nil,
-	})
+	runs, err := s.client.ListRuns(context.Background(), threadID, openai.Pagination{})
 	if err != nil {
 		return err
 	}

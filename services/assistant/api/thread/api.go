@@ -107,12 +107,14 @@ func (s API) SendMessage(c echo.Context) error {
 	}
 
 	var threadID string
-	if req.ThreadID != nil {
+	if req.ThreadID == nil || len(*req.ThreadID) == 0 {
 		th, err := s.oc.NewThread()
 		if err != nil {
 			return fmt.Errorf("newThread failed due to %v", err)
 		}
 		threadID = th.ID
+	} else {
+		threadID = *req.ThreadID
 	}
 
 	_, err := s.oc.SendMessage(threadID, req.Content)
