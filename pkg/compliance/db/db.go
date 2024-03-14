@@ -342,12 +342,22 @@ func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, err
 	return s, nil
 }
 
-func (db Database) GetControls(controlIDs []string) ([]Control, error) {
+func (db Database) GetControls(controlIDs []string, tags map[string][]string) ([]Control, error) {
 	var s []Control
 	tx := db.Orm.Model(&Control{}).
 		Preload(clause.Associations)
 	if len(controlIDs) > 0 {
 		tx = tx.Where("id IN ?", controlIDs)
+	}
+	if len(tags) > 0 {
+		tx = tx.Joins("JOIN control_tags AS tags ON tags.control_id = controls.id")
+		for key, values := range tags {
+			if len(values) != 0 {
+				tx = tx.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
+			} else {
+				tx = tx.Where("tags.key = ?", key)
+			}
+		}
 	}
 	if tx.Find(&s).Error != nil {
 		return nil, tx.Error

@@ -1632,6 +1632,16 @@ const docTemplate = `{
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
                     }
                 ],
                 "responses": {
