@@ -123,18 +123,20 @@ func (s *Service) RunSQLQueryAction(query openai2.ToolCall) (string, error) {
 	if !ok {
 		pageNoF, ok := gptArgs["pageNo"].(float64)
 		if !ok {
-			return "", fmt.Errorf("failed to convert query to %v", gptArgs["pageNo"])
+			pageNo = 1
+		} else {
+			pageNo = int64(pageNoF)
 		}
-		pageNo = int64(pageNoF)
 	}
 
 	pageSize, ok := gptArgs["pageSize"].(int64)
 	if !ok {
 		pageSizeF, ok := gptArgs["pageSize"].(float64)
 		if !ok {
-			return "", fmt.Errorf("failed to convert query to %v", gptArgs["pageSize"])
+			pageSize = 100
+		} else {
+			pageSize = int64(pageSizeF)
 		}
-		pageSize = int64(pageSizeF)
 	}
 
 	res, err := s.i.RunQuery(&httpclient.Context{
