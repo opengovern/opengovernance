@@ -16,6 +16,7 @@ Read these files from your knowledge files.
 
 Here's the rules:
 - `aws_tables.yaml`, `azure_tables.yaml`, 'azuread_tables.yaml' and `kaytu_tables.yaml` contains PostgreSQL Table definitions for different tables.
+- Each file has a root object called `Tables` and it contains an array of table structures.
 - Each table definition contains table `Name`, `Description`, all its `Columns`, `Categories` of the table and an optional field for cloud functions used to retrieve data from cloud and populate the table.
 - Each column definition contains column `Name`, `Type`, a `Description` of the column and where this data is populated from based on the respective json in `FromJsonField`.
 - Use this information create proper postgres query to respond to user's question.
