@@ -35,7 +35,7 @@ func (s *Service) Run() {
 		if err != nil {
 			fmt.Println("failed to run due to", err)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }
 
@@ -73,10 +73,12 @@ func (s *Service) run() error {
 					if call.Type != openai2.ToolTypeFunction {
 						continue
 					}
+					fmt.Printf("run SQL action %v\n", call)
 					out, err := s.RunSQLQueryAction(call)
 					if err != nil {
 						out = fmt.Sprintf("Failed to run due to %v", err)
 					}
+					fmt.Printf("run SQL action out %v\n", out)
 					output = append(output, openai2.ToolOutput{
 						ToolCallID: call.ID,
 						Output:     out,
