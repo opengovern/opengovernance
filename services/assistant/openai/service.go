@@ -11,6 +11,9 @@ import (
 //go:embed main_prompt.txt
 var mainPromptStr string
 
+//go:embed chat_prompt.txt
+var chatPromptStr string
+
 type Service struct {
 	MainPrompt    string
 	Model         string

@@ -115,6 +115,11 @@ func (s API) SendMessage(c echo.Context) error {
 			return fmt.Errorf("newThread failed due to %v", err)
 		}
 		threadID = th.ID
+
+		_, err = s.oc.SendChatPrompt(threadID)
+		if err != nil {
+			return fmt.Errorf("SendChatPrompt failed due to %v", err)
+		}
 	} else {
 		threadID = *req.ThreadID
 	}

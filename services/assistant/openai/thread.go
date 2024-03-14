@@ -2,7 +2,6 @@ package openai
 
 import (
 	"context"
-	"fmt"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -10,6 +9,12 @@ func (s *Service) NewThread() (openai.Thread, error) {
 	return s.client.CreateThread(context.Background(), openai.ThreadRequest{})
 }
 
+func (s *Service) SendChatPrompt(threadID string) (openai.Message, error) {
+	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
+		Role:    openai.ChatMessageRoleUser,
+		Content: chatPromptStr,
+	})
+}
 func (s *Service) SendMessage(threadID, content string) (openai.Message, error) {
 	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
 		Role:    openai.ChatMessageRoleUser,
@@ -19,12 +24,10 @@ func (s *Service) SendMessage(threadID, content string) (openai.Message, error) 
 
 func (s *Service) RunThread(threadID string, id *string) (openai.Run, error) {
 	if id == nil || len(*id) == 0 {
-		fmt.Println("creating new", threadID)
 		return s.client.CreateRun(context.Background(), threadID, openai.RunRequest{
 			AssistantID: s.assistant.ID,
 		})
 	}
-	fmt.Println("RetrieveRun", threadID, *id)
 	return s.client.RetrieveRun(context.Background(), threadID, *id)
 }
 
