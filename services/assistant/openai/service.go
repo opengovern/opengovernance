@@ -142,6 +142,8 @@ func (s *Service) InitAssistant() error {
 	}
 	mainPrompt := outputExecute.String()
 
+	fmt.Println("main prompt:", mainPrompt)
+
 	assistants, err := s.client.ListAssistants(context.Background(), nil, nil, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list assistants due to %v", err)
