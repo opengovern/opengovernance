@@ -56,25 +56,25 @@ func ExtractTableFiles() (map[string]string, error) {
 
 	files := map[string]string{}
 
-	t, err := yaml.Marshal(extractTables(kaytu.Plugin(context.Background()).TableMap))
+	t, err := yaml.Marshal(extractTables(kaytu.Plugin(context.Background()).TableMap, tableCategories))
 	if err != nil {
 		return nil, err
 	}
 	files["kaytu_tables.yaml"] = string(t)
 
-	t, err = yaml.Marshal(extractTables(aws.Plugin(context.Background()).TableMap))
+	t, err = yaml.Marshal(extractTables(aws.Plugin(context.Background()).TableMap, tableCategories))
 	if err != nil {
 		return nil, err
 	}
 	files["aws_tables.yaml"] = string(t)
 
-	t, err = yaml.Marshal(extractTables(azure.Plugin(context.Background()).TableMap))
+	t, err = yaml.Marshal(extractTables(azure.Plugin(context.Background()).TableMap, tableCategories))
 	if err != nil {
 		return nil, err
 	}
 	files["azure_tables.yaml"] = string(t)
 
-	t, err = yaml.Marshal(extractTables(azuread.Plugin(context.Background()).TableMap))
+	t, err = yaml.Marshal(extractTables(azuread.Plugin(context.Background()).TableMap, tableCategories))
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func extractFromJsonField(transforms []*transform.TransformCall) string {
 	return strings.Join(res, ",")
 }
 
-func extractTables(tableMap map[string]*plugin.Table) Def {
+func extractTables(tableMap map[string]*plugin.Table, categories map[string][]string) Def {
 	var tables []Table
 	for _, def := range tableMap {
 
@@ -138,8 +138,8 @@ func extractTables(tableMap map[string]*plugin.Table) Def {
 		tables = append(tables, Table{
 			Name:          def.Name,
 			Description:   def.Description,
-			Documentation: "",  //TODO-Saleh
-			Categories:    nil, //TODO-Saleh
+			Documentation: "",                   //TODO-Saleh
+			Categories:    categories[def.Name], //TODO-Saleh
 			Columns:       columns,
 		})
 	}
