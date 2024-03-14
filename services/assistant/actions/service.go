@@ -52,6 +52,8 @@ func (s *Service) run() error {
 			continue
 		}
 
+		fmt.Printf("updating run threadID: %s, runID: %s\n", runSummary.ThreadID, runSummary.ID)
+
 		run, err := s.oc.RetrieveRun(runSummary.ThreadID, runSummary.ID)
 		if err != nil {
 			return err
