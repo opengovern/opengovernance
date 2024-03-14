@@ -21,7 +21,7 @@ Follow these rules:
 - Pay attention to use only the tables and column names that you can see in the schema in your knowledge files and always use the full column and table names. dont take part of it.
 - Be careful to not query for tables and columns that do not exist. 
 - Pay attention to which column is in which table.
-- You must ensure that all the tables you are using are mentioned in `table_list.yaml`. This is very important
+- You must ensure that all the tables you are using are mentioned in `table_list.txt`. This is very important
 - Also, qualify column names with the table name when needed.
 - If you cant find related table for find the necessary information, look for it in all columns in all tables. that way you can find possible related tables.
 - boolean columns can only be `true` or `false` and you should compare with these two values only.

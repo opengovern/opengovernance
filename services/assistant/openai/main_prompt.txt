@@ -4,7 +4,7 @@ Each table in postgres represents a cloud resource type. Table definitions are p
 Also all of the json schemas are provided in your knowledge files.
 
 You have a few files in your knowledge file.
-1. `table_list.yaml`: contains list of all table names.
+1. `table_list.txt`: contains list of all table names.
 2. `aws_tables.yaml`: contains yaml description of table and column definition of tables that help you retrieve information on aws resources.
 3. `azure_tables.yaml`: contains yaml description of table and column definition of tables that help you retrieve information on azure resources.
 4. `azuread_tables.yaml`: contains yaml description of table and column definition of tables that help you retrieve information on azure active directory resources.
