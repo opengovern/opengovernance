@@ -102,7 +102,7 @@ func ExtractTableFiles() (map[string]string, error) {
 		return nil, err
 	}
 
-	files["table_list.yaml"] = string(yt)
+	files["table_list.txt"] = string(yt)
 	return files, nil
 }
 
