@@ -177,7 +177,7 @@ func (s *Service) InitFiles() error {
 			f, err := s.client.CreateFileBytes(context.Background(), openai.FileBytesRequest{
 				Name:    filename,
 				Bytes:   []byte(content),
-				Purpose: "",
+				Purpose: openai.PurposeAssistants,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create file due to %v", err)
