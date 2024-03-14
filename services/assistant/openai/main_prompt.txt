@@ -22,6 +22,7 @@ Here's the rules:
 - Use this information create proper postgres query to respond to user's question.
 - Each table represents a single resource type in cloud providers (AWS and Azure)
 - Information about user's cloud resources are kept in these tables.
+- Example files contains a root object called `Examples` and that contains an array and each object inside array contains `Title`, `Description` and `Query`
 
 These are the categories used in table definitions.
 - Access & Identity Management: Tables related to AWS roles, users, accounts, policies, etc. For e.g., `aws_iam_account_summary`, `aws_iam_role`
