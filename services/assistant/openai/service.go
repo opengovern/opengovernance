@@ -1,38 +1,39 @@
 package openai
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/jsonmodels"
 	tables2 "github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/tables"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	"github.com/sashabaranov/go-openai"
+	"text/template"
 )
-
-//go:embed main_prompt.txt
-var mainPromptStr string
-
-//go:embed chat_prompt.txt
-var chatPromptStr string
 
 type Service struct {
 	MainPrompt    string
+	ChatPrompt    string
 	Model         string
 	AssistantName string
 	Tools         []openai.AssistantTool
 	Files         map[string]string
 
-	fileIDs []string
+	fileIDs   []string
+	fileIDMap map[string]string
 
 	client          *openai.Client
 	inventoryClient client.InventoryServiceClient
 	assistant       *openai.Assistant
+	prompt          repository.Prompt
 }
 
-func New(token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient) (*Service, error) {
+func New(token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
@@ -58,13 +59,30 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient, c cl
 		files[k] = v
 	}
 
+	prompts, err := prompt.List(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var mainPrompts, chatPrompts string
+	for _, p := range prompts {
+		if p.Purpose == model.Purpose_SystemPrompt {
+			mainPrompts = p.Content
+		}
+		if p.Purpose == model.Purpose_ChatPrompt {
+			chatPrompts = p.Content
+		}
+	}
 	s := &Service{
 		client:          gptClient,
-		MainPrompt:      mainPromptStr,
+		MainPrompt:      mainPrompts,
+		ChatPrompt:      chatPrompts,
 		Model:           modelName,
 		AssistantName:   "kaytu-r-assistant",
 		inventoryClient: i,
 		Files:           files,
+		fileIDMap:       map[string]string{},
+		prompt:          prompt,
 		Tools: []openai.AssistantTool{
 			{
 				Type: openai.AssistantToolTypeCodeInterpreter,
@@ -107,7 +125,23 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient, c cl
 	return s, nil
 }
 
+func (s *Service) GetFileID(filename string) string {
+	return s.fileIDMap[filename]
+}
+
 func (s *Service) InitAssistant() error {
+	tmpl := template.New("test")
+	tm, err := tmpl.Parse(s.MainPrompt)
+	if err != nil {
+		panic(err)
+	}
+	var outputExecute bytes.Buffer
+	err = tm.Execute(&outputExecute, s)
+	if err != nil {
+		panic(err)
+	}
+	mainPrompt := outputExecute.String()
+
 	assistants, err := s.client.ListAssistants(context.Background(), nil, nil, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list assistants due to %v", err)
@@ -125,7 +159,7 @@ func (s *Service) InitAssistant() error {
 			Model:        s.Model,
 			Name:         &s.AssistantName,
 			Description:  nil,
-			Instructions: &s.MainPrompt,
+			Instructions: &mainPrompt,
 			Tools:        s.Tools,
 			FileIDs:      s.fileIDs,
 			Metadata:     nil,
@@ -151,12 +185,12 @@ func (s *Service) InitAssistant() error {
 		}
 	}
 
-	if updateFiles || assistant.Instructions == nil || *assistant.Instructions != s.MainPrompt {
+	if updateFiles || assistant.Instructions == nil || *assistant.Instructions != mainPrompt {
 		a, err := s.client.ModifyAssistant(context.Background(), assistant.ID, openai.AssistantRequest{
 			Model:        s.Model,
 			Name:         &s.AssistantName,
 			Description:  nil,
-			Instructions: &s.MainPrompt,
+			Instructions: &mainPrompt,
 			Tools:        s.Tools,
 			FileIDs:      s.fileIDs,
 			Metadata:     nil,
@@ -184,6 +218,7 @@ func (s *Service) InitFiles() error {
 			if f.FileName == filename {
 				exists = true
 				s.fileIDs = append(s.fileIDs, f.ID)
+				s.fileIDMap[filename] = f.ID
 				break
 			}
 		}
@@ -199,6 +234,7 @@ func (s *Service) InitFiles() error {
 			}
 
 			s.fileIDs = append(s.fileIDs, f.ID)
+			s.fileIDMap[filename] = f.ID
 		}
 	}
 

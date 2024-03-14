@@ -2,6 +2,7 @@ package job
 
 import (
 	"github.com/kaytu-io/kaytu-engine/services/migrator/job/migrations/analytics"
+	"github.com/kaytu-io/kaytu-engine/services/migrator/job/migrations/assistant"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/job/migrations/compliance"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/job/migrations/elasticsearch"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/job/migrations/insight"
@@ -23,4 +24,5 @@ var migrations = map[string]types.Migration{
 	"compliance":          compliance.Migration{},
 	"analytics":           analytics.Migration{},
 	"superset":            superset.Migration{},
+	"assistant":           assistant.Migration{},
 }

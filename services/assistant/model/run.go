@@ -6,8 +6,8 @@ import (
 )
 
 type Run struct {
-	ID        string
-	ThreadID  string
+	ID        string `gorm:"primarykey"`
+	ThreadID  string `gorm:"primarykey"`
 	Status    openai2.RunStatus
 	UpdatedAt time.Time
 }

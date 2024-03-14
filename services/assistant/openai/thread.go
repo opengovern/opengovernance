@@ -1,8 +1,10 @@
 package openai
 
 import (
+	"bytes"
 	"context"
 	"github.com/sashabaranov/go-openai"
+	"text/template"
 )
 
 func (s *Service) NewThread() (openai.Thread, error) {
@@ -10,9 +12,20 @@ func (s *Service) NewThread() (openai.Thread, error) {
 }
 
 func (s *Service) SendChatPrompt(threadID string) (openai.Message, error) {
+	tmpl := template.New("test")
+	tm, err := tmpl.Parse(s.ChatPrompt)
+	if err != nil {
+		panic(err)
+	}
+	var outputExecute bytes.Buffer
+	err = tm.Execute(&outputExecute, s)
+	if err != nil {
+		panic(err)
+	}
+
 	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
 		Role:    openai.ChatMessageRoleUser,
-		Content: chatPromptStr,
+		Content: outputExecute.String(),
 	})
 }
 func (s *Service) SendMessage(threadID, content string) (openai.Message, error) {
