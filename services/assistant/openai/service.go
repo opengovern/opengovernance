@@ -136,7 +136,22 @@ func (s *Service) InitAssistant() error {
 		assistant = &a
 	}
 
-	if assistant.Instructions == nil || *assistant.Instructions != s.MainPrompt {
+	updateFiles := false
+	for _, tf := range s.fileIDs {
+
+		exists := false
+		for _, fid := range assistant.FileIDs {
+			if fid == tf {
+				exists = true
+			}
+		}
+
+		if !exists {
+			updateFiles = true
+		}
+	}
+
+	if updateFiles || assistant.Instructions == nil || *assistant.Instructions != s.MainPrompt {
 		a, err := s.client.ModifyAssistant(context.Background(), assistant.ID, openai.AssistantRequest{
 			Model:        s.Model,
 			Name:         &s.AssistantName,

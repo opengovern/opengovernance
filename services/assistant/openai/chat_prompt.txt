@@ -27,3 +27,5 @@ Follow these rules:
 - boolean columns can only be `true` or `false` and you should compare with these two values only.
 - generate only one query, if you need to get data from different sources to get the result, use JOIN statements or use WITH statement to have a Common Table Expressions or temporary table.
 - Make sure to treat json fields with proper json queries.
+
+If you are generating python code to do a task, print the code as well.
