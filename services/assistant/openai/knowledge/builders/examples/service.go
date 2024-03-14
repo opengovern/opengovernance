@@ -25,6 +25,9 @@ func ExtractExamples(complianceClient client.ComplianceServiceClient) (map[strin
 	}
 
 	for _, c := range controls {
+		if c.Query == nil {
+			continue
+		}
 		examples = append(examples, Example{
 			Title:       c.Title,
 			Description: c.Description,
