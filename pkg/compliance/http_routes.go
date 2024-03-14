@@ -1238,7 +1238,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			resControlIDs = append(resControlIDs, item.Key)
 		}
-		controls, err := h.db.GetControls(resControlIDs)
+		controls, err := h.db.GetControls(resControlIDs, nil)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -2942,7 +2942,7 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 		}
 	}
 	if len(missingControls) > 0 {
-		controls, err := h.db.GetControls(missingControls)
+		controls, err := h.db.GetControls(missingControls, nil)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -3078,9 +3078,11 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Param		controlId		query		[]string	false	"Control IDs to filter by"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Success	200				{object}	[]api.ControlSummary
 //	@Router		/compliance/api/v1/controls/summary [get]
 func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		h.logger.Error("failed to get connection IDs", zap.Error(err))
@@ -3088,7 +3090,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 	}
 
 	controlIds := httpserver.QueryArrayParam(ctx, "controlId")
-	controls, err := h.db.GetControls(controlIds)
+	controls, err := h.db.GetControls(controlIds, tagMap)
 	if err != nil {
 		h.logger.Error("failed to fetch controls", zap.Error(err))
 		return err
@@ -4039,7 +4041,7 @@ func (h *HttpHandler) getBenchmarkControls(ctx context.Context, benchmarkID stri
 	_, span2 := tracer.Start(outputS, "new_GetControls", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetControls")
 
-	controls, err := h.db.GetControls(controlIDs)
+	controls, err := h.db.GetControls(controlIDs, nil)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
