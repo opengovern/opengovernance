@@ -145,6 +145,9 @@ func (s *SupersetService) Login() (string, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -181,6 +184,9 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[GuestToken] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -213,6 +219,9 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return nil, fmt.Errorf("[ListDashboards] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -245,6 +254,9 @@ func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[GetEmbeddedUUID] invalid status code: %d, body=%s", res.StatusCode, string(r))

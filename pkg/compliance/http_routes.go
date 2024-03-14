@@ -5100,19 +5100,35 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 //	@Router			/compliance/api/v1/superset/dashboards/token [post]
 func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 	ss := superset.New(h.conf.SuperSet.BaseURL, h.conf.SuperSet.Username, h.conf.SuperSet.Password)
+	tracerCtx, span1 := tracer.Start(ctx.Request().Context(), "new_GenerateSupersetDashboardToken", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GenerateSupersetDashboardToken")
+
+	span2 := trace.SpanFromContext(tracerCtx)
+	span2.SetName("superset_login")
 	token, err := ss.Login()
+	span2.End()
 	if err != nil {
+		h.logger.Error("failed to login to superset", zap.Error(err))
 		return err
 	}
 
 	var respDashboards []api.SupersetDashboard
+	span2 = trace.SpanFromContext(tracerCtx)
+	span2.SetName("superset_list_dashboards")
 	dashboards, err := ss.ListDashboards(token)
+	span2.End()
 	if err != nil {
+		h.logger.Error("failed to list dashboards", zap.Error(err))
 		return err
 	}
 	for _, d := range dashboards {
+		span2 = trace.SpanFromContext(tracerCtx)
+		span2.SetName("superset_get_embedded_uuid")
+		span2.SetAttributes(attribute.Int("dashboard_id", d.Id))
 		uid, err := ss.GetEmbeddedUUID(token, d.Id)
+		span2.End()
 		if err != nil {
+			h.logger.Error("failed to get embedded uuid", zap.Error(err))
 			return err
 		}
 
@@ -5129,6 +5145,8 @@ func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 			Id:   d.ID,
 		})
 	}
+	span2 = trace.SpanFromContext(tracerCtx)
+	span2.SetName("superset_guest_token")
 	guestToken, err := ss.GuestToken(token, superset.GuestTokenRequest{
 		User: superset.GuestUser{
 			Username:  h.conf.SuperSet.GuestUsername,
@@ -5138,7 +5156,9 @@ func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 		Resources: resources,
 		Rls:       []superset.RLS{},
 	})
+	span2.End()
 	if err != nil {
+		h.logger.Error("failed to get guest token", zap.Error(err))
 		return err
 	}
 
