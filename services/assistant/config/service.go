@@ -9,8 +9,9 @@ type OpenAI struct {
 }
 
 type AssistantConfig struct {
-	Postgres  koanf.Postgres     `json:"postgres,omitempty" koanf:"postgres"`
-	OpenAI    OpenAI             `json:"openai,omitempty" koanf:"openai"`
-	Inventory koanf.KaytuService `json:"inventory,omitempty" koanf:"inventory"`
-	Http      koanf.HttpServer   `json:"http,omitempty" koanf:"http"`
+	Postgres   koanf.Postgres     `json:"postgres,omitempty" koanf:"postgres"`
+	OpenAI     OpenAI             `json:"openai,omitempty" koanf:"openai"`
+	Inventory  koanf.KaytuService `json:"inventory,omitempty" koanf:"inventory"`
+	Compliance koanf.KaytuService `json:"compliance,omitempty" koanf:"compliance"`
+	Http       koanf.HttpServer   `json:"http,omitempty" koanf:"http"`
 }

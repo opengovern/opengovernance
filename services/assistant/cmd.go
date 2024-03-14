@@ -1,6 +1,7 @@
 package assistant
 
 import (
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/actions"
@@ -32,7 +33,8 @@ func Command() *cobra.Command {
 			}
 
 			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
-			oc, err := openai.New(cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, i)
+			c := complianceClient.NewComplianceClient(cnf.Compliance.BaseURL)
+			oc, err := openai.New(cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, i, c)
 			if err != nil {
 				return err
 			}

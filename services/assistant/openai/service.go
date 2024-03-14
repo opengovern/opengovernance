@@ -4,7 +4,11 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/jsonmodels"
+	tables2 "github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/tables"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -28,10 +32,31 @@ type Service struct {
 	assistant       *openai.Assistant
 }
 
-func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Service, error) {
+func New(token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
+
+	var files map[string]string
+	for k, v := range jsonmodels.ExtractJSONModels() {
+		files[k] = v
+	}
+
+	tf, err := tables2.ExtractTableFiles()
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range tf {
+		files[k] = v
+	}
+
+	ex, err := examples.ExtractExamples(c)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range ex {
+		files[k] = v
+	}
 
 	s := &Service{
 		client:          gptClient,
@@ -39,6 +64,7 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Se
 		Model:           modelName,
 		AssistantName:   "kaytu-r-assistant",
 		inventoryClient: i,
+		Files:           files,
 		Tools: []openai.AssistantTool{
 			{
 				Type: openai.AssistantToolTypeCodeInterpreter,
@@ -54,6 +80,12 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Se
 							"query": map[string]any{
 								"type": "string", "description": "The SQL Query to run",
 							},
+							"pageNo": map[string]any{
+								"type": "number", "description": "Result page number starting from 1",
+							},
+							"pageSize": map[string]any{
+								"type": "number", "description": "Result page size, must be a non-zero number",
+							},
 						},
 						"required": []string{"query"},
 					},
@@ -61,7 +93,8 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient) (*Se
 			},
 		},
 	}
-	err := s.InitFiles()
+
+	err = s.InitFiles()
 	if err != nil {
 		return nil, fmt.Errorf("failed to init files due to %v", err)
 	}
