@@ -111,9 +111,16 @@ func columnType(t proto.ColumnType) string {
 	}
 }
 
-func extractFromJsonField(transforms []*transform.TransformCall) string {
+func extractFromJsonField(transforms *transform.ColumnTransforms) string {
+	if transforms == nil {
+		return ""
+	}
+
 	var res []string
-	for _, t := range transforms {
+	for _, t := range transforms.Transforms {
+		if t == nil {
+			continue
+		}
 		if arr, ok := t.Param.([]string); ok {
 			res = append(res, arr...)
 		}
@@ -127,11 +134,14 @@ func extractTables(tableMap map[string]*plugin.Table, categories map[string][]st
 
 		var columns []Column
 		for _, col := range def.Columns {
+			if col == nil {
+				continue
+			}
 			columns = append(columns, Column{
 				Name:          col.Name,
 				Type:          columnType(col.Type),
 				Description:   col.Description,
-				FromJsonField: extractFromJsonField(col.Transform.Transforms),
+				FromJsonField: extractFromJsonField(col.Transform),
 			})
 		}
 
