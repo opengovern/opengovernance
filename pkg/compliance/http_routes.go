@@ -5102,6 +5102,7 @@ func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 	ss := superset.New(h.conf.SuperSet.BaseURL, h.conf.SuperSet.Username, h.conf.SuperSet.Password)
 	tracerCtx, span1 := tracer.Start(ctx.Request().Context(), "new_GenerateSupersetDashboardToken", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GenerateSupersetDashboardToken")
+	defer span1.End()
 
 	span2 := trace.SpanFromContext(tracerCtx)
 	span2.SetName("superset_login")
