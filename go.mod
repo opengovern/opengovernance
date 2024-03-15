@@ -40,7 +40,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/kaytu-io/kaytu-aws-describer v0.32.27
+	github.com/kaytu-io/kaytu-aws-describer v0.32.28
 	github.com/kaytu-io/kaytu-azure-describer v0.23.30
 	github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee
 	github.com/kaytu-io/pennywise v1.1.5
@@ -208,6 +208,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
+	github.com/aws/aws-lambda-go v1.42.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
