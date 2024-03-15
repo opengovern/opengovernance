@@ -3,14 +3,21 @@ package tables
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"github.com/goccy/go-yaml"
+	"github.com/hashicorp/go-hclog"
+	"github.com/invopop/jsonschema"
+	steampipeAws "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-aws-describer/steampipe-plugin-aws/aws"
+	steampipeAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-azure-describer/steampipe-plugin-azure/azure"
 	"github.com/kaytu-io/kaytu-azure-describer/steampipe-plugin-azuread/azuread"
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/context_key"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -22,6 +29,8 @@ type Column struct {
 	Type          string `yaml:"Type"`
 	Description   string `yaml:"Description"`
 	FromJsonField string `yaml:"FromJsonField"`
+
+	JsonSchema any `yaml:"JsonSchema,omitempty"`
 }
 
 type Table struct {
@@ -36,7 +45,7 @@ type Def struct {
 	Tables []Table `yaml:"Tables"`
 }
 
-func ExtractTableFiles() (map[string]string, error) {
+func ExtractTableFiles(logger *zap.Logger) (map[string]string, error) {
 	tableCategories := map[string][]string{}
 	catArr := strings.Split(categoriesStr, "\n")
 	for _, i := range catArr {
@@ -57,7 +66,7 @@ func ExtractTableFiles() (map[string]string, error) {
 	files := map[string]string{}
 	var tableNames []string
 
-	tables := extractTables(kaytu.Plugin(context.Background()).TableMap, tableCategories)
+	tables := extractTables(logger, kaytu.Plugin(context.Background()).TableMap, nil, nil, tableCategories)
 	t, err := yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -67,7 +76,7 @@ func ExtractTableFiles() (map[string]string, error) {
 		tableNames = append(tableNames, tb.Name)
 	}
 
-	tables = extractTables(aws.Plugin(context.Background()).TableMap, tableCategories)
+	tables = extractTables(logger, aws.Plugin(context.Background()).TableMap, steampipeAws.AWSReverseMap, steampipeAws.AWSDescriptionMap, tableCategories)
 	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -77,7 +86,7 @@ func ExtractTableFiles() (map[string]string, error) {
 		tableNames = append(tableNames, tb.Name)
 	}
 
-	tables = extractTables(azure.Plugin(context.Background()).TableMap, tableCategories)
+	tables = extractTables(logger, azure.Plugin(context.Background()).TableMap, steampipeAzure.AzureReverseMap, steampipeAzure.AzureDescriptionMap, tableCategories)
 	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -87,7 +96,7 @@ func ExtractTableFiles() (map[string]string, error) {
 		tableNames = append(tableNames, tb.Name)
 	}
 
-	tables = extractTables(azuread.Plugin(context.Background()).TableMap, tableCategories)
+	tables = extractTables(logger, azuread.Plugin(context.Background()).TableMap, steampipeAzure.AzureReverseMap, steampipeAzure.AzureDescriptionMap, tableCategories)
 	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -152,21 +161,58 @@ func extractFromJsonField(transforms *transform.ColumnTransforms) string {
 	return strings.Join(res, ",")
 }
 
-func extractTables(tableMap map[string]*plugin.Table, categories map[string][]string) Def {
+func extractTables(logger *zap.Logger, tableMap map[string]*plugin.Table,
+	tableToResourceTypeMap map[string]string,
+	resourceTypeToTypeMap map[string]any, categories map[string][]string) Def {
 	var tables []Table
 	for _, def := range tableMap {
-
 		var columns []Column
 		for _, col := range def.Columns {
 			if col == nil {
 				continue
 			}
-			columns = append(columns, Column{
+			column := Column{
 				Name:          col.Name,
 				Type:          columnType(col.Type),
 				Description:   col.Description,
 				FromJsonField: extractFromJsonField(col.Transform),
-			})
+				JsonSchema:    nil,
+			}
+			if col.Type == proto.ColumnType_JSON && col.Transform != nil && resourceTypeToTypeMap != nil && tableToResourceTypeMap != nil {
+				resourceType, ok := tableToResourceTypeMap[def.Name]
+				if !ok {
+					logger.Debug("resource type not found for table", zap.String("table", def.Name))
+					continue
+				}
+				descObj, ok := resourceTypeToTypeMap[resourceType]
+				if !ok {
+					logger.Debug("resource type not found in resource type map", zap.String("table", def.Name), zap.String("resourceType", resourceType))
+					continue
+				}
+				//descObjRecursiveZeroValue := utils.GetNestedZeroValue(descObj)
+				ctx := context.WithValue(context.Background(), context_key.Logger, hclog.NewNullLogger())
+				colObj, err := col.Transform.Execute(ctx, &transform.TransformData{
+					HydrateItem: descObj,
+					ColumnName:  column.Name,
+				})
+				if err != nil || colObj == nil {
+					logger.Debug("skipping generating json schema for column", zap.String("table", def.Name), zap.String("column", col.Name), zap.Error(err))
+					continue
+				}
+				jsonSchema, err := jsonschema.Reflect(colObj).MarshalJSON()
+				if err != nil {
+					logger.Debug("failed to generate json schema for column", zap.String("table", def.Name), zap.String("column", col.Name), zap.Error(err))
+					continue
+				}
+				var schema any
+				err = json.Unmarshal(jsonSchema, &schema)
+				if err != nil {
+					logger.Debug("failed to unmarshal json schema for column", zap.String("table", def.Name), zap.String("column", col.Name), zap.Error(err))
+					continue
+				}
+				column.JsonSchema = schema
+			}
+			columns = append(columns, column)
 		}
 
 		tables = append(tables, Table{
