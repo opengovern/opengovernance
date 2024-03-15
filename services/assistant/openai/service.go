@@ -13,6 +13,7 @@ import (
 	tables2 "github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/tables"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	"github.com/sashabaranov/go-openai"
+	"go.uber.org/zap"
 	"text/template"
 )
 
@@ -33,7 +34,7 @@ type Service struct {
 	prompt          repository.Prompt
 }
 
-func New(token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func New(logger *zap.Logger, token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
@@ -43,7 +44,7 @@ func New(token, baseURL, modelName string, i client.InventoryServiceClient, c cl
 		files[k] = v
 	}
 
-	tf, err := tables2.ExtractTableFiles()
+	tf, err := tables2.ExtractTableFiles(logger)
 	if err != nil {
 		return nil, err
 	}

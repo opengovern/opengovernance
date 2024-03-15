@@ -34,7 +34,7 @@ func Command() *cobra.Command {
 
 			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
 			c := complianceClient.NewComplianceClient(cnf.Compliance.BaseURL)
-			oc, err := openai.New(cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, i, c, repository.NewPrompt(database))
+			oc, err := openai.New(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, i, c, repository.NewPrompt(database))
 			if err != nil {
 				return err
 			}
