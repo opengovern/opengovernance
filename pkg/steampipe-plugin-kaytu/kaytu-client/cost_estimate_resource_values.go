@@ -1,6 +1,7 @@
 package kaytu_client
 
 import (
+	aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
 	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
@@ -182,14 +183,19 @@ func getAwsEksClusterValues(resource Resource) (map[string]interface{}, error) {
 
 // getAwsEc2EipValues get resource values needed for cost estimate from model.EC2EIPDescription
 func getAwsEc2EipValues(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAws.EC2EIP); ok {
+	if v, ok := resource.Description.(aws.EC2EIPDescription); ok {
 		return map[string]interface{}{
-			"customer_owned_ipv4_pool": ptrStr2(v.Description.Address.CustomerOwnedIpv4Pool),
-			"instance":                 ptrStr2(v.Description.Address.InstanceId),
-			"network_interface":        ptrStr2(v.Description.Address.NetworkInterfaceId),
+			"customer_owned_ipv4_pool": ptrStr2(v.Address.CustomerOwnedIpv4Pool),
+			"instance":                 ptrStr2(v.Address.InstanceId),
+			"network_interface":        ptrStr2(v.Address.NetworkInterfaceId),
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"customer_owned_ipv4_pool": v["Address"].(map[string]interface{})["CustomerOwnedIpv4Pool"],
+			"instance":                 v["Address"].(map[string]interface{})["InstanceId"],
+			"network_interface":        v["Address"].(map[string]interface{})["NetworkInterfaceId"],
 		}, nil
 	}
-
 	return nil, nil
 }
 
@@ -243,9 +249,13 @@ func getAwsEfsFileSystemValues(resource Resource) (map[string]interface{}, error
 
 // getAwsEbsSnapshotValues get resource values needed for cost estimate from model.EC2VolumeSnapshotDescription
 func getAwsEbsSnapshotValues(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAws.EC2VolumeSnapshot); ok {
+	if v, ok := resource.Description.(aws.EC2VolumeSnapshotDescription); ok {
 		return map[string]interface{}{
-			"volume_size": v.Description.Snapshot.VolumeSize,
+			"volume_size": v.Snapshot.VolumeSize,
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"volume_size": v["Snapshot"].(map[string]interface{})["VolumeSize"],
 		}, nil
 	}
 	return nil, nil
@@ -253,13 +263,13 @@ func getAwsEbsSnapshotValues(resource Resource) (map[string]interface{}, error) 
 
 // getAwsEbsVolumeValues get resource values needed for cost estimate from model.EC2VolumeDescription
 func getAwsEbsVolumeValues(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAws.EC2Volume); ok {
+	if v, ok := resource.Description.(aws.EC2VolumeDescription); ok {
 		return map[string]interface{}{
-			"availability_zone": ptrStr2(v.Description.Volume.AvailabilityZone),
-			"type":              v.Description.Volume.VolumeType,
-			"size":              ptrInt2(v.Description.Volume.Size),
-			"iops":              ptrInt2(v.Description.Volume.Iops),
-			"throughput":        ptrInt2(v.Description.Volume.Throughput),
+			"availability_zone": ptrStr2(v.Volume.AvailabilityZone),
+			"type":              v.Volume.VolumeType,
+			"size":              ptrInt2(v.Volume.Size),
+			"iops":              ptrInt2(v.Volume.Iops),
+			"throughput":        ptrInt2(v.Volume.Throughput),
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
 		return map[string]interface{}{
@@ -346,12 +356,15 @@ func getAwsLoadBalancerValues(resource Resource) (map[string]interface{}, error)
 
 // getAwsLoadBalancer2Values get resource values needed for cost estimate from model.ElasticLoadBalancingV2LoadBalancerDescription
 func getAwsLoadBalancer2Values(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAws.ElasticLoadBalancingV2LoadBalancer); ok {
+	if v, ok := resource.Description.(aws.ElasticLoadBalancingV2LoadBalancerDescription); ok {
 		return map[string]interface{}{
-			"load_balancer_type": v.Description.LoadBalancer.Type,
+			"load_balancer_type": v.LoadBalancer.Type,
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"load_balancer_type": v["LoadBalancer"].(map[string]interface{})["Type"],
 		}, nil
 	}
-
 	return nil, nil
 }
 
