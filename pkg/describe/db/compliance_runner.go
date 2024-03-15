@@ -8,8 +8,11 @@ import (
 	"time"
 )
 
-func (db Database) CreateRunnerJobs(runners []*model.ComplianceRunner) error {
-	tx := db.ORM.
+func (db Database) CreateRunnerJobs(tx *gorm.DB, runners []*model.ComplianceRunner) error {
+	if tx == nil {
+		tx = db.ORM
+	}
+	tx = tx.
 		Model(&model.ComplianceRunner{}).
 		CreateInBatches(runners, 500)
 	if tx.Error != nil {

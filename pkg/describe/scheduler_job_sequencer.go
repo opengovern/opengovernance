@@ -173,7 +173,7 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 			}
 		}
 
-		err = s.db.CreateRunnerJobs(runners)
+		err = s.db.CreateRunnerJobs(nil, runners)
 		if err != nil {
 			s.logger.Error("error while creating runners", zap.Error(err))
 			return err

@@ -21,8 +21,11 @@ func (db Database) CountComplianceJobsByDate(start time.Time, end time.Time) (in
 	return count, nil
 }
 
-func (db Database) CreateComplianceJob(job *model.ComplianceJob) error {
-	tx := db.ORM.
+func (db Database) CreateComplianceJob(tx *gorm.DB, job *model.ComplianceJob) error {
+	if tx == nil {
+		tx = db.ORM
+	}
+	tx = tx.
 		Model(&model.ComplianceJob{}).
 		Create(job)
 	if tx.Error != nil {

@@ -138,17 +138,6 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 		}
 	}
 
-	job := model.ComplianceJob{
-		BenchmarkID: benchmarkID,
-		Status:      model.ComplianceJobCreated,
-		IsStack:     false,
-	}
-	err = s.db.CreateComplianceJob(&job)
-	if err != nil {
-		s.logger.Error("error while creating compliance job", zap.Error(err))
-		return 0, err
-	}
-
 	// delete old runners
 	if lastJob != nil {
 		err = s.db.DeleteOldRunnerJob(&lastJob.ID)
@@ -162,6 +151,19 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 			s.logger.Error("error while deleting old runners", zap.Error(err))
 			return 0, err
 		}
+	}
+
+	transaction := s.db.ORM.Begin()
+	defer transaction.Rollback()
+	job := model.ComplianceJob{
+		BenchmarkID: benchmarkID,
+		Status:      model.ComplianceJobCreated,
+		IsStack:     false,
+	}
+	err = s.db.CreateComplianceJob(transaction, &job)
+	if err != nil {
+		s.logger.Error("error while creating compliance job", zap.Error(err))
+		return 0, err
 	}
 
 	var allRunners []*model.ComplianceRunner
@@ -188,9 +190,15 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 	//	allRunners = append(allRunners, runners...)
 	//}
 
-	err = s.db.CreateRunnerJobs(allRunners)
+	err = s.db.CreateRunnerJobs(transaction, allRunners)
 	if err != nil {
 		s.logger.Error("error while creating runners", zap.Error(err))
+		return 0, err
+	}
+
+	err = transaction.Commit().Error
+	if err != nil {
+		s.logger.Error("error while committing transaction", zap.Error(err))
 		return 0, err
 	}
 
