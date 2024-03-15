@@ -347,7 +347,7 @@ func getAwsEc2InstanceValues(resource Resource) (map[string]interface{}, error) 
 
 // getAwsLoadBalancerValues get resource values needed for cost estimate
 func getAwsLoadBalancerValues(resource Resource) (map[string]interface{}, error) {
-	var valuesMap map[string]interface{}
+	valuesMap := make(map[string]interface{})
 
 	valuesMap["load_balancer_type"] = "classic"
 
