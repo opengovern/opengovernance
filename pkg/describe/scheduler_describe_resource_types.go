@@ -2,6 +2,7 @@ package describe
 
 import (
 	"errors"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -92,11 +93,11 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	}
 
 	var resourceTypes []string
-	assetMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, analyticsDb.MetricTypeAssets)
+	assetMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, utils.GetPointer(analyticsDb.MetricTypeAssets))
 	if err != nil {
 		return result, err
 	}
-	spendMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, analyticsDb.MetricTypeSpend)
+	spendMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, utils.GetPointer(analyticsDb.MetricTypeSpend))
 	if err != nil {
 		return result, err
 	}

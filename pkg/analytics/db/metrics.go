@@ -95,10 +95,10 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 	metricIDs []string, connectorTypes []source.Type, statuses []AnalyticMetricStatus) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
-	if len(tags) != 0 {
+	if len(tags) > 0 {
 		query = query.Joins("JOIN metric_tags AS tags ON tags.id = analytic_metrics.id")
 		for key, values := range tags {
-			if len(values) != 0 {
+			if len(values) > 0 {
 				query = query.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
 			} else {
 				query = query.Where("tags.key = ?", key)
@@ -113,10 +113,12 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 	if len(statuses) > 0 {
 		query = query.Where("analytic_metrics.status IN ?", statuses)
 	}
-	if len(metricIDs) != 0 {
+	if len(metricIDs) > 0 {
 		query = query.Where("analytic_metrics.id IN ?", metricIDs)
 	}
-	query.Where("type = ?", metricType)
+	if len(metricType) > 0 {
+		query = query.Where("type = ?", metricType)
+	}
 	tx := query.Find(&metrics)
 	if tx.Error != nil {
 		return nil, tx.Error

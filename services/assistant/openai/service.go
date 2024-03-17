@@ -6,10 +6,12 @@ import (
 	_ "embed"
 	"fmt"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/jsonmodels"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/metrics"
 	tables2 "github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/tables"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	"github.com/sashabaranov/go-openai"
@@ -125,12 +127,21 @@ func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, c c
 	return s, nil
 }
 
-func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName string, prompt repository.Prompt) (*Service, error) {
+func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
 
 	files := map[string]string{}
+
+	metrics, err := metrics.ExtractMetrics(logger, i)
+	if err != nil {
+		logger.Error("failed to extract metrics", zap.Error(err))
+		return nil, err
+	}
+	for k, v := range metrics {
+		files[k] = v
+	}
 
 	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeRedirection))
 	if err != nil {

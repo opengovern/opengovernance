@@ -27,7 +27,7 @@ type InventoryServiceClient interface {
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
-	ListAnalyticsMetrics(ctx *httpclient.Context, metricType analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
+	ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
 }
 
 type inventoryClient struct {
@@ -69,8 +69,19 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 	return count, nil
 }
 
-func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricType analyticsDB.MetricType) ([]api.AnalyticsMetric, error) {
-	url := fmt.Sprintf("%s/api/v2/analytics/metrics/list?metricType=%s", s.baseURL, string(metricType))
+func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error) {
+	url := fmt.Sprintf("%s/api/v2/analytics/metrics/list", s.baseURL)
+
+	firstParamAttached := false
+	if metricType != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("metricType=%s", *metricType)
+	}
 
 	var resp []api.AnalyticsMetric
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
