@@ -14,4 +14,7 @@ type AssistantConfig struct {
 	Inventory  koanf.KaytuService `json:"inventory,omitempty" koanf:"inventory"`
 	Compliance koanf.KaytuService `json:"compliance,omitempty" koanf:"compliance"`
 	Http       koanf.HttpServer   `json:"http,omitempty" koanf:"http"`
+
+	KaytuBaseUrl  string `json:"kaytu_base_url,omitempty" koanf:"kaytu_base_url"`
+	WorkspaceName string `json:"workspace_name,omitempty" koanf:"workspace_name"`
 }

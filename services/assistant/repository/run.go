@@ -18,7 +18,7 @@ var (
 type Run interface {
 	Get(context.Context, []string) ([]model.Run, error)
 	Create(context.Context, model.Run) error
-	List(context.Context) ([]model.Run, error)
+	List(context.Context, *model.AssistantType) ([]model.Run, error)
 	UpdateStatus(ctx context.Context, id string, threadID string, status openai.RunStatus) error
 }
 
@@ -43,10 +43,14 @@ func (s RunSQL) Get(ctx context.Context, ids []string) ([]model.Run, error) {
 	return thread, nil
 }
 
-func (s RunSQL) List(ctx context.Context) ([]model.Run, error) {
+func (s RunSQL) List(ctx context.Context, assistantType *model.AssistantType) ([]model.Run, error) {
 	var thread []model.Run
 
-	tx := s.db.DB.WithContext(ctx).Find(&thread)
+	tx := s.db.DB.WithContext(ctx)
+	if assistantType != nil {
+		tx = tx.Where("assistant_type = ?", assistantType)
+	}
+	tx = tx.Find(&thread)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

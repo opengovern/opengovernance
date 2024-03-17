@@ -134,12 +134,12 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 
 	files := map[string]string{}
 
-	metrics, err := metrics.ExtractMetrics(logger, i)
+	assistantMetrics, err := metrics.ExtractMetrics(logger, i)
 	if err != nil {
 		logger.Error("failed to extract metrics", zap.Error(err))
 		return nil, err
 	}
-	for k, v := range metrics {
+	for k, v := range assistantMetrics {
 		files[k] = v
 	}
 
@@ -169,6 +169,23 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 		prompt:        prompt,
 		Tools: []openai.AssistantTool{
 			{Type: openai.AssistantToolTypeCodeInterpreter},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetFullUrlFromPath",
+					Description: "Get full URL from provided path",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"path": map[string]any{
+								"type":        "string",
+								"description": "The path to get full URL",
+							},
+						},
+						"required": []string{"path"},
+					},
+				},
+			},
 		},
 	}
 

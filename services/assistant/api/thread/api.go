@@ -135,7 +135,7 @@ func (s API) SendMessage(c echo.Context) error {
 		return fmt.Errorf("RunThread failed due to %v", err)
 	}
 
-	err = s.db.Create(context.Background(), model.Run{ID: run.ID, ThreadID: threadID, Status: openai2.RunStatusQueued, UpdatedAt: time.Now()})
+	err = s.db.Create(context.Background(), model.Run{ID: run.ID, ThreadID: threadID, AssistantType: s.oc.AssistantName, Status: openai2.RunStatusQueued, UpdatedAt: time.Now()})
 	if err != nil {
 		return fmt.Errorf("db.Create failed due to %v", err)
 	}
