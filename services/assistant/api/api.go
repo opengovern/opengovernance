@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/api/thread"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/db"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
@@ -10,24 +11,30 @@ import (
 )
 
 type API struct {
-	logger   *zap.Logger
-	oc       *openai.Service
-	database db.Database
+	logger               *zap.Logger
+	queryAssistant       *openai.Service
+	redirectionAssistant *openai.Service
+	database             db.Database
 }
 
 func New(
 	logger *zap.Logger,
-	oc *openai.Service,
+	queryAssistant *openai.Service,
+	redirectionAssistant *openai.Service,
 	database db.Database,
 ) *API {
 	return &API{
-		logger:   logger.Named("api"),
-		oc:       oc,
-		database: database,
+		logger:               logger.Named(fmt.Sprintf("api-%s", queryAssistant.AssistantName.String())),
+		queryAssistant:       queryAssistant,
+		redirectionAssistant: redirectionAssistant,
+		database:             database,
 	}
 }
 
 func (api *API) Register(e *echo.Echo) {
-	thr := thread.New(api.logger, api.oc, repository.NewRun(api.database))
-	thr.Register(e.Group("/api/v1/thread"))
+	runRepo := repository.NewRun(api.database)
+	qThr := thread.New(api.logger, api.queryAssistant, runRepo)
+	qThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.queryAssistant.AssistantName.String())))
+	rThr := thread.New(api.logger, api.redirectionAssistant, runRepo)
+	rThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.redirectionAssistant.AssistantName.String())))
 }

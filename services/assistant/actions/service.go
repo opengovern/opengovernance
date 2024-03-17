@@ -9,27 +9,35 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	openai2 "github.com/sashabaranov/go-openai"
 	"time"
 )
 
-type Service struct {
+type Service interface {
+	RunActions()
+}
+
+type QueryAssistantActionsService struct {
 	oc      *openai.Service
 	runRepo repository.Run
 	i       client.InventoryServiceClient
 }
 
-func New(oc *openai.Service, i client.InventoryServiceClient, runRepo repository.Run) *Service {
-	return &Service{
+func NewQueryAssistantActions(oc *openai.Service, i client.InventoryServiceClient, runRepo repository.Run) (Service, error) {
+	if oc.AssistantName != model.AssistantTypeQuery {
+		return nil, errors.New(fmt.Sprintf("incompatible assistant type %v", oc.AssistantName))
+	}
+	return &QueryAssistantActionsService{
 		oc:      oc,
 		i:       i,
 		runRepo: runRepo,
-	}
+	}, nil
 }
 
-func (s *Service) Run() {
+func (s *QueryAssistantActionsService) RunActions() {
 	for {
 		err := s.run()
 		if err != nil {
@@ -39,7 +47,7 @@ func (s *Service) Run() {
 	}
 }
 
-func (s *Service) run() error {
+func (s *QueryAssistantActionsService) run() error {
 	runs, err := s.runRepo.List(context.Background())
 	if err != nil {
 		return err
@@ -74,7 +82,7 @@ func (s *Service) run() error {
 						continue
 					}
 					fmt.Printf("run SQL action %v\n", call)
-					out, err := s.RunSQLQueryAction(call)
+					out, err := s.runSQLQueryAction(call)
 					if err != nil {
 						out = fmt.Sprintf("Failed to run due to %v", err)
 					}
@@ -103,7 +111,7 @@ func (s *Service) run() error {
 	return nil
 }
 
-func (s *Service) RunSQLQueryAction(query openai2.ToolCall) (string, error) {
+func (s *QueryAssistantActionsService) runSQLQueryAction(query openai2.ToolCall) (string, error) {
 	if query.Function.Name != "RunQuery" {
 		return "", errors.New("invalid function")
 	}

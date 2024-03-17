@@ -4606,10 +4606,18 @@ paths:
       summary: List triggers
       tags:
       - alerting
-  /assistant/api/v1/thread:
+  /assistant/api/v1/{assistant_name}/thread:
     post:
       description: Send a message [standalone]
       parameters:
+      - description: Assistant Name
+        enum:
+        - kaytu-r-assistant
+        - kaytu-redirection-assistant
+        in: path
+        name: assistant_name
+        required: true
+        type: string
       - description: Request
         in: body
         name: request
@@ -4628,13 +4636,21 @@ paths:
       summary: Send a message [standalone]
       tags:
       - assistant
-  /assistant/api/v1/thread/{thread_id}:
+  /assistant/api/v1/{assistant_name}/thread/{thread_id}:
     get:
       description: List messages of a thread
       parameters:
       - description: Thread ID
         in: path
         name: thread_id
+        required: true
+        type: string
+      - description: Assistant Name
+        enum:
+        - kaytu-r-assistant
+        - kaytu-redirection-assistant
+        in: path
+        name: assistant_name
         required: true
         type: string
       - description: Run ID

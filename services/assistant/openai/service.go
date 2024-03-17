@@ -6,10 +6,12 @@ import (
 	_ "embed"
 	"fmt"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/jsonmodels"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/metrics"
 	tables2 "github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/tables"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	"github.com/sashabaranov/go-openai"
@@ -21,25 +23,25 @@ type Service struct {
 	MainPrompt    string
 	ChatPrompt    string
 	Model         string
-	AssistantName string
+	AssistantName model.AssistantType
 	Tools         []openai.AssistantTool
 	Files         map[string]string
 
 	fileIDs   []string
 	fileIDMap map[string]string
 
-	client          *openai.Client
-	inventoryClient client.InventoryServiceClient
-	assistant       *openai.Assistant
-	prompt          repository.Prompt
+	client    *openai.Client
+	assistant *openai.Assistant
+	prompt    repository.Prompt
 }
 
-func New(logger *zap.Logger, token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
 
 	files := map[string]string{}
+
 	for k, v := range jsonmodels.ExtractJSONModels() {
 		files[k] = v
 	}
@@ -60,7 +62,7 @@ func New(logger *zap.Logger, token, baseURL, modelName string, i client.Inventor
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background())
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeQuery))
 	if err != nil {
 		return nil, err
 	}
@@ -75,15 +77,14 @@ func New(logger *zap.Logger, token, baseURL, modelName string, i client.Inventor
 		}
 	}
 	s := &Service{
-		client:          gptClient,
-		MainPrompt:      mainPrompts,
-		ChatPrompt:      chatPrompts,
-		Model:           modelName,
-		AssistantName:   "kaytu-r-assistant",
-		inventoryClient: i,
-		Files:           files,
-		fileIDMap:       map[string]string{},
-		prompt:          prompt,
+		client:        gptClient,
+		MainPrompt:    mainPrompts,
+		ChatPrompt:    chatPrompts,
+		Model:         modelName,
+		AssistantName: model.AssistantTypeQuery,
+		Files:         files,
+		fileIDMap:     map[string]string{},
+		prompt:        prompt,
 		Tools: []openai.AssistantTool{
 			{
 				Type: openai.AssistantToolTypeCodeInterpreter,
@@ -126,6 +127,62 @@ func New(logger *zap.Logger, token, baseURL, modelName string, i client.Inventor
 	return s, nil
 }
 
+func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
+	config := openai.DefaultAzureConfig(token, baseURL)
+	config.APIVersion = "2024-02-15-preview"
+	gptClient := openai.NewClientWithConfig(config)
+
+	files := map[string]string{}
+
+	metrics, err := metrics.ExtractMetrics(logger, i)
+	if err != nil {
+		logger.Error("failed to extract metrics", zap.Error(err))
+		return nil, err
+	}
+	for k, v := range metrics {
+		files[k] = v
+	}
+
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeRedirection))
+	if err != nil {
+		logger.Error("failed to list prompts", zap.Error(err))
+		return nil, err
+	}
+
+	var mainPrompts, chatPrompts string
+	for _, p := range prompts {
+		if p.Purpose == model.Purpose_SystemPrompt {
+			mainPrompts = p.Content
+		}
+		if p.Purpose == model.Purpose_ChatPrompt {
+			chatPrompts = p.Content
+		}
+	}
+	s := &Service{
+		client:        gptClient,
+		MainPrompt:    mainPrompts,
+		ChatPrompt:    chatPrompts,
+		Model:         modelName,
+		AssistantName: model.AssistantTypeRedirection,
+		Files:         files,
+		fileIDMap:     map[string]string{},
+		prompt:        prompt,
+		Tools:         []openai.AssistantTool{},
+	}
+
+	err = s.InitFiles()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init files due to %v", err)
+	}
+
+	err = s.InitAssistant()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init assistant due to %v", err)
+	}
+
+	return s, nil
+}
+
 func (s *Service) GetFileID(filename string) string {
 	return s.fileIDMap[filename]
 }
@@ -152,7 +209,7 @@ func (s *Service) InitAssistant() error {
 
 	var assistant *openai.Assistant
 	for _, as := range assistants.Assistants {
-		if as.Name != nil && *as.Name == s.AssistantName {
+		if as.Name != nil && *as.Name == s.AssistantName.String() {
 			assistant = &as
 		}
 	}
@@ -160,7 +217,7 @@ func (s *Service) InitAssistant() error {
 	if assistant == nil {
 		a, err := s.client.CreateAssistant(context.Background(), openai.AssistantRequest{
 			Model:        s.Model,
-			Name:         &s.AssistantName,
+			Name:         utils.GetPointer(s.AssistantName.String()),
 			Description:  nil,
 			Instructions: &mainPrompt,
 			Tools:        s.Tools,
@@ -191,7 +248,7 @@ func (s *Service) InitAssistant() error {
 	if updateFiles || assistant.Instructions == nil || *assistant.Instructions != mainPrompt {
 		a, err := s.client.ModifyAssistant(context.Background(), assistant.ID, openai.AssistantRequest{
 			Model:        s.Model,
-			Name:         &s.AssistantName,
+			Name:         utils.GetPointer(s.AssistantName.String()),
 			Description:  nil,
 			Instructions: &mainPrompt,
 			Tools:        s.Tools,
