@@ -19,7 +19,7 @@ func (a AssistantType) String() string {
 }
 
 type Prompt struct {
-	Purpose       Purpose       `gorm:"primarykey"`
-	AssistantName AssistantType `gorm:"primarykey"`
+	Purpose       Purpose       `gorm:"primaryKey"`
+	AssistantName AssistantType `gorm:"primaryKey"`
 	Content       string
 }
