@@ -22,7 +22,7 @@ func New(
 	database db.Database,
 ) *API {
 	return &API{
-		logger:   logger.Named("api"),
+		logger:   logger.Named(fmt.Sprintf("assistant-api-%s", oc.AssistantName.String())),
 		oc:       oc,
 		database: database,
 	}
