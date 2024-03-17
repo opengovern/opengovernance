@@ -549,6 +549,8 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
+github.com/aws/aws-lambda-go v1.42.0 h1:U4QKkxLp/il15RJGAANxiT9VumQzimsUER7gokqA0+c=
+github.com/aws/aws-lambda-go v1.42.0/go.mod h1:dpMpZgvWx5vuQJfBt0zqBha60q7Dd7RfgJv23DymV8A=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -1726,6 +1728,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.32.29 h1:sUneqZEbQ5dTMFzdSaijX9lsddb0
 github.com/kaytu-io/kaytu-aws-describer v0.32.29/go.mod h1:nltfouNMZinykTsKw9LDbM/Ndd8ey7cWYAWG+RIimac=
 github.com/kaytu-io/kaytu-azure-describer v0.23.31 h1:ICWBMAsKN8JGd9TZAhH2YQjvouN3nHalcoQmE7ssJrU=
 github.com/kaytu-io/kaytu-azure-describer v0.23.31/go.mod h1:U6WQQMJ/kIxa8nrZDlpYMknXbD3o00U+xNC7aE87LuE=
+github.com/kaytu-io/kaytu-azure-describer v0.23.32 h1:E0K33gN9ml9iDAtpbXe644upa/iFWSww2iYWmjvhJcE=
+github.com/kaytu-io/kaytu-azure-describer v0.23.32/go.mod h1:U6WQQMJ/kIxa8nrZDlpYMknXbD3o00U+xNC7aE87LuE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee h1:vWKE/SQIFXcOGekqmfPbUcAt5xepH1LHI06hefhRfGE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
