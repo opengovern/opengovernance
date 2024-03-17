@@ -35,12 +35,13 @@ type Service struct {
 	prompt          repository.Prompt
 }
 
-func New(logger *zap.Logger, token, baseURL, modelName string, assistantName model.AssistantType, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
 
 	files := map[string]string{}
+
 	for k, v := range jsonmodels.ExtractJSONModels() {
 		files[k] = v
 	}
@@ -61,7 +62,7 @@ func New(logger *zap.Logger, token, baseURL, modelName string, assistantName mod
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), &assistantName)
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeQuery))
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func New(logger *zap.Logger, token, baseURL, modelName string, assistantName mod
 		MainPrompt:      mainPrompts,
 		ChatPrompt:      chatPrompts,
 		Model:           modelName,
-		AssistantName:   assistantName,
+		AssistantName:   model.AssistantTypeQuery,
 		inventoryClient: i,
 		Files:           files,
 		fileIDMap:       map[string]string{},

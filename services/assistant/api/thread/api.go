@@ -42,13 +42,13 @@ func New(logger *zap.Logger, oc *openai.Service, db repository.Run) API {
 //	@Security		BearerToken
 //	@Tags			assistant
 //	@Produce		json
-//	@Success		200			{object}	entity.ListMessagesResponse
-//	@Param			thread_id	path		string	true	"Thread ID"
-//	@Param			run_id		query		string	false	"Run ID"
-//	@Router			/assistant/api/v1/thread/{thread_id} [get]
+//	@Success		200				{object}	entity.ListMessagesResponse
+//	@Param			thread_id		path		string				true	"Thread ID"
+//	@Param			assistant_name	path		model.AssistantType	true	"Assistant Name"
+//	@Param			run_id			query		string				false	"Run ID"
+//	@Router			/assistant/api/v1/{assistant_name}/thread/{thread_id} [get]
 func (s API) ListMessages(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
-
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
@@ -91,9 +91,10 @@ func (s API) ListMessages(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			assistant
 //	@Produce		json
-//	@Param			request	body		entity.SendMessageRequest	true	"Request"
-//	@Success		200		{object}	entity.SendMessageResponse
-//	@Router			/assistant/api/v1/thread [post]
+//	@Param			assistant_name	path		model.AssistantType			true	"Assistant Name"
+//	@Param			request			body		entity.SendMessageRequest	true	"Request"
+//	@Success		200				{object}	entity.SendMessageResponse
+//	@Router			/assistant/api/v1/{assistant_name}/thread [post]
 func (s API) SendMessage(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 

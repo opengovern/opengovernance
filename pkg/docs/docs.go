@@ -449,7 +449,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/assistant/api/v1/thread": {
+        "/assistant/api/v1/{assistant_name}/thread": {
             "post": {
                 "security": [
                     {
@@ -465,6 +465,17 @@ const docTemplate = `{
                 ],
                 "summary": "Send a message [standalone]",
                 "parameters": [
+                    {
+                        "enum": [
+                            "kaytu-r-assistant",
+                            "kaytu-redirection-assistant"
+                        ],
+                        "type": "string",
+                        "description": "Assistant Name",
+                        "name": "assistant_name",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "Request",
                         "name": "request",
@@ -485,7 +496,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/assistant/api/v1/thread/{thread_id}": {
+        "/assistant/api/v1/{assistant_name}/thread/{thread_id}": {
             "get": {
                 "security": [
                     {
@@ -505,6 +516,17 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Thread ID",
                         "name": "thread_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "kaytu-r-assistant",
+                            "kaytu-redirection-assistant"
+                        ],
+                        "type": "string",
+                        "description": "Assistant Name",
+                        "name": "assistant_name",
                         "in": "path",
                         "required": true
                     },

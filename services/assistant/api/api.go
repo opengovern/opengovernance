@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/api/thread"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/db"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
@@ -29,5 +30,5 @@ func New(
 
 func (api *API) Register(e *echo.Echo) {
 	thr := thread.New(api.logger, api.oc, repository.NewRun(api.database))
-	thr.Register(e.Group("/api/v1/thread"))
+	thr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.oc.AssistantName.String())))
 }
