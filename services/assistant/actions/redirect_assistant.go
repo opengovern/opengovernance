@@ -118,6 +118,7 @@ func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCa
 	var gptArgs map[string]any
 	err := json.Unmarshal([]byte(call.Function.Arguments), &gptArgs)
 	if err != nil {
+		s.logger.Error("failed to unmarshal gpt args", zap.Error(err), zap.String("args", call.Function.Arguments))
 		return "", err
 	}
 
