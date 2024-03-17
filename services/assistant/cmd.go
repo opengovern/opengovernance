@@ -32,22 +32,34 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
-			c := complianceClient.NewComplianceClient(cnf.Compliance.BaseURL)
-			queryAssistant, err := openai.NewQueryAssistant(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, i, c, repository.NewPrompt(database))
+			inventoryServiceClient := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
+			complianceServiceClient := complianceClient.NewComplianceClient(cnf.Compliance.BaseURL)
+
+			promptRepo := repository.NewPrompt(database)
+
+			queryAssistant, err := openai.NewQueryAssistant(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, complianceServiceClient, promptRepo)
 			if err != nil {
+				logger.Error("failed to create query assistant", zap.Error(err))
+				return err
+			}
+			redirectionAssistant, err := openai.NewRedirectionAssistant(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, promptRepo)
+			if err != nil {
+				logger.Error("failed to create redirection assistant", zap.Error(err))
 				return err
 			}
 
-			a := actions.New(queryAssistant, i, repository.NewRun(database))
-			go a.Run()
+			queryAssistantActions, err := actions.NewQueryAssistantActions(queryAssistant, inventoryServiceClient, repository.NewRun(database))
+			if err != nil {
+				logger.Error("failed to create query assistant actions", zap.Error(err))
+			}
+			go queryAssistantActions.Run()
 
 			cmd.SilenceUsage = true
 
 			return httpserver.RegisterAndStart(
 				logger,
 				cnf.Http.Address,
-				api.New(logger, queryAssistant, database),
+				api.New(logger, queryAssistant, redirectionAssistant, database),
 			)
 		},
 	}

@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"fmt"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
@@ -29,13 +28,12 @@ type Service struct {
 	fileIDs   []string
 	fileIDMap map[string]string
 
-	client          *openai.Client
-	inventoryClient client.InventoryServiceClient
-	assistant       *openai.Assistant
-	prompt          repository.Prompt
+	client    *openai.Client
+	assistant *openai.Assistant
+	prompt    repository.Prompt
 }
 
-func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
@@ -77,15 +75,14 @@ func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, i c
 		}
 	}
 	s := &Service{
-		client:          gptClient,
-		MainPrompt:      mainPrompts,
-		ChatPrompt:      chatPrompts,
-		Model:           modelName,
-		AssistantName:   model.AssistantTypeQuery,
-		inventoryClient: i,
-		Files:           files,
-		fileIDMap:       map[string]string{},
-		prompt:          prompt,
+		client:        gptClient,
+		MainPrompt:    mainPrompts,
+		ChatPrompt:    chatPrompts,
+		Model:         modelName,
+		AssistantName: model.AssistantTypeQuery,
+		Files:         files,
+		fileIDMap:     map[string]string{},
+		prompt:        prompt,
 		Tools: []openai.AssistantTool{
 			{
 				Type: openai.AssistantToolTypeCodeInterpreter,
@@ -113,6 +110,53 @@ func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, i c
 				},
 			},
 		},
+	}
+
+	err = s.InitFiles()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init files due to %v", err)
+	}
+
+	err = s.InitAssistant()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init assistant due to %v", err)
+	}
+
+	return s, nil
+}
+
+func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName string, prompt repository.Prompt) (*Service, error) {
+	config := openai.DefaultAzureConfig(token, baseURL)
+	config.APIVersion = "2024-02-15-preview"
+	gptClient := openai.NewClientWithConfig(config)
+
+	files := map[string]string{}
+
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeRedirection))
+	if err != nil {
+		logger.Error("failed to list prompts", zap.Error(err))
+		return nil, err
+	}
+
+	var mainPrompts, chatPrompts string
+	for _, p := range prompts {
+		if p.Purpose == model.Purpose_SystemPrompt {
+			mainPrompts = p.Content
+		}
+		if p.Purpose == model.Purpose_ChatPrompt {
+			chatPrompts = p.Content
+		}
+	}
+	s := &Service{
+		client:        gptClient,
+		MainPrompt:    mainPrompts,
+		ChatPrompt:    chatPrompts,
+		Model:         modelName,
+		AssistantName: model.AssistantTypeRedirection,
+		Files:         files,
+		fileIDMap:     map[string]string{},
+		prompt:        prompt,
+		Tools:         []openai.AssistantTool{},
 	}
 
 	err = s.InitFiles()

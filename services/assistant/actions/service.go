@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	openai2 "github.com/sashabaranov/go-openai"
@@ -21,12 +22,15 @@ type Service struct {
 	i       client.InventoryServiceClient
 }
 
-func New(oc *openai.Service, i client.InventoryServiceClient, runRepo repository.Run) *Service {
+func NewQueryAssistantActions(oc *openai.Service, i client.InventoryServiceClient, runRepo repository.Run) (*Service, error) {
+	if oc.AssistantName != model.AssistantTypeQuery {
+		return nil, errors.New(fmt.Sprintf("incompatible assistant type %v", oc.AssistantName))
+	}
 	return &Service{
 		oc:      oc,
 		i:       i,
 		runRepo: runRepo,
-	}
+	}, nil
 }
 
 func (s *Service) Run() {
