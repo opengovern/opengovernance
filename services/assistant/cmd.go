@@ -42,7 +42,7 @@ func Command() *cobra.Command {
 				logger.Error("failed to create query assistant", zap.Error(err))
 				return err
 			}
-			redirectionAssistant, err := openai.NewRedirectionAssistant(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, promptRepo)
+			redirectionAssistant, err := openai.NewRedirectionAssistant(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, inventoryServiceClient, promptRepo)
 			if err != nil {
 				logger.Error("failed to create redirection assistant", zap.Error(err))
 				return err
