@@ -52,7 +52,7 @@ func Command() *cobra.Command {
 			if err != nil {
 				logger.Error("failed to create query assistant actions", zap.Error(err))
 			}
-			go queryAssistantActions.Run()
+			go queryAssistantActions.RunActions()
 
 			cmd.SilenceUsage = true
 
