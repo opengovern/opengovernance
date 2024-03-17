@@ -167,7 +167,9 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 		Files:         files,
 		fileIDMap:     map[string]string{},
 		prompt:        prompt,
-		Tools:         []openai.AssistantTool{},
+		Tools: []openai.AssistantTool{
+			{Type: openai.AssistantToolTypeCodeInterpreter},
+		},
 	}
 
 	err = s.InitFiles()
