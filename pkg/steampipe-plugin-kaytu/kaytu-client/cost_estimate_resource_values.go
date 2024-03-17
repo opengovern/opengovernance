@@ -416,10 +416,20 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 			"sku_tier":     *v.LoadBalancer.SKU.Tier,
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		rulesNumber := 0
+		if inRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["InboundNatRules"].([]interface{}); ok {
+			rulesNumber += len(inRules)
+		}
+		if lbRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["LoadBalancingRules"].([]interface{}); ok {
+			rulesNumber += len(lbRules)
+		}
+		if outRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["OutboundRules"].([]interface{}); ok {
+			rulesNumber += len(outRules)
+		}
 		return map[string]interface{}{
 			"sku":          v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Name"],
 			"location":     v["LoadBalancer"].(map[string]interface{})["Location"],
-			"rules_number": len(v["LoadBalancer"].(map[string]interface{})["InboundNatRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["LoadBalancingRules"].([]interface{})) + len(v["LoadBalancer"].(map[string]interface{})["OutboundRules"].([]interface{})),
+			"rules_number": rulesNumber,
 			"sku_tier":     v["LoadBalancer"].(map[string]interface{})["SKU"].(map[string]interface{})["Tier"],
 		}, nil
 	}
