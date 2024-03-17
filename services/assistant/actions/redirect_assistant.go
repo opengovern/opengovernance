@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -125,6 +126,7 @@ func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCa
 		if !ok {
 			return "", errors.New(fmt.Sprintf("invalid path %v", pathAny))
 		}
+		path = strings.TrimPrefix(path, "/")
 		return fmt.Sprintf("%s/%s/%s", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName, path), nil
 	} else {
 		return "", errors.New(fmt.Sprintf("path not found in %v", gptArgs))
