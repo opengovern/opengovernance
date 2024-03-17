@@ -417,13 +417,13 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
 		rulesNumber := 0
-		if inRules, ok := v["LoadBalancer"].(map[string]interface{})["InboundNatRules"].([]interface{}); ok {
+		if inRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["InboundNatRules"].([]interface{}); ok {
 			rulesNumber += len(inRules)
 		}
-		if lbRules, ok := v["LoadBalancer"].(map[string]interface{})["LoadBalancingRules"].([]interface{}); ok {
+		if lbRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["LoadBalancingRules"].([]interface{}); ok {
 			rulesNumber += len(lbRules)
 		}
-		if outRules, ok := v["LoadBalancer"].(map[string]interface{})["OutboundRules"].([]interface{}); ok {
+		if outRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["OutboundRules"].([]interface{}); ok {
 			rulesNumber += len(outRules)
 		}
 		return map[string]interface{}{
