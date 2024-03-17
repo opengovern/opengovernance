@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/api"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/config"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/db"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
@@ -34,7 +35,7 @@ func Command() *cobra.Command {
 
 			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
 			c := complianceClient.NewComplianceClient(cnf.Compliance.BaseURL)
-			oc, err := openai.New(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, i, c, repository.NewPrompt(database))
+			oc, err := openai.New(logger, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, model.AssistantTypeQuery, i, c, repository.NewPrompt(database))
 			if err != nil {
 				return err
 			}

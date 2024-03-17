@@ -7,6 +7,7 @@ import (
 	"fmt"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/jsonmodels"
@@ -21,7 +22,7 @@ type Service struct {
 	MainPrompt    string
 	ChatPrompt    string
 	Model         string
-	AssistantName string
+	AssistantName model.AssistantType
 	Tools         []openai.AssistantTool
 	Files         map[string]string
 
@@ -34,7 +35,7 @@ type Service struct {
 	prompt          repository.Prompt
 }
 
-func New(logger *zap.Logger, token, baseURL, modelName string, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func New(logger *zap.Logger, token, baseURL, modelName string, assistantName model.AssistantType, i client.InventoryServiceClient, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	config := openai.DefaultAzureConfig(token, baseURL)
 	config.APIVersion = "2024-02-15-preview"
 	gptClient := openai.NewClientWithConfig(config)
@@ -60,7 +61,7 @@ func New(logger *zap.Logger, token, baseURL, modelName string, i client.Inventor
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background())
+	prompts, err := prompt.List(context.Background(), &assistantName)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +80,7 @@ func New(logger *zap.Logger, token, baseURL, modelName string, i client.Inventor
 		MainPrompt:      mainPrompts,
 		ChatPrompt:      chatPrompts,
 		Model:           modelName,
-		AssistantName:   "kaytu-r-assistant",
+		AssistantName:   assistantName,
 		inventoryClient: i,
 		Files:           files,
 		fileIDMap:       map[string]string{},
@@ -152,7 +153,7 @@ func (s *Service) InitAssistant() error {
 
 	var assistant *openai.Assistant
 	for _, as := range assistants.Assistants {
-		if as.Name != nil && *as.Name == s.AssistantName {
+		if as.Name != nil && *as.Name == s.AssistantName.String() {
 			assistant = &as
 		}
 	}
@@ -160,7 +161,7 @@ func (s *Service) InitAssistant() error {
 	if assistant == nil {
 		a, err := s.client.CreateAssistant(context.Background(), openai.AssistantRequest{
 			Model:        s.Model,
-			Name:         &s.AssistantName,
+			Name:         utils.GetPointer(s.AssistantName.String()),
 			Description:  nil,
 			Instructions: &mainPrompt,
 			Tools:        s.Tools,
@@ -191,7 +192,7 @@ func (s *Service) InitAssistant() error {
 	if updateFiles || assistant.Instructions == nil || *assistant.Instructions != mainPrompt {
 		a, err := s.client.ModifyAssistant(context.Background(), assistant.ID, openai.AssistantRequest{
 			Model:        s.Model,
-			Name:         &s.AssistantName,
+			Name:         utils.GetPointer(s.AssistantName.String()),
 			Description:  nil,
 			Instructions: &mainPrompt,
 			Tools:        s.Tools,

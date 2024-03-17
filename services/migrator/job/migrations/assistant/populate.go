@@ -33,33 +33,72 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		SSLMode:  conf.PostgreSQL.SSLMode,
 	}, logger)
 	if err != nil {
+		logger.Error("failed to create database", zap.Error(err))
 		return err
 	}
 	promptRepo := repository.NewPrompt(database)
 
 	prompt, err := os.ReadFile(path.Join(m.AttachmentFolderPath(), "chat_prompt.txt"))
 	if err != nil {
+		logger.Error("failed to read chat prompt", zap.Error(err))
 		return err
 	}
 
 	err = promptRepo.Create(context.Background(), model.Prompt{
-		Purpose: model.Purpose_ChatPrompt,
-		Content: string(prompt),
+		Purpose:       model.Purpose_ChatPrompt,
+		AssistantName: model.AssistantTypeQuery,
+		Content:       string(prompt),
 	})
 	if err != nil {
+		logger.Error("failed to create chat prompt", zap.Error(err))
 		return err
 	}
 
 	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "main_prompt.txt"))
 	if err != nil {
+		logger.Error("failed to read main prompt", zap.Error(err))
 		return err
 	}
 
 	err = promptRepo.Create(context.Background(), model.Prompt{
-		Purpose: model.Purpose_SystemPrompt,
-		Content: string(prompt),
+		Purpose:       model.Purpose_SystemPrompt,
+		AssistantName: model.AssistantTypeQuery,
+		Content:       string(prompt),
 	})
 	if err != nil {
+		logger.Error("failed to create main prompt", zap.Error(err))
+		return err
+	}
+
+	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "redirect_chat_prompt.txt"))
+	if err != nil {
+		logger.Error("failed to read redirect chat prompt", zap.Error(err))
+		return err
+	}
+
+	err = promptRepo.Create(context.Background(), model.Prompt{
+		Purpose:       model.Purpose_ChatPrompt,
+		AssistantName: model.AssistantTypeRedirection,
+		Content:       string(prompt),
+	})
+	if err != nil {
+		logger.Error("failed to create redirect chat prompt", zap.Error(err))
+		return err
+	}
+
+	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "redirect_main_prompt.txt"))
+	if err != nil {
+		logger.Error("failed to read redirect main prompt", zap.Error(err))
+		return err
+	}
+
+	err = promptRepo.Create(context.Background(), model.Prompt{
+		Purpose:       model.Purpose_SystemPrompt,
+		AssistantName: model.AssistantTypeRedirection,
+		Content:       string(prompt),
+	})
+	if err != nil {
+		logger.Error("failed to create redirect main prompt", zap.Error(err))
 		return err
 	}
 
