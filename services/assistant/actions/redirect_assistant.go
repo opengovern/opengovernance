@@ -80,7 +80,8 @@ func (s *RedirectAssistantActionsService) run() error {
 					if call.Type != openai2.ToolTypeFunction {
 						continue
 					}
-					if call.Function.Name == "GetFullUrlFromPath" {
+					switch call.Function.Name {
+					case "GetFullUrlFromPath":
 						out, err := s.GetFullUrlFromPath(call)
 						if err != nil {
 							s.logger.Error("failed to get full url from path", zap.Error(err))
