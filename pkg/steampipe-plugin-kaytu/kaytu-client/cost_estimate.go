@@ -67,6 +67,8 @@ func ResourceTypeConversion(resourceType string) string {
 		return "aws_elasticsearch_domain"
 	case "aws::opensearch::domain":
 		return "aws_opensearch_domain"
+	case "aws::dynamodb::table":
+		return "aws_dynamodb_table"
 
 	// Azure
 	case "microsoft.compute/virtualmachines":
@@ -194,6 +196,8 @@ func GetValues(resource Resource) (map[string]interface{}, error) {
 		return getAwsEsDomainValues(resource)
 	case "aws::opensearch::domain":
 		return getAwsOpenSearchDomainValues(resource)
+	case "aws::dynamodb::table":
+		return getAwsDynamoDbTableValues(resource)
 
 	// Azure
 	case "microsoft.compute/virtualmachines":
