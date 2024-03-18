@@ -484,8 +484,8 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 func getAzureApplicationGatewayValues(resource Resource) (map[string]interface{}, error) {
 	if v, ok := resource.Description.(azure.ApplicationGatewayDescription); ok {
 		autoscaleConfiguration := struct {
-			MaxCapacity int64 `mapstructure:"max_capacity"`
-			MinCapacity int64 `mapstructure:"min_capacity"`
+			MaxCapacity int32 `mapstructure:"max_capacity"`
+			MinCapacity int32 `mapstructure:"min_capacity"`
 		}{
 			MaxCapacity: *v.ApplicationGateway.Properties.AutoscaleConfiguration.MaxCapacity,
 			MinCapacity: *v.ApplicationGateway.Properties.AutoscaleConfiguration.MinCapacity,
