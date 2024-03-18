@@ -128,7 +128,7 @@ func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCa
 		if !ok {
 			return "", errors.New(fmt.Sprintf("invalid path %v", pathAny))
 		}
-		prefix := fmt.Sprintf("%s/%s/", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName)
+		prefix := fmt.Sprintf("https://%s/%s/", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName)
 		if strings.HasPrefix(path, prefix) {
 			return path, nil
 		}
