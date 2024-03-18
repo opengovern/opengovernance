@@ -388,17 +388,26 @@ func getAwsDynamoDbTableValues(resource Resource) (map[string]interface{}, error
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
 		if _, ok2 := v["Table"].(map[string]interface{})["Replicas"].([]interface{}); ok2 {
 			for _, r := range v["Table"].(map[string]interface{})["Replicas"].([]interface{}) {
+				if r == nil {
+					continue
+				}
 				replicas = append(replicas, struct {
 					RegionName string `mapstructure:"region_name"`
 				}{RegionName: r.(map[string]interface{})["RegionName"].(string)})
 			}
 		}
-		return map[string]interface{}{
-			"billing_mode":   v["Table"].(map[string]interface{})["BillingModeSummary"].(map[string]interface{})["BillingMode"],
-			"write_capacity": v["Table"].(map[string]interface{})["ProvisionedThroughput"].(map[string]interface{})["WriteCapacityUnits"],
-			"read_capacity":  v["Table"].(map[string]interface{})["ProvisionedThroughput"].(map[string]interface{})["ReadCapacityUnits"],
-			"replica":        replicas,
-		}, nil
+		output := make(map[string]interface{})
+
+		if v["Table"].(map[string]interface{})["BillingModeSummary"] != nil {
+			output["billing_mode"] = v["Table"].(map[string]interface{})["BillingModeSummary"].(map[string]interface{})["BillingMode"]
+		}
+		if v["Table"].(map[string]interface{})["ProvisionedThroughput"] != nil {
+			output["write_capacity"] = v["Table"].(map[string]interface{})["ProvisionedThroughput"].(map[string]interface{})["WriteCapacityUnits"]
+			output["read_capacity"] = v["Table"].(map[string]interface{})["ProvisionedThroughput"].(map[string]interface{})["ReadCapacityUnits"]
+		}
+
+		output["replica"] = replicas
+		return output, nil
 	}
 	return nil, nil
 }
