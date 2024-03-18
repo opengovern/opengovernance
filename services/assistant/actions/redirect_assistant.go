@@ -133,7 +133,7 @@ func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCa
 			return path, nil
 		}
 		path = strings.TrimPrefix(path, "/")
-		return fmt.Sprintf("%s/%s/%s", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName, path), nil
+		return fmt.Sprintf("%s%s", prefix, path), nil
 	} else {
 		return "", errors.New(fmt.Sprintf("path not found in %v", gptArgs))
 	}
