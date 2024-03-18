@@ -196,7 +196,7 @@ func getAwsEc2EipValues(resource Resource) (map[string]interface{}, error) {
 			"network_interface":        v["Address"].(map[string]interface{})["NetworkInterfaceId"],
 		}, nil
 	}
-	return nil, nil
+	return resource.Description.(map[string]interface{}), nil
 }
 
 // getAwsElastiCacheReplicationGroupValues get resource values needed for cost estimate from model.ElastiCacheReplicationGroupDescription
@@ -363,6 +363,39 @@ func getAwsLoadBalancer2Values(resource Resource) (map[string]interface{}, error
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
 		return map[string]interface{}{
 			"load_balancer_type": v["LoadBalancer"].(map[string]interface{})["Type"],
+		}, nil
+	}
+	return nil, nil
+}
+
+// getAwsDynamoDbTableValues get resource values needed for cost estimate from model.ElasticLoadBalancingV2LoadBalancerDescription
+func getAwsDynamoDbTableValues(resource Resource) (map[string]interface{}, error) {
+	var replicas []struct {
+		RegionName string `mapstructure:"region_name"`
+	}
+	if v, ok := resource.Description.(aws.DynamoDbTableDescription); ok {
+		for _, r := range v.Table.Replicas {
+			replicas = append(replicas, struct {
+				RegionName string `mapstructure:"region_name"`
+			}{RegionName: *r.RegionName})
+		}
+		return map[string]interface{}{
+			"billing_mode":   v.Table.BillingModeSummary.BillingMode,
+			"write_capacity": v.Table.ProvisionedThroughput.WriteCapacityUnits,
+			"read_capacity":  v.Table.ProvisionedThroughput.ReadCapacityUnits,
+			"replica":        replicas,
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		for _, r := range v["Table"].(map[string]interface{})["Replicas"].([]interface{}) {
+			replicas = append(replicas, struct {
+				RegionName string `mapstructure:"region_name"`
+			}{RegionName: r.(map[string]interface{})["RegionName"].(string)})
+		}
+		return map[string]interface{}{
+			"billing_mode":   v["Table"].(map[string]interface{})["BillingModeSummary"].(map[string]interface{})["BillingMode"],
+			"write_capacity": v["Table"].(map[string]interface{})["ProvisionedThroughput"].(map[string]interface{})["WriteCapacityUnits"],
+			"read_capacity":  v["Table"].(map[string]interface{})["ProvisionedThroughput"].(map[string]interface{})["ReadCapacityUnits"],
+			"replica":        replicas,
 		}, nil
 	}
 	return nil, nil
