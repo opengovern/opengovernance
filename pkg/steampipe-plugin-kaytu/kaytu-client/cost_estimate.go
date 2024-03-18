@@ -217,7 +217,7 @@ func GetValues(resource Resource) (map[string]interface{}, error) {
 	case "microsoft.network/loadbalancers/outboundrules":
 		return nil, nil
 	case "microsoft.network/applicationgateways":
-		return nil, nil
+		return getAzureApplicationGatewayValues(resource)
 	case "microsoft.network/natgateways":
 		return nil, nil
 	case "microsoft.network/publicipaddresses":

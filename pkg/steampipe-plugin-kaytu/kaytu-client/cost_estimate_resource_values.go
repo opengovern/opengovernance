@@ -481,6 +481,38 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 	return resource.Description.(map[string]interface{}), nil
 }
 
+func getAzureApplicationGatewayValues(resource Resource) (map[string]interface{}, error) {
+	if v, ok := resource.Description.(azure.ApplicationGatewayDescription); ok {
+		autoscaleConfiguration := struct {
+			MaxCapacity int64 `mapstructure:"max_capacity"`
+			MinCapacity int64 `mapstructure:"min_capacity"`
+		}{
+			MaxCapacity: *v.ApplicationGateway.Properties.AutoscaleConfiguration.MaxCapacity,
+			MinCapacity: *v.ApplicationGateway.Properties.AutoscaleConfiguration.MinCapacity,
+		}
+		return map[string]interface{}{
+			"location":                *v.ApplicationGateway.Location,
+			"sku":                     []interface{}{*v.ApplicationGateway.Properties.SKU},
+			"autoscale_configuration": []interface{}{autoscaleConfiguration},
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		autoscaleConfiguration := struct {
+			MaxCapacity int64 `mapstructure:"max_capacity"`
+			MinCapacity int64 `mapstructure:"min_capacity"`
+		}{
+			MaxCapacity: v["ApplicationGateway"].(map[string]interface{})["Properties"].(map[string]interface{})["AutoscaleConfiguration"].(map[string]interface{})["MaxCapacity"].(int64),
+			MinCapacity: v["ApplicationGateway"].(map[string]interface{})["Properties"].(map[string]interface{})["AutoscaleConfiguration"].(map[string]interface{})["MinCapacity"].(int64),
+		}
+		return map[string]interface{}{
+			"location":                v["ApplicationGateway"].(map[string]interface{})["Location"],
+			"sku":                     v["ApplicationGateway"].(map[string]interface{})["Properties"].(map[string]interface{})["SKU"],
+			"autoscale_configuration": []interface{}{autoscaleConfiguration},
+		}, nil
+	}
+
+	return resource.Description.(map[string]interface{}), nil
+}
+
 //func getAzureVirtualMachineScaleSetValues(resource Resource) (map[string]interface{}, error) {
 //	if v, ok := resource.Description.(azure.ComputeVirtualMachineScaleSetDescription); ok {
 //		var additionalCapabalities []map[string]bool
