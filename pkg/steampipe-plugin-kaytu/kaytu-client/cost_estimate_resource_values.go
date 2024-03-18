@@ -386,10 +386,12 @@ func getAwsDynamoDbTableValues(resource Resource) (map[string]interface{}, error
 			"replica":        replicas,
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
-		for _, r := range v["Table"].(map[string]interface{})["Replicas"].([]interface{}) {
-			replicas = append(replicas, struct {
-				RegionName string `mapstructure:"region_name"`
-			}{RegionName: r.(map[string]interface{})["RegionName"].(string)})
+		if _, ok2 := v["Table"].(map[string]interface{})["Replicas"].([]interface{}); ok2 {
+			for _, r := range v["Table"].(map[string]interface{})["Replicas"].([]interface{}) {
+				replicas = append(replicas, struct {
+					RegionName string `mapstructure:"region_name"`
+				}{RegionName: r.(map[string]interface{})["RegionName"].(string)})
+			}
 		}
 		return map[string]interface{}{
 			"billing_mode":   v["Table"].(map[string]interface{})["BillingModeSummary"].(map[string]interface{})["BillingMode"],
