@@ -1748,6 +1748,12 @@ github.com/kaytu-io/kaytu-azure-describer v0.24.1 h1:3Z/yGaqyxFcQ0UFVxta7ibptU3Z
 github.com/kaytu-io/kaytu-azure-describer v0.24.1/go.mod h1:LmgUkt3YleEEXNaaZN+l/N4A3HemqbHaJkCJqA3M2eE=
 github.com/kaytu-io/kaytu-azure-describer v0.24.4 h1:XGebgNDTfD54qWjo5/KZ7PmYVVZIvecQpWO/Sq3G7kc=
 github.com/kaytu-io/kaytu-azure-describer v0.24.4/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
+github.com/kaytu-io/kaytu-azure-describer v0.24.7 h1:l3Z3XuEehScZSbG3Q0rm2SWHvYoItHIp9ogtMJLmY5U=
+github.com/kaytu-io/kaytu-azure-describer v0.24.7/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
+github.com/kaytu-io/kaytu-azure-describer v0.24.8 h1:QsjMkth8uih5Exo+nk/WYYkCU5xpj1Ud046fJ1z5+9Q=
+github.com/kaytu-io/kaytu-azure-describer v0.24.8/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
+github.com/kaytu-io/kaytu-azure-describer v0.24.10 h1:DMePpJGbQIQDU+zSPmeaYXFQp7+btnY/k1kT9oup2hE=
+github.com/kaytu-io/kaytu-azure-describer v0.24.10/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee h1:vWKE/SQIFXcOGekqmfPbUcAt5xepH1LHI06hefhRfGE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/kaytu-util v0.0.0-20240318153412-51f644bed630 h1:MX4Td51GqNEbpoY9KqBpMUw6mJ5OQaTRHSA78PhkL4c=
