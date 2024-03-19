@@ -33,10 +33,11 @@ func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig,
 		return nil, errors.New(fmt.Sprintf("incompatible assistant type %v", oc.AssistantName))
 	}
 	return &RedirectAssistantActionsService{
-		logger:  logger,
-		oc:      oc,
-		runRepo: runRepo,
-		cnf:     cnf,
+		logger:        logger,
+		oc:            oc,
+		runRepo:       runRepo,
+		cnf:           cnf,
+		onboardClient: onboardClient,
 	}, nil
 }
 
