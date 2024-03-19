@@ -43,6 +43,8 @@ func ResourceTypeConversion(resourceType string) string {
 		return "aws_db_instance"
 	case "aws::ec2::volume":
 		return "aws_ebs_volume"
+	case "aws::ec2::volumegp3":
+		return "aws_ebs_volume"
 	case "aws::efs::filesystem":
 		return "aws_efs_file_system"
 	case "aws::elasticache::cluster":
@@ -170,6 +172,8 @@ func GetValues(resource Resource) (map[string]interface{}, error) {
 		return getAwsRdsDbInstanceValues(resource)
 	case "aws::ec2::volume":
 		return getAwsEbsVolumeValues(resource)
+	case "aws::ec2::volumegp3":
+		return getAwsEbsVolumeGp3Values(resource)
 	case "aws::ec2::volumesnapshot":
 		return getAwsEbsSnapshotValues(resource)
 	case "aws::efs::filesystem":

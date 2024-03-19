@@ -284,6 +284,29 @@ func getAwsEbsVolumeValues(resource Resource) (map[string]interface{}, error) {
 	return resource.Description.(map[string]interface{}), nil
 }
 
+// getAwsEbsVolumeGp3Values get resource values needed for cost estimate from model.EC2VolumeDescription
+func getAwsEbsVolumeGp3Values(resource Resource) (map[string]interface{}, error) {
+	if v, ok := resource.Description.(aws.EC2VolumeDescription); ok {
+		return map[string]interface{}{
+			"availability_zone": ptrStr2(v.Volume.AvailabilityZone),
+			"type":              "gp3",
+			"size":              ptrInt2(v.Volume.Size),
+			"iops":              ptrInt2(v.Volume.Iops),
+			"throughput":        ptrInt2(v.Volume.Throughput),
+		}, nil
+	} else if v, ok := resource.Description.(map[string]interface{}); ok {
+		return map[string]interface{}{
+			"availability_zone": v["Volume"].(map[string]interface{})["AvailabilityZone"],
+			"type":              "gp3",
+			"size":              v["Volume"].(map[string]interface{})["Size"],
+			"iops":              v["Volume"].(map[string]interface{})["Iops"],
+			"throughput":        v["Volume"].(map[string]interface{})["Throughput"],
+		}, nil
+	}
+
+	return resource.Description.(map[string]interface{}), nil
+}
+
 // getAwsRdsDbInstanceValues get resource values needed for cost estimate from model.RDSDBInstanceDescription
 func getAwsRdsDbInstanceValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
