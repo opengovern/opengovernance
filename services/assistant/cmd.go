@@ -4,6 +4,7 @@ import (
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/actions"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/api"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/config"
@@ -34,6 +35,7 @@ func Command() *cobra.Command {
 
 			inventoryServiceClient := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
 			complianceServiceClient := complianceClient.NewComplianceClient(cnf.Compliance.BaseURL)
+			onboardServiceClient := onboardClient.NewOnboardServiceClient(cnf.Onboard.BaseURL)
 
 			promptRepo := repository.NewPrompt(database)
 
@@ -53,7 +55,7 @@ func Command() *cobra.Command {
 				logger.Error("failed to create query assistant actions", zap.Error(err))
 			}
 			go queryAssistantActions.RunActions()
-			redirectAssistantActions, err := actions.NewRedirectAssistantActions(logger, cnf, redirectionAssistant, repository.NewRun(database))
+			redirectAssistantActions, err := actions.NewRedirectAssistantActions(logger, cnf, redirectionAssistant, repository.NewRun(database), onboardServiceClient)
 			if err != nil {
 				logger.Error("failed to create redirection assistant actions", zap.Error(err))
 			}

@@ -13,6 +13,7 @@ type AssistantConfig struct {
 	OpenAI     OpenAI             `json:"openai,omitempty" koanf:"openai"`
 	Inventory  koanf.KaytuService `json:"inventory,omitempty" koanf:"inventory"`
 	Compliance koanf.KaytuService `json:"compliance,omitempty" koanf:"compliance"`
+	Onboard    koanf.KaytuService `json:"onboard,omitempty" koanf:"onboard"`
 	Http       koanf.HttpServer   `json:"http,omitempty" koanf:"http"`
 
 	KaytuBaseUrl  string `json:"kaytu_base_url,omitempty" koanf:"kaytu_base_url"`

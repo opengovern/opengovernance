@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/config"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
@@ -21,9 +24,11 @@ type RedirectAssistantActionsService struct {
 	oc      *openai.Service
 	runRepo repository.Run
 	cnf     config.AssistantConfig
+
+	onboardClient onboardClient.OnboardServiceClient
 }
 
-func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, oc *openai.Service, runRepo repository.Run) (Service, error) {
+func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, oc *openai.Service, runRepo repository.Run, onboardClient onboardClient.OnboardServiceClient) (Service, error) {
 	if oc.AssistantName != model.AssistantTypeRedirection {
 		return nil, errors.New(fmt.Sprintf("incompatible assistant type %v", oc.AssistantName))
 	}
@@ -91,6 +96,16 @@ func (s *RedirectAssistantActionsService) run() error {
 							ToolCallID: call.ID,
 							Output:     out,
 						})
+					case "GetConnectionKaytuIDFromNameOrProviderID":
+						out, err := s.GetConnectionKaytuIDFromNameOrProviderID(call)
+						if err != nil {
+							s.logger.Error("failed to get connection kaytu id from name or provider id", zap.Error(err))
+							out = fmt.Sprintf("Failed to run due to %v", err)
+						}
+						output = append(output, openai2.ToolOutput{
+							ToolCallID: call.ID,
+							Output:     out,
+						})
 					}
 				}
 				_, err := s.oc.Client().SubmitToolOutputs(
@@ -137,4 +152,48 @@ func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCa
 	} else {
 		return "", errors.New(fmt.Sprintf("path not found in %v", gptArgs))
 	}
+}
+
+func (s *RedirectAssistantActionsService) GetConnectionKaytuIDFromNameOrProviderID(call openai2.ToolCall) (string, error) {
+	if call.Function.Name != "GetConnectionKaytuIDFromNameOrProviderID" {
+		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
+	}
+	var gptArgs map[string]any
+	err := json.Unmarshal([]byte(call.Function.Arguments), &gptArgs)
+	if err != nil {
+		s.logger.Error("failed to unmarshal gpt args", zap.Error(err), zap.String("args", call.Function.Arguments))
+		return "", err
+	}
+
+	allConnections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	if err != nil {
+		s.logger.Error("failed to list sources", zap.Error(err), zap.Any("args", gptArgs))
+		return "", fmt.Errorf("there has been a backend error")
+	}
+
+	if nameAny, ok := gptArgs["name"]; ok {
+		name, ok := nameAny.(string)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid name %v", nameAny))
+		}
+		for _, connection := range allConnections {
+			if strings.TrimSpace(strings.ToLower(connection.ConnectionName)) == strings.TrimSpace(strings.ToLower(name)) {
+				return connection.ID.String(), nil
+			}
+		}
+	}
+	if providerIDAny, ok := gptArgs["provider_id"]; ok {
+		providerID, ok := providerIDAny.(string)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid provider_id %v", providerIDAny))
+		}
+		for _, connection := range allConnections {
+			if strings.TrimSpace(strings.ToLower(connection.ConnectionID)) == strings.TrimSpace(strings.ToLower(providerID)) {
+				return connection.ID.String(), nil
+			}
+		}
+	}
+
+	s.logger.Error("name or provider_id not found in input", zap.Any("args", gptArgs))
+	return "", errors.New(fmt.Sprintf("name or provider_id not found in input"))
 }

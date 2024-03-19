@@ -190,6 +190,26 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 					},
 				},
 			},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetConnectionKaytuIDFromNameOrProviderID",
+					Description: "Get connection kaytu id from it's name or provider_id",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"name": map[string]any{
+								"type":        "string",
+								"description": "The name of the connection",
+							},
+							"provider_id": map[string]any{
+								"type":        "string",
+								"description": "The id of the connection in the cloud provider",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
