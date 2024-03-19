@@ -145,7 +145,7 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 		return &metadata, nil
 	}
 
-	result, err := graphClient.ApplicationsById(config.ObjectID).Get(ctx, nil)
+	result, err := graphClient.Applications().ByApplicationId(config.ObjectID).Get(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Applications: %v", err)
 	}
@@ -154,7 +154,7 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 	metadata.ObjectId = *result.GetId()
 	metadata.SecretId = config.SecretID
 	for _, passwd := range result.GetPasswordCredentials() {
-		if passwd.GetKeyId() != nil && *passwd.GetKeyId() == config.SecretID {
+		if passwd.GetKeyId() != nil && passwd.GetKeyId().String() == config.SecretID {
 			metadata.SecretId = config.SecretID
 			metadata.SecretExpirationDate = *passwd.GetEndDateTime()
 		}

@@ -17,6 +17,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"text/template"
+	"time"
 )
 
 type Service struct {
@@ -29,6 +30,8 @@ type Service struct {
 
 	fileIDs   []string
 	fileIDMap map[string]string
+
+	extraVariables map[string]string
 
 	client    *openai.Client
 	assistant *openai.Assistant
@@ -159,14 +162,15 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 		}
 	}
 	s := &Service{
-		client:        gptClient,
-		MainPrompt:    mainPrompts,
-		ChatPrompt:    chatPrompts,
-		Model:         modelName,
-		AssistantName: model.AssistantTypeRedirection,
-		Files:         files,
-		fileIDMap:     map[string]string{},
-		prompt:        prompt,
+		client:         gptClient,
+		MainPrompt:     mainPrompts,
+		ChatPrompt:     chatPrompts,
+		Model:          modelName,
+		AssistantName:  model.AssistantTypeRedirection,
+		Files:          files,
+		fileIDMap:      make(map[string]string),
+		extraVariables: make(map[string]string),
+		prompt:         prompt,
 		Tools: []openai.AssistantTool{
 			{Type: openai.AssistantToolTypeCodeInterpreter},
 			{
@@ -186,12 +190,37 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 					},
 				},
 			},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetConnectionKaytuIDFromNameOrProviderID",
+					Description: "Get connection kaytu id from it's name or provider_id",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"name": map[string]any{
+								"type":        "string",
+								"description": "The name of the connection",
+							},
+							"provider_id": map[string]any{
+								"type":        "string",
+								"description": "The id of the connection in the cloud provider",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
 	err = s.InitFiles()
 	if err != nil {
 		return nil, fmt.Errorf("failed to init files due to %v", err)
+	}
+
+	err = s.InitExtraVariables()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init extra variables due to %v", err)
 	}
 
 	err = s.InitAssistant()
@@ -204,6 +233,10 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 
 func (s *Service) GetFileID(filename string) string {
 	return s.fileIDMap[filename]
+}
+
+func (s *Service) GetExtraVariable(variable string) string {
+	return s.extraVariables[variable]
 }
 
 func (s *Service) InitAssistant() error {
@@ -317,6 +350,11 @@ func (s *Service) InitFiles() error {
 		}
 	}
 
+	return nil
+}
+
+func (s *Service) InitExtraVariables() error {
+	s.extraVariables["currentDate"] = time.Now().Format("2006-01-02")
 	return nil
 }
 
