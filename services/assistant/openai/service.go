@@ -39,13 +39,14 @@ type Service struct {
 	prompt    repository.Prompt
 }
 
-func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
 		config.APIVersion = "2024-02-15-preview"
 	} else {
 		config = openai.DefaultConfig(token)
+		config.OrgID = orgId
 	}
 	gptClient := openai.NewClientWithConfig(config)
 
@@ -136,13 +137,14 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	return s, nil
 }
 
-func NewRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
 		config.APIVersion = "2024-02-15-preview"
 	} else {
 		config = openai.DefaultConfig(token)
+		config.OrgID = orgId
 	}
 	gptClient := openai.NewClientWithConfig(config)
 

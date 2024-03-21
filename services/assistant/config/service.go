@@ -7,6 +7,7 @@ type OpenAI struct {
 	Token     string `json:"token,omitempty" koanf:"token"`
 	BaseURL   string `json:"base_url,omitempty" koanf:"base_url"`
 	ModelName string `json:"model_name,omitempty" koanf:"model_name"`
+	OrgId     string `json:"org_id,omitempty" koanf:"org_id"`
 }
 
 type AssistantConfig struct {
