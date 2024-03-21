@@ -39,9 +39,14 @@ type Service struct {
 	prompt    repository.Prompt
 }
 
-func NewQueryAssistant(logger *zap.Logger, token, baseURL, modelName string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
-	config := openai.DefaultAzureConfig(token, baseURL)
-	config.APIVersion = "2024-02-15-preview"
+func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+	var config openai.ClientConfig
+	if isAzure {
+		config = openai.DefaultAzureConfig(token, baseURL)
+		config.APIVersion = "2024-02-15-preview"
+	} else {
+		config = openai.DefaultConfig(token)
+	}
 	gptClient := openai.NewClientWithConfig(config)
 
 	files := map[string]string{}
