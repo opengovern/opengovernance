@@ -118,9 +118,16 @@ var resourceMapping = map[string]string{
 	"name":          "metadata.Name",
 }
 
+var resourceTypeMap = map[string]string{
+	"aws::ec2::volumegp3": "aws::ec2::volume",
+}
+
 var stopWordsRe = regexp.MustCompile(`\W+`)
 
 func ResourceTypeToESIndex(t string) string {
+	if rt, ok := resourceMapping[t]; ok {
+		t = rt
+	}
 	t = stopWordsRe.ReplaceAllString(t, "_")
 	return strings.ToLower(t)
 }
