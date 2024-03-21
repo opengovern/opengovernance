@@ -157,8 +157,8 @@ func ResourceTypeConversion(resourceType string) string {
 	return resourceType
 }
 
-func GetValues(resource Resource) (map[string]interface{}, error) {
-	switch strings.ToLower(resource.ResourceType) {
+func GetValues(resource Resource, resourceType string) (map[string]interface{}, error) {
+	switch strings.ToLower(resourceType) {
 	// AWS
 	case "aws::elasticloadbalancing::loadbalancer":
 		return getAwsLoadBalancerValues(resource)
@@ -374,17 +374,26 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 	}
 
 	plugin.Logger(ctx).Trace("Columns", d.EqualsQuals)
-	var indexes []string
+	var indexes []struct {
+		index        string
+		resourceType string
+	}
 	for column, q := range d.EqualsQuals {
 		if column == "resource_type" {
 			if s, ok := q.GetValue().(*proto.QualValue_StringValue); ok && s != nil {
-				indexes = []string{ResourceTypeToESIndex(s.StringValue)}
+				indexes = []struct {
+					index        string
+					resourceType string
+				}{{index: ResourceTypeToESIndex(s.StringValue), resourceType: s.StringValue}}
 			} else if l := q.GetListValue(); l != nil {
 				for _, v := range l.GetValues() {
 					if v == nil {
 						continue
 					}
-					indexes = append(indexes, v.GetStringValue())
+					indexes = append(indexes, struct {
+						index        string
+						resourceType string
+					}{index: v.GetStringValue(), resourceType: v.GetStringValue()})
 				}
 			}
 		}
@@ -400,7 +409,7 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 
 	for _, index := range indexes {
 		paginator, err := k.NewResourcePaginator(essdk.BuildFilterWithDefaultFieldName(ctx, d.QueryContext, resourceMapping,
-			"", nil, encodedResourceCollectionFilters, clientType, true), d.QueryContext.Limit, index)
+			"", nil, encodedResourceCollectionFilters, clientType, true), d.QueryContext.Limit, index.index)
 		if err != nil {
 			plugin.Logger(ctx).Error("ListResourceCostEstimate NewResourcePaginator", "error", err)
 			return nil, err
@@ -423,7 +432,7 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 				} else if hit.SourceType == source.CloudAzure.String() {
 					provider = schema.AzureProvider
 				}
-				values, err := GetValues(hit)
+				values, err := GetValues(hit, index.resourceType)
 				if err != nil {
 					plugin.Logger(ctx).Error("GetValues ", "error", err)
 					return nil, err
