@@ -55,7 +55,7 @@ func Command() *cobra.Command {
 				logger.Error("failed to create query assistant actions", zap.Error(err))
 			}
 			go queryAssistantActions.RunActions()
-			redirectAssistantActions, err := actions.NewRedirectAssistantActions(logger, cnf, redirectionAssistant, repository.NewRun(database), onboardServiceClient)
+			redirectAssistantActions, err := actions.NewRedirectAssistantActions(logger, cnf, redirectionAssistant, repository.NewRun(database), onboardServiceClient, inventoryServiceClient)
 			if err != nil {
 				logger.Error("failed to create redirection assistant actions", zap.Error(err))
 			}

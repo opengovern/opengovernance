@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/goccy/go-yaml"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/config"
@@ -15,6 +18,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
+	"sort"
 	"strings"
 	"time"
 )
@@ -25,19 +29,22 @@ type RedirectAssistantActionsService struct {
 	runRepo repository.Run
 	cnf     config.AssistantConfig
 
-	onboardClient onboardClient.OnboardServiceClient
+	onboardClient   onboardClient.OnboardServiceClient
+	inventoryClient inventoryClient.InventoryServiceClient
 }
 
-func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, oc *openai.Service, runRepo repository.Run, onboardClient onboardClient.OnboardServiceClient) (Service, error) {
+func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, oc *openai.Service, runRepo repository.Run,
+	onboardClient onboardClient.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient) (Service, error) {
 	if oc.AssistantName != model.AssistantTypeRedirection {
 		return nil, errors.New(fmt.Sprintf("incompatible assistant type %v", oc.AssistantName))
 	}
 	return &RedirectAssistantActionsService{
-		logger:        logger,
-		oc:            oc,
-		runRepo:       runRepo,
-		cnf:           cnf,
-		onboardClient: onboardClient,
+		logger:          logger,
+		oc:              oc,
+		runRepo:         runRepo,
+		cnf:             cnf,
+		onboardClient:   onboardClient,
+		inventoryClient: inventoryClient,
 	}, nil
 }
 
@@ -101,6 +108,16 @@ func (s *RedirectAssistantActionsService) run() error {
 						out, err := s.GetConnectionKaytuIDFromNameOrProviderID(call)
 						if err != nil {
 							s.logger.Error("failed to get connection kaytu id from name or provider id", zap.Error(err))
+							out = fmt.Sprintf("Failed to run due to %v", err)
+						}
+						output = append(output, openai2.ToolOutput{
+							ToolCallID: call.ID,
+							Output:     out,
+						})
+					case "GetMetricValues":
+						out, err := s.GetMetricValues(call)
+						if err != nil {
+							s.logger.Error("failed to get metric values", zap.Error(err))
 							out = fmt.Sprintf("Failed to run due to %v", err)
 						}
 						output = append(output, openai2.ToolOutput{
@@ -197,4 +214,127 @@ func (s *RedirectAssistantActionsService) GetConnectionKaytuIDFromNameOrProvider
 
 	s.logger.Error("name or provider_id not found in input", zap.Any("args", gptArgs))
 	return "", errors.New(fmt.Sprintf("name or provider_id not found in input"))
+}
+
+type AssistantTrendDataPoint struct {
+	Value float64   `json:"value" yaml:"value"`
+	Date  time.Time `json:"time" yaml:"date"`
+}
+
+func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall) (string, error) {
+	if call.Function.Name != "GetMetricValues" {
+		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
+	}
+	var gptArgs map[string]any
+	err := json.Unmarshal([]byte(call.Function.Arguments), &gptArgs)
+	if err != nil {
+		s.logger.Error("failed to unmarshal gpt args", zap.Error(err), zap.String("args", call.Function.Arguments))
+		return "", err
+	}
+
+	metricType := ""
+	if metricTypeAny, ok := gptArgs["metric_type"]; ok {
+		metricType, ok = metricTypeAny.(string)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid metric_type %v", metricTypeAny))
+		}
+		metricType = strings.ToLower(metricType)
+		if metricType != string(analyticsDB.MetricTypeAssets) && metricType != string(analyticsDB.MetricTypeSpend) {
+			return "", errors.New(fmt.Sprintf("invalid metric_type %v must be %s or %s", metricType, analyticsDB.MetricTypeAssets, analyticsDB.MetricTypeSpend))
+		}
+	} else {
+		return "", errors.New(fmt.Sprintf("metric_type not found in %v", gptArgs))
+	}
+
+	metricId := ""
+	if metricIdAny, ok := gptArgs["metric_id"]; ok {
+		metricId, ok = metricIdAny.(string)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid metric_id type %T must be string", metricIdAny))
+		}
+	} else {
+		return "", errors.New(fmt.Sprintf("metric_id not found in %v", gptArgs))
+	}
+
+	startTime := int64(0)
+	if startTimeAny, ok := gptArgs["start_time"]; ok {
+		startTime, ok = startTimeAny.(int64)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid start_time type %T must be int", startTimeAny))
+		}
+	} else {
+		return "", errors.New(fmt.Sprintf("start_time not found in %v", gptArgs))
+	}
+	endTime := int64(0)
+	if endTimeAny, ok := gptArgs["end_time"]; ok {
+		endTime, ok = endTimeAny.(int64)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid end_time type %T must be int", endTimeAny))
+		}
+	} else {
+		return "", errors.New(fmt.Sprintf("end_time not found in %v", gptArgs))
+	}
+	connections := make([]string, 0)
+	if connectionsAny, ok := gptArgs["connections"]; ok {
+		connectionsAnyArray, ok := connectionsAny.([]any)
+		if !ok {
+			return "", errors.New(fmt.Sprintf("invalid connections type %T must be []string", connectionsAnyArray))
+		}
+		for _, connectionAny := range connectionsAnyArray {
+			connection, ok := connectionAny.(string)
+			if !ok {
+				return "", errors.New(fmt.Sprintf("invalid connection type %T must be string", connectionAny))
+			}
+			connections = append(connections, connection)
+		}
+	}
+
+	result := make([]AssistantTrendDataPoint, 0)
+
+	switch metricType {
+	case string(analyticsDB.MetricTypeAssets):
+		trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
+			[]string{metricId}, connections,
+			utils.GetPointer(time.Unix(startTime, 0)),
+			utils.GetPointer(time.Unix(endTime, 0)))
+		if err != nil {
+			s.logger.Error("failed to list analytics metric trend", zap.Error(err))
+			return "", fmt.Errorf("there has been a backend error: %v", err)
+		}
+		for _, trendDatapoint := range trendDatapoints {
+			result = append(result, AssistantTrendDataPoint{
+				Value: float64(trendDatapoint.Count),
+				Date:  trendDatapoint.Date,
+			})
+
+		}
+	case string(analyticsDB.MetricTypeSpend):
+		trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
+			[]string{metricId}, connections,
+			utils.GetPointer(time.Unix(startTime, 0)),
+			utils.GetPointer(time.Unix(endTime, 0)))
+		if err != nil {
+			s.logger.Error("failed to list analytics metric trend", zap.Error(err))
+			return "", fmt.Errorf("there has been a backend error: %v", err)
+		}
+		for _, trendDatapoint := range trendDatapoints {
+			result = append(result, AssistantTrendDataPoint{
+				Value: float64(trendDatapoint.Count),
+				Date:  trendDatapoint.Date,
+			})
+		}
+	}
+
+	//sort
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Date.Before(result[j].Date)
+	})
+
+	resultYaml, err := yaml.Marshal(result)
+	if err != nil {
+		s.logger.Error("failed to marshal result", zap.Error(err))
+		return "", fmt.Errorf("failed to marshal result: %v", err)
+	}
+
+	return string(resultYaml), nil
 }

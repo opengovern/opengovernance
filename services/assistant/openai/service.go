@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -207,6 +208,43 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 								"description": "The id of the connection in the cloud provider",
 							},
 						},
+					},
+				},
+			},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetMetricValues",
+					Description: "Get metric values from the provided metric id, start and end time with optional list of kaytu connection ids",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"metric_id": map[string]any{
+								"type":        "string",
+								"description": "The id of the metric",
+							},
+							"metric_type": map[string]any{
+								"type":        "string",
+								"enum":        []string{string(analyticsDB.MetricTypeAssets), string(analyticsDB.MetricTypeSpend)},
+								"description": "The type of the metric",
+							},
+							"start_time": map[string]any{
+								"type":        "number",
+								"description": "The start of the time interval to fetch data for in epoch seconds",
+							},
+							"end_time": map[string]any{
+								"type":        "number",
+								"description": "The end of the time interval to fetch data for in epoch seconds",
+							},
+							"connections": map[string]any{
+								"type":        "array",
+								"description": "The list of connection ids to filter the metric values",
+								"items": map[string]any{
+									"type": "string",
+								},
+							},
+						},
+						"required": []string{"metric_id", "metric_type", "start_time", "end_time"},
 					},
 				},
 			},

@@ -28,6 +28,8 @@ type InventoryServiceClient interface {
 	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
 	ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
+	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
+	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
 }
 
 type inventoryClient struct {
@@ -427,6 +429,114 @@ func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]ap
 	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection", s.baseURL)
 
 	var response []api.ResourceCollection
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *inventoryClient) ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error) {
+	url := fmt.Sprintf("%s/api/v2/analytics/trend", s.baseURL)
+	firstParamAttached := false
+	if len(metricIds) > 0 {
+		for _, metricId := range metricIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("ids=%s", metricId)
+		}
+	}
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if startTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
+	}
+	if endTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
+	}
+
+	var response []api.ResourceTypeTrendDatapoint
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error) {
+	url := fmt.Sprintf("%s/api/v2/analytics/spend/trend", s.baseURL)
+	firstParamAttached := false
+	if len(metricIds) > 0 {
+		for _, metricId := range metricIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("metricIds=%s", metricId)
+		}
+	}
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if startTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
+	}
+	if endTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
+	}
+
+	var response []api.CostTrendDatapoint
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
