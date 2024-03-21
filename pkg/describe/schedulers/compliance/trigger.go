@@ -18,6 +18,7 @@ func (s *JobScheduler) buildRunners(
 	rootBenchmarkID string,
 	parentBenchmarkIDs []string,
 	benchmarkID string,
+	currentRunnerExistMap map[string]bool,
 ) ([]*model.ComplianceRunner, error) {
 	ctx := &httpclient.Context{UserRole: api2.InternalRole}
 	var runners []*model.ComplianceRunner
@@ -27,9 +28,20 @@ func (s *JobScheduler) buildRunners(
 		s.logger.Error("error while getting benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return nil, err
 	}
+	if currentRunnerExistMap == nil {
+		currentRunners, err := s.db.GetRunnersByParentJobID(parentJobID)
+		if err != nil {
+			s.logger.Error("error while getting current runners", zap.Error(err))
+			return nil, err
+		}
+		currentRunnerExistMap = make(map[string]bool)
+		for _, r := range currentRunners {
+			currentRunnerExistMap[r.GetKeyIdentifier()] = true
+		}
+	}
 
 	for _, child := range benchmark.Children {
-		childRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child)
+		childRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap)
 		if err != nil {
 			s.logger.Error("error while building child runners", zap.Error(err))
 			return nil, err
@@ -104,103 +116,106 @@ func (s *JobScheduler) buildRunners(
 
 	var jobs []*model.ComplianceRunner
 	for _, v := range uniqueMap {
-		jobs = append(jobs, v)
+		if !currentRunnerExistMap[v.GetKeyIdentifier()] {
+			jobs = append(jobs, v)
+		}
 	}
 	return jobs, nil
 }
 
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 	lastJob *model.ComplianceJob, connectionIDs []string) (uint, error) {
-	var assignments *complianceApi.BenchmarkAssignedEntities
-	var err error
-	if len(connectionIDs) > 0 {
-		connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api2.InternalRole}, connectionIDs)
-		if err != nil {
-			s.logger.Error("error while getting sources", zap.Error(err))
-			return 0, err
-		}
-		assignments = &complianceApi.BenchmarkAssignedEntities{}
-		for _, connection := range connections {
-			assignment := complianceApi.BenchmarkAssignedConnection{
-				ConnectionID:           connection.ID.String(),
-				ProviderConnectionID:   connection.ConnectionID,
-				ProviderConnectionName: connection.ConnectionName,
-				Connector:              connection.Connector,
-				Status:                 true,
-			}
-			assignments.Connections = append(assignments.Connections, assignment)
-		}
-	} else {
-		assignments, err = s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
-		if err != nil {
-			s.logger.Error("error while listing assignments", zap.Error(err))
-			return 0, err
-		}
-	}
-
 	// delete old runners
 	if lastJob != nil {
-		err = s.db.DeleteOldRunnerJob(&lastJob.ID)
+		err := s.db.DeleteOldRunnerJob(&lastJob.ID)
 		if err != nil {
 			s.logger.Error("error while deleting old runners", zap.Error(err))
 			return 0, err
 		}
 	} else {
-		err = s.db.DeleteOldRunnerJob(nil)
+		err := s.db.DeleteOldRunnerJob(nil)
 		if err != nil {
 			s.logger.Error("error while deleting old runners", zap.Error(err))
 			return 0, err
 		}
 	}
 
-	transaction := s.db.ORM.Begin()
-	defer transaction.Rollback()
 	job := model.ComplianceJob{
-		BenchmarkID: benchmarkID,
-		Status:      model.ComplianceJobCreated,
-		IsStack:     false,
+		BenchmarkID:         benchmarkID,
+		Status:              model.ComplianceJobCreated,
+		AreAllRunnersQueued: false,
+		ConnectionIDs:       connectionIDs,
+		IsStack:             false,
 	}
-	err = s.db.CreateComplianceJob(transaction, &job)
+	err := s.db.CreateComplianceJob(nil, &job)
 	if err != nil {
 		s.logger.Error("error while creating compliance job", zap.Error(err))
 		return 0, err
 	}
 
-	var allRunners []*model.ComplianceRunner
-	for _, it := range assignments.Connections {
-		if !it.Status {
-			continue
-		}
-		connection := it
-		runners, err := s.buildRunners(job.ID, &connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
-		if err != nil {
-			s.logger.Error("error while building runners", zap.Error(err))
-			return 0, err
-		}
-		allRunners = append(allRunners, runners...)
-	}
-
-	// We don't need to create runners for resource collections anymore because we are handling it in the summarizer
-	//for _, it := range assignments.ResourceCollections {
-	//	resourceCollection := it
-	//	runners, err := s.buildRunners(job.ID, nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	//	allRunners = append(allRunners, runners...)
-	//}
-
-	err = s.db.CreateRunnerJobs(transaction, allRunners)
-	if err != nil {
-		s.logger.Error("error while creating runners", zap.Error(err))
-		return 0, err
-	}
-
-	err = transaction.Commit().Error
-	if err != nil {
-		s.logger.Error("error while committing transaction", zap.Error(err))
-		return 0, err
-	}
-
 	return job.ID, nil
+}
+
+func (s *JobScheduler) EnqueueRunnersCycle() error {
+	var err error
+	jobsWithUnqueuedRunners, err := s.db.ListComplianceJobsWithUnqueuedRunners()
+	if err != nil {
+		s.logger.Error("error while listing jobs with unqueued runners", zap.Error(err))
+		return err
+	}
+	for _, job := range jobsWithUnqueuedRunners {
+		var allRunners []*model.ComplianceRunner
+		var assignments *complianceApi.BenchmarkAssignedEntities
+		if len(job.ConnectionIDs) > 0 {
+			connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api2.InternalRole}, job.ConnectionIDs)
+			if err != nil {
+				s.logger.Error("error while getting sources", zap.Error(err))
+				continue
+			}
+			assignments = &complianceApi.BenchmarkAssignedEntities{}
+			for _, connection := range connections {
+				assignment := complianceApi.BenchmarkAssignedConnection{
+					ConnectionID:           connection.ID.String(),
+					ProviderConnectionID:   connection.ConnectionID,
+					ProviderConnectionName: connection.ConnectionName,
+					Connector:              connection.Connector,
+					Status:                 true,
+				}
+				assignments.Connections = append(assignments.Connections, assignment)
+			}
+		} else {
+			assignments, err = s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, job.BenchmarkID)
+			if err != nil {
+				s.logger.Error("error while listing assignments", zap.Error(err))
+				continue
+			}
+		}
+		for _, it := range assignments.Connections {
+			if !it.Status {
+				continue
+			}
+			connection := it
+			runners, err := s.buildRunners(job.ID, &connection.ConnectionID, nil, job.BenchmarkID, nil, job.BenchmarkID, nil)
+			if err != nil {
+				s.logger.Error("error while building runners", zap.Error(err))
+				return err
+			}
+			allRunners = append(allRunners, runners...)
+		}
+		if len(allRunners) > 0 {
+			err = s.db.CreateRunnerJobs(nil, allRunners)
+			if err != nil {
+				s.logger.Error("error while creating runners", zap.Error(err))
+				return err
+			}
+		} else {
+			err = s.db.UpdateComplianceJobAreAllRunnersQueued(job.ID, true)
+			if err != nil {
+				s.logger.Error("error while updating compliance job", zap.Error(err))
+				return err
+			}
+		}
+	}
+
+	return nil
 }
