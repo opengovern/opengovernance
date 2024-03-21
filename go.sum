@@ -1724,10 +1724,10 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.32.36 h1:43v/wnqVFP+geJlm4wy00X6X1ylDDJ0WpeJ9oXZfreQ=
-github.com/kaytu-io/kaytu-aws-describer v0.32.36/go.mod h1:5Ez3mT3JaGhJRbmAEtrFToBEvsSjtJ5ZGZknr4V5PVM=
-github.com/kaytu-io/kaytu-azure-describer v0.24.20 h1:T2e8Q+b3v3pp/Ie1emgRyqUBY1+m3dVtkafgLFz+ZdU=
-github.com/kaytu-io/kaytu-azure-describer v0.24.20/go.mod h1:dDXCX/jIWCiGOAwa7p0sjPvflOqHXaolj50YI+CVvuk=
+github.com/kaytu-io/kaytu-aws-describer v0.32.37 h1:Hyq0rYuxFycl+8RS/iIgmjLK+P9tFEBWaf8yK3fhxKs=
+github.com/kaytu-io/kaytu-aws-describer v0.32.37/go.mod h1:5Ez3mT3JaGhJRbmAEtrFToBEvsSjtJ5ZGZknr4V5PVM=
+github.com/kaytu-io/kaytu-azure-describer v0.24.21 h1:u2QqE9q4OaLE1Q4CFUo/8KLCcLxwU68ofUbUH8U1GAU=
+github.com/kaytu-io/kaytu-azure-describer v0.24.21/go.mod h1:dDXCX/jIWCiGOAwa7p0sjPvflOqHXaolj50YI+CVvuk=
 github.com/kaytu-io/kaytu-util v0.0.0-20240321093255-fa3e0be382a2 h1:/20ZmJJ80Io94fhkc/zzYhT6HLdXRl9EWhG47RqH43w=
 github.com/kaytu-io/kaytu-util v0.0.0-20240321093255-fa3e0be382a2/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
