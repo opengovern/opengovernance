@@ -156,14 +156,17 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 	return job.ID, nil
 }
 
-func (s *JobScheduler) EnqueueRunnersCycle() error {
+func (s *JobScheduler) enqueueRunnersCycle() error {
+	s.logger.Info("enqueue runners cycle started")
 	var err error
 	jobsWithUnqueuedRunners, err := s.db.ListComplianceJobsWithUnqueuedRunners()
 	if err != nil {
 		s.logger.Error("error while listing jobs with unqueued runners", zap.Error(err))
 		return err
 	}
+	s.logger.Info("jobs with unqueued runners", zap.Int("count", len(jobsWithUnqueuedRunners)))
 	for _, job := range jobsWithUnqueuedRunners {
+		s.logger.Info("processing job with unqueued runners", zap.Uint("jobID", job.ID))
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
 		if len(job.ConnectionIDs) > 0 {
@@ -203,12 +206,14 @@ func (s *JobScheduler) EnqueueRunnersCycle() error {
 			allRunners = append(allRunners, runners...)
 		}
 		if len(allRunners) > 0 {
+			s.logger.Info("creating runners", zap.Int("count", len(allRunners)), zap.Uint("jobID", job.ID))
 			err = s.db.CreateRunnerJobs(nil, allRunners)
 			if err != nil {
 				s.logger.Error("error while creating runners", zap.Error(err))
 				return err
 			}
 		} else {
+			s.logger.Info("no runners to create", zap.Uint("jobID", job.ID))
 			err = s.db.UpdateComplianceJobAreAllRunnersQueued(job.ID, true)
 			if err != nil {
 				s.logger.Error("error while updating compliance job", zap.Error(err))

@@ -54,6 +54,9 @@ func (s *JobScheduler) Run() {
 		s.RunScheduler()
 	})
 	utils.EnsureRunGoroutine(func() {
+		s.RunEnqueueRunnersCycle()
+	})
+	utils.EnsureRunGoroutine(func() {
 		s.RunPublisher()
 	})
 	utils.EnsureRunGoroutine(func() {
@@ -77,6 +80,20 @@ func (s *JobScheduler) RunScheduler() {
 		if err := s.runScheduler(); err != nil {
 			s.logger.Error("failed to run compliance scheduler", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
+			continue
+		}
+	}
+}
+
+func (s JobScheduler) RunEnqueueRunnersCycle() {
+	s.logger.Info("enqueue runners cycle on a timer")
+
+	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		if err := s.enqueueRunnersCycle(); err != nil {
+			s.logger.Error("failed to run compliance scheduler", zap.Error(err))
 			continue
 		}
 	}
