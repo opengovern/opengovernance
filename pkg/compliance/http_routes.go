@@ -4088,6 +4088,7 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
+		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlId", controlId))
 		return err
 	}
 	span1.AddEvent("information", trace.WithAttributes(
@@ -4108,6 +4109,7 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
+		h.logger.Error("failed to populate connector", zap.Error(err), zap.String("controlId", controlId))
 		return err
 	}
 	span2.End()
