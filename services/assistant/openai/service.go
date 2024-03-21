@@ -229,11 +229,11 @@ func NewRedirectionAssistant(logger *zap.Logger, token, baseURL, modelName strin
 								"description": "The type of the metric",
 							},
 							"start_time": map[string]any{
-								"type":        "number",
+								"type":        "integer",
 								"description": "The start of the time interval to fetch data for in epoch seconds",
 							},
 							"end_time": map[string]any{
-								"type":        "number",
+								"type":        "integer",
 								"description": "The end of the time interval to fetch data for in epoch seconds",
 							},
 							"connections": map[string]any{
