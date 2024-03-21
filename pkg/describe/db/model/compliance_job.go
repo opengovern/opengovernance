@@ -30,7 +30,7 @@ type ComplianceJob struct {
 	BenchmarkID         string
 	Status              ComplianceJobStatus
 	AreAllRunnersQueued bool
-	ConnectionIDs       pq.StringArray
+	ConnectionIDs       pq.StringArray `gorm:"type:text[]"`
 	FailureMessage      string
 	IsStack             bool
 }
