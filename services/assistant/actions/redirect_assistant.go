@@ -260,7 +260,11 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 	if startTimeAny, ok := gptArgs["start_time"]; ok {
 		startTime, ok = startTimeAny.(int64)
 		if !ok {
-			return "", errors.New(fmt.Sprintf("invalid start_time type %T must be int", startTimeAny))
+			startTimeFloat, ok := startTimeAny.(float64)
+			if !ok {
+				return "", errors.New(fmt.Sprintf("invalid start_time type %T must be int or float", startTimeAny))
+			}
+			startTime = int64(startTimeFloat)
 		}
 	} else {
 		return "", errors.New(fmt.Sprintf("start_time not found in %v", gptArgs))
@@ -269,7 +273,11 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 	if endTimeAny, ok := gptArgs["end_time"]; ok {
 		endTime, ok = endTimeAny.(int64)
 		if !ok {
-			return "", errors.New(fmt.Sprintf("invalid end_time type %T must be int", endTimeAny))
+			endTimeFloat, ok := endTimeAny.(float64)
+			if !ok {
+				return "", errors.New(fmt.Sprintf("invalid end_time type %T must be int or float", endTimeAny))
+			}
+			endTime = int64(endTimeFloat)
 		}
 	} else {
 		return "", errors.New(fmt.Sprintf("end_time not found in %v", gptArgs))
