@@ -1728,6 +1728,8 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.32.29 h1:sUneqZEbQ5dTMFzdSaijX9lsddb0NYgYFXX37jo9b4Y=
 github.com/kaytu-io/kaytu-aws-describer v0.32.29/go.mod h1:nltfouNMZinykTsKw9LDbM/Ndd8ey7cWYAWG+RIimac=
+github.com/kaytu-io/kaytu-aws-describer v0.32.30 h1:T9dD5hwERzu2hzQSxPSidMjS3c37XGx6d8k70+9GUH4=
+github.com/kaytu-io/kaytu-aws-describer v0.32.30/go.mod h1:nltfouNMZinykTsKw9LDbM/Ndd8ey7cWYAWG+RIimac=
 github.com/kaytu-io/kaytu-azure-describer v0.23.42 h1:NAdL2W3jlTuHR8Ai0b6MWm9l+pzJNBP/QFDWpBRgGUo=
 github.com/kaytu-io/kaytu-azure-describer v0.23.42/go.mod h1:Yp9QhIhrr9e8APn4uLrQxPjWV2PeFDHtwee0O0zzMJc=
 github.com/kaytu-io/kaytu-azure-describer v0.23.43 h1:7A7zJPhuLmro09Mh6OQuA1RifEz85vGLMzO6GEyXDeQ=
@@ -1756,6 +1758,8 @@ github.com/kaytu-io/kaytu-azure-describer v0.24.8 h1:QsjMkth8uih5Exo+nk/WYYkCU5x
 github.com/kaytu-io/kaytu-azure-describer v0.24.8/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
 github.com/kaytu-io/kaytu-azure-describer v0.24.10 h1:DMePpJGbQIQDU+zSPmeaYXFQp7+btnY/k1kT9oup2hE=
 github.com/kaytu-io/kaytu-azure-describer v0.24.10/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
+github.com/kaytu-io/kaytu-azure-describer v0.24.14 h1:pHn0x12BU5wx5rIP4MuMo960Yeumgb9+ABxji7Ym4Bs=
+github.com/kaytu-io/kaytu-azure-describer v0.24.14/go.mod h1:E17IzbF8A6yIHVC4Zs6Nj6bPELmeZEEYCPCtieq3oYg=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee h1:vWKE/SQIFXcOGekqmfPbUcAt5xepH1LHI06hefhRfGE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240304212713-311bbef6aeee/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/kaytu-util v0.0.0-20240318153412-51f644bed630 h1:MX4Td51GqNEbpoY9KqBpMUw6mJ5OQaTRHSA78PhkL4c=
