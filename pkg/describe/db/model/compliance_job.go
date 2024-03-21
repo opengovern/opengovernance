@@ -2,9 +2,11 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"
 )
@@ -25,10 +27,12 @@ func (c ComplianceJobStatus) ToApi() api.ComplianceJobStatus {
 
 type ComplianceJob struct {
 	gorm.Model
-	BenchmarkID    string
-	Status         ComplianceJobStatus
-	FailureMessage string
-	IsStack        bool
+	BenchmarkID         string
+	Status              ComplianceJobStatus
+	AreAllRunnersQueued bool
+	ConnectionIDs       pq.StringArray
+	FailureMessage      string
+	IsStack             bool
 }
 
 func (c ComplianceJob) ToApi() api.ComplianceJob {
@@ -56,6 +60,14 @@ type ComplianceRunner struct {
 	Status            runner.ComplianceRunnerStatus
 	FailureMessage    string
 	RetryCount        int
+}
+
+func (cr *ComplianceRunner) GetKeyIdentifier() string {
+	cid := "all"
+	if cr.ConnectionID != nil {
+		cid = *cr.ConnectionID
+	}
+	return fmt.Sprintf("%s-%s-%s-%d", cr.BenchmarkID, cr.QueryID, cid, cr.ParentJobID)
 }
 
 func (cr *ComplianceRunner) GetCallers() ([]runner.Caller, error) {
