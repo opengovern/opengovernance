@@ -93,7 +93,7 @@ func (s JobScheduler) RunEnqueueRunnersCycle() {
 
 	for ; ; <-t.C {
 		if err := s.enqueueRunnersCycle(); err != nil {
-			s.logger.Error("failed to run compliance scheduler", zap.Error(err))
+			s.logger.Error("failed to run enqueue runners cycle", zap.Error(err))
 			continue
 		}
 	}
