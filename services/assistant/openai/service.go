@@ -218,7 +218,7 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 								"type":        "number",
 								"description": "The limit of the result",
 							},
-							"order_by": map[string]any{
+							"orderBy": map[string]any{
 								"type":        "string",
 								"description": "The order by field",
 								"enum":        []string{"asc", "dsc"},
@@ -231,7 +231,7 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 								"type":        "number",
 								"description": "The end date in epoch seconds",
 							},
-							"primary_goal": map[string]any{
+							"primaryGoal": map[string]any{
 								"type":        "string",
 								"description": "The primary goal",
 								"enum":        []string{"cloud_account", "metric"},
@@ -243,7 +243,7 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 									"type": "string",
 								},
 							},
-							"metric_id": map[string]any{
+							"metricId": map[string]any{
 								"type":        "array",
 								"description": "The list of metric ids",
 								"items": map[string]any{
@@ -252,43 +252,6 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 							},
 						},
 						"required": []string{"resultLimit", "order_by", "primary_goal"},
-					},
-				},
-			},
-			{
-				Type: openai.AssistantToolTypeFunction,
-				Function: &openai.FunctionDefinition{
-					Name:        "GetMetricValues",
-					Description: "Get metric values from the provided metric id, start and end time with optional list of kaytu connection ids",
-					Parameters: map[string]any{
-						"type": "object",
-						"properties": map[string]any{
-							"metric_id": map[string]any{
-								"type":        "string",
-								"description": "The id of the metric",
-							},
-							"metric_type": map[string]any{
-								"type":        "string",
-								"enum":        []string{string(analyticsDB.MetricTypeAssets), string(analyticsDB.MetricTypeSpend)},
-								"description": "The type of the metric",
-							},
-							"start_time": map[string]any{
-								"type":        "integer",
-								"description": "The start of the time interval to fetch data for in epoch seconds",
-							},
-							"end_time": map[string]any{
-								"type":        "integer",
-								"description": "The end of the time interval to fetch data for in epoch seconds",
-							},
-							"connections": map[string]any{
-								"type":        "array",
-								"description": "The list of connection ids to filter the metric values",
-								"items": map[string]any{
-									"type": "string",
-								},
-							},
-						},
-						"required": []string{"metric_id", "metric_type", "start_time", "end_time"},
 					},
 				},
 			},

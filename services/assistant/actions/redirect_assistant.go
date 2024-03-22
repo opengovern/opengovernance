@@ -400,7 +400,7 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 	}
 
 	orderBy := ""
-	if orderByAny, ok := gptArgs["order_by"]; ok {
+	if orderByAny, ok := gptArgs["orderBy"]; ok {
 		orderBy, ok = orderByAny.(string)
 		if !ok {
 			return "", errors.New(fmt.Sprintf("invalid orderBy type %T must be string", orderByAny))
@@ -413,7 +413,7 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 	}
 
 	primaryGoal := ""
-	if primaryGoalAny, ok := gptArgs["primary_goal"]; ok {
+	if primaryGoalAny, ok := gptArgs["primaryGoal"]; ok {
 		primaryGoal, ok = primaryGoalAny.(string)
 		if !ok {
 			return "", errors.New(fmt.Sprintf("invalid primaryGoal type %T must be string", primaryGoalAny))
@@ -471,7 +471,7 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 	}
 
 	metricIds := make([]string, 0)
-	if metricIdsAny, ok := gptArgs["metric_id"]; ok {
+	if metricIdsAny, ok := gptArgs["metricId"]; ok {
 		metricIdsAnyArray, ok := metricIdsAny.([]any)
 		if !ok {
 			return "", errors.New(fmt.Sprintf("invalid metric_id type %T must be []string", metricIdsAny))
