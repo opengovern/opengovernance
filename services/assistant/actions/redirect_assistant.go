@@ -18,6 +18,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"sort"
@@ -360,10 +361,11 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 }
 
 type AssistantGeneralMetricsConnectionData struct {
-	KaytuConnectionID      string `json:"kaytu_connection_id" yaml:"kaytu_connection_id"`
-	ProviderConnectionID   string `json:"provider_connection_id" yaml:"provider_connection_id"`
-	ProviderConnectionName string `json:"provider_connection_name" yaml:"provider_connection_name"`
-	ResourceCount          *int   `json:"resource_count" yaml:"resource_count"`
+	KaytuConnectionID      string      `json:"kaytu_connection_id" yaml:"kaytu_connection_id"`
+	ProviderConnectionID   string      `json:"provider_connection_id" yaml:"provider_connection_id"`
+	ProviderConnectionName string      `json:"provider_connection_name" yaml:"provider_connection_name"`
+	Provider               source.Type `json:"provider" yaml:"provider"`
+	ResourceCount          *int        `json:"resource_count" yaml:"resource_count"`
 }
 
 type AssistantGeneralMetricsMetricData struct {
@@ -539,6 +541,7 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 				KaytuConnectionID:      connectionData.ConnectionID,
 				ProviderConnectionID:   connectionsMetadataMap[connectionData.ConnectionID].ConnectionID,
 				ProviderConnectionName: connectionsMetadataMap[connectionData.ConnectionID].ConnectionName,
+				Provider:               connectionsMetadataMap[connectionData.ConnectionID].Connector,
 				ResourceCount:          connectionData.Count,
 			})
 		}
