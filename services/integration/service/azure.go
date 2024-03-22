@@ -74,7 +74,7 @@ func (h Credential) NewAzureConnection(
 		name = *sub.SubModel.DisplayName
 	}
 
-	metadata := model.NewAzureConnectionMetadata(&sub)
+	metadata := model.NewAzureConnectionMetadata(&sub, creds.TenantID)
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		jsonMetadata = []byte("{}")
@@ -527,7 +527,7 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 			return connection, err
 		}
 
-		metadata := model.NewAzureConnectionMetadata(subscription)
+		metadata := model.NewAzureConnectionMetadata(subscription, subscriptionConfig.TenantID)
 		var jsonMetadata []byte
 		jsonMetadata, err = json.Marshal(metadata)
 		if err != nil {

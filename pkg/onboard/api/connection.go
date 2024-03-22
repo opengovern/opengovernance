@@ -73,6 +73,16 @@ type Connection struct {
 	supportedResourceTypes map[string]bool
 }
 
+func (c *Connection) TenantID() string {
+	var TenantID string
+	if tenantId, ok := c.Metadata["tenant_id"]; ok {
+		if tenantIdStr, ok := tenantId.(string); ok {
+			TenantID = tenantIdStr
+		}
+	}
+	return TenantID
+}
+
 func (c *Connection) GetSupportedResourceTypeMap() map[string]bool {
 	if c.supportedResourceTypes != nil {
 		return c.supportedResourceTypes

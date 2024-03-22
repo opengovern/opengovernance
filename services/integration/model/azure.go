@@ -52,6 +52,7 @@ type AzureSubscription struct {
 
 // AzureConnectionMetadata converts into json and stored along side its connection.
 type AzureConnectionMetadata struct {
+	TenantID       string                       `json:"tenant_id"`
 	SubscriptionID string                       `json:"subscription_id"`
 	SubModel       armsubscription.Subscription `json:"subscription_model"`
 	SubTags        map[string][]string          `json:"subscription_tags"`
@@ -59,11 +60,13 @@ type AzureConnectionMetadata struct {
 
 func NewAzureConnectionMetadata(
 	sub *AzureSubscription,
+	tenantID string,
 ) AzureConnectionMetadata {
 	metadata := AzureConnectionMetadata{
 		SubscriptionID: sub.SubscriptionID,
 		SubModel:       sub.SubModel,
 		SubTags:        make(map[string][]string),
+		TenantID:       tenantID,
 	}
 	for _, tag := range sub.SubTags {
 		if tag.TagName == nil || tag.Count == nil {

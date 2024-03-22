@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"math/rand"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -299,6 +301,10 @@ func (s *Scheduler) scheduleDescribeJob() {
 				s.logger.Warn("resource type is not supported on this connection, skipping describe", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType))
 				continue
 			}
+
+			if azureAdOnlyOnOneConnection(connections, connection, resourceType) {
+				continue
+			}
 			_, err = s.describe(connection, resourceType, true, false)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
@@ -322,6 +328,33 @@ func (s *Scheduler) scheduleDescribeJob() {
 	}
 
 	DescribeJobsCount.WithLabelValues("successful").Inc()
+}
+
+func azureAdOnlyOnOneConnection(connections []apiOnboard.Connection, connection apiOnboard.Connection, resourceType string) bool {
+	if connection.Connector != source.CloudAzure {
+		return false
+	}
+
+	if steampipe.ExtractPlugin(resourceType) != steampipe.SteampipePluginAzureAD {
+		return false
+	}
+
+	connectionTenantID := connection.TenantID()
+	if connectionTenantID != "" {
+		var connectionIDs []string
+		for _, c := range connections {
+			if c.TenantID() == connectionTenantID {
+				connectionIDs = append(connectionIDs, c.ID.String())
+			}
+		}
+
+		sort.Strings(connectionIDs)
+
+		if connection.ID.String() != connectionIDs[0] {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Scheduler) retryFailedJobs() error {
