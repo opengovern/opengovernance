@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"net"
 	"net/http"
 	"strconv"
@@ -499,6 +500,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.RunDisabledConnectionCleanup()
 	})
+	utils.EnsureRunGoroutine(func() {
+		s.RunRemoveResourcesConnectionJobsCleanup()
+	})
 	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("CheckupJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer(ctx)))
@@ -564,6 +568,33 @@ func (s *Scheduler) RunDisabledConnectionCleanup() {
 			s.cleanupDescribeResourcesForConnections(disabledConnectionIds)
 		}
 
+	}
+}
+
+func (s *Scheduler) RunRemoveResourcesConnectionJobsCleanup() {
+	ticker := ticker.NewTicker(2*time.Minute, time.Second*10)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		jobs, err := s.db.ListDescribeJobsByStatus(api.DescribeResourceJobRemovingResources)
+		if err != nil {
+			s.logger.Error("Failed to list jobs", zap.Error(err))
+			continue
+		}
+
+		for _, j := range jobs {
+			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.ConnectionID, j.ResourceType)
+			if err != nil {
+				s.logger.Error("Failed to remove old resources", zap.Error(err))
+				continue
+			}
+
+			err = s.db.UpdateDescribeConnectionJobStatus(j.ID, api.DescribeResourceJobSucceeded, "", "", 0, 0)
+			if err != nil {
+				s.logger.Error("Failed to update job", zap.Error(err))
+				continue
+			}
+		}
 	}
 }
 

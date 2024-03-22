@@ -51,6 +51,7 @@ const (
 	DescribeResourceJobTimeout             DescribeResourceJobStatus = "TIMEOUT"
 	DescribeResourceJobFailed              DescribeResourceJobStatus = "FAILED"
 	DescribeResourceJobSucceeded           DescribeResourceJobStatus = "SUCCEEDED"
+	DescribeResourceJobRemovingResources   DescribeResourceJobStatus = "REMOVING_RESOURCES"
 )
 
 type DescribeAllJobsStatus string

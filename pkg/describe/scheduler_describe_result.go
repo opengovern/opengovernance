@@ -1,9 +1,11 @@
 package describe
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"strings"
 	"time"
 
@@ -406,4 +408,37 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []strin
 	}
 
 	return
+}
+
+func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(connectionId, resourceType string) error {
+	root := make(map[string]any)
+	root["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": []any{
+				map[string]any{
+					"term": map[string]any{
+						"source_id": connectionId,
+					},
+				},
+				map[string]any{
+					"term": map[string]any{
+						"resource_type": resourceType,
+					},
+				},
+			},
+		},
+	}
+	query, err := json.Marshal(root)
+	if err != nil {
+		return err
+	}
+
+	index := es2.ResourceTypeToESIndex(resourceType)
+	res, err := s.es.ES().DeleteByQuery([]string{index}, bytes.NewReader(query))
+	if err != nil {
+		return err
+	}
+
+	defer kaytu.CloseSafe(res)
+	return nil
 }

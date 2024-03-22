@@ -302,10 +302,8 @@ func (s *Scheduler) scheduleDescribeJob() {
 				continue
 			}
 
-			if azureAdOnlyOnOneConnection(connections, connection, resourceType) {
-				continue
-			}
-			_, err = s.describe(connection, resourceType, true, false)
+			removeResources := azureAdOnlyOnOneConnection(connections, connection, resourceType)
+			_, err = s.describe(connection, resourceType, true, false, removeResources)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
 			}
@@ -413,7 +411,7 @@ func (s *Scheduler) retryFailedJobs() error {
 	return nil
 }
 
-func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool) (*model.DescribeConnectionJob, error) {
+func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool, removeResources bool) (*model.DescribeConnectionJob, error) {
 	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
 		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
 		// cost on org
@@ -528,6 +526,9 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	}
 	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("connectionID", connection.ID.String()), zap.String("resourceType", resourceType))
 	daj := newDescribeConnectionJob(connection, resourceType, triggerType, discoveryType)
+	if removeResources {
+		daj.Status = apiDescribe.DescribeResourceJobRemovingResources
+	}
 	err = s.db.CreateDescribeConnectionJob(&daj)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()

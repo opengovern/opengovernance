@@ -439,7 +439,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		if !src.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type for connection: %s", resourceType))
 		}
-		daj, err := h.Scheduler.describe(*src, resourceType, false, costFullDiscovery)
+		daj, err := h.Scheduler.describe(*src, resourceType, false, costFullDiscovery, false)
 		if err == ErrJobInProgress {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
@@ -520,7 +520,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				continue
 			}
-			_, err = h.Scheduler.describe(connection, resourceType, false, false)
+			_, err = h.Scheduler.describe(connection, resourceType, false, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}
@@ -808,7 +808,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false)
+		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false, false)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
 			continue
