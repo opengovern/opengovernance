@@ -1,7 +1,9 @@
 package metrics
 
 import (
+	"fmt"
 	"github.com/goccy/go-yaml"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
@@ -11,13 +13,12 @@ import (
 type assistantMetric struct {
 	ID             string              `json:"id"`
 	CloudProviders []string            `json:"cloud_providers"`
-	Type           string              `json:"type"`
 	Name           string              `json:"name"`
 	Tags           map[string][]string `json:"tags"`
 }
 
-func ExtractMetrics(logger *zap.Logger, i inventoryClient.InventoryServiceClient) (map[string]string, error) {
-	metrics, err := i.ListAnalyticsMetrics(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+func ExtractMetrics(logger *zap.Logger, i inventoryClient.InventoryServiceClient, metricType analyticsDB.MetricType) (map[string]string, error) {
+	metrics, err := i.ListAnalyticsMetrics(&httpclient.Context{UserRole: authApi.InternalRole}, &metricType)
 	if err != nil {
 		logger.Error("failed to list analytics metrics", zap.Error(err))
 		return nil, err
@@ -33,7 +34,6 @@ func ExtractMetrics(logger *zap.Logger, i inventoryClient.InventoryServiceClient
 		assistantMetrics = append(assistantMetrics, assistantMetric{
 			ID:             m.ID,
 			CloudProviders: cloudProviders,
-			Type:           string(m.Type),
 			Name:           m.Name,
 			Tags:           m.Tags,
 		})
@@ -46,6 +46,6 @@ func ExtractMetrics(logger *zap.Logger, i inventoryClient.InventoryServiceClient
 	}
 
 	return map[string]string{
-		"assistant_metrics.yaml": string(yamlAssistantMetrics),
+		fmt.Sprintf("assistant_metrics_%s.yaml", string(metricType)): string(yamlAssistantMetrics),
 	}, nil
 }

@@ -1879,6 +1879,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	var err error
 	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
 	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	metricIDFilters := httpserver2.QueryArrayParam(ctx, "metricId")
 	connectors, err := h.getConnectorTypesFromConnectionIDs(ctx, nil, connectionIDs)
 	if err != nil {
 		return err
@@ -1916,7 +1917,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
 		metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets,
-			nil, connectors, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
+			metricIDFilters, connectors, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 		if err != nil {
 			return err
 		}
@@ -1967,7 +1968,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 
 	if needCost {
-		hits, err := es.FetchConnectionDailySpendHistory(h.client, connectionIDs, connectors, nil, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistory(h.client, connectionIDs, connectors, metricIDFilters, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}

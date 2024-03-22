@@ -22,12 +22,13 @@ type InventoryServiceClient interface {
 	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
 	GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
 	GetInsightTrendResults(ctx *httpclient.Context, connectionIds, resourceCollections []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
-	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
+	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, metricIDs []string, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
 	ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
+	ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, connectionIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error)
 	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
 	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
 }
@@ -261,7 +262,7 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 func (s *inventoryClient) ListConnectionsData(
 	ctx *httpclient.Context,
 	connectionIds, resourceCollections []string,
-	startTime, endTime *time.Time,
+	startTime, endTime *time.Time, metricIDs []string,
 	needCost, needResourceCount bool,
 ) (map[string]api.ConnectionData, error) {
 	params := url.Values{}
@@ -277,6 +278,12 @@ func (s *inventoryClient) ListConnectionsData(
 		for _, resourceCollection := range resourceCollections {
 			params.Add("resourceCollection", resourceCollection)
 		}
+	}
+	if len(metricIDs) > 0 {
+		for _, metricID := range metricIDs {
+			params.Add("metricId", metricID)
+		}
+
 	}
 	if startTime != nil {
 		params.Set("startTime", strconv.FormatInt(startTime.Unix(), 10))
@@ -544,4 +551,74 @@ func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metri
 		return nil, err
 	}
 	return response, nil
+}
+
+func (s *inventoryClient) ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, connectionIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error) {
+	url := fmt.Sprintf("%s/api/v2/analytics/metric", s.baseURL)
+	firstParamAttached := false
+	if metricType != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("metricType=%s", *metricType)
+	}
+	if len(metricIds) > 0 {
+		for _, metricId := range metricIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("metricIDs=%s", metricId)
+		}
+	}
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if startTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
+	}
+	if endTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
+	}
+	if !firstParamAttached {
+		url += "?"
+		firstParamAttached = true
+	} else {
+		url += "&"
+	}
+	url += "pageSize=1000"
+
+	var response api.ListMetricsResponse
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
 }

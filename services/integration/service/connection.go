@@ -75,7 +75,7 @@ func (h Connection) Data(
 	startTime, endTime *time.Time,
 	needCost, needResourceCount bool,
 ) (map[string]inventoryAPI.ConnectionData, error) {
-	connectionData, err := h.inventory.ListConnectionsData(ctx, nil, resourceCollections, startTime, endTime, needCost, needResourceCount)
+	connectionData, err := h.inventory.ListConnectionsData(ctx, nil, resourceCollections, startTime, endTime, nil, needCost, needResourceCount)
 	if err != nil {
 		return nil, err
 	}

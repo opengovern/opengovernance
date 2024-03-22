@@ -2401,7 +2401,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 
 	connectionData := map[string]api2.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, resourceCollections, &startTime, &endTime, nil, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}
