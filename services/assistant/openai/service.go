@@ -137,7 +137,7 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	return s, nil
 }
 
-func NewRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -150,7 +150,7 @@ func NewRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, m
 
 	files := map[string]string{}
 
-	assistantMetrics, err := metrics.ExtractMetrics(logger, i)
+	assistantMetrics, err := metrics.ExtractMetrics(logger, i, analyticsDB.MetricTypeAssets)
 	if err != nil {
 		logger.Error("failed to extract metrics", zap.Error(err))
 		return nil, err
@@ -189,23 +189,6 @@ func NewRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, m
 			{
 				Type: openai.AssistantToolTypeFunction,
 				Function: &openai.FunctionDefinition{
-					Name:        "GetFullUrlFromPath",
-					Description: "Get full URL from provided path",
-					Parameters: map[string]any{
-						"type": "object",
-						"properties": map[string]any{
-							"path": map[string]any{
-								"type":        "string",
-								"description": "The path to get full URL",
-							},
-						},
-						"required": []string{"path"},
-					},
-				},
-			},
-			{
-				Type: openai.AssistantToolTypeFunction,
-				Function: &openai.FunctionDefinition{
 					Name:        "GetConnectionKaytuIDFromNameOrProviderID",
 					Description: "Get connection kaytu id from it's name or provider_id",
 					Parameters: map[string]any{
@@ -220,6 +203,55 @@ func NewRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, m
 								"description": "The id of the connection in the cloud provider",
 							},
 						},
+					},
+				},
+			},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetGeneralMetricsTrendsValues",
+					Description: "Get general metrics trends values",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"resultLimit": map[string]any{
+								"type":        "number",
+								"description": "The limit of the result",
+							},
+							"order_by": map[string]any{
+								"type":        "string",
+								"description": "The order by field",
+								"enum":        []string{"asc", "dsc"},
+							},
+							"startDate": map[string]any{
+								"type":        "number",
+								"description": "The start date in epoch seconds",
+							},
+							"endDate": map[string]any{
+								"type":        "number",
+								"description": "The end date in epoch seconds",
+							},
+							"primary_goal": map[string]any{
+								"type":        "string",
+								"description": "The primary goal",
+								"enum":        []string{"cloud_account", "metric"},
+							},
+							"connection": map[string]any{
+								"type":        "array",
+								"description": "The list of connection ids",
+								"items": map[string]any{
+									"type": "string",
+								},
+							},
+							"metric_id": map[string]any{
+								"type":        "array",
+								"description": "The list of metric ids",
+								"items": map[string]any{
+									"type": "string",
+								},
+							},
+						},
+						"required": []string{"resultLimit", "order_by", "primary_goal"},
 					},
 				},
 			},
