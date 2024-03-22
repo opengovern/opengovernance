@@ -186,6 +186,7 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 		prompt:         prompt,
 		Tools: []openai.AssistantTool{
 			{Type: openai.AssistantToolTypeCodeInterpreter},
+			{Type: openai.AssistantToolTypeRetrieval},
 			{
 				Type: openai.AssistantToolTypeFunction,
 				Function: &openai.FunctionDefinition{
