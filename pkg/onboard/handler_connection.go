@@ -183,7 +183,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 				h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
 			}
-			metadata := NewAzureConnectionMetadata(*azSub)
+			metadata := NewAzureConnectionMetadata(*azSub, azureCnf.TenantID)
 			var jsonMetadata []byte
 			jsonMetadata, err = json.Marshal(metadata)
 			if err != nil {

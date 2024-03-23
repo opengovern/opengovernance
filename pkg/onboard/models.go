@@ -149,13 +149,15 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 }
 
 type AzureConnectionMetadata struct {
+	TenantID       string                       `json:"tenant_id"`
 	SubscriptionID string                       `json:"subscription_id"`
 	SubModel       armsubscription.Subscription `json:"subscription_model"`
 	SubTags        map[string][]string          `json:"subscription_tags"`
 }
 
-func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
+func NewAzureConnectionMetadata(sub azureSubscription, tenantID string) AzureConnectionMetadata {
 	metadata := AzureConnectionMetadata{
+		TenantID:       tenantID,
 		SubscriptionID: sub.SubscriptionID,
 		SubModel:       sub.SubModel,
 		SubTags:        make(map[string][]string),
@@ -176,7 +178,7 @@ func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
 	return metadata
 }
 
-func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Source {
+func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds model.Credential, tenantID string) model.Source {
 	id := uuid.New()
 
 	name := sub.SubscriptionID
@@ -184,7 +186,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 		name = *sub.SubModel.DisplayName
 	}
 
-	metadata := NewAzureConnectionMetadata(sub)
+	metadata := NewAzureConnectionMetadata(sub, tenantID)
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		jsonMetadata = []byte("{}")

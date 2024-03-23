@@ -376,7 +376,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred)
+	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred, req.Config.TenantId)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
 	if err != nil {
 		return err
@@ -956,6 +956,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			source.SourceCreationMethodAutoOnboard,
 			fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
 			credential,
+			azureCnf.TenantID,
 		)
 		//tracer :
 		_, span5 := tracer.Start(outputS4, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
