@@ -422,7 +422,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(connect
 				},
 				map[string]any{
 					"term": map[string]any{
-						"resource_type": resourceType,
+						"resource_type": strings.ToLower(resourceType),
 					},
 				},
 			},
@@ -439,6 +439,13 @@ func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(connect
 		return err
 	}
 
-	defer kaytu.CloseSafe(res)
+	kaytu.CloseSafe(res)
+
+	res, err = s.es.ES().DeleteByQuery([]string{InventorySummaryIndex}, bytes.NewReader(query))
+	if err != nil {
+		return err
+	}
+
+	kaytu.CloseSafe(res)
 	return nil
 }
