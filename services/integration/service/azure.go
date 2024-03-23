@@ -66,6 +66,7 @@ func (h Credential) NewAzureConnection(
 	creationMethod source.SourceCreationMethod,
 	description string,
 	creds model.Credential,
+	tenantID string,
 ) model.Connection {
 	id := uuid.New()
 
@@ -74,7 +75,7 @@ func (h Credential) NewAzureConnection(
 		name = *sub.SubModel.DisplayName
 	}
 
-	metadata := model.NewAzureConnectionMetadata(&sub, creds.TenantID)
+	metadata := model.NewAzureConnectionMetadata(&sub, tenantID)
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		jsonMetadata = []byte("{}")
@@ -283,6 +284,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 			source.SourceCreationMethodAutoOnboard,
 			fmt.Sprintf("Auto on-boarded subscription %s", sub.SubscriptionID),
 			credential,
+			azureCnf.TenantID,
 		)
 
 		if err := h.connSvc.Create(ctx, src); err != nil {
