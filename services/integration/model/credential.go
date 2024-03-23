@@ -24,7 +24,6 @@ type Credential struct {
 	SpendDiscovery      *bool
 
 	Metadata datatypes.JSON `json:"metadata,omitempty" gorm:"default:'{}'"`
-	TenantID string         `json:"tenantID"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
