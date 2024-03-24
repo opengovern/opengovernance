@@ -74,7 +74,7 @@ func (db Database) UpdateComplianceJobsTimedOut(complianceIntervalHours int64) e
 			string(model.ComplianceJobRunnersInProgress),
 			string(model.ComplianceJobSummarizerInProgress),
 		}).
-		Updates(model.ComplianceJob{Status: model.ComplianceJobFailed, FailureMessage: "Job timed out"})
+		Updates(model.ComplianceJob{Status: model.ComplianceJobTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}

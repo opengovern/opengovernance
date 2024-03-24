@@ -75,6 +75,12 @@ func (s *JobScheduler) runSummarizer() error {
 		return err
 	}
 
+	err = s.db.UpdateComplianceJobsTimedOut(24)
+	if err != nil {
+		s.logger.Error("failed to update compliance jobs timed out", zap.Error(err))
+		return err
+	}
+
 	jobs, err := s.db.ListJobsWithRunnersCompleted()
 	if err != nil {
 		s.logger.Error("failed to list jobs with runners completed", zap.Error(err))
