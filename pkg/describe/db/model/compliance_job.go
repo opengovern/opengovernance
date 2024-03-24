@@ -19,6 +19,7 @@ const (
 	ComplianceJobSummarizerInProgress ComplianceJobStatus = "SUMMARIZER_IN_PROGRESS"
 	ComplianceJobFailed               ComplianceJobStatus = "FAILED"
 	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
+	ComplianceJobTimeOut              ComplianceJobStatus = "TIMEOUT"
 )
 
 func (c ComplianceJobStatus) ToApi() api.ComplianceJobStatus {
