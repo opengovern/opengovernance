@@ -959,14 +959,19 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		}
 	}
 
+	others := map[string]int{}
 	resourceTypeCountMap, err := es.GetResourceTypeCounts(h.client, nil, nil, nil, EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to get resource type counts", zap.Error(err))
 		return err
 	}
+	for rt, count := range resourceTypeCountMap {
+		others[strings.ToLower(rt)] = count
+	}
 
 	for category, resourceTypes := range categoryResourceTypeMapMap {
 		for resourceType := range resourceTypes {
+			delete(others, strings.ToLower(resourceType))
 			if count, _ := resourceTypeCountMap[strings.ToLower(resourceType)]; count < minCount {
 				delete(resourceTypes, resourceType)
 			}
@@ -982,6 +987,10 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		for resourceType := range resourceTypes {
 			categoryResourceTypeMap[category] = append(categoryResourceTypeMap[category], resourceType)
 		}
+	}
+
+	for rt := range others {
+		categoryResourceTypeMap["Others"] = append(categoryResourceTypeMap["Others"], rt)
 	}
 
 	return ctx.JSON(http.StatusOK, inventoryApi.AnalyticsCategoriesResponse{
