@@ -335,7 +335,7 @@ func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(ca
 
 	output := GetDirectionOnMultipleMetricsValuesResponse{
 		Results:      result,
-		ReferenceURL: fmt.Sprintf("https://%s/%s/asset-metrics/%s", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName, metricId),
+		ReferenceURL: fmt.Sprintf("https://%s/%s/asset-metrics/metric_%s", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName, metricId),
 	}
 	params := url.Values{}
 	if startDate != nil {
