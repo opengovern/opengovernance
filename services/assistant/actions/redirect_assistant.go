@@ -255,32 +255,36 @@ func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(ca
 		return "", errors.New(fmt.Sprintf("metric_id not found in %v", gptArgs))
 	}
 
-	startTime := int64(0)
-	if startTimeAny, ok := gptArgs["startDate"]; ok {
-		startTime, ok = startTimeAny.(int64)
+	var startDate *time.Time
+	if startDateAny, ok := gptArgs["startDate"]; ok {
+		startDateVal, ok := startDateAny.(int64)
 		if !ok {
-			startTimeFloat, ok := startTimeAny.(float64)
+			startDateFloat, ok := startDateAny.(float64)
 			if !ok {
-				return "", errors.New(fmt.Sprintf("invalid start_time type %T must be int or float", startTimeAny))
+				return "", errors.New(fmt.Sprintf("invalid startDate type %T must be int or float", startDateAny))
 			}
-			startTime = int64(startTimeFloat)
+			startDateInt := int64(startDateFloat)
+			startDate = utils.GetPointer(time.Unix(startDateInt, 0))
+		} else {
+			startDate = utils.GetPointer(time.Unix(startDateVal, 0))
 		}
-	} else {
-		return "", errors.New(fmt.Sprintf("start_time not found in %v", gptArgs))
 	}
-	endTime := int64(0)
-	if endTimeAny, ok := gptArgs["endDate"]; ok {
-		endTime, ok = endTimeAny.(int64)
+
+	var endDate *time.Time
+	if endDateAny, ok := gptArgs["endDate"]; ok {
+		endDateVal, ok := endDateAny.(int64)
 		if !ok {
-			endTimeFloat, ok := endTimeAny.(float64)
+			endDateFloat, ok := endDateAny.(float64)
 			if !ok {
-				return "", errors.New(fmt.Sprintf("invalid end_time type %T must be int or float", endTimeAny))
+				return "", errors.New(fmt.Sprintf("invalid endDate type %T must be int or float", endDateAny))
 			}
-			endTime = int64(endTimeFloat)
+			endDateInt := int64(endDateFloat)
+			endDate = utils.GetPointer(time.Unix(endDateInt, 0))
+		} else {
+			endDate = utils.GetPointer(time.Unix(endDateVal, 0))
 		}
-	} else {
-		return "", errors.New(fmt.Sprintf("end_time not found in %v", gptArgs))
 	}
+
 	connections := make([]string, 0)
 	if connectionsAny, ok := gptArgs["connections"]; ok {
 		connectionsAnyArray, ok := connectionsAny.([]any)
@@ -305,8 +309,8 @@ func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(ca
 
 	trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
 		metricIds, connections,
-		utils.GetPointer(time.Unix(startTime, 0)),
-		utils.GetPointer(time.Unix(endTime, 0)))
+		startDate,
+		endDate)
 	if err != nil {
 		s.logger.Error("failed to list analytics metric trend", zap.Error(err))
 		return "", fmt.Errorf("there has been a backend error: %v", err)
