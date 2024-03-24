@@ -256,6 +256,41 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 					},
 				},
 			},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetDirectionOnMultipleMetricsValues",
+					Description: "Get direction on multiple metrics values",
+					Parameters: map[string]any{
+						"type": "object",
+						//i.  Metric ID: `metricId`
+						//          ii.  Connection: [connections]
+						//          iii.  StartDate: `startDate`
+						//          iv.  EndDate: `endDate`
+						"properties": map[string]any{
+							"metricId": map[string]any{
+								"type":        "string",
+								"description": "The metric id",
+							},
+							"connections": map[string]any{
+								"type":        "array",
+								"description": "The list of connection ids",
+								"items": map[string]any{
+									"type": "string",
+								},
+							},
+							"startDate": map[string]any{
+								"type":        "number",
+								"description": "The start date in epoch seconds",
+							},
+							"endDate": map[string]any{
+								"type":        "number",
+								"description": "The end date in epoch seconds",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 

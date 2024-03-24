@@ -117,8 +117,8 @@ func (s *RedirectAssistantActionsService) run() error {
 							ToolCallID: call.ID,
 							Output:     out,
 						})
-					case "GetMetricValues":
-						out, err := s.GetMetricValues(call)
+					case "GetDirectionOnMultipleMetricsValues":
+						out, err := s.GetDirectionOnMultipleMetricsValues(call)
 						if err != nil {
 							s.logger.Error("failed to get metric values", zap.Error(err))
 							out = fmt.Sprintf("Failed to run due to %v", err)
@@ -229,13 +229,13 @@ func (s *RedirectAssistantActionsService) GetConnectionKaytuIDFromNameOrProvider
 	return "", errors.New(fmt.Sprintf("name or provider_id not found in input"))
 }
 
-type AssistantTrendDataPoint struct {
-	Value float64   `json:"value" yaml:"value"`
+type GetDirectionOnMultipleMetricsValuesDataPoint struct {
+	Value int       `json:"value" yaml:"value"`
 	Date  time.Time `json:"time" yaml:"date"`
 }
 
-func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall) (string, error) {
-	if call.Function.Name != "GetMetricValues" {
+func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(call openai2.ToolCall) (string, error) {
+	if call.Function.Name != "GetDirectionOnMultipleMetricsValues" {
 		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
 	}
 	var gptArgs map[string]any
@@ -245,22 +245,8 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 		return "", err
 	}
 
-	metricType := ""
-	if metricTypeAny, ok := gptArgs["metric_type"]; ok {
-		metricType, ok = metricTypeAny.(string)
-		if !ok {
-			return "", errors.New(fmt.Sprintf("invalid metric_type %v", metricTypeAny))
-		}
-		metricType = strings.ToLower(metricType)
-		if metricType != string(analyticsDB.MetricTypeAssets) && metricType != string(analyticsDB.MetricTypeSpend) {
-			return "", errors.New(fmt.Sprintf("invalid metric_type %v must be %s or %s", metricType, analyticsDB.MetricTypeAssets, analyticsDB.MetricTypeSpend))
-		}
-	} else {
-		return "", errors.New(fmt.Sprintf("metric_type not found in %v", gptArgs))
-	}
-
 	metricId := ""
-	if metricIdAny, ok := gptArgs["metric_id"]; ok {
+	if metricIdAny, ok := gptArgs["metricId"]; ok {
 		metricId, ok = metricIdAny.(string)
 		if !ok {
 			return "", errors.New(fmt.Sprintf("invalid metric_id type %T must be string", metricIdAny))
@@ -270,7 +256,7 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 	}
 
 	startTime := int64(0)
-	if startTimeAny, ok := gptArgs["start_time"]; ok {
+	if startTimeAny, ok := gptArgs["startDate"]; ok {
 		startTime, ok = startTimeAny.(int64)
 		if !ok {
 			startTimeFloat, ok := startTimeAny.(float64)
@@ -283,7 +269,7 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 		return "", errors.New(fmt.Sprintf("start_time not found in %v", gptArgs))
 	}
 	endTime := int64(0)
-	if endTimeAny, ok := gptArgs["end_time"]; ok {
+	if endTimeAny, ok := gptArgs["endDate"]; ok {
 		endTime, ok = endTimeAny.(int64)
 		if !ok {
 			endTimeFloat, ok := endTimeAny.(float64)
@@ -310,40 +296,27 @@ func (s *RedirectAssistantActionsService) GetMetricValues(call openai2.ToolCall)
 		}
 	}
 
-	result := make([]AssistantTrendDataPoint, 0)
+	result := make([]GetDirectionOnMultipleMetricsValuesDataPoint, 0)
 
-	switch metricType {
-	case string(analyticsDB.MetricTypeAssets):
-		trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
-			[]string{metricId}, connections,
-			utils.GetPointer(time.Unix(startTime, 0)),
-			utils.GetPointer(time.Unix(endTime, 0)))
-		if err != nil {
-			s.logger.Error("failed to list analytics metric trend", zap.Error(err))
-			return "", fmt.Errorf("there has been a backend error: %v", err)
-		}
-		for _, trendDatapoint := range trendDatapoints {
-			result = append(result, AssistantTrendDataPoint{
-				Value: float64(trendDatapoint.Count),
-				Date:  trendDatapoint.Date,
-			})
+	metricIds := []string{metricId}
+	if len(metricIds) == 0 || metricId == "all" {
+		metricIds = nil
+	}
 
-		}
-	case string(analyticsDB.MetricTypeSpend):
-		trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
-			[]string{metricId}, connections,
-			utils.GetPointer(time.Unix(startTime, 0)),
-			utils.GetPointer(time.Unix(endTime, 0)))
-		if err != nil {
-			s.logger.Error("failed to list analytics metric trend", zap.Error(err))
-			return "", fmt.Errorf("there has been a backend error: %v", err)
-		}
-		for _, trendDatapoint := range trendDatapoints {
-			result = append(result, AssistantTrendDataPoint{
-				Value: float64(trendDatapoint.Count),
-				Date:  trendDatapoint.Date,
-			})
-		}
+	trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
+		metricIds, connections,
+		utils.GetPointer(time.Unix(startTime, 0)),
+		utils.GetPointer(time.Unix(endTime, 0)))
+	if err != nil {
+		s.logger.Error("failed to list analytics metric trend", zap.Error(err))
+		return "", fmt.Errorf("there has been a backend error: %v", err)
+	}
+	for _, trendDatapoint := range trendDatapoints {
+		result = append(result, GetDirectionOnMultipleMetricsValuesDataPoint{
+			Value: trendDatapoint.Count,
+			Date:  trendDatapoint.Date,
+		})
+
 	}
 
 	//sort
