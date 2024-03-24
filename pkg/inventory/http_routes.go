@@ -607,7 +607,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		endTime = time.Unix(endTimeVal, 0)
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, -1, 0)
+	startTime := endTime.AddDate(0, 0, -7)
 	if startTimeStr != "" {
 		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
