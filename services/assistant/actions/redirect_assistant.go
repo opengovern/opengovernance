@@ -21,6 +21,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -229,6 +230,11 @@ func (s *RedirectAssistantActionsService) GetConnectionKaytuIDFromNameOrProvider
 	return "", errors.New(fmt.Sprintf("name or provider_id not found in input"))
 }
 
+type GetDirectionOnMultipleMetricsValuesResponse struct {
+	Results      []GetDirectionOnMultipleMetricsValuesDataPoint `json:"results" yaml:"results"`
+	ReferenceURL string                                         `json:"reference_url" yaml:"reference_url"`
+}
+
 type GetDirectionOnMultipleMetricsValuesDataPoint struct {
 	Value int       `json:"value" yaml:"value"`
 	Date  time.Time `json:"time" yaml:"date"`
@@ -320,7 +326,6 @@ func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(ca
 			Value: trendDatapoint.Count,
 			Date:  trendDatapoint.Date,
 		})
-
 	}
 
 	//sort
@@ -328,13 +333,39 @@ func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(ca
 		return result[i].Date.Before(result[j].Date)
 	})
 
-	resultYaml, err := yaml.Marshal(result)
+	output := GetDirectionOnMultipleMetricsValuesResponse{
+		Results:      result,
+		ReferenceURL: fmt.Sprintf("https://%s/%s/asset-metrics/%s", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName, metricId),
+	}
+	params := url.Values{}
+	if startDate != nil {
+		params.Set("startDate", startDate.Format("2006-01-02+15:04:05"))
+	}
+	if endDate != nil {
+		params.Set("endDate", endDate.Format("2006-01-02+15:04:05"))
+	}
+	if len(connections) > 0 {
+		for _, connection := range connections {
+			params.Add("connections", connection)
+		}
+	}
+	if len(params) > 0 {
+		output.ReferenceURL = fmt.Sprintf("%s?%s", output.ReferenceURL, params.Encode())
+	}
+
+	outputYaml, err := yaml.Marshal(output)
 	if err != nil {
 		s.logger.Error("failed to marshal result", zap.Error(err))
 		return "", fmt.Errorf("failed to marshal result: %v", err)
 	}
 
-	return string(resultYaml), nil
+	return string(outputYaml), nil
+}
+
+type GetGeneralMetricsTrendsValuesResponse struct {
+	Connections  []AssistantGeneralMetricsConnectionData `json:"connections,omitempty" yaml:"connections,omitempty"`
+	Metrics      []AssistantGeneralMetricsMetricData     `json:"metrics,omitempty" yaml:"metrics,omitempty"`
+	ReferenceURL string                                  `json:"reference_url" yaml:"reference_url"`
 }
 
 type AssistantGeneralMetricsConnectionData struct {
@@ -447,6 +478,19 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 		}
 	}
 
+	params := url.Values{}
+	if startDate != nil {
+		params.Set("startDate", startDate.Format("2006-01-02+15:04:05"))
+	}
+	if endDate != nil {
+		params.Set("endDate", endDate.Format("2006-01-02+15:04:05"))
+	}
+	if len(connections) > 0 {
+		for _, connection := range connections {
+			params.Add("connections", connection)
+		}
+	}
+
 	metricIds := make([]string, 0)
 	if metricIdsAny, ok := gptArgs["metricId"]; ok {
 		metricIdsAnyArray, ok := metricIdsAny.([]any)
@@ -523,13 +567,21 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 			})
 		}
 
-		resultYaml, err := yaml.Marshal(result)
+		output := GetGeneralMetricsTrendsValuesResponse{
+			Connections:  result,
+			ReferenceURL: fmt.Sprintf("https://%s/%s/asset-cloud-accounts", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName),
+		}
+		if len(params) > 0 {
+			output.ReferenceURL = fmt.Sprintf("%s?%s", output.ReferenceURL, params.Encode())
+		}
+
+		outputYaml, err := yaml.Marshal(output)
 		if err != nil {
 			s.logger.Error("failed to marshal result", zap.Error(err))
 			return "", fmt.Errorf("failed to marshal result: %v", err)
 		}
 
-		return string(resultYaml), nil
+		return string(outputYaml), nil
 	case "metric":
 		metricResponse, err := s.inventoryClient.ListAnalyticsMetricsSummary(&httpclient.Context{UserRole: authApi.InternalRole},
 			utils.GetPointer(analyticsDB.MetricTypeAssets), metricIds, connections, startDate, endDate)
@@ -575,13 +627,21 @@ func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call ope
 			})
 		}
 
-		resultYaml, err := yaml.Marshal(result)
+		output := GetGeneralMetricsTrendsValuesResponse{
+			Metrics:      result,
+			ReferenceURL: fmt.Sprintf("https://%s/%s/asset-metrics", s.cnf.KaytuBaseUrl, s.cnf.WorkspaceName),
+		}
+		if len(params) > 0 {
+			output.ReferenceURL = fmt.Sprintf("%s?%s", output.ReferenceURL, params.Encode())
+		}
+
+		outputYaml, err := yaml.Marshal(output)
 		if err != nil {
 			s.logger.Error("failed to marshal result", zap.Error(err))
 			return "", fmt.Errorf("failed to marshal result: %v", err)
 		}
 
-		return string(resultYaml), nil
+		return string(outputYaml), nil
 	}
 
 	return "", errors.New(fmt.Sprintf("invalid primaryGoal %v", primaryGoal))
