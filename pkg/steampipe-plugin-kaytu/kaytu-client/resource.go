@@ -125,7 +125,7 @@ var resourceTypeMap = map[string]string{
 var stopWordsRe = regexp.MustCompile(`\W+`)
 
 func ResourceTypeToESIndex(t string) string {
-	if rt, ok := resourceMapping[t]; ok {
+	if rt, ok := resourceTypeMap[t]; ok {
 		t = rt
 	}
 	t = stopWordsRe.ReplaceAllString(t, "_")
