@@ -138,7 +138,7 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	return s, nil
 }
 
-func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -160,7 +160,7 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeRedirection))
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeAssets))
 	if err != nil {
 		logger.Error("failed to list prompts", zap.Error(err))
 		return nil, err
@@ -180,7 +180,7 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 		MainPrompt:     mainPrompts,
 		ChatPrompt:     chatPrompts,
 		Model:          modelName,
-		AssistantName:  model.AssistantTypeRedirection,
+		AssistantName:  model.AssistantTypeAssets,
 		Files:          files,
 		fileIDMap:      make(map[string]string),
 		extraVariables: make(map[string]string),

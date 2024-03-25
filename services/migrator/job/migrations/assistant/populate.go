@@ -70,35 +70,35 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "redirect_chat_prompt.txt"))
+	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "assets_chat_prompt.txt"))
 	if err != nil {
-		logger.Error("failed to read redirect chat prompt", zap.Error(err))
+		logger.Error("failed to read assets chat prompt", zap.Error(err))
 		return err
 	}
 
 	err = promptRepo.Create(context.Background(), model.Prompt{
 		Purpose:       model.Purpose_ChatPrompt,
-		AssistantName: model.AssistantTypeRedirection,
+		AssistantName: model.AssistantTypeAssets,
 		Content:       string(prompt),
 	})
 	if err != nil {
-		logger.Error("failed to create redirect chat prompt", zap.Error(err))
+		logger.Error("failed to create assets chat prompt", zap.Error(err))
 		return err
 	}
 
-	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "redirect_main_prompt.txt"))
+	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "assets_main_prompt.txt"))
 	if err != nil {
-		logger.Error("failed to read redirect main prompt", zap.Error(err))
+		logger.Error("failed to read assets main prompt", zap.Error(err))
 		return err
 	}
 
 	err = promptRepo.Create(context.Background(), model.Prompt{
 		Purpose:       model.Purpose_SystemPrompt,
-		AssistantName: model.AssistantTypeRedirection,
+		AssistantName: model.AssistantTypeAssets,
 		Content:       string(prompt),
 	})
 	if err != nil {
-		logger.Error("failed to create redirect main prompt", zap.Error(err))
+		logger.Error("failed to create assets main prompt", zap.Error(err))
 		return err
 	}
 
