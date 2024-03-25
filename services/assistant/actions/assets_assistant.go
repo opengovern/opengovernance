@@ -226,8 +226,8 @@ func (s *AssetsAssistantActionsService) GetConnectionKaytuIDFromNameOrProviderID
 		}
 	}
 
-	s.logger.Error("name or provider_id not found in input", zap.Any("args", gptArgs))
-	return "", errors.New(fmt.Sprintf("name or provider_id not found in input"))
+	s.logger.Error("no connection found", zap.Any("args", gptArgs))
+	return "", errors.New(fmt.Sprintf("no connection found for input %v", gptArgs))
 }
 
 type GetDirectionOnMultipleMetricsValuesResponse struct {
