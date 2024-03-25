@@ -44,7 +44,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/kaytu-io/kaytu-aws-describer v0.32.37
 	github.com/kaytu-io/kaytu-azure-describer v0.24.33
-	github.com/kaytu-io/kaytu-util v0.0.0-20240325092842-afeab1189e7e
+	github.com/kaytu-io/kaytu-util v0.0.0-20240325120213-68a3aa298a30
 	github.com/kaytu-io/pennywise v1.1.5
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
