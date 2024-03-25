@@ -122,7 +122,7 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 			s.logger.Error("failed to unmarshal benchmark runner parameters", zap.Error(err))
 			return err
 		}
-		controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: authApi.InternalRole}, parameters.ControlIDs)
+		controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: authApi.InternalRole}, parameters.ControlIDs, nil)
 
 		runners := make([]*model.ComplianceRunner, 0, len(parameters.ConnectionIDs)*len(controls))
 		for _, control := range controls {

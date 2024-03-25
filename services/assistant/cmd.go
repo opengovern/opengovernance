@@ -49,6 +49,11 @@ func Command() *cobra.Command {
 				logger.Error("failed to create redirection assistant", zap.Error(err))
 				return err
 			}
+			scoreAssistant, err := openai.NewScoreAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
+			if err != nil {
+				logger.Error("failed to create score assistant", zap.Error(err))
+				return err
+			}
 
 			queryAssistantActions, err := actions.NewQueryAssistantActions(logger, queryAssistant, inventoryServiceClient, repository.NewRun(database))
 			if err != nil {
@@ -66,7 +71,7 @@ func Command() *cobra.Command {
 			return httpserver.RegisterAndStart(
 				logger,
 				cnf.Http.Address,
-				api.New(logger, queryAssistant, redirectionAssistant, database),
+				api.New(logger, queryAssistant, redirectionAssistant, scoreAssistant, database),
 			)
 		},
 	}

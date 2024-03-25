@@ -714,7 +714,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 			controlIDs = append(controlIDs, control)
 		}
 	}
-	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs)
+	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs, nil)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
 		return nil, nil, err

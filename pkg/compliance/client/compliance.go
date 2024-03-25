@@ -29,7 +29,7 @@ type ComplianceServiceClient interface {
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
 	CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error)
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
-	ListControl(ctx *httpclient.Context, controlIDs []string) ([]compliance.Control, error)
+	ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error)
 }
 
 type complianceClient struct {
@@ -149,7 +149,7 @@ func (s *complianceClient) GetControl(ctx *httpclient.Context, controlID string)
 	return &response, nil
 }
 
-func (s *complianceClient) ListControl(ctx *httpclient.Context, controlIDs []string) ([]compliance.Control, error) {
+func (s *complianceClient) ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error) {
 	url := fmt.Sprintf("%s/api/v1/benchmarks/controls", s.baseURL)
 
 	firstParamAttached := false
@@ -162,6 +162,26 @@ func (s *complianceClient) ListControl(ctx *httpclient.Context, controlIDs []str
 				url += "&"
 			}
 			url += fmt.Sprintf("control_id=%s", controlID)
+		}
+	}
+	for tagKey, tagValues := range tags {
+		for _, tagValue := range tagValues {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tag=%s=%s", tagKey, tagValue)
+		}
+		if len(tagValues) == 0 {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tag=%s=", tagKey)
 		}
 	}
 

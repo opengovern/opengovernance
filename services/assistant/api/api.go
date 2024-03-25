@@ -14,6 +14,7 @@ type API struct {
 	logger               *zap.Logger
 	queryAssistant       *openai.Service
 	redirectionAssistant *openai.Service
+	scoreAssistant       *openai.Service
 	database             db.Database
 }
 
@@ -21,12 +22,14 @@ func New(
 	logger *zap.Logger,
 	queryAssistant *openai.Service,
 	redirectionAssistant *openai.Service,
+	scoreAssistant *openai.Service,
 	database db.Database,
 ) *API {
 	return &API{
 		logger:               logger.Named(fmt.Sprintf("api-%s", queryAssistant.AssistantName.String())),
 		queryAssistant:       queryAssistant,
 		redirectionAssistant: redirectionAssistant,
+		scoreAssistant:       scoreAssistant,
 		database:             database,
 	}
 }
@@ -37,4 +40,6 @@ func (api *API) Register(e *echo.Echo) {
 	qThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.queryAssistant.AssistantName.String())))
 	rThr := thread.New(api.logger, api.redirectionAssistant, runRepo)
 	rThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.redirectionAssistant.AssistantName.String())))
+	sThr := thread.New(api.logger, api.scoreAssistant, runRepo)
+	sThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.scoreAssistant.AssistantName.String())))
 }

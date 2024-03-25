@@ -10,6 +10,7 @@ import (
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
+	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/controls"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/examples"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/jsonmodels"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai/knowledge/builders/metrics"
@@ -320,6 +321,15 @@ func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	gptClient := openai.NewClientWithConfig(config)
 
 	files := map[string]string{}
+
+	assistantControls, err := controls.ExtractControls(logger, complianceServiceClient, map[string][]string{"score_service_name": nil})
+	if err != nil {
+		logger.Error("failed to extract metrics", zap.Error(err))
+		return nil, err
+	}
+	for k, v := range assistantControls {
+		files[k] = v
+	}
 
 	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeScore))
 	if err != nil {
