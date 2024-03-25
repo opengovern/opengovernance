@@ -46,7 +46,7 @@ func Command() *cobra.Command {
 			}
 			assetsAssistant, err := openai.NewAssetsAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, inventoryServiceClient, promptRepo)
 			if err != nil {
-				logger.Error("failed to create redirection assistant", zap.Error(err))
+				logger.Error("failed to create assets assistant", zap.Error(err))
 				return err
 			}
 			scoreAssistant, err := openai.NewScoreAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
@@ -62,7 +62,7 @@ func Command() *cobra.Command {
 			go queryAssistantActions.RunActions()
 			assetsAssistantActions, err := actions.NewAssetsAssistantActions(logger, cnf, assetsAssistant, repository.NewRun(database), onboardServiceClient, inventoryServiceClient)
 			if err != nil {
-				logger.Error("failed to create redirection assistant actions", zap.Error(err))
+				logger.Error("failed to create assets assistant actions", zap.Error(err))
 			}
 			go assetsAssistantActions.RunActions()
 
