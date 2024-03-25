@@ -4613,7 +4613,8 @@ paths:
       - description: Assistant Name
         enum:
         - kaytu-r-assistant
-        - kaytu-redirection-assistant
+        - kaytu-assets-assistant
+        - kaytu-score-assistant
         in: path
         name: assistant_name
         required: true
@@ -4648,7 +4649,8 @@ paths:
       - description: Assistant Name
         enum:
         - kaytu-r-assistant
-        - kaytu-redirection-assistant
+        - kaytu-assets-assistant
+        - kaytu-score-assistant
         in: path
         name: assistant_name
         required: true

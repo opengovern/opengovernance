@@ -123,7 +123,7 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	if err != nil {
 		return result, err
 	}
-	controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, nil)
+	controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, nil, nil)
 	if err != nil {
 		return result, err
 	}

@@ -44,9 +44,14 @@ func Command() *cobra.Command {
 				logger.Error("failed to create query assistant", zap.Error(err))
 				return err
 			}
-			redirectionAssistant, err := openai.NewAssetsRedirectionAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, inventoryServiceClient, promptRepo)
+			assetsAssistant, err := openai.NewAssetsAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, inventoryServiceClient, promptRepo)
 			if err != nil {
-				logger.Error("failed to create redirection assistant", zap.Error(err))
+				logger.Error("failed to create assets assistant", zap.Error(err))
+				return err
+			}
+			scoreAssistant, err := openai.NewScoreAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
+			if err != nil {
+				logger.Error("failed to create score assistant", zap.Error(err))
 				return err
 			}
 
@@ -55,18 +60,18 @@ func Command() *cobra.Command {
 				logger.Error("failed to create query assistant actions", zap.Error(err))
 			}
 			go queryAssistantActions.RunActions()
-			redirectAssistantActions, err := actions.NewRedirectAssistantActions(logger, cnf, redirectionAssistant, repository.NewRun(database), onboardServiceClient, inventoryServiceClient)
+			assetsAssistantActions, err := actions.NewAssetsAssistantActions(logger, cnf, assetsAssistant, repository.NewRun(database), onboardServiceClient, inventoryServiceClient)
 			if err != nil {
-				logger.Error("failed to create redirection assistant actions", zap.Error(err))
+				logger.Error("failed to create assets assistant actions", zap.Error(err))
 			}
-			go redirectAssistantActions.RunActions()
+			go assetsAssistantActions.RunActions()
 
 			cmd.SilenceUsage = true
 
 			return httpserver.RegisterAndStart(
 				logger,
 				cnf.Http.Address,
-				api.New(logger, queryAssistant, redirectionAssistant, database),
+				api.New(logger, queryAssistant, assetsAssistant, scoreAssistant, database),
 			)
 		},
 	}

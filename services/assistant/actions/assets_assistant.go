@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-type RedirectAssistantActionsService struct {
+type AssetsAssistantActionsService struct {
 	logger  *zap.Logger
 	oc      *openai.Service
 	runRepo repository.Run
@@ -37,12 +37,12 @@ type RedirectAssistantActionsService struct {
 	inventoryClient inventoryClient.InventoryServiceClient
 }
 
-func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, oc *openai.Service, runRepo repository.Run,
+func NewAssetsAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, oc *openai.Service, runRepo repository.Run,
 	onboardClient onboardClient.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient) (Service, error) {
-	if oc.AssistantName != model.AssistantTypeRedirection {
+	if oc.AssistantName != model.AssistantTypeAssets {
 		return nil, errors.New(fmt.Sprintf("incompatible assistant type %v", oc.AssistantName))
 	}
-	return &RedirectAssistantActionsService{
+	return &AssetsAssistantActionsService{
 		logger:          logger,
 		oc:              oc,
 		runRepo:         runRepo,
@@ -52,7 +52,7 @@ func NewRedirectAssistantActions(logger *zap.Logger, cnf config.AssistantConfig,
 	}, nil
 }
 
-func (s *RedirectAssistantActionsService) RunActions() {
+func (s *AssetsAssistantActionsService) RunActions() {
 	for {
 		err := s.run()
 		if err != nil {
@@ -62,8 +62,8 @@ func (s *RedirectAssistantActionsService) RunActions() {
 	}
 }
 
-func (s *RedirectAssistantActionsService) run() error {
-	runs, err := s.runRepo.List(context.Background(), utils.GetPointer(model.AssistantTypeRedirection))
+func (s *AssetsAssistantActionsService) run() error {
+	runs, err := s.runRepo.List(context.Background(), utils.GetPointer(model.AssistantTypeAssets))
 	if err != nil {
 		s.logger.Error("failed to list runs", zap.Error(err))
 		return err
@@ -76,7 +76,7 @@ func (s *RedirectAssistantActionsService) run() error {
 			continue
 		}
 
-		s.logger.Info("updating run status", zap.String("assistant_type", model.AssistantTypeRedirection.String()), zap.String("run_id", runSummary.ID), zap.String("thread_id", runSummary.ThreadID), zap.String("status", string(runSummary.Status)))
+		s.logger.Info("updating run status", zap.String("assistant_type", model.AssistantTypeAssets.String()), zap.String("run_id", runSummary.ID), zap.String("thread_id", runSummary.ThreadID), zap.String("status", string(runSummary.Status)))
 
 		run, err := s.oc.RetrieveRun(runSummary.ThreadID, runSummary.ID)
 		if err != nil {
@@ -159,7 +159,7 @@ func (s *RedirectAssistantActionsService) run() error {
 	return nil
 }
 
-func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCall) (string, error) {
+func (s *AssetsAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCall) (string, error) {
 	if call.Function.Name != "GetFullUrlFromPath" {
 		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
 	}
@@ -186,7 +186,7 @@ func (s *RedirectAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCa
 	}
 }
 
-func (s *RedirectAssistantActionsService) GetConnectionKaytuIDFromNameOrProviderID(call openai2.ToolCall) (string, error) {
+func (s *AssetsAssistantActionsService) GetConnectionKaytuIDFromNameOrProviderID(call openai2.ToolCall) (string, error) {
 	if call.Function.Name != "GetConnectionKaytuIDFromNameOrProviderID" {
 		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
 	}
@@ -240,7 +240,7 @@ type GetDirectionOnMultipleMetricsValuesDataPoint struct {
 	Date  time.Time `json:"time" yaml:"date"`
 }
 
-func (s *RedirectAssistantActionsService) GetDirectionOnMultipleMetricsValues(call openai2.ToolCall) (string, error) {
+func (s *AssetsAssistantActionsService) GetDirectionOnMultipleMetricsValues(call openai2.ToolCall) (string, error) {
 	if call.Function.Name != "GetDirectionOnMultipleMetricsValues" {
 		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
 	}
@@ -382,7 +382,7 @@ type AssistantGeneralMetricsMetricData struct {
 	ResourceCount *int   `json:"resource_count" yaml:"resource_count"`
 }
 
-func (s *RedirectAssistantActionsService) GetGeneralMetricsTrendsValues(call openai2.ToolCall) (string, error) {
+func (s *AssetsAssistantActionsService) GetGeneralMetricsTrendsValues(call openai2.ToolCall) (string, error) {
 	if call.Function.Name != "GetGeneralMetricsTrendsValues" {
 		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
 	}

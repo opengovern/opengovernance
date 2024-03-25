@@ -11,23 +11,26 @@ import (
 )
 
 type API struct {
-	logger               *zap.Logger
-	queryAssistant       *openai.Service
-	redirectionAssistant *openai.Service
-	database             db.Database
+	logger          *zap.Logger
+	queryAssistant  *openai.Service
+	assetsAssistant *openai.Service
+	scoreAssistant  *openai.Service
+	database        db.Database
 }
 
 func New(
 	logger *zap.Logger,
 	queryAssistant *openai.Service,
-	redirectionAssistant *openai.Service,
+	assetsAssistant *openai.Service,
+	scoreAssistant *openai.Service,
 	database db.Database,
 ) *API {
 	return &API{
-		logger:               logger.Named(fmt.Sprintf("api-%s", queryAssistant.AssistantName.String())),
-		queryAssistant:       queryAssistant,
-		redirectionAssistant: redirectionAssistant,
-		database:             database,
+		logger:          logger.Named(fmt.Sprintf("api-%s", queryAssistant.AssistantName.String())),
+		queryAssistant:  queryAssistant,
+		assetsAssistant: assetsAssistant,
+		scoreAssistant:  scoreAssistant,
+		database:        database,
 	}
 }
 
@@ -35,6 +38,8 @@ func (api *API) Register(e *echo.Echo) {
 	runRepo := repository.NewRun(api.database)
 	qThr := thread.New(api.logger, api.queryAssistant, runRepo)
 	qThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.queryAssistant.AssistantName.String())))
-	rThr := thread.New(api.logger, api.redirectionAssistant, runRepo)
-	rThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.redirectionAssistant.AssistantName.String())))
+	rThr := thread.New(api.logger, api.assetsAssistant, runRepo)
+	rThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.assetsAssistant.AssistantName.String())))
+	sThr := thread.New(api.logger, api.scoreAssistant, runRepo)
+	sThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.scoreAssistant.AssistantName.String())))
 }

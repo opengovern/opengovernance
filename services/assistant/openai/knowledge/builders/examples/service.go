@@ -19,7 +19,7 @@ type Def struct {
 
 func ExtractExamples(complianceClient client.ComplianceServiceClient) (map[string]string, error) {
 	var examples []Example
-	controls, err := complianceClient.ListControl(&httpclient.Context{UserRole: api.InternalRole}, nil)
+	controls, err := complianceClient.ListControl(&httpclient.Context{UserRole: api.InternalRole}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
