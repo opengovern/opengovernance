@@ -275,7 +275,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	controls, err := h.db.ListControls(nil)
+	controls, err := h.db.ListControls(nil, nil)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -459,7 +459,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	controls, err := h.db.ListControls(nil)
+	controls, err := h.db.ListControls(nil, nil)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -4118,8 +4118,9 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 
 func (h *HttpHandler) ListControls(ctx echo.Context) error {
 	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 
-	controls, err := h.db.ListControls(controlIDs)
+	controls, err := h.db.ListControls(controlIDs, tagMap)
 	if err != nil {
 		return err
 	}

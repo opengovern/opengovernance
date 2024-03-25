@@ -12,6 +12,7 @@ type AssistantType string
 const (
 	AssistantTypeQuery       AssistantType = "kaytu-r-assistant"
 	AssistantTypeRedirection AssistantType = "kaytu-redirection-assistant"
+	AssistantTypeScore       AssistantType = "kaytu-score-assistant"
 )
 
 func (a AssistantType) String() string {

@@ -720,11 +720,21 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 	return &res, nil
 }
 
-func (db Database) ListControls(controlIDs []string) ([]Control, error) {
+func (db Database) ListControls(controlIDs []string, tags map[string][]string) ([]Control, error) {
 	var s []Control
 	tx := db.Orm.Model(&Control{}).Preload(clause.Associations)
 	if len(controlIDs) > 0 {
 		tx = tx.Where("id IN ?", controlIDs)
+	}
+	if len(tags) > 0 {
+		tx = tx.Joins("JOIN control_tags AS tags ON tags.control_id = controls.id")
+		for key, values := range tags {
+			if len(values) > 0 {
+				tx = tx.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
+			} else {
+				tx = tx.Where("tags.key = ?", key)
+			}
+		}
 	}
 	tx = tx.Find(&s)
 	if tx.Error != nil {

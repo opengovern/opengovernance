@@ -6,7 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
@@ -39,7 +39,7 @@ type Service struct {
 	prompt    repository.Prompt
 }
 
-func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, c client4.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, c complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -263,10 +263,6 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 					Description: "Get direction on multiple metrics values",
 					Parameters: map[string]any{
 						"type": "object",
-						//i.  Metric ID: `metricId`
-						//          ii.  Connection: [connections]
-						//          iii.  StartDate: `startDate`
-						//          iv.  EndDate: `endDate`
 						"properties": map[string]any{
 							"metricId": map[string]any{
 								"type":        "string",
@@ -306,6 +302,71 @@ func NewAssetsRedirectionAssistant(logger *zap.Logger, isAzure bool, token, base
 
 	err = s.InitAssistant()
 	if err != nil {
+		return nil, fmt.Errorf("failed to init assistant due to %v", err)
+	}
+
+	return s, nil
+}
+
+func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, complianceServiceClient complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+	var config openai.ClientConfig
+	if isAzure {
+		config = openai.DefaultAzureConfig(token, baseURL)
+		config.APIVersion = "2024-02-15-preview"
+	} else {
+		config = openai.DefaultConfig(token)
+		config.OrgID = orgId
+	}
+	gptClient := openai.NewClientWithConfig(config)
+
+	files := map[string]string{}
+
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeScore))
+	if err != nil {
+		logger.Error("failed to list prompts", zap.Error(err))
+		return nil, err
+	}
+	var mainPrompts, chatPrompts string
+	for _, p := range prompts {
+		if p.Purpose == model.Purpose_SystemPrompt {
+			mainPrompts = p.Content
+		}
+		if p.Purpose == model.Purpose_ChatPrompt {
+			chatPrompts = p.Content
+		}
+	}
+
+	s := &Service{
+		MainPrompt:     mainPrompts,
+		ChatPrompt:     chatPrompts,
+		Model:          modelName,
+		AssistantName:  model.AssistantTypeScore,
+		Files:          files,
+		fileIDMap:      map[string]string{},
+		extraVariables: map[string]string{},
+		client:         gptClient,
+		prompt:         prompt,
+		Tools: []openai.AssistantTool{
+			{Type: openai.AssistantToolTypeCodeInterpreter},
+			{Type: openai.AssistantToolTypeRetrieval},
+		},
+	}
+
+	err = s.InitFiles()
+	if err != nil {
+		logger.Error("failed to init files", zap.Error(err), zap.String("assistant", string(model.AssistantTypeScore)))
+		return nil, fmt.Errorf("failed to init files due to %v", err)
+	}
+
+	err = s.InitExtraVariables()
+	if err != nil {
+		logger.Error("failed to init extra variables", zap.Error(err), zap.String("assistant", string(model.AssistantTypeScore)))
+		return nil, fmt.Errorf("failed to init extra variables due to %v", err)
+	}
+
+	err = s.InitAssistant()
+	if err != nil {
+		logger.Error("failed to init assistant", zap.Error(err), zap.String("assistant", string(model.AssistantTypeScore)))
 		return nil, fmt.Errorf("failed to init assistant due to %v", err)
 	}
 
