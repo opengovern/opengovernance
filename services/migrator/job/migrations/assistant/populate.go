@@ -135,5 +135,38 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
+	// Compliance assistant
+	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "compliance_chat_prompt.txt"))
+	if err != nil {
+		logger.Error("failed to read compliance chat prompt", zap.Error(err))
+		return err
+	}
+
+	err = promptRepo.Create(context.Background(), model.Prompt{
+		Purpose:       model.Purpose_ChatPrompt,
+		AssistantName: model.AssistantTypeCompliance,
+		Content:       string(prompt),
+	})
+	if err != nil {
+		logger.Error("failed to create compliance chat prompt", zap.Error(err))
+		return err
+	}
+
+	prompt, err = os.ReadFile(path.Join(m.AttachmentFolderPath(), "compliance_main_prompt.txt"))
+	if err != nil {
+		logger.Error("failed to read compliance main prompt", zap.Error(err))
+		return err
+	}
+
+	err = promptRepo.Create(context.Background(), model.Prompt{
+		Purpose:       model.Purpose_SystemPrompt,
+		AssistantName: model.AssistantTypeCompliance,
+		Content:       string(prompt),
+	})
+	if err != nil {
+		logger.Error("failed to create compliance main prompt", zap.Error(err))
+		return err
+	}
+
 	return nil
 }
