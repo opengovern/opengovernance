@@ -911,7 +911,7 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 	ctx := &httpclient.Context{
 		UserRole: apiAuth.AdminRole,
 	}
-	benchmarks, err := s.complianceClient.ListBenchmarks(ctx)
+	benchmarks, err := s.complianceClient.ListBenchmarks(ctx, nil)
 	if err != nil {
 		return err
 	}

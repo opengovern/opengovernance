@@ -135,7 +135,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		return err
 	}
 
-	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx))
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
 		return err
 	}
