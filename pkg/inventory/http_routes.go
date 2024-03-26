@@ -990,7 +990,15 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	}
 
 	for rt := range others {
-		categoryResourceTypeMap["Others"] = append(categoryResourceTypeMap["Others"], rt)
+		category := "Others"
+		for cat, rts := range categoryMap {
+			for _, crt := range rts {
+				if strings.ToLower(crt) == strings.ToLower(rt) {
+					category = cat
+				}
+			}
+		}
+		categoryResourceTypeMap[category] = append(categoryResourceTypeMap[category], rt)
 	}
 
 	return ctx.JSON(http.StatusOK, inventoryApi.AnalyticsCategoriesResponse{
