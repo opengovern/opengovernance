@@ -302,8 +302,9 @@ func (s *Scheduler) scheduleDescribeJob() {
 				continue
 			}
 
-			removeResources := azureAdOnlyOnOneConnection(connections, connection, resourceType)
-			_, err = s.describe(connection, resourceType, true, false, removeResources)
+			removeResourcesAzure := azureAdOnlyOnOneConnection(connections, connection, resourceType)
+			removeResourcesAWS := awsOnlyOnOneConnection(connections, connection, resourceType)
+			_, err = s.describe(connection, resourceType, true, false, removeResourcesAzure || removeResourcesAWS)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
 			}
@@ -353,6 +354,33 @@ func azureAdOnlyOnOneConnection(connections []apiOnboard.Connection, connection 
 		}
 	}
 	return false
+}
+
+func awsOnlyOnOneConnection(connections []apiOnboard.Connection, connection apiOnboard.Connection, resourceType string) bool {
+	if connection.Connector != source.CloudAWS {
+		return false
+	}
+
+	if connection.CredentialType != apiOnboard.CredentialTypeManualAwsOrganization {
+		return false
+	}
+
+	if !strings.HasPrefix(resourceType, "AWS::IdentityStore::") {
+		return false
+	}
+
+	var AccountType string
+	if accountType, ok := connection.Metadata["account_type"]; ok {
+		if accountTypeStr, ok := accountType.(string); ok {
+			AccountType = accountTypeStr
+		}
+	}
+
+	if AccountType == "" {
+		return false
+	}
+
+	return AccountType != "organization_manager"
 }
 
 func (s *Scheduler) retryFailedJobs() error {
