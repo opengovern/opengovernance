@@ -469,7 +469,8 @@ const docTemplate = `{
                         "enum": [
                             "kaytu-r-assistant",
                             "kaytu-assets-assistant",
-                            "kaytu-score-assistant"
+                            "kaytu-score-assistant",
+                            "kaytu-compliance-assistant"
                         ],
                         "type": "string",
                         "description": "Assistant Name",
@@ -524,7 +525,8 @@ const docTemplate = `{
                         "enum": [
                             "kaytu-r-assistant",
                             "kaytu-assets-assistant",
-                            "kaytu-score-assistant"
+                            "kaytu-score-assistant",
+                            "kaytu-compliance-assistant"
                         ],
                         "type": "string",
                         "description": "Assistant Name",

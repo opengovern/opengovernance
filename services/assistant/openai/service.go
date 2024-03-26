@@ -411,7 +411,7 @@ func NewComplianceAssistant(logger *zap.Logger, isAzure bool, token, baseURL, mo
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeScore))
+	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeCompliance))
 	if err != nil {
 		logger.Error("failed to list prompts", zap.Error(err))
 		return nil, err

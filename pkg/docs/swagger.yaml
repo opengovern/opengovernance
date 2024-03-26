@@ -4620,6 +4620,7 @@ paths:
         - kaytu-r-assistant
         - kaytu-assets-assistant
         - kaytu-score-assistant
+        - kaytu-compliance-assistant
         in: path
         name: assistant_name
         required: true
@@ -4656,6 +4657,7 @@ paths:
         - kaytu-r-assistant
         - kaytu-assets-assistant
         - kaytu-score-assistant
+        - kaytu-compliance-assistant
         in: path
         name: assistant_name
         required: true

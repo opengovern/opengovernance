@@ -464,7 +464,8 @@
                         "enum": [
                             "kaytu-r-assistant",
                             "kaytu-assets-assistant",
-                            "kaytu-score-assistant"
+                            "kaytu-score-assistant",
+                            "kaytu-compliance-assistant"
                         ],
                         "type": "string",
                         "description": "Assistant Name",
@@ -519,7 +520,8 @@
                         "enum": [
                             "kaytu-r-assistant",
                             "kaytu-assets-assistant",
-                            "kaytu-score-assistant"
+                            "kaytu-score-assistant",
+                            "kaytu-compliance-assistant"
                         ],
                         "type": "string",
                         "description": "Assistant Name",
