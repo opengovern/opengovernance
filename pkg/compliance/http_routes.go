@@ -3955,8 +3955,9 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	// trace :
 	output1, span1 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListRootBenchmarks")
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 
-	benchmarks, err := h.db.ListRootBenchmarks(nil)
+	benchmarks, err := h.db.ListRootBenchmarks(tagMap)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())

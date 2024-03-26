@@ -11,11 +11,12 @@ import (
 )
 
 type API struct {
-	logger          *zap.Logger
-	queryAssistant  *openai.Service
-	assetsAssistant *openai.Service
-	scoreAssistant  *openai.Service
-	database        db.Database
+	logger              *zap.Logger
+	queryAssistant      *openai.Service
+	assetsAssistant     *openai.Service
+	scoreAssistant      *openai.Service
+	complianceAssistant *openai.Service
+	database            db.Database
 }
 
 func New(
@@ -23,14 +24,16 @@ func New(
 	queryAssistant *openai.Service,
 	assetsAssistant *openai.Service,
 	scoreAssistant *openai.Service,
+	complianceAssistant *openai.Service,
 	database db.Database,
 ) *API {
 	return &API{
-		logger:          logger.Named(fmt.Sprintf("api-%s", queryAssistant.AssistantName.String())),
-		queryAssistant:  queryAssistant,
-		assetsAssistant: assetsAssistant,
-		scoreAssistant:  scoreAssistant,
-		database:        database,
+		logger:              logger.Named(fmt.Sprintf("api-%s", queryAssistant.AssistantName.String())),
+		queryAssistant:      queryAssistant,
+		assetsAssistant:     assetsAssistant,
+		scoreAssistant:      scoreAssistant,
+		complianceAssistant: complianceAssistant,
+		database:            database,
 	}
 }
 
@@ -42,4 +45,6 @@ func (api *API) Register(e *echo.Echo) {
 	rThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.assetsAssistant.AssistantName.String())))
 	sThr := thread.New(api.logger, api.scoreAssistant, runRepo)
 	sThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.scoreAssistant.AssistantName.String())))
+	cThr := thread.New(api.logger, api.complianceAssistant, runRepo)
+	cThr.Register(e.Group(fmt.Sprintf("/api/v1/%s/thread", api.complianceAssistant.AssistantName.String())))
 }

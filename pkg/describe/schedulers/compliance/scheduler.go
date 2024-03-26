@@ -18,7 +18,7 @@ func (s *JobScheduler) runScheduler() error {
 	}
 	clientCtx := &httpclient.Context{UserRole: authAPI.InternalRole}
 
-	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx)
+	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx, nil)
 	if err != nil {
 		s.logger.Error("error while listing benchmarks", zap.Error(err))
 		return fmt.Errorf("error while listing benchmarks: %v", err)

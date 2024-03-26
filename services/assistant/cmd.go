@@ -54,6 +54,11 @@ func Command() *cobra.Command {
 				logger.Error("failed to create score assistant", zap.Error(err))
 				return err
 			}
+			complianceAssistant, err := openai.NewComplianceAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
+			if err != nil {
+				logger.Error("failed to create compliance assistant", zap.Error(err))
+				return err
+			}
 
 			queryAssistantActions, err := actions.NewQueryAssistantActions(logger, queryAssistant, inventoryServiceClient, repository.NewRun(database))
 			if err != nil {
@@ -71,7 +76,7 @@ func Command() *cobra.Command {
 			return httpserver.RegisterAndStart(
 				logger,
 				cnf.Http.Address,
-				api.New(logger, queryAssistant, assetsAssistant, scoreAssistant, database),
+				api.New(logger, queryAssistant, assetsAssistant, scoreAssistant, complianceAssistant, database),
 			)
 		},
 	}

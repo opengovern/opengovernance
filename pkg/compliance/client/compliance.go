@@ -22,7 +22,7 @@ type ComplianceServiceClient interface {
 	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
-	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
+	ListBenchmarks(ctx *httpclient.Context, tags map[string][]string) ([]compliance.Benchmark, error)
 	ListAllBenchmarks(ctx *httpclient.Context, isBare bool) ([]compliance.Benchmark, error)
 	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
 	ListInsights(ctx *httpclient.Context) ([]compliance.Insight, error)
@@ -339,8 +339,30 @@ func (s *complianceClient) GetInsight(ctx *httpclient.Context, insightId string,
 	return insight, nil
 }
 
-func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error) {
+func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context, tags map[string][]string) ([]compliance.Benchmark, error) {
 	url := fmt.Sprintf("%s/api/v1/benchmarks", s.baseURL)
+
+	isFirstParamAttached := false
+	for tagKey, tagValues := range tags {
+		for _, tagValue := range tagValues {
+			if !isFirstParamAttached {
+				url += "?"
+				isFirstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tag=%s=%s", tagKey, tagValue)
+		}
+		if len(tagValues) == 0 {
+			if !isFirstParamAttached {
+				url += "?"
+				isFirstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tag=%s=", tagKey)
+		}
+	}
 
 	var benchmarks []compliance.Benchmark
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {
