@@ -1726,10 +1726,10 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.32.39 h1:SE0xHSgjS4TZSPjS4O2qTUrJAat5qebD5iGDHjFwGLY=
 github.com/kaytu-io/kaytu-aws-describer v0.32.39/go.mod h1:5Ez3mT3JaGhJRbmAEtrFToBEvsSjtJ5ZGZknr4V5PVM=
-github.com/kaytu-io/kaytu-azure-describer v0.24.36 h1:Af3LnsuLRIK3cDxVTWGtbWkltHlKtCZTV7kJWcxg8S4=
-github.com/kaytu-io/kaytu-azure-describer v0.24.36/go.mod h1:GRTXQusA9W5B0S1eOJEpiZiRoBo+jrGEv+Qt62oY+jQ=
-github.com/kaytu-io/kaytu-util v0.0.0-20240325164212-b8617d159d8c h1:/CHZYZmUfawcqYvTvMsMtJ6JF0V2NbEmLq8FBwHFHO8=
-github.com/kaytu-io/kaytu-util v0.0.0-20240325164212-b8617d159d8c/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
+github.com/kaytu-io/kaytu-azure-describer v0.24.38 h1:KeeZCFe9VyAUYQhDIL0SK/PkCrBIxxra0nbOiwRTgr8=
+github.com/kaytu-io/kaytu-azure-describer v0.24.38/go.mod h1:D3yUJ1u6SkDaxMcCzB1gq5vkIPQcH8APRDbn0eS985A=
+github.com/kaytu-io/kaytu-util v0.0.0-20240326082318-e78256a19da0 h1:hZYxQoao8WCpF9yrPuUoAs3HhL2mpka+i3RlpcG24Tg=
+github.com/kaytu-io/kaytu-util v0.0.0-20240326082318-e78256a19da0/go.mod h1:oD/cMRLqPIGBTiUpKvhmBxZrUqMtx1H86ttJjsSapis=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
 github.com/kaytu-io/pennywise v1.1.5/go.mod h1:hmfCDFdnQJdwjwqt5XpAi5tOHNvl4XhJuAkVm5kX+To=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
