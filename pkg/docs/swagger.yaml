@@ -1667,6 +1667,9 @@ definitions:
       kaytuResourceId:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
+      resourceType:
+        example: Microsoft.Compute/virtualMachines
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetSingleResourceFindingResponse:
     properties:
@@ -1971,6 +1974,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding'
         type: array
+      id:
+        type: string
       kaytuResourceID:
         type: string
       providerConnectionID:

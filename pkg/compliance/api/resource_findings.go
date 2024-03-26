@@ -7,6 +7,7 @@ import (
 )
 
 type ResourceFinding struct {
+	ID                string      `json:"id"`
 	KaytuResourceID   string      `json:"kaytuResourceID"`
 	ResourceName      string      `json:"resourceName"`
 	ResourceLocation  string      `json:"resourceLocation"`
@@ -30,6 +31,7 @@ type ResourceFinding struct {
 
 func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFinding {
 	apiRf := ResourceFinding{
+		ID:               resourceFinding.EsID,
 		KaytuResourceID:  resourceFinding.KaytuResourceID,
 		ResourceName:     resourceFinding.ResourceName,
 		ResourceLocation: resourceFinding.ResourceLocation,

@@ -69,7 +69,8 @@ type GetSingleFindingRequest struct {
 }
 
 type GetSingleResourceFindingRequest struct {
-	KaytuResourceId string `json:"kaytuResourceId" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	KaytuResourceId string  `json:"kaytuResourceId" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType    *string `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 }
 
 type ConformanceStatus string

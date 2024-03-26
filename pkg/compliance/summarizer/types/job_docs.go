@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strings"
 
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -16,7 +17,7 @@ type JobDocs struct {
 
 	// these are used to track if the resource finding is done so we can remove it from the map and send it to queue to save memory
 	ResourcesFindingsIsDone map[string]bool `json:"-"`
-	LastResourceId          string          `json:"-"`
+	LastResourceIdType      string          `json:"-"`
 	// caches, these are not marshalled and only used
 	ResourceCollectionCache map[string]inventoryApi.ResourceCollection `json:"-"`
 	ConnectionCache         map[string]onboardApi.Connection           `json:"-"`
@@ -51,13 +52,13 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 		return
 	}
 
-	if jd.LastResourceId == "" {
-		jd.LastResourceId = resource.ResourceID
-	} else if jd.LastResourceId != resource.ResourceID {
-		jd.ResourcesFindingsIsDone[jd.LastResourceId] = true
-		jd.LastResourceId = resource.ResourceID
+	if jd.LastResourceIdType == "" {
+		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)
+	} else if jd.LastResourceIdType != fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID) {
+		jd.ResourcesFindingsIsDone[jd.LastResourceIdType] = true
+		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)
 	}
-	resourceFinding, ok := jd.ResourcesFindings[resource.ResourceID]
+	resourceFinding, ok := jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
 			KaytuResourceID:       resource.ResourceID,
@@ -71,8 +72,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			JobId:                 job.ID,
 			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
-		jd.ResourcesFindingsIsDone[resource.ResourceID] = false
-
+		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = false
 	}
 	if resourceFinding.ResourceName == "" {
 		resourceFinding.ResourceName = resource.Name
@@ -190,7 +190,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 		}
 	}
 
-	jd.ResourcesFindings[resource.ResourceID] = resourceFinding
+	jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = resourceFinding
 }
 
 func (jd *JobDocs) SummarizeResourceFinding(logger *zap.Logger, resourceFinding types.ResourceFinding) types.ResourceFinding {
