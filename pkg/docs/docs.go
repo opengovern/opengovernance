@@ -10169,6 +10169,10 @@ const docTemplate = `{
                 "kaytuResourceId": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "resourceType": {
+                    "type": "string",
+                    "example": "Microsoft.Compute/virtualMachines"
                 }
             }
         },
@@ -10602,6 +10606,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding"
                     }
+                },
+                "id": {
+                    "type": "string"
                 },
                 "kaytuResourceID": {
                     "type": "string"

@@ -114,5 +114,6 @@ type ResourceFinding struct {
 func (r ResourceFinding) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.KaytuResourceID,
+		r.ResourceType,
 	}, ResourceFindingsIndex
 }

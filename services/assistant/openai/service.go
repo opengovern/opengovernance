@@ -23,6 +23,8 @@ import (
 )
 
 type Service struct {
+	logger *zap.Logger
+
 	MainPrompt    string
 	ChatPrompt    string
 	Model         string
@@ -88,6 +90,7 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		}
 	}
 	s := &Service{
+		logger:        logger,
 		client:        gptClient,
 		MainPrompt:    mainPrompts,
 		ChatPrompt:    chatPrompts,
@@ -176,6 +179,7 @@ func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelN
 		}
 	}
 	s := &Service{
+		logger:         logger,
 		client:         gptClient,
 		MainPrompt:     mainPrompts,
 		ChatPrompt:     chatPrompts,
@@ -347,6 +351,7 @@ func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	}
 
 	s := &Service{
+		logger:         logger,
 		MainPrompt:     mainPrompts,
 		ChatPrompt:     chatPrompts,
 		Model:          modelName,
@@ -404,7 +409,7 @@ func (s *Service) InitAssistant() error {
 	}
 	mainPrompt := outputExecute.String()
 
-	fmt.Println("main prompt:", mainPrompt)
+	s.logger.Info("main prompt", zap.String("main_prompt", mainPrompt), zap.String("assistant_name", s.AssistantName.String()))
 
 	assistants, err := s.client.ListAssistants(context.Background(), nil, nil, nil, nil)
 	if err != nil {
@@ -429,6 +434,7 @@ func (s *Service) InitAssistant() error {
 			Metadata:     nil,
 		})
 		if err != nil {
+			s.logger.Error("failed to create assistants", zap.Error(err), zap.String("assistant_name", s.AssistantName.String()))
 			return fmt.Errorf("failed to create assistants due to %v", err)
 		}
 		assistant = &a
@@ -460,6 +466,7 @@ func (s *Service) InitAssistant() error {
 			Metadata:     nil,
 		})
 		if err != nil {
+			s.logger.Error("failed to modify assistants", zap.Error(err), zap.String("assistant_name", s.AssistantName.String()))
 			return fmt.Errorf("failed to modify assistants due to %v", err)
 		}
 		assistant = &a

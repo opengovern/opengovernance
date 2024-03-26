@@ -342,20 +342,23 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
 	}
 
-	lookupResources, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
 	}
 
-	lookupResourcesMap := make(map[string]*es2.LookupResource)
-	for _, r := range lookupResources {
-		r := r
-		lookupResourcesMap[r.ResourceID] = &r
-	}
-
 	for i, finding := range response.Findings {
-		if lookupResource, ok := lookupResourcesMap[finding.KaytuResourceID]; ok {
+		var lookupResource *es2.LookupResource
+		potentialResources := lookupResourcesMap[finding.KaytuResourceID]
+		for _, r := range potentialResources {
+			r := r
+			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
+				lookupResource = &r
+				break
+			}
+		}
+		if lookupResource != nil {
 			response.Findings[i].ResourceName = lookupResource.Name
 			response.Findings[i].ResourceLocation = lookupResource.Location
 		} else {
@@ -423,11 +426,24 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
 	}
-	if len(lookupResourceRes) == 0 {
+	if len(lookupResourceRes) == 0 || len(lookupResourceRes[req.KaytuResourceId]) == 0 {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
-
-	lookupResource := lookupResourceRes[0]
+	var lookupResource *es2.LookupResource
+	if req.ResourceType == nil {
+		lookupResource = utils.GetPointer(lookupResourceRes[req.KaytuResourceId][0])
+	} else {
+		for _, r := range lookupResourceRes[req.KaytuResourceId] {
+			r := r
+			if strings.ToLower(r.ResourceType) == strings.ToLower(*req.ResourceType) {
+				lookupResource = &r
+				break
+			}
+		}
+	}
+	if lookupResource == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
+	}
 
 	resource, err := es.FetchResourceByResourceIdAndType(h.client, lookupResource.ResourceID, lookupResource.ResourceType)
 	if err != nil {
@@ -1718,20 +1734,24 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	lookupResources, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
 	}
 
-	lookupResourcesMap := make(map[string]*es2.LookupResource)
-	for _, r := range lookupResources {
-		r := r
-		lookupResourcesMap[r.ResourceID] = &r
-	}
-
 	for i, findingEvent := range response.FindingEvents {
-		if lookupResource, ok := lookupResourcesMap[findingEvent.KaytuResourceID]; ok {
+		var lookupResource *es2.LookupResource
+		potentialResources := lookupResourcesMap[findingEvent.KaytuResourceID]
+		for _, r := range potentialResources {
+			r := r
+			if strings.ToLower(r.ResourceType) == strings.ToLower(findingEvent.ResourceType) {
+				lookupResource = &r
+				break
+			}
+		}
+
+		if lookupResource != nil {
 			response.FindingEvents[i].ResourceName = lookupResource.Name
 			response.FindingEvents[i].ResourceLocation = lookupResource.Location
 		} else {

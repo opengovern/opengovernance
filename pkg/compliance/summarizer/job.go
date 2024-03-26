@@ -32,7 +32,10 @@ func (w *Worker) RunJob(j types2.Job) error {
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
 	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []kaytu.BoolFilter{
 		kaytu.NewTermFilter("stateActive", "true"),
-	}, nil, []map[string]any{{"kaytuResourceID": "asc"}})
+	}, nil, []map[string]any{
+		{"kaytuResourceID": "asc"},
+		{"resourceType": "asc"},
+	})
 	if err != nil {
 		return err
 	}
@@ -104,34 +107,39 @@ func (w *Worker) RunJob(j types2.Job) error {
 			resourceIds = append(resourceIds, f.KaytuResourceID)
 		}
 
-		lookupResources, err := es.FetchLookupByResourceIDBatch(w.esClient, resourceIds)
+		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(w.esClient, resourceIds)
 		if err != nil {
 			w.logger.Error("failed to fetch lookup resources", zap.Error(err))
 			return err
 		}
-		lookupResourcesMap := make(map[string]*es2.LookupResource)
-		for _, r := range lookupResources {
-			r := r
-			lookupResourcesMap[r.ResourceID] = &r
-		}
 
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
-			jd.AddFinding(w.logger, j, f, lookupResourcesMap[f.KaytuResourceID])
+			var resource *es2.LookupResource
+			potentialResources := lookupResourcesMap[f.KaytuResourceID]
+			for _, r := range potentialResources {
+				r := r
+				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
+					resource = &r
+					break
+				}
+			}
+
+			jd.AddFinding(w.logger, j, f, resource)
 		}
 
 		var docs []es2.Doc
-		for resourceId, isReady := range jd.ResourcesFindingsIsDone {
+		for resourceIdType, isReady := range jd.ResourcesFindingsIsDone {
 			if !isReady {
 				continue
 			}
-			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceId])
+			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceIdType])
 			keys, idx := resourceFinding.KeysAndIndex()
 			resourceFinding.EsID = es2.HashOf(keys...)
 			resourceFinding.EsIndex = idx
 			docs = append(docs, resourceFinding)
-			delete(jd.ResourcesFindings, resourceId)
-			delete(jd.ResourcesFindingsIsDone, resourceId)
+			delete(jd.ResourcesFindings, resourceIdType)
+			delete(jd.ResourcesFindingsIsDone, resourceIdType)
 		}
 		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
 

@@ -30,7 +30,7 @@ type LookupQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) ([]es.LookupResource, error) {
+func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) (map[string][]es.LookupResource, error) {
 	if len(resourceID) == 0 {
 		return nil, nil
 	}
@@ -59,7 +59,7 @@ func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) ([]e
 			"aggs": map[string]any{
 				"hit_select": map[string]any{
 					"top_hits": map[string]any{
-						"size": 1,
+						"size": 1000,
 						"sort": map[string]any{
 							"_id": "desc",
 						},
@@ -82,12 +82,15 @@ func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) ([]e
 		return nil, err
 	}
 
-	resources := make([]es.LookupResource, 0, len(response.Aggregations.Resources.Buckets))
+	resources := make(map[string][]es.LookupResource)
 	for _, bucket := range response.Aggregations.Resources.Buckets {
 		if len(bucket.HitSelect.Hits.Hits) == 0 {
 			continue
 		}
-		resources = append(resources, bucket.HitSelect.Hits.Hits[0].Source)
+		resources[bucket.Key] = make([]es.LookupResource, 0, len(bucket.HitSelect.Hits.Hits))
+		for _, hit := range bucket.HitSelect.Hits.Hits {
+			resources[bucket.Key] = append(resources[bucket.Key], hit.Source)
+		}
 	}
 
 	return resources, nil
