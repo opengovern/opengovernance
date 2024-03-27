@@ -11,7 +11,7 @@ import (
 type assistantControl struct {
 	ID            string              `json:"id" yaml:"id"`
 	Title         string              `json:"title" yaml:"title"`
-	CloudProvider string              `json:"cloud_provider" yaml:"cloud_provider"`
+	CloudProvider []string            `json:"cloud_provider" yaml:"cloud_provider"`
 	Severity      string              `json:"severity" yaml:"severity"`
 	Tags          map[string][]string `json:"tags" yaml:"tags"`
 }
@@ -25,10 +25,14 @@ func ExtractControls(logger *zap.Logger, complianceClient complianceClient.Compl
 
 	var assistantControls []assistantControl
 	for _, c := range controls {
+		var connectors []string
+		for _, con := range c.Connector {
+			connectors = append(connectors, con.String())
+		}
 		assistantControls = append(assistantControls, assistantControl{
 			ID:            c.ID,
 			Title:         c.Title,
-			CloudProvider: c.Connector.String(),
+			CloudProvider: connectors,
 			Severity:      c.Severity.String(),
 			Tags:          c.Tags,
 		})
