@@ -2860,7 +2860,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 	for _, control := range controlsMap {
 		if control.Query != nil {
 			if query, ok := queryMap[control.Query.ID]; ok {
-				control.Connector, _ = source.ParseType(query.Connector)
+				control.Connector = source.ParseTypes(query.Connector)
 			}
 		}
 		result, ok := controlResult[control.ID]
@@ -3155,9 +3155,9 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		apiControl := control.ToApi()
 		var resourceType *inventoryApi.ResourceType
 		if control.Query != nil {
-			apiControl.Connector, _ = source.ParseType(control.Query.Connector)
+			apiControl.Connector = source.ParseTypes(control.Query.Connector)
 			if control.Query.PrimaryTable != nil {
-				rtName := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.Type(control.Query.Connector))
+				rtName, _ := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.ParseTypes(control.Query.Connector))
 				resourceType = resourceTypeMap[strings.ToLower(rtName)]
 			}
 		}
@@ -3258,9 +3258,9 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 
 	var resourceType *inventoryApi.ResourceType
 	if control.Query != nil {
-		apiControl.Connector, _ = source.ParseType(control.Query.Connector)
+		apiControl.Connector = source.ParseTypes(control.Query.Connector)
 		if control.Query != nil {
-			rtName := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.Type(control.Query.Connector))
+			rtName, _ := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.ParseTypes(control.Query.Connector))
 			resourceType = resourceTypeMap[strings.ToLower(rtName)]
 		}
 	}
@@ -3746,23 +3746,25 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	var assignedConnections []api.BenchmarkAssignedConnection
 
-	connections, err := h.onboardClient.ListSources(hctx, []source.Type{benchmark.Connector})
-	if err != nil {
-		return err
-	}
+	for _, c := range benchmark.Connector {
+		connections, err := h.onboardClient.ListSources(hctx, []source.Type{c})
+		if err != nil {
+			return err
+		}
 
-	for _, connection := range connections {
-		if !connection.IsEnabled() {
-			continue
+		for _, connection := range connections {
+			if !connection.IsEnabled() {
+				continue
+			}
+			ba := api.BenchmarkAssignedConnection{
+				ConnectionID:           connection.ID.String(),
+				ProviderConnectionID:   connection.ConnectionID,
+				ProviderConnectionName: connection.ConnectionName,
+				Connector:              c,
+				Status:                 false,
+			}
+			assignedConnections = append(assignedConnections, ba)
 		}
-		ba := api.BenchmarkAssignedConnection{
-			ConnectionID:           connection.ID.String(),
-			ProviderConnectionID:   connection.ConnectionID,
-			ProviderConnectionName: connection.ConnectionName,
-			Connector:              benchmark.Connector,
-			Status:                 false,
-		}
-		assignedConnections = append(assignedConnections, ba)
 	}
 
 	// trace :
