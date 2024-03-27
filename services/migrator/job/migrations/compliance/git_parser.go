@@ -334,7 +334,7 @@ func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []stri
 			}
 		}
 	}
-	return benchmarks, nil
+	return benchmarks, connectors
 }
 
 func (g *GitParser) CheckForDuplicate() error {
