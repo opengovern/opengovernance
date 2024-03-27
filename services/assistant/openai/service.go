@@ -440,6 +440,58 @@ func NewComplianceAssistant(logger *zap.Logger, isAzure bool, token, baseURL, mo
 		Tools: []openai.AssistantTool{
 			{Type: openai.AssistantToolTypeCodeInterpreter},
 			{Type: openai.AssistantToolTypeRetrieval},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetConnectionKaytuIDFromNameOrProviderID",
+					Description: "Get connection kaytu id from it's name or provider_id",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"name": map[string]any{
+								"type":        "string",
+								"description": "The name of the connection",
+							},
+							"provider_id": map[string]any{
+								"type":        "string",
+								"description": "The id of the connection in the cloud provider",
+							},
+						},
+					},
+				},
+			},
+			{
+				Type: openai.AssistantToolTypeFunction,
+				Function: &openai.FunctionDefinition{
+					Name:        "GetDirectionOnBenchmarkResultValues",
+					Description: "Get direction on benchmark result values",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"benchmarkId": map[string]any{
+								"type":        "string",
+								"description": "The benchmark id",
+							},
+							"connections": map[string]any{
+								"type":        "array",
+								"description": "The list of connection ids",
+								"items": map[string]any{
+									"type": "string",
+								},
+							},
+							"startDate": map[string]any{
+								"type":        "number",
+								"description": "The start date in epoch seconds",
+							},
+							"endDate": map[string]any{
+								"type":        "number",
+								"description": "The end date in epoch seconds",
+							},
+						},
+						"required": []string{"benchmarkId"},
+					},
+				},
+			},
 		},
 	}
 
