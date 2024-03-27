@@ -324,7 +324,7 @@ func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []stri
 
 	for idx, benchmark := range benchmarks {
 		if benchmark.Connector == nil {
-			benchmarks, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
+			benchmark.Children, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
 			benchmarks[idx] = benchmark
 		}
 		for _, c := range benchmark.Connector {
