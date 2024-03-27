@@ -198,6 +198,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 					PrimaryTable:   control.Query.PrimaryTable,
 					ListOfTables:   control.Query.ListOfTables,
 					Engine:         control.Query.Engine,
+					Global:         control.Query.Global,
 				}
 				for _, parameter := range control.Query.Parameters {
 					q.Parameters = append(q.Parameters, db.QueryParameter{
@@ -208,6 +209,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				}
 				g.queries = append(g.queries, q)
 				p.QueryID = &control.ID
+				p.Connector = q.Connector
 			}
 			g.controls = append(g.controls, p)
 		}
@@ -314,7 +316,27 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 		g.benchmarks[idx] = benchmark
 	}
+	g.benchmarks, _ = fillBenchmarksConnectors(g.benchmarks)
 	return nil
+}
+
+func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []string) {
+	var connectors []string
+	connectorMap := make(map[string]bool)
+
+	for idx, benchmark := range benchmarks {
+		if benchmark.Connector == nil {
+			benchmarks, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
+			benchmarks[idx] = benchmark
+		}
+		for _, c := range benchmark.Connector {
+			if _, ok := connectorMap[c]; !ok {
+				connectors = append(connectors, c)
+				connectorMap[c] = true
+			}
+		}
+	}
+	return benchmarks, nil
 }
 
 func (g *GitParser) CheckForDuplicate() error {
