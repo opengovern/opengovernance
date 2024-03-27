@@ -109,6 +109,7 @@ type Control struct {
 	Tags    []ControlTag        `gorm:"foreignKey:ControlID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string `gorm:"-:all"`
 
+	Connector          pq.StringArray `gorm:"type:text[]"`
 	DocumentURI        string
 	Enabled            bool
 	QueryID            *string
