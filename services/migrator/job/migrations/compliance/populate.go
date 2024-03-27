@@ -130,6 +130,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 					"managed",
 					"baseline",
 					"updated_at",
+					"connector",
 				}), // column needed to be updated
 			}).Create(&obj).Error
 			if err != nil {
