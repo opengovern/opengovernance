@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-func GetResourceTypeFromTableName(tableName string, queryConnector []source.Type) string {
+func GetResourceTypeFromTableName(tableName string, queryConnector []source.Type) (string, source.Type) {
 	var connector source.Type
 	if len(queryConnector) == 1 {
 		connector = queryConnector[0]
@@ -23,21 +23,23 @@ func GetResourceTypeFromTableName(tableName string, queryConnector []source.Type
 	}
 	switch connector {
 	case source.CloudAWS:
-		return awsSteampipe.ExtractResourceType(tableName)
+		return awsSteampipe.ExtractResourceType(tableName), source.CloudAWS
 	case source.CloudAzure:
-		return azureSteampipe.ExtractResourceType(tableName)
+		return azureSteampipe.ExtractResourceType(tableName), source.CloudAzure
 	default:
 		resourceType := awsSteampipe.ExtractResourceType(tableName)
 		if resourceType == "" {
 			resourceType = azureSteampipe.ExtractResourceType(tableName)
+			return resourceType, source.CloudAzure
+		} else {
+			return resourceType, source.CloudAWS
 		}
-		return resourceType
 	}
 }
 
 func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Benchmark, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
-
+	var connector source.Type
 	queryResourceType := ""
 	if query.PrimaryTable != nil || len(query.ListOfTables) == 1 {
 		tableName := ""
@@ -47,7 +49,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			tableName = query.ListOfTables[0]
 		}
 		if tableName != "" {
-			queryResourceType = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.Connector)
+			queryResourceType, connector = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.Connector)
 		}
 	}
 
@@ -72,7 +74,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			connectionId = v
 		}
 		if v, ok := recordValue["kaytu_table_name"].(string); ok && resourceType == "" {
-			resourceType = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.Connector)
+			resourceType, connector = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.Connector)
 		}
 		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
 			resourceID = v
@@ -158,7 +160,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			ConformanceStatus:         status,
 			Severity:                  severity,
 			Evaluator:                 w.ExecutionPlan.Query.Engine,
-			Connector:                 w.ExecutionPlan.Query.Connector,
+			Connector:                 connector,
 			KaytuResourceID:           kaytuResourceId,
 			ResourceID:                resourceID,
 			ResourceName:              resourceName,
