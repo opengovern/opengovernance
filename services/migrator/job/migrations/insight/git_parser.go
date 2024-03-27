@@ -2,6 +2,7 @@ package insight
 
 import (
 	"fmt"
+	"github.com/goccy/go-yaml"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"gorm.io/gorm"
