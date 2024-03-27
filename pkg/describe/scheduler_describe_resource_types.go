@@ -102,10 +102,8 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		return result, err
 	}
 	for _, metric := range append(assetMetrics, spendMetrics...) {
-		for _, connector := range metric.Connectors {
-			rts := extractResourceTypes(metric.Query, connector)
-			resourceTypes = append(resourceTypes, rts...)
-		}
+		rts := extractResourceTypes(metric.Query, metric.Connectors)
+		resourceTypes = append(resourceTypes, rts...)
 	}
 	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
 	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
@@ -115,7 +113,7 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		return result, err
 	}
 	for _, ins := range insights {
-		rts := extractResourceTypes(ins.Query.QueryToExecute, ins.Connector)
+		rts := extractResourceTypes(ins.Query.QueryToExecute, []source.Type{ins.Connector})
 		resourceTypes = append(resourceTypes, rts...)
 	}
 
@@ -131,7 +129,7 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 		if !control.ManualVerification && control.Query != nil {
 			for _, query := range queries {
 				if control.Query.ID == query.ID {
-					rts := extractResourceTypes(query.QueryToExecute, source.Type(query.Connector))
+					rts := extractResourceTypes(query.QueryToExecute, query.Connector)
 					resourceTypes = append(resourceTypes, rts...)
 					break
 				}
