@@ -285,7 +285,11 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 				}
 			}
 		}
-		b.Connector = connectors
+		var cs []string
+		for _, c := range connectors {
+			cs = append(cs, c.String())
+		}
+		b.Connector = cs
 
 		if len(o.Controls) != len(b.Controls) {
 			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))

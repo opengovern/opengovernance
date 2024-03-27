@@ -32,7 +32,7 @@ type Benchmark struct {
 	ID          string `gorm:"primarykey"`
 	Title       string
 	DisplayCode string
-	Connector   []source.Type
+	Connector   pq.StringArray `gorm:"type:text[]"`
 	Description string
 	LogoURI     string
 	Category    string
@@ -69,7 +69,7 @@ func (b Benchmark) ToApi() api.Benchmark {
 		Tags:          b.GetTagsMap(),
 	}
 	if b.Connector != nil {
-		ba.Connectors = b.Connector
+		ba.Connectors = source.ParseTypes(b.Connector)
 	}
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
