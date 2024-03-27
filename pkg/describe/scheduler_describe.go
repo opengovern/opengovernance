@@ -342,6 +342,10 @@ func azureAdOnlyOnOneConnection(connections []apiOnboard.Connection, connection 
 	if connectionTenantID != "" {
 		var connectionIDs []string
 		for _, c := range connections {
+			if c.HealthState == source.HealthStatusUnhealthy {
+				continue
+			}
+
 			if c.TenantID() == connectionTenantID {
 				connectionIDs = append(connectionIDs, c.ID.String())
 			}
