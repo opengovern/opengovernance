@@ -23,7 +23,7 @@ type FindingEvent struct {
 	BenchmarkID               string          `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                 string          `json:"controlID" example:"azure_cis_v140_7_5"`
 	ConnectionID              string          `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	Connector                 source.Type     `json:"connector" example:"Azure"`
+	Connector                 []source.Type   `json:"connector" example:"Azure"`
 	Severity                  FindingSeverity `json:"severity" example:"low"`
 	KaytuResourceID           string          `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID                string          `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
