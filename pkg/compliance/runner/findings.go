@@ -14,8 +14,14 @@ import (
 	"strconv"
 )
 
-func GetResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
-	switch queryConnector {
+func GetResourceTypeFromTableName(tableName string, queryConnector []source.Type) string {
+	var connector source.Type
+	if len(queryConnector) == 1 {
+		connector = queryConnector[0]
+	} else {
+		connector = source.Nil
+	}
+	switch connector {
 	case source.CloudAWS:
 		return awsSteampipe.ExtractResourceType(tableName)
 	case source.CloudAzure:
