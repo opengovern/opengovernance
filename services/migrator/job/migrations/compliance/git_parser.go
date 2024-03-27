@@ -273,14 +273,16 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		for _, controls := range g.controls {
 			if contains(o.Controls, controls.ID) {
 				b.Controls = append(b.Controls, controls)
-				for _, connector := range controls.Query.Connector {
-					if _, exists := connectorMap[connector]; !exists {
-						c, err := source.ParseType(connector)
-						if err != nil {
-							return err
+				if controls.Query != nil || controls.Query.Connector != nil {
+					for _, connector := range controls.Query.Connector {
+						if _, exists := connectorMap[connector]; !exists {
+							c, err := source.ParseType(connector)
+							if err != nil {
+								return err
+							}
+							connectors = append(connectors, c)
+							connectorMap[connector] = true
 						}
-						connectors = append(connectors, c)
-						connectorMap[connector] = true
 					}
 				}
 			}
