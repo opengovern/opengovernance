@@ -2971,7 +2971,7 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 		}
 		for _, control := range controls {
 			v := control.ToApi()
-			v.Connector = benchmark.Connector
+			v.Connector = source.ParseTypes(benchmark.Connector)
 			baseControlsMap[control.ID] = v
 		}
 	}
@@ -3241,7 +3241,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 			h.logger.Error("failed to fetch benchmark", zap.Error(err), zap.Stringp("benchmarkID", benchmarkID))
 			return nil, err
 		}
-		apiControl.Connector = benchmark.Connector
+		apiControl.Connector = source.ParseTypes(benchmark.Connector)
 	}
 
 	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
@@ -3747,7 +3747,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	var assignedConnections []api.BenchmarkAssignedConnection
 
 	for _, c := range benchmark.Connector {
-		connections, err := h.onboardClient.ListSources(hctx, []source.Type{c})
+		connections, err := h.onboardClient.ListSources(hctx, source.ParseTypes([]string{c}))
 		if err != nil {
 			return err
 		}
@@ -3756,11 +3756,15 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 			if !connection.IsEnabled() {
 				continue
 			}
+			connector, err := source.ParseType(c)
+			if err != nil {
+				return err
+			}
 			ba := api.BenchmarkAssignedConnection{
 				ConnectionID:           connection.ID.String(),
 				ProviderConnectionID:   connection.ConnectionID,
 				ProviderConnectionName: connection.ConnectionName,
-				Connector:              c,
+				Connector:              connector,
 				Status:                 false,
 			}
 			assignedConnections = append(assignedConnections, ba)
