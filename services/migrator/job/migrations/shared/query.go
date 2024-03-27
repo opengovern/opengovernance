@@ -1,13 +1,14 @@
 package shared
 
 type Query struct {
-	ID             string           `json:"ID" yaml:"ID"`
+	ID             string           `json:"ID,omitempty" yaml:"ID,omitempty"`
 	Engine         string           `json:"Engine" yaml:"Engine"`
 	QueryToExecute string           `json:"QueryToExecute" yaml:"QueryToExecute"`
-	Connector      string           `json:"Connector" yaml:"Connector"`
+	Connector      []string         `json:"Connector" yaml:"Connector"`
 	PrimaryTable   *string          `json:"PrimaryTable" yaml:"PrimaryTable"`
 	ListOfTables   []string         `json:"ListOfTables" yaml:"ListOfTables"`
 	Parameters     []QueryParameter `json:"Parameters" yaml:"Parameters"`
+	Global         bool             `json:"Global,omitempty" yaml:"Global,omitempty"`
 }
 
 type QueryParameter struct {

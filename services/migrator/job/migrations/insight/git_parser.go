@@ -2,7 +2,6 @@ package insight
 
 import (
 	"fmt"
-	"github.com/goccy/go-yaml"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"gorm.io/gorm"
@@ -69,7 +68,7 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 			q := db.Query{
 				ID:             insight.Query.ID,
 				QueryToExecute: insight.Query.QueryToExecute,
-				Connector:      insight.Connector.String(),
+				Connector:      []string{insight.Connector.String()},
 				PrimaryTable:   insight.Query.PrimaryTable,
 				ListOfTables:   insight.Query.ListOfTables,
 				Engine:         insight.Query.Engine,
