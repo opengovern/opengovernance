@@ -22,7 +22,7 @@ type Control struct {
 	GuardrailRemediation    string `json:"guardrailRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 	ProgrammaticRemediation string `json:"programmaticRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 
-	Connector          source.Type           `json:"connector" example:"Azure"`
+	Connector          []source.Type         `json:"connector" example:"Azure"`
 	Enabled            bool                  `json:"enabled" example:"true"`
 	DocumentURI        string                `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
 	Query              *Query                `json:"query"`

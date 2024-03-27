@@ -58,6 +58,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 					"engine",
 					"updated_at",
 					"primary_table",
+					"global",
 				}), // column needed to be updated
 			}).Create(&obj).Error
 			if err != nil {

@@ -253,13 +253,11 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 				BenchmarkID: o.ID,
 			})
 		}
-		connector, _ := source.ParseType(o.Connector)
 
 		b := db.Benchmark{
 			ID:          o.ID,
 			Title:       o.Title,
 			DisplayCode: o.ReferenceCode,
-			Connector:   connector,
 			Description: o.Description,
 			Enabled:     o.Enabled,
 			Managed:     o.Managed,
@@ -269,11 +267,26 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			Children:    nil,
 			Controls:    nil,
 		}
+		var connectors []source.Type
+		connectorMap := make(map[string]bool)
+
 		for _, controls := range g.controls {
 			if contains(o.Controls, controls.ID) {
 				b.Controls = append(b.Controls, controls)
+				for _, connector := range controls.Query.Connector {
+					if _, exists := connectorMap[connector]; !exists {
+						c, err := source.ParseType(connector)
+						if err != nil {
+							return err
+						}
+						connectors = append(connectors, c)
+						connectorMap[connector] = true
+					}
+				}
 			}
 		}
+		b.Connector = connectors
+
 		if len(o.Controls) != len(b.Controls) {
 			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))
 		}

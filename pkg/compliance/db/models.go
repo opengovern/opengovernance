@@ -32,7 +32,7 @@ type Benchmark struct {
 	ID          string `gorm:"primarykey"`
 	Title       string
 	DisplayCode string
-	Connector   source.Type
+	Connector   []source.Type
 	Description string
 	LogoURI     string
 	Category    string
@@ -68,8 +68,8 @@ func (b Benchmark) ToApi() api.Benchmark {
 		UpdatedAt:     b.UpdatedAt,
 		Tags:          b.GetTagsMap(),
 	}
-	if b.Connector != source.Nil {
-		ba.Connectors = []source.Type{b.Connector}
+	if b.Connector != nil {
+		ba.Connectors = b.Connector
 	}
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
@@ -130,7 +130,7 @@ func (p Control) ToApi() api.Control {
 		Explanation:        "",
 		NonComplianceCost:  "",
 		UsefulExample:      "",
-		Connector:          "",
+		Connector:          nil,
 		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
 		Severity:           p.Severity,
@@ -187,7 +187,7 @@ func (p Control) GetTagsMap() map[string][]string {
 
 func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.Control) error {
 	tracer := otel.Tracer("PopulateConnector")
-	if !api.Connector.IsNull() {
+	if api.Connector == nil || len(api.Connector) > 0 {
 		return nil
 	}
 
@@ -213,10 +213,7 @@ func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.C
 		return fmt.Errorf("query %s not found", *p.QueryID)
 	}
 
-	ty, err := source.ParseType(query.Connector)
-	if err != nil {
-		return err
-	}
+	ty := source.ParseTypes(query.Connector)
 
 	api.Connector = ty
 	return nil
@@ -344,13 +341,14 @@ func (qp QueryParameter) ToApi() api.QueryParameter {
 type Query struct {
 	ID             string `gorm:"primaryKey"`
 	QueryToExecute string
-	Connector      string
+	Connector      pq.StringArray `gorm:"type:text[]"`
 	PrimaryTable   *string
 	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
 	Controls       []Control        `gorm:"foreignKey:QueryID"`
 	Insights       []Insight        `gorm:"foreignKey:QueryID"`
 	Parameters     []QueryParameter `gorm:"foreignKey:QueryID"`
+	Global         bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -359,11 +357,12 @@ func (q Query) ToApi() api.Query {
 	query := api.Query{
 		ID:             q.ID,
 		QueryToExecute: q.QueryToExecute,
-		Connector:      source.Type(q.Connector),
+		Connector:      source.ParseTypes(q.Connector),
 		ListOfTables:   q.ListOfTables,
 		PrimaryTable:   q.PrimaryTable,
 		Engine:         q.Engine,
 		Parameters:     make([]api.QueryParameter, 0, len(q.Parameters)),
+		Global:         q.Global,
 		CreatedAt:      q.CreatedAt,
 		UpdatedAt:      q.UpdatedAt,
 	}

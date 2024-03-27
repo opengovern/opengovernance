@@ -19,20 +19,21 @@ func (s *JobScheduler) buildRunners(
 	parentBenchmarkIDs []string,
 	benchmarkID string,
 	currentRunnerExistMap map[string]bool,
-) ([]*model.ComplianceRunner, error) {
+) ([]*model.ComplianceRunner, []*model.ComplianceRunner, error) {
 	ctx := &httpclient.Context{UserRole: api2.InternalRole}
 	var runners []*model.ComplianceRunner
+	var globalRunners []*model.ComplianceRunner
 
 	benchmark, err := s.complianceClient.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
 		s.logger.Error("error while getting benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
-		return nil, err
+		return nil, nil, err
 	}
 	if currentRunnerExistMap == nil {
 		currentRunners, err := s.db.GetRunnersByParentJobID(parentJobID)
 		if err != nil {
 			s.logger.Error("error while getting current runners", zap.Error(err))
-			return nil, err
+			return nil, nil, err
 		}
 		currentRunnerExistMap = make(map[string]bool)
 		for _, r := range currentRunners {
@@ -41,20 +42,21 @@ func (s *JobScheduler) buildRunners(
 	}
 
 	for _, child := range benchmark.Children {
-		childRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap)
+		childRunners, childGlobalRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap)
 		if err != nil {
 			s.logger.Error("error while building child runners", zap.Error(err))
-			return nil, err
+			return nil, nil, err
 		}
 
 		runners = append(runners, childRunners...)
+		globalRunners = append(globalRunners, childGlobalRunners...)
 	}
 
 	for _, controlID := range benchmark.Controls {
 		control, err := s.complianceClient.GetControl(ctx, controlID)
 		if err != nil {
 			s.logger.Error("error while getting control", zap.Error(err), zap.String("controlID", controlID))
-			return nil, err
+			return nil, nil, err
 		}
 
 		if control.Query == nil {
@@ -67,23 +69,42 @@ func (s *JobScheduler) buildRunners(
 			ControlID:          control.ID,
 			ControlSeverity:    control.Severity,
 		}
+		if control.Query.Global == true {
+			runnerJob := model.ComplianceRunner{
+				BenchmarkID:          rootBenchmarkID,
+				QueryID:              control.Query.ID,
+				ConnectionID:         nil,
+				ResourceCollectionID: resourceCollectionID,
+				ParentJobID:          parentJobID,
+				StartedAt:            time.Time{},
+				RetryCount:           0,
+				Status:               runner.ComplianceRunnerCreated,
+				FailureMessage:       "",
+			}
+			err = runnerJob.SetCallers([]runner.Caller{callers})
+			if err != nil {
+				return nil, nil, err
+			}
+			globalRunners = append(globalRunners, &runnerJob)
+		} else {
+			runnerJob := model.ComplianceRunner{
+				BenchmarkID:          rootBenchmarkID,
+				QueryID:              control.Query.ID,
+				ConnectionID:         connectionID,
+				ResourceCollectionID: resourceCollectionID,
+				ParentJobID:          parentJobID,
+				StartedAt:            time.Time{},
+				RetryCount:           0,
+				Status:               runner.ComplianceRunnerCreated,
+				FailureMessage:       "",
+			}
+			err = runnerJob.SetCallers([]runner.Caller{callers})
+			if err != nil {
+				return nil, nil, err
+			}
+			runners = append(runners, &runnerJob)
+		}
 
-		runnerJob := model.ComplianceRunner{
-			BenchmarkID:          rootBenchmarkID,
-			QueryID:              control.Query.ID,
-			ConnectionID:         connectionID,
-			ResourceCollectionID: resourceCollectionID,
-			ParentJobID:          parentJobID,
-			StartedAt:            time.Time{},
-			RetryCount:           0,
-			Status:               runner.ComplianceRunnerCreated,
-			FailureMessage:       "",
-		}
-		err = runnerJob.SetCallers([]runner.Caller{callers})
-		if err != nil {
-			return nil, err
-		}
-		runners = append(runners, &runnerJob)
 	}
 
 	uniqueMap := map[string]*model.ComplianceRunner{}
@@ -93,34 +114,67 @@ func (s *JobScheduler) buildRunners(
 			cr, err := r.GetCallers()
 			if err != nil {
 				s.logger.Error("error while getting callers", zap.Error(err))
-				return nil, err
+				return nil, nil, err
 			}
 
 			cv, err := v.GetCallers()
 			if err != nil {
 				s.logger.Error("error while getting callers", zap.Error(err))
-				return nil, err
+				return nil, nil, err
 			}
 
 			cv = append(cv, cr...)
 			err = v.SetCallers(cv)
 			if err != nil {
 				s.logger.Error("error while setting callers", zap.Error(err))
-				return nil, err
+				return nil, nil, err
 			}
 		} else {
 			v = r
 		}
 		uniqueMap[r.QueryID] = v
 	}
+	globalUniqueMap := map[string]*model.ComplianceRunner{}
+	for _, r := range globalRunners {
+		v, ok := globalUniqueMap[r.QueryID]
+		if ok {
+			cr, err := r.GetCallers()
+			if err != nil {
+				s.logger.Error("error while getting callers", zap.Error(err))
+				return nil, nil, err
+			}
+
+			cv, err := v.GetCallers()
+			if err != nil {
+				s.logger.Error("error while getting callers", zap.Error(err))
+				return nil, nil, err
+			}
+
+			cv = append(cv, cr...)
+			err = v.SetCallers(cv)
+			if err != nil {
+				s.logger.Error("error while setting callers", zap.Error(err))
+				return nil, nil, err
+			}
+		} else {
+			v = r
+		}
+		globalUniqueMap[r.QueryID] = v
+	}
 
 	var jobs []*model.ComplianceRunner
+	var globalJobs []*model.ComplianceRunner
 	for _, v := range uniqueMap {
 		if !currentRunnerExistMap[v.GetKeyIdentifier()] {
 			jobs = append(jobs, v)
 		}
 	}
-	return jobs, nil
+	for _, v := range globalUniqueMap {
+		if !currentRunnerExistMap[v.GetKeyIdentifier()] {
+			globalJobs = append(globalJobs, v)
+		}
+	}
+	return jobs, globalJobs, nil
 }
 
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
@@ -193,18 +247,21 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 				continue
 			}
 		}
+		var globalRunners []*model.ComplianceRunner
+		var runners []*model.ComplianceRunner
 		for _, it := range assignments.Connections {
 			if !it.Status {
 				continue
 			}
 			connection := it
-			runners, err := s.buildRunners(job.ID, &connection.ConnectionID, nil, job.BenchmarkID, nil, job.BenchmarkID, nil)
+			runners, globalRunners, err = s.buildRunners(job.ID, &connection.ConnectionID, nil, job.BenchmarkID, nil, job.BenchmarkID, nil)
 			if err != nil {
 				s.logger.Error("error while building runners", zap.Error(err))
 				return err
 			}
 			allRunners = append(allRunners, runners...)
 		}
+		allRunners = append(allRunners, globalRunners...)
 		if len(allRunners) > 0 {
 			s.logger.Info("creating runners", zap.Int("count", len(allRunners)), zap.Uint("jobID", job.ID))
 			err = s.db.CreateRunnerJobs(nil, allRunners)
