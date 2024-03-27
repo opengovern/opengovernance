@@ -279,35 +279,37 @@ func getResourceTypeFromTableName(tableName string, queryConnector source.Type) 
 	return ""
 }
 
-func extractResourceTypes(query string, connector source.Type) []string {
+func extractResourceTypes(query string, connectors []source.Type) []string {
 	var result []string
 
-	if connector == source.CloudAWS {
-		awsTables := awsResourceTypeReg.FindAllString(query, -1)
-		result = append(result, awsTables...)
+	for _, connector := range connectors {
+		if connector == source.CloudAWS {
+			awsTables := awsResourceTypeReg.FindAllString(query, -1)
+			result = append(result, awsTables...)
 
-		awsTables = awsTableReg.FindAllString(query, -1)
-		for _, table := range awsTables {
-			resourceType := getResourceTypeFromTableNameLower(table, source.CloudAWS)
-			if resourceType == "" {
-				resourceType = table
+			awsTables = awsTableReg.FindAllString(query, -1)
+			for _, table := range awsTables {
+				resourceType := getResourceTypeFromTableNameLower(table, source.CloudAWS)
+				if resourceType == "" {
+					resourceType = table
+				}
+				result = append(result, resourceType)
 			}
-			result = append(result, resourceType)
-		}
-	}
-
-	if connector == source.CloudAzure {
-		azureTables := azureTableReg.FindAllString(query, -1)
-		for _, table := range azureTables {
-			resourceType := getResourceTypeFromTableNameLower(table, source.CloudAzure)
-			if resourceType == "" {
-				resourceType = table
-			}
-			result = append(result, resourceType)
 		}
 
-		azureTables = azureResourceTypeReg.FindAllString(query, -1)
-		result = append(result, azureTables...)
+		if connector == source.CloudAzure {
+			azureTables := azureTableReg.FindAllString(query, -1)
+			for _, table := range azureTables {
+				resourceType := getResourceTypeFromTableNameLower(table, source.CloudAzure)
+				if resourceType == "" {
+					resourceType = table
+				}
+				result = append(result, resourceType)
+			}
+
+			azureTables = azureResourceTypeReg.FindAllString(query, -1)
+			result = append(result, azureTables...)
+		}
 	}
 
 	return result
