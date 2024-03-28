@@ -174,8 +174,6 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
 		if j.ExecutionPlan.ConnectionID != nil {
 			filters = append(filters, kaytu.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
-		} else {
-			filters = append(filters, kaytu.NewTermFilter("connectionID", "all"))
 		}
 
 		newFindings := make([]types.Finding, 0, len(findings))
