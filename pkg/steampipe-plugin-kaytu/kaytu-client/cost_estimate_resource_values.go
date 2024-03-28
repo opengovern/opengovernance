@@ -5,6 +5,7 @@ import (
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
 	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
+	"strings"
 )
 
 // getAwsEc2HostValues get resource values needed for cost estimate from model.EC2HostDescription
@@ -373,6 +374,7 @@ func getAwsLoadBalancerValues(resource Resource) (map[string]interface{}, error)
 	valuesMap := make(map[string]interface{})
 
 	valuesMap["load_balancer_type"] = "classic"
+	valuesMap["region"] = strings.Split(resource.ARN, ":")[3]
 
 	return valuesMap, nil
 }
@@ -382,10 +384,12 @@ func getAwsLoadBalancer2Values(resource Resource) (map[string]interface{}, error
 	if v, ok := resource.Description.(aws.ElasticLoadBalancingV2LoadBalancerDescription); ok {
 		return map[string]interface{}{
 			"load_balancer_type": v.LoadBalancer.Type,
+			"region":             strings.Split(*v.LoadBalancer.LoadBalancerArn, ":")[3],
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
 		return map[string]interface{}{
 			"load_balancer_type": v["LoadBalancer"].(map[string]interface{})["Type"],
+			"region":             strings.Split(v["LoadBalancer"].(map[string]interface{})["LoadBalancerArn"].(string), ":")[3],
 		}, nil
 	}
 	return nil, nil
