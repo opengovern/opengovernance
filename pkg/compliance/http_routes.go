@@ -3259,7 +3259,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	var resourceType *inventoryApi.ResourceType
 	if control.Query != nil {
 		apiControl.Connector = source.ParseTypes(control.Query.Connector)
-		if control.Query != nil {
+		if control.Query != nil && control.Query.PrimaryTable != nil {
 			rtName, _ := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, source.ParseTypes(control.Query.Connector))
 			resourceType = resourceTypeMap[strings.ToLower(rtName)]
 		}
