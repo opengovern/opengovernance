@@ -138,6 +138,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
+		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID))
 		return 0, err
 	}
 
