@@ -79,6 +79,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
 		zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+		zap.Stringp("provider_connection_id", j.ExecutionPlan.ProviderConnectionID),
 	)
 
 	if err := w.Initialize(ctx, j); err != nil {
