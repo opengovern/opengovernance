@@ -479,14 +479,11 @@ func getAzureLoadBalancerValues(resource Resource) (map[string]interface{}, erro
 		return map[string]interface{}{
 			"sku":          *v.LoadBalancer.SKU.Name,
 			"location":     ptrStr2(v.LoadBalancer.Location),
-			"rules_number": len(v.LoadBalancer.Properties.InboundNatRules) + len(v.LoadBalancer.Properties.LoadBalancingRules) + len(v.LoadBalancer.Properties.OutboundRules),
+			"rules_number": len(v.LoadBalancer.Properties.LoadBalancingRules) + len(v.LoadBalancer.Properties.OutboundRules),
 			"sku_tier":     *v.LoadBalancer.SKU.Tier,
 		}, nil
 	} else if v, ok := resource.Description.(map[string]interface{}); ok {
 		rulesNumber := 0
-		if inRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["InboundNatRules"].([]interface{}); ok {
-			rulesNumber += len(inRules)
-		}
 		if lbRules, ok := v["LoadBalancer"].(map[string]interface{})["Properties"].(map[string]interface{})["LoadBalancingRules"].([]interface{}); ok {
 			rulesNumber += len(lbRules)
 		}
