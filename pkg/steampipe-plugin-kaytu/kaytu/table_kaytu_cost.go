@@ -28,8 +28,8 @@ func tableKaytuCost(_ context.Context) *plugin.Table {
 			{Name: "metric_id", Type: proto.ColumnType_STRING},
 			{Name: "metric_name", Type: proto.ColumnType_STRING},
 			{Name: "cost_value", Type: proto.ColumnType_DOUBLE},
-			{Name: "period_start", Type: proto.ColumnType_INT},
-			{Name: "period_end", Type: proto.ColumnType_INT},
+			{Name: "period_start", Type: proto.ColumnType_TIMESTAMP},
+			{Name: "period_end", Type: proto.ColumnType_TIMESTAMP},
 		},
 	}
 }

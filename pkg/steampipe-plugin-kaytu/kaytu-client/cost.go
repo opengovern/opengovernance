@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	"runtime"
+	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -142,8 +143,8 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 					MetricID:       v.MetricID,
 					MetricName:     v.MetricName,
 					CostValue:      connRes.CostValue,
-					PeriodStart:    v.PeriodStart,
-					PeriodEnd:      v.PeriodEnd,
+					PeriodStart:    time.UnixMilli(v.PeriodStart),
+					PeriodEnd:      time.UnixMilli(v.PeriodEnd),
 				}
 				d.StreamListItem(ctx, row)
 			}
@@ -155,16 +156,16 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 type KaytuCostTableRow struct {
-	ConnectionID   string  `json:"connection_id"`
-	ConnectionName string  `json:"connection_name"`
-	Connector      string  `json:"connector"`
-	Date           string  `json:"date"`
-	DateEpoch      int64   `json:"date_epoch"`
-	Month          string  `json:"month"`
-	Year           string  `json:"year"`
-	MetricID       string  `json:"metric_id"`
-	MetricName     string  `json:"metric_name"`
-	CostValue      float64 `json:"cost_value"`
-	PeriodStart    int64   `json:"period_start"`
-	PeriodEnd      int64   `json:"period_end"`
+	ConnectionID   string    `json:"connection_id"`
+	ConnectionName string    `json:"connection_name"`
+	Connector      string    `json:"connector"`
+	Date           string    `json:"date"`
+	DateEpoch      int64     `json:"date_epoch"`
+	Month          string    `json:"month"`
+	Year           string    `json:"year"`
+	MetricID       string    `json:"metric_id"`
+	MetricName     string    `json:"metric_name"`
+	CostValue      float64   `json:"cost_value"`
+	PeriodStart    time.Time `json:"period_start"`
+	PeriodEnd      time.Time `json:"period_end"`
 }
