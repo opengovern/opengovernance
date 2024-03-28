@@ -78,7 +78,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
-		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
+		zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
 	)
 
 	if err := w.Initialize(ctx, j); err != nil {
