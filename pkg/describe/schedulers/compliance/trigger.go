@@ -2,6 +2,7 @@ package compliance
 
 import (
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"time"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -14,6 +15,7 @@ import (
 func (s *JobScheduler) buildRunners(
 	parentJobID uint,
 	connectionID *string,
+	connector *source.Type,
 	resourceCollectionID *string,
 	rootBenchmarkID string,
 	parentBenchmarkIDs []string,
@@ -42,7 +44,7 @@ func (s *JobScheduler) buildRunners(
 	}
 
 	for _, child := range benchmark.Children {
-		childRunners, childGlobalRunners, err := s.buildRunners(parentJobID, connectionID, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap)
+		childRunners, childGlobalRunners, err := s.buildRunners(parentJobID, connectionID, connector, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap)
 		if err != nil {
 			s.logger.Error("error while building child runners", zap.Error(err))
 			return nil, nil, err
@@ -61,6 +63,18 @@ func (s *JobScheduler) buildRunners(
 
 		if control.Query == nil {
 			continue
+		}
+		if connector != nil && len(control.Query.Connector) > 0 {
+			supportsConnector := false
+			for _, c := range control.Query.Connector {
+				if *connector == c {
+					supportsConnector = true
+					break
+				}
+			}
+			if !supportsConnector {
+				continue
+			}
 		}
 
 		callers := runner.Caller{
@@ -254,7 +268,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 				continue
 			}
 			connection := it
-			runners, globalRunners, err = s.buildRunners(job.ID, &connection.ConnectionID, nil, job.BenchmarkID, nil, job.BenchmarkID, nil)
+			runners, globalRunners, err = s.buildRunners(job.ID, &connection.ConnectionID, &connection.Connector, nil, job.BenchmarkID, nil, job.BenchmarkID, nil)
 			if err != nil {
 				s.logger.Error("error while building runners", zap.Error(err))
 				return err
