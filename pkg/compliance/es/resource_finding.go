@@ -232,6 +232,10 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 			requestSort = append(requestSort, map[string]any{
 				"resourceLocation": *sort.ResourceLocation,
 			})
+		case sort.ConformanceStatus != nil:
+			requestSort = append(requestSort, map[string]any{
+				"findings.conformanceStatus": *sort.ConformanceStatus,
+			})
 		case sort.FailedCount != nil:
 			scriptSource :=
 				fmt.Sprintf(`int total = 0; 

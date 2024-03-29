@@ -84,11 +84,12 @@ type ResourceFindingFilters struct {
 }
 
 type ResourceFindingsSort struct {
-	KaytuResourceID  *SortDirection `json:"kaytuResourceID"`
-	ResourceType     *SortDirection `json:"resourceType"`
-	ResourceName     *SortDirection `json:"resourceName"`
-	ResourceLocation *SortDirection `json:"resourceLocation"`
-	FailedCount      *SortDirection `json:"failedCount"`
+	KaytuResourceID   *SortDirection `json:"kaytuResourceID"`
+	ResourceType      *SortDirection `json:"resourceType"`
+	ResourceName      *SortDirection `json:"resourceName"`
+	ResourceLocation  *SortDirection `json:"resourceLocation"`
+	FailedCount       *SortDirection `json:"failedCount"`
+	ConformanceStatus *SortDirection `json:"conformanceStatus"`
 }
 
 type ListResourceFindingsRequest struct {

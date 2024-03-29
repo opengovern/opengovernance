@@ -9182,12 +9182,13 @@ const docTemplate = `{
                     "example": "To enable multi-factor authentication for a user, run the following command..."
                 },
                 "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "Azure"
+                    ]
                 },
                 "createdAt": {
                     "type": "string",
@@ -10524,13 +10525,17 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query": {
             "type": "object",
             "properties": {
+                "Global": {
+                    "type": "boolean"
+                },
                 "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "Azure"
+                    ]
                 },
                 "createdAt": {
                     "type": "string",
@@ -10755,6 +10760,9 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsSort": {
             "type": "object",
             "properties": {
+                "conformanceStatus": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
+                },
                 "failedCount": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection"
                 },

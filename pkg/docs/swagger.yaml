@@ -995,9 +995,11 @@ definitions:
           command...
         type: string
       connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
+        example:
+        - Azure
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       createdAt:
         example: "2020-01-01T00:00:00Z"
         type: string
@@ -1911,10 +1913,14 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
+      Global:
+        type: boolean
       connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
+        example:
+        - Azure
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       createdAt:
         example: "2023-06-07T14:00:15.677558Z"
         type: string
@@ -2072,6 +2078,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResourceFindingsSort:
     properties:
+      conformanceStatus:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
       failedCount:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
       kaytuResourceID:
