@@ -64,7 +64,7 @@ func (s *JobScheduler) buildRunners(
 		if control.Query == nil {
 			continue
 		}
-		if connector != nil && len(control.Query.Connector) > 0 {
+		if connector != nil && len(control.Query.Connector) > 0 && !control.Query.Global {
 			supportsConnector := false
 			for _, c := range control.Query.Connector {
 				if *connector == c {
