@@ -63,13 +63,21 @@ func Command() *cobra.Command {
 			queryAssistantActions, err := actions.NewQueryAssistantActions(logger, queryAssistant, inventoryServiceClient, repository.NewRun(database))
 			if err != nil {
 				logger.Error("failed to create query assistant actions", zap.Error(err))
+			} else {
+				go queryAssistantActions.RunActions()
 			}
-			go queryAssistantActions.RunActions()
 			assetsAssistantActions, err := actions.NewAssetsAssistantActions(logger, cnf, assetsAssistant, repository.NewRun(database), onboardServiceClient, inventoryServiceClient)
 			if err != nil {
 				logger.Error("failed to create assets assistant actions", zap.Error(err))
+			} else {
+				go assetsAssistantActions.RunActions()
 			}
-			go assetsAssistantActions.RunActions()
+			complianceAssistantActions, err := actions.NewComplianceAssistantActions(logger, cnf, complianceAssistant, repository.NewRun(database), onboardServiceClient, complianceServiceClient)
+			if err != nil {
+				logger.Error("failed to create compliance assistant actions", zap.Error(err))
+			} else {
+				go complianceAssistantActions.RunActions()
+			}
 
 			cmd.SilenceUsage = true
 

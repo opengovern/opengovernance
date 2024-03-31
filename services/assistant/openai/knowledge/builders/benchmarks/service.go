@@ -9,10 +9,10 @@ import (
 )
 
 type assistantBenchmark struct {
-	ID            string `json:"id" yaml:"id"`
-	Title         string `json:"title" yaml:"title"`
-	CloudProvider string `json:"cloud_provider" yaml:"cloud_provider"`
-	Tags          map[string][]string
+	ID             string   `json:"id" yaml:"id"`
+	Title          string   `json:"title" yaml:"title"`
+	CloudProviders []string `json:"cloud_provider" yaml:"cloud_provider"`
+	Tags           map[string][]string
 }
 
 func ExtractBenchmarks(logger *zap.Logger, complianceClient complianceClient.ComplianceServiceClient, tags map[string][]string) (map[string]string, error) {
@@ -29,8 +29,8 @@ func ExtractBenchmarks(logger *zap.Logger, complianceClient complianceClient.Com
 			Title: c.Title,
 			Tags:  c.Tags,
 		}
-		if len(c.Connectors) > 0 {
-			b.CloudProvider = c.Connectors[0].String()
+		for _, cp := range c.Connectors {
+			b.CloudProviders = append(b.CloudProviders, cp.String())
 		}
 		assistantBenchmarks = append(assistantBenchmarks, b)
 	}

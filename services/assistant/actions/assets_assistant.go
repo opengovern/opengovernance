@@ -63,7 +63,7 @@ func (s *AssetsAssistantActionsService) RunActions() {
 }
 
 func (s *AssetsAssistantActionsService) run() error {
-	runs, err := s.runRepo.List(context.Background(), utils.GetPointer(model.AssistantTypeAssets))
+	runs, err := s.runRepo.List(context.Background(), utils.GetPointer(s.oc.AssistantName))
 	if err != nil {
 		s.logger.Error("failed to list runs", zap.Error(err))
 		return err
@@ -76,7 +76,7 @@ func (s *AssetsAssistantActionsService) run() error {
 			continue
 		}
 
-		s.logger.Info("updating run status", zap.String("assistant_type", model.AssistantTypeAssets.String()), zap.String("run_id", runSummary.ID), zap.String("thread_id", runSummary.ThreadID), zap.String("status", string(runSummary.Status)))
+		s.logger.Info("updating run status", zap.String("assistant_type", s.oc.AssistantName.String()), zap.String("run_id", runSummary.ID), zap.String("thread_id", runSummary.ThreadID), zap.String("status", string(runSummary.Status)))
 
 		run, err := s.oc.RetrieveRun(runSummary.ThreadID, runSummary.ID)
 		if err != nil {
@@ -109,7 +109,7 @@ func (s *AssetsAssistantActionsService) run() error {
 							Output:     out,
 						})
 					case "GetConnectionKaytuIDFromNameOrProviderID":
-						out, err := s.GetConnectionKaytuIDFromNameOrProviderID(call)
+						out, err := getConnectionKaytuIDFromNameOrProviderID(s.logger, s.onboardClient, call)
 						if err != nil {
 							s.logger.Error("failed to get connection kaytu id from name or provider id", zap.Error(err))
 							out = fmt.Sprintf("Failed to run due to %v", err)
@@ -184,50 +184,6 @@ func (s *AssetsAssistantActionsService) GetFullUrlFromPath(call openai2.ToolCall
 	} else {
 		return "", errors.New(fmt.Sprintf("path not found in %v", gptArgs))
 	}
-}
-
-func (s *AssetsAssistantActionsService) GetConnectionKaytuIDFromNameOrProviderID(call openai2.ToolCall) (string, error) {
-	if call.Function.Name != "GetConnectionKaytuIDFromNameOrProviderID" {
-		return "", errors.New(fmt.Sprintf("incompatible function name %v", call.Function.Name))
-	}
-	var gptArgs map[string]any
-	err := json.Unmarshal([]byte(call.Function.Arguments), &gptArgs)
-	if err != nil {
-		s.logger.Error("failed to unmarshal gpt args", zap.Error(err), zap.String("args", call.Function.Arguments))
-		return "", err
-	}
-
-	allConnections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
-	if err != nil {
-		s.logger.Error("failed to list sources", zap.Error(err), zap.Any("args", gptArgs))
-		return "", fmt.Errorf("there has been a backend error")
-	}
-
-	if nameAny, ok := gptArgs["name"]; ok {
-		name, ok := nameAny.(string)
-		if !ok {
-			return "", errors.New(fmt.Sprintf("invalid name %v", nameAny))
-		}
-		for _, connection := range allConnections {
-			if strings.TrimSpace(strings.ToLower(connection.ConnectionName)) == strings.TrimSpace(strings.ToLower(name)) {
-				return connection.ID.String(), nil
-			}
-		}
-	}
-	if providerIDAny, ok := gptArgs["provider_id"]; ok {
-		providerID, ok := providerIDAny.(string)
-		if !ok {
-			return "", errors.New(fmt.Sprintf("invalid provider_id %v", providerIDAny))
-		}
-		for _, connection := range allConnections {
-			if strings.TrimSpace(strings.ToLower(connection.ConnectionID)) == strings.TrimSpace(strings.ToLower(providerID)) {
-				return connection.ID.String(), nil
-			}
-		}
-	}
-
-	s.logger.Error("no connection found", zap.Any("args", gptArgs))
-	return "", errors.New(fmt.Sprintf("no connection found for input %v", gptArgs))
 }
 
 type GetDirectionOnMultipleMetricsValuesResponse struct {
