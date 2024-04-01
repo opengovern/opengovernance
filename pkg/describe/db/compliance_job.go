@@ -175,7 +175,7 @@ UPDATE compliance_jobs j SET status = 'RUNNERS_IN_PROGRESS' WHERE status = 'CREA
 func (db Database) ListJobsWithRunnersCompleted() ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Raw(`
-SELECT * FROM compliance_jobs j WHERE status = 'RUNNERS_IN_PROGRESS' AND are_all_runners_queued = TRUE AND
+SELECT * FROM compliance_jobs j WHERE status IN ('RUNNERS_IN_PROGRESS', 'SINK_IN_PROGRESS') AND are_all_runners_queued = TRUE AND
 	(select count(*) from compliance_runners where parent_job_id = j.id AND 
 	                                               NOT (status = 'SUCCEEDED' OR status = 'TIMEOUT' OR (status = 'FAILED' and retry_count >= 3))
 	                                         ) = 0

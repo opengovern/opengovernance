@@ -16,6 +16,7 @@ type ComplianceJobStatus string
 const (
 	ComplianceJobCreated              ComplianceJobStatus = "CREATED"
 	ComplianceJobRunnersInProgress    ComplianceJobStatus = "RUNNERS_IN_PROGRESS"
+	ComplianceJobSinkInProgress       ComplianceJobStatus = "SINK_IN_PROGRESS"
 	ComplianceJobSummarizerInProgress ComplianceJobStatus = "SUMMARIZER_IN_PROGRESS"
 	ComplianceJobFailed               ComplianceJobStatus = "FAILED"
 	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
