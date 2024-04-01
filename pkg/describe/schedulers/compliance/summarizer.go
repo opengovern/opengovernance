@@ -107,33 +107,25 @@ func (s *JobScheduler) runSummarizer() error {
 			return err
 		}
 
-		if sankDocCount != totalDocCount &&
-			(float64(sankDocCount) < float64(totalDocCount)*0.9 || time.Now().Add(-1*time.Hour).Before(lastUpdatedRunner.UpdatedAt)) {
+		if sankDocCount != totalDocCount {
 			// do not summarize if all docs are not sank
 			// do not summarize if either less than 90% of the docs are sank or last job update is in less than an hour ago
-			if time.Now().Add(-2 * time.Hour).After(lastUpdatedRunner.UpdatedAt) {
-				s.logger.Info("give up waiting for documents to sink",
-					zap.String("benchmarkId", job.BenchmarkID),
-					zap.Int("sankDocCount", sankDocCount),
-					zap.Int("totalDocCount", totalDocCount),
-					zap.Time("lastUpdatedRunner", lastUpdatedRunner.UpdatedAt),
-				)
-				err = s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed,
-					fmt.Sprintf("give up waiting for documents to sink, sankDocCount: %v, totalDocCount: %v",
-						sankDocCount, totalDocCount))
+			s.logger.Info("waiting for documents to sink",
+				zap.String("benchmarkId", job.BenchmarkID),
+				zap.Int("sankDocCount", sankDocCount),
+				zap.Int("totalDocCount", totalDocCount),
+				zap.Time("lastUpdatedRunner", lastUpdatedRunner.UpdatedAt),
+			)
+			if job.Status != model.ComplianceJobSinkInProgress {
+				err = s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSinkInProgress, "")
 				if err != nil {
 					s.logger.Error("failed to update compliance job status", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 					return err
 				}
-			} else {
-				s.logger.Info("waiting for documents to sink",
-					zap.String("benchmarkId", job.BenchmarkID),
-					zap.Int("sankDocCount", sankDocCount),
-					zap.Int("totalDocCount", totalDocCount),
-					zap.Time("lastUpdatedRunner", lastUpdatedRunner.UpdatedAt),
-				)
+				continue
+			} else if time.Now().Add(-10 * time.Minute).Before(job.UpdatedAt) {
+				continue
 			}
-			continue
 		}
 		s.logger.Info("documents are sank, creating summarizer", zap.String("benchmarkId", job.BenchmarkID), zap.Int("sankDocCount", sankDocCount), zap.Int("totalDocCount", totalDocCount))
 
