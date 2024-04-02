@@ -549,6 +549,8 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
+github.com/aws/aws-lambda-go v1.42.0 h1:U4QKkxLp/il15RJGAANxiT9VumQzimsUER7gokqA0+c=
+github.com/aws/aws-lambda-go v1.42.0/go.mod h1:dpMpZgvWx5vuQJfBt0zqBha60q7Dd7RfgJv23DymV8A=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.27.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -1728,8 +1730,12 @@ github.com/kaytu-io/kaytu-aws-describer v0.32.40 h1:1XRPAUwjpI0GOwSUzEBjmYpPd16J
 github.com/kaytu-io/kaytu-aws-describer v0.32.40/go.mod h1:5Ez3mT3JaGhJRbmAEtrFToBEvsSjtJ5ZGZknr4V5PVM=
 github.com/kaytu-io/kaytu-azure-describer v0.24.42 h1:xN96JuTQvKqYiNTIPruHEFdTOWgAQkETIYwEGFU/4+c=
 github.com/kaytu-io/kaytu-azure-describer v0.24.42/go.mod h1:D3yUJ1u6SkDaxMcCzB1gq5vkIPQcH8APRDbn0eS985A=
+github.com/kaytu-io/kaytu-azure-describer v0.24.51 h1:Tm6igzNV6aEiSz7oP357nhmNYWMVGPge1lJPEIUMjQ4=
+github.com/kaytu-io/kaytu-azure-describer v0.24.51/go.mod h1:9SsDXc/0H6ScXdAV2LLTFq7z/n5lrsv3puVih5os2kE=
 github.com/kaytu-io/kaytu-util v0.0.0-20240402141125-77929b18f955 h1:nWE25U47OjyooXo4rgaoXkhjS9X228OPrmd6yalRbK0=
 github.com/kaytu-io/kaytu-util v0.0.0-20240402141125-77929b18f955/go.mod h1:0yQRC+EwTstNfbekeWKy607Cki+qQUzDOPmNEVDing8=
+github.com/kaytu-io/kaytu-util v0.0.0-20240402173715-469c9f281a93 h1:Ezhe8AllQLSq4KIiOpYfQehiL42X73MEYL2jOgYh9dk=
+github.com/kaytu-io/kaytu-util v0.0.0-20240402173715-469c9f281a93/go.mod h1:0yQRC+EwTstNfbekeWKy607Cki+qQUzDOPmNEVDing8=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
 github.com/kaytu-io/pennywise v1.1.5/go.mod h1:hmfCDFdnQJdwjwqt5XpAi5tOHNvl4XhJuAkVm5kX+To=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
