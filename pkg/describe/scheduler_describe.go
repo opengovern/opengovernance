@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"math/rand"
 	"net/http"
@@ -23,12 +24,12 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
+	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
@@ -593,7 +594,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		zap.String("resourceType", dc.ResourceType),
 	)
 
-	input := LambdaDescribeWorkerInput{
+	input := describe.DescribeWorkerInput{
 		WorkspaceId:               CurrentWorkspaceID,
 		WorkspaceName:             workspaceName,
 		DescribeEndpoint:          s.describeEndpoint,
@@ -602,7 +603,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		KeyARN:                    s.keyARN,
 		KeyRegion:                 s.keyRegion,
 		KafkaTopic:                "", // it is not used by lambda functions
-		DescribeJob: DescribeJob{
+		DescribeJob: describe.DescribeJob{
 			JobID:        dc.ID,
 			ResourceType: dc.ResourceType,
 			SourceID:     dc.ConnectionID,

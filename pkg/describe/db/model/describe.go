@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/gorm"
 	"time"
