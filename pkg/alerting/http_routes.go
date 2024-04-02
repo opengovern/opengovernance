@@ -88,8 +88,8 @@ func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling scope : %v ", err))
 		}
 
-		var operator api.OperatorStruct
-		err = json.Unmarshal(rule.Operator, &operator)
+		var condition api.Condition
+		err = json.Unmarshal(rule.Operator, &condition)
 		if err != nil {
 			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling operator : %v ", err))
 		}
@@ -104,7 +104,7 @@ func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 			Id:            rule.Id,
 			EventType:     eventType,
 			Scope:         scope,
-			Operator:      operator,
+			Condition:     condition,
 			Metadata:      metadata,
 			TriggerStatus: api.TriggerStatus(rule.TriggerStatus),
 			ActionID:      rule.ActionID,
@@ -211,8 +211,8 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling scope : %v ", err))
 		}
 
-		var operator api.OperatorStruct
-		err = json.Unmarshal(rule.Operator, &operator)
+		var condition api.Condition
+		err = json.Unmarshal(rule.Operator, &condition)
 		if err != nil {
 			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling operator : %v ", err))
 		}
@@ -227,7 +227,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			Id:            rule.Id,
 			EventType:     eventType,
 			Scope:         scope,
-			Operator:      operator,
+			Condition:     condition,
 			Metadata:      metadata,
 			TriggerStatus: api.TriggerStatus(rule.TriggerStatus),
 			ActionID:      rule.ActionID,
@@ -267,7 +267,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling eventType : %v ", err))
 	}
 
-	operator, err := json.Marshal(req.Operator)
+	operator, err := json.Marshal(req.Condition)
 	if err != nil {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling operator : %v ", err))
 	}
@@ -359,8 +359,8 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		eventType = nil
 	}
 
-	if req.Operator != nil {
-		operator, err = json.Marshal(req.Operator)
+	if req.Condition != nil {
+		operator, err = json.Marshal(req.Condition)
 		if err != nil {
 			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the operator : %v ", err))
 		}

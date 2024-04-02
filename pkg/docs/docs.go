@@ -7886,34 +7886,31 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct": {
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition": {
             "type": "object",
             "properties": {
-                "condition_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionType"
+                "combinator": {
+                    "type": "string"
+                },
+                "field": {
+                    "type": "string"
+                },
+                "not": {
+                    "type": "boolean"
                 },
                 "operator": {
+                    "type": "string"
+                },
+                "rules": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
                     }
+                },
+                "value": {
+                    "type": "string"
                 }
             }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionType": {
-            "type": "string",
-            "enum": [
-                "AND",
-                "and",
-                "OR",
-                "or"
-            ],
-            "x-enum-varnames": [
-                "ConditionAnd",
-                "ConditionAndLowerCase",
-                "ConditionOr",
-                "ConditionOrLowerCase"
-            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq": {
             "type": "object",
@@ -7944,14 +7941,14 @@ const docTemplate = `{
                 "action_id": {
                     "type": "integer"
                 },
+                "condition": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
+                },
                 "event_type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
                 },
                 "metadata": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata"
-                },
-                "operator": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
                 },
                 "scope": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
@@ -8017,44 +8014,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct": {
-            "type": "object",
-            "properties": {
-                "condition": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct"
-                },
-                "operator_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType"
-                },
-                "value": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType": {
-            "type": "string",
-            "enum": [
-                "GreaterThan",
-                "LessThan",
-                "LessThanOrEqual",
-                "GreaterThanOrEqual",
-                "Equal",
-                "DoesNotEqual"
-            ],
-            "x-enum-varnames": [
-                "OperatorGreaterThan",
-                "OperatorLessThan",
-                "OperatorLessThanOrEqual",
-                "OperatorGreaterThanOrEqual",
-                "OperatorEqual",
-                "OperatorDoesNotEqual"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule": {
             "type": "object",
             "properties": {
                 "action_id": {
                     "type": "integer"
+                },
+                "condition": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
                 },
                 "event_type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
@@ -8064,9 +8031,6 @@ const docTemplate = `{
                 },
                 "metadata": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata"
-                },
-                "operator": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
                 },
                 "scope": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
@@ -8153,14 +8117,14 @@ const docTemplate = `{
                 "action_id": {
                     "type": "integer"
                 },
+                "condition": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
+                },
                 "event_type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
                 },
                 "metadata": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata"
-                },
-                "operator": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
                 },
                 "scope": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"

@@ -61,7 +61,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("error unmarshalling the eventType : %v", err.Error())
 	}
 
-	var operator api.OperatorStruct
+	var operator api.Condition
 	err = json.Unmarshal(rule.Operator, &operator)
 	if err != nil {
 		return fmt.Errorf("error unmarshalling the operator : %v ", err.Error())
@@ -176,7 +176,7 @@ func (h HttpHandler) sendAlert(rule Rule, metadata api.Metadata, averageSecurity
 	return nil
 }
 
-func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, int64, error) {
+func (h HttpHandler) triggerInsight(operator api.Condition, eventType api.EventType, scope api.Scope) (bool, int64, error) {
 	diff := 24 * time.Hour
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
@@ -194,7 +194,11 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 		return false, 0, nil
 	}
 
-	stat, err := calculationOperations(operator, *insight.TotalResultValue)
+	fieldValue := map[string]int64{
+		"insight_value": *insight.TotalResultValue,
+	}
+
+	stat, err := checkCondition(operator, fieldValue)
 	if err != nil {
 		return false, 0, fmt.Errorf("error calculating operator : %v", err.Error())
 	}
@@ -204,7 +208,7 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 	return stat, *insight.TotalResultValue, nil
 }
 
-func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, int64, error) {
+func (h HttpHandler) triggerCompliance(operator api.Condition, scope api.Scope, eventType api.EventType) (bool, int64, error) {
 	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
 		return false, 0, fmt.Errorf("error getting connectionId : %v ", err.Error())
@@ -233,7 +237,12 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	h.logger.Info("received compliance account ")
 	averageSecurityScore := securityScore / float64(len(compliance.Accounts))
 	fmt.Printf("averageSecurityScore : %v \n ", int64(averageSecurityScore*100))
-	stat, err := calculationOperations(operator, int64(averageSecurityScore*100))
+
+	fieldValue := map[string]int64{
+		"security_score": int64(averageSecurityScore * 100),
+	}
+
+	stat, err := checkCondition(operator, fieldValue)
 	fmt.Printf("stat : %v \n ", stat)
 
 	if err != nil {
@@ -289,249 +298,55 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	return connectionIDSChecked, nil
 }
 
-func calculationOperations(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
-	if operator.Condition == nil {
-		fmt.Println("test operation 1 ")
-		if operator.OperatorType == ">" {
-			operator.OperatorType = api.OperatorGreaterThan
-		} else if operator.OperatorType == "<" {
-			operator.OperatorType = api.OperatorLessThan
-		} else if operator.OperatorType == ">=" {
-			operator.OperatorType = api.OperatorGreaterThanOrEqual
-		} else if operator.OperatorType == "<=" {
-			operator.OperatorType = api.OperatorLessThanOrEqual
-		} else if operator.OperatorType == "=" {
-			operator.OperatorType = api.OperatorEqual
-		} else if operator.OperatorType == "!=" {
-			operator.OperatorType = api.OperatorDoesNotEqual
-		} else {
-			return false, fmt.Errorf("Error : Your operator sign is wrong , please enter the correct operator ")
-		}
-		stat := compareValue(operator.OperatorType, operator.Value, averageSecurityScorePercentage)
-		return stat, nil
-	} else if operator.Condition != nil {
-
-		fmt.Println("test operation 2 ")
-		stat, err := calculationConditionStr(operator, averageSecurityScorePercentage)
-		if err != nil {
-			return false, fmt.Errorf("error in calculation operator : %v ", err.Error())
-		}
-		return stat, nil
-	}
-	return false, fmt.Errorf("error entering the operation")
-}
-
-func calculationConditionStr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
-	conditionType := operator.Condition.ConditionType
-
-	if conditionType == api.ConditionAnd || conditionType == api.ConditionAndLowerCase {
-		stat, err := calculationConditionStrAND(operator, averageSecurityScorePercentage)
-		if err != nil {
-			return false, fmt.Errorf("error in AND condition type : %v", err)
-		}
-		return stat, nil
-
-	} else if conditionType == api.ConditionOr || conditionType == api.ConditionOrLowerCase {
-		stat, err := calculationConditionStrOr(operator, averageSecurityScorePercentage)
-		if err != nil {
-			return false, fmt.Errorf("error in OR condition type : %v", err)
-		}
-		return stat, nil
+func runOperation(field, operator, value string, fieldValue map[string]int64) (bool, error) {
+	currValue, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return false, err
 	}
 
-	return false, fmt.Errorf("please enter right condition type ")
-}
-
-func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
-	// AND condition
-	numberOperatorStr := len(operator.Condition.Operator)
-	for i := 0; i < numberOperatorStr; i++ {
-		newOperator := operator.Condition.Operator[i]
-
-		if newOperator.Condition == nil {
-			if newOperator.OperatorType == ">" {
-				newOperator.OperatorType = api.OperatorGreaterThan
-			} else if newOperator.OperatorType == "<" {
-				newOperator.OperatorType = api.OperatorLessThan
-			} else if operator.OperatorType == ">=" {
-				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
-			} else if operator.OperatorType == "<=" {
-				newOperator.OperatorType = api.OperatorLessThanOrEqual
-			} else if newOperator.OperatorType == "=" {
-				newOperator.OperatorType = api.OperatorEqual
-			} else if newOperator.OperatorType == "!=" {
-				newOperator.OperatorType = api.OperatorDoesNotEqual
-			} else {
-				return false, fmt.Errorf("Error : Your operator type is wrong , please enter the correct operator ")
-			}
-			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
-			if !stat {
-				return false, nil
-			} else {
-				if i == numberOperatorStr-1 {
-					return true, nil
-				}
-				continue
-			}
-
-		} else if newOperator.Condition.ConditionType != "" {
-			newOperator2 := newOperator.Condition
-			conditionType2 := newOperator2.ConditionType
-			numberOperatorStr2 := len(newOperator2.Operator)
-
-			for j := 0; j < numberOperatorStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
-				if err != nil {
-					return false, fmt.Errorf("error in calculation operations : %v ", err.Error())
-				}
-
-				if conditionType2 == api.ConditionAnd || conditionType2 == api.ConditionAndLowerCase {
-					if !stat {
-						return false, nil
-					} else {
-						if j == numberOperatorStr2-1 {
-							if i == numberOperatorStr-1 {
-								return true, nil
-							}
-							break
-						}
-						continue
-					}
-				} else if conditionType2 == api.ConditionOr || conditionType2 == api.ConditionOrLowerCase {
-					if stat {
-						return true, nil
-					} else {
-						if j == numberOperatorStr2-1 {
-							if i == numberOperatorStr-1 {
-								return false, nil
-							}
-							break
-						}
-						continue
-					}
-				} else {
-					return false, fmt.Errorf("error: condition type is invalid")
-				}
-
-			}
-			continue
-		} else {
-			return false, fmt.Errorf("error : condition is is invalid")
-		}
-	}
-	return false, fmt.Errorf("error")
-}
-
-func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
-	// OR condition
-	numberOperatorStr := len(operator.Condition.Operator)
-
-	for i := 0; i < numberOperatorStr; i++ {
-		newOperator := operator.Condition.Operator[i]
-
-		if newOperator.Condition == nil {
-			if newOperator.OperatorType == ">" {
-				newOperator.OperatorType = api.OperatorGreaterThan
-			} else if newOperator.OperatorType == "<" {
-				newOperator.OperatorType = api.OperatorLessThan
-			} else if newOperator.OperatorType == ">=" {
-				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
-			} else if newOperator.OperatorType == "<=" {
-				newOperator.OperatorType = api.OperatorLessThanOrEqual
-			} else if newOperator.OperatorType == "=" {
-				newOperator.OperatorType = api.OperatorEqual
-			} else if newOperator.OperatorType == "!=" {
-				newOperator.OperatorType = api.OperatorDoesNotEqual
-			} else {
-				return false, fmt.Errorf("Error : Your operator type is wrong , please enter the correct operator type ")
-			}
-			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
-			if stat {
-				return true, nil
-			} else {
-				if i == numberOperatorStr-1 {
-					return false, nil
-				}
-				continue
-			}
-
-		} else if newOperator.Condition.Operator != nil {
-			newOperator2 := newOperator.Condition
-			conditionType2 := newOperator2.ConditionType
-			numberConditionStr2 := len(newOperator2.ConditionType)
-
-			for j := 0; j < numberConditionStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
-				if err != nil {
-					return false, fmt.Errorf("error in calculation operations : %v ", err)
-				}
-
-				if conditionType2 == api.ConditionAnd {
-					if !stat {
-						return false, nil
-					} else {
-						if j == numberConditionStr2-1 {
-							if i == numberOperatorStr-1 {
-								return true, nil
-							}
-							break
-						}
-						continue
-					}
-				} else if conditionType2 == api.ConditionOr || conditionType2 == api.ConditionOrLowerCase {
-					if stat {
-						return true, nil
-					} else {
-						if j == numberConditionStr2-1 {
-							if i == numberOperatorStr-1 {
-								return false, nil
-							}
-							break
-						}
-						continue
-					}
-				} else {
-					return false, fmt.Errorf("error: condition type is invalid")
-				}
-
-			}
-			continue
-		} else {
-			return false, fmt.Errorf("error : condition is invalid ")
-		}
-
-	}
-	return false, fmt.Errorf("error")
-}
-
-func compareValue(operator api.OperatorType, value int64, averageSecurityScorePercentage int64) bool {
 	switch operator {
-	case api.OperatorGreaterThan:
-		if averageSecurityScorePercentage > value {
-			return true
-		}
-	case api.OperatorLessThan:
-		if averageSecurityScorePercentage < value {
-			return true
-		}
-	case api.OperatorGreaterThanOrEqual:
-		if averageSecurityScorePercentage >= value {
-			return true
-		}
-	case api.OperatorLessThanOrEqual:
-		if averageSecurityScorePercentage <= value {
-			return true
-		}
-	case api.OperatorEqual:
-		if averageSecurityScorePercentage == value {
-			return true
-		}
-	case api.OperatorDoesNotEqual:
-		if averageSecurityScorePercentage != value {
-			return true
-		}
+	case ">":
+		return fieldValue[field] > currValue, nil
+	case ">=":
+		return fieldValue[field] >= currValue, nil
+	case "<":
+		return fieldValue[field] < currValue, nil
+	case "<=":
+		return fieldValue[field] <= currValue, nil
+	case "=":
+		return fieldValue[field] == currValue, nil
+	case "!=":
+		return fieldValue[field] != currValue, nil
 	default:
-		return false
+		return false, fmt.Errorf("invalid operator %s", operator)
 	}
-	return false
+}
+
+func checkCondition(condition api.Condition, fieldValue map[string]int64) (bool, error) {
+	if condition.Combinator == nil {
+		return runOperation(condition.Field, condition.Operator, condition.Value, fieldValue)
+	} else if *condition.Combinator == "and" {
+		for _, rule := range condition.Rules {
+			res, err := checkCondition(rule, fieldValue)
+			if err != nil {
+				return false, err
+			}
+
+			if res == false {
+				return false, nil
+			}
+		}
+	} else if *condition.Combinator == "or" {
+		for _, rule := range condition.Rules {
+			res, err := checkCondition(rule, fieldValue)
+			if err != nil {
+				return false, err
+			}
+
+			if res == true {
+				return true, nil
+			}
+		}
+	}
+	return true, nil
 }
