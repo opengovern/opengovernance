@@ -182,10 +182,7 @@ resource-sink:
 		//EncryptionAtRestOptions: &types.EncryptionAtRestOptions{KmsKeyArn: nil},
 		LogPublishingOptions: &types.LogPublishingOptions{IsLoggingEnabled: aws.Bool(false)},
 		Tags:                 nil,
-		VpcOptions: &types.VpcOptions{
-			SubnetIds:        []string{t.subnetID},
-			SecurityGroupIds: []string{t.securityGroupID},
-		},
+		VpcOptions:           nil,
 	})
 	if err != nil {
 		return err
