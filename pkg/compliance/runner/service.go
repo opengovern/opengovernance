@@ -88,6 +88,10 @@ func NewWorker(
 		return nil, err
 	}
 
+	if err := jq.Stream(context.Background(), StreamName, "compliance runner job queue", []string{JobQueueTopic, ResultQueueTopic}, 1000000); err != nil {
+		return nil, err
+	}
+
 	w := &Worker{
 		config:           config,
 		logger:           logger,
