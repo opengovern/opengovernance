@@ -16,12 +16,24 @@ func Logger(log *zap.Logger) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			start := time.Now()
 
+			req := c.Request()
+			fields := []zapcore.Field{
+				zap.String("remote_ip", c.RealIP()),
+				zap.String("latency", time.Since(start).String()),
+				zap.String("host", req.Host),
+				zap.String("request", fmt.Sprintf("%s %s", req.Method, req.RequestURI)),
+				zap.String("user_agent", req.UserAgent()),
+			}
+			id := req.Header.Get(echo.HeaderXRequestID)
+			if id != "" {
+				fields = append(fields, zap.String("request_id", id))
+			}
+			log.Info("Request received", fields...)
 			err := next(c)
 			if err != nil {
 				c.Error(err)
 			}
 
-			req := c.Request()
 			res := c.Response()
 
 			// skip metric endpoints
@@ -29,21 +41,15 @@ func Logger(log *zap.Logger) echo.MiddlewareFunc {
 				return nil
 			}
 
-			fields := []zapcore.Field{
-				zap.String("remote_ip", c.RealIP()),
-				zap.String("latency", time.Since(start).String()),
-				zap.String("host", req.Host),
-				zap.String("request", fmt.Sprintf("%s %s", req.Method, req.RequestURI)),
+			fields = append(fields,
 				zap.Int("status", res.Status),
 				zap.Int64("size", res.Size),
-				zap.String("user_agent", req.UserAgent()),
-			}
+			)
 
-			id := req.Header.Get(echo.HeaderXRequestID)
 			if id == "" {
 				id = res.Header().Get(echo.HeaderXRequestID)
+				fields = append(fields, zap.String("request_id", id))
 			}
-			fields = append(fields, zap.String("request_id", id))
 
 			n := res.Status
 			switch {
