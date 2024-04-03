@@ -96,7 +96,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(context.Background(), StreamName, "insight service queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
+	if err := jq.Stream(context.Background(), StreamName, "insight job queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
