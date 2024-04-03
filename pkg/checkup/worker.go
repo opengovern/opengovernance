@@ -42,6 +42,11 @@ func NewWorker(
 	if err != nil {
 		return nil, err
 	}
+
+	if err := jq.Stream(context.Background(), StreamName, "checkup worker queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
+		return nil, err
+	}
+
 	w.jq = jq
 
 	w.logger = logger

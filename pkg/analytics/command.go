@@ -118,6 +118,11 @@ func NewWorker(
 	if err != nil {
 		return nil, err
 	}
+
+	if err := jq.Stream(context.Background(), StreamName, "analytics worker queue", []string{JobQueueTopic, JobResultQueueTopic}, 1000); err != nil {
+		return nil, err
+	}
+
 	w.jq = jq
 
 	w.config = conf
