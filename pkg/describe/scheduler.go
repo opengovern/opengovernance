@@ -133,9 +133,10 @@ type Scheduler struct {
 
 	jq *jq.JobQueue
 
-	describeEndpoint string
-	keyARN           string
-	keyRegion        string
+	describeEndpoint         string
+	describeExternalEndpoint string
+	keyARN                   string
+	keyRegion                string
 
 	WorkspaceName string
 
@@ -173,11 +174,12 @@ func InitializeScheduler(
 	}
 
 	s = &Scheduler{
-		id:               id,
-		OperationMode:    OperationMode(OperationModeConfig),
-		describeEndpoint: DescribeDeliverEndpoint,
-		keyARN:           KeyARN,
-		keyRegion:        KeyRegion,
+		id:                       id,
+		OperationMode:            OperationMode(OperationModeConfig),
+		describeEndpoint:         DescribeDeliverEndpoint,
+		describeExternalEndpoint: DescribeExternalDeliverEndpoint,
+		keyARN:                   KeyARN,
+		keyRegion:                KeyRegion,
 	}
 	defer func() {
 		if err != nil && s != nil {
