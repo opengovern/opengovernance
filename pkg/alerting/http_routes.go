@@ -404,9 +404,11 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 	for _, action := range actions {
 
 		var headers map[string]string
-		err = json.Unmarshal(action.Headers, &headers)
-		if err != nil {
-			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling the action : %v ", err))
+		if len(action.Headers) > 0 {
+			err = json.Unmarshal(action.Headers, &headers)
+			if err != nil {
+				return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling the action : %v ", err))
+			}
 		}
 
 		response = append(response, api.Action{
