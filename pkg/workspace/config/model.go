@@ -17,6 +17,7 @@ type Config struct {
 	DomainSuffix               string
 	AppDomain                  string `yaml:"app_domain"`
 	GrpcDomain                 string `yaml:"grpc_domain"`
+	GrpcExternalDomain         string `yaml:"grpc_external_domain"`
 	KaytuHelmChartLocation     string
 	KaytuOctopusNamespace      string
 	FluxSystemNamespace        string

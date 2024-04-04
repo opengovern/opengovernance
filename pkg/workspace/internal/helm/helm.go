@@ -167,6 +167,11 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 		needsUpdate = true
 	}
 
+	if settings.Kaytu.Domain.GrpcExternal != cfg.GrpcExternalDomain {
+		settings.Kaytu.Domain.GrpcExternal = cfg.GrpcExternalDomain
+		needsUpdate = true
+	}
+
 	if settings.Kaytu.OpenSearch.IngestionPipelineEndpoint != workspace.PipelineEndpoint {
 		settings.Kaytu.OpenSearch.IngestionPipelineEndpoint = workspace.PipelineEndpoint
 		needsUpdate = true

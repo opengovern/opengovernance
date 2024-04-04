@@ -153,8 +153,9 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 				Namespace: t.cfg.KaytuOctopusNamespace,
 			},
 			Domain: types3.DomainConfig{
-				App:  t.cfg.AppDomain,
-				Grpc: t.cfg.GrpcDomain,
+				App:          t.cfg.AppDomain,
+				Grpc:         t.cfg.GrpcDomain,
+				GrpcExternal: t.cfg.GrpcExternalDomain,
 			},
 			Workspace: types3.WorkspaceConfig{
 				Name:    workspace.Name,

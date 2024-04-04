@@ -14,8 +14,9 @@ type OctopusConfig struct {
 }
 
 type DomainConfig struct {
-	App  string `json:"app"`
-	Grpc string `json:"grpc"`
+	App          string `json:"app"`
+	Grpc         string `json:"grpc"`
+	GrpcExternal string `json:"grpc_external"`
 }
 
 type KaytuConfig struct {
