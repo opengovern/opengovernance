@@ -145,6 +145,7 @@ func (s *SupersetService) Login() (string, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	res, err := client.Do(req)
+	defer res.Body.Close()
 	if err != nil {
 		return "", err
 	}
@@ -184,6 +185,7 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
+	defer res.Body.Close()
 	if err != nil {
 		return "", err
 	}
@@ -219,6 +221,7 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
+	defer res.Body.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -254,6 +257,7 @@ func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
+	defer res.Body.Close()
 	if err != nil {
 		return "", err
 	}
