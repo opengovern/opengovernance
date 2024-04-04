@@ -334,6 +334,13 @@ func FromEchoContext(c echo.Context) *Context {
 	}
 }
 
+func discardBody(res *http.Response) {
+	if res != nil && res.Body != nil {
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}
+}
+
 func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
 	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
@@ -355,10 +362,10 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 		Transport: t,
 	}
 	res, err := client.Do(req)
+	defer discardBody(res)
 	if err != nil {
 		return statusCode, fmt.Errorf("do request: %w", err)
 	}
-	defer res.Body.Close()
 
 	body := res.Body
 	if res.Header.Get("Content-Encoding") == "gzip" {

@@ -124,6 +124,13 @@ type GetEmbeddedDashboardResponse struct {
 	} `json:"result"`
 }
 
+func discardBody(res *http.Response) {
+	if res != nil && res.Body != nil {
+		io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}
+}
+
 func (s *SupersetService) Login() (string, error) {
 	fmt.Println("=A")
 	client := http.Client{
@@ -168,7 +175,7 @@ func (s *SupersetService) Login() (string, error) {
 	req.Header.Add("Content-Type", "application/json")
 	res, err := client.Do(req)
 	fmt.Println("=E")
-	defer res.Body.Close()
+	defer discardBody(res)
 	fmt.Println("=F")
 	if err != nil {
 		return "", err
@@ -179,20 +186,20 @@ func (s *SupersetService) Login() (string, error) {
 		return "", fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
-	fmt.Println("=G")
+	fmt.Println("=H")
 	r, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
 
-	fmt.Println("=H")
+	fmt.Println("=I")
 	var resp LoginResponse
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
 		return "", err
 	}
 
-	fmt.Println("=I")
+	fmt.Println("=J")
 	return resp.AccessToken, nil
 }
 
@@ -213,7 +220,7 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
-	defer res.Body.Close()
+	defer discardBody(res)
 	if err != nil {
 		return "", err
 	}
@@ -249,7 +256,7 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
-	defer res.Body.Close()
+	defer discardBody(res)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +292,8 @@ func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	res, err := client.Do(req)
-	defer res.Body.Close()
+
+	defer discardBody(res)
 	if err != nil {
 		return "", err
 	}
