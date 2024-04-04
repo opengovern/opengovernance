@@ -458,6 +458,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 
 	job, err := s.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
 	if err != nil {
+		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
 	}
@@ -528,6 +529,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 			UserRole: apiAuth.EditorRole,
 		}, connection.ID.String(), false)
 		if err != nil {
+			s.logger.Error("failed to get source healthcheck", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return nil, err
 		}
@@ -566,6 +568,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	}
 	err = s.db.CreateDescribeConnectionJob(&daj)
 	if err != nil {
+		s.logger.Error("failed to create describe resource job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
 	}

@@ -1796,6 +1796,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 
 	err = httpserver2.CheckAccessToConnectionID(ctx, sourceUUID.String())
 	if err != nil {
+		h.logger.Error("failed to check access to connection", zap.Error(err))
 		return err
 	}
 
@@ -1846,6 +1847,9 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			}
 		} else {
 			connection, err = h.checkConnectionHealth(ctx.Request().Context(), connection, updateMetadata)
+			if err != nil {
+				h.logger.Error("failed to check connection health", zap.Error(err), zap.String("sourceId", connection.SourceId))
+			}
 		}
 	}
 	return ctx.JSON(http.StatusOK, connection.ToAPI())
