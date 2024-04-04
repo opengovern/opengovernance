@@ -123,9 +123,11 @@ type GetEmbeddedDashboardResponse struct {
 }
 
 func (s *SupersetService) Login() (string, error) {
+	fmt.Println("=A")
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
+	fmt.Println("=B")
 	url := fmt.Sprintf("%s/api/v1/security/login", s.BaseURL)
 
 	request := LoginRequest{
@@ -139,32 +141,40 @@ func (s *SupersetService) Login() (string, error) {
 		return "", err
 	}
 
+	fmt.Println("=C")
 	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}
+	fmt.Println("=D")
 	req.Header.Add("Content-Type", "application/json")
 	res, err := client.Do(req)
+	fmt.Println("=E")
 	defer res.Body.Close()
+	fmt.Println("=F")
 	if err != nil {
 		return "", err
 	}
+	fmt.Println("=G")
 	if res.StatusCode != http.StatusOK {
 		r, _ := io.ReadAll(res.Body)
 		return "", fmt.Errorf("[Login] invalid status code: %d, body=%s", res.StatusCode, string(r))
 	}
 
+	fmt.Println("=G")
 	r, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
 
+	fmt.Println("=H")
 	var resp LoginResponse
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
 		return "", err
 	}
 
+	fmt.Println("=I")
 	return resp.AccessToken, nil
 }
 

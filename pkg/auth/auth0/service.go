@@ -90,6 +90,10 @@ func (a *Service) GetUser(userID string) (*User, error) {
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		r, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("[GetUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -124,6 +128,10 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		r, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("[SearchByEmail] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -185,6 +193,10 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error)
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
 		r, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("[CreateUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -218,6 +230,7 @@ func (a *Service) DeleteUser(userId string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("[DeleteUser] could not delete user: %d", res.StatusCode)
 	}
@@ -248,6 +261,10 @@ func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChan
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
 		r, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("[CreatePasswordChangeTicket] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -287,6 +304,10 @@ func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) erro
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		r, _ := ioutil.ReadAll(res.Body)
 		return fmt.Errorf("[PatchUserAppMetadata] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -314,6 +335,10 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		r, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d, body=%s", res.StatusCode, string(r))
@@ -360,6 +385,10 @@ func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, r
 	}
 	req.Header.Add("Authorization", "Bearer "+a.token)
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		r, _ := ioutil.ReadAll(res.Body)
 		return nil, fmt.Errorf("[SearchUsers] invalid status code: %d, body=%s", res.StatusCode, string(r))

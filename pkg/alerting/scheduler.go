@@ -163,6 +163,7 @@ func (h HttpHandler) sendAlert(rule Rule, metadata api.Metadata, averageSecurity
 	if err != nil {
 		return fmt.Errorf("error sending the alert request : %v ", err.Error())
 	}
+	defer res.Body.Close()
 
 	err = h.addTriggerToDatabase(rule, averageSecurityScorePercentage, res.StatusCode)
 	if err != nil {

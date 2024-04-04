@@ -5129,19 +5129,24 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 //	@Success		200	{object}	api.GenerateSupersetDashboardTokenResponse
 //	@Router			/compliance/api/v1/superset/dashboards/token [post]
 func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
+	fmt.Println("A")
 	ss := superset.New(h.conf.SuperSet.BaseURL, h.conf.SuperSet.Username, h.conf.SuperSet.Password)
 	tracerCtx, span1 := tracer.Start(ctx.Request().Context(), "new_GenerateSupersetDashboardToken", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GenerateSupersetDashboardToken")
 	defer span1.End()
 
+	fmt.Println("B")
 	span2 := trace.SpanFromContext(tracerCtx)
 	span2.SetName("superset_login")
+	fmt.Println("C")
 	token, err := ss.Login()
+	fmt.Println("D")
 	span2.End()
 	if err != nil {
 		h.logger.Error("failed to login to superset", zap.Error(err))
 		return err
 	}
+	fmt.Println("E")
 
 	var respDashboards []api.SupersetDashboard
 	span2 = trace.SpanFromContext(tracerCtx)
