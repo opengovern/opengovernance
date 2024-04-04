@@ -448,7 +448,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
 	}
 
-	id, err := h.db.CreateAction(req.Name, req.Method, req.Url, headers, req.Body)
+	id, err := h.db.CreateAction(req.Name, req.Method, req.Url, headers, req.Body, ActionType_Webhook)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating the action : %v ", err))
 	}
@@ -550,7 +550,7 @@ func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("error in marshalling the request : %v", err)
 	}
-	id, err := h.db.CreateAction(inputs.Name, "POST", inputs.SlackUrl, nil, string(reqStrMarshalled))
+	id, err := h.db.CreateAction(inputs.Name, "POST", inputs.SlackUrl, nil, string(reqStrMarshalled), ActionType_Slack)
 	if err != nil {
 		return fmt.Errorf("error creating action : %v ", err)
 	}
@@ -602,7 +602,7 @@ func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
 		return err
 	}
 
-	id, err := h.db.CreateAction(inputs.Name, "POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), headerMarshalled, string(requestMarshalled))
+	id, err := h.db.CreateAction(inputs.Name, "POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), headerMarshalled, string(requestMarshalled), ActionType_Jira)
 	if err != nil {
 		return err
 	}

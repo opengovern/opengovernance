@@ -140,13 +140,14 @@ func (db Database) GetAction(id uint) (Action, error) {
 	return action, nil
 }
 
-func (db Database) CreateAction(name, method string, url string, headers []byte, body string) (uint, error) {
+func (db Database) CreateAction(name, method string, url string, headers []byte, body string, actionType ActionType) (uint, error) {
 	action := Action{
-		Name:    name,
-		Method:  method,
-		Url:     url,
-		Headers: headers,
-		Body:    body,
+		Name:       name,
+		Method:     method,
+		Url:        url,
+		Headers:    headers,
+		Body:       body,
+		ActionType: actionType,
 	}
 	err := db.orm.Model(&Action{}).Create(&action).Error
 	return action.Id, err
