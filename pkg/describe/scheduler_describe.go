@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"math/rand"
@@ -616,13 +618,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		},
 	}
 
-	lambdaRequest, err := json.Marshal(input)
-	if err != nil {
-		s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-
-		return fmt.Errorf("failed to marshal cloud native req due to %w", err)
-	}
-
 	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
@@ -646,46 +641,118 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		}
 	}()
 
-	invokeOutput, err := s.lambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
-		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
-		LogType:        types.LogTypeTail,
-		Payload:        lambdaRequest,
-		InvocationType: types.InvocationTypeEvent,
-	})
-	if err != nil {
-		s.logger.Error("failed to invoke lambda function",
-			zap.Uint("jobID", dc.ID),
-			zap.String("connectionID", dc.ConnectionID),
-			zap.String("resourceType", dc.ResourceType),
-			zap.Error(err),
-		)
+	switch s.conf.ServerlessProvider {
+	case config.ServerlessProviderTypeAWSLambda.String():
+		lambdaPayload, err := json.Marshal(input)
+		if err != nil {
+			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
+		}
+		invokeOutput, err := s.lambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+			FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
+			LogType:        types.LogTypeTail,
+			Payload:        lambdaPayload,
+			InvocationType: types.InvocationTypeEvent,
+		})
+		if err != nil {
+			s.logger.Error("failed to invoke lambda function",
+				zap.Uint("jobID", dc.ID),
+				zap.String("connectionID", dc.ConnectionID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to invoke lambda function due to %v", err)
+		}
+
+		if invokeOutput.FunctionError != nil {
+			s.logger.Info("lambda function function error",
+				zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
+		}
+		if invokeOutput.LogResult != nil {
+			s.logger.Info("lambda function log result",
+				zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
+		}
+
+		s.logger.Info("lambda function payload",
+			zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
+		resBody := invokeOutput.Payload
+
+		if invokeOutput.StatusCode == http.StatusTooManyRequests {
+			s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+			isFailed = true
+			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+		}
+
+		if invokeOutput.StatusCode != http.StatusAccepted {
+			s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+			isFailed = true
+			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+		}
+	case config.ServerlessProviderTypeAzureFunctions.String():
+		input.DescribeEndpoint = s.describeExternalEndpoint
+		eventHubPayload, err := json.Marshal(input)
+		if err != nil {
+			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+			isFailed = true
+			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
+		}
+
+		eventHubProducerClient, err := azeventhubs.NewProducerClientFromConnectionString(s.conf.EventHubConnectionString,
+			fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String())), nil)
+		if err != nil {
+			s.logger.Error("failed to create event hub producer client",
+				zap.Uint("jobID", dc.ID),
+				zap.String("connectionID", dc.ConnectionID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to create event hub producer client due to %v", err)
+		}
+		defer eventHubProducerClient.Close(ctx)
+
+		batch, err := eventHubProducerClient.NewEventDataBatch(ctx, nil)
+		if err != nil {
+			s.logger.Error("failed to create event hub producer data batch",
+				zap.Uint("jobID", dc.ID),
+				zap.String("connectionID", dc.ConnectionID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to create event hub producer data batch due to %v", err)
+		}
+
+		err = batch.AddEventData(&azeventhubs.EventData{
+			Body: eventHubPayload,
+		}, nil)
+		if err != nil {
+			s.logger.Error("failed to add data to event hub producer data batch",
+				zap.Uint("jobID", dc.ID),
+				zap.String("connectionID", dc.ConnectionID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to add data to event hub producer data batch due to %v", err)
+		}
+
+		err = eventHubProducerClient.SendEventDataBatch(ctx, batch, nil)
+		if err != nil {
+			s.logger.Error("failed to send event hub producer data batch",
+				zap.Uint("jobID", dc.ID),
+				zap.String("connectionID", dc.ConnectionID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to send event hub producer data batch due to %v", err)
+		}
+	default:
+		s.logger.Error("unknown serverless provider", zap.String("provider", s.conf.ServerlessProvider))
 		isFailed = true
-		return fmt.Errorf("failed to invoke lambda function due to %v", err)
-	}
-
-	if invokeOutput.FunctionError != nil {
-		s.logger.Info("lambda function function error",
-			zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
-	}
-	if invokeOutput.LogResult != nil {
-		s.logger.Info("lambda function log result",
-			zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
-	}
-
-	s.logger.Info("lambda function payload",
-		zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
-	resBody := invokeOutput.Payload
-
-	if invokeOutput.StatusCode == http.StatusTooManyRequests {
-		s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-		isFailed = true
-		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
-	}
-
-	if invokeOutput.StatusCode != http.StatusAccepted {
-		s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-		isFailed = true
-		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+		return fmt.Errorf("unknown serverless provider: %s", s.conf.ServerlessProvider)
 	}
 
 	s.logger.Info("successful job trigger",
@@ -693,10 +760,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		zap.String("connectionID", dc.ConnectionID),
 		zap.String("resourceType", dc.ResourceType),
 	)
-
-	if err != nil {
-		return err
-	}
 
 	return nil
 }

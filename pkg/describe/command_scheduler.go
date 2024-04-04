@@ -44,9 +44,10 @@ var (
 	InventoryBaseURL           = os.Getenv("INVENTORY_BASE_URL")
 	AuthGRPCURI                = os.Getenv("AUTH_GRPC_URI")
 
-	KeyARN                  = os.Getenv("KMS_KEY_ARN")
-	KeyRegion               = os.Getenv("KMS_ACCOUNT_REGION")
-	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
+	KeyARN                          = os.Getenv("KMS_KEY_ARN")
+	KeyRegion                       = os.Getenv("KMS_ACCOUNT_REGION")
+	DescribeDeliverEndpoint         = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
+	DescribeExternalDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT_EXTERNAL")
 
 	DoDeleteOldResources  = os.Getenv("DO_DELETE_OLD_RESOURCES")
 	OperationModeConfig   = os.Getenv("OPERATION_MODE_CONFIG")
