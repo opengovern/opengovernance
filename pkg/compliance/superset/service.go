@@ -4,9 +4,11 @@ package superset
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 )
@@ -126,6 +128,22 @@ func (s *SupersetService) Login() (string, error) {
 	fmt.Println("=A")
 	client := http.Client{
 		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				fmt.Println("connecting to", addr)
+				c, err := net.Dial(network, addr)
+				fmt.Println("connection created")
+				return c, err
+			},
+			DisableKeepAlives:     true,
+			DisableCompression:    true,
+			MaxIdleConns:          0,
+			MaxIdleConnsPerHost:   0,
+			MaxConnsPerHost:       0,
+			IdleConnTimeout:       10,
+			ResponseHeaderTimeout: 10,
+			ExpectContinueTimeout: 10,
+		},
 	}
 	fmt.Println("=B")
 	url := fmt.Sprintf("%s/api/v1/security/login", s.BaseURL)
