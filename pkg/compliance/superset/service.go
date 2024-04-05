@@ -147,9 +147,9 @@ func (s *SupersetService) Login() (string, error) {
 			MaxIdleConns:          0,
 			MaxIdleConnsPerHost:   0,
 			MaxConnsPerHost:       0,
-			IdleConnTimeout:       10,
-			ResponseHeaderTimeout: 10,
-			ExpectContinueTimeout: 10,
+			IdleConnTimeout:       10 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			ExpectContinueTimeout: 10 * time.Second,
 		},
 	}
 	fmt.Println("=B")
