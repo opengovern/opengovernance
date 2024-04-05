@@ -545,7 +545,7 @@ func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 
 	reqStr := api.SlackRequest{
 		ChannelName: inputs.ChannelName,
-		Text:        fmt.Sprintf("{{.Name}} rule triggered successfully"),
+		Text:        "{{.Name}} alert is failing",
 	}
 
 	reqStrMarshalled, err := json.Marshal(&reqStr)

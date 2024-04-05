@@ -1734,12 +1734,8 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.32.40 h1:1XRPAUwjpI0GOwSUzEBjmYpPd16JmrFCDyP8F+s4MHQ=
 github.com/kaytu-io/kaytu-aws-describer v0.32.40/go.mod h1:5Ez3mT3JaGhJRbmAEtrFToBEvsSjtJ5ZGZknr4V5PVM=
-github.com/kaytu-io/kaytu-azure-describer v0.24.53 h1:WODO4Q5oDL/7c2+afRj/JwRsVWNi/CAIpIUtbC/7UWE=
-github.com/kaytu-io/kaytu-azure-describer v0.24.53/go.mod h1:ebCDGUpc2nHjEIces84/4mPgURKDZCrSikyAZ+/Y83E=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8 h1:cXQGFjt1H35iwVX3yyq1lfjNbw9X+IM8+aTYbzHj81s=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8/go.mod h1:+4ZsZm5fL84vdG81oYDaoTGIhE+SFhzxX8K5VlZsbhY=
-github.com/kaytu-io/kaytu-util v0.0.0-20240403101553-b22f2c8fd13d h1:I5+82N2/w1m9akuWAJoJmBwlEjZWUBZH8SWrQVzKO7A=
-github.com/kaytu-io/kaytu-util v0.0.0-20240403101553-b22f2c8fd13d/go.mod h1:0yQRC+EwTstNfbekeWKy607Cki+qQUzDOPmNEVDing8=
 github.com/kaytu-io/kaytu-util v0.0.0-20240404161318-7a0248784331 h1:FDmNURpymjZAX14dBvp90TNPJLFUoQYuP1sUhJmv0ec=
 github.com/kaytu-io/kaytu-util v0.0.0-20240404161318-7a0248784331/go.mod h1:0yQRC+EwTstNfbekeWKy607Cki+qQUzDOPmNEVDing8=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
