@@ -209,7 +209,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	sdkCnf, err := kaytuAws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	sdkCnf, err := kaytuAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 
 	// Create source section
-	cfg, err := kaytuAws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	cfg, err := kaytuAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
@@ -232,7 +232,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		cfg.Region = "us-east-1"
 	}
 
-	acc, err := currentAwsAccount(context.Background(), h.logger, cfg)
+	acc, err := currentAwsAccount(ctx.Request().Context(), h.logger, cfg)
 	if err != nil {
 		return err
 	}
@@ -288,7 +288,7 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		return err
 	}
 
-	acc, err := currentAwsAccount(context.Background(), h.logger, sdkCnf)
+	acc, err := currentAwsAccount(ctx.Request().Context(), h.logger, sdkCnf)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		return err
 	}
 
-	src, err = h.checkConnectionHealth(context.Background(), src, true)
+	src, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
 	if err != nil {
 		return err
 	}

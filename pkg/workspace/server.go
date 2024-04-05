@@ -579,7 +579,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		roleARN := generateRoleARN(request.AWSConfig.AccountID, request.AWSConfig.AssumeRoleName)
 
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(context.Background(), accessKey, secretKey, "", roleARN, ws.AWSUniqueId)
+		sdkCnf, err = kaytuAws.GetConfig(ctx.Request().Context(), accessKey, secretKey, "", roleARN, ws.AWSUniqueId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -588,7 +588,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		}
 
 		stsClient := sts.NewFromConfig(sdkCnf)
-		caller, err := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+		caller, err := stsClient.GetCallerIdentity(ctx.Request().Context(), &sts.GetCallerIdentityInput{})
 		if err != nil {
 			return err
 		}
@@ -596,14 +596,14 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		if sdkCnf.Region == "" {
 			sdkCnf.Region = "us-east-1"
 		}
-		org, err := describer.OrganizationOrganization(context.Background(), sdkCnf)
+		org, err := describer.OrganizationOrganization(ctx.Request().Context(), sdkCnf)
 		if err != nil {
 			if !ignoreAwsOrgError(err) {
 				return err
 			}
 		}
 		if org != nil && org.MasterAccountId != nil && *org.MasterAccountId == *caller.Account {
-			accounts, err := describer.OrganizationAccounts(context.Background(), sdkCnf)
+			accounts, err := describer.OrganizationAccounts(ctx.Request().Context(), sdkCnf)
 			if err != nil {
 				if !ignoreAwsOrgError(err) {
 					return err
@@ -676,7 +676,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
-	result, err := s.kms.Encrypt(context.TODO(), &kms.EncryptInput{
+	result, err := s.kms.Encrypt(ctx.Request().Context(), &kms.EncryptInput{
 		KeyId:               &s.cfg.KMSKeyARN,
 		Plaintext:           configStr,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
@@ -767,7 +767,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 
 	version := "unspecified"
 	var kaytuVersionConfig corev1.ConfigMap
-	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 		Namespace: workspace.ID,
 		Name:      "kaytu-version",
 	}, &kaytuVersionConfig)
@@ -804,7 +804,7 @@ func (s *Server) GetWorkspaceByName(c echo.Context) error {
 
 	version := "unspecified"
 	var kaytuVersionConfig corev1.ConfigMap
-	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 		Namespace: workspace.ID,
 		Name:      "kaytu-version",
 	}, &kaytuVersionConfig)
@@ -877,7 +877,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 
 		if workspace.IsCreated {
 			var kaytuVersionConfig corev1.ConfigMap
-			err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+			err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 				Namespace: workspace.ID,
 				Name:      "kaytu-version",
 			}, &kaytuVersionConfig)
@@ -916,7 +916,7 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 
 	version := "unspecified"
 	var kaytuVersionConfig corev1.ConfigMap
-	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 		Namespace: workspace.ID,
 		Name:      "kaytu-version",
 	}, &kaytuVersionConfig)

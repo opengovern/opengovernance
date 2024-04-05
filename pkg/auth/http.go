@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"crypto/rsa"
 	"crypto/sha512"
 	_ "embed"
@@ -442,7 +441,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		}
 
 		emailContent := inviteEmailTemplate
-		err = r.emailService.SendEmail(context.Background(), req.Email, emailContent)
+		err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
 		if err != nil {
 			return err
 		}
@@ -459,7 +458,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 		emailContent := inviteEmailTemplate
 		emailContent = strings.ReplaceAll(emailContent, "{{ url }}", resp.Ticket)
-		err = r.emailService.SendEmail(context.Background(), req.Email, emailContent)
+		err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
 		if err != nil {
 			return err
 		}

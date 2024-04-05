@@ -147,7 +147,7 @@ func (w *Worker) Run(ctx context.Context) error {
 				}
 			}()
 
-			_, _, err := w.ProcessMessage(context.Background(), msg)
+			_, _, err := w.ProcessMessage(ctx, msg)
 			if err != nil {
 				w.logger.Error("failed to process message", zap.Error(err))
 			}

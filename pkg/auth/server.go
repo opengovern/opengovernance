@@ -270,7 +270,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	}
 
 	var u userClaim
-	t, err := s.verifierNative.Verify(context.Background(), token)
+	t, err := s.verifierNative.Verify(ctx, token)
 	if err == nil {
 		if err := t.Claims(&u); err != nil {
 			return nil, err
@@ -279,7 +279,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		return &u, nil
 	}
 
-	t, err = s.verifier.Verify(context.Background(), token)
+	t, err = s.verifier.Verify(ctx, token)
 	if err == nil {
 		if err := t.Claims(&u); err != nil {
 			return nil, err
@@ -288,7 +288,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		return &u, nil
 	}
 
-	tp, err := s.verifierPennywiseNative.Verify(context.Background(), token)
+	tp, err := s.verifierPennywiseNative.Verify(ctx, token)
 	if err == nil {
 		if err := tp.Claims(&u); err != nil {
 			return nil, err

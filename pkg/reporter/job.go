@@ -477,7 +477,7 @@ func (w *Worker) runResourceQuery(ctx context.Context, originalSteampipe *steamp
 		}
 
 		w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
-		esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), getQuery, keyValues...)
+		esRows, err := w.kaytuSteampipeDb.Conn().Query(ctx, getQuery, keyValues...)
 		if err != nil {
 			w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ElasticSearchQuery), zap.String("account", connection.ConnectionID))
 			return nil, err
@@ -695,7 +695,7 @@ func (w *Worker) runInsightQuery(ctx context.Context, originalSteampipe *steampi
 	esQuery = strings.ReplaceAll(esQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
 	w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", esQuery))
 	_, span3 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("%s-es-query-%s", QueryTypeInsight, query.TableName))
-	esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), esQuery)
+	esRows, err := w.kaytuSteampipeDb.Conn().Query(ctx, esQuery)
 	if err != nil {
 		w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ElasticSearchQuery), zap.String("account", connection.ConnectionID))
 		return nil, err

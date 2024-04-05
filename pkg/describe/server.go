@@ -1,7 +1,6 @@
 package describe
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/json"
 	"errors"
@@ -1149,7 +1148,6 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 			return err
 		}
 
-		ctx := context.Background()
 		for {
 			if paginator.Done() {
 				break
@@ -1157,7 +1155,7 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 
 			h.Scheduler.logger.Info("migration: next page", zap.String("index", indexToMigrate))
 			var res MigratorResponse
-			err = paginator.SearchWithLog(ctx, &res, true)
+			err = paginator.SearchWithLog(ctx.Request().Context(), &res, true)
 			if err != nil {
 				return err
 			}
@@ -1188,7 +1186,7 @@ func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
 			}
 		}
 
-		err = paginator.Deallocate(ctx)
+		err = paginator.Deallocate(ctx.Request().Context())
 		if err != nil {
 			return err
 		}
