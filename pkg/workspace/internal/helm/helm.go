@@ -198,7 +198,7 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 			return false, nil, err
 		}
 
-		result, err := kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+		result, err := kmsClient.Decrypt(ctx, &kms.DecryptInput{
 			CiphertextBlob:      decoded,
 			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 			KeyId:               &cfg.KMSKeyARN,

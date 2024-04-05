@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
@@ -80,7 +79,7 @@ func (svc MeteringService) generateSchedulerMeter(workspaceId string, usageDate 
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {
@@ -142,7 +141,7 @@ func (svc MeteringService) generateTotalFindingsMeter(workspaceId string, usageD
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {
@@ -182,7 +181,7 @@ func (svc MeteringService) generateTotalResourceMeter(workspaceId string, usageD
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {
@@ -220,7 +219,7 @@ func (svc MeteringService) generateTotalUsersMeter(workspaceId string, usageDate
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {
@@ -257,7 +256,7 @@ func (svc MeteringService) generateTotalApiKeysMeter(workspaceId string, usageDa
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {
@@ -295,7 +294,7 @@ func (svc MeteringService) generateTotalRulesMeter(workspaceId string, usageDate
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {
@@ -334,7 +333,7 @@ func (svc MeteringService) generateAlertCountMeter(workspaceId string, usageDate
 		return err
 	}
 
-	err = svc.sendMeterToFirehose(context.TODO(), &meter)
+	err = svc.sendMeterToFirehose(ctx.Request().Context(), &meter)
 	if err != nil {
 		svc.logger.Warn("failed to send meter to firehose", zap.Error(err), zap.String("workspaceID", workspaceId), zap.String("meter", string(meterType)))
 	} else {

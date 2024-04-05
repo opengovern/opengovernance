@@ -114,7 +114,7 @@ func NewAWSConnectionMetadata(ctx context.Context, cfg describe.AWSAccountConfig
 		}
 		organizationClient := organizations.NewFromConfig(sdkCnf)
 
-		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
 			ResourceId: &metadata.AccountID,
 		})
 		if err != nil {
@@ -130,7 +130,7 @@ func NewAWSConnectionMetadata(ctx context.Context, cfg describe.AWSAccountConfig
 		}
 
 		if account.Account == nil {
-			orgAccount, err := organizationClient.DescribeAccount(context.TODO(), &organizations.DescribeAccountInput{
+			orgAccount, err := organizationClient.DescribeAccount(ctx, &organizations.DescribeAccountInput{
 				AccountId: &metadata.AccountID,
 			})
 			if err != nil {

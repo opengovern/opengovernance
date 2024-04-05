@@ -556,7 +556,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 				return err
 			}
 
-			result, err := s.kms.Decrypt(context.TODO(), &kms.DecryptInput{
+			result, err := s.kms.Decrypt(ctx.Request().Context(), &kms.DecryptInput{
 				CiphertextBlob:      decoded,
 				EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 				KeyId:               &s.cfg.KMSKeyARN,
