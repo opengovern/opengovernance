@@ -142,7 +142,7 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 	}
 
 	awsConfig, err := kaytuAws.GetConfig(
-		context.Background(),
+		ctx,
 		h.masterAccessKey,
 		h.masterSecretKey,
 		"",
@@ -157,13 +157,13 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 	}
 
 	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
-	org, err := describer.OrganizationOrganization(context.Background(), awsConfig)
+	org, err := describer.OrganizationOrganization(ctx, awsConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
 			return nil, err
 		}
 	}
-	accounts, err := describer.OrganizationAccounts(context.Background(), awsConfig)
+	accounts, err := describer.OrganizationAccounts(ctx, awsConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
 			return nil, err
@@ -385,13 +385,13 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		sdkCnf, err = kaytuAws.GetConfig(ctx, awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
 		if err == nil {
-			metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
+			metadata, err := getAWSCredentialsMetadata(ctx, h.logger, awsConfig)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -419,7 +419,7 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			Password:            azureConfig.Password,
 		})
 		if err == nil {
-			metadata, err := getAzureCredentialsMetadata(context.Background(), azureConfig)
+			metadata, err := getAzureCredentialsMetadata(ctx, azureConfig)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}

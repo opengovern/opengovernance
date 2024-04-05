@@ -2255,7 +2255,7 @@ func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
 		Content: control.Title,
 	})
 
-	resp, err := h.openAIClient.CreateChatCompletion(context.Background(), req)
+	resp, err := h.openAIClient.CreateChatCompletion(ctx.Request().Context(), req)
 	if err != nil {
 		return err
 	}
@@ -4243,7 +4243,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	}
 
 	var migratorJob batchv1.Job
-	err = h.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+	err = h.kubeClient.Get(ctx.Request().Context(), k8sclient.ObjectKey{
 		Namespace: currentNamespace,
 		Name:      "migrator-job",
 	}, &migratorJob)
@@ -4251,13 +4251,13 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.kubeClient.Delete(context.Background(), &migratorJob)
+	err = h.kubeClient.Delete(ctx.Request().Context(), &migratorJob)
 	if err != nil {
 		return err
 	}
 
 	for {
-		err = h.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+		err = h.kubeClient.Get(ctx.Request().Context(), k8sclient.ObjectKey{
 			Namespace: currentNamespace,
 			Name:      "migrator-job",
 		}, &migratorJob)
@@ -4283,7 +4283,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	migratorJob.Status = batchv1.JobStatus{}
 
-	err = h.kubeClient.Create(context.Background(), &migratorJob)
+	err = h.kubeClient.Create(ctx.Request().Context(), &migratorJob)
 	if err != nil {
 		return err
 	}

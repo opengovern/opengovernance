@@ -91,13 +91,13 @@ func UpdateHelmRelease(ctx context.Context, cfg config.Config, kubeClient k8scli
 	}
 
 	var res corev1.PodList
-	err = kubeClient.List(context.Background(), &res)
+	err = kubeClient.List(ctx, &res)
 	if err != nil {
 		return fmt.Errorf("listing pods: %w", err)
 	}
 	for _, pod := range res.Items {
 		if strings.HasPrefix(pod.Name, "describe-scheduler") {
-			err = kubeClient.Delete(context.Background(), &pod)
+			err = kubeClient.Delete(ctx, &pod)
 			if err != nil {
 				return fmt.Errorf("deleting pods: %w", err)
 			}
@@ -198,7 +198,7 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 			return false, nil, err
 		}
 
-		result, err := kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+		result, err := kmsClient.Decrypt(ctx, &kms.DecryptInput{
 			CiphertextBlob:      decoded,
 			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 			KeyId:               &cfg.KMSKeyARN,

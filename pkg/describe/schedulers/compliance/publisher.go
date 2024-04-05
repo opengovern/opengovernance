@@ -1,7 +1,6 @@
 package compliance
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -97,7 +96,7 @@ func (s *JobScheduler) runPublisher() error {
 			}
 
 			s.logger.Info("publishing runner", zap.Uint("jobId", job.ID))
-			if err := s.jq.Produce(context.Background(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
+			if err := s.jq.Produce(ctx.Request().Context(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue

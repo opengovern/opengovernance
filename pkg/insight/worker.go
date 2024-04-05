@@ -106,7 +106,7 @@ func NewWorker(
 }
 
 func (w *Worker) Run(ctx context.Context) error {
-	consumerCtx, err := w.jq.Consume(context.Background(), "insight-service", StreamName, []string{JobsQueueName}, "insight-service", func(msg jetstream.Msg) {
+	consumerCtx, err := w.jq.Consume(ctx, "insight-service", StreamName, []string{JobsQueueName}, "insight-service", func(msg jetstream.Msg) {
 		var job Job
 		if err := json.Unmarshal(msg.Data(), &job); err != nil {
 			w.logger.Error("Failed to unmarshal task", zap.Error(err))
@@ -136,7 +136,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			w.logger.Error("failed to marshal result as json", zap.Error(err))
 		}
 
-		if err := w.jq.Produce(context.Background(), ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
+		if err := w.jq.Produce(ctx, ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
 			w.logger.Error("Failed to send results to queue", zap.Error(err))
 		}
 
