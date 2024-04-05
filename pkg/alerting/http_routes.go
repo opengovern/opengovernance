@@ -111,9 +111,11 @@ func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 		}
 
 		var headers map[string]string
-		err = json.Unmarshal(action.Headers, &headers)
-		if err != nil {
-			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling the action : %v ", err))
+		if len(action.Headers) > 0 {
+			err = json.Unmarshal(action.Headers, &headers)
+			if err != nil {
+				return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling the action : %v ", err))
+			}
 		}
 
 		apiAction := api.Action{
