@@ -3132,7 +3132,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		benchmarkIds = append(benchmarkIds, benchmark.ID)
 	}
 
-	controlResults, evaluatedAts, err := es.BenchmarksControlSummary(h.logger, h.client, benchmarkIds, connectionIDs)
+	controlResults, evaluatedAts, err := es.BenchmarksControlSummary(ctx.Request().Context(), h.logger, h.client, benchmarkIds, connectionIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch control results", zap.Error(err))
 		return err
@@ -3292,7 +3292,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 		}
 		evaluatedAt = evAt
 	} else {
-		controlResult, evaluatedAts, err := es.BenchmarksControlSummary(h.logger, h.client, benchmarkIds, connectionIDs)
+		controlResult, evaluatedAts, err := es.BenchmarksControlSummary(ctx, h.logger, h.client, benchmarkIds, connectionIDs)
 		if err != nil {
 			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 		}
