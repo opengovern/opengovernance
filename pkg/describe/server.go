@@ -558,7 +558,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 		}
 
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		jobID, err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector, nil)
+		jobID, err := h.Scheduler.runInsightJob(ctx.Request().Context(), true, ins, id, id, ins.Connector, nil)
 		if err != nil {
 			return err
 		}
@@ -993,7 +993,7 @@ func (h HttpServer) GetJobsByInsightID(ctx echo.Context) error {
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
-	jobID, err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal)
+	jobID, err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal, ctx.Request().Context())
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
@@ -1070,7 +1070,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		totalJobs++
 
 		if job.DescribedResourceCount > 0 {
-			resourceCount, err := es.GetInventoryCountResponse(h.Scheduler.es, strings.ToLower(job.ResourceType))
+			resourceCount, err := es.GetInventoryCountResponse(ctx.Request().Context(), h.Scheduler.es, strings.ToLower(job.ResourceType))
 			if err != nil {
 				return err
 			}
@@ -1375,7 +1375,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.Scheduler.storeStackCredentials(stackRecord.ToApi(), configStr) // should be removed after describing
+	err = h.Scheduler.storeStackCredentials(ctx.Request().Context(), stackRecord.ToApi(), configStr) // should be removed after describing
 	if err != nil {
 		return err
 	}
@@ -1747,7 +1747,7 @@ func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error { // Retired
 	if err != nil {
 		return err
 	}
-	err = h.Scheduler.storeStackCredentials(stack, string(configStr))
+	err = h.Scheduler.storeStackCredentials(ctx.Request().Context(), stack, string(configStr))
 	if err != nil {
 		return err
 	}

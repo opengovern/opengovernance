@@ -70,5 +70,5 @@ func startHttpServer(ctx context.Context) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(logger, conf.Http.Address, handler)
+	return httpserver.RegisterAndStart(ctx, logger, conf.Http.Address, handler)
 }

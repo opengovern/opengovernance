@@ -53,25 +53,25 @@ type CloudNativeCall struct {
 	src *apiOnboard.Connection
 }
 
-func (s *Scheduler) RunDescribeJobScheduler() {
+func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
 	t := ticker.NewTicker(60*time.Second, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		s.scheduleDescribeJob()
+		s.scheduleDescribeJob(ctx)
 	}
 }
 
-func (s *Scheduler) RunStackScheduler() {
+func (s *Scheduler) RunStackScheduler(ctx context.Context) {
 	s.logger.Info("Scheduling stack jobs on a timer")
 
 	t := ticker.NewTicker(1*time.Minute, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		err := s.scheduleStackJobs()
+		err := s.scheduleStackJobs(ctx)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Scheduling stack jobs error: %v", err.Error()))
 		}
@@ -256,7 +256,7 @@ func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
 	}
 }
 
-func (s *Scheduler) scheduleDescribeJob() {
+func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	//err := s.CheckWorkspaceResourceLimit()
 	//if err != nil {
 	//	s.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
@@ -323,7 +323,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		}
 	}
 
-	if err := s.retryFailedJobs(); err != nil {
+	if err := s.retryFailedJobs(ctx); err != nil {
 		s.logger.Error("failed to retry failed jobs", zap.String("spot", "retryFailedJobs"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
@@ -390,8 +390,7 @@ func awsOnlyOnOneConnection(connections []apiOnboard.Connection, connection apiO
 	return AccountType != "organization_manager"
 }
 
-func (s *Scheduler) retryFailedJobs() error {
-	ctx := context.Background()
+func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
 	defer span.End()
@@ -769,8 +768,8 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 
 // ================================================ STACKS ================================================
 
-func (s *Scheduler) scheduleStackJobs() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func (s *Scheduler) scheduleStackJobs(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	s.logger.Info("Schedule stack jobs started")
 
@@ -886,7 +885,7 @@ func (s *Scheduler) scheduleStackJobs() error {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run benchmarks on stack with error: %s", err.Error()))
 		}
-		err = s.runStackInsights(stack.ToApi())
+		err = s.runStackInsights(ctx, stack.ToApi())
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
@@ -907,7 +906,7 @@ func (s *Scheduler) scheduleStackJobs() error {
 		}
 		if isComplete {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
-			err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
+			err = s.httpServer.deleteStackHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("Failed to delete helm-release for stack: %s", stack.StackID), zap.Error(err))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
@@ -922,7 +921,7 @@ func (s *Scheduler) scheduleStackJobs() error {
 		return err
 	}
 	for _, stack := range stacks {
-		err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
+		err = s.httpServer.deleteStackHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to delete helm-release for stack: %s", stack.StackID), zap.Error(err))
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
@@ -963,7 +962,7 @@ func (s *Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 	return nil
 }
 
-func (s *Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr string) error {
+func (s *Scheduler) storeStackCredentials(ctx context.Context, stack apiDescribe.Stack, configStr string) error {
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -973,7 +972,7 @@ func (s *Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr str
 		}
 	}
 	var secretBytes []byte
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", KeyRegion)
+	kms, err := vault.NewKMSVaultSourceConfig(ctx, "", "", KeyRegion)
 	if err != nil {
 		return err
 	}
@@ -1053,7 +1052,7 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 	return nil
 }
 
-func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
+func (s *Scheduler) runStackInsights(ctx context.Context, stack apiDescribe.Stack) error {
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -1062,7 +1061,9 @@ func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 			provider = source.CloudAzure
 		}
 	}
-	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: apiAuth.AdminRole}, []source.Type{provider})
+	ctx2 := &httpclient.Context{UserRole: apiAuth.AdminRole}
+	ctx2.Ctx = ctx
+	insights, err := s.complianceClient.ListInsightsMetadata(ctx2, []source.Type{provider})
 	if err != nil {
 		return err
 	}
@@ -1074,7 +1075,7 @@ func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 			return err
 		}
 
-		if err := enqueueInsightJobs(s.jq, job, insight); err != nil {
+		if err := enqueueInsightJobs(ctx, s.jq, job, insight); err != nil {
 			job.Status = apiInsight.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
 			s.db.UpdateInsightJobStatus(job)

@@ -115,8 +115,8 @@ func (h HttpServer) findHelmRelease(ctx context.Context, stack api.Stack, worksp
 	return &helmRelease, nil
 }
 
-func (h HttpServer) deleteStackHelmRelease(stack api.Stack, workspaceId string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func (h HttpServer) deleteStackHelmRelease(ctx context.Context, stack api.Stack, workspaceId string) error {
+	ctx2, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
@@ -124,5 +124,5 @@ func (h HttpServer) deleteStackHelmRelease(stack api.Stack, workspaceId string) 
 			Namespace: workspaceId,
 		},
 	}
-	return h.kubeClient.Delete(ctx, &helmRelease)
+	return h.kubeClient.Delete(ctx2, &helmRelease)
 }

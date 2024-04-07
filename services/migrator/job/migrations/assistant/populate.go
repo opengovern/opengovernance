@@ -23,7 +23,7 @@ func (m Migration) AttachmentFolderPath() string {
 	return "/workspace-migration"
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	database, err := db.New(koanf.Postgres{
 		Host:     conf.PostgreSQL.Host,
 		Port:     conf.PostgreSQL.Port,
@@ -44,7 +44,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_ChatPrompt,
 		AssistantName: model.AssistantTypeQuery,
 		Content:       string(prompt),
@@ -60,7 +60,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_SystemPrompt,
 		AssistantName: model.AssistantTypeQuery,
 		Content:       string(prompt),
@@ -76,7 +76,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_ChatPrompt,
 		AssistantName: model.AssistantTypeAssets,
 		Content:       string(prompt),
@@ -92,7 +92,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_SystemPrompt,
 		AssistantName: model.AssistantTypeAssets,
 		Content:       string(prompt),
@@ -109,7 +109,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_ChatPrompt,
 		AssistantName: model.AssistantTypeScore,
 		Content:       string(prompt),
@@ -125,7 +125,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_SystemPrompt,
 		AssistantName: model.AssistantTypeScore,
 		Content:       string(prompt),
@@ -142,7 +142,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_ChatPrompt,
 		AssistantName: model.AssistantTypeCompliance,
 		Content:       string(prompt),
@@ -158,7 +158,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 		return err
 	}
 
-	err = promptRepo.Create(context.Background(), model.Prompt{
+	err = promptRepo.Create(ctx, model.Prompt{
 		Purpose:       model.Purpose_SystemPrompt,
 		AssistantName: model.AssistantTypeCompliance,
 		Content:       string(prompt),

@@ -20,9 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (w *Worker) RunJob(j types2.Job) error {
-	ctx := context.Background()
-
+func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	w.logger.Info("Running summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
@@ -40,7 +38,7 @@ func (w *Worker) RunJob(j types2.Job) error {
 		return err
 	}
 	defer func() {
-		if err := paginator.Close(context.Background()); err != nil {
+		if err := paginator.Close(ctx); err != nil {
 			w.logger.Error("failed to close paginator", zap.Error(err))
 		}
 	}()
@@ -107,7 +105,7 @@ func (w *Worker) RunJob(j types2.Job) error {
 			resourceIds = append(resourceIds, f.KaytuResourceID)
 		}
 
-		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(w.esClient, resourceIds)
+		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, resourceIds)
 		if err != nil {
 			w.logger.Error("failed to fetch lookup resources", zap.Error(err))
 			return err

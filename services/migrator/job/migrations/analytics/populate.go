@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"context"
 	"fmt"
 	"github.com/goccy/go-yaml"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -188,8 +187,6 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 }
 
 func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
-
-	context.Background()
 	id := strings.TrimSuffix(info.Name(), ".yaml")
 
 	content, err := os.ReadFile(path)

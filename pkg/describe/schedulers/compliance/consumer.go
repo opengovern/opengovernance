@@ -13,9 +13,7 @@ import (
 
 const JobTimeoutCheckInterval = 5 * time.Minute
 
-func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
-	ctx := context.Background()
-
+func (s *JobScheduler) RunComplianceReportJobResultsConsumer(ctx context.Context) error {
 	if _, err := s.jq.Consume(ctx, "scheduler-runner-compliance", runner.StreamName, []string{runner.ResultQueueTopic}, "scheduler-runner-compliance", func(msg jetstream.Msg) {
 		if err := msg.Ack(); err != nil {
 			s.logger.Error("Failed committing message", zap.Error(err))
@@ -46,9 +44,7 @@ func (s *JobScheduler) RunComplianceReportJobResultsConsumer() error {
 	return nil
 }
 
-func (s *JobScheduler) RunComplianceSummarizerResultsConsumer() error {
-	ctx := context.Background()
-
+func (s *JobScheduler) RunComplianceSummarizerResultsConsumer(ctx context.Context) error {
 	if _, err := s.jq.Consume(
 		ctx,
 		"scheduler-summarizer-compliance",

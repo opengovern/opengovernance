@@ -50,11 +50,11 @@ func (t *CreateIngestionPipeline) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateOpenSearch}
 }
 
-func (t *CreateIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error {
-	processing, endpoint, err := t.isPipelineCreationFinished(workspace)
+func (t *CreateIngestionPipeline) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
+	processing, endpoint, err := t.isPipelineCreationFinished(ctx, workspace)
 	if err != nil {
 		if strings.Contains(err.Error(), "ResourceNotFoundException") {
-			if err := t.createPipeline(workspace); err != nil {
+			if err := t.createPipeline(ctx, workspace); err != nil {
 				return err
 			}
 			return ErrTransactionNeedsTime
@@ -78,10 +78,10 @@ func (t *CreateIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error 
 	return nil
 }
 
-func (t *CreateIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error {
+func (t *CreateIngestionPipeline) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 
-	pipe, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{
+	pipe, err := t.osis.GetPipeline(ctx, &osis.GetPipelineInput{
 		PipelineName: aws.String(pipelineName),
 	})
 	if err != nil {
@@ -92,7 +92,7 @@ func (t *CreateIngestionPipeline) RollbackIdempotent(workspace db.Workspace) err
 	}
 
 	if pipe.Pipeline.Status != types.PipelineStatusDeleting {
-		_, err := t.osis.DeletePipeline(context.Background(), &osis.DeletePipelineInput{PipelineName: aws.String(pipelineName)})
+		_, err := t.osis.DeletePipeline(ctx, &osis.DeletePipelineInput{PipelineName: aws.String(pipelineName)})
 		if err != nil {
 			return err
 		}
@@ -102,9 +102,9 @@ func (t *CreateIngestionPipeline) RollbackIdempotent(workspace db.Workspace) err
 	return nil
 }
 
-func (t *CreateIngestionPipeline) isPipelineCreationFinished(workspace db.Workspace) (bool, string, error) {
+func (t *CreateIngestionPipeline) isPipelineCreationFinished(ctx context.Context, workspace db.Workspace) (bool, string, error) {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
-	pipe, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{
+	pipe, err := t.osis.GetPipeline(ctx, &osis.GetPipelineInput{
 		PipelineName: aws.String(pipelineName),
 	})
 	if err != nil {
@@ -120,11 +120,11 @@ func (t *CreateIngestionPipeline) isPipelineCreationFinished(workspace db.Worksp
 	return processing, endpoint, nil
 }
 
-func (t *CreateIngestionPipeline) createPipeline(workspace db.Workspace) error {
+func (t *CreateIngestionPipeline) createPipeline(ctx context.Context, workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
 	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/kaytu-opensearch-master-%s", t.cfg.AWSAccountID, workspace.ID)
 	bucketName := fmt.Sprintf("dlq-%s", workspace.ID)
-	_, err := t.s3Client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+	_, err := t.s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
@@ -135,7 +135,7 @@ func (t *CreateIngestionPipeline) createPipeline(workspace db.Workspace) error {
 		return err
 	}
 
-	_, err = t.osis.CreatePipeline(context.Background(), &osis.CreatePipelineInput{
+	_, err = t.osis.CreatePipeline(ctx, &osis.CreatePipelineInput{
 		MaxUnits: aws.Int32(1),
 		MinUnits: aws.Int32(1),
 		PipelineConfigurationBody: aws.String(fmt.Sprintf(`version: "2"

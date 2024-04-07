@@ -18,14 +18,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func (s *Scheduler) RunAnalyticsJobScheduler() {
+func (s *Scheduler) RunAnalyticsJobScheduler(ctx context.Context) {
 	s.logger.Info("Scheduling analytics jobs on a timer")
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
-
+	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2.Ctx = ctx
 	for ; ; <-t.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+		connections, err := s.onboardClient.ListSources(ctx2, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			AnalyticsJobsCount.WithLabelValues("failure").Inc()
@@ -50,7 +51,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(s.analyticsIntervalHours).Before(time.Now()) {
-			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
+			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal, ctx)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -63,7 +64,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(s.analyticsIntervalHours).Before(time.Now()) {
-			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
+			_, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection, ctx)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -72,7 +73,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	}
 }
 
-func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType) (uint, error) {
+func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType, ctx context.Context) (uint, error) {
 	lastJob, err := s.db.FetchLastAnalyticsJobForJobType(analyticsJobType)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
@@ -98,7 +99,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		return 0, err
 	}
 
-	if err = s.enqueueAnalyticsJobs(job); err != nil {
+	if err = s.enqueueAnalyticsJobs(job, ctx); err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue AnalyticsJob",
 			zap.Uint("jobId", job.ID),
@@ -119,7 +120,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 	return job.ID, nil
 }
 
-func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
+func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob, ctx context.Context) error {
 	var resourceCollectionIds []string
 
 	if job.Type == model.AnalyticsJobTypeResourceCollection {
@@ -145,7 +146,7 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
 		return err
 	}
 
-	if err := s.jq.Produce(context.Background(), analytics.JobQueueTopic, aJobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
+	if err := s.jq.Produce(ctx, analytics.JobQueueTopic, aJobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
 		return err
 	}
 

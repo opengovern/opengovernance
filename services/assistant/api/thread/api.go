@@ -1,7 +1,6 @@
 package thread
 
 import (
-	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
@@ -55,7 +54,7 @@ func (s API) ListMessages(c echo.Context) error {
 	threadID := c.Param("thread_id")
 	runID := c.QueryParam("run_id")
 
-	msgs, err := s.oc.ListMessages(threadID)
+	msgs, err := s.oc.ListMessages(c.Request().Context(), threadID)
 	if err != nil {
 		s.logger.Error("failed to read msgs from the service", zap.Error(err))
 
@@ -75,7 +74,7 @@ func (s API) ListMessages(c echo.Context) error {
 
 	var status openai2.RunStatus
 	if len(runID) > 0 {
-		run, err := s.oc.RetrieveRun(threadID, runID)
+		run, err := s.oc.RetrieveRun(c.Request().Context(), threadID, runID)
 		if err != nil {
 			return err
 		}
@@ -111,13 +110,13 @@ func (s API) SendMessage(c echo.Context) error {
 
 	var threadID string
 	if req.ThreadID == nil || len(*req.ThreadID) == 0 {
-		th, err := s.oc.NewThread()
+		th, err := s.oc.NewThread(c.Request().Context())
 		if err != nil {
 			return fmt.Errorf("newThread failed due to %v", err)
 		}
 		threadID = th.ID
 
-		_, err = s.oc.SendChatPrompt(threadID)
+		_, err = s.oc.SendChatPrompt(c.Request().Context(), threadID)
 		if err != nil {
 			return fmt.Errorf("SendChatPrompt failed due to %v", err)
 		}
@@ -125,17 +124,17 @@ func (s API) SendMessage(c echo.Context) error {
 		threadID = *req.ThreadID
 	}
 
-	_, err := s.oc.SendMessage(threadID, req.Content)
+	_, err := s.oc.SendMessage(c.Request().Context(), threadID, req.Content)
 	if err != nil {
 		return fmt.Errorf("SendMessage failed due to %v", err)
 	}
 
-	run, err := s.oc.RunThread(threadID, req.RunID)
+	run, err := s.oc.RunThread(c.Request().Context(), threadID, req.RunID)
 	if err != nil {
 		return fmt.Errorf("RunThread failed due to %v", err)
 	}
 
-	err = s.db.Create(context.Background(), model.Run{ID: run.ID, ThreadID: threadID, AssistantType: s.oc.AssistantName, Status: openai2.RunStatusQueued, UpdatedAt: time.Now()})
+	err = s.db.Create(c.Request().Context(), model.Run{ID: run.ID, ThreadID: threadID, AssistantType: s.oc.AssistantName, Status: openai2.RunStatusQueued, UpdatedAt: time.Now()})
 	if err != nil {
 		return fmt.Errorf("db.Create failed due to %v", err)
 	}

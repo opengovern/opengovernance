@@ -258,7 +258,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
 		lastEventFrom, lastEventTo,
 		evaluatedAtFrom, evaluatedAtTo,
-		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, ctx.Request().Context())
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
@@ -342,7 +342,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx.Request().Context(), h.client, kaytuResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -387,7 +387,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 	findingID := ctx.Param("id")
 
-	findingEvents, err := es.FetchFindingEventsByFindingIDs(h.logger, h.client, []string{findingID})
+	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx.Request().Context(), h.logger, h.client, []string{findingID})
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
@@ -421,7 +421,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 	}
 	kaytuResourceID := req.KaytuResourceId
 
-	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(h.client, []string{kaytuResourceID})
+	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx.Request().Context(), h.client, []string{kaytuResourceID})
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -445,7 +445,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
 
-	resource, err := es.FetchResourceByResourceIdAndType(h.client, lookupResource.ResourceID, lookupResource.ResourceType)
+	resource, err := es.FetchResourceByResourceIdAndType(ctx.Request().Context(), h.client, lookupResource.ResourceID, lookupResource.ResourceType)
 	if err != nil {
 		h.logger.Error("failed to fetch resource", zap.Error(err))
 		return err
@@ -458,7 +458,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		Resource: *resource,
 	}
 
-	controlFindings, err := es.FetchFindingsPerControlForResourceId(h.logger, h.client, lookupResource.ResourceID)
+	controlFindings, err := es.FetchFindingsPerControlForResourceId(ctx.Request().Context(), h.logger, h.client, lookupResource.ResourceID)
 	if err != nil {
 		h.logger.Error("failed to fetch control findings", zap.Error(err))
 		return err
@@ -539,7 +539,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		response.ControlFindings = append(response.ControlFindings, finding)
 	}
 
-	findingEvents, err := es.FetchFindingEventsByFindingIDs(h.logger, h.client, findingsIDs)
+	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx.Request().Context(), h.logger, h.client, findingsIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch finding events", zap.Error(err))
 		return err
@@ -567,7 +567,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 	findingID := ctx.Param("id")
 
-	finding, err := es.FetchFindingByID(h.logger, h.client, findingID)
+	finding, err := es.FetchFindingByID(ctx.Request().Context(), h.logger, h.client, findingID)
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
@@ -660,7 +660,7 @@ func (h *HttpHandler) CountFindings(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	totalCount, err := es.FindingsCount(h.client, esConformanceStatuses, boolStateActives)
+	totalCount, err := es.FindingsCount(h.client, esConformanceStatuses, boolStateActives, ctx.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -774,7 +774,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
 	}
 
-	possibleFilters, err := es.FindingsFiltersQuery(h.logger, h.client,
+	possibleFilters, err := es.FindingsFiltersQuery(ctx.Request().Context(), h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceTypeID,
 		req.BenchmarkID, req.ControlID,
@@ -927,7 +927,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Success		200	{object}	api.FindingKPIResponse
 //	@Router			/compliance/api/v1/findings/kpi [get]
 func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
-	kpiRes, err := es.FindingKPIQuery(h.logger, h.client)
+	kpiRes, err := es.FindingKPIQuery(ctx.Request().Context(), h.logger, h.client)
 	if err != nil {
 		h.logger.Error("failed to get finding kpis", zap.Error(err))
 		return err
@@ -1011,14 +1011,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors,
+	topFieldResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs,
 		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount))
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors,
+	topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs,
 		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000)
 	if err != nil {
@@ -1183,7 +1183,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 
 		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
-			h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
+			ctx.Request().Context(), h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -1216,7 +1216,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			recordMap[item.Key] = record
 		}
 
-		resourcesResult, err := es.GetPerFieldResourceConformanceResult(h.logger, h.client, "connectionID",
+		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx.Request().Context(), h.logger, h.client, "connectionID",
 			resConnectionIDs, notConnectionIDs, nil, controlIDs, benchmarkIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
@@ -1294,7 +1294,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			recordMap[control.ID] = record
 		}
 
-		resourcesResult, err := es.GetPerFieldResourceConformanceResult(h.logger, h.client, "controlID",
+		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx.Request().Context(), h.logger, h.client, "controlID",
 			connectionIDs, notConnectionIDs, nil, resControlIDs, benchmarkIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
@@ -1418,7 +1418,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.FindingsFieldCountByControl(h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
+	res, err := es.FindingsFieldCountByControl(ctx.Request().Context(), h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
 		esConformanceStatuses)
 	if err != nil {
 		return err
@@ -1459,7 +1459,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 	}
 
 	var response api.GetAccountsFindingsSummaryResponse
-	res, evaluatedAt, err := es.BenchmarkConnectionSummary(h.logger, h.client, benchmarkID)
+	res, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx.Request().Context(), h.logger, h.client, benchmarkID)
 	if err != nil {
 		return err
 	}
@@ -1555,7 +1555,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	}
 
 	var response api.GetServicesFindingsSummaryResponse
-	resp, err := es.ResourceTypesFindingsSummary(h.logger, h.client, connectionIDs, benchmarkID)
+	resp, err := es.ResourceTypesFindingsSummary(ctx.Request().Context(), h.logger, h.client, connectionIDs, benchmarkID)
 	if err != nil {
 		return err
 	}
@@ -1683,7 +1683,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	}
 
-	res, totalCount, err := es.FindingEventsQuery(h.logger, h.client,
+	res, totalCount, err := es.FindingEventsQuery(ctx.Request().Context(), h.logger, h.client,
 		req.Filters.FindingID, req.Filters.KaytuResourceID,
 		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceType,
@@ -1734,7 +1734,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx.Request().Context(), h.client, kaytuResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -1821,7 +1821,7 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 		startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
 	}
 
-	totalCount, err := es.FindingEventsCount(h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
+	totalCount, err := es.FindingEventsCount(ctx.Request().Context(), h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1929,7 +1929,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		controlMetadataMap[item.ID] = &item
 	}
 
-	possibleFilters, err := es.FindingEventsFiltersQuery(h.logger, h.client,
+	possibleFilters, err := es.FindingEventsFiltersQuery(ctx.Request().Context(), h.logger, h.client,
 		req.FindingID, req.KaytuResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
@@ -2084,7 +2084,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
 	findingEventID := ctx.Param("id")
 
-	findingEvent, err := es.FetchFindingEventByID(h.logger, h.client, findingEventID)
+	findingEvent, err := es.FetchFindingEventByID(ctx.Request().Context(), h.logger, h.client, findingEventID)
 	if err != nil {
 		h.logger.Error("failed to fetch findingEvent by id", zap.Error(err))
 		return err
@@ -2195,7 +2195,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		req.Filters.ResourceCollection, req.Filters.ResourceTypeID,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
 		evaluatedAtFrom, evaluatedAtTo,
-		esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+		esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, ctx.Request().Context())
 	if err != nil {
 		h.logger.Error("failed to get resource findings", zap.Error(err))
 		return err
@@ -2385,7 +2385,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
 	}
 
-	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt, false)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx.Request().Context(), h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt, false)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
@@ -2394,13 +2394,13 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	_, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_PopulateConnectors(loop)")
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
 	}
 
-	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, nil)
+	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
 		return err
@@ -2446,12 +2446,12 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
-			topFieldResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+			topFieldResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(), []bool{true}, topAccountCount)
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(), []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -2599,20 +2599,20 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		controlsMap[strings.ToLower(control.ID)] = &control
 	}
 
-	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client,
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx.Request().Context(), h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, resourceCollections,
 		timeAt, true)
 	if err != nil {
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
 	}
 
-	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, nil)
+	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
 		return err
@@ -2685,13 +2685,13 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+		res, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
@@ -2833,7 +2833,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 		return err
 	}
 
-	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(h.logger, h.client, benchmarkID, connectionIDs, timeAt)
+	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(ctx.Request().Context(), h.logger, h.client, benchmarkID, connectionIDs, timeAt)
 	if err != nil {
 		return err
 	}
@@ -2928,7 +2928,7 @@ func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
 		return err
 	}
 
-	controlSummary, err := h.getControlSummary(controlID, &benchmarkID, connectionIDs)
+	controlSummary, err := h.getControlSummary(ctx.Request().Context(), controlID, &benchmarkID, connectionIDs)
 	if err != nil {
 		h.logger.Error("failed to get control summary", zap.Error(err))
 		return err
@@ -3048,7 +3048,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client,
+	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(ctx.Request().Context(), h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
 		return err
@@ -3217,7 +3217,7 @@ func (h *HttpHandler) GetControlSummary(ctx echo.Context) error {
 		return err
 	}
 
-	controlSummary, err := h.getControlSummary(controlID, nil, connectionIDs)
+	controlSummary, err := h.getControlSummary(ctx.Request().Context(), controlID, nil, connectionIDs)
 	if err != nil {
 		return err
 	}
@@ -3225,7 +3225,7 @@ func (h *HttpHandler) GetControlSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, controlSummary)
 }
 
-func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, connectionIDs []string) (*api.ControlSummary, error) {
+func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, benchmarkID *string, connectionIDs []string) (*api.ControlSummary, error) {
 	control, err := h.db.GetControl(controlID)
 	if err != nil {
 		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
@@ -3280,7 +3280,7 @@ func (h *HttpHandler) getControlSummary(controlID string, benchmarkID *string, c
 	var evaluatedAt int64
 	var result types.ControlResult
 	if benchmarkID != nil {
-		controlResult, evAt, err := es.BenchmarkControlSummary(h.logger, h.client, *benchmarkID, connectionIDs, time.Now())
+		controlResult, evAt, err := es.BenchmarkControlSummary(ctx, h.logger, h.client, *benchmarkID, connectionIDs, time.Now())
 		if err != nil {
 			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 			return nil, err
@@ -3384,7 +3384,7 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 		stepDuration = 30 * 24 * time.Hour
 	}
 
-	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(h.logger, h.client,
+	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx.Request().Context(), h.logger, h.client,
 		benchmarkIds, []string{controlID}, connectionIDs, startTime, endTime, stepDuration)
 	if err != nil {
 		h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID))

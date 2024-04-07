@@ -69,6 +69,7 @@ type JobResult struct {
 }
 
 func (j Job) Do(
+	ctx context.Context,
 	esConfig config.ElasticSearch,
 	steampipePgConfig config.Postgres,
 	onboardClient client.OnboardServiceClient,
@@ -95,7 +96,9 @@ func (j Job) Do(
 		}
 	}()
 
-	if err := schedulerClient.InsightJobInProgress(&httpclient.Context{UserRole: authApi.InternalRole}, j.JobID); err != nil {
+	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2.Ctx = ctx
+	if err := schedulerClient.InsightJobInProgress(ctx2, j.JobID); err != nil {
 		logger.Error("failed to update job status", zap.Error(err))
 	}
 
@@ -122,9 +125,7 @@ func (j Job) Do(
 	var err error
 	var res *steampipe.Result
 
-	connections, err := onboardClient.ListSources(&httpclient.Context{
-		UserRole: authApi.InternalRole,
-	}, []source.Type{j.SourceType})
+	connections, err := onboardClient.ListSources(ctx2, []source.Type{j.SourceType})
 	if err != nil {
 		logger.Error("failed to list sources", zap.Error(err))
 		fail(fmt.Errorf("listing sources: %w", err))
@@ -156,7 +157,7 @@ func (j Job) Do(
 
 	var encodedResourceCollectionFilter *string
 	if j.ResourceCollectionId != nil {
-		rc, err := inventoryClient.GetResourceCollectionMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
+		rc, err := inventoryClient.GetResourceCollectionMetadata(ctx2,
 			*j.ResourceCollectionId)
 		if err != nil {
 			fail(err)
@@ -188,35 +189,35 @@ func (j Job) Do(
 	defer steampipe.StopSteampipeService(logger)
 	logger.Info("Initialized steampipe")
 
-	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, steampipeSourceId)
+	err = steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, steampipeSourceId)
 	if err != nil {
 		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", steampipeSourceId))
 		fail(err)
 		return
 	}
-	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
 
-	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyClientType, "insight")
+	err = steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "insight")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "insight"))
 		fail(err)
 		return
 	}
-	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 
 	if encodedResourceCollectionFilter != nil {
-		err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, *encodedResourceCollectionFilter)
+		err = steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters, *encodedResourceCollectionFilter)
 		if err != nil {
 			logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
 			fail(err)
 			return
 		}
-		defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyResourceCollectionFilters)
+		defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 	}
 
 	logger.Info("running insight query", zap.Uint("insightId", j.InsightID), zap.String("connectionId", j.SourceID), zap.String("query", j.Query))
 
-	res, err = steampipeConn.QueryAll(context.TODO(), j.Query)
+	res, err = steampipeConn.QueryAll(ctx, j.Query)
 	steampipeConn.Conn().Close()
 	if res != nil {
 		count = int64(len(res.Data))

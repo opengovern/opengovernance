@@ -43,7 +43,7 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
+func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -102,7 +102,7 @@ func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs
 	query := string(b)
 	fmt.Println("FetchConnectionDailySpendHistoryByMetric =", query)
 	var response FetchConnectionDailySpendHistoryByMetricQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ type FetchConnectorDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
+func FetchConnectorDailySpendHistoryByMetric(ctx context.Context, client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -337,7 +337,7 @@ func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []s
 	query := string(b)
 	fmt.Println("FetchConnectorDailySpendHistoryByMetric =", query)
 	var response FetchConnectorDailySpendHistoryByMetricQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectorSummaryIndex, query, &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +398,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectionSpendTrend(ctx context.Context, client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -463,7 +463,7 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryAPI.Tab
 	fmt.Printf("FetchConnectionSpendTrend = %s\n", queryJson)
 
 	var response ConnectionSpendTrendQueryResponse
-	err = client.Search(context.TODO(), spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +510,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectorSpendTrend(ctx context.Context, client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -569,7 +569,7 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryAPI.Tabl
 	fmt.Printf("FetchConnectorSpendTrend = %s\n", queryJson)
 
 	var response ConnectorSpendTrendQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectorSummaryIndex, string(queryJson), &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectorSummaryIndex, string(queryJson), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -624,15 +624,15 @@ type SpendMetricResp struct {
 	CostValue  float64
 }
 
-func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetric(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	if len(connectionIDs) > 0 {
-		return FetchSpendByMetricConnection(client, connectionIDs, connectors, metricIDs, startTime, endTime, size)
+		return FetchSpendByMetricConnection(ctx, client, connectionIDs, connectors, metricIDs, startTime, endTime, size)
 	} else {
-		return FetchSpendByMetricConnector(client, connectors, metricIDs, startTime, endTime, size)
+		return FetchSpendByMetricConnector(ctx, client, connectors, metricIDs, startTime, endTime, size)
 	}
 }
 
-func FetchSpendByMetricConnection(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetricConnection(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -690,7 +690,7 @@ func FetchSpendByMetricConnection(client kaytu.Client, connectionIDs []string, c
 	query := string(b)
 	fmt.Println("FetchSpendByMetricConnection =", query)
 	var response FetchSpendByMetricConnectionQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -737,7 +737,7 @@ type FetchSpendByMetricConnectorQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendByMetricConnector(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetricConnector(ctx context.Context, client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -791,7 +791,7 @@ func FetchSpendByMetricConnector(client kaytu.Client, connectors []source.Type, 
 	query := string(b)
 	fmt.Println("FetchSpendByMetricConnector =", query)
 	var response FetchSpendByMetricConnectorQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectorSummaryIndex, query, &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -844,7 +844,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(ctx context.Context, client kaytu.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -902,7 +902,7 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryAPI.Dime
 	fmt.Printf("FetchSpendTableByDimension = %s\n", queryJson)
 
 	var response SpendTableByDimensionQueryResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -965,7 +965,7 @@ type CountAnalyticsSpendResponse struct {
 	} `json:"aggregations"`
 }
 
-func CountAnalyticsSpend(logger *zap.Logger, client kaytu.Client) (*CountAnalyticsSpendResponse, error) {
+func CountAnalyticsSpend(ctx context.Context, logger *zap.Logger, client kaytu.Client) (*CountAnalyticsSpendResponse, error) {
 	query := make(map[string]any)
 	query["size"] = 0
 
@@ -999,7 +999,7 @@ return res;
 	logger.Info("CountAnalyticsSpend", zap.String("query", string(queryJson)))
 
 	var response CountAnalyticsSpendResponse
-	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
+	err = client.Search(ctx, spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
 	if err != nil {
 		logger.Error("CountAnalyticsSpend", zap.Error(err), zap.String("query", string(queryJson)))
 		return nil, err

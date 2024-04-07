@@ -39,22 +39,22 @@ func Command() *cobra.Command {
 
 			promptRepo := repository.NewPrompt(database)
 
-			queryAssistant, err := openai.NewQueryAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
+			queryAssistant, err := openai.NewQueryAssistant(cmd.Context(), logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
 			if err != nil {
 				logger.Error("failed to create query assistant", zap.Error(err))
 				return err
 			}
-			assetsAssistant, err := openai.NewAssetsAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, inventoryServiceClient, promptRepo)
+			assetsAssistant, err := openai.NewAssetsAssistant(cmd.Context(), logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, inventoryServiceClient, promptRepo)
 			if err != nil {
 				logger.Error("failed to create assets assistant", zap.Error(err))
 				return err
 			}
-			scoreAssistant, err := openai.NewScoreAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
+			scoreAssistant, err := openai.NewScoreAssistant(cmd.Context(), logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
 			if err != nil {
 				logger.Error("failed to create score assistant", zap.Error(err))
 				return err
 			}
-			complianceAssistant, err := openai.NewComplianceAssistant(logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
+			complianceAssistant, err := openai.NewComplianceAssistant(cmd.Context(), logger, cnf.OpenAI.IsAzure, cnf.OpenAI.Token, cnf.OpenAI.BaseURL, cnf.OpenAI.ModelName, cnf.OpenAI.OrgId, complianceServiceClient, promptRepo)
 			if err != nil {
 				logger.Error("failed to create compliance assistant", zap.Error(err))
 				return err
@@ -64,24 +64,25 @@ func Command() *cobra.Command {
 			if err != nil {
 				logger.Error("failed to create query assistant actions", zap.Error(err))
 			} else {
-				go queryAssistantActions.RunActions()
+				go queryAssistantActions.RunActions(cmd.Context())
 			}
 			assetsAssistantActions, err := actions.NewAssetsAssistantActions(logger, cnf, assetsAssistant, repository.NewRun(database), onboardServiceClient, inventoryServiceClient)
 			if err != nil {
 				logger.Error("failed to create assets assistant actions", zap.Error(err))
 			} else {
-				go assetsAssistantActions.RunActions()
+				go assetsAssistantActions.RunActions(cmd.Context())
 			}
 			complianceAssistantActions, err := actions.NewComplianceAssistantActions(logger, cnf, complianceAssistant, repository.NewRun(database), onboardServiceClient, complianceServiceClient)
 			if err != nil {
 				logger.Error("failed to create compliance assistant actions", zap.Error(err))
 			} else {
-				go complianceAssistantActions.RunActions()
+				go complianceAssistantActions.RunActions(cmd.Context())
 			}
 
 			cmd.SilenceUsage = true
 
 			return httpserver.RegisterAndStart(
+				cmd.Context(),
 				logger,
 				cnf.Http.Address,
 				api.New(logger, queryAssistant, assetsAssistant, scoreAssistant, complianceAssistant, database),

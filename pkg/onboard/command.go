@@ -56,6 +56,7 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
+		ctx,
 		SourceEventsQueueName,
 		PostgreSQLUser, PostgreSQLPassword, PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
@@ -70,5 +71,5 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
+	return httpserver.RegisterAndStart(ctx, logger, HttpAddress, handler)
 }

@@ -52,9 +52,9 @@ func NewAssetsAssistantActions(logger *zap.Logger, cnf config.AssistantConfig, o
 	}, nil
 }
 
-func (s *AssetsAssistantActionsService) RunActions() {
+func (s *AssetsAssistantActionsService) RunActions(ctx context.Context) {
 	for {
-		err := s.run()
+		err := s.run(ctx)
 		if err != nil {
 			s.logger.Warn("failed to run due to", zap.Error(err))
 		}
@@ -62,8 +62,8 @@ func (s *AssetsAssistantActionsService) RunActions() {
 	}
 }
 
-func (s *AssetsAssistantActionsService) run() error {
-	runs, err := s.runRepo.List(context.Background(), utils.GetPointer(s.oc.AssistantName))
+func (s *AssetsAssistantActionsService) run(ctx context.Context) error {
+	runs, err := s.runRepo.List(ctx, utils.GetPointer(s.oc.AssistantName))
 	if err != nil {
 		s.logger.Error("failed to list runs", zap.Error(err))
 		return err
@@ -78,13 +78,13 @@ func (s *AssetsAssistantActionsService) run() error {
 
 		s.logger.Info("updating run status", zap.String("assistant_type", s.oc.AssistantName.String()), zap.String("run_id", runSummary.ID), zap.String("thread_id", runSummary.ThreadID), zap.String("status", string(runSummary.Status)))
 
-		run, err := s.oc.RetrieveRun(runSummary.ThreadID, runSummary.ID)
+		run, err := s.oc.RetrieveRun(ctx, runSummary.ThreadID, runSummary.ID)
 		if err != nil {
 			return err
 		}
 
 		if runSummary.UpdatedAt.Before(time.Now().Add(-15 * time.Second)) {
-			err = s.runRepo.UpdateStatus(context.Background(), run.ID, run.ThreadID, run.Status)
+			err = s.runRepo.UpdateStatus(ctx, run.ID, run.ThreadID, run.Status)
 			if err != nil {
 				return err
 			}
@@ -141,7 +141,7 @@ func (s *AssetsAssistantActionsService) run() error {
 					}
 				}
 				_, err := s.oc.Client().SubmitToolOutputs(
-					context.Background(),
+					ctx,
 					run.ThreadID,
 					run.ID,
 					openai2.SubmitToolOutputsRequest{

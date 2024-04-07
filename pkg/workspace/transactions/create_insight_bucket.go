@@ -27,9 +27,9 @@ func (t *CreateInsightBucket) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *CreateInsightBucket) ApplyIdempotent(workspace db.Workspace) error {
+func (t *CreateInsightBucket) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	bucketName := fmt.Sprintf("insights-%s", workspace.ID)
-	_, err := t.s3Client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+	_, err := t.s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(bucketName),
 	})
 	var bucketAlreadyExists *s3Types.BucketAlreadyExists
@@ -39,9 +39,9 @@ func (t *CreateInsightBucket) ApplyIdempotent(workspace db.Workspace) error {
 	return err
 }
 
-func (t *CreateInsightBucket) RollbackIdempotent(workspace db.Workspace) error {
+func (t *CreateInsightBucket) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	bucketName := fmt.Sprintf("insights-%s", workspace.ID)
-	objects, err := t.s3Client.ListObjects(context.Background(), &s3.ListObjectsInput{
+	objects, err := t.s3Client.ListObjects(ctx, &s3.ListObjectsInput{
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
@@ -59,7 +59,7 @@ func (t *CreateInsightBucket) RollbackIdempotent(workspace db.Workspace) error {
 		})
 	}
 	if len(objs) > 0 {
-		_, err = t.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+		_, err = t.s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
 			Bucket: aws.String(bucketName),
 			Delete: &s3Types.Delete{
 				Objects: objs,
@@ -70,7 +70,7 @@ func (t *CreateInsightBucket) RollbackIdempotent(workspace db.Workspace) error {
 		}
 	}
 
-	_, err = t.s3Client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{
+	_, err = t.s3Client.DeleteBucket(ctx, &s3.DeleteBucketInput{
 		Bucket: aws.String(bucketName),
 	})
 	return err

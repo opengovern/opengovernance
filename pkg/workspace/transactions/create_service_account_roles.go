@@ -59,25 +59,25 @@ func (t *CreateServiceAccountRoles) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *CreateServiceAccountRoles) ApplyIdempotent(workspace db.Workspace) error {
+func (t *CreateServiceAccountRoles) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	for _, serviceName := range serviceNames {
-		if err := t.createRole(workspace, serviceName); err != nil {
+		if err := t.createRole(ctx, workspace, serviceName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (t *CreateServiceAccountRoles) RollbackIdempotent(workspace db.Workspace) error {
+func (t *CreateServiceAccountRoles) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	for _, serviceName := range serviceNames {
 		roleName := aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName))
 
-		out, err := t.iam.ListAttachedRolePolicies(context.Background(), &iam.ListAttachedRolePoliciesInput{
+		out, err := t.iam.ListAttachedRolePolicies(ctx, &iam.ListAttachedRolePoliciesInput{
 			RoleName: roleName,
 		})
 		if err == nil && out != nil {
 			for _, attachedPolicy := range out.AttachedPolicies {
-				_, err := t.iam.DetachRolePolicy(context.Background(), &iam.DetachRolePolicyInput{
+				_, err := t.iam.DetachRolePolicy(ctx, &iam.DetachRolePolicyInput{
 					PolicyArn: attachedPolicy.PolicyArn,
 					RoleName:  roleName,
 				})
@@ -87,7 +87,7 @@ func (t *CreateServiceAccountRoles) RollbackIdempotent(workspace db.Workspace) e
 			}
 		}
 
-		_, err = t.iam.DeleteRole(context.Background(), &iam.DeleteRoleInput{
+		_, err = t.iam.DeleteRole(ctx, &iam.DeleteRoleInput{
 			RoleName: roleName,
 		})
 		if err != nil {
@@ -99,9 +99,9 @@ func (t *CreateServiceAccountRoles) RollbackIdempotent(workspace db.Workspace) e
 	return nil
 }
 
-func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceName string) error {
+func (t *CreateServiceAccountRoles) createRole(ctx context.Context, workspace db.Workspace, serviceName string) error {
 	roleName := aws.String(fmt.Sprintf("kaytu-service-%s-%s", workspace.ID, serviceName))
-	_, err := t.iam.CreateRole(context.Background(), &iam.CreateRoleInput{
+	_, err := t.iam.CreateRole(ctx, &iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(fmt.Sprintf(`{
     "Version": "2012-10-17",
     "Statement": [
@@ -128,7 +128,7 @@ func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceNa
 		}
 	}
 
-	_, err = t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
+	_, err = t.iam.CreatePolicy(ctx, &iam.CreatePolicyInput{
 		PolicyName: aws.String(fmt.Sprintf("kaytu-ingestion-%s", workspace.ID)),
 		PolicyDocument: aws.String(`{
     "Statement": [
@@ -152,7 +152,7 @@ func (t *CreateServiceAccountRoles) createRole(workspace db.Workspace, serviceNa
 			policyARN = strings.ReplaceAll(policyARN, "${accountID}", t.kaytuAWSAccountID)
 			policyARN = strings.ReplaceAll(policyARN, "${workspaceID}", workspace.ID)
 
-			_, err = t.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
+			_, err = t.iam.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
 				PolicyArn: aws.String(policyARN),
 				RoleName:  roleName,
 			})

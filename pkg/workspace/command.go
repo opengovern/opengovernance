@@ -13,11 +13,11 @@ func Command() *cobra.Command {
 			var cfg config.Config
 			config2.ReadFromEnv(&cfg, nil)
 
-			s, err := NewServer(cfg)
+			s, err := NewServer(cmd.Context(), cfg)
 			if err != nil {
 				return fmt.Errorf("new server: %w", err)
 			}
-			return s.Start()
+			return s.Start(cmd.Context())
 		},
 	}
 	return cmd

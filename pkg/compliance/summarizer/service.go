@@ -39,6 +39,7 @@ func NewWorker(
 	config Config,
 	logger *zap.Logger,
 	prometheusPushAddress string,
+	ctx context.Context,
 ) (*Worker, error) {
 	esClient, err := kaytu.NewClient(kaytu.ClientConfig{
 		Addresses:     []string{config.ElasticSearch.Address},
@@ -57,7 +58,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(context.Background(), StreamName, "compliance summarizer job runner queue", []string{JobQueueTopic, ResultQueueTopic}, 1000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "compliance summarizer job runner queue", []string{JobQueueTopic, ResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +82,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	consumeCtx, err := w.jq.Consume(ctx, "compliance-summarizer", StreamName, []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("received a new job")
 
-		if err := w.ProcessMessage(context.Background(), msg); err != nil {
+		if err := w.ProcessMessage(ctx, msg); err != nil {
 			w.logger.Error("failed to process message", zap.Error(err))
 		}
 		err := msg.Ack()
@@ -141,7 +142,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) error {
 
 	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
 
-	err = w.RunJob(job)
+	err = w.RunJob(ctx, job)
 	if err != nil {
 		w.logger.Info("failure while running job", zap.Error(err))
 		return err

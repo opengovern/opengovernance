@@ -52,6 +52,7 @@ func NewWorker(
 	workerConfig WorkerConfig,
 	logger *zap.Logger,
 	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
+	ctx context.Context,
 ) (*Worker, error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -96,7 +97,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(context.Background(), StreamName, "insight job queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "insight job queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
@@ -120,7 +121,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 		w.logger.Info("Processing job", zap.Uint("jobID", job.JobID))
 
-		result := job.Do(w.config.ElasticSearch,
+		result := job.Do(ctx, w.config.ElasticSearch,
 			w.config.SteampipePg,
 			w.onboardClient,
 			w.inventoryClient,

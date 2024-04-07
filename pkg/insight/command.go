@@ -52,6 +52,7 @@ func WorkerCommand() *cobra.Command {
 				S3Endpoint, S3AccessKey,
 				S3AccessSecret, S3Region,
 				S3Bucket,
+				cmd.Context(),
 			)
 			if err != nil {
 				return err

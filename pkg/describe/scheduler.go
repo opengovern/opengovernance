@@ -168,6 +168,7 @@ func InitializeScheduler(
 	mustSummarizeIntervalHours string,
 	kaytuHelmChartLocation string,
 	fluxSystemNamespace string,
+	ctx context.Context,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -187,7 +188,7 @@ func InitializeScheduler(
 		}
 	}()
 
-	lambdaCfg, err := awsConfig.LoadDefaultConfig(context.Background())
+	lambdaCfg, err := awsConfig.LoadDefaultConfig(ctx)
 	lambdaCfg.Region = KeyRegion
 
 	s.conf = conf
@@ -223,27 +224,27 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
-	if err := s.jq.Stream(context.Background(), insight.StreamName, "insight job queue", []string{insight.ResultsQueueName, insight.JobsQueueName}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, insight.StreamName, "insight job queue", []string{insight.ResultsQueueName, insight.JobsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}, 1000000); err != nil {
+	if err := s.jq.Stream(ctx, runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}, 1000000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
-	if err := s.jq.Stream(context.Background(), DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
+	if err := s.jq.Stream(ctx, DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
 		return nil, err
 	}
 
@@ -372,6 +373,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	httpCtx := &httpclient.Context{
 		UserRole: authAPI.ViewerRole,
 	}
+	httpCtx.Ctx = ctx
 	describeJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyDescribeJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
@@ -448,21 +450,21 @@ func (s *Scheduler) Run(ctx context.Context) error {
 
 	// Describe
 	utils.EnsureRunGoroutine(func() {
-		s.RunDescribeJobScheduler()
+		s.RunDescribeJobScheduler(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunDescribeResourceJobs(ctx)
 	})
-	s.discoveryScheduler.Run()
+	s.discoveryScheduler.Run(ctx)
 
 	// Describe
 	utils.EnsureRunGoroutine(func() {
-		s.RunStackScheduler()
+		s.RunStackScheduler(ctx)
 	})
 
 	// Inventory summarizer
 	utils.EnsureRunGoroutine(func() {
-		s.RunAnalyticsJobScheduler()
+		s.RunAnalyticsJobScheduler(ctx)
 	})
 
 	wg.Add(1)
@@ -482,9 +484,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.es,
 		s.complianceIntervalHours,
 	)
-	s.complianceScheduler.Run()
+	s.complianceScheduler.Run(ctx)
 	utils.EnsureRunGoroutine(func() {
-		s.RunJobSequencer()
+		s.RunJobSequencer(ctx)
 	})
 
 	// Insights
@@ -497,10 +499,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	//	wg.Done()
 	//})
 	utils.EnsureRunGoroutine(func() {
-		s.RunCheckupJobScheduler()
+		s.RunCheckupJobScheduler(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunDisabledConnectionCleanup()
+		s.RunDisabledConnectionCleanup(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunRemoveResourcesConnectionJobsCleanup()
@@ -538,7 +540,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	}()
 
 	go func() {
-		if err := httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := httpserver.RegisterAndStart(ctx, s.logger, s.httpServer.Address, s.httpServer); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			s.logger.Fatal("failed to serve http server", zap.Error(err))
 		}
 	}()
@@ -548,7 +550,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scheduler) RunDisabledConnectionCleanup() {
+func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 	ticker := ticker.NewTicker(time.Hour, time.Second*10)
 	defer ticker.Stop()
 
@@ -567,7 +569,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup() {
 		}
 
 		if len(disabledConnectionIds) > 0 {
-			s.cleanupDescribeResourcesForConnections(disabledConnectionIds)
+			s.cleanupDescribeResourcesForConnections(ctx, disabledConnectionIds)
 		}
 
 	}
@@ -623,18 +625,18 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 func (s *Scheduler) Stop() {
 }
 
-func (s *Scheduler) RunCheckupJobScheduler() {
+func (s *Scheduler) RunCheckupJobScheduler(ctx context.Context) {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		s.scheduleCheckupJob()
+		s.scheduleCheckupJob(ctx)
 	}
 }
 
-func (s *Scheduler) scheduleCheckupJob() {
+func (s *Scheduler) scheduleCheckupJob(ctx context.Context) {
 	checkupJob, err := s.db.FetchLastCheckupJob()
 	if err != nil {
 		s.logger.Error("Failed to find the last job to check for CheckupJob", zap.Error(err))
@@ -663,7 +665,7 @@ func (s *Scheduler) scheduleCheckupJob() {
 			s.logger.Error("Failed to marshal a checkup job as json", zap.Error(err), zap.Uint("jobId", job.ID))
 		}
 
-		if err := s.jq.Produce(context.Background(), checkup.JobsQueueName, bytes, fmt.Sprintf("job-%d", job.ID)); err != nil {
+		if err := s.jq.Produce(ctx, checkup.JobsQueueName, bytes, fmt.Sprintf("job-%d", job.ID)); err != nil {
 			CheckupJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to enqueue CheckupJob",
 				zap.Uint("jobId", job.ID),

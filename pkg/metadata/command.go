@@ -47,5 +47,5 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
+	return httpserver.RegisterAndStart(ctx, logger, HttpAddress, handler)
 }

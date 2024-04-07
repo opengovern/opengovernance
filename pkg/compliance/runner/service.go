@@ -52,6 +52,7 @@ func NewWorker(
 	config Config,
 	logger *zap.Logger,
 	prometheusPushAddress string,
+	ctx context.Context,
 ) (*Worker, error) {
 	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
 	if err != nil {
@@ -88,7 +89,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(context.Background(), StreamName, "compliance runner job queue", []string{JobQueueTopic, ResultQueueTopic}, 1000000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{JobQueueTopic, ResultQueueTopic}, 1000000); err != nil {
 		return nil, err
 	}
 
@@ -104,8 +105,9 @@ func NewWorker(
 		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
-
-	benchmarks, err := w.complianceClient.ListAllBenchmarks(&httpclient.Context{UserRole: authApi.InternalRole}, true)
+	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2.Ctx = ctx
+	benchmarks, err := w.complianceClient.ListAllBenchmarks(ctx2, true)
 	if err != nil {
 		logger.Error("failed to get benchmarks", zap.Error(err))
 		return nil, err

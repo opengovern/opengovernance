@@ -64,13 +64,13 @@ func (domain *opensearchDomain) WithWorkspaceID(workspaceID string) *opensearchD
 	return domain
 }
 
-func (domain *opensearchDomain) CreateIdempotent() error {
-	d, err := domain.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{
+func (domain *opensearchDomain) CreateIdempotent(ctx context.Context) error {
+	d, err := domain.opensearch.DescribeDomain(ctx, &opensearch.DescribeDomainInput{
 		DomainName: aws.String(domain.domainName),
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			_, err = domain.opensearch.CreateDomain(context.Background(), &opensearch.CreateDomainInput{
+			_, err = domain.opensearch.CreateDomain(ctx, &opensearch.CreateDomainInput{
 				DomainName:     aws.String(domain.domainName),
 				AccessPolicies: nil,
 				AdvancedOptions: map[string]string{
@@ -178,8 +178,8 @@ func (domain *opensearchDomain) CreateIdempotent() error {
 	return nil
 }
 
-func (domain *opensearchDomain) DeleteIdempotent() error {
-	d, err := domain.opensearch.DescribeDomain(context.Background(), &opensearch.DescribeDomainInput{
+func (domain *opensearchDomain) DeleteIdempotent(ctx context.Context) error {
+	d, err := domain.opensearch.DescribeDomain(ctx, &opensearch.DescribeDomainInput{
 		DomainName: aws.String(domain.domainName),
 	})
 	if err != nil {
@@ -195,7 +195,7 @@ func (domain *opensearchDomain) DeleteIdempotent() error {
 	}
 
 	if !deleted {
-		_, err := domain.opensearch.DeleteDomain(context.Background(), &opensearch.DeleteDomainInput{DomainName: aws.String(domain.domainName)})
+		_, err := domain.opensearch.DeleteDomain(ctx, &opensearch.DeleteDomainInput{DomainName: aws.String(domain.domainName)})
 		if err != nil {
 			return err
 		}

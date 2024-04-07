@@ -23,7 +23,7 @@ type SankDocumentCountResponse struct {
 	}
 }
 
-func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJobID uint) (int, error) {
+func (s *JobScheduler) getSankDocumentCountBenchmark(ctx context.Context, benchmarkId string, parentJobID uint) (int, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	filters = append(filters, map[string]any{
@@ -53,7 +53,7 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJ
 
 	sankDocumentCountResponse := SankDocumentCountResponse{}
 	err = s.esClient.SearchWithTrackTotalHits(
-		context.TODO(), types.FindingsIndex,
+		ctx, types.FindingsIndex,
 		string(query),
 		nil,
 		&sankDocumentCountResponse, true,
@@ -66,7 +66,7 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(benchmarkId string, parentJ
 	return sankDocumentCountResponse.Hits.Total.Value, nil
 }
 
-func (s *JobScheduler) runSummarizer() error {
+func (s *JobScheduler) runSummarizer(ctx context.Context) error {
 	s.logger.Info("checking for benchmarks to summarize")
 
 	err := s.db.SetJobToRunnersInProgress()
@@ -90,7 +90,7 @@ func (s *JobScheduler) runSummarizer() error {
 		s.logger.Info("no jobs with runners completed, skipping this summarizer scheduling")
 	}
 	for _, job := range jobs {
-		sankDocCount, err := s.getSankDocumentCountBenchmark(job.BenchmarkID, job.ID)
+		sankDocCount, err := s.getSankDocumentCountBenchmark(ctx, job.BenchmarkID, job.ID)
 		if err != nil {
 			s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
@@ -143,7 +143,7 @@ func (s *JobScheduler) runSummarizer() error {
 	}
 
 	for _, job := range createds {
-		err = s.triggerSummarizer(job)
+		err = s.triggerSummarizer(ctx, job)
 		if err != nil {
 			s.logger.Error("failed to trigger summarizer", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
 			return err
@@ -210,7 +210,7 @@ func (s *JobScheduler) CreateSummarizer(benchmarkId string, jobId *uint) error {
 	return nil
 }
 
-func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
+func (s *JobScheduler) triggerSummarizer(ctx context.Context, job model.ComplianceSummarizer) error {
 	summarizerJob := types2.Job{
 		ID:          job.ID,
 		RetryCount:  job.RetryCount,
@@ -223,7 +223,7 @@ func (s *JobScheduler) triggerSummarizer(job model.ComplianceSummarizer) error {
 		return err
 	}
 
-	if err := s.jq.Produce(context.Background(), summarizer.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, job.RetryCount)); err != nil {
+	if err := s.jq.Produce(ctx, summarizer.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, job.RetryCount)); err != nil {
 		_ = s.db.UpdateSummarizerJob(job.ID, summarizer.ComplianceSummarizerFailed, job.CreatedAt, err.Error())
 		return err
 	}

@@ -30,7 +30,7 @@ type LookupQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) (map[string][]es.LookupResource, error) {
+func FetchLookupByResourceIDBatch(ctx context.Context, client kaytu.Client, resourceID []string) (map[string][]es.LookupResource, error) {
 	if len(resourceID) == 0 {
 		return nil, nil
 	}
@@ -77,7 +77,7 @@ func FetchLookupByResourceIDBatch(client kaytu.Client, resourceID []string) (map
 	fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
 
 	var response LookupQueryResponse
-	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
+	err = client.Search(ctx, InventorySummaryIndex, string(b), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ type ResourceQueryResponse struct {
 	}
 }
 
-func FetchResourceByResourceIdAndType(client kaytu.Client, resourceId string, resourceType string) (*es.Resource, error) {
+func FetchResourceByResourceIdAndType(ctx context.Context, client kaytu.Client, resourceId string, resourceType string) (*es.Resource, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
@@ -133,7 +133,7 @@ func FetchResourceByResourceIdAndType(client kaytu.Client, resourceId string, re
 	fmt.Println("query=", string(b), "index=", index)
 
 	var response ResourceQueryResponse
-	err = client.Search(context.Background(), index, string(b), &response)
+	err = client.Search(ctx, index, string(b), &response)
 	if err != nil {
 		return nil, err
 	}

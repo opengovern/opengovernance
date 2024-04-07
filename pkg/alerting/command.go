@@ -54,5 +54,5 @@ func start(ctx context.Context) error {
 
 	go handler.TriggerRulesJobCycle()
 
-	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
+	return httpserver.RegisterAndStart(ctx, logger, HttpAddress, handler)
 }

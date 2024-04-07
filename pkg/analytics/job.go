@@ -49,6 +49,7 @@ func (j *Job) Do(
 	inventoryClient inventoryClient.InventoryServiceClient,
 	logger *zap.Logger,
 	config config.WorkerConfig,
+	ctx context.Context,
 ) JobResult {
 	result := JobResult{
 		JobID:  j.JobID,
@@ -63,7 +64,9 @@ func (j *Job) Do(
 
 	encodedResourceCollectionFilters := make(map[string]string)
 	if len(j.ResourceCollectionIDs) > 0 {
-		rcs, err := inventoryClient.ListResourceCollectionsMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
+		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2.Ctx = ctx
+		rcs, err := inventoryClient.ListResourceCollectionsMetadata(ctx2,
 			j.ResourceCollectionIDs)
 		if err != nil {
 			return fail(err)
@@ -77,19 +80,19 @@ func (j *Job) Do(
 		}
 	}
 
-	err := steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, "all")
+	err := steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, "all")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", "all"))
 		return fail(err)
 	}
-	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
 
 	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyClientType, "analytics")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "analytics"))
 		return fail(err)
 	}
-	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 
 	if err := j.Run(jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, logger, config); err != nil {
 		fail(err)

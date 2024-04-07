@@ -26,6 +26,7 @@ func NewWorker(
 	logger *zap.Logger,
 	prometheusPushAddress string,
 	onboardBaseURL string,
+	ctx context.Context,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -43,7 +44,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(context.Background(), StreamName, "checkup job queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "checkup job queue", []string{JobsQueueName, ResultsQueueName}, 1000); err != nil {
 		return nil, err
 	}
 
@@ -59,9 +60,7 @@ func NewWorker(
 	return w, nil
 }
 
-func (w *Worker) Run() error {
-	ctx := context.Background()
-
+func (w *Worker) Run(ctx context.Context) error {
 	consumeCtx, err := w.jq.Consume(
 		ctx,
 		"checkup-service",
@@ -93,7 +92,7 @@ func (w *Worker) Run() error {
 
 			w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 
-			if err := w.jq.Produce(context.Background(), ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", result.JobID)); err != nil {
+			if err := w.jq.Produce(ctx, ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", result.JobID)); err != nil {
 				w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
 			}
 

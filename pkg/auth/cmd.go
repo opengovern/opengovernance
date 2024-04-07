@@ -210,7 +210,7 @@ func start(ctx context.Context) error {
 			db:              adb,
 			authServer:      authServer,
 		}
-		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
+		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
 	}()
 
 	return <-errors

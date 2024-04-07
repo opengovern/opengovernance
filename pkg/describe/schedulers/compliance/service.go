@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"context"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
@@ -49,7 +50,7 @@ func New(
 	}
 }
 
-func (s *JobScheduler) Run() {
+func (s *JobScheduler) Run(ctx context.Context) {
 	utils.EnsureRunGoroutine(func() {
 		s.RunScheduler()
 	})
@@ -60,13 +61,13 @@ func (s *JobScheduler) Run() {
 		s.RunPublisher()
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunSummarizer()
+		s.RunSummarizer(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
+		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer(ctx)))
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("ComplianceSummarizerResult consumer exited", zap.Error(s.RunComplianceSummarizerResultsConsumer()))
+		s.logger.Fatal("ComplianceSummarizerResult consumer exited", zap.Error(s.RunComplianceSummarizerResultsConsumer(ctx)))
 	})
 }
 
@@ -114,14 +115,14 @@ func (s *JobScheduler) RunPublisher() {
 	}
 }
 
-func (s *JobScheduler) RunSummarizer() {
+func (s *JobScheduler) RunSummarizer(ctx context.Context) {
 	s.logger.Info("Scheduling compliance summarizer on a timer")
 
 	t := ticker.NewTicker(SummarizerSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		if err := s.runSummarizer(); err != nil {
+		if err := s.runSummarizer(ctx); err != nil {
 			s.logger.Error("failed to run compliance summarizer", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue

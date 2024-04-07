@@ -283,7 +283,7 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		return err
 	}
 
-	sdkCnf, err := h.GetAWSSDKConfig(generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
+	sdkCnf, err := h.GetAWSSDKConfig(ctx.Request().Context(), generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
 	if err != nil {
 		return err
 	}
@@ -583,7 +583,7 @@ func (h HttpHandler) CreateCredential(ctx echo.Context) error {
 	case source.CloudAzure:
 		return echo.NewHTTPError(http.StatusNotImplemented)
 	case source.CloudAWS:
-		resp, err := h.createAWSCredential(req)
+		resp, err := h.createAWSCredential(ctx.Request().Context(), req)
 		if err != nil {
 			return err
 		}

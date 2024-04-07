@@ -43,7 +43,7 @@ type Service struct {
 	prompt    repository.Prompt
 }
 
-func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, c complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewQueryAssistant(ctx context.Context, logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, c complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -60,7 +60,7 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		files[k] = v
 	}
 
-	tf, err := tables2.ExtractTableFiles(logger)
+	tf, err := tables2.ExtractTableFiles(ctx, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeQuery))
+	prompts, err := prompt.List(ctx, utils.GetPointer(model.AssistantTypeQuery))
 	if err != nil {
 		return nil, err
 	}
@@ -129,12 +129,12 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		},
 	}
 
-	err = s.InitFiles()
+	err = s.InitFiles(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init files due to %v", err)
 	}
 
-	err = s.InitAssistant()
+	err = s.InitAssistant(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init assistant due to %v", err)
 	}
@@ -142,7 +142,7 @@ func NewQueryAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	return s, nil
 }
 
-func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewAssetsAssistant(ctx context.Context, logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, i inventoryClient.InventoryServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -164,7 +164,7 @@ func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelN
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeAssets))
+	prompts, err := prompt.List(ctx, utils.GetPointer(model.AssistantTypeAssets))
 	if err != nil {
 		logger.Error("failed to list prompts", zap.Error(err))
 		return nil, err
@@ -296,7 +296,7 @@ func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelN
 		},
 	}
 
-	err = s.InitFiles()
+	err = s.InitFiles(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init files due to %v", err)
 	}
@@ -306,7 +306,7 @@ func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelN
 		return nil, fmt.Errorf("failed to init extra variables due to %v", err)
 	}
 
-	err = s.InitAssistant()
+	err = s.InitAssistant(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init assistant due to %v", err)
 	}
@@ -314,7 +314,7 @@ func NewAssetsAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelN
 	return s, nil
 }
 
-func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, complianceServiceClient complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewScoreAssistant(ctx context.Context, logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, complianceServiceClient complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -336,7 +336,7 @@ func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeScore))
+	prompts, err := prompt.List(ctx, utils.GetPointer(model.AssistantTypeScore))
 	if err != nil {
 		logger.Error("failed to list prompts", zap.Error(err))
 		return nil, err
@@ -368,7 +368,7 @@ func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		},
 	}
 
-	err = s.InitFiles()
+	err = s.InitFiles(ctx)
 	if err != nil {
 		logger.Error("failed to init files", zap.Error(err), zap.String("assistant", string(model.AssistantTypeScore)))
 		return nil, fmt.Errorf("failed to init files due to %v", err)
@@ -380,7 +380,7 @@ func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 		return nil, fmt.Errorf("failed to init extra variables due to %v", err)
 	}
 
-	err = s.InitAssistant()
+	err = s.InitAssistant(ctx)
 	if err != nil {
 		logger.Error("failed to init assistant", zap.Error(err), zap.String("assistant", string(model.AssistantTypeScore)))
 		return nil, fmt.Errorf("failed to init assistant due to %v", err)
@@ -389,7 +389,7 @@ func NewScoreAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelNa
 	return s, nil
 }
 
-func NewComplianceAssistant(logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, complianceServiceClient complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
+func NewComplianceAssistant(ctx context.Context, logger *zap.Logger, isAzure bool, token, baseURL, modelName, orgId string, complianceServiceClient complianceClient.ComplianceServiceClient, prompt repository.Prompt) (*Service, error) {
 	var config openai.ClientConfig
 	if isAzure {
 		config = openai.DefaultAzureConfig(token, baseURL)
@@ -411,7 +411,7 @@ func NewComplianceAssistant(logger *zap.Logger, isAzure bool, token, baseURL, mo
 		files[k] = v
 	}
 
-	prompts, err := prompt.List(context.Background(), utils.GetPointer(model.AssistantTypeCompliance))
+	prompts, err := prompt.List(ctx, utils.GetPointer(model.AssistantTypeCompliance))
 	if err != nil {
 		logger.Error("failed to list prompts", zap.Error(err))
 		return nil, err
@@ -495,7 +495,7 @@ func NewComplianceAssistant(logger *zap.Logger, isAzure bool, token, baseURL, mo
 		},
 	}
 
-	err = s.InitFiles()
+	err = s.InitFiles(ctx)
 	if err != nil {
 		logger.Error("failed to init files", zap.Error(err), zap.String("assistant", string(model.AssistantTypeCompliance)))
 		return nil, fmt.Errorf("failed to init files due to %v", err)
@@ -507,7 +507,7 @@ func NewComplianceAssistant(logger *zap.Logger, isAzure bool, token, baseURL, mo
 		return nil, fmt.Errorf("failed to init extra variables due to %v", err)
 	}
 
-	err = s.InitAssistant()
+	err = s.InitAssistant(ctx)
 	if err != nil {
 		logger.Error("failed to init assistant", zap.Error(err), zap.String("assistant", string(model.AssistantTypeCompliance)))
 		return nil, fmt.Errorf("failed to init assistant due to %v", err)
@@ -524,7 +524,7 @@ func (s *Service) GetExtraVariable(variable string) string {
 	return s.extraVariables[variable]
 }
 
-func (s *Service) InitAssistant() error {
+func (s *Service) InitAssistant(ctx context.Context) error {
 	tmpl := template.New("test")
 	tm, err := tmpl.Parse(s.MainPrompt)
 	if err != nil {
@@ -539,7 +539,7 @@ func (s *Service) InitAssistant() error {
 
 	s.logger.Info("main prompt", zap.String("main_prompt", mainPrompt), zap.String("assistant_name", s.AssistantName.String()))
 
-	assistants, err := s.client.ListAssistants(context.Background(), nil, nil, nil, nil)
+	assistants, err := s.client.ListAssistants(ctx, nil, nil, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list assistants due to %v", err)
 	}
@@ -552,7 +552,7 @@ func (s *Service) InitAssistant() error {
 	}
 
 	if assistant == nil {
-		a, err := s.client.CreateAssistant(context.Background(), openai.AssistantRequest{
+		a, err := s.client.CreateAssistant(ctx, openai.AssistantRequest{
 			Model:        s.Model,
 			Name:         utils.GetPointer(s.AssistantName.String()),
 			Description:  nil,
@@ -584,7 +584,7 @@ func (s *Service) InitAssistant() error {
 	}
 
 	if updateFiles || assistant.Instructions == nil || *assistant.Instructions != mainPrompt {
-		a, err := s.client.ModifyAssistant(context.Background(), assistant.ID, openai.AssistantRequest{
+		a, err := s.client.ModifyAssistant(ctx, assistant.ID, openai.AssistantRequest{
 			Model:        s.Model,
 			Name:         utils.GetPointer(s.AssistantName.String()),
 			Description:  nil,
@@ -604,8 +604,8 @@ func (s *Service) InitAssistant() error {
 	return nil
 }
 
-func (s *Service) InitFiles() error {
-	files, err := s.client.ListFiles(context.Background())
+func (s *Service) InitFiles(ctx context.Context) error {
+	files, err := s.client.ListFiles(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list files due to %v", err)
 	}
@@ -623,7 +623,7 @@ func (s *Service) InitFiles() error {
 		}
 
 		if !exists {
-			f, err := s.client.CreateFileBytes(context.Background(), openai.FileBytesRequest{
+			f, err := s.client.CreateFileBytes(ctx, openai.FileBytesRequest{
 				Name:    filename,
 				Bytes:   []byte(content),
 				Purpose: openai.PurposeAssistants,

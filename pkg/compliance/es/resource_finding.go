@@ -86,7 +86,8 @@ func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
 	severity []types.FindingSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	conformanceStatuses []types.ConformanceStatus,
-	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any) ([]ResourceFindingsQueryHit, int64, error) {
+	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any,
+	ctx context.Context) ([]ResourceFindingsQueryHit, int64, error) {
 
 	nestedFilters := make([]map[string]any, 0)
 	if len(connector) > 0 {
@@ -269,7 +270,7 @@ return total;`, types.ConformanceStatusOK, types.ConformanceStatusINFO, types.Co
 	logger.Info("ResourceFindingsQuery", zap.String("request", string(request)), zap.String("index", types.ResourceFindingsIndex))
 
 	var response ResourceFindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), types.ResourceFindingsIndex, string(request), nil, &response, true)
+	err = client.SearchWithTrackTotalHits(ctx, types.ResourceFindingsIndex, string(request), nil, &response, true)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -299,7 +300,7 @@ type GetPerBenchmarkResourceSeverityResultResponse struct {
 	} `json:"aggregations"`
 }
 
-func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Client,
+func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
@@ -406,7 +407,7 @@ func GetPerBenchmarkResourceSeverityResult(logger *zap.Logger, client kaytu.Clie
 
 	logger.Info("GetPerBenchmarkResourceSeverityResult", zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
 	var response GetPerBenchmarkResourceSeverityResultResponse
-	err = client.Search(context.Background(), types.ResourceFindingsIndex, string(query), &response)
+	err = client.Search(ctx, types.ResourceFindingsIndex, string(query), &response)
 	if err != nil {
 		logger.Error("GetPerBenchmarkResourceSeverityResult", zap.Error(err), zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
 		return nil, err
@@ -461,7 +462,7 @@ type GetPerFieldResourceConformanceResultResponse struct {
 
 // GetPerFieldResourceConformanceResult
 // field could be: connectionID, benchmarkID, controlID, severity, conformanceStatus
-func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Client,
+func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	field string,
 	connectionIDs []string, notConnectionIDs []string,
 	resourceCollections []string,
@@ -593,7 +594,7 @@ func GetPerFieldResourceConformanceResult(logger *zap.Logger, client kaytu.Clien
 
 	logger.Info("GetPerFieldResourceConformanceResult", zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
 	var response GetPerFieldResourceConformanceResultResponse
-	err = client.Search(context.Background(), types.ResourceFindingsIndex, string(query), &response)
+	err = client.Search(ctx, types.ResourceFindingsIndex, string(query), &response)
 	if err != nil {
 		logger.Error("GetPerFieldResourceConformanceResult", zap.Error(err), zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
 		return nil, err

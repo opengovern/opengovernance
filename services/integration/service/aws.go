@@ -264,7 +264,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 	}
 
 	awsConfig, err := aws.GetConfig(
-		context.Background(),
+		ctx,
 		h.masterAccessKey,
 		h.masterSecretKey,
 		"",
@@ -281,7 +281,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 
 	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
 
-	org, err := describer.OrganizationOrganization(context.Background(), awsConfig)
+	org, err := describer.OrganizationOrganization(ctx, awsConfig)
 	if err != nil {
 		var ae smithy.APIError
 		if !errors.As(err, &ae) ||
@@ -291,7 +291,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		}
 	}
 
-	accounts, err := describer.OrganizationAccounts(context.Background(), awsConfig)
+	accounts, err := describer.OrganizationAccounts(ctx, awsConfig)
 	if err != nil {
 		var ae smithy.APIError
 		if !errors.As(err, &ae) ||

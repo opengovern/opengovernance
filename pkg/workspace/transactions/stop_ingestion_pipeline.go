@@ -30,9 +30,9 @@ func (t *StopIngestionPipeline) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateIngestionPipeline}
 }
 
-func (t *StopIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error {
+func (t *StopIngestionPipeline) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
-	pipeline, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{PipelineName: aws.String(pipelineName)})
+	pipeline, err := t.osis.GetPipeline(ctx, &osis.GetPipelineInput{PipelineName: aws.String(pipelineName)})
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (t *StopIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error {
 		return ErrTransactionNeedsTime
 	}
 
-	_, err = t.osis.StopPipeline(context.Background(), &osis.StopPipelineInput{PipelineName: aws.String(pipelineName)})
+	_, err = t.osis.StopPipeline(ctx, &osis.StopPipelineInput{PipelineName: aws.String(pipelineName)})
 	if err != nil {
 		return err
 	}
@@ -53,9 +53,9 @@ func (t *StopIngestionPipeline) ApplyIdempotent(workspace db.Workspace) error {
 	return ErrTransactionNeedsTime
 }
 
-func (t *StopIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error {
+func (t *StopIngestionPipeline) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	pipelineName := fmt.Sprintf("kaytu-%s", workspace.ID)
-	pipeline, err := t.osis.GetPipeline(context.Background(), &osis.GetPipelineInput{PipelineName: aws.String(pipelineName)})
+	pipeline, err := t.osis.GetPipeline(ctx, &osis.GetPipelineInput{PipelineName: aws.String(pipelineName)})
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (t *StopIngestionPipeline) RollbackIdempotent(workspace db.Workspace) error
 		return ErrTransactionNeedsTime
 	}
 
-	_, err = t.osis.StartPipeline(context.Background(), &osis.StartPipelineInput{PipelineName: aws.String(pipelineName)})
+	_, err = t.osis.StartPipeline(ctx, &osis.StartPipelineInput{PipelineName: aws.String(pipelineName)})
 	if err != nil {
 		return err
 	}

@@ -15,24 +15,24 @@ import (
 
 const OldResourceDeleterInterval = 1 * time.Minute
 
-func (s *Scheduler) OldResourceDeleter() {
+func (s *Scheduler) OldResourceDeleter(ctx context.Context) {
 	s.logger.Info("Scheduling OldResourceDeleter on a timer")
 
 	t := ticker.NewTicker(OldResourceDeleterInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		if err := s.runDeleter(); err != nil {
+		if err := s.runDeleter(ctx); err != nil {
 			s.logger.Error("failed to run deleter", zap.Error(err))
 			continue
 		}
 	}
 }
 
-func (s *Scheduler) runDeleter() error {
+func (s *Scheduler) runDeleter(ctx context.Context) error {
 	s.logger.Info("runDeleter")
 
-	tasks, err := es.GetDeleteTasks(s.esClient)
+	tasks, err := es.GetDeleteTasks(ctx, s.esClient)
 	if err != nil {
 		s.logger.Error("failed to get delete tasks", zap.Error(err))
 		return err
@@ -73,7 +73,7 @@ func (s *Scheduler) runDeleter() error {
 				s.logger.Error("failed to unmarshal query", zap.Error(err))
 				return err
 			}
-			_, err = es2.DeleteByQuery(context.Background(), s.esClient.ES(), []string{task.Source.QueryIndex}, query)
+			_, err = es2.DeleteByQuery(ctx, s.esClient.ES(), []string{task.Source.QueryIndex}, query)
 			if err != nil {
 				s.logger.Error("failed to delete by query", zap.Error(err))
 				return err

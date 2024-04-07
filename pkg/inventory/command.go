@@ -62,5 +62,5 @@ func start(ctx context.Context, cnf config3.InventoryConfig) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
+	return httpserver.RegisterAndStart(ctx, logger, HttpAddress, handler)
 }

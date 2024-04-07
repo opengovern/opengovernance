@@ -73,11 +73,11 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerPr
 	return e, tp
 }
 
-func RegisterAndStart(logger *zap.Logger, address string, routes Routes) error {
+func RegisterAndStart(ctx context.Context, logger *zap.Logger, address string, routes Routes) error {
 	e, tp := Register(logger, routes)
 
 	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
+		if err := tp.Shutdown(ctx); err != nil {
 		}
 	}()
 	e.Use(otelecho.Middleware(serviceName))

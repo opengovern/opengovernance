@@ -212,9 +212,9 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 
 	var metricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, filteredMetricIDs, connectorTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx, h.logger, h.client, filteredMetricIDs, connectorTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, filteredMetricIDs, connectorTypes, resourceCollections, timeAt, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx, h.logger, h.client, filteredMetricIDs, connectorTypes, resourceCollections, timeAt, EsFetchPageSize)
 	}
 	if err != nil {
 		return nil, nil, err
@@ -503,15 +503,15 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	if metricType == analyticsDB.MetricTypeAssets {
 		if len(connectionIDs) > 0 {
-			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, nil, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
+			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 		} else {
-			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, nil, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
+			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
 		}
 		if err != nil {
 			return err
 		}
 	} else {
-		spend, err = es.FetchSpendByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+		spend, err = es.FetchSpendByMetric(ctx.Request().Context(), h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -660,12 +660,12 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		esDatapointCount = 1
 	}
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.logger, h.client, connectionIDs, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(ctx.Request().Context(), h.logger, h.client, connectionIDs, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.logger, h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(ctx.Request().Context(), h.logger, h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -824,9 +824,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var metricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -834,9 +834,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var oldMetricIndexed map[string]es.CountWithTime
 	if len(connectionIDs) > 0 {
-		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
 	} else {
-		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, metricsIDs, connectorTypes, resourceCollections, startTime, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, connectorTypes, resourceCollections, startTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -960,7 +960,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	}
 
 	others := map[string]int{}
-	resourceTypeCountMap, err := es.GetResourceTypeCounts(h.client, nil, nil, nil, EsFetchPageSize)
+	resourceTypeCountMap, err := es.GetResourceTypeCounts(ctx.Request().Context(), h.client, nil, nil, nil, EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to get resource type counts", zap.Error(err))
 		return err
@@ -1059,7 +1059,7 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	for _, m := range ms {
 		metricIds = append(metricIds, m.ID)
 	}
-	mt, err := es.FetchAssetTableByDimension(h.logger, h.client, metricIds, granularity, dimension, startTime, endTime)
+	mt, err := es.FetchAssetTableByDimension(ctx.Request().Context(), h.logger, h.client, metricIds, granularity, dimension, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1170,7 +1170,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			Metrics:    []inventoryApi.CostMetric{},
 		})
 	} else if len(connectionIDs) > 0 {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistoryByMetric(ctx.Request().Context(), h.client, connectionIDs, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1205,7 +1205,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectorDailySpendHistoryByMetric(ctx.Request().Context(), h.client, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1338,7 +1338,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 //	@Success		200	{object}	inventoryApi.CountAnalyticsSpendResponse
 //	@Router			/inventory/api/v2/analytics/spend/count [get]
 func (h *HttpHandler) CountAnalyticsSpend(ctx echo.Context) error {
-	counts, err := es.CountAnalyticsSpend(h.logger, h.client)
+	counts, err := es.CountAnalyticsSpend(ctx.Request().Context(), h.logger, h.client)
 	if err != nil {
 		h.logger.Error("failed to count analytics spend", zap.Error(err))
 		return err
@@ -1363,7 +1363,7 @@ func (h *HttpHandler) CountAnalyticsSpend(ctx echo.Context) error {
 //	@Success		200	{object}	inventoryApi.CountAnalyticsMetricsResponse
 //	@Router			/inventory/api/v2/analytics/count [get]
 func (h *HttpHandler) CountAnalytics(ctx echo.Context) error {
-	counts, err := es.CountAnalyticsMetrics(h.logger, h.client)
+	counts, err := es.CountAnalyticsMetrics(ctx.Request().Context(), h.logger, h.client)
 	if err != nil {
 		h.logger.Error("failed to count analytics metrics", zap.Error(err))
 		return err
@@ -1527,7 +1527,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	span.End()
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
-	spends, err := es.FetchSpendByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+	spends, err := es.FetchSpendByMetric(ctx.Request().Context(), h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1673,9 +1673,9 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 
 	timepointToCost := map[string]es.DatapointWithFailures{}
 	if len(connectionIDs) > 0 {
-		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
+		timepointToCost, err = es.FetchConnectionSpendTrend(ctx.Request().Context(), h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
 	} else {
-		timepointToCost, err = es.FetchConnectorSpendTrend(h.client, granularity, metricIds, connectorTypes, startTime, endTime)
+		timepointToCost, err = es.FetchConnectorSpendTrend(ctx.Request().Context(), h.client, granularity, metricIds, connectorTypes, startTime, endTime)
 	}
 	if err != nil {
 		return err
@@ -1809,7 +1809,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		span.End()
 	}
 
-	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, connectors, metricIds, startTime, endTime)
+	mt, err := es.FetchSpendTableByDimension(ctx.Request().Context(), h.client, dimension, connectionIDs, connectors, metricIds, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1943,7 +1943,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			metricIDs = append(metricIDs, m.ID)
 		}
 
-		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.logger, h.client, connectors, connectionIDs, resourceCollections, metricIDs, endTime, EsFetchPageSize)
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, connectors, connectionIDs, resourceCollections, metricIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1962,7 +1962,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
-		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.logger, h.client, connectors, connectionIDs, resourceCollections, metricIDs, startTime, EsFetchPageSize)
+		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, connectors, connectionIDs, resourceCollections, metricIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2154,7 +2154,7 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
-	metricsIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
+	metricsIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2289,15 +2289,15 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 
 	var insightValues map[uint][]insight.InsightResource
 	if timeStr != "" {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, true)
+		insightValues, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, true)
 	} else {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, false)
+		insightValues, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList)
+	firstAvailable, err := es.FetchInsightValueAfter(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList)
 	if err != nil {
 		return err
 	}
@@ -2334,15 +2334,15 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 
 	var insightResults map[uint][]insight.InsightResource
 	if timeStr != "" {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, true)
+		insightResults, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, true)
 	} else {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, false)
+		insightResults, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
+	firstAvailable, err := es.FetchInsightValueAfter(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}
@@ -2389,7 +2389,7 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
 
 	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
+	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(ctx.Request().Context(), h.client, startTime, endTime, dataPointCount, nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}
@@ -2514,7 +2514,7 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 		filteredMetricMap[metric.ID] = metric
 	}
 
-	perRcMetricResult, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.logger, h.client,
+	perRcMetricResult, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client,
 		filteredMetricIds, nil, collectionIds, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
@@ -2596,7 +2596,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		filteredMetricMap[metric.ID] = metric
 	}
 
-	metricIndexed, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(h.logger, h.client,
+	metricIndexed, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client,
 		filteredMetricIds, nil, []string{collectionID}, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
@@ -2630,7 +2630,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		}
 	}
 
-	perConnectionMetric, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.logger, h.client, nil, nil,
+	perConnectionMetric, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, nil,
 		[]string{collectionID}, filteredMetricIds, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per connection metric count", zap.Error(err))
@@ -2673,7 +2673,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
 		metricsMap[metric.ID] = metric
 	}
-	metricIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(h.logger, h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
+	metricIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
