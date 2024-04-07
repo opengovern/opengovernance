@@ -13,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"golang.org/x/net/context"
 	"strconv"
 	"strings"
 )
@@ -33,7 +34,7 @@ func (t *EnsureJobsFinished) Requirements() []api4.TransactionID {
 	return []api4.TransactionID{api4.Transaction_EnsureJobsRunning}
 }
 
-func (t *EnsureJobsFinished) ApplyIdempotent(workspace db.Workspace) error {
+func (t *EnsureJobsFinished) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	hctx := &httpclient.Context{UserRole: api2.InternalRole}
 	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
@@ -114,6 +115,6 @@ func (t *EnsureJobsFinished) ApplyIdempotent(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *EnsureJobsFinished) RollbackIdempotent(workspace db.Workspace) error {
+func (t *EnsureJobsFinished) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	return nil
 }

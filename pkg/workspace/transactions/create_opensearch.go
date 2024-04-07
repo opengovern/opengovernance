@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -116,10 +117,10 @@ func (t *CreateOpenSearch) Resources(workspace db.Workspace) (rs []resources.Res
 	return rs
 }
 
-func (t *CreateOpenSearch) ApplyIdempotent(workspace db.Workspace) error {
+func (t *CreateOpenSearch) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	rs := t.Resources(workspace)
 	for i := 0; i < len(rs); i++ {
-		if err := rs[i].CreateIdempotent(); err != nil {
+		if err := rs[i].CreateIdempotent(ctx); err != nil {
 			if errors.Is(err, resources.ErrResourceNeedsTime) {
 				return ErrTransactionNeedsTime
 			}
@@ -129,10 +130,10 @@ func (t *CreateOpenSearch) ApplyIdempotent(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateOpenSearch) RollbackIdempotent(workspace db.Workspace) error {
+func (t *CreateOpenSearch) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	rs := t.Resources(workspace)
 	for i := len(rs) - 1; i >= 0; i-- {
-		if err := rs[i].DeleteIdempotent(); err != nil {
+		if err := rs[i].DeleteIdempotent(ctx); err != nil {
 			if errors.Is(err, resources.ErrResourceNeedsTime) {
 				return ErrTransactionNeedsTime
 			}

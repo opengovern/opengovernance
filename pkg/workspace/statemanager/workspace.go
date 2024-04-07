@@ -1,6 +1,7 @@
 package statemanager
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	types3 "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
@@ -46,7 +47,7 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid ap
 	return transaction
 }
 
-func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
+func (s *Service) handleTransitionRequirements(ctx context.Context, workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
 	allStateTransactionsMet := true
 	for _, stateRequirement := range currentState.Requirements(*workspace) {
 		alreadyDone := false
@@ -97,7 +98,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 		}
 
 		s.logger.Info("applying transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.ApplyIdempotent(*workspace)
+		err := transaction.ApplyIdempotent(ctx, *workspace)
 		if err != nil {
 			if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 				return err
@@ -118,7 +119,7 @@ func (s *Service) handleTransitionRequirements(workspace *db.Workspace, currentS
 	return nil
 }
 
-func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
+func (s *Service) handleTransitionRollbacks(ctx context.Context, workspace *db.Workspace, currentState state.State, currentTransactions []db.WorkspaceTransaction) error {
 	for _, transactionID := range currentTransactions {
 		isRequirement := false
 		for _, requirement := range currentState.Requirements(*workspace) {
@@ -137,7 +138,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 		}
 
 		s.logger.Info("rolling back transaction", zap.String("workspace_id", workspace.ID), zap.String("type", reflect.TypeOf(transaction).String()))
-		err := transaction.RollbackIdempotent(*workspace)
+		err := transaction.RollbackIdempotent(ctx, *workspace)
 		if err != nil {
 			return err
 		}
@@ -150,7 +151,7 @@ func (s *Service) handleTransitionRollbacks(workspace *db.Workspace, currentStat
 	return nil
 }
 
-func (s *Service) handleTransition(workspace *db.Workspace) error {
+func (s *Service) handleTransition(ctx context.Context, workspace *db.Workspace) error {
 	var currentState state.State
 	for _, v := range state.AllStates(s.db, s.logger) {
 		if v.ProcessingStateID() == workspace.Status {
@@ -168,7 +169,7 @@ func (s *Service) handleTransition(workspace *db.Workspace) error {
 		return err
 	}
 
-	err = s.handleTransitionRequirements(workspace, currentState, tns)
+	err = s.handleTransitionRequirements(ctx, workspace, currentState, tns)
 	if err != nil {
 		if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 			return nil
@@ -176,7 +177,7 @@ func (s *Service) handleTransition(workspace *db.Workspace) error {
 		return err
 	}
 
-	err = s.handleTransitionRollbacks(workspace, currentState, tns)
+	err = s.handleTransitionRollbacks(ctx, workspace, currentState, tns)
 	if err != nil {
 		if errors.Is(err, transactions.ErrTransactionNeedsTime) {
 			return nil
