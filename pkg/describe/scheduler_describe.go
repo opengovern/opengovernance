@@ -983,7 +983,7 @@ func (s *Scheduler) storeStackCredentials(ctx context.Context, stack apiDescribe
 		if err != nil {
 			return fmt.Errorf("invalid config")
 		}
-		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
+		secretBytes, err = kms.Encrypt(ctx, config.AsMap(), KeyARN, "")
 		if err != nil {
 			return err
 		}
@@ -993,7 +993,7 @@ func (s *Scheduler) storeStackCredentials(ctx context.Context, stack apiDescribe
 		if err != nil {
 			return fmt.Errorf("invalid config")
 		}
-		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
+		secretBytes, err = kms.Encrypt(ctx, config.AsMap(), KeyARN, "")
 		if err != nil {
 			return err
 		}

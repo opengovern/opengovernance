@@ -51,11 +51,18 @@ func (h Credential) NewAzure(
 		return nil, err
 	}
 
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	latestVersion, err := h.vault.GetLatestVersion(ctx, h.keyId)
+	if err != nil {
+		return nil, err
+	}
+
+	secretBytes, err := h.vault.Encrypt(ctx, config.AsMap(), h.keyId, latestVersion)
 	if err != nil {
 		return nil, err
 	}
 	cred.Secret = string(secretBytes)
+	cred.CredentialStoreKeyID = h.keyId
+	cred.CredentialStoreKeyVersion = latestVersion
 
 	return cred, nil
 }
@@ -146,7 +153,7 @@ func (Credential) AzureMetadata(ctx context.Context, config describe.AzureSubscr
 
 // AzureHealthCheck checks the credential health.
 func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential) (bool, error) {
-	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	config, err := h.vault.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return false, err
 	}
@@ -177,7 +184,7 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 func (h Credential) AzureOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
 	connections := make([]model.Connection, 0)
 
-	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	cnf, err := h.vault.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +388,7 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 		cred.Name = req.Name
 	}
 
-	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	cnf, err := h.vault.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return err
 	}
@@ -418,7 +425,13 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 		return err
 	}
 	cred.Metadata = jsonMetadata
-	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+
+	lastVersion, err := h.vault.GetLatestVersion(ctx, h.keyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.vault.Encrypt(ctx, config.ToMap(), h.keyId, lastVersion)
 	if err != nil {
 		return err
 	}
@@ -427,6 +440,8 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 	if metadata.SpnName != "" {
 		cred.Name = &metadata.SpnName
 	}
+	cred.CredentialStoreKeyVersion = lastVersion
+	cred.CredentialStoreKeyID = h.keyId
 
 	if err := h.repo.Update(ctx, cred); err != nil {
 		return err
@@ -441,7 +456,7 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 
 // AzureCredentialConfig reads credentials configuration from azure credential secret and return it.
 func (h Credential) AzureCredentialConfig(ctx context.Context, credential model.Credential) (*describe.AzureSubscriptionConfig, error) {
-	raw, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	raw, err := h.vault.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +472,7 @@ func (h Credential) AzureCredentialConfig(ctx context.Context, credential model.
 func (h Connection) AzureHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
 	var cnf map[string]any
 
-	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
+	cnf, err := h.vault.Decrypt(ctx, connection.Credential.Secret, connection.Credential.CredentialStoreKeyID, connection.Credential.CredentialStoreKeyVersion)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
 		return connection, err

@@ -94,7 +94,7 @@ func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(ctx context.Context
 	result, err := t.kmsClient.Decrypt(ctx, &kms.DecryptInput{
 		CiphertextBlob:      decoded,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-		KeyId:               &t.cfg.KMSKeyARN,
+		KeyId:               &t.cfg.VaultKeyId,
 		EncryptionContext:   nil, //TODO-Saleh use workspaceID
 	})
 	if err != nil {

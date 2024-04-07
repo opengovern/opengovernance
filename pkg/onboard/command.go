@@ -32,7 +32,7 @@ var (
 	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
 	DescribeBaseURL       = os.Getenv("DESCRIBE_BASE_URL")
 
-	KeyARN           = os.Getenv("KMS_KEY_ARN")
+	VaultKeyId       = os.Getenv("VAULT_KEY_ID")
 	KMSAccountRegion = os.Getenv("KMS_ACCOUNT_REGION")
 
 	HttpAddress     = os.Getenv("HTTP_ADDRESS")
@@ -62,7 +62,7 @@ func start(ctx context.Context) error {
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
 		logger,
 		AWSPermissionCheckURL,
-		KeyARN,
+		VaultKeyId,
 		InventoryBaseURL,
 		DescribeBaseURL,
 		MasterAccessKey, MasterSecretKey,

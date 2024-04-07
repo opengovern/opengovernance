@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"strings"
 
-	onboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	onboard "github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
@@ -23,7 +23,7 @@ type ConnectionRow struct {
 	Tags           map[string][]string `json:"tags"`
 }
 
-func getAWSConnectionRowFromConnection(ctx context.Context, connection onboard.Source) (*ConnectionRow, error) {
+func getAWSConnectionRowFromConnection(ctx context.Context, connection onboard.Connection) (*ConnectionRow, error) {
 	row := ConnectionRow{
 		KaytuID:        connection.ID.String(),
 		ID:             connection.SourceId,
@@ -55,7 +55,7 @@ func getAWSConnectionRowFromConnection(ctx context.Context, connection onboard.S
 	return &row, nil
 }
 
-func getAzureConnectionRowFromConnection(ctx context.Context, connection onboard.Source) (*ConnectionRow, error) {
+func getAzureConnectionRowFromConnection(ctx context.Context, connection onboard.Connection) (*ConnectionRow, error) {
 	row := ConnectionRow{
 		KaytuID:        connection.ID.String(),
 		ID:             connection.SourceId,
@@ -92,7 +92,7 @@ func getAzureConnectionRowFromConnection(ctx context.Context, connection onboard
 	return &row, nil
 }
 
-func getConnectionRowFromConnection(ctx context.Context, connection onboard.Source) (*ConnectionRow, error) {
+func getConnectionRowFromConnection(ctx context.Context, connection onboard.Connection) (*ConnectionRow, error) {
 	switch connection.Type {
 	case source.CloudAWS:
 		return getAWSConnectionRowFromConnection(ctx, connection)

@@ -3,12 +3,11 @@ package onboard
 import (
 	"fmt"
 	"github.com/goccy/go-yaml"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 )
 
 type ConnectionGroup struct {

@@ -25,7 +25,7 @@ type Config struct {
 	S3AccessKey                string
 	S3SecretKey                string
 	KMSAccountRegion           string `yaml:"kms_account_region"`
-	KMSKeyARN                  string `yaml:"kms_key_arn"`
+	VaultKeyId                 string `yaml:"vault_key_id"`
 	AWSMasterAccessKey         string `yaml:"aws_master_access_key"`
 	AWSMasterSecretKey         string `yaml:"aws_master_secret_key"`
 	AWSMasterPolicyARN         string `yaml:"aws_master_policy_arn"`

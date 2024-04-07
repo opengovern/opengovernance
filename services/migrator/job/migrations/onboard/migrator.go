@@ -3,10 +3,10 @@ package onboard
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/db"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

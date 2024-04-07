@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/db"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"

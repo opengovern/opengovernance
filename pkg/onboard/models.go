@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"strings"
 	"time"
 
@@ -37,7 +37,7 @@ type AWSConnectionMetadata struct {
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, connection model.Source, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, connection model.Connection, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
@@ -93,7 +93,7 @@ func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg descr
 	return metadata, nil
 }
 
-func NewAWSSource(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) model.Source {
+func NewAWSSource(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) model.Connection {
 	id := uuid.New()
 	provider := source.CloudAWS
 
@@ -115,7 +115,7 @@ func NewAWSSource(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccou
 		accountEmail = *account.Account.Email
 	}
 
-	s := model.Source{
+	s := model.Connection{
 		ID:                   id,
 		SourceId:             account.AccountID,
 		Name:                 accountName,
@@ -178,7 +178,7 @@ func NewAzureConnectionMetadata(sub azureSubscription, tenantID string) AzureCon
 	return metadata
 }
 
-func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds model.Credential, tenantID string) model.Source {
+func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds model.Credential, tenantID string) model.Connection {
 	id := uuid.New()
 
 	name := sub.SubscriptionID
@@ -192,7 +192,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 		jsonMetadata = []byte("{}")
 	}
 
-	s := model.Source{
+	s := model.Connection{
 		ID:                   id,
 		SourceId:             sub.SubscriptionID,
 		Name:                 name,
@@ -209,7 +209,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSAutoOnboardedConnection(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Source {
+func NewAWSAutoOnboardedConnection(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Connection {
 	id := uuid.New()
 
 	name := account.AccountID
@@ -226,7 +226,7 @@ func NewAWSAutoOnboardedConnection(ctx context.Context, logger *zap.Logger, cfg 
 		lifecycleState = model.ConnectionLifecycleStateArchived
 	}
 
-	s := model.Source{
+	s := model.Connection{
 		ID:                   id,
 		SourceId:             account.AccountID,
 		Name:                 name,
@@ -253,7 +253,7 @@ func NewAWSAutoOnboardedConnection(ctx context.Context, logger *zap.Logger, cfg 
 	return s
 }
 
-func NewAWSAutoOnboardedConnectionV2(ctx context.Context, org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig aws.Config) (*model.Source, error) {
+func NewAWSAutoOnboardedConnectionV2(ctx context.Context, org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig aws.Config) (*model.Connection, error) {
 	id := uuid.New()
 
 	name := *account.Id
@@ -270,7 +270,7 @@ func NewAWSAutoOnboardedConnectionV2(ctx context.Context, org *types.Organizatio
 		lifecycleState = model.ConnectionLifecycleStateArchived
 	}
 
-	s := model.Source{
+	s := model.Connection{
 		ID:                   id,
 		SourceId:             *account.Id,
 		Name:                 name,

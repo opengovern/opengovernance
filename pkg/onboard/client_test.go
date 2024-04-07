@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/stretchr/testify/assert"
 	"testing"

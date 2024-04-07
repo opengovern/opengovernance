@@ -22,10 +22,10 @@ type API struct {
 	inventory       inventory.InventoryServiceClient
 	meta            *meta.Meta
 	database        db.Database
-	kms             *vault.KMSVaultSourceConfig
+	vault           vault.VaultSourceConfig
+	vaultKeyId      string
 	masterAccessKey string
 	masterSecretKey string
-	arn             string
 }
 
 func New(
@@ -34,8 +34,8 @@ func New(
 	i inventory.InventoryServiceClient,
 	m *meta.Meta,
 	db db.Database,
-	kms *vault.KMSVaultSourceConfig,
-	arn string,
+	vault vault.VaultSourceConfig,
+	vaultKeyId string,
 	masterAccessKey string,
 	masterSecretKey string,
 ) *API {
@@ -45,8 +45,8 @@ func New(
 		inventory:       i,
 		meta:            m,
 		database:        db,
-		kms:             kms,
-		arn:             arn,
+		vault:           vault,
+		vaultKeyId:      vaultKeyId,
 		masterAccessKey: masterAccessKey,
 		masterSecretKey: masterSecretKey,
 	}
@@ -60,8 +60,8 @@ func (api *API) Register(e *echo.Echo) {
 	connSvc := service.NewConnection(
 		repository.NewConnectionSQL(api.database),
 		repo,
-		api.kms,
-		api.arn,
+		api.vault,
+		api.vaultKeyId,
 		api.describe,
 		api.inventory,
 		api.meta,
@@ -73,8 +73,8 @@ func (api *API) Register(e *echo.Echo) {
 	credSvc := service.NewCredential(
 		repository.NewCredentialSQL(api.database),
 		repo,
-		api.kms,
-		api.arn,
+		api.vault,
+		api.vaultKeyId,
 		api.describe,
 		api.inventory,
 		api.meta,

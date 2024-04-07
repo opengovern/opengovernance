@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -11,9 +11,9 @@ import (
 )
 
 // ListSources gets list of all source
-func (db Database) ListSources() ([]model.Source, error) {
-	var s []model.Source
-	tx := db.Orm.Model(model.Source{}).Preload(clause.Associations).Find(&s)
+func (db Database) ListSources() ([]model.Connection, error) {
+	var s []model.Connection
+	tx := db.Orm.Model(model.Connection{}).Preload(clause.Associations).Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -27,10 +27,10 @@ func (db Database) ListSourcesWithFilters(
 	connectorTypes []source.Type,
 	connectionIDs []string,
 	lifecycleState []model.ConnectionLifecycleState,
-	healthState []source.HealthStatus) ([]model.Source, error) {
+	healthState []source.HealthStatus) ([]model.Connection, error) {
 
-	var s []model.Source
-	tx := db.Orm.Model(model.Source{}).Preload(clause.Associations)
+	var s []model.Connection
+	tx := db.Orm.Model(model.Connection{}).Preload(clause.Associations)
 	if len(connectorTypes) > 0 {
 		tx = tx.Where("type IN ?", connectorTypes)
 	}
@@ -52,8 +52,8 @@ func (db Database) ListSourcesWithFilters(
 }
 
 // GetSources gets sources by id
-func (db Database) GetSources(ids []string) ([]model.Source, error) {
-	var s []model.Source
+func (db Database) GetSources(ids []string) ([]model.Connection, error) {
+	var s []model.Connection
 	tx := db.Orm.Preload(clause.Associations).Find(&s, "id in ?", ids)
 
 	if tx.Error != nil {
@@ -65,7 +65,7 @@ func (db Database) GetSources(ids []string) ([]model.Source, error) {
 // CountSources gets count of all source
 func (db Database) CountSources() (int64, error) {
 	var c int64
-	tx := db.Orm.Model(&model.Source{}).Count(&c)
+	tx := db.Orm.Model(&model.Connection{}).Count(&c)
 
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -75,8 +75,8 @@ func (db Database) CountSources() (int64, error) {
 }
 
 // GetSourcesOfType gets list of sources with matching type
-func (db Database) GetSourcesOfType(rType source.Type) ([]model.Source, error) {
-	var s []model.Source
+func (db Database) GetSourcesOfType(rType source.Type) ([]model.Connection, error) {
+	var s []model.Connection
 	tx := db.Orm.Preload(clause.Associations).Find(&s, "type = ?", rType)
 
 	if tx.Error != nil {
@@ -87,8 +87,8 @@ func (db Database) GetSourcesOfType(rType source.Type) ([]model.Source, error) {
 }
 
 // GetSourcesOfTypes gets list of sources with matching types
-func (db Database) GetSourcesOfTypes(rTypes []source.Type) ([]model.Source, error) {
-	var s []model.Source
+func (db Database) GetSourcesOfTypes(rTypes []source.Type) ([]model.Connection, error) {
+	var s []model.Connection
 	tx := db.Orm.Preload(clause.Associations).Find(&s, "type IN ?", rTypes)
 
 	if tx.Error != nil {
@@ -101,7 +101,7 @@ func (db Database) GetSourcesOfTypes(rTypes []source.Type) ([]model.Source, erro
 // CountSourcesOfType gets count of sources with matching type
 func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 	var c int64
-	tx := db.Orm.Model(&model.Source{}).Where("type = ?", rType.String()).Count(&c)
+	tx := db.Orm.Model(&model.Connection{}).Where("type = ?", rType.String()).Count(&c)
 
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -111,35 +111,35 @@ func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 }
 
 // GetSource gets a source with matching id
-func (db Database) GetSource(id uuid.UUID) (model.Source, error) {
-	var s model.Source
+func (db Database) GetSource(id uuid.UUID) (model.Connection, error) {
+	var s model.Connection
 	tx := db.Orm.Preload(clause.Associations).First(&s, "id = ?", id.String())
 
 	if tx.Error != nil {
-		return model.Source{}, tx.Error
+		return model.Connection{}, tx.Error
 	} else if tx.RowsAffected != 1 {
-		return model.Source{}, gorm.ErrRecordNotFound
+		return model.Connection{}, gorm.ErrRecordNotFound
 	}
 
 	return s, nil
 }
 
 // GetSourceBySourceID gets a source with matching source id
-func (db Database) GetSourceBySourceID(id string) (model.Source, error) {
-	var s model.Source
+func (db Database) GetSourceBySourceID(id string) (model.Connection, error) {
+	var s model.Connection
 	tx := db.Orm.First(&s, "source_id = ?", id)
 
 	if tx.Error != nil {
-		return model.Source{}, tx.Error
+		return model.Connection{}, tx.Error
 	} else if s.SourceId != id {
-		return model.Source{}, gorm.ErrRecordNotFound
+		return model.Connection{}, gorm.ErrRecordNotFound
 	}
 	return s, nil
 }
 
 // GetSourcesByCredentialID list sources with matching credential id
-func (db Database) GetSourcesByCredentialID(id string) ([]model.Source, error) {
-	var s []model.Source
+func (db Database) GetSourcesByCredentialID(id string) ([]model.Connection, error) {
+	var s []model.Connection
 	tx := db.Orm.Find(&s, "credential_id = ?", id)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -148,9 +148,9 @@ func (db Database) GetSourcesByCredentialID(id string) ([]model.Source, error) {
 }
 
 // CreateSource creates a new source and returns it
-func (db Database) CreateSource(s *model.Source) error {
+func (db Database) CreateSource(s *model.Connection) error {
 	tx := db.Orm.
-		Model(&model.Source{}).
+		Model(&model.Connection{}).
 		Clauses(clause.OnConflict{DoNothing: true}).
 		Create(s)
 
@@ -164,9 +164,9 @@ func (db Database) CreateSource(s *model.Source) error {
 }
 
 // UpdateSource updates an existing source and returns it
-func (db Database) UpdateSource(s *model.Source) (*model.Source, error) {
+func (db Database) UpdateSource(s *model.Connection) (*model.Connection, error) {
 	tx := db.Orm.
-		Model(&model.Source{}).
+		Model(&model.Connection{}).
 		Where("id = ?", s.ID.String()).Updates(s)
 
 	if tx.Error != nil {
@@ -182,7 +182,7 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 	tx := db.Orm.
 		Where("id = ?", id.String()).
 		Unscoped().
-		Delete(&model.Source{})
+		Delete(&model.Connection{})
 
 	if tx.Error != nil {
 		return tx.Error
@@ -196,7 +196,7 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 // UpdateSourceLifecycleState update source lifecycle state
 func (db Database) UpdateSourceLifecycleState(id uuid.UUID, state model.ConnectionLifecycleState) error {
 	tx := db.Orm.
-		Model(&model.Source{}).
+		Model(&model.Connection{}).
 		Where("id = ?", id.String()).
 		Updates(map[string]interface{}{
 			"lifecycle_state": state,
@@ -213,7 +213,7 @@ func (db Database) UpdateSourceLifecycleState(id uuid.UUID, state model.Connecti
 
 func (db Database) CountSourcesWithFilters(query string, args ...interface{}) (int64, error) {
 	var count int64
-	tx := db.Orm.Model(&model.Source{})
+	tx := db.Orm.Model(&model.Connection{})
 	if len(args) > 0 {
 		tx = tx.Where(query, args)
 	} else if len(strings.TrimSpace(query)) > 0 {
@@ -230,7 +230,7 @@ func (db Database) CountSourcesWithFilters(query string, args ...interface{}) (i
 
 func (db Database) CountConnectionsByCredential(credentialId string, state []model.ConnectionLifecycleState, healthStates []source.HealthStatus) (int, error) {
 	var count int64
-	tx := db.Orm.Model(&model.Source{}).Where("credential_id = ?", credentialId)
+	tx := db.Orm.Model(&model.Connection{}).Where("credential_id = ?", credentialId)
 	if len(state) > 0 {
 		tx = tx.Where("lifecycle_state IN ?", state)
 	}

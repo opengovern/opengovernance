@@ -17,8 +17,8 @@ import (
 )
 
 type Credential struct {
-	keyARN            string
-	kms               *vault.KMSVaultSourceConfig
+	keyId             string
+	vault             vault.VaultSourceConfig
 	tracer            trace.Tracer
 	repo              repository.Credential
 	transactionalRepo repository.CredConn
@@ -34,7 +34,7 @@ type Credential struct {
 func NewCredential(
 	repo repository.Credential,
 	transactionalRepo repository.CredConn,
-	kms *vault.KMSVaultSourceConfig,
+	vault vault.VaultSourceConfig,
 	keyARN string,
 	describe describe.SchedulerServiceClient,
 	inventory inventory.InventoryServiceClient,
@@ -48,8 +48,8 @@ func NewCredential(
 		tracer:            otel.GetTracerProvider().Tracer("integration.service.credential"),
 		repo:              repo,
 		transactionalRepo: transactionalRepo,
-		keyARN:            keyARN,
-		kms:               kms,
+		keyId:             keyARN,
+		vault:             vault,
 		inventory:         inventory,
 		describe:          describe,
 		meta:              meta,

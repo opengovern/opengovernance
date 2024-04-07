@@ -12,8 +12,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api/entities"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -246,11 +247,19 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 
 	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
-	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), req.Config.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	src.Credential.Secret = string(secretBytes)
+	src.Credential.CredentialStoreKeyID = h.vaultKeyId
+	src.Credential.CredentialStoreKeyVersion = latestVersion
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
@@ -296,12 +305,20 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		acc.AccountName = &req.Name
 	}
 	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: h.masterAccessKey, SecretKey: h.masterSecretKey}, *acc, "")
-	secretBytes, err := h.kms.Encrypt(req.AWSConfig.AsMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), req.AWSConfig.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	src.Credential.Version = 2
 	src.Credential.Secret = string(secretBytes)
+	src.Credential.CredentialStoreKeyID = h.vaultKeyId
+	src.Credential.CredentialStoreKeyVersion = latestVersion
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
@@ -377,11 +394,19 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 
 	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred, req.Config.TenantId)
-	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), req.Config.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	src.Credential.Secret = string(secretBytes)
+	src.Credential.CredentialStoreKeyID = h.vaultKeyId
+	src.Credential.CredentialStoreKeyVersion = latestVersion
 	// trace :
 	//_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
 	//span2.SetName("new_CreateSource")
@@ -437,11 +462,19 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	if err != nil {
 		return err
 	}
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), config.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	cred.CredentialStoreKeyID = h.vaultKeyId
+	cred.CredentialStoreKeyVersion = latestVersion
 
 	// trace :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
@@ -494,11 +527,19 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	if err != nil {
 		return err
 	}
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), config.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	cred.CredentialStoreKeyID = h.vaultKeyId
+	cred.CredentialStoreKeyVersion = latestVersion
 	// trace :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction ", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_Transaction")
@@ -666,7 +707,7 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
-		apiCredential := cred.ToAPI()
+		apiCredential := entities.NewCredential(cred)
 		apiCredential.TotalConnections = &totalConnectionCount
 		apiCredential.UnhealthyConnections = &unhealthyConnectionCount
 
@@ -745,12 +786,12 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		return err
 	}
 
-	apiCredential := credential.ToAPI()
+	apiCredential := entities.NewCredential(*credential)
 	if err != nil {
 		return err
 	}
 	for _, conn := range connections {
-		apiCredential.Connections = append(apiCredential.Connections, conn.ToAPI())
+		apiCredential.Connections = append(apiCredential.Connections, entities.NewConnection(conn))
 		switch conn.LifecycleState {
 		case model.ConnectionLifecycleStateDiscovered:
 			apiCredential.DiscoveredConnections = utils.PAdd(apiCredential.DiscoveredConnections, utils.GetPointer(1))
@@ -772,7 +813,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 
 	switch credential.ConnectorType {
 	case source.CloudAzure:
-		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		cnf, err := h.kms.Decrypt(ctx.Request().Context(), credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 		if err != nil {
 			return err
 		}
@@ -788,7 +829,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			ClientId:       azureCnf.ClientID,
 		}
 	case source.CloudAWS:
-		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		cnf, err := h.kms.Decrypt(ctx.Request().Context(), credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 		if err != nil {
 			return err
 		}
@@ -830,7 +871,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 
 func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -1006,7 +1047,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 
 func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -1352,7 +1393,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		cred.Name = req.Name
 	}
 
-	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx.Request().Context(), cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return err
 	}
@@ -1399,11 +1440,19 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		return err
 	}
 	cred.Metadata = jsonMetadata
-	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), config.ToMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	cred.CredentialStoreKeyID = h.vaultKeyId
+	cred.CredentialStoreKeyVersion = latestVersion
 	if metadata.SpnName != "" {
 		cred.Name = &metadata.SpnName
 	}
@@ -1468,7 +1517,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		cred.Name = req.Name
 	}
 
-	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx.Request().Context(), cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return err
 	}
@@ -1523,11 +1572,20 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		return err
 	}
 	cred.Metadata = jsonMetadata
-	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
+
+	latestVersion, err := h.kms.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx.Request().Context(), config.ToMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	cred.CredentialStoreKeyID = h.vaultKeyId
+	cred.CredentialStoreKeyVersion = latestVersion
+
 	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
 		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
 		config.AssumeRoleName != "" && config.ExternalID != nil {
@@ -1718,7 +1776,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	))
 	span.End()
 
-	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx.Request().Context(), src.Credential.Secret, src.Credential.CredentialStoreKeyID, src.Credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return err
 	}
@@ -1756,7 +1814,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	}
 }
 
-func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection model.Source, healthStatus source.HealthStatus, reason *string, spendDiscovery, assetDiscovery *bool) (model.Source, error) {
+func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection model.Connection, healthStatus source.HealthStatus, reason *string, spendDiscovery, assetDiscovery *bool) (model.Connection, error) {
 	connection.HealthState = healthStatus
 	connection.HealthReason = reason
 	connection.LastHealthCheckTime = time.Now()
@@ -1768,7 +1826,7 @@ func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection mode
 
 	_, err := h.db.UpdateSource(&connection)
 	if err != nil {
-		return model.Source{}, err
+		return model.Connection{}, err
 	}
 	span.AddEvent("information", trace.WithAttributes(
 		attribute.String("source name", connection.Name),
@@ -1853,7 +1911,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			}
 		}
 	}
-	return ctx.JSON(http.StatusOK, connection.ToAPI())
+	return ctx.JSON(http.StatusOK, entities.NewConnection(connection))
 }
 
 func (h HttpHandler) GetSource(ctx echo.Context) error {
@@ -1887,12 +1945,12 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		}
 	}
 
-	apiRes := src.ToAPI()
+	apiRes := entities.NewConnection(src)
 	if httpserver2.GetUserRole(ctx) == api3.InternalRole {
-		apiRes.Credential = src.Credential.ToAPI()
+		apiRes.Credential = entities.NewCredential(src.Credential)
 		apiRes.Credential.Config = src.Credential.Secret
 		if apiRes.Credential.Version == 2 {
-			apiRes.Credential.Config, err = h.CredentialV2ToV1(src.Credential.Secret)
+			apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), src.Credential)
 			if err != nil {
 				return err
 			}
@@ -2062,7 +2120,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var err error
 	sType := httpserver2.QueryArrayParam(ctx, "connector")
-	var sources []model.Source
+	var sources []model.Connection
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
 		// trace :
@@ -2092,12 +2150,12 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		apiRes := s.ToAPI()
+		apiRes := entities.NewConnection(s)
 		if httpserver2.GetUserRole(ctx) == api3.InternalRole {
-			apiRes.Credential = s.Credential.ToAPI()
+			apiRes.Credential = entities.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.CredentialV2ToV1(s.Credential.Secret)
+				apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), s.Credential)
 				if err != nil {
 					return err
 				}
@@ -2131,12 +2189,12 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 
 	var res []api.Connection
 	for _, src := range srcs {
-		apiRes := src.ToAPI()
+		apiRes := entities.NewConnection(src)
 		if httpserver2.GetUserRole(ctx) == api3.InternalRole {
-			apiRes.Credential = src.Credential.ToAPI()
+			apiRes.Credential = entities.NewCredential(src.Credential)
 			apiRes.Credential.Config = src.Credential.Secret
 			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.CredentialV2ToV1(src.Credential.Secret)
+				apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), src.Credential)
 				if err != nil {
 					return err
 				}
@@ -2342,7 +2400,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	_, span = tracer.Start(ctx.Request().Context(), "new_FilterConnectionGroups", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_FilterConnectionGroups")
 
-	var connections []model.Source
+	var connections []model.Connection
 	if filterStr != "" && len(connectionIDs) == 0 {
 		result := api.ListConnectionSummaryResponse{
 			ConnectionCount:       len(connections),
@@ -2372,7 +2430,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			span.AddEvent("information", trace.WithAttributes(
 				attribute.String("connectionGroup name", connectionGroup.Name),
 			))
-			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
+			apiCg, err := entities.NewConnectionGroup(ctx.Request().Context(), h.steampipeConn, *connectionGroup)
 			if err != nil {
 				h.logger.Error("error populating connection group", zap.Error(err))
 				return err
@@ -2435,7 +2493,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	for _, connection := range connections {
 		if data, ok := connectionData[connection.ID.String()]; ok {
 			localData := data
-			apiConn := connection.ToAPI()
+			apiConn := entities.NewConnection(connection)
 			apiConn.Cost = localData.TotalCost
 			apiConn.DailyCostAtStartTime = localData.DailyCostAtStartTime
 			apiConn.DailyCostAtEndTime = localData.DailyCostAtEndTime
@@ -2456,7 +2514,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			if len(resourceCollections) > 0 {
 				continue
 			}
-			result.Connections = append(result.Connections, connection.ToAPI())
+			result.Connections = append(result.Connections, entities.NewConnection(connection))
 		}
 		switch connection.LifecycleState {
 		case model.ConnectionLifecycleStateDiscovered:
@@ -2659,7 +2717,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 	span2.SetName("new_GetSources(loop)")
 
 	for _, connectionGroup := range connectionGroups {
-		apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
+		apiCg, err := entities.NewConnectionGroup(ctx.Request().Context(), h.steampipeConn, connectionGroup)
 		if err != nil {
 			h.logger.Error("error populating connection group", zap.Error(err))
 			continue
@@ -2680,7 +2738,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 
 			apiCg.Connections = make([]api.Connection, 0, len(connections))
 			for _, connection := range connections {
-				apiCg.Connections = append(apiCg.Connections, connection.ToAPI())
+				apiCg.Connections = append(apiCg.Connections, entities.NewConnection(connection))
 			}
 		}
 
@@ -2728,7 +2786,7 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 	))
 	span.End()
 
-	apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
+	apiCg, err := entities.NewConnectionGroup(ctx.Request().Context(), h.steampipeConn, *connectionGroup)
 	if err != nil {
 		h.logger.Error("error populating connection group", zap.Error(err))
 		return err
@@ -2750,7 +2808,7 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 
 		apiCg.Connections = make([]api.Connection, 0, len(connections))
 		for _, connection := range connections {
-			apiCg.Connections = append(apiCg.Connections, connection.ToAPI())
+			apiCg.Connections = append(apiCg.Connections, entities.NewConnection(connection))
 		}
 	}
 
@@ -2796,7 +2854,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 					allGroupsMap := make(map[string][]string)
 					var allGroupsStr []string
 					for _, group := range allGroups {
-						g, err := group.ToAPI(ctx.Request().Context(), h.steampipeConn)
+						g, err := entities.NewConnectionGroup(ctx.Request().Context(), h.steampipeConn, group)
 						if err != nil {
 							return nil, err
 						}

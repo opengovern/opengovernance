@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +19,7 @@ func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
 		&model.Connector{},
 		&model.Credential{},
-		&model.Source{},
+		&model.Connection{},
 		&model.ConnectionGroup{},
 	)
 	if err != nil {
