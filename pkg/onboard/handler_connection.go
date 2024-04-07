@@ -111,7 +111,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 					h.logger.Error("failed to get current aws account", zap.Error(err), zap.String("sourceId", connection.SourceId))
 					return connection, err
 				}
-				metadata, err2 := NewAWSConnectionMetadata(h.logger, awsCnf, connection, *awsAccount)
+				metadata, err2 := NewAWSConnectionMetadata(ctx, h.logger, awsCnf, connection, *awsAccount)
 				if err2 != nil {
 					h.logger.Error("failed to get aws connection metadata", zap.Error(err2), zap.String("sourceId", connection.SourceId))
 				}

@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/db"
@@ -58,7 +59,7 @@ func InitializeJob(
 	return w, nil
 }
 
-func (w *Job) Run() error {
+func (w *Job) Run(ctx context.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
 			w.logger.Error("paniced with error", zap.Error(fmt.Errorf("%v", r)))
@@ -79,7 +80,7 @@ func (w *Job) Run() error {
 		}
 
 		updateFailed := false
-		err = mig.Run(w.conf, w.logger)
+		err = mig.Run(ctx, w.conf, w.logger)
 		if err != nil {
 			w.logger.Error("failed to run migration", zap.Error(err), zap.String("migrationName", name))
 			updateFailed = true

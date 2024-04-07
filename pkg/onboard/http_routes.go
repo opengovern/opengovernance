@@ -245,7 +245,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return err
 	}
 
-	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
+	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
 	if err != nil {
 		return err
@@ -295,7 +295,7 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 	if req.Name != "" {
 		acc.AccountName = &req.Name
 	}
-	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: h.masterAccessKey, SecretKey: h.masterSecretKey}, *acc, "")
+	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: h.masterAccessKey, SecretKey: h.masterSecretKey}, *acc, "")
 	secretBytes, err := h.kms.Encrypt(req.AWSConfig.AsMap(), h.keyARN)
 	if err != nil {
 		return err
@@ -1149,6 +1149,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential mode
 		}
 
 		src := NewAWSAutoOnboardedConnection(
+			ctx,
 			h.logger,
 			awsCnf,
 			account,

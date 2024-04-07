@@ -79,7 +79,7 @@ func ReporterCommand() *cobra.Command {
 				}
 
 				EnsureRunGoroutin(func() {
-					j.Run()
+					j.Run(cmd.Context())
 				})
 				return startHttpServer(cmd.Context(), j)
 			}

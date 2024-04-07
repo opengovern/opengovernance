@@ -374,6 +374,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		}
 
 		src, err := NewAWSAutoOnboardedConnection(
+			ctx,
 			org,
 			account,
 			source.SourceCreationMethodAutoOnboard,
@@ -404,6 +405,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 }
 
 func NewAWSAutoOnboardedConnection(
+	ctx context.Context,
 	org *types.Organization,
 	account types.Account,
 	creationMethod source.SourceCreationMethod,
@@ -461,7 +463,7 @@ func NewAWSAutoOnboardedConnection(
 		}
 
 		organizationClient := organizations.NewFromConfig(awsConfig)
-		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
 			ResourceId: &metadata.AccountID,
 		})
 		if err != nil {

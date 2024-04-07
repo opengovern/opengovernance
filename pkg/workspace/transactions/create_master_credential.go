@@ -116,7 +116,7 @@ func (t *CreateMasterCredential) ApplyIdempotent(ctx context.Context, workspace 
 		return err
 	}
 
-	result, err := t.kms.Encrypt(context.TODO(), &kms.EncryptInput{
+	result, err := t.kms.Encrypt(ctx, &kms.EncryptInput{
 		KeyId:               &t.cfg.KMSKeyARN,
 		Plaintext:           js,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,

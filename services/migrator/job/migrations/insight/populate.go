@@ -1,6 +1,7 @@
 package insight
 
 import (
+	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
@@ -23,7 +24,7 @@ func (m Migration) AttachmentFolderPath() string {
 	return config.InsightsGitPath
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	orm, err := postgres.NewClient(&postgres.Config{
 		Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,

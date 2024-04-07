@@ -236,6 +236,7 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 		}
 
 		src, err := NewAWSAutoOnboardedConnectionV2(
+			ctx,
 			org,
 			h.logger,
 			account,

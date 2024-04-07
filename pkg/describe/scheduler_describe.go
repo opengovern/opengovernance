@@ -650,7 +650,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
 			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 		}
-		invokeOutput, err := s.lambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+		invokeOutput, err := s.lambdaClient.Invoke(ctx, &lambda.InvokeInput{
 			FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
 			LogType:        types.LogTypeTail,
 			Payload:        lambdaPayload,

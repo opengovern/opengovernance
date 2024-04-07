@@ -41,7 +41,7 @@ func (t *EnsureCredentialOnboarded) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateMasterCredential, api.Transaction_CreateHelmRelease}
 }
 
-func (t *EnsureCredentialOnboarded) ApplyIdempotent(workspace db.Workspace) error {
+func (t *EnsureCredentialOnboarded) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	creds, err := t.db.ListCredentialsByWorkspaceID(workspace.ID)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (t *EnsureCredentialOnboarded) ApplyIdempotent(workspace db.Workspace) erro
 
 	for _, cred := range creds {
 		if !cred.IsCreated {
-			err := t.addCredentialToWorkspace(workspace, cred)
+			err := t.addCredentialToWorkspace(ctx, workspace, cred)
 			if err != nil {
 				return err
 			}
@@ -81,7 +81,7 @@ func (t *EnsureCredentialOnboarded) RollbackIdempotent(workspace db.Workspace) e
 	return nil
 }
 
-func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(workspace db.Workspace, cred db.Credential) error {
+func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(ctx context.Context, workspace db.Workspace, cred db.Credential) error {
 	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
 	onboardClient := client.NewOnboardServiceClient(onboardURL)
 
@@ -91,7 +91,7 @@ func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(workspace db.Worksp
 		return err
 	}
 
-	result, err := t.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+	result, err := t.kmsClient.Decrypt(ctx, &kms.DecryptInput{
 		CiphertextBlob:      decoded,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 		KeyId:               &t.cfg.KMSKeyARN,
