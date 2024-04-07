@@ -49,21 +49,21 @@ func (t *CreateHelmRelease) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateIngestionPipeline, api.Transaction_CreateServiceAccountRoles}
 }
 
-func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
-	helmRelease, err := helm.FindHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace)
+func (t *CreateHelmRelease) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
+	helmRelease, err := helm.FindHelmRelease(ctx, t.cfg, t.kubeClient, workspace)
 	if err != nil {
 		return fmt.Errorf("findHelmRelease: %w", err)
 	}
 
 	if helmRelease == nil {
-		err := t.createHelmRelease(workspace)
+		err := t.createHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("createHelmRelease: %w", err)
 		}
 		return ErrTransactionNeedsTime
 	}
 
-	err = t.ensureSettingsSynced(context.Background(), workspace, helmRelease)
+	err = t.ensureSettingsSynced(ctx, workspace, helmRelease)
 	if err != nil {
 		return err
 	}
@@ -74,13 +74,13 @@ func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
 		meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
 		if !helmRelease.Spec.Suspend {
 			helmRelease.Spec.Suspend = true
-			err = t.kubeClient.Update(context.Background(), helmRelease)
+			err = t.kubeClient.Update(ctx, helmRelease)
 			if err != nil {
 				return fmt.Errorf("suspend helmrelease: %v", err)
 			}
 		} else {
 			helmRelease.Spec.Suspend = false
-			err = t.kubeClient.Update(context.Background(), helmRelease)
+			err = t.kubeClient.Update(ctx, helmRelease)
 			if err != nil {
 				return fmt.Errorf("suspend helmrelease: %v", err)
 			}
@@ -91,25 +91,25 @@ func (t *CreateHelmRelease) ApplyIdempotent(workspace db.Workspace) error {
 	return ErrTransactionNeedsTime
 }
 
-func (t *CreateHelmRelease) RollbackIdempotent(workspace db.Workspace) error {
-	helmRelease, err := helm.FindHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace)
+func (t *CreateHelmRelease) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
+	helmRelease, err := helm.FindHelmRelease(ctx, t.cfg, t.kubeClient, workspace)
 	if err != nil {
 		return fmt.Errorf("find helm release: %w", err)
 	}
 
 	if helmRelease != nil {
-		if err := helm.DeleteHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace); err != nil {
+		if err := helm.DeleteHelmRelease(ctx, t.cfg, t.kubeClient, workspace); err != nil {
 			return fmt.Errorf("delete helm release: %w", err)
 		}
 		return ErrTransactionNeedsTime
 	}
 
-	namespace, err := t.findTargetNamespace(context.Background(), workspace.ID)
+	namespace, err := t.findTargetNamespace(ctx, workspace.ID)
 	if err != nil {
 		return fmt.Errorf("find target namespace: %w", err)
 	}
 	if namespace != nil {
-		if err := t.deleteTargetNamespace(context.Background(), workspace.ID); err != nil {
+		if err := t.deleteTargetNamespace(ctx, workspace.ID); err != nil {
 			return fmt.Errorf("delete target namespace: %w", err)
 		}
 		return ErrTransactionNeedsTime
@@ -139,7 +139,7 @@ func (t *CreateHelmRelease) ensureSettingsSynced(ctx context.Context, workspace 
 	return nil
 }
 
-func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
+func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.Workspace) error {
 	var userARN string
 	if workspace.AWSUserARN != nil {
 		userARN = *workspace.AWSUserARN
@@ -186,7 +186,7 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 			return err
 		}
 
-		result, err := t.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
+		result, err := t.kmsClient.Decrypt(ctx, &kms.DecryptInput{
 			CiphertextBlob:      decoded,
 			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 			KeyId:               &t.cfg.KMSKeyARN,
@@ -211,7 +211,7 @@ func (t *CreateHelmRelease) createHelmRelease(workspace db.Workspace) error {
 		return err
 	}
 
-	if err := helm.CreateHelmRelease(context.Background(), t.cfg, t.kubeClient, workspace, valuesJson); err != nil {
+	if err := helm.CreateHelmRelease(ctx, t.cfg, t.kubeClient, workspace, valuesJson); err != nil {
 		return fmt.Errorf("create helm release: %w", err)
 	}
 
@@ -251,8 +251,7 @@ func (t *CreateHelmRelease) deleteHelmRelease(ctx context.Context, workspace db.
 	return t.kubeClient.Delete(ctx, &helmRelease)
 }
 
-func (t *CreateHelmRelease) UpdateWorkspaceSettings(helmRelease *v2beta1.HelmRelease, settings types3.KaytuWorkspaceSettings) error {
-	ctx := context.Background()
+func (t *CreateHelmRelease) UpdateWorkspaceSettings(ctx context.Context, helmRelease *v2beta1.HelmRelease, settings types3.KaytuWorkspaceSettings) error {
 	b, err := json.Marshal(settings)
 	if err != nil {
 		return fmt.Errorf("marshalling values: %w", err)

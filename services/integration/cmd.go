@@ -48,6 +48,7 @@ func Command() *cobra.Command {
 			cmd.SilenceUsage = true
 
 			return httpserver.RegisterAndStart(
+				cmd.Context(),
 				logger,
 				cnf.Http.Address,
 				api.New(logger, d, i, m, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey),

@@ -76,7 +76,7 @@ type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
@@ -161,7 +161,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 
 	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
-	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
 		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
@@ -206,7 +206,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.C
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) == 0 {
 		return nil, fmt.Errorf("resource collections cannot be empty")
 	}
@@ -293,7 +293,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 
 	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
-	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
 		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
@@ -339,14 +339,14 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger *zap.L
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrend(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) > 0 {
-		return FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(logger, client, benchmarkIDs, connectionIDs, resourceCollections, from, to)
+		return FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx, logger, client, benchmarkIDs, connectionIDs, resourceCollections, from, to)
 	}
-	return FetchBenchmarkSummaryTrendByConnectionID(logger, client, benchmarkIDs, connectionIDs, from, to)
+	return FetchBenchmarkSummaryTrendByConnectionID(ctx, logger, client, benchmarkIDs, connectionIDs, from, to)
 }
 
-func FetchBenchmarkSummaryTrendByConnectionIDPerControl(logger *zap.Logger, client kaytu.Client,
+func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, controlIDs []string, connectionIDs []string, from, to time.Time, stepDuration time.Duration) (map[string][]ControlTrendDatapoint, error) {
 	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
@@ -449,7 +449,7 @@ func FetchBenchmarkSummaryTrendByConnectionIDPerControl(logger *zap.Logger, clie
 
 	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
-	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
 		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
@@ -532,7 +532,7 @@ type ListBenchmarkSummariesAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
+func ListBenchmarkSummariesAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string,
 	connectionIDs []string, resourceCollections []string,
 	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
@@ -628,9 +628,9 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 
 	var response ListBenchmarkSummariesAtTimeResponse
 	if fetchFullObject {
-		err = client.Search(context.Background(), idx, string(query), &response)
+		err = client.Search(ctx, idx, string(query), &response)
 	} else {
-		err = client.SearchWithFilterPath(context.Background(), idx, string(query), pathFilters, &response)
+		err = client.SearchWithFilterPath(ctx, idx, string(query), pathFilters, &response)
 	}
 	if err != nil {
 		return nil, err
@@ -657,7 +657,7 @@ type BenchmarkSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
+func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
 	includes := []string{"Connections.Connections", "EvaluatedAtEpoch"}
 	pathFilters := make([]string, 0, 2)
 	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Connections.Connections.*.Result")
@@ -699,7 +699,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 
 	logger.Info("BenchmarkConnectionSummary", zap.String("query", string(queryBytes)))
 	var resp BenchmarkSummaryResponse
-	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -710,7 +710,7 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 	return nil, 0, nil
 }
 
-func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string, connectionIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
+func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkID string, connectionIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
 	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
@@ -768,7 +768,7 @@ func BenchmarkControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkI
 
 	logger.Info("BenchmarkControlSummary", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var resp BenchmarkSummaryResponse
-	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex,
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex,
 		string(queryBytes), pathFilters, &resp)
 	if err != nil {
 		return nil, -1, err
@@ -821,7 +821,7 @@ type BenchmarksControlSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarksControlSummary(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
+func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
 	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
@@ -881,7 +881,7 @@ func BenchmarksControlSummary(logger *zap.Logger, client kaytu.Client, benchmark
 
 	logger.Info("BenchmarksControlSummary", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var resp BenchmarksControlSummaryResponse
-	err = client.SearchWithFilterPath(context.Background(), types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
 	if err != nil {
 		logger.Error("BenchmarksControlSummary", zap.Error(err))
 		return nil, nil, err

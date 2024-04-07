@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
@@ -24,7 +25,7 @@ func (m Migration) IsGitBased() bool {
 	return false
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	if err := OnboardMigration(conf, logger, m.AttachmentFolderPath()+"/onboard.json"); err != nil {
 		return err
 	}

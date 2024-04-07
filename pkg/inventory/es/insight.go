@@ -120,7 +120,7 @@ func BuildFindInsightResultsQuery(connectors []source.Type, resourceCollections 
 	return res
 }
 
-func FetchInsightValueAtTime(client kaytu.Client, t time.Time,
+func FetchInsightValueAtTime(ctx context.Context, client kaytu.Client, t time.Time,
 	connectors []source.Type, connectionIDs, resourceCollections []string, insightIds []uint, useHistoricalData bool,
 ) (map[uint][]es.InsightResource, error) {
 	idx := es.InsightsIndex
@@ -176,13 +176,13 @@ func FetchInsightValueAtTime(client kaytu.Client, t time.Time,
 
 	if isStack {
 		fmt.Println("query=", string(queryJson), "index=", es.StacksInsightsIndex)
-		err = client.Search(context.Background(), es.StacksInsightsIndex, string(queryJson), &response)
+		err = client.Search(ctx, es.StacksInsightsIndex, string(queryJson), &response)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		fmt.Println("query=", string(queryJson), "index=", idx)
-		err = client.Search(context.Background(), idx, string(queryJson), &response)
+		err = client.Search(ctx, idx, string(queryJson), &response)
 		if err != nil {
 			return nil, err
 		}
@@ -213,7 +213,7 @@ func FetchInsightValueAtTime(client kaytu.Client, t time.Time,
 	return result, nil
 }
 
-func FetchInsightValueAfter(client kaytu.Client, t time.Time, connectors []source.Type, connectionIDs []string, resourceCollections []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
+func FetchInsightValueAfter(ctx context.Context, client kaytu.Client, t time.Time, connectors []source.Type, connectionIDs []string, resourceCollections []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
 	idx := es.InsightsIndex
 	if len(resourceCollections) > 0 {
 		idx = es.ResourceCollectionsInsightsIndex
@@ -271,7 +271,7 @@ func FetchInsightValueAfter(client kaytu.Client, t time.Time, connectors []sourc
 		idx = es.StacksInsightsIndex
 	}
 	fmt.Println("query=", string(queryJson), "index=", idx)
-	err = client.Search(context.Background(), idx, string(queryJson), &response)
+	err = client.Search(ctx, idx, string(queryJson), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ type InsightHistoryResultQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchInsightAggregatedPerQueryValuesBetweenTimes(client kaytu.Client, startTime time.Time, endTime time.Time, datapointCount int, connectors []source.Type, connectionIDs []string, resourceCollections []string, insightIds []uint) (map[uint]map[int][]es.InsightResource, error) {
+func FetchInsightAggregatedPerQueryValuesBetweenTimes(ctx context.Context, client kaytu.Client, startTime time.Time, endTime time.Time, datapointCount int, connectors []source.Type, connectionIDs []string, resourceCollections []string, insightIds []uint) (map[uint]map[int][]es.InsightResource, error) {
 	idx := es.InsightsIndex
 	if len(resourceCollections) > 0 {
 		idx = es.ResourceCollectionsInsightsIndex
@@ -404,7 +404,7 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client kaytu.Client, start
 		idx = es.StacksInsightsIndex
 	}
 	fmt.Println("query=", string(queryJson), "index=", idx)
-	err = client.Search(context.Background(), idx, string(queryJson), &response)
+	err = client.Search(ctx, idx, string(queryJson), &response)
 	if err != nil {
 		return nil, err
 	}

@@ -12,17 +12,16 @@ import (
 //go:embed management_policy.json
 var managementPolicyStr string
 
-func CreateManagement(workspaceID string) error {
+func CreateManagement(ctx context.Context, workspaceID string) error {
 	userName := fmt.Sprintf("jump-%s", workspaceID)
 	policyName := fmt.Sprintf("policy-jump-%s", workspaceID)
 
 	var cfg aws.Config
-	cfg, err := kaytuAws.GetConfig(context.Background(), "", "", "", "", nil)
+	cfg, err := kaytuAws.GetConfig(ctx, "", "", "", "", nil)
 	if err != nil {
 		return err
 	}
 
-	ctx := context.Background()
 	iamClient := iam.NewFromConfig(cfg)
 
 	user, err := iamClient.CreateUser(ctx, &iam.CreateUserInput{UserName: aws.String(userName)})

@@ -189,7 +189,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			return 0, err
 		}
 		closePaginator := func() {
-			if err := paginator.Close(context.Background()); err != nil {
+			if err := paginator.Close(ctx); err != nil {
 				w.logger.Error("failed to close paginator", zap.Error(err))
 			}
 		}
@@ -376,8 +376,8 @@ func (w *Worker) setOldFindingsInactive(jobID uint,
 	connectionId *string,
 	benchmarkID,
 	controlID string,
+	ctx context.Context,
 ) error {
-	ctx := context.Background()
 	idx := types.FindingsIndex
 	var filters []map[string]any
 	mustFilters := make([]map[string]any, 0, 4)

@@ -49,6 +49,7 @@ func (j *Job) Do(
 	inventoryClient inventoryClient.InventoryServiceClient,
 	logger *zap.Logger,
 	config config.WorkerConfig,
+	ctx context.Context,
 ) JobResult {
 	result := JobResult{
 		JobID:  j.JobID,
@@ -63,7 +64,9 @@ func (j *Job) Do(
 
 	encodedResourceCollectionFilters := make(map[string]string)
 	if len(j.ResourceCollectionIDs) > 0 {
-		rcs, err := inventoryClient.ListResourceCollectionsMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
+		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2.Ctx = ctx
+		rcs, err := inventoryClient.ListResourceCollectionsMetadata(ctx2,
 			j.ResourceCollectionIDs)
 		if err != nil {
 			return fail(err)
@@ -77,27 +80,27 @@ func (j *Job) Do(
 		}
 	}
 
-	err := steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, "all")
+	err := steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, "all")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", "all"))
 		return fail(err)
 	}
-	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
 
-	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyClientType, "analytics")
+	err = steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "analytics")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "analytics"))
 		return fail(err)
 	}
-	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 
-	if err := j.Run(jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, logger, config); err != nil {
+	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, logger, config); err != nil {
 		fail(err)
 	}
 	return result
 }
 
-func (j *Job) Run(jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
+func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics([]db.AnalyticMetricStatus{db.AnalyticMetricStatusActive, db.AnalyticMetricStatusInvisible})
 	if err != nil {
@@ -134,6 +137,7 @@ func (j *Job) Run(jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFil
 			}
 
 			err = j.DoAssetMetric(
+				ctx,
 				jq,
 				steampipeDB,
 				encodedResourceCollectionFilters,
@@ -181,6 +185,7 @@ func (j *Job) Run(jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFil
 			}
 
 			err = j.DoSpendMetric(
+				ctx,
 				jq,
 				steampipeDB,
 				onboardClient,
@@ -198,7 +203,7 @@ func (j *Job) Run(jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFil
 	return nil
 }
 
-func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Database, metric db.AnalyticMetric,
+func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steampipeDB *steampipe.Database, metric db.AnalyticMetric,
 	connectionCache map[string]onboardApi.Connection,
 	status []describeApi.DescribeStatus,
 	onboardClient onboardClient.OnboardServiceClient) (
@@ -207,7 +212,7 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 	error,
 ) {
 	logger.Info("assets ==== ", zap.String("query", metric.Query))
-	res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
+	res, err := steampipeDB.QueryAll(ctx, metric.Query)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -245,7 +250,9 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 		if cached, ok := connectionCache[connectionId]; ok {
 			conn = &cached
 		} else {
-			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionId)
+			ctx2 := &httpclient.Context{UserRole: authApi.AdminRole}
+			ctx2.Ctx = ctx
+			conn, err = onboardClient.GetSource(ctx2, connectionId)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
 					continue
@@ -315,7 +322,7 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 		}, nil
 }
 
-func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
@@ -341,13 +348,13 @@ func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, en
 		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectorMetricTrendSummaryResult)
 
 		for rcId, encodedFilter := range encodedResourceCollectionFilters {
-			err := steampipeDB.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, encodedFilter)
+			err := steampipeDB.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters, encodedFilter)
 			if err != nil {
 				logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err),
 					zap.String("resource_collection", rcId))
 				return err
 			}
-			perConnection, perConnector, err := j.DoSingleAssetMetric(logger, steampipeDB, metric, connectionCache, status, onboardClient)
+			perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient)
 			if err != nil {
 				logger.Error("failed to do single asset metric for rc", zap.Error(err), zap.String("metric", metric.ID), zap.String("resource_collection_filters", encodedFilter))
 				return err
@@ -356,12 +363,12 @@ func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, en
 			connectorMetricTrendSummary.ResourceCollections[rcId] = *perConnector
 		}
 	} else {
-		err := steampipeDB.UnsetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters)
+		err := steampipeDB.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 		if err != nil {
 			logger.Error("failed to unset steampipe context config for resource collection filters", zap.Error(err))
 			return err
 		}
-		perConnection, perConnector, err := j.DoSingleAssetMetric(logger, steampipeDB, metric, connectionCache, status, onboardClient)
+		perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient)
 		if err != nil {
 			logger.Error("failed to do single asset metric", zap.Error(err), zap.String("metric", metric.ID))
 			return err
@@ -392,14 +399,14 @@ func (j *Job) DoAssetMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, en
 	return nil
 }
 
-func (j *Job) DoSpendMetric(jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
 
 	logger.Info("spend ==== ", zap.String("query", query))
-	res, err := steampipeDB.QueryAll(context.TODO(), query)
+	res, err := steampipeDB.QueryAll(ctx, query)
 	if err != nil {
 		return err
 	}

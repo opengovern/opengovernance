@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
@@ -43,7 +44,7 @@ func (m Migration) AttachmentFolderPath() string {
 	return "/inventory-data-config"
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	orm, err := postgres.NewClient(&postgres.Config{
 		Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,

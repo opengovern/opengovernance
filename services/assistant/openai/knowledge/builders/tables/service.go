@@ -45,7 +45,7 @@ type Def struct {
 	Tables []Table `yaml:"Tables"`
 }
 
-func ExtractTableFiles(logger *zap.Logger) (map[string]string, error) {
+func ExtractTableFiles(ctx context.Context, logger *zap.Logger) (map[string]string, error) {
 	tableCategories := map[string][]string{}
 	catArr := strings.Split(categoriesStr, "\n")
 	for _, i := range catArr {
@@ -66,7 +66,7 @@ func ExtractTableFiles(logger *zap.Logger) (map[string]string, error) {
 	files := map[string]string{}
 	var tableNames []string
 
-	tables := extractTables(logger, kaytu.Plugin(context.Background()).TableMap, nil, nil, tableCategories)
+	tables := extractTables(ctx, logger, kaytu.Plugin(ctx).TableMap, nil, nil, tableCategories)
 	t, err := yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func ExtractTableFiles(logger *zap.Logger) (map[string]string, error) {
 		tableNames = append(tableNames, tb.Name)
 	}
 
-	tables = extractTables(logger, aws.Plugin(context.Background()).TableMap, steampipeAws.AWSReverseMap, steampipeAws.AWSDescriptionMap, tableCategories)
+	tables = extractTables(ctx, logger, aws.Plugin(ctx).TableMap, steampipeAws.AWSReverseMap, steampipeAws.AWSDescriptionMap, tableCategories)
 	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func ExtractTableFiles(logger *zap.Logger) (map[string]string, error) {
 		tableNames = append(tableNames, tb.Name)
 	}
 
-	tables = extractTables(logger, azure.Plugin(context.Background()).TableMap, steampipeAzure.AzureReverseMap, steampipeAzure.AzureDescriptionMap, tableCategories)
+	tables = extractTables(ctx, logger, azure.Plugin(ctx).TableMap, steampipeAzure.AzureReverseMap, steampipeAzure.AzureDescriptionMap, tableCategories)
 	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func ExtractTableFiles(logger *zap.Logger) (map[string]string, error) {
 		tableNames = append(tableNames, tb.Name)
 	}
 
-	tables = extractTables(logger, azuread.Plugin(context.Background()).TableMap, steampipeAzure.AzureReverseMap, steampipeAzure.AzureDescriptionMap, tableCategories)
+	tables = extractTables(ctx, logger, azuread.Plugin(ctx).TableMap, steampipeAzure.AzureReverseMap, steampipeAzure.AzureDescriptionMap, tableCategories)
 	t, err = yaml.Marshal(tables)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func extractFromJsonField(transforms *transform.ColumnTransforms) string {
 	return strings.Join(res, ",")
 }
 
-func extractTables(logger *zap.Logger, tableMap map[string]*plugin.Table,
+func extractTables(ctx context.Context, logger *zap.Logger, tableMap map[string]*plugin.Table,
 	tableToResourceTypeMap map[string]string,
 	resourceTypeToTypeMap map[string]any, categories map[string][]string) Def {
 	var tables []Table
@@ -190,8 +190,8 @@ func extractTables(logger *zap.Logger, tableMap map[string]*plugin.Table,
 					continue
 				}
 				//descObjRecursiveZeroValue := utils.GetNestedZeroValue(descObj)
-				ctx := context.WithValue(context.Background(), context_key.Logger, hclog.NewNullLogger())
-				colObj, err := col.Transform.Execute(ctx, &transform.TransformData{
+				ctx2 := context.WithValue(ctx, context_key.Logger, hclog.NewNullLogger())
+				colObj, err := col.Transform.Execute(ctx2, &transform.TransformData{
 					HydrateItem: descObj,
 					ColumnName:  column.Name,
 				})

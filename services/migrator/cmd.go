@@ -31,7 +31,7 @@ func Command() *cobra.Command {
 				return fmt.Errorf("failed to initialize job: %w", err)
 			}
 
-			return j.Run()
+			return j.Run(cmd.Context())
 		},
 	}
 

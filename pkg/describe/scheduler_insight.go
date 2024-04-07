@@ -19,18 +19,18 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Scheduler) RunInsightJobScheduler() {
+func (s *Scheduler) RunInsightJobScheduler(ctx context.Context) {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		s.scheduleInsightJob(false)
+		s.scheduleInsightJob(ctx, false)
 	}
 }
 
-func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
+func (s *Scheduler) scheduleInsightJob(ctx context.Context, forceCreate bool) {
 	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: authAPI.ViewerRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of insights", zap.Error(err))
@@ -51,7 +51,7 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 
 	for _, ins := range insights {
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		_, err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector, nil)
+		_, err := s.runInsightJob(ctx, forceCreate, ins, id, id, ins.Connector, nil)
 		if err != nil {
 			s.logger.Error("Failed to run InsightJob", zap.Error(err))
 			InsightJobsCount.WithLabelValues("failure").Inc()
@@ -61,7 +61,7 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 	}
 }
 
-func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceAPI.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) (uint, error) {
+func (s *Scheduler) runInsightJob(ctx context.Context, forceCreate bool, ins complianceAPI.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) (uint, error) {
 	lastJob, err := s.db.GetLastInsightJobForResourceCollection(ins.ID, srcID, resourceCollectionId)
 	if err != nil {
 		return 0, err
@@ -76,7 +76,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceAPI.Insight, s
 			return 0, err
 		}
 
-		if err := enqueueInsightJobs(s.jq, job, ins); err != nil {
+		if err := enqueueInsightJobs(ctx, s.jq, job, ins); err != nil {
 			job.Status = insightAPI.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
 			s.db.UpdateInsightJobStatus(job)
@@ -87,7 +87,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceAPI.Insight, s
 	return 0, nil
 }
 
-func enqueueInsightJobs(jq *jq.JobQueue, job model.InsightJob, ins complianceAPI.Insight) error {
+func enqueueInsightJobs(ctx context.Context, jq *jq.JobQueue, job model.InsightJob, ins complianceAPI.Insight) error {
 	bytes, err := json.Marshal(insight.Job{
 		JobID:                job.ID,
 		InsightID:            job.InsightID,
@@ -106,7 +106,7 @@ func enqueueInsightJobs(jq *jq.JobQueue, job model.InsightJob, ins complianceAPI
 	}
 
 	if err := jq.Produce(
-		context.Background(),
+		ctx,
 		insight.JobsQueueName,
 		bytes,
 		fmt.Sprintf("job-%d", job.ID),

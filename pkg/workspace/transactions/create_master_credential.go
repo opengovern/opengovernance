@@ -41,9 +41,9 @@ func (t *CreateMasterCredential) Requirements() []api.TransactionID {
 	return nil
 }
 
-func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
+func (t *CreateMasterCredential) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
-	iamUser, err := t.iam.CreateUser(context.Background(), &iam.CreateUserInput{
+	iamUser, err := t.iam.CreateUser(ctx, &iam.CreateUserInput{
 		UserName:            aws.String(userName),
 		Path:                nil,
 		PermissionsBoundary: nil,
@@ -53,7 +53,7 @@ func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 		if !strings.Contains(err.Error(), "EntityAlreadyExists") {
 			return err
 		}
-		u, err := t.iam.GetUser(context.Background(), &iam.GetUserInput{UserName: aws.String(userName)})
+		u, err := t.iam.GetUser(ctx, &iam.GetUserInput{UserName: aws.String(userName)})
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 			User: u.User,
 		}
 	}
-	policy, err := t.iam.CreatePolicy(context.Background(), &iam.CreatePolicyInput{
+	policy, err := t.iam.CreatePolicy(ctx, &iam.CreatePolicyInput{
 		PolicyDocument: aws.String(`{
 	"Version": "2012-10-17",
 	"Statement": {
@@ -77,18 +77,18 @@ func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 			return err
 		}
 	} else {
-		_, err = t.iam.AttachUserPolicy(context.Background(), &iam.AttachUserPolicyInput{
+		_, err = t.iam.AttachUserPolicy(ctx, &iam.AttachUserPolicyInput{
 			PolicyArn: policy.Policy.Arn,
 			UserName:  aws.String(userName),
 		})
 	}
 
-	key, err := t.iam.CreateAccessKey(context.Background(), &iam.CreateAccessKeyInput{
+	key, err := t.iam.CreateAccessKey(ctx, &iam.CreateAccessKeyInput{
 		UserName: aws.String(userName),
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "LimitExceeded") {
-			accessKeys, err := t.iam.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
+			accessKeys, err := t.iam.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
 				UserName: aws.String(userName),
 			})
 			if err != nil {
@@ -98,7 +98,7 @@ func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 				accessKeys = &iam.ListAccessKeysOutput{}
 			}
 			for _, accessKey := range accessKeys.AccessKeyMetadata {
-				_, err := t.iam.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
+				_, err := t.iam.DeleteAccessKey(ctx, &iam.DeleteAccessKeyInput{
 					UserName:    aws.String(userName),
 					AccessKeyId: accessKey.AccessKeyId,
 				})
@@ -116,7 +116,7 @@ func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 		return err
 	}
 
-	result, err := t.kms.Encrypt(context.TODO(), &kms.EncryptInput{
+	result, err := t.kms.Encrypt(ctx, &kms.EncryptInput{
 		KeyId:               &t.cfg.KMSKeyARN,
 		Plaintext:           js,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
@@ -145,10 +145,10 @@ func (t *CreateMasterCredential) ApplyIdempotent(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) error {
+func (t *CreateMasterCredential) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	if workspace.AWSUniqueId != nil {
 		userName := fmt.Sprintf("kaytu-user-%s", *workspace.AWSUniqueId)
-		accessKeys, err := t.iam.ListAccessKeys(context.Background(), &iam.ListAccessKeysInput{
+		accessKeys, err := t.iam.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
 			UserName: aws.String(userName),
 		})
 		if err != nil {
@@ -158,7 +158,7 @@ func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) erro
 			accessKeys = &iam.ListAccessKeysOutput{}
 		}
 		for _, accessKey := range accessKeys.AccessKeyMetadata {
-			_, err := t.iam.DeleteAccessKey(context.Background(), &iam.DeleteAccessKeyInput{
+			_, err := t.iam.DeleteAccessKey(ctx, &iam.DeleteAccessKeyInput{
 				UserName:    aws.String(userName),
 				AccessKeyId: accessKey.AccessKeyId,
 			})
@@ -167,7 +167,7 @@ func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) erro
 			}
 		}
 
-		policies, err := t.iam.ListAttachedUserPolicies(context.Background(), &iam.ListAttachedUserPoliciesInput{
+		policies, err := t.iam.ListAttachedUserPolicies(ctx, &iam.ListAttachedUserPoliciesInput{
 			UserName: aws.String(userName),
 		})
 		if err != nil {
@@ -178,7 +178,7 @@ func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) erro
 		}
 
 		for _, policy := range policies.AttachedPolicies {
-			_, err = t.iam.DetachUserPolicy(context.Background(), &iam.DetachUserPolicyInput{
+			_, err = t.iam.DetachUserPolicy(ctx, &iam.DetachUserPolicyInput{
 				UserName:  aws.String(userName),
 				PolicyArn: policy.PolicyArn,
 			})
@@ -186,7 +186,7 @@ func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) erro
 				return err
 			}
 
-			_, err = t.iam.DeleteUserPolicy(context.Background(), &iam.DeleteUserPolicyInput{
+			_, err = t.iam.DeleteUserPolicy(ctx, &iam.DeleteUserPolicyInput{
 				PolicyName: policy.PolicyName,
 				UserName:   aws.String(userName),
 			})
@@ -195,7 +195,7 @@ func (t *CreateMasterCredential) RollbackIdempotent(workspace db.Workspace) erro
 			}
 		}
 
-		_, err = t.iam.DeleteUser(context.Background(), &iam.DeleteUserInput{
+		_, err = t.iam.DeleteUser(ctx, &iam.DeleteUserInput{
 			UserName: aws.String(userName),
 		})
 		if err != nil {

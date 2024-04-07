@@ -37,9 +37,9 @@ func NewQueryAssistantActions(logger *zap.Logger, oc *openai.Service, i client.I
 	}, nil
 }
 
-func (s *QueryAssistantActionsService) RunActions() {
+func (s *QueryAssistantActionsService) RunActions(ctx context.Context) {
 	for {
-		err := s.run()
+		err := s.run(ctx)
 		if err != nil {
 			fmt.Println("failed to run due to", err)
 		}
@@ -47,8 +47,8 @@ func (s *QueryAssistantActionsService) RunActions() {
 	}
 }
 
-func (s *QueryAssistantActionsService) run() error {
-	runs, err := s.runRepo.List(context.Background(), utils.GetPointer(model.AssistantTypeQuery))
+func (s *QueryAssistantActionsService) run(ctx context.Context) error {
+	runs, err := s.runRepo.List(ctx, utils.GetPointer(model.AssistantTypeQuery))
 	if err != nil {
 		return err
 	}
@@ -62,13 +62,13 @@ func (s *QueryAssistantActionsService) run() error {
 
 		s.logger.Info("updating run status", zap.String("assistant_type", model.AssistantTypeQuery.String()), zap.String("run_id", runSummary.ID), zap.String("thread_id", runSummary.ThreadID), zap.String("status", string(runSummary.Status)))
 
-		run, err := s.oc.RetrieveRun(runSummary.ThreadID, runSummary.ID)
+		run, err := s.oc.RetrieveRun(ctx, runSummary.ThreadID, runSummary.ID)
 		if err != nil {
 			return err
 		}
 
 		if runSummary.UpdatedAt.Before(time.Now().Add(-15 * time.Second)) {
-			err = s.runRepo.UpdateStatus(context.Background(), run.ID, run.ThreadID, run.Status)
+			err = s.runRepo.UpdateStatus(ctx, run.ID, run.ThreadID, run.Status)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func (s *QueryAssistantActionsService) run() error {
 				}
 
 				_, err := s.oc.Client().SubmitToolOutputs(
-					context.Background(),
+					ctx,
 					run.ThreadID,
 					run.ID,
 					openai2.SubmitToolOutputsRequest{

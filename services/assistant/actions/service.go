@@ -1,5 +1,7 @@
 package actions
 
+import "context"
+
 type Service interface {
-	RunActions()
+	RunActions(ctx context.Context)
 }

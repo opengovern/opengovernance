@@ -74,7 +74,7 @@ type Server struct {
 	kms          *kms.Client
 }
 
-func NewServer(cfg config.Config) (*Server, error) {
+func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 	s := &Server{
 		cfg: cfg,
 	}
@@ -111,12 +111,12 @@ func NewServer(cfg config.Config) (*Server, error) {
 
 	s.logger = logger
 
-	s.StateManager, err = statemanager.New(cfg)
+	s.StateManager, err = statemanager.New(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	awsCfg, err := config2.LoadDefaultConfig(context.Background())
+	awsCfg, err := config2.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
@@ -158,8 +158,8 @@ func (s *Server) Register(e *echo.Echo) {
 	costEstimatorGroup.GET("/azure", httpserver.AuthorizeHandler(s.GetAzureCost, authapi.ViewerRole))
 }
 
-func (s *Server) Start() error {
-	go s.StateManager.StartReconciler()
+func (s *Server) Start(ctx context.Context) error {
+	go s.StateManager.StartReconciler(ctx)
 
 	s.e.Logger.SetLevel(log.DEBUG)
 	s.e.Logger.Infof("workspace service is started on %s", s.cfg.Http.Address)
@@ -655,10 +655,9 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			return err
 		}
 
-		ctx2 := context.Background()
 		it := subClient.NewListPager(nil)
 		for it.More() {
-			page, err := it.NextPage(ctx2)
+			page, err := it.NextPage(ctx.Request().Context())
 			if err != nil {
 				return err
 			}

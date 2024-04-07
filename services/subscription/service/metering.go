@@ -48,9 +48,9 @@ func NewMeteringService(
 	return svc
 }
 
-func (svc MeteringService) Start() {
+func (svc MeteringService) Start(ctx context.Context) {
 	utils.EnsureRunGoroutine(func() {
-		svc.RunEnsurePublishing()
+		svc.RunEnsurePublishing(ctx)
 	})
 }
 
@@ -147,7 +147,7 @@ func (svc MeteringService) RunChecks() {
 	}
 }
 
-func (svc MeteringService) RunEnsurePublishing() {
+func (svc MeteringService) RunEnsurePublishing(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Minute)
 	for {
 		select {
@@ -162,7 +162,7 @@ func (svc MeteringService) RunEnsurePublishing() {
 			}
 			for i := 0; i < len(unpublishedMeters); i += 100 {
 				meters := unpublishedMeters[i:min(i+100, len(unpublishedMeters))]
-				err = svc.sendMetersToFirehose(context.TODO(), meters)
+				err = svc.sendMetersToFirehose(ctx, meters)
 				if err != nil {
 					svc.logger.Error("failed to send meters to firehose", zap.Error(err))
 					break

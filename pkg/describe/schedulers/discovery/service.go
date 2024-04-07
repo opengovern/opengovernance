@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"context"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
@@ -30,8 +31,8 @@ func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient clie
 	}
 }
 
-func (s *Scheduler) Run() {
+func (s *Scheduler) Run(ctx context.Context) {
 	utils.EnsureRunGoroutine(func() {
-		s.OldResourceDeleter()
+		s.OldResourceDeleter(ctx)
 	})
 }

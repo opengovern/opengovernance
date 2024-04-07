@@ -36,7 +36,7 @@ type FetchFindingEventsByFindingIDResponse struct {
 	} `json:"hits"`
 }
 
-func FetchFindingEventsByFindingIDs(logger *zap.Logger, client kaytu.Client, findingID []string) ([]types.FindingEvent, error) {
+func FetchFindingEventsByFindingIDs(ctx context.Context, logger *zap.Logger, client kaytu.Client, findingID []string) ([]types.FindingEvent, error) {
 	request := map[string]any{
 		"query": map[string]any{
 			"bool": map[string]any{
@@ -62,7 +62,7 @@ func FetchFindingEventsByFindingIDs(logger *zap.Logger, client kaytu.Client, fin
 	logger.Info("Fetching finding events", zap.String("request", string(jsonReq)), zap.String("index", types.FindingEventsIndex))
 
 	var resp FetchFindingEventsByFindingIDResponse
-	err = client.Search(context.Background(), types.FindingEventsIndex, string(jsonReq), &resp)
+	err = client.Search(ctx, types.FindingEventsIndex, string(jsonReq), &resp)
 	if err != nil {
 		logger.Error("Failed to fetch finding events", zap.Error(err), zap.String("request", string(jsonReq)), zap.String("index", types.FindingEventsIndex))
 		return nil, err
@@ -74,7 +74,7 @@ func FetchFindingEventsByFindingIDs(logger *zap.Logger, client kaytu.Client, fin
 	return result, nil
 }
 
-func FindingEventsQuery(logger *zap.Logger, client kaytu.Client,
+func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	findingIDs []string, kaytuResourceIDs []string,
 	provider []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string,
@@ -260,7 +260,7 @@ func FindingEventsQuery(logger *zap.Logger, client kaytu.Client,
 	logger.Info("FindingEventsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
 
 	var response FindingEventsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -289,7 +289,7 @@ type FindingEventFiltersAggregationResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingEventsFiltersQuery(logger *zap.Logger, client kaytu.Client,
+func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	findingIDs []string, kaytuResourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
@@ -394,7 +394,7 @@ func FindingEventsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	logger.Info("FindingEventsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
 
 	var resp FindingEventFiltersAggregationResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
 		logger.Error("FindingEventsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
@@ -403,7 +403,7 @@ func FindingEventsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	return &resp, nil
 }
 
-func FetchFindingEventByID(logger *zap.Logger, client kaytu.Client, findingID string) (*types.FindingEvent, error) {
+func FetchFindingEventByID(ctx context.Context, logger *zap.Logger, client kaytu.Client, findingID string) (*types.FindingEvent, error) {
 	query := map[string]any{
 		"query": map[string]any{
 			"term": map[string]any{
@@ -420,7 +420,7 @@ func FetchFindingEventByID(logger *zap.Logger, client kaytu.Client, findingID st
 
 	logger.Info("FetchFindingByID", zap.String("query", string(queryBytes)))
 	var resp FindingEventsQueryResponse
-	err = client.Search(context.Background(), types.FindingEventsIndex, string(queryBytes), &resp)
+	err = client.Search(ctx, types.FindingEventsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +439,7 @@ type FindingEventsCountResponse struct {
 	PitID string `json:"pit_id"`
 }
 
-func FindingEventsCount(client kaytu.Client, benchmarkIDs []string, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
+func FindingEventsCount(ctx context.Context, client kaytu.Client, benchmarkIDs []string, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
 	idx := types.FindingEventsIndex
 
 	filters := make([]map[string]any, 0)
@@ -508,7 +508,7 @@ func FindingEventsCount(client kaytu.Client, benchmarkIDs []string, conformanceS
 	}
 
 	var response FindingsCountResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return 0, err
 	}

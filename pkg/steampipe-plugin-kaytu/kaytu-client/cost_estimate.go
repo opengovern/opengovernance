@@ -333,7 +333,7 @@ func FetchLookupByResourceIDType(client Client, ctx context.Context, d *plugin.Q
 	plugin.Logger(ctx).Error("ListResourceCostEstimate Query", "query=", string(b), "index=", InventorySummaryIndex)
 
 	var response LookupQueryResponse
-	err = client.ES.Search(context.Background(), InventorySummaryIndex, string(b), &response)
+	err = client.ES.Search(ctx, InventorySummaryIndex, string(b), &response)
 	if err != nil {
 		return nil, err
 	}

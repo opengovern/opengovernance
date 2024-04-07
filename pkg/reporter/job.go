@@ -171,7 +171,7 @@ func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) Run() {
+func (s *Service) Run(ctx context.Context) {
 	fmt.Println("starting scheduling")
 	for _, q := range awsQueries {
 		s.logger.Info("loaded aws query ", zap.String("listQuery", q.SteampipeQuery))
@@ -181,7 +181,7 @@ func (s *Service) Run() {
 	}
 
 	for {
-		s.ESLivenessProbe(context.TODO())
+		s.ESLivenessProbe(ctx)
 		time.Sleep(time.Duration(s.ScheduleMinutes) * time.Minute)
 	}
 }

@@ -24,7 +24,7 @@ func (m Migration) AttachmentFolderPath() string {
 	return "/elasticsearch-index-config"
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	logger.Info("running", zap.String("es_address", conf.ElasticSearch.Address))
 
 	var externalID *string
@@ -46,7 +46,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	}
 
 	for {
-		err := elastic.Healthcheck(context.TODO())
+		err := elastic.Healthcheck(ctx)
 		if err != nil {
 			if err.Error() == "unhealthy" {
 				logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
@@ -75,7 +75,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	var finalErr error
 	for _, fp := range files {
 		if strings.Contains(fp, "_component_template") {
-			err = CreateTemplate(elastic, logger, fp)
+			err = CreateTemplate(ctx, elastic, logger, fp)
 			if err != nil {
 				finalErr = err
 				logger.Error("failed to create component template", zap.Error(err), zap.String("filepath", fp))
@@ -85,7 +85,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 
 	for _, fp := range files {
 		if !strings.Contains(fp, "_component_template") {
-			err = CreateTemplate(elastic, logger, fp)
+			err = CreateTemplate(ctx, elastic, logger, fp)
 			if err != nil {
 				finalErr = err
 				logger.Error("failed to create template", zap.Error(err), zap.String("filepath", fp))
@@ -111,7 +111,7 @@ func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
 	return finalErr
 }
 
-func CreateTemplate(es kaytu.Client, logger *zap.Logger, fp string) error {
+func CreateTemplate(ctx context.Context, es kaytu.Client, logger *zap.Logger, fp string) error {
 	fn := filepath.Base(fp)
 	idx := strings.LastIndex(fn, ".")
 	fne := fn[:idx]
@@ -122,13 +122,13 @@ func CreateTemplate(es kaytu.Client, logger *zap.Logger, fp string) error {
 	}
 
 	if strings.HasSuffix(fne, "_component_template") {
-		err = es.CreateComponentTemplate(context.TODO(), fne, string(f))
+		err = es.CreateComponentTemplate(ctx, fne, string(f))
 		if err != nil {
 			logger.Error("failed to create component template", zap.Error(err), zap.String("filepath", fp))
 			return err
 		}
 	} else {
-		err = es.CreateIndexTemplate(context.TODO(), fne, string(f))
+		err = es.CreateIndexTemplate(ctx, fne, string(f))
 		if err != nil {
 			logger.Error("failed to create index template", zap.Error(err), zap.String("filepath", fp))
 			return err

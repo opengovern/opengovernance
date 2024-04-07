@@ -87,7 +87,8 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
-	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
+	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any,
+	ctx context.Context) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
@@ -289,7 +290,7 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 	logger.Info("FindingsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
 
 	var response FindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -305,7 +306,7 @@ type FindingsCountHits struct {
 	Total kaytu.SearchTotal `json:"total"`
 }
 
-func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
+func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool, ctx context.Context) (int64, error) {
 	idx := types.FindingsIndex
 
 	filters := make([]map[string]any, 0)
@@ -345,7 +346,7 @@ func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceS
 	}
 
 	var response FindingsCountResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(queryJson), nil, &response, true)
+	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return 0, err
 	}
@@ -391,7 +392,7 @@ type FindingFiltersAggregationResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
+func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	resourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
@@ -507,7 +508,7 @@ func FindingsFiltersQuery(logger *zap.Logger, client kaytu.Client,
 	logger.Info("FindingsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
 
 	var resp FindingFiltersAggregationResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
 		logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
@@ -535,7 +536,7 @@ type FindingKPIResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIResponse, error) {
+func FindingKPIQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client) (*FindingKPIResponse, error) {
 	root := make(map[string]any)
 	root["size"] = 0
 	root["track_total_hits"] = true
@@ -577,7 +578,7 @@ func FindingKPIQuery(logger *zap.Logger, client kaytu.Client) (*FindingKPIRespon
 
 	logger.Info("FindingKPIQuery", zap.String("query", string(queryBytes)))
 	var resp FindingKPIResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(queryBytes), nil, &resp, true)
+	err = client.SearchWithTrackTotalHits(ctx, types.FindingsIndex, string(queryBytes), nil, &resp, true)
 	if err != nil {
 		logger.Error("FindingKPIQuery", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
@@ -601,7 +602,7 @@ type FindingsTopFieldResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
+func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
 	size int) (*FindingsTopFieldResponse, error) {
@@ -694,7 +695,7 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 
 	logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp FindingsTopFieldResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
@@ -721,7 +722,7 @@ type ResourceTypesFindingsSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
+func ResourceTypesFindingsSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	connectionIDs []string, benchmarkID string) (*ResourceTypesFindingsSummaryResponse, error) {
 	var filters []map[string]any
 
@@ -782,7 +783,7 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 
 	logger.Info("ResourceTypesFindingsSummary", zap.String("query", string(queryBytes)))
 	var resp ResourceTypesFindingsSummaryResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
 	return &resp, err
 }
 
@@ -810,7 +811,7 @@ type FindingsFieldCountByControlResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
+func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsFieldCountByControlResponse, error) {
 	terms := make(map[string]any)
@@ -896,7 +897,7 @@ func FindingsFieldCountByControl(logger *zap.Logger, client kaytu.Client,
 
 	logger.Info("FindingsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp FindingsFieldCountByControlResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
@@ -927,7 +928,7 @@ type FindingsConformanceStatusCountByControlPerConnectionResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsConformanceStatusCountByControlPerConnection(logger *zap.Logger, client kaytu.Client,
+func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsConformanceStatusCountByControlPerConnectionResponse, error) {
 	terms := make(map[string]any)
@@ -1016,7 +1017,7 @@ func FindingsConformanceStatusCountByControlPerConnection(logger *zap.Logger, cl
 
 	logger.Info("FindingsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp FindingsConformanceStatusCountByControlPerConnectionResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
 		logger.Error("FindingsFieldCountByControl", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
@@ -1035,7 +1036,7 @@ type FindingCountPerKaytuResourceIdsResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Client, kaytuResourceIds []string,
+func FetchFindingCountPerKaytuResourceIds(ctx context.Context, logger *zap.Logger, client kaytu.Client, kaytuResourceIds []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
 ) (map[string]int, error) {
 	var filters []map[string]any
@@ -1093,7 +1094,7 @@ func FetchFindingCountPerKaytuResourceIds(logger *zap.Logger, client kaytu.Clien
 
 	logger.Info("FetchFindingCountPerKaytuResourceIds", zap.String("query", string(queryBytes)))
 	var resp FindingCountPerKaytuResourceIdsResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -1123,7 +1124,7 @@ type FindingsPerControlForResourceIdResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingsPerControlForResourceId(logger *zap.Logger, client kaytu.Client, kaytuResourceId string) ([]types.Finding, error) {
+func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client kaytu.Client, kaytuResourceId string) ([]types.Finding, error) {
 	request := map[string]any{
 		"aggs": map[string]any{
 			"control_id_group": map[string]any{
@@ -1162,7 +1163,7 @@ func FetchFindingsPerControlForResourceId(logger *zap.Logger, client kaytu.Clien
 
 	logger.Info("FetchFindingsPerControlForResourceId", zap.String("query", string(queryBytes)))
 	var resp FindingsPerControlForResourceIdResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -1177,7 +1178,7 @@ func FetchFindingsPerControlForResourceId(logger *zap.Logger, client kaytu.Clien
 	return findings, nil
 }
 
-func FetchFindingByID(logger *zap.Logger, client kaytu.Client, findingID string) (*types.Finding, error) {
+func FetchFindingByID(ctx context.Context, logger *zap.Logger, client kaytu.Client, findingID string) (*types.Finding, error) {
 	query := map[string]any{
 		"query": map[string]any{
 			"term": map[string]any{
@@ -1194,7 +1195,7 @@ func FetchFindingByID(logger *zap.Logger, client kaytu.Client, findingID string)
 
 	logger.Info("FetchFindingByID", zap.String("query", string(queryBytes)))
 	var resp FindingsQueryResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}

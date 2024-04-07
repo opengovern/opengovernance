@@ -105,7 +105,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 			if s.DoDeleteOldResources && result.Status == api.DescribeResourceJobSucceeded {
 				result.Status = api.DescribeResourceJobOldResourceDeletion
 
-				dlc, err := s.cleanupOldResources(result)
+				dlc, err := s.cleanupOldResources(ctx, result)
 				if err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
@@ -214,7 +214,7 @@ func (s *Scheduler) handleTimeoutForDiscoveryJobs() {
 	}
 }
 
-func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
+func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResult) (int64, error) {
 	var searchAfter []any
 
 	isCostResourceType := false
@@ -240,6 +240,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 
 	for {
 		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(
+			ctx,
 			s.es,
 			res.DescribeJob.SourceID,
 			res.DescribeJob.ResourceType,
@@ -351,11 +352,11 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) (int64, error) {
 	return int64(deletedCount), nil
 }
 
-func (s *Scheduler) cleanupDescribeResourcesForConnections(connectionIds []string) {
+func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, connectionIds []string) {
 	for _, connectionId := range connectionIds {
 		var searchAfter []any
 		for {
-			esResp, err := es.GetResourceIDsForAccountFromES(s.es, connectionId, searchAfter, 1000)
+			esResp, err := es.GetResourceIDsForAccountFromES(ctx, s.es, connectionId, searchAfter, 1000)
 			if err != nil {
 				s.logger.Error("failed to get resource ids from es", zap.Error(err))
 				break

@@ -48,6 +48,7 @@ func WorkerCommand() *cobra.Command {
 				id,
 				cnf,
 				logger,
+				cmd.Context(),
 			)
 			if err != nil {
 				return err
@@ -79,6 +80,7 @@ func NewWorker(
 	id string,
 	conf workerConfig.WorkerConfig,
 	logger *zap.Logger,
+	ctx context.Context,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -119,7 +121,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(context.Background(), StreamName, "analytics job queue", []string{JobQueueTopic, JobResultQueueTopic}, 1000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "analytics job queue", []string{JobQueueTopic, JobResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
@@ -168,7 +170,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	w.logger.Info("Reading messages from the queue")
 
-	consumeCtx, err := w.jq.Consume(context.Background(), "analytics-worker", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
+	consumeCtx, err := w.jq.Consume(ctx, "analytics-worker", StreamName, []string{JobQueueTopic}, consumerGroup, func(msg jetstream.Msg) {
 		w.logger.Info("Parsing job")
 
 		var job Job
@@ -184,7 +186,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 		w.logger.Info("Running the job", zap.Uint("id", job.JobID))
 
-		result := job.Do(w.jq, w.db, steampipeConn, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger, w.config)
+		result := job.Do(w.jq, w.db, steampipeConn, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger, w.config, ctx)
 
 		w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
@@ -194,7 +196,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			return
 		}
 
-		if err := w.jq.Produce(context.Background(), JobResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
+		if err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
 			w.logger.Error("Failed to send job result", zap.Error(err))
 			return
 		}

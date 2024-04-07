@@ -44,7 +44,7 @@ func ReporterCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			ctx := cmd.Context()
 			logger, _ := zap.NewProduction()
 			switch mode {
 			case "worker":
@@ -79,7 +79,7 @@ func ReporterCommand() *cobra.Command {
 				}
 
 				EnsureRunGoroutin(func() {
-					j.Run()
+					j.Run(cmd.Context())
 				})
 				return startHttpServer(cmd.Context(), j)
 			}
@@ -104,5 +104,5 @@ func startHttpServer(ctx context.Context, j *Service) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(logger, HttpAddress, httpServer)
+	return httpserver.RegisterAndStart(ctx, logger, HttpAddress, httpServer)
 }

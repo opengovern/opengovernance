@@ -30,7 +30,7 @@ func (m Migration) AttachmentFolderPath() string {
 	return ""
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	orm, err := postgres.NewClient(&postgres.Config{
 		Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,
@@ -188,8 +188,6 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 }
 
 func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
-
-	context.Background()
 	id := strings.TrimSuffix(info.Name(), ".yaml")
 
 	content, err := os.ReadFile(path)

@@ -34,9 +34,9 @@ func generateRoleARN(accountID, roleName string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
 }
 
-func (h HttpHandler) GetAWSSDKConfig(roleARN string, externalID *string) (aws.Config, error) {
+func (h HttpHandler) GetAWSSDKConfig(ctx context.Context, roleARN string, externalID *string) (aws.Config, error) {
 	awsConfig, err := kaytuAws.GetConfig(
-		context.Background(),
+		ctx,
 		h.masterAccessKey,
 		h.masterSecretKey,
 		"",
@@ -52,15 +52,15 @@ func (h HttpHandler) GetAWSSDKConfig(roleARN string, externalID *string) (aws.Co
 	return awsConfig, nil
 }
 
-func (h HttpHandler) GetOrgAccounts(sdkConfig aws.Config) (*awsOrgTypes.Organization, []awsOrgTypes.Account, error) {
-	org, err := describer.OrganizationOrganization(context.Background(), sdkConfig)
+func (h HttpHandler) GetOrgAccounts(ctx context.Context, sdkConfig aws.Config) (*awsOrgTypes.Organization, []awsOrgTypes.Account, error) {
+	org, err := describer.OrganizationOrganization(ctx, sdkConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
 			return nil, nil, err
 		}
 	}
 
-	accounts, err := describer.OrganizationAccounts(context.Background(), sdkConfig)
+	accounts, err := describer.OrganizationAccounts(ctx, sdkConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
 			return nil, nil, err
@@ -86,13 +86,13 @@ func (h HttpHandler) ExtractCredentialMetadata(accountID string, org *awsOrgType
 	return &metadata, nil
 }
 
-func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
-	awsConfig, err := h.GetAWSSDKConfig(generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
+func (h HttpHandler) createAWSCredential(ctx context.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
+	awsConfig, err := h.GetAWSSDKConfig(ctx, generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
 	if err != nil {
 		return nil, err
 	}
 
-	org, accounts, err := h.GetOrgAccounts(awsConfig)
+	org, accounts, err := h.GetOrgAccounts(ctx, awsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (h HttpHandler) createAWSCredential(req apiv2.CreateCredentialV2Request) (*
 	if err := h.db.CreateCredential(cred); err != nil {
 		return nil, err
 	}
-	_, err = h.checkCredentialHealth(context.Background(), *cred)
+	_, err = h.checkCredentialHealth(ctx, *cred)
 	if err != nil {
 		return nil, err
 	}
@@ -236,6 +236,7 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 		}
 
 		src, err := NewAWSAutoOnboardedConnectionV2(
+			ctx,
 			org,
 			h.logger,
 			account,
@@ -279,7 +280,7 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 	return onboardedSources, nil
 }
 
-func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy bool, err error) {
+func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Credential) (healthy bool, err error) {
 	defer func() {
 		if err != nil {
 			h.logger.Error("credential is not healthy", zap.Error(err))
@@ -311,12 +312,12 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 		if err != nil {
 			return false, err
 		}
-		sdkCnf, err := h.GetAWSSDKConfig(generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName), awsConfig.ExternalId)
+		sdkCnf, err := h.GetAWSSDKConfig(ctx, generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName), awsConfig.ExternalId)
 		if err != nil {
 			return false, err
 		}
 
-		org, accounts, err := h.GetOrgAccounts(sdkCnf)
+		org, accounts, err := h.GetOrgAccounts(ctx, sdkCnf)
 		if err != nil {
 			return false, err
 		}
@@ -331,7 +332,6 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 		}
 		cred.Metadata = jsonMetadata
 
-		ctx := context.Background()
 		iamClient := iam.NewFromConfig(sdkCnf)
 		paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
 			RoleName: &awsConfig.AssumeRoleName,
@@ -348,7 +348,9 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 		}
 
 		spendAttached := true
-		awsSpendDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api2.InternalRole}, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
+		ctx2 := &httpclient.Context{UserRole: api2.InternalRole}
+		ctx2.Ctx = ctx
+		awsSpendDiscovery, err := h.metadataClient.GetConfigMetadata(ctx2, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
 		if err != nil {
 			if err != nil {
 				return false, err
@@ -370,7 +372,7 @@ func (h HttpHandler) checkCredentialHealthV2(cred model.Credential) (healthy boo
 
 func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Credential) (bool, error) {
 	if cred.Version == 2 {
-		return h.checkCredentialHealthV2(cred)
+		return h.checkCredentialHealthV2(ctx, cred)
 	}
 
 	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)

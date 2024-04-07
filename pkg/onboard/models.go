@@ -37,7 +37,7 @@ type AWSConnectionMetadata struct {
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig, connection model.Source, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, connection model.Source, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
@@ -58,14 +58,14 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 		metadata.AccountType = AWSAccountTypeOrganizationManager
 	}
 	if account.Organization != nil {
-		sdkCnf, err := kaytuAws.GetConfig(context.TODO(), cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		sdkCnf, err := kaytuAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
 		if err != nil {
 			logger.Error("failed to get aws config", zap.Error(err), zap.String("account_id", metadata.AccountID))
 			return metadata, err
 		}
 		organizationClient := organizations.NewFromConfig(sdkCnf)
 
-		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
 			ResourceId: &metadata.AccountID,
 		})
 		if err != nil {
@@ -80,7 +80,7 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 			metadata.OrganizationTags[*tag.Key] = *tag.Value
 		}
 		if account.Account == nil {
-			orgAccount, err := organizationClient.DescribeAccount(context.TODO(), &organizations.DescribeAccountInput{
+			orgAccount, err := organizationClient.DescribeAccount(ctx, &organizations.DescribeAccountInput{
 				AccountId: &metadata.AccountID,
 			})
 			if err != nil {
@@ -93,7 +93,7 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 	return metadata, nil
 }
 
-func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) model.Source {
+func NewAWSSource(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) model.Source {
 	id := uuid.New()
 	provider := source.CloudAWS
 
@@ -134,7 +134,7 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 		s.Name = s.SourceId
 	}
 
-	metadata, err := NewAWSConnectionMetadata(logger, cfg, s, account)
+	metadata, err := NewAWSConnectionMetadata(ctx, logger, cfg, s, account)
 	if err != nil {
 		// TODO: log error
 	}
@@ -209,7 +209,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Source {
+func NewAWSAutoOnboardedConnection(ctx context.Context, logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Source {
 	id := uuid.New()
 
 	name := account.AccountID
@@ -240,7 +240,7 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 		CreationMethod:       creationMethod,
 	}
 
-	metadata, err := NewAWSConnectionMetadata(logger, cfg, s, account)
+	metadata, err := NewAWSConnectionMetadata(ctx, logger, cfg, s, account)
 	if err != nil {
 		// TODO: log error
 	}
@@ -253,7 +253,7 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 	return s
 }
 
-func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig aws.Config) (*model.Source, error) {
+func NewAWSAutoOnboardedConnectionV2(ctx context.Context, org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig aws.Config) (*model.Source, error) {
 	id := uuid.New()
 
 	name := *account.Id
@@ -304,7 +304,7 @@ func NewAWSAutoOnboardedConnectionV2(org *types.Organization, logger *zap.Logger
 		}
 
 		organizationClient := organizations.NewFromConfig(awsConfig)
-		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
 			ResourceId: &metadata.AccountID,
 		})
 		if err != nil {

@@ -1,7 +1,6 @@
 package subscription
 
 import (
-	"context"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	firehose "github.com/aws/aws-sdk-go-v2/service/firehose"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
@@ -38,7 +37,7 @@ func Command() *cobra.Command {
 			w := workspaceClient.NewWorkspaceClient(cnf.Workspace.BaseURL)
 			a := client2.NewAuthServiceClient(cnf.Auth.BaseURL)
 
-			awsCfg, err := awsConfig.LoadDefaultConfig(context.Background())
+			awsCfg, err := awsConfig.LoadDefaultConfig(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -46,9 +45,10 @@ func Command() *cobra.Command {
 			firehoseClient := firehose.NewFromConfig(awsCfg)
 
 			meteringService := service.NewMeteringService(logger, pdb, cnf, firehoseClient, w, a)
-			go meteringService.Start()
+			go meteringService.Start(cmd.Context())
 			go jobs.GenerateMeters(meteringService, logger)
 			return httpserver.RegisterAndStart(
+				cmd.Context(),
 				logger,
 				cnf.Http.Address,
 				api.New(logger, pdb, w, meteringService),

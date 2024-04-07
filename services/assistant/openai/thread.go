@@ -7,11 +7,11 @@ import (
 	"text/template"
 )
 
-func (s *Service) NewThread() (openai.Thread, error) {
-	return s.client.CreateThread(context.Background(), openai.ThreadRequest{})
+func (s *Service) NewThread(ctx context.Context) (openai.Thread, error) {
+	return s.client.CreateThread(ctx, openai.ThreadRequest{})
 }
 
-func (s *Service) SendChatPrompt(threadID string) (openai.Message, error) {
+func (s *Service) SendChatPrompt(ctx context.Context, threadID string) (openai.Message, error) {
 	tmpl := template.New("test")
 	tm, err := tmpl.Parse(s.ChatPrompt)
 	if err != nil {
@@ -23,40 +23,40 @@ func (s *Service) SendChatPrompt(threadID string) (openai.Message, error) {
 		panic(err)
 	}
 
-	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
+	return s.client.CreateMessage(ctx, threadID, openai.MessageRequest{
 		Role:    openai.ChatMessageRoleUser,
 		Content: outputExecute.String(),
 	})
 }
-func (s *Service) SendMessage(threadID, content string) (openai.Message, error) {
-	return s.client.CreateMessage(context.Background(), threadID, openai.MessageRequest{
+func (s *Service) SendMessage(ctx context.Context, threadID, content string) (openai.Message, error) {
+	return s.client.CreateMessage(ctx, threadID, openai.MessageRequest{
 		Role:    openai.ChatMessageRoleUser,
 		Content: content,
 	})
 }
 
-func (s *Service) RunThread(threadID string, id *string) (openai.Run, error) {
+func (s *Service) RunThread(ctx context.Context, threadID string, id *string) (openai.Run, error) {
 	if id == nil || len(*id) == 0 {
-		return s.client.CreateRun(context.Background(), threadID, openai.RunRequest{
+		return s.client.CreateRun(ctx, threadID, openai.RunRequest{
 			AssistantID: s.assistant.ID,
 		})
 	}
-	return s.client.RetrieveRun(context.Background(), threadID, *id)
+	return s.client.RetrieveRun(ctx, threadID, *id)
 }
 
-func (s *Service) RetrieveRun(threadID, runID string) (openai.Run, error) {
-	return s.client.RetrieveRun(context.Background(), threadID, runID)
+func (s *Service) RetrieveRun(ctx context.Context, threadID, runID string) (openai.Run, error) {
+	return s.client.RetrieveRun(ctx, threadID, runID)
 }
 
-func (s *Service) StopAllRun(threadID string) error {
-	runs, err := s.client.ListRuns(context.Background(), threadID, openai.Pagination{})
+func (s *Service) StopAllRun(ctx context.Context, threadID string) error {
+	runs, err := s.client.ListRuns(ctx, threadID, openai.Pagination{})
 	if err != nil {
 		return err
 	}
 
 	for _, run := range runs.Runs {
 		if run.Status == openai.RunStatusInProgress || run.Status == openai.RunStatusQueued {
-			_, err := s.client.CancelRun(context.Background(), threadID, run.ID)
+			_, err := s.client.CancelRun(ctx, threadID, run.ID)
 			if err != nil {
 				return err
 			}
@@ -65,6 +65,6 @@ func (s *Service) StopAllRun(threadID string) error {
 	return nil
 }
 
-func (s *Service) ListMessages(threadID string) (openai.MessagesList, error) {
-	return s.client.ListMessage(context.Background(), threadID, nil, nil, nil, nil)
+func (s *Service) ListMessages(ctx context.Context, threadID string) (openai.MessagesList, error) {
+	return s.client.ListMessage(ctx, threadID, nil, nil, nil, nil)
 }

@@ -1,6 +1,7 @@
 package superset
 
 import (
+	"context"
 	"fmt"
 	"github.com/gruntwork-io/go-commons/random"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
@@ -31,7 +32,7 @@ func (m Migration) AttachmentFolderPath() string {
 	return "/tmp/superset"
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	ssWrapper, err := newSupersetWrapper(logger, conf.SupersetBaseURL, conf.SupersetAdminPassword)
 	if err != nil {
 		return err

@@ -39,6 +39,7 @@ func WorkerCommand() *cobra.Command {
 				logger,
 				PrometheusPushAddress,
 				OnboardBaseURL,
+				cmd.Context(),
 			)
 			if err != nil {
 				return err
@@ -46,7 +47,7 @@ func WorkerCommand() *cobra.Command {
 
 			defer w.Stop()
 
-			return w.Run()
+			return w.Run(cmd.Context())
 		},
 	}
 

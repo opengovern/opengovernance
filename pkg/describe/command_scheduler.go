@@ -91,6 +91,7 @@ func SchedulerCommand() *cobra.Command {
 				MustSummarizeIntervalHours,
 				KaytuHelmChartLocation,
 				FluxSystemNamespace,
+				cmd.Context(),
 			)
 			if err != nil {
 				return err

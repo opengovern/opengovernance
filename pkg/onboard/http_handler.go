@@ -31,6 +31,7 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
+	ctx context.Context,
 	sourceEventsQueueName string,
 	postgresUsername string, postgresPassword string, postgresHost string, postgresPort string, postgresDb string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
@@ -70,7 +71,7 @@ func InitializeHttpHandler(
 	}
 	logger.Info("Connected to the steampipe database", zap.String("database", steampipeDb))
 
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", KMSAccountRegion)
+	kms, err := vault.NewKMSVaultSourceConfig(ctx, "", "", KMSAccountRegion)
 	if err != nil {
 		return nil, err
 	}

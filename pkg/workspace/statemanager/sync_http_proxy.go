@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-func (s *Service) syncSupersetHttpProxy(workspace *db.Workspace) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func (s *Service) syncSupersetHttpProxy(ctx context.Context, workspace *db.Workspace) error {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	httpKey := types.NamespacedName{
@@ -96,8 +96,8 @@ func (s *Service) syncSupersetHttpProxy(workspace *db.Workspace) error {
 	return nil
 }
 
-func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func (s *Service) syncHTTPProxy(ctx context.Context, workspaces []*db.Workspace) error {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	var httpIncludes []contourv1.Include
@@ -108,7 +108,7 @@ func (s *Service) syncHTTPProxy(workspaces []*db.Workspace) error {
 			continue
 		}
 
-		err := s.syncSupersetHttpProxy(w)
+		err := s.syncSupersetHttpProxy(ctx, w)
 		if err != nil {
 			return err
 		}
@@ -257,14 +257,14 @@ func (s *Service) ensureSettingsSynced(ctx context.Context, workspace db.Workspa
 	return nil
 }
 
-func (s *Service) syncHelmValues(workspaces []*db.Workspace) error {
+func (s *Service) syncHelmValues(ctx context.Context, workspaces []*db.Workspace) error {
 	for _, w := range workspaces {
 		if !(w.Status == api.StateID_Provisioned ||
 			((w.Status == api.StateID_WaitingForCredential || w.Status == api.StateID_Provisioning) && w.IsCreated)) {
 			continue
 		}
 
-		err := s.ensureSettingsSynced(context.Background(), *w)
+		err := s.ensureSettingsSynced(ctx, *w)
 		if err != nil {
 			return err
 		}

@@ -47,7 +47,7 @@ type Service struct {
 	s3Client   *s3.Client
 }
 
-func New(cfg workspaceConfig.Config) (*Service, error) {
+func New(ctx context.Context, cfg workspaceConfig.Config) (*Service, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
@@ -75,13 +75,13 @@ func New(cfg workspaceConfig.Config) (*Service, error) {
 		return nil, fmt.Errorf("add v1 to scheme: %w", err)
 	}
 
-	awsConfigMaster, err := aws2.GetConfig(context.Background(), cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
+	awsConfigMaster, err := aws2.GetConfig(ctx, cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
 	iamClientMaster := iam.NewFromConfig(awsConfigMaster)
 
-	awsCfg, err := awsConfig.LoadDefaultConfig(context.Background())
+	awsCfg, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
@@ -95,7 +95,7 @@ func New(cfg workspaceConfig.Config) (*Service, error) {
 
 	iamClient := iam.NewFromConfig(awsCfg)
 
-	awsConfig, err := aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	awsConfig, err := aws2.GetConfig(ctx, cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +117,12 @@ func New(cfg workspaceConfig.Config) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) StartReconciler() {
+func (s *Service) StartReconciler(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("%s", string(debug.Stack()))
 			fmt.Printf("reconciler crashed: %v, restarting ...\n", r)
-			go s.StartReconciler()
+			go s.StartReconciler(ctx)
 		}
 	}()
 
@@ -144,11 +144,11 @@ func (s *Service) StartReconciler() {
 				}
 			}
 
-			if err := s.syncHTTPProxy(workspaces); err != nil {
+			if err := s.syncHTTPProxy(ctx, workspaces); err != nil {
 				s.logger.Error(fmt.Sprintf("syncing http proxy: %v", err))
 			}
 
-			if err := s.syncHelmValues(workspaces); err != nil {
+			if err := s.syncHelmValues(ctx, workspaces); err != nil {
 				s.logger.Error(fmt.Sprintf("syncing helm values: %v", err))
 			}
 		}

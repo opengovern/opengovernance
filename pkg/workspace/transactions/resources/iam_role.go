@@ -43,8 +43,8 @@ func (role *iamRole) ARN() string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", role.accountID, role.roleName)
 }
 
-func (role *iamRole) CreateIdempotent() error {
-	_, err := role.iam.CreateRole(context.Background(), &iam.CreateRoleInput{
+func (role *iamRole) CreateIdempotent(ctx context.Context) error {
+	_, err := role.iam.CreateRole(ctx, &iam.CreateRoleInput{
 		AssumeRolePolicyDocument: aws.String(role.policyDocument),
 		RoleName:                 aws.String(role.roleName),
 		Description:              nil,
@@ -60,7 +60,7 @@ func (role *iamRole) CreateIdempotent() error {
 	}
 
 	for _, policyARN := range role.attachedPolicy {
-		_, err = role.iam.AttachRolePolicy(context.Background(), &iam.AttachRolePolicyInput{
+		_, err = role.iam.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
 			PolicyArn: aws.String(policyARN),
 			RoleName:  aws.String(role.roleName),
 		})
@@ -72,9 +72,9 @@ func (role *iamRole) CreateIdempotent() error {
 	return nil
 }
 
-func (role *iamRole) DeleteIdempotent() error {
+func (role *iamRole) DeleteIdempotent(ctx context.Context) error {
 	for _, policyARN := range role.attachedPolicy {
-		_, err := role.iam.DetachRolePolicy(context.Background(), &iam.DetachRolePolicyInput{
+		_, err := role.iam.DetachRolePolicy(ctx, &iam.DetachRolePolicyInput{
 			PolicyArn: aws.String(policyARN),
 			RoleName:  aws.String(role.roleName),
 		})
@@ -85,7 +85,7 @@ func (role *iamRole) DeleteIdempotent() error {
 		}
 	}
 
-	_, err := role.iam.DeleteRole(context.Background(), &iam.DeleteRoleInput{
+	_, err := role.iam.DeleteRole(ctx, &iam.DeleteRoleInput{
 		RoleName: aws.String(role.roleName),
 	})
 	if err != nil {

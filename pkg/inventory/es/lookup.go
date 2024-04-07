@@ -21,7 +21,7 @@ type ResourceTypeCountsResponse struct {
 	} `json:"aggregations"`
 }
 
-func GetResourceTypeCounts(client kaytu.Client, connectors []source.Type, connectionIDs []string, resourceTypes []string, size int) (map[string]int, error) {
+func GetResourceTypeCounts(ctx context.Context, client kaytu.Client, connectors []source.Type, connectionIDs []string, resourceTypes []string, size int) (map[string]int, error) {
 	var filters []any
 	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))
@@ -73,7 +73,7 @@ func GetResourceTypeCounts(client kaytu.Client, connectors []source.Type, connec
 	}
 
 	var response ResourceTypeCountsResponse
-	err = client.Search(context.Background(), describe.InventorySummaryIndex,
+	err = client.Search(ctx, describe.InventorySummaryIndex,
 		string(queryStr), &response)
 	if err != nil {
 		return nil, err

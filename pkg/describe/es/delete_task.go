@@ -68,7 +68,7 @@ type GetDeleteTasksHit struct {
 	Sort    []any      `json:"sort"`
 }
 
-func GetDeleteTasks(client kaytu.Client) (*GetDeleteTasksResponse, error) {
+func GetDeleteTasks(ctx context.Context, client kaytu.Client) (*GetDeleteTasksResponse, error) {
 	root := map[string]any{}
 	root["size"] = 10000
 	root["sort"] = []map[string]any{
@@ -81,7 +81,7 @@ func GetDeleteTasks(client kaytu.Client) (*GetDeleteTasksResponse, error) {
 	}
 
 	var response GetDeleteTasksResponse
-	err = client.Search(context.Background(), DeleteTasksIndex,
+	err = client.Search(ctx, DeleteTasksIndex,
 		string(queryBytes), &response)
 	if err != nil {
 		fmt.Println("query=", string(queryBytes))

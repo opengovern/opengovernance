@@ -27,7 +27,7 @@ type ResourceIdentifierFetchHit struct {
 	Sort    []any             `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client kaytu.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
@@ -52,7 +52,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, r
 	}
 
 	var response ResourceIdentifierFetchResponse
-	err = client.Search(context.Background(), es.InventorySummaryIndex,
+	err = client.Search(ctx, es.InventorySummaryIndex,
 		string(queryBytes), &response)
 	if err != nil {
 		fmt.Println("query=", string(queryBytes))
@@ -62,7 +62,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, r
 	return &response, nil
 }
 
-func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountFromES(ctx context.Context, client kaytu.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
@@ -86,7 +86,7 @@ func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, search
 	}
 
 	var response ResourceIdentifierFetchResponse
-	err = client.Search(context.Background(), es.InventorySummaryIndex,
+	err = client.Search(ctx, es.InventorySummaryIndex,
 		string(queryBytes), &response)
 	if err != nil {
 		fmt.Println("query=", string(queryBytes))
@@ -115,12 +115,12 @@ type InventoryCountResponse struct {
 	} `json:"hits"`
 }
 
-func GetInventoryCountResponse(client kaytu.Client, resourceType string) (int64, error) {
+func GetInventoryCountResponse(ctx context.Context, client kaytu.Client, resourceType string) (int64, error) {
 	query := fmt.Sprintf(`{"size": 0, "query": {"bool": {"filter": [{"term": {"resource_type": "%s"}}]}}}`, resourceType)
 
 	fmt.Println("GetInventoryCountResponse, query=", query)
 	var response InventoryCountResponse
-	err := client.SearchWithTrackTotalHits(context.Background(), es.InventorySummaryIndex,
+	err := client.SearchWithTrackTotalHits(ctx, es.InventorySummaryIndex,
 		query, nil, &response, true)
 	if err != nil {
 		return 0, err

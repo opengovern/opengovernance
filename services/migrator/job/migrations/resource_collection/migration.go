@@ -1,6 +1,7 @@
 package resource_collection
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgtype"
@@ -35,7 +36,7 @@ func (m Migration) IsGitBased() bool {
 	return true
 }
 
-func (m Migration) Run(conf config.MigratorConfig, logger *zap.Logger) error {
+func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	orm, err := postgres.NewClient(&postgres.Config{
 		Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,

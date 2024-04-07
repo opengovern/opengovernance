@@ -16,14 +16,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Scheduler) RunJobSequencer() {
+func (s *Scheduler) RunJobSequencer(ctx context.Context) {
 	s.logger.Info("Scheduling job sequencer")
 
 	t := ticker.NewTicker(JobSequencerInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		err := s.checkJobSequences()
+		err := s.checkJobSequences(ctx)
 		if err != nil {
 			s.logger.Error("failed to run checkJobSequences", zap.Error(err))
 			continue
@@ -31,7 +31,7 @@ func (s *Scheduler) RunJobSequencer() {
 	}
 }
 
-func (s *Scheduler) checkJobSequences() error {
+func (s *Scheduler) checkJobSequences(ctx context.Context) error {
 	jobs, err := s.db.ListWaitingJobSequencers()
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (s *Scheduler) checkJobSequences() error {
 	for _, job := range jobs {
 		switch job.DependencySource {
 		case model.JobSequencerJobTypeBenchmark:
-			err := s.resolveBenchmarkDependency(job)
+			err := s.resolveBenchmarkDependency(ctx, job)
 			if err != nil {
 				s.logger.Error("failed to resolve benchmark dependency", zap.Uint("jobID", job.ID), zap.Error(err))
 				if err := s.db.UpdateJobSequencerFailed(job.ID); err != nil {
@@ -49,7 +49,7 @@ func (s *Scheduler) checkJobSequences() error {
 				continue
 			}
 		case model.JobSequencerJobTypeDescribe:
-			err := s.resolveDescribeDependency(job)
+			err := s.resolveDescribeDependency(ctx, job)
 			if err != nil {
 				s.logger.Error("failed to resolve describe dependency", zap.Uint("jobID", job.ID), zap.Error(err))
 				if err := s.db.UpdateJobSequencerFailed(job.ID); err != nil {
@@ -98,10 +98,10 @@ func (s *Scheduler) getParentBenchmarkPaths(rootBenchmark, controlID string) ([]
 	return paths, nil
 }
 
-func (s *Scheduler) runNextJob(job model.JobSequencer) error {
+func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) error {
 	switch job.NextJob {
 	case model.JobSequencerJobTypeAnalytics:
-		jobID, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
+		jobID, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal, ctx)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 	return nil
 }
 
-func (s *Scheduler) resolveBenchmarkDependency(job model.JobSequencer) error {
+func (s *Scheduler) resolveBenchmarkDependency(ctx context.Context, job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
 		complianceJob, err := s.db.GetComplianceJobByID(uint(id))
@@ -214,7 +214,7 @@ func (s *Scheduler) resolveBenchmarkDependency(job model.JobSequencer) error {
 	}
 
 	if allDependencyResolved {
-		err := s.runNextJob(job)
+		err := s.runNextJob(ctx, job)
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ type ResourceCountResponse struct {
 	} `json:"hits"`
 }
 
-func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
+func (s *Scheduler) resolveDescribeDependency(ctx context.Context, job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
 		describeConnectionJob, err := s.db.GetDescribeConnectionJobByID(uint(id))
@@ -275,7 +275,7 @@ func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
 		}
 
 		var resourceCountResponse ResourceCountResponse
-		err = s.es.SearchWithTrackTotalHits(context.TODO(), InventorySummaryIndex, string(rootJson), nil, &resourceCountResponse, true)
+		err = s.es.SearchWithTrackTotalHits(ctx, InventorySummaryIndex, string(rootJson), nil, &resourceCountResponse, true)
 		if err != nil {
 			s.logger.Error("failed to search resource count", zap.Error(err))
 
@@ -289,7 +289,7 @@ func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
 	}
 
 	if allDependencyResolved {
-		err := s.runNextJob(job)
+		err := s.runNextJob(ctx, job)
 		if err != nil {
 			return err
 		}
