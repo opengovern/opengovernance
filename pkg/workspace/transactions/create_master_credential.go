@@ -117,7 +117,7 @@ func (t *CreateMasterCredential) ApplyIdempotent(ctx context.Context, workspace 
 	}
 
 	result, err := t.kms.Encrypt(ctx, &kms.EncryptInput{
-		KeyId:               &t.cfg.KMSKeyARN,
+		KeyId:               &t.cfg.VaultKeyId,
 		Plaintext:           js,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 		EncryptionContext:   nil, //TODO-Saleh use workspaceID

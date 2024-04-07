@@ -12,17 +12,17 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"strings"
 )
 
-func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model.Source, updateMetadata bool) (model.Source, error) {
+func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
 	var cnf map[string]any
-	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx, connection.Credential.Secret, connection.Credential.CredentialStoreKeyID, connection.Credential.CredentialStoreKeyVersion)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
 		return connection, err

@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

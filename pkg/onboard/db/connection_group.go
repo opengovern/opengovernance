@@ -1,6 +1,8 @@
 package db
 
-import "github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
+import (
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+)
 
 func (db Database) ListConnectionGroups() ([]model.ConnectionGroup, error) {
 	var cgs []model.ConnectionGroup

@@ -17,8 +17,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/attribute"
@@ -113,7 +113,12 @@ func (h HttpHandler) createAWSCredential(ctx context.Context, req apiv2.CreateCr
 	}
 	cred.HealthStatus = source.HealthStatusHealthy
 
-	secretBytes, err := h.kms.Encrypt(req.AWSConfig.AsMap(), h.keyARN)
+	latestVersion, err := h.kms.GetLatestVersion(ctx, h.vaultKeyId)
+	if err != nil {
+		return nil, err
+	}
+
+	secretBytes, err := h.kms.Encrypt(ctx, req.AWSConfig.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +136,7 @@ func (h HttpHandler) createAWSCredential(ctx context.Context, req apiv2.CreateCr
 
 func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	cnf, err := h.kms.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +306,7 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 		}
 	}()
 
-	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	config, err := h.kms.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return false, err
 	}
@@ -375,7 +380,7 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 		return h.checkCredentialHealthV2(ctx, cred)
 	}
 
-	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	config, err := h.kms.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

@@ -60,7 +60,12 @@ func (h Credential) NewAWS(
 		crd.AutoOnboardEnabled = true
 	}
 
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	latestVersion, err := h.vault.GetLatestVersion(ctx, h.keyId)
+	if err != nil {
+		return nil, err
+	}
+
+	secretBytes, err := h.vault.Encrypt(ctx, config.AsMap(), h.keyId, latestVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +162,7 @@ func (h Credential) AWSHealthCheck(
 		}
 	}()
 
-	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	config, err := h.vault.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return false, err
 	}
@@ -253,7 +258,7 @@ func (h Credential) AWSOrgAccounts(ctx context.Context, cfg awsOfficial.Config) 
 func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
 	onboardedSources := make([]model.Connection, 0)
 
-	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	cnf, err := h.vault.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +574,12 @@ func (h Connection) NewAWS(
 	}
 	s.Metadata = marshalMetadata
 
-	secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
+	latestVersion, err := h.vault.GetLatestVersion(ctx, h.keyId)
+	if err != nil {
+		return model.Connection{}, err
+	}
+
+	secretBytes, err := h.vault.Encrypt(ctx, req.AsMap(), h.keyId, latestVersion)
 	if err != nil {
 		h.logger.Error("cannot encrypt request data into the connection", zap.Error(err))
 
@@ -599,7 +609,7 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 		cred.Name = req.Name
 	}
 
-	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	cnf, err := h.vault.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return err
 	}
@@ -653,7 +663,12 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 
 	cred.Metadata = jsonMetadata
 
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	latestVersion, err := h.vault.GetLatestVersion(ctx, h.keyId)
+	if err != nil {
+		return err
+	}
+
+	secretBytes, err := h.vault.Encrypt(ctx, config.AsMap(), h.keyId, latestVersion)
 	if err != nil {
 		return err
 	}
@@ -674,7 +689,7 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 
 // AWSCredentialConfig reads credentials configuration from aws credential secret and return it.
 func (h Credential) AWSCredentialConfig(ctx context.Context, credential model.Credential) (*model.AWSCredentialConfig, error) {
-	raw, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	raw, err := h.vault.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +707,7 @@ func (h Credential) AWSCredentialConfig(ctx context.Context, credential model.Cr
 func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, update bool) (model.Connection, error) {
 	var cnf map[string]any
 
-	cnf, err := h.kms.Decrypt(connection.Credential.Secret, h.keyARN)
+	cnf, err := h.vault.Decrypt(ctx, connection.Credential.Secret, connection.Credential.CredentialStoreKeyID, connection.Credential.CredentialStoreKeyVersion)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("connectionId", connection.SourceId))
 		return connection, err

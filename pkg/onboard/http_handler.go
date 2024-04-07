@@ -25,7 +25,7 @@ type HttpHandler struct {
 	describeClient                   describeClient.SchedulerServiceClient
 	metadataClient                   metadataClient.MetadataServiceClient
 	validator                        *validator.Validate
-	keyARN                           string
+	vaultKeyId                       string
 	logger                           *zap.Logger
 	masterAccessKey, masterSecretKey string
 }
@@ -37,7 +37,7 @@ func InitializeHttpHandler(
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	logger *zap.Logger,
 	awsPermissionCheckURL string,
-	keyARN string,
+	vaultKeyId string,
 	inventoryBaseURL string,
 	describeBaseURL string,
 	masterAccessKey, masterSecretKey string,
@@ -96,7 +96,7 @@ func InitializeHttpHandler(
 		inventoryClient:       inventoryClient,
 		describeClient:        describeCli,
 		validator:             validator.New(),
-		keyARN:                keyARN,
+		vaultKeyId:            vaultKeyId,
 		logger:                logger,
 		masterAccessKey:       masterAccessKey,
 		masterSecretKey:       masterSecretKey,

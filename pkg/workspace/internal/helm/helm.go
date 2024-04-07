@@ -201,7 +201,7 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 		result, err := kmsClient.Decrypt(ctx, &kms.DecryptInput{
 			CiphertextBlob:      decoded,
 			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-			KeyId:               &cfg.KMSKeyARN,
+			KeyId:               &cfg.VaultKeyId,
 			EncryptionContext:   nil, //TODO-Saleh use workspaceID
 		})
 		if err != nil {

@@ -559,7 +559,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			result, err := s.kms.Decrypt(ctx.Request().Context(), &kms.DecryptInput{
 				CiphertextBlob:      decoded,
 				EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-				KeyId:               &s.cfg.KMSKeyARN,
+				KeyId:               &s.cfg.VaultKeyId,
 				EncryptionContext:   nil, //TODO-Saleh use workspaceID
 			})
 			if err != nil {
@@ -676,7 +676,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 	}
 
 	result, err := s.kms.Encrypt(ctx.Request().Context(), &kms.EncryptInput{
-		KeyId:               &s.cfg.KMSKeyARN,
+		KeyId:               &s.cfg.VaultKeyId,
 		Plaintext:           configStr,
 		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
 		EncryptionContext:   nil, //TODO-Saleh use workspaceID

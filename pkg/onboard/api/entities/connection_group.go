@@ -1,17 +1,13 @@
-package model
+package entities
 
 import (
 	"context"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 )
 
-type ConnectionGroup struct {
-	Name  string `gorm:"primaryKey" json:"name"`
-	Query string `json:"query"`
-}
-
-func (cg ConnectionGroup) ToAPI(ctx context.Context, steampipe *steampipe.Database) (*api.ConnectionGroup, error) {
+func NewConnectionGroup(ctx context.Context, steampipe *steampipe.Database, cg model.ConnectionGroup) (*api.ConnectionGroup, error) {
 	apiCg := api.ConnectionGroup{
 		Name:  cg.Name,
 		Query: cg.Query,

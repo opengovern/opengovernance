@@ -189,7 +189,7 @@ func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.
 		result, err := t.kmsClient.Decrypt(ctx, &kms.DecryptInput{
 			CiphertextBlob:      decoded,
 			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-			KeyId:               &t.cfg.KMSKeyARN,
+			KeyId:               &t.cfg.VaultKeyId,
 			EncryptionContext:   nil,
 		})
 		if err != nil {

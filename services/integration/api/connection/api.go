@@ -893,7 +893,7 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, entity.NewConnection(connection))
 }
 
-// PostSourceAws godoc
+// AWSCreate godoc
 //
 //	@Summary		Create AWS connection [standalone]
 //	@Description	Creating AWS source [standalone]
