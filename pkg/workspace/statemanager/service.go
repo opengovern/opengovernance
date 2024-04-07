@@ -137,7 +137,7 @@ func (s *Service) StartReconciler(ctx context.Context) {
 			s.logger.Error(fmt.Sprintf("list workspaces: %v", err))
 		} else {
 			for _, workspace := range workspaces {
-				if err := s.handleTransition(workspace); err != nil {
+				if err := s.handleTransition(ctx, workspace); err != nil {
 					if !errors.Is(err, transactions.ErrTransactionNeedsTime) {
 						s.logger.Error(fmt.Sprintf("handle workspace %s: %v", workspace.ID, err))
 					}

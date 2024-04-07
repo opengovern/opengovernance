@@ -67,7 +67,7 @@ func (t *EnsureCredentialOnboarded) ApplyIdempotent(ctx context.Context, workspa
 	return nil
 }
 
-func (t *EnsureCredentialOnboarded) RollbackIdempotent(workspace db.Workspace) error {
+func (t *EnsureCredentialOnboarded) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	creds, err := t.db.ListCredentialsByWorkspaceID(workspace.ID)
 	if err != nil {
 		return fmt.Errorf("listing credentials: %w", err)

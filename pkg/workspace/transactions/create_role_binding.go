@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"golang.org/x/net/context"
 )
 
 type CreateRoleBinding struct {
@@ -25,7 +26,7 @@ func (t *CreateRoleBinding) Requirements() []api.TransactionID {
 	return []api.TransactionID{api.Transaction_CreateHelmRelease}
 }
 
-func (t *CreateRoleBinding) ApplyIdempotent(workspace db.Workspace) error {
+func (t *CreateRoleBinding) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	authCtx := &httpclient.Context{
 		UserID:        *workspace.OwnerId,
 		UserRole:      authapi.AdminRole,
@@ -43,7 +44,7 @@ func (t *CreateRoleBinding) ApplyIdempotent(workspace db.Workspace) error {
 	return nil
 }
 
-func (t *CreateRoleBinding) RollbackIdempotent(workspace db.Workspace) error {
+func (t *CreateRoleBinding) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	authCtx := &httpclient.Context{
 		UserID:        authapi.GodUserID,
 		UserRole:      authapi.InternalRole,
