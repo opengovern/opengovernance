@@ -2,11 +2,8 @@ package transactions
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
-	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
@@ -16,24 +13,25 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"strings"
 )
 
 type EnsureCredentialOnboarded struct {
-	kmsClient *kms.Client
-	cfg       config.Config
-	db        *db.Database
+	vault vault.VaultSourceConfig
+	cfg   config.Config
+	db    *db.Database
 }
 
 func NewEnsureCredentialOnboarded(
-	kmsClient *kms.Client,
+	vault vault.VaultSourceConfig,
 	cfg config.Config,
 	db *db.Database,
 ) *EnsureCredentialOnboarded {
 	return &EnsureCredentialOnboarded{
-		kmsClient: kmsClient,
-		cfg:       cfg,
-		db:        db,
+		vault: vault,
+		cfg:   cfg,
+		db:    db,
 	}
 }
 
@@ -86,22 +84,18 @@ func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(ctx context.Context
 	onboardClient := client.NewOnboardServiceClient(onboardURL)
 
 	var request api.AddCredentialRequest
-	decoded, err := base64.StdEncoding.DecodeString(cred.Metadata)
-	if err != nil {
-		return err
-	}
 
-	result, err := t.kmsClient.Decrypt(ctx, &kms.DecryptInput{
-		CiphertextBlob:      decoded,
-		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-		KeyId:               &t.cfg.VaultKeyId,
-		EncryptionContext:   nil, //TODO-Saleh use workspaceID
-	})
+	result, err := t.vault.Decrypt(ctx, cred.Metadata, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}
 
-	err = json.Unmarshal(result.Plaintext, &request)
+	jsonResult, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonResult, &request)
 	if err != nil {
 		return err
 	}

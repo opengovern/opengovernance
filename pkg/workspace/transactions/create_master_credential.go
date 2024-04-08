@@ -2,38 +2,36 @@ package transactions
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
-	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"strings"
 )
 
 type CreateMasterCredential struct {
-	iam *iam.Client
-	kms *kms.Client
-	cfg config.Config
-	db  *db.Database
+	iam   *iam.Client
+	vault vault.VaultSourceConfig
+	cfg   config.Config
+	db    *db.Database
 }
 
 func NewCreateMasterCredential(
 	iam *iam.Client,
-	kms *kms.Client,
+	vault vault.VaultSourceConfig,
 	cfg config.Config,
 	db *db.Database,
 ) *CreateMasterCredential {
 	return &CreateMasterCredential{
-		iam: iam,
-		kms: kms,
-		cfg: cfg,
-		db:  db,
+		iam:   iam,
+		vault: vault,
+		cfg:   cfg,
+		db:    db,
 	}
 }
 
@@ -116,22 +114,25 @@ func (t *CreateMasterCredential) ApplyIdempotent(ctx context.Context, workspace 
 		return err
 	}
 
-	result, err := t.kms.Encrypt(ctx, &kms.EncryptInput{
-		KeyId:               &t.cfg.VaultKeyId,
-		Plaintext:           js,
-		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-		EncryptionContext:   nil, //TODO-Saleh use workspaceID
-		GrantTokens:         nil,
-	})
+	latestVersion, err := t.vault.GetLatestVersion(ctx, t.cfg.Vault.KeyId)
+	if err != nil {
+		return fmt.Errorf("failed to get latest version of key for encryption: %v", err)
+	}
+
+	jsMap := make(map[string]any)
+	err = json.Unmarshal(js, &jsMap)
+
+	result, err := t.vault.Encrypt(ctx, jsMap, t.cfg.Vault.KeyId, latestVersion)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}
-	encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
 
 	err = t.db.CreateMasterCredential(&db.MasterCredential{
-		WorkspaceID:   *workspace.AWSUniqueId,
-		ConnectorType: source.CloudAWS,
-		Credential:    encoded,
+		WorkspaceID:               *workspace.AWSUniqueId,
+		ConnectorType:             source.CloudAWS,
+		Credential:                string(result),
+		CredentialStoreKeyID:      t.cfg.Vault.KeyId,
+		CredentialStoreKeyVersion: latestVersion,
 	})
 	if err != nil {
 		return err

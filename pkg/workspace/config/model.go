@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 )
 
 type Config struct {
@@ -14,6 +15,8 @@ type Config struct {
 	Compliance config.KaytuService
 	Inventory  config.KaytuService
 
+	Vault vault.Config `yaml:"vault"`
+
 	DomainSuffix               string
 	AppDomain                  string `yaml:"app_domain"`
 	GrpcDomain                 string `yaml:"grpc_domain"`
@@ -24,8 +27,6 @@ type Config struct {
 	AutoSuspendDurationMinutes int64
 	S3AccessKey                string
 	S3SecretKey                string
-	KMSAccountRegion           string `yaml:"kms_account_region"`
-	VaultKeyId                 string `yaml:"vault_key_id"`
 	AWSMasterAccessKey         string `yaml:"aws_master_access_key"`
 	AWSMasterSecretKey         string `yaml:"aws_master_secret_key"`
 	AWSMasterPolicyARN         string `yaml:"aws_master_policy_arn"`

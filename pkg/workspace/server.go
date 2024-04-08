@@ -2,19 +2,15 @@ package workspace
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	config2 "github.com/aws/aws-sdk-go-v2/config"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/smithy-go"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
@@ -31,6 +27,7 @@ import (
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -71,7 +68,7 @@ type Server struct {
 	kubeClient   k8sclient.Client // the kubernetes client
 	StateManager *statemanager.Service
 	awsMasterCnf aws.Config
-	kms          *kms.Client
+	vault        vault.VaultSourceConfig
 }
 
 func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
@@ -116,12 +113,10 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	awsCfg, err := config2.LoadDefaultConfig(ctx)
+	s.vault, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
+		return nil, err
 	}
-	awsCfg.Region = cfg.KMSAccountRegion
-	s.kms = kms.NewFromConfig(awsCfg)
 
 	return s, nil
 }
@@ -551,24 +546,16 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 
 		var accessKey, secretKey string
 		if masterCred != nil {
-			decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
-			if err != nil {
-				return err
-			}
-
-			result, err := s.kms.Decrypt(ctx.Request().Context(), &kms.DecryptInput{
-				CiphertextBlob:      decoded,
-				EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-				KeyId:               &s.cfg.VaultKeyId,
-				EncryptionContext:   nil, //TODO-Saleh use workspaceID
-			})
+			result, err := s.vault.Decrypt(ctx.Request().Context(), masterCred.Credential, masterCred.CredentialStoreKeyID, masterCred.CredentialStoreKeyVersion)
 			if err != nil {
 				return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 			}
-
+			jsonResult, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
 			var acc types2.AccessKey
-			err = json.Unmarshal(result.Plaintext, &acc)
-			//err = json.Unmarshal([]byte(masterCred.Credential), &acc)
+			err = json.Unmarshal(jsonResult, &acc)
 			if err != nil {
 				return err
 			}
@@ -675,24 +662,32 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
-	result, err := s.kms.Encrypt(ctx.Request().Context(), &kms.EncryptInput{
-		KeyId:               &s.cfg.VaultKeyId,
-		Plaintext:           configStr,
-		EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-		EncryptionContext:   nil, //TODO-Saleh use workspaceID
-		GrantTokens:         nil,
-	})
+	configStrMap := make(map[string]any)
+	err = json.Unmarshal(configStr, &configStrMap)
+	if err != nil {
+		s.logger.Error("failed to unmarshal the credential", zap.Error(err))
+		return err
+	}
+
+	latestVersion, err := s.vault.GetLatestVersion(ctx.Request().Context(), s.cfg.Vault.KeyId)
+	if err != nil {
+		s.logger.Error("failed to get latest version", zap.Error(err))
+		return err
+	}
+
+	result, err := s.vault.Encrypt(ctx.Request().Context(), configStrMap, s.cfg.Vault.KeyId, latestVersion)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}
-	encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
 
 	cred := db2.Credential{
-		ConnectorType:    request.ConnectorType,
-		WorkspaceID:      ws.ID,
-		Metadata:         encoded,
-		ConnectionCount:  count,
-		SingleConnection: request.SingleConnection,
+		ConnectorType:             request.ConnectorType,
+		WorkspaceID:               ws.ID,
+		Metadata:                  string(result),
+		ConnectionCount:           count,
+		SingleConnection:          request.SingleConnection,
+		CredentialStoreKeyID:      s.cfg.Vault.KeyId,
+		CredentialStoreKeyVersion: latestVersion,
 	}
 	err = s.db.CreateCredential(&cred)
 	if err != nil {
