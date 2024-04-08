@@ -47,7 +47,7 @@ type Service struct {
 	s3Client   *s3.Client
 }
 
-func New(ctx context.Context, cfg workspaceConfig.Config) (*Service, error) {
+func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.VaultSourceConfig) (*Service, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
@@ -84,11 +84,6 @@ func New(ctx context.Context, cfg workspaceConfig.Config) (*Service, error) {
 	awsCfg, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
-	}
-
-	vaultClient, err := vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
-	if err != nil {
-		return nil, fmt.Errorf("new kms vaultClient source config: %w", err)
 	}
 
 	awsCfg.Region = cfg.OpenSearchRegion

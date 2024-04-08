@@ -180,6 +180,44 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 		needsUpdate = true
 	}
 
+	if settings.Vault.Provider != cfg.Vault.Provider {
+		settings.Vault.Provider = cfg.Vault.Provider
+		needsUpdate = true
+	}
+	if settings.Vault.AWS.RoleArn != cfg.Vault.Aws.RoleArn {
+		settings.Vault.AWS.RoleArn = cfg.Vault.Aws.RoleArn
+		needsUpdate = true
+	}
+	if settings.Vault.AWS.AccessKey != cfg.Vault.Aws.AccessKey {
+		settings.Vault.AWS.AccessKey = cfg.Vault.Aws.AccessKey
+		needsUpdate = true
+	}
+	if settings.Vault.AWS.SecretKey != cfg.Vault.Aws.SecretKey {
+		settings.Vault.AWS.SecretKey = cfg.Vault.Aws.SecretKey
+		needsUpdate = true
+	}
+	if settings.Vault.AWS.Region != cfg.Vault.Aws.Region {
+		settings.Vault.AWS.Region = cfg.Vault.Aws.Region
+		needsUpdate = true
+	}
+
+	if settings.Vault.Azure.BaseUrl != cfg.Vault.Azure.BaseUrl {
+		settings.Vault.Azure.BaseUrl = cfg.Vault.Azure.BaseUrl
+		needsUpdate = true
+	}
+	if settings.Vault.Azure.ClientId != cfg.Vault.Azure.ClientId {
+		settings.Vault.Azure.ClientId = cfg.Vault.Azure.ClientId
+		needsUpdate = true
+	}
+	if settings.Vault.Azure.ClientSecret != cfg.Vault.Azure.ClientSecret {
+		settings.Vault.Azure.ClientSecret = cfg.Vault.Azure.ClientSecret
+		needsUpdate = true
+	}
+	if settings.Vault.KeyID != cfg.Vault.KeyId {
+		settings.Vault.KeyID = cfg.Vault.KeyId
+		needsUpdate = true
+	}
+
 	if workspace.AWSUserARN != nil && settings.Kaytu.Workspace.UserARN != *workspace.AWSUserARN {
 		settings.Kaytu.Workspace.UserARN = *workspace.AWSUserARN
 		needsUpdate = true

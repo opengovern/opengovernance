@@ -3,10 +3,12 @@ package types
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 )
 
 type KaytuWorkspaceSettings struct {
 	Kaytu KaytuConfig `json:"kaytu"`
+	Vault VaultConfig `json:"vault"`
 }
 
 type OctopusConfig struct {
@@ -55,4 +57,20 @@ type WorkspaceConfig struct {
 	UserARN         string            `json:"userARN"`
 	MasterAccessKey string            `json:"masterAccessKey"`
 	MasterSecretKey string            `json:"masterSecretKey"`
+}
+
+type VaultConfig struct {
+	Provider vault.Provider `json:"provider"`
+	AWS      struct {
+		Region    string `json:"region"`
+		RoleArn   string `json:"roleArn"`
+		AccessKey string `json:"accessKey"`
+		SecretKey string `json:"secretKey"`
+	} `json:"aws"`
+	Azure struct {
+		BaseUrl      string `json:"baseUrl"`
+		ClientId     string `json:"clientId"`
+		ClientSecret string `json:"clientSecret"`
+	} `json:"azure"`
+	KeyID string `json:"keyID"`
 }
