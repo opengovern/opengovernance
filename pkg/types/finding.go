@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"strings"
 )
 
 type FindingEvent struct {
@@ -77,9 +76,6 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.BenchmarkID,
 	}
 	keys = append(keys, r.ParentBenchmarks...)
-	if strings.HasPrefix(r.ConnectionID, "stack-") {
-		index = StackFindingsIndex
-	}
 	return keys, index
 }
 

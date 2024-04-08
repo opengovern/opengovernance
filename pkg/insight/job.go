@@ -57,7 +57,6 @@ type Job struct {
 	Query       string
 	Description string
 	ExecutedAt  int64
-	IsStack     bool
 
 	ResourceCollectionId *string
 }
@@ -145,15 +144,6 @@ func (j Job) Do(
 	}
 
 	steampipeSourceId := "all"
-	if j.IsStack == true {
-		esConfig, err = steampipe.GetStackElasticConfig(currentWorkspaceID, j.SourceID)
-		if err != nil {
-			logger.Error("failed to get stack elastic config", zap.Error(err))
-			fail(fmt.Errorf("getting stack elastic config: %w", err))
-			return
-		}
-		steampipeSourceId = j.SourceID
-	}
 
 	var encodedResourceCollectionFilter *string
 	if j.ResourceCollectionId != nil {

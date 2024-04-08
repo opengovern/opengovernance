@@ -37,5 +37,4 @@ type ComplianceJob struct {
 	BenchmarkID    string
 	Status         ComplianceJobStatus
 	FailureMessage string
-	IsStack        bool
 }

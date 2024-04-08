@@ -166,8 +166,6 @@ func InitializeScheduler(
 	describeTimeoutHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
-	kaytuHelmChartLocation string,
-	fluxSystemNamespace string,
 	ctx context.Context,
 ) (s *Scheduler, err error) {
 	if id == "" {
@@ -263,11 +261,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	helmConfig := HelmConfig{
-		KaytuHelmChartLocation: kaytuHelmChartLocation,
-		FluxSystemNamespace:    fluxSystemNamespace,
-	}
-	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s, helmConfig)
+	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
 	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
@@ -456,11 +450,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDescribeResourceJobs(ctx)
 	})
 	s.discoveryScheduler.Run(ctx)
-
-	// Describe
-	utils.EnsureRunGoroutine(func() {
-		s.RunStackScheduler(ctx)
-	})
 
 	// Inventory summarizer
 	utils.EnsureRunGoroutine(func() {

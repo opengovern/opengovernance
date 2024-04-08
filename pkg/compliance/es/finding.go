@@ -7,7 +7,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"go.uber.org/zap"
-	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -254,16 +253,6 @@ func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string
 		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
 			"", "",
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
-	}
-
-	isStack := false
-	if len(connectionID) > 0 {
-		if strings.HasPrefix(connectionID[0], "stack-") {
-			isStack = true
-		}
-	}
-	if isStack {
-		idx = types.StackFindingsIndex
 	}
 
 	query := make(map[string]any)

@@ -10,7 +10,6 @@ import (
 const (
 	InsightsIndex                    = "insights"
 	ResourceCollectionsInsightsIndex = "rc_insights"
-	StacksInsightsIndex              = "stacks-insights"
 )
 
 type InsightResourceType string
@@ -76,10 +75,6 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 	if r.ResourceCollection != nil {
 		keys = append(keys, *r.ResourceCollection)
 		idx = ResourceCollectionsInsightsIndex
-	}
-
-	if strings.HasPrefix(r.SourceID, "stack-") {
-		idx = StacksInsightsIndex
 	}
 
 	return keys, idx

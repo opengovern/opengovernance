@@ -34,7 +34,6 @@ type ComplianceJob struct {
 	AreAllRunnersQueued bool
 	ConnectionIDs       pq.StringArray `gorm:"type:text[]"`
 	FailureMessage      string
-	IsStack             bool
 }
 
 func (c ComplianceJob) ToApi() api.ComplianceJob {
@@ -43,7 +42,6 @@ func (c ComplianceJob) ToApi() api.ComplianceJob {
 		BenchmarkID:    c.BenchmarkID,
 		Status:         c.Status.ToApi(),
 		FailureMessage: c.FailureMessage,
-		IsStack:        c.IsStack,
 	}
 }
 

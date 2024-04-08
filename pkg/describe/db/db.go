@@ -11,8 +11,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.ORM.AutoMigrate(&model.ComplianceJob{}, &model.ComplianceSummarizer{}, &model.ComplianceRunner{}, &model.InsightJob{}, &model.CheckupJob{},
-		&model.AnalyticsJob{}, &model.Stack{}, &model.StackTag{},
-		&model.StackEvaluation{}, &model.StackCredential{}, &model.DescribeConnectionJob{},
+		&model.AnalyticsJob{}, &model.DescribeConnectionJob{},
 		&model.JobSequencer{},
 	)
 }

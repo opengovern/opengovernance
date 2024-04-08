@@ -14,6 +14,5 @@ type InsightJob struct {
 	SourceType         source.Type
 	Status             insightapi.InsightJobStatus
 	FailureMessage     string
-	IsStack            bool
 	ResourceCollection *string
 }

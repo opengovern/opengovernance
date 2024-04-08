@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
@@ -161,31 +160,16 @@ func FetchInsightValueAtTime(ctx context.Context, client kaytu.Client, t time.Ti
 		},
 	}
 
-	isStack := false
-	if len(connectionIDs) > 0 {
-		if strings.HasPrefix(connectionIDs[0], "stack-") {
-			isStack = true
-		}
-	}
-
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return nil, err
 	}
 	var response InsightResultQueryResponse
 
-	if isStack {
-		fmt.Println("query=", string(queryJson), "index=", es.StacksInsightsIndex)
-		err = client.Search(ctx, es.StacksInsightsIndex, string(queryJson), &response)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		fmt.Println("query=", string(queryJson), "index=", idx)
-		err = client.Search(ctx, idx, string(queryJson), &response)
-		if err != nil {
-			return nil, err
-		}
+	fmt.Println("query=", string(queryJson), "index=", idx)
+	err = client.Search(ctx, idx, string(queryJson), &response)
+	if err != nil {
+		return nil, err
 	}
 
 	result := make(map[uint][]es.InsightResource)
@@ -258,18 +242,8 @@ func FetchInsightValueAfter(ctx context.Context, client kaytu.Client, t time.Tim
 		return nil, err
 	}
 
-	isStack := false
-	if len(connectionIDs) > 0 {
-		if strings.HasPrefix(connectionIDs[0], "stack-") {
-			isStack = true
-		}
-	}
-
 	var response InsightResultQueryResponse
 
-	if isStack {
-		idx = es.StacksInsightsIndex
-	}
 	fmt.Println("query=", string(queryJson), "index=", idx)
 	err = client.Search(ctx, idx, string(queryJson), &response)
 	if err != nil {
@@ -392,17 +366,7 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(ctx context.Context, clien
 		return nil, err
 	}
 
-	isStack := false
-	if len(connectionIDs) > 0 {
-		if strings.HasPrefix(connectionIDs[0], "stack-") {
-			isStack = true
-		}
-	}
-
 	var response InsightHistoryResultQueryResponse
-	if isStack {
-		idx = es.StacksInsightsIndex
-	}
 	fmt.Println("query=", string(queryJson), "index=", idx)
 	err = client.Search(ctx, idx, string(queryJson), &response)
 	if err != nil {

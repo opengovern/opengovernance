@@ -98,7 +98,6 @@ func enqueueInsightJobs(ctx context.Context, jq *jq.JobQueue, job model.InsightJ
 		Query:                ins.Query.QueryToExecute,
 		Description:          ins.Description,
 		ExecutedAt:           job.CreatedAt.UnixMilli(),
-		IsStack:              job.IsStack,
 		ResourceCollectionId: job.ResourceCollection,
 	})
 	if err != nil {
@@ -124,7 +123,6 @@ func newInsightJob(insight complianceAPI.Insight, sourceType source.Type, source
 		AccountID:          accountId,
 		Status:             insightAPI.InsightJobCreated,
 		FailureMessage:     "",
-		IsStack:            false,
 		ResourceCollection: resourceCollectionId,
 	}
 }

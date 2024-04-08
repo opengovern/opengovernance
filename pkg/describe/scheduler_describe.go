@@ -12,14 +12,12 @@ import (
 	"math/rand"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -28,17 +26,14 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 const (
@@ -61,20 +56,6 @@ func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
 
 	for ; ; <-t.C {
 		s.scheduleDescribeJob(ctx)
-	}
-}
-
-func (s *Scheduler) RunStackScheduler(ctx context.Context) {
-	s.logger.Info("Scheduling stack jobs on a timer")
-
-	t := ticker.NewTicker(1*time.Minute, time.Second*10)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		err := s.scheduleStackJobs(ctx)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Scheduling stack jobs error: %v", err.Error()))
-		}
 	}
 }
 
@@ -166,68 +147,38 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		if v, ok := srcMap[dc.ConnectionID]; ok {
 			src = v
 		} else {
-			switch dc.TriggerType {
-			case enums.DescribeTriggerTypeStack:
-			default:
-				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.InternalRole}, dc.ConnectionID)
-				if err != nil {
-					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
-					DescribeResourceJobsCount.WithLabelValues("failure", "get_source").Inc()
-					return err
-				}
-
-				if src.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
-					strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
-					// cost on org
-				} else {
-					if !src.IsEnabled() {
-						continue
-					}
-				}
-				srcMap[dc.ConnectionID] = src
-			}
-		}
-
-		switch dc.TriggerType {
-		case enums.DescribeTriggerTypeStack:
-			cred, err := s.db.GetStackCredential(dc.ConnectionID)
+			src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.InternalRole}, dc.ConnectionID)
 			if err != nil {
-				s.logger.Error("failed to get stack credential", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dc.ID))
+				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure", "get_source").Inc()
 				return err
 			}
-			if cred.Secret == "" {
-				s.logger.Error("failed to get stack credential secret", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dc.ID))
-				return errors.New(fmt.Sprintf("No secret found for %s", dc.ConnectionID))
-			}
-			c := CloudNativeCall{
-				dc: dc,
-			}
-			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, cred.Secret, s.WorkspaceName)
-				if err != nil {
-					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
-					DescribeResourceJobsCount.WithLabelValues("failure", "enqueue_stack").Inc()
-					return nil, err
+
+			if src.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
+				strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
+				// cost on org
+			} else {
+				if !src.IsEnabled() {
+					continue
 				}
-				DescribeResourceJobsCount.WithLabelValues("successful", "").Inc()
-				return nil, nil
-			})
-		default:
-			c := CloudNativeCall{
-				dc:  dc,
-				src: src,
 			}
-			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName)
-				if err != nil {
-					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
-					DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
-					return nil, err
-				}
-				DescribeResourceJobsCount.WithLabelValues("successful", "").Inc()
-				return nil, nil
-			})
+			srcMap[dc.ConnectionID] = src
+
 		}
+		c := CloudNativeCall{
+			dc:  dc,
+			src: src,
+		}
+		wp.AddJob(func() (interface{}, error) {
+			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName)
+			if err != nil {
+				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
+				return nil, err
+			}
+			DescribeResourceJobsCount.WithLabelValues("successful", "").Inc()
+			return nil, nil
+		})
 	}
 
 	res := wp.Run()
@@ -764,368 +715,4 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	)
 
 	return nil
-}
-
-// ================================================ STACKS ================================================
-
-func (s *Scheduler) scheduleStackJobs(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
-	s.logger.Info("Schedule stack jobs started")
-
-	kubeClient, err := s.httpServer.newKubeClient()
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("fail to make new kube client: %s", err.Error()))
-		return fmt.Errorf("fail to make new kube client: %w", err)
-	}
-	s.httpServer.kubeClient = kubeClient
-
-	// ======== Create helm chart for created stacks and check helm release created ========
-	stacks, err := s.db.ListPendingStacks()
-	if err != nil {
-		return err
-	}
-	for _, stack := range stacks {
-		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("could not find helm release: %s", err.Error()))
-			return fmt.Errorf("could not find helm release: %w", err)
-		}
-		s.logger.Info(fmt.Sprintf("Helm release creating for stack: %s", stack.StackID))
-		if helmRelease == nil {
-			if err := s.httpServer.createStackHelmRelease(ctx, CurrentWorkspaceID, stack.ToApi()); err != nil {
-				s.logger.Error(fmt.Sprintf("failed to create helm release for stack: %s", stack.StackID), zap.Error(err))
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to create helm release: %s", err.Error()))
-			} else {
-				s.logger.Error(fmt.Sprintf("helm release for stack %s not created", stack.StackID))
-			}
-		} else {
-			if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-				s.logger.Info(fmt.Sprintf("Helm release created for stack: %s", stack.StackID))
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCreated)
-			} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-				s.logger.Info(fmt.Sprintf("Helm release not ready for stack: %s", stack.StackID))
-				if !helmRelease.Spec.Suspend {
-					helmRelease.Spec.Suspend = true
-					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
-					if err != nil {
-						s.logger.Error(fmt.Sprintf("failed to suspend helm-release for stack: %s", stack.StackID), zap.Error(err))
-						s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to suspend helm-release: %s", err.Error()))
-					}
-				} else {
-					helmRelease.Spec.Suspend = false
-					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
-					if err != nil {
-						s.logger.Error(fmt.Sprintf("failed to unsuspend helm-release for stack: %s", stack.StackID), zap.Error(err))
-						s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to unsuspend helm-release: %s", err.Error()))
-					}
-				}
-			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
-				s.logger.Info(fmt.Sprintf("Helm release stalled for stack: %s", stack.StackID))
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusStalled) // Temporary for debug
-			}
-		}
-	}
-
-	// ======== Run describer for created stacks ========
-	stacks, err = s.db.ListCreatedStacks()
-	for _, stack := range stacks {
-		err = s.triggerStackDescriberJob(stack.ToApi())
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to describe stack resources %s", stack.StackID), zap.Error(err))
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to describe stack resources with error: %s", err.Error()))
-		} else {
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribing)
-		}
-	}
-
-	// ======== Check describer jobs and update stack status ========
-	stacks, err = s.db.ListDescribingStacks()
-	if err != nil {
-		return err
-	}
-	for _, stack := range stacks {
-		jobs, err := s.db.GetDescribeConnectionJobByConnectionID(stack.StackID)
-		if err != nil {
-			return err
-		}
-		if len(jobs) == 0 {
-			continue
-		} else {
-			finished := true
-			for _, job := range jobs {
-				if job.Status == apiDescribe.DescribeResourceJobCreated ||
-					job.Status == apiDescribe.DescribeResourceJobQueued ||
-					job.Status == apiDescribe.DescribeResourceJobInProgress ||
-					job.Status == apiDescribe.DescribeResourceJobOldResourceDeletion {
-					finished = false
-				}
-			}
-
-			if finished {
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed) // don't need to check sink. it waits one minutes
-			}
-		}
-	}
-
-	// ======== run evaluations on stacks ========
-	stacks, err = s.db.ListDescribedStacks()
-	if err != nil {
-		return err
-	}
-	for _, stack := range stacks {
-		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusEvaluating)
-		err = s.runStackBenchmarks(stack.ToApi())
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run benchmarks on stack with error: %s", err.Error()))
-		}
-		err = s.runStackInsights(ctx, stack.ToApi())
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run insights on stack with error: %s", err.Error()))
-		}
-
-	}
-
-	// ======== Check evaluation jobs completed and remove helm release ========
-	stacks, err = s.db.ListEvaluatingStacks()
-	if err != nil {
-		return err
-	}
-	for _, stack := range stacks {
-		isComplete, err := s.updateStackJobs(stack.ToApi())
-		if err != nil {
-			return err
-		}
-		if isComplete {
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
-			err = s.httpServer.deleteStackHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
-			if err != nil {
-				s.logger.Error(fmt.Sprintf("Failed to delete helm-release for stack: %s", stack.StackID), zap.Error(err))
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helm-release: %s", err.Error()))
-			}
-		}
-	}
-
-	// ======== Delete failed helm releases ========
-	stacks, err = s.db.ListFailedStacks()
-	if err != nil {
-		return err
-	}
-	for _, stack := range stacks {
-		err = s.httpServer.deleteStackHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to delete helm-release for stack: %s", stack.StackID), zap.Error(err))
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helm-release: %s", err.Error()))
-		} else {
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompletedWithFailure)
-		}
-	}
-	return nil
-}
-
-func (s *Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
-	var provider source.Type
-	for _, resource := range stack.Resources {
-		if strings.Contains(resource, "aws") {
-			provider = source.CloudAWS
-		} else if strings.Contains(resource, "subscriptions") {
-			provider = source.CloudAzure
-		}
-	}
-	resourceTypes := stack.ResourceTypes
-	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
-	for _, rType := range resourceTypes {
-		describeResourceJob := model.DescribeConnectionJob{
-			ConnectionID: stack.StackID,
-			Connector:    source.Type(provider),
-			AccountID:    stack.AccountIDs[0], // assume we have one account
-			TriggerType:  enums.DescribeTriggerTypeStack,
-			ResourceType: rType,
-			Status:       apiDescribe.DescribeResourceJobCreated,
-		}
-
-		err := s.db.CreateDescribeConnectionJob(&describeResourceJob)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Scheduler) storeStackCredentials(ctx context.Context, stack apiDescribe.Stack, configStr string) error {
-	var provider source.Type
-	for _, resource := range stack.Resources {
-		if strings.Contains(resource, "aws") {
-			provider = source.CloudAWS
-		} else if strings.Contains(resource, "subscriptions") {
-			provider = source.CloudAzure
-		}
-	}
-	var secretBytes []byte
-	kms, err := vault.NewKMSVaultSourceConfig(ctx, "", "", KeyRegion)
-	if err != nil {
-		return err
-	}
-	switch provider {
-	case source.CloudAzure:
-		config := apiOnboard.AzureCredentialConfig{}
-		err := json.Unmarshal([]byte(configStr), &config)
-		if err != nil {
-			return fmt.Errorf("invalid config")
-		}
-		secretBytes, err = kms.Encrypt(ctx, config.AsMap(), KeyARN, "")
-		if err != nil {
-			return err
-		}
-	case source.CloudAWS:
-		config := apiOnboard.AWSCredentialConfig{}
-		err := json.Unmarshal([]byte(configStr), &config)
-		if err != nil {
-			return fmt.Errorf("invalid config")
-		}
-		secretBytes, err = kms.Encrypt(ctx, config.AsMap(), KeyARN, "")
-		if err != nil {
-			return err
-		}
-	}
-	err = s.db.CreateStackCredential(&model.StackCredential{StackID: stack.StackID, Secret: string(secretBytes)})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
-	ctx := &httpclient.Context{
-		UserRole: apiAuth.AdminRole,
-	}
-	benchmarks, err := s.complianceClient.ListBenchmarks(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	var provider source.Type
-	for _, resource := range stack.Resources {
-		if strings.Contains(resource, "aws") {
-			provider = source.CloudAWS
-		} else if strings.Contains(resource, "subscriptions") {
-			provider = source.CloudAzure
-		}
-	}
-	for _, benchmark := range benchmarks {
-		connectorMatch := false
-		for _, p := range benchmark.Tags["plugin"] {
-			if strings.ToLower(p) == strings.ToLower(provider.String()) {
-				connectorMatch = true
-			}
-		}
-		if !connectorMatch { // pass if connector doesn't match
-			continue
-		}
-		jobID, err := s.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, nil, nil)
-		if err != nil {
-			return err
-		}
-
-		evaluation := model.StackEvaluation{
-			EvaluatorID: benchmark.ID,
-			Type:        api.EvaluationTypeBenchmark,
-			StackID:     stack.StackID,
-			JobID:       jobID,
-			Status:      api.StackEvaluationStatusInProgress,
-		}
-		err = s.db.AddEvaluation(&evaluation)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Scheduler) runStackInsights(ctx context.Context, stack apiDescribe.Stack) error {
-	var provider source.Type
-	for _, resource := range stack.Resources {
-		if strings.Contains(resource, "aws") {
-			provider = source.CloudAWS
-		} else if strings.Contains(resource, "subscriptions") {
-			provider = source.CloudAzure
-		}
-	}
-	ctx2 := &httpclient.Context{UserRole: apiAuth.AdminRole}
-	ctx2.Ctx = ctx
-	insights, err := s.complianceClient.ListInsightsMetadata(ctx2, []source.Type{provider})
-	if err != nil {
-		return err
-	}
-	for _, insight := range insights {
-		job := newInsightJob(insight, stack.SourceType, stack.StackID, stack.AccountIDs[0], nil)
-		job.IsStack = true
-
-		if err := s.db.AddInsightJob(&job); err != nil {
-			return err
-		}
-
-		if err := enqueueInsightJobs(ctx, s.jq, job, insight); err != nil {
-			job.Status = apiInsight.InsightJobFailed
-			job.FailureMessage = "Failed to enqueue InsightJob"
-			s.db.UpdateInsightJobStatus(job)
-		}
-		evaluation := model.StackEvaluation{
-			EvaluatorID: strconv.FormatUint(uint64(insight.ID), 10),
-			Type:        api.EvaluationTypeInsight,
-			StackID:     stack.StackID,
-			JobID:       job.ID,
-			Status:      api.StackEvaluationStatusInProgress,
-		}
-		err = s.db.AddEvaluation(&evaluation)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // returns true if all jobs are completed
-	isAllDone := true
-	for _, evaluation := range stack.Evaluations {
-		if evaluation.Status != apiDescribe.StackEvaluationStatusInProgress {
-			continue
-		}
-		if evaluation.Type == api.EvaluationTypeBenchmark {
-			job, err := s.db.GetComplianceJobByID(evaluation.JobID)
-			if err != nil {
-				return false, err
-			}
-			if job.Status == model.ComplianceJobSucceeded {
-				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusCompleted)
-			} else if job.Status == model.ComplianceJobFailed {
-				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusFailed)
-			} else {
-				isAllDone = false
-			}
-		} else if evaluation.Type == api.EvaluationTypeInsight {
-			job, err := s.db.GetInsightJobById(evaluation.JobID)
-			if err != nil {
-				return false, err
-			}
-			if job.Status == apiInsight.InsightJobSucceeded {
-				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusCompleted)
-			} else if job.Status == apiInsight.InsightJobFailed {
-				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusFailed)
-			} else {
-				isAllDone = false
-			}
-		}
-	}
-	return isAllDone, nil
 }

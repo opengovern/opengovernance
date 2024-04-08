@@ -213,7 +213,6 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 		Status:              model.ComplianceJobCreated,
 		AreAllRunnersQueued: false,
 		ConnectionIDs:       connectionIDs,
-		IsStack:             false,
 	}
 	err := s.db.CreateComplianceJob(nil, &job)
 	if err != nil {
