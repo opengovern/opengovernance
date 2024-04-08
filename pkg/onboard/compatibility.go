@@ -8,7 +8,7 @@ import (
 )
 
 func (h HttpHandler) CredentialV2ToV1(ctx context.Context, newCred model.Credential) (string, error) {
-	cnf, err := h.kms.Decrypt(ctx, newCred.Secret, newCred.CredentialStoreKeyID, newCred.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx, newCred.Secret, newCred.CredentialStoreKeyID, newCred.CredentialStoreKeyVersion)
 	if err != nil {
 		return "", err
 	}
@@ -29,12 +29,12 @@ func (h HttpHandler) CredentialV2ToV1(ctx context.Context, newCred model.Credent
 		ExternalId:           awsCnf.ExternalId,
 	}
 
-	latestVersion, err := h.kms.GetLatestVersion(ctx, h.vaultKeyId)
+	latestVersion, err := h.vaultSc.GetLatestVersion(ctx, h.vaultKeyId)
 	if err != nil {
 		return "", err
 	}
 
-	newSecret, err := h.kms.Encrypt(ctx, newConf.AsMap(), h.vaultKeyId, latestVersion)
+	newSecret, err := h.vaultSc.Encrypt(ctx, newConf.AsMap(), h.vaultKeyId, latestVersion)
 	if err != nil {
 		return "", err
 	}

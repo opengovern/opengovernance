@@ -5,7 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 )
 
-type IntegrationConfig struct {
+type OnboardConfig struct {
 	Postgres        koanf.Postgres     `json:"postgres,omitempty" koanf:"postgres"`
 	Http            koanf.HttpServer   `json:"http,omitempty" koanf:"http"`
 	Metadata        koanf.KaytuService `json:"metadata,omitempty" koanf:"metadata"`

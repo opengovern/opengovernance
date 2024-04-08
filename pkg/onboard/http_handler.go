@@ -19,8 +19,7 @@ import (
 type HttpHandler struct {
 	db                               db.Database
 	steampipeConn                    *steampipe.Database
-	kms                              *vault.KMSVaultSourceConfig
-	awsPermissionCheckURL            string
+	vaultSc                          vault.VaultSourceConfig
 	inventoryClient                  inventory.InventoryServiceClient
 	describeClient                   describeClient.SchedulerServiceClient
 	metadataClient                   metadataClient.MetadataServiceClient
@@ -32,14 +31,14 @@ type HttpHandler struct {
 
 func InitializeHttpHandler(
 	ctx context.Context,
-	sourceEventsQueueName string,
 	postgresUsername string, postgresPassword string, postgresHost string, postgresPort string, postgresDb string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	logger *zap.Logger,
-	awsPermissionCheckURL string,
+	vaultSc vault.VaultSourceConfig,
 	vaultKeyId string,
 	inventoryBaseURL string,
 	describeBaseURL string,
+	metadataBaseURL string,
 	masterAccessKey, masterSecretKey string,
 ) (*HttpHandler, error) {
 
@@ -71,11 +70,6 @@ func InitializeHttpHandler(
 	}
 	logger.Info("Connected to the steampipe database", zap.String("database", steampipeDb))
 
-	kms, err := vault.NewKMSVaultSourceConfig(ctx, "", "", KMSAccountRegion)
-	if err != nil {
-		return nil, err
-	}
-
 	onboardDB := db.NewDatabase(orm)
 	err = onboardDB.Initialize()
 	if err != nil {
@@ -86,20 +80,19 @@ func InitializeHttpHandler(
 	inventoryClient := inventory.NewInventoryServiceClient(inventoryBaseURL)
 	describeCli := describeClient.NewSchedulerServiceClient(describeBaseURL)
 
-	meta := metadataClient.NewMetadataServiceClient(MetadataBaseUrl)
+	meta := metadataClient.NewMetadataServiceClient(metadataBaseURL)
 
 	return &HttpHandler{
-		db:                    onboardDB,
-		steampipeConn:         steampipeConn,
-		kms:                   kms,
-		awsPermissionCheckURL: awsPermissionCheckURL,
-		inventoryClient:       inventoryClient,
-		describeClient:        describeCli,
-		validator:             validator.New(),
-		vaultKeyId:            vaultKeyId,
-		logger:                logger,
-		masterAccessKey:       masterAccessKey,
-		masterSecretKey:       masterSecretKey,
-		metadataClient:        meta,
+		db:              onboardDB,
+		steampipeConn:   steampipeConn,
+		vaultSc:         vaultSc,
+		inventoryClient: inventoryClient,
+		describeClient:  describeCli,
+		validator:       validator.New(),
+		vaultKeyId:      vaultKeyId,
+		logger:          logger,
+		masterAccessKey: masterAccessKey,
+		masterSecretKey: masterSecretKey,
+		metadataClient:  meta,
 	}, nil
 }
