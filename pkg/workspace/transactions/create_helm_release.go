@@ -2,12 +2,9 @@ package transactions
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
-	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
@@ -16,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/internal/helm"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -26,20 +24,20 @@ import (
 
 type CreateHelmRelease struct {
 	kubeClient k8sclient.Client // the kubernetes client
-	kmsClient  *kms.Client
+	vault      vault.VaultSourceConfig
 	cfg        config.Config
 	db         *db.Database
 }
 
 func NewCreateHelmRelease(
 	kubeClient k8sclient.Client,
-	kmsClient *kms.Client,
+	vault vault.VaultSourceConfig,
 	cfg config.Config,
 	db *db.Database,
 ) *CreateHelmRelease {
 	return &CreateHelmRelease{
 		kubeClient: kubeClient,
-		kmsClient:  kmsClient,
+		vault:      vault,
 		cfg:        cfg,
 		db:         db,
 	}
@@ -119,7 +117,7 @@ func (t *CreateHelmRelease) RollbackIdempotent(ctx context.Context, workspace db
 }
 
 func (t *CreateHelmRelease) ensureSettingsSynced(ctx context.Context, workspace db.Workspace, release *helmv2.HelmRelease) error {
-	needsUpdate, settings, err := helm.GetUpToDateWorkspaceHelmValues(ctx, t.cfg, t.kubeClient, t.db, t.kmsClient, workspace)
+	needsUpdate, settings, err := helm.GetUpToDateWorkspaceHelmValues(ctx, t.cfg, t.kubeClient, t.db, t.vault, workspace)
 	if err != nil {
 		return fmt.Errorf("get up to date workspace helm values: %w", err)
 	}
@@ -181,23 +179,16 @@ func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.
 			return err
 		}
 
-		decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
-		if err != nil {
-			return err
-		}
-
-		result, err := t.kmsClient.Decrypt(ctx, &kms.DecryptInput{
-			CiphertextBlob:      decoded,
-			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-			KeyId:               &t.cfg.VaultKeyId,
-			EncryptionContext:   nil,
-		})
+		result, err := t.vault.Decrypt(ctx, masterCred.Credential, masterCred.CredentialStoreKeyID, masterCred.CredentialStoreKeyVersion)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 		}
-
+		jsonResult, err := json.Marshal(result)
+		if err != nil {
+			return err
+		}
 		var accessKey types2.AccessKey
-		err = json.Unmarshal(result.Plaintext, &accessKey)
+		err = json.Unmarshal(jsonResult, &accessKey)
 		if err != nil {
 			return err
 		}

@@ -233,7 +233,7 @@ func (s *Service) syncHTTPProxy(ctx context.Context, workspaces []*db.Workspace)
 }
 
 func (s *Service) ensureSettingsSynced(ctx context.Context, workspace db.Workspace) error {
-	needsUpdate, settings, err := helm.GetUpToDateWorkspaceHelmValues(ctx, s.cfg, s.kubeClient, s.db, s.kmsClient, workspace)
+	needsUpdate, settings, err := helm.GetUpToDateWorkspaceHelmValues(ctx, s.cfg, s.kubeClient, s.db, s.vault, workspace)
 	if err != nil {
 		return fmt.Errorf("get up to date workspace helm values: %w", err)
 	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	"github.com/aws/aws-sdk-go-v2/service/osis"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -17,6 +16,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -37,7 +37,7 @@ type Service struct {
 	cfg        workspaceConfig.Config
 	logger     *zap.Logger
 	db         *db.Database
-	kmsClient  *kms.Client
+	vault      vault.VaultSourceConfig
 	authClient authclient.AuthServiceClient
 	kubeClient k8sclient.Client // the kubernetes client
 	opensearch *opensearch.Client
@@ -86,8 +86,10 @@ func New(ctx context.Context, cfg workspaceConfig.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
 
-	awsCfg.Region = cfg.KMSAccountRegion
-	kmsClient := kms.NewFromConfig(awsCfg)
+	vaultClient, err := vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
+	if err != nil {
+		return nil, fmt.Errorf("new kms vaultClient source config: %w", err)
+	}
 
 	awsCfg.Region = cfg.OpenSearchRegion
 	openSearchClient := opensearch.NewFromConfig(awsCfg)
@@ -108,7 +110,7 @@ func New(ctx context.Context, cfg workspaceConfig.Config) (*Service, error) {
 		db:         dbs,
 		authClient: authClient,
 		kubeClient: kubeClient,
-		kmsClient:  kmsClient,
+		vault:      vaultClient,
 		iam:        iamClient,
 		iamMaster:  iamClientMaster,
 		s3Client:   s3Client,

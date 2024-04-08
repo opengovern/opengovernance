@@ -2,16 +2,14 @@ package helm
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
-	kms2 "github.com/aws/aws-sdk-go/service/kms"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -138,7 +136,7 @@ func GetWorkspaceHelmValues(ctx context.Context, cfg config.Config, kubeClient k
 }
 
 func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kubeClient k8sclient.Client,
-	db *db.Database, kmsClient *kms.Client,
+	db *db.Database, vault vault.VaultSourceConfig,
 	workspace db.Workspace) (bool, *types3.KaytuWorkspaceSettings, error) {
 	settings, err := GetWorkspaceHelmValues(ctx, cfg, kubeClient, workspace)
 	if err != nil {
@@ -193,23 +191,16 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 			return false, nil, err
 		}
 
-		decoded, err := base64.StdEncoding.DecodeString(masterCred.Credential)
-		if err != nil {
-			return false, nil, err
-		}
-
-		result, err := kmsClient.Decrypt(ctx, &kms.DecryptInput{
-			CiphertextBlob:      decoded,
-			EncryptionAlgorithm: kms2.EncryptionAlgorithmSpecSymmetricDefault,
-			KeyId:               &cfg.VaultKeyId,
-			EncryptionContext:   nil, //TODO-Saleh use workspaceID
-		})
+		result, err := vault.Decrypt(ctx, masterCred.Credential, masterCred.CredentialStoreKeyID, masterCred.CredentialStoreKeyVersion)
 		if err != nil {
 			return false, nil, fmt.Errorf("failed to encrypt ciphertext: %v", err)
 		}
-
+		jsonResult, err := json.Marshal(result)
+		if err != nil {
+			return false, nil, err
+		}
 		var accessKey types2.AccessKey
-		err = json.Unmarshal(result.Plaintext, &accessKey)
+		err = json.Unmarshal(jsonResult, &accessKey)
 		if err != nil {
 			return false, nil, err
 		}
