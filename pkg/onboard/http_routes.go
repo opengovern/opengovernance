@@ -1955,6 +1955,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 				return err
 			}
 		}
+		apiRes.Credential.CredentialStoreKeyVersion = src.Credential.CredentialStoreKeyVersion
 	}
 
 	return ctx.JSON(http.StatusOK, apiRes)
