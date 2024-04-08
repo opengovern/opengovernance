@@ -33,9 +33,20 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			kms, err := vault.NewKMSVaultSourceConfig(ctx, "", "", cnf.KMS.Region)
-			if err != nil {
-				return err
+			var vaultSc vault.VaultSourceConfig
+			switch cnf.Vault.Provider {
+			case vault.AwsKMS:
+				vaultSc, err = vault.NewKMSVaultSourceConfig(ctx, cnf.Vault.Aws.AccessKey, cnf.Vault.Aws.SecretKey, cnf.Vault.Aws.Region)
+				if err != nil {
+					logger.Error("failed to create vault source config", zap.Error(err))
+					return err
+				}
+			case vault.AzureKeyVault:
+				vaultSc, err = vault.NewAzureVaultClient(logger, cnf.Vault.Azure.ClientId, cnf.Vault.Azure.ClientSecret, cnf.Vault.Azure.BaseUrl)
+				if err != nil {
+					logger.Error("failed to create vault source config", zap.Error(err))
+					return err
+				}
 			}
 
 			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
@@ -51,7 +62,7 @@ func Command() *cobra.Command {
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(logger, d, i, m, db, kms, cnf.KMS.ARN, cnf.MasterAccessKey, cnf.MasterSecretKey),
+				api.New(logger, d, i, m, db, vaultSc, cnf.Vault.KeyId, cnf.MasterAccessKey, cnf.MasterSecretKey),
 			)
 		},
 	}

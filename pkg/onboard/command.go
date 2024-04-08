@@ -4,41 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/config"
+	"github.com/kaytu-io/kaytu-util/pkg/koanf"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"os"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
 
-const (
-	SourceEventsQueueName = "source-events-queue"
-)
-
 var (
-	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
-	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
-	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
-	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
-	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
-	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
-
 	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
 	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
 	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
 	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
-
-	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
-	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
-	DescribeBaseURL       = os.Getenv("DESCRIBE_BASE_URL")
-
-	VaultKeyId       = os.Getenv("VAULT_KEY_ID")
-	KMSAccountRegion = os.Getenv("KMS_ACCOUNT_REGION")
-
-	HttpAddress     = os.Getenv("HTTP_ADDRESS")
-	MasterAccessKey = os.Getenv("MASTER_ACCESS_KEY")
-	MasterSecretKey = os.Getenv("MASTER_SECRET_KEY")
-	MetadataBaseUrl = os.Getenv("METADATA_BASE_URL")
 )
 
 func Command() *cobra.Command {
@@ -55,21 +35,39 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
+	cfg := koanf.Provide("onboard", config.OnboardConfig{})
+
+	var vaultSc vault.VaultSourceConfig
+	switch cfg.Vault.Provider {
+	case vault.AwsKMS:
+		vaultSc, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
+		if err != nil {
+			logger.Error("failed to create vault source config", zap.Error(err))
+			return err
+		}
+	case vault.AzureKeyVault:
+		vaultSc, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure.ClientId, cfg.Vault.Azure.ClientSecret, cfg.Vault.Azure.BaseUrl)
+		if err != nil {
+			logger.Error("failed to create vault source config", zap.Error(err))
+			return err
+		}
+	}
+
 	handler, err := InitializeHttpHandler(
 		ctx,
-		SourceEventsQueueName,
-		PostgreSQLUser, PostgreSQLPassword, PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLSSLMode,
-		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
+		cfg.Postgres.Username, cfg.Postgres.Password, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.DB, cfg.Postgres.SSLMode,
+		cfg.Steampipe.Host, cfg.Steampipe.Port, cfg.Steampipe.DB, cfg.Steampipe.Username, cfg.Steampipe.Password,
 		logger,
-		AWSPermissionCheckURL,
-		VaultKeyId,
-		InventoryBaseURL,
-		DescribeBaseURL,
-		MasterAccessKey, MasterSecretKey,
+		vaultSc,
+		cfg.Vault.KeyId,
+		cfg.Inventory.BaseURL,
+		cfg.Describe.BaseURL,
+		cfg.Metadata.BaseURL,
+		cfg.MasterAccessKey, cfg.MasterSecretKey,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(ctx, logger, HttpAddress, handler)
+	return httpserver.RegisterAndStart(ctx, logger, cfg.Http.Address, handler)
 }
