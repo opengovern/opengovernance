@@ -4,6 +4,7 @@ go 1.21.3
 
 toolchain go1.21.6
 
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v1.1.0
