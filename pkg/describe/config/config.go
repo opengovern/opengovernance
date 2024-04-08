@@ -1,6 +1,9 @@
 package config
 
-import "github.com/kaytu-io/kaytu-util/pkg/config"
+import (
+	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
+)
 
 type ServerlessProviderType string
 
@@ -19,4 +22,5 @@ type SchedulerConfig struct {
 	ServerlessProvider       string `yaml:"serverless_provider"`
 	ElasticSearch            config.ElasticSearch
 	NATS                     config.NATS
+	Vault                    vault.Config `yaml:"vault" koanf:"vault"`
 }

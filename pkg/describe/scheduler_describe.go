@@ -170,7 +170,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			src: src,
 		}
 		wp.AddJob(func() (interface{}, error) {
-			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName)
+			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), c.src.Credential.CredentialStoreKeyVersion, s.WorkspaceName)
 			if err != nil {
 				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
 				DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
@@ -539,7 +539,7 @@ func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, trig
 	}
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string, workspaceName string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string, credentialStoreKeyVersion string, workspaceName string) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -555,19 +555,23 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		DescribeEndpoint:          s.describeEndpoint,
 		IngestionPipelineEndpoint: s.conf.ElasticSearch.IngestionEndpoint,
 		UseOpenSearch:             s.conf.ElasticSearch.IsOpenSearch,
-		KeyARN:                    s.keyARN,
-		KeyRegion:                 s.keyRegion,
-		KafkaTopic:                "", // it is not used by lambda functions
+
+		KeyARN:    s.keyARN,
+		KeyRegion: s.keyRegion,
+
+		VaultConfig: s.conf.Vault,
+
 		DescribeJob: describe.DescribeJob{
-			JobID:        dc.ID,
-			ResourceType: dc.ResourceType,
-			SourceID:     dc.ConnectionID,
-			AccountID:    dc.AccountID,
-			DescribedAt:  dc.CreatedAt.UnixMilli(),
-			SourceType:   dc.Connector,
-			CipherText:   cipherText,
-			TriggerType:  dc.TriggerType,
-			RetryCounter: 0,
+			JobID:           dc.ID,
+			ResourceType:    dc.ResourceType,
+			SourceID:        dc.ConnectionID,
+			AccountID:       dc.AccountID,
+			DescribedAt:     dc.CreatedAt.UnixMilli(),
+			SourceType:      dc.Connector,
+			CipherText:      cipherText,
+			VaultKeyVersion: credentialStoreKeyVersion,
+			TriggerType:     dc.TriggerType,
+			RetryCounter:    0,
 		},
 	}
 
