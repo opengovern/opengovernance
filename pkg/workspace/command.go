@@ -3,15 +3,14 @@ package workspace
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
-	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/spf13/cobra"
 )
 
 func Command() *cobra.Command {
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var cfg config.Config
-			config2.ReadFromEnv(&cfg, nil)
+			cfg := koanf.Provide("workspace", config.Config{})
 
 			s, err := NewServer(cmd.Context(), cfg)
 			if err != nil {
