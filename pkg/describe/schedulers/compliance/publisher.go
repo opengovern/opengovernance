@@ -3,6 +3,7 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -12,12 +13,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *JobScheduler) runPublisher() error {
+func (s *JobScheduler) runPublisher(ctx context.Context) error {
 	s.logger.Info("runPublisher")
-	ctx := &httpclient.Context{UserRole: api.InternalRole}
-
+	ctx2 := &httpclient.Context{UserRole: api.InternalRole}
+	ctx2.Ctx = ctx
 	connectionsMap := make(map[string]*onboardApi.Connection)
-	connections, err := s.onboardClient.ListSources(ctx, nil)
+	connections, err := s.onboardClient.ListSources(ctx2, nil)
 	if err != nil {
 		s.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -27,7 +28,7 @@ func (s *JobScheduler) runPublisher() error {
 		connectionsMap[connection.ID.String()] = &connection
 	}
 
-	queries, err := s.complianceClient.ListQueries(ctx)
+	queries, err := s.complianceClient.ListQueries(ctx2)
 	if err != nil {
 		s.logger.Error("failed to get queries", zap.Error(err))
 		return err
@@ -96,7 +97,7 @@ func (s *JobScheduler) runPublisher() error {
 			}
 
 			s.logger.Info("publishing runner", zap.Uint("jobId", job.ID))
-			if err := s.jq.Produce(ctx.Request().Context(), runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
+			if err := s.jq.Produce(ctx, runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue

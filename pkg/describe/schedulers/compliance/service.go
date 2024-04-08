@@ -58,7 +58,7 @@ func (s *JobScheduler) Run(ctx context.Context) {
 		s.RunEnqueueRunnersCycle()
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunPublisher()
+		s.RunPublisher(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunSummarizer(ctx)
@@ -100,14 +100,14 @@ func (s JobScheduler) RunEnqueueRunnersCycle() {
 	}
 }
 
-func (s *JobScheduler) RunPublisher() {
+func (s *JobScheduler) RunPublisher(ctx context.Context) {
 	s.logger.Info("Scheduling publisher on a timer")
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		if err := s.runPublisher(); err != nil {
+		if err := s.runPublisher(ctx); err != nil {
 			s.logger.Error("failed to run compliance publisher", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
