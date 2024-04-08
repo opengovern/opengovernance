@@ -108,12 +108,24 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 
 	s.logger = logger
 
-	s.StateManager, err = statemanager.New(ctx, cfg)
-	if err != nil {
-		return nil, err
+	switch cfg.Vault.Provider {
+	case vault.AwsKMS:
+		s.vault, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
+		if err != nil {
+			logger.Error("new kms vaultClient source config", zap.Error(err))
+			return nil, fmt.Errorf("new kms vaultClient source config: %w", err)
+		}
+	case vault.AzureKeyVault:
+		s.vault, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure.ClientId, cfg.Vault.Azure.ClientSecret, cfg.Vault.Azure.BaseUrl)
+		if err != nil {
+			logger.Error("new azure vaultClient source config", zap.Error(err))
+			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported vault provider: %s", cfg.Vault.Provider)
 	}
 
-	s.vault, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
+	s.StateManager, err = statemanager.New(ctx, cfg, s.vault)
 	if err != nil {
 		return nil, err
 	}
