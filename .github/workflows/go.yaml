@@ -174,16 +174,32 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipeServiceDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/SteampipeServiceDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
           context: .
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -213,13 +229,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/auth-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/auth-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/AuthServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/auth-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AuthServiceDockerfile
           context: .
   deploy-checkup-worker:
@@ -250,13 +280,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/CheckupWorkerDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/CheckupWorkerDockerfile
           context: .
   deploy-compliance-report-worker:
@@ -288,16 +332,32 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/ComplianceReportWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
           context: .
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
@@ -327,16 +387,32 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/ComplianceSummarizerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
           context: .
   deploy-compliance-service:
     runs-on: ubuntu-latest
@@ -366,13 +442,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/ComplianceServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceServiceDockerfile
           context: .
   deploy-describe-scheduler:
@@ -403,13 +493,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/DescribeSchedulerDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/DescribeSchedulerDockerfile
           context: .
   deploy-integration-service:
@@ -440,13 +544,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/IntegrationServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/IntegrationServiceDockerfile
           context: .
   deploy-assistant-service:
@@ -477,13 +595,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/assistant:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/assistant:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/AssistantServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/assistant:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AssistantServiceDockerfile
           context: .
   deploy-reporter:
@@ -514,13 +646,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/ReporterDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ReporterDockerfile
           context: .
   deploy-insight-worker:
@@ -552,16 +698,32 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InsightWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/InsightWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
           context: .
   deploy-inventory-service:
     runs-on: ubuntu-latest
@@ -591,13 +753,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/InventoryServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InventoryServiceDockerfile
           context: .
   deploy-metadata-service:
@@ -628,13 +804,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/MetadataServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/MetadataServiceDockerfile
           context: .
   deploy-migrator-worker:
@@ -665,13 +855,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/MigratorDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/MigratorDockerfile
           context: .
   deploy-onboard-service:
@@ -702,13 +906,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/OnboardServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/OnboardServiceDockerfile
           context: .
   deploy-subscription-service:
@@ -739,13 +957,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/subscription-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/subscription-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/SubscriptionServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/subscription-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SubscriptionServiceDockerfile
           context: .
   deploy-swagger-ui-and-redoc:
@@ -776,13 +1008,13 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images - swagger-ui
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SwaggerUIDockerfile
           context: .
       - name: Build and push Docker images - redoc
@@ -790,7 +1022,29 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/RedocDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR - swagger-ui
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/SwaggerUIDockerfile
+          context: .
+      - name: Build and Push to ACR - redoc
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/RedocDockerfile
           context: .
   deploy-workspace-service:
@@ -821,13 +1075,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/WorkspaceServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/WorkspaceServiceDockerfile
           context: .
   deploy-analytics-worker:
@@ -859,16 +1127,32 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/AnalyticsWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
           context: .
   deploy-alerting-service:
     runs-on: ubuntu-latest
@@ -898,13 +1182,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/alerting-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/alerting-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/AlertingServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/alerting-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AlertingServiceDockerfile
           context: .
   deploy-cost-estimator-service:
@@ -935,13 +1233,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       - uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/cost-estimator-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/cost-estimator-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/CostEstimatorServiceDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/cost-estimator-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/CostEstimatorServiceDockerfile
           context: .
   deploy-steampipe-plugin-kaytu:
@@ -990,14 +1302,29 @@ jobs:
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/login-action@v2
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
-            ${{ vars.DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AWS_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
+            ${{ vars.AWS_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/SteampipePluginKaytuDockerfile
+          context: .
+      - name: Azure Docker Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
+            ${{ vars.AZURE_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipePluginKaytuDockerfile
           context: .
