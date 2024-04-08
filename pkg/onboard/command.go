@@ -56,7 +56,7 @@ func start(ctx context.Context) error {
 	handler, err := InitializeHttpHandler(
 		ctx,
 		cfg.Postgres.Username, cfg.Postgres.Password, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.DB, cfg.Postgres.SSLMode,
-		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
+		cfg.Steampipe.Host, cfg.Steampipe.Port, cfg.Steampipe.DB, cfg.Steampipe.Username, cfg.Steampipe.Password,
 		logger,
 		vaultSc,
 		cfg.Vault.KeyId,
