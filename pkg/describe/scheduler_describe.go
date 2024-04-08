@@ -556,9 +556,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		IngestionPipelineEndpoint: s.conf.ElasticSearch.IngestionEndpoint,
 		UseOpenSearch:             s.conf.ElasticSearch.IsOpenSearch,
 
-		KeyARN:    s.keyARN,
-		KeyRegion: s.keyRegion,
-
 		VaultConfig: s.conf.Vault,
 
 		DescribeJob: describe.DescribeJob{
