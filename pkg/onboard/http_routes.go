@@ -828,6 +828,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			SecretId:       azureCnf.SecretID,
 			ClientId:       azureCnf.ClientID,
 		}
+		apiCredential.CredentialStoreKeyVersion = credential.CredentialStoreKeyVersion
 	case source.CloudAWS:
 		cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
 		if err != nil {
@@ -845,6 +846,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 				AssumeRolePolicyName: awsCnf.AssumeRoleName,
 				ExternalId:           awsCnf.ExternalId,
 			}
+			apiCredential.CredentialStoreKeyVersion = credential.CredentialStoreKeyVersion
 		} else {
 			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
 			if err != nil {
@@ -858,6 +860,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 				AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
 				ExternalId:           awsCnf.ExternalID,
 			}
+			apiCredential.CredentialStoreKeyVersion = credential.CredentialStoreKeyVersion
 		}
 	}
 
@@ -2161,6 +2164,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 					return err
 				}
 			}
+			apiRes.Credential.CredentialStoreKeyVersion = s.Credential.CredentialStoreKeyVersion
 		}
 		resp = append(resp, apiRes)
 	}
@@ -2200,6 +2204,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 					return err
 				}
 			}
+			apiRes.Credential.CredentialStoreKeyVersion = src.Credential.CredentialStoreKeyVersion
 		}
 
 		res = append(res, apiRes)

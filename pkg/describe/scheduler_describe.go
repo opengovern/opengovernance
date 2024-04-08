@@ -563,8 +563,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 
 		DescribeJob: describe.DescribeJob{
 			JobID:           dc.ID,
-			ScheduleJobID:   0,
-			ParentJobID:     0,
 			ResourceType:    dc.ResourceType,
 			SourceID:        dc.ConnectionID,
 			AccountID:       dc.AccountID,
