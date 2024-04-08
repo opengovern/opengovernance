@@ -16,7 +16,7 @@ type Config struct {
 	Compliance koanf.KaytuService `yaml:"compliance" koanf:"compliance"`
 	Inventory  koanf.KaytuService `yaml:"inventory" koanf:"inventory"`
 
-	Vault vault.Config `yaml:"vault"`
+	Vault vault.Config `yaml:"vault" koanf:"vault"`
 
 	DomainSuffix               string `yaml:"domain_suffix" koanf:"domain_suffix"`
 	AppDomain                  string `yaml:"app_domain" koanf:"app_domain"`
