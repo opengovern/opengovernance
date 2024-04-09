@@ -68,9 +68,11 @@ type VaultConfig struct {
 		SecretKey string `json:"secretKey"`
 	} `json:"aws"`
 	Azure struct {
-		BaseUrl      string `json:"baseUrl"`
-		ClientId     string `json:"clientId"`
-		ClientSecret string `json:"clientSecret"`
+		BaseUrl  string `json:"baseUrl"`
+		TenantId string `json:"tenantId"`
+		ClientId string `json:"clientId"`
+		Username string `json:"username"`
+		Password string `json:"password"`
 	} `json:"azure"`
 	KeyID string `json:"keyID"`
 }

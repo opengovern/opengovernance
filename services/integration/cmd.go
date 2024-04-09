@@ -42,7 +42,7 @@ func Command() *cobra.Command {
 					return err
 				}
 			case vault.AzureKeyVault:
-				vaultSc, err = vault.NewAzureVaultClient(logger, cnf.Vault.Azure.ClientId, cnf.Vault.Azure.ClientSecret, cnf.Vault.Azure.BaseUrl)
+				vaultSc, err = vault.NewAzureVaultClient(logger, cnf.Vault.Azure)
 				if err != nil {
 					logger.Error("failed to create vault source config", zap.Error(err))
 					return err

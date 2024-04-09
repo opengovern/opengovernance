@@ -46,7 +46,7 @@ func start(ctx context.Context) error {
 			return err
 		}
 	case vault.AzureKeyVault:
-		vaultSc, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure.ClientId, cfg.Vault.Azure.ClientSecret, cfg.Vault.Azure.BaseUrl)
+		vaultSc, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure)
 		if err != nil {
 			logger.Error("failed to create vault source config", zap.Error(err))
 			return err

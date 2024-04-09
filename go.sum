@@ -390,6 +390,10 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/trafficmanager/armtrafficm
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/trafficmanager/armtrafficmanager v1.2.0/go.mod h1:k+1M+7xoDh1I7TrPdRUcAOWAenZVGORvt3LKdWfAhDE=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder v1.2.1 h1:k8SYtWDR2WyrOI/WM9Uj0tzp0G9hfvBPyMKftv8dtQQ=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder v1.2.1/go.mod h1:Vvx5jcO9aa2+96TveIolZLBr1wvDKEBMn7U34Q+HGn4=
+github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.1.0 h1:DRiANoJTiW6obBQe3SqZizkuV1PEgfiiGivmVocDy64=
+github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.1.0/go.mod h1:qLIye2hwb/ZouqhpSD9Zn3SJipvpEnz1Ywl3VUk9Y0s=
+github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.0.0 h1:D3occbWoio4EBLkbkevetNMAVX197GkzbUMtqjGWn80=
+github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.0.0/go.mod h1:bTSOgj05NGRuHHhQwAdPnYr9TOdNmKlZTgGLL6nyAdI=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0 h1:IfFdxTUDiV58iZqPKgyWiz4X4fCxZeQ1pTQPImLYXpY=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0/go.mod h1:SUZc9YRRHfx2+FAQKNDGrssXehqLpxmwRv2mC/5ntj4=
 github.com/Azure/azure-storage-blob-go v0.15.0 h1:rXtgp8tN1p29GvpGgfJetavIG0V7OgcSXPpwp3tx6qk=
@@ -1736,8 +1740,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.34.8 h1:/EvNShXF723Lizx4LbYfinMfgy/nb
 github.com/kaytu-io/kaytu-aws-describer v0.34.8/go.mod h1:iKztu7A+z02I1axTplQXBq9OfnfvwBcDX7myOl/9TWE=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8 h1:cXQGFjt1H35iwVX3yyq1lfjNbw9X+IM8+aTYbzHj81s=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8/go.mod h1:+4ZsZm5fL84vdG81oYDaoTGIhE+SFhzxX8K5VlZsbhY=
-github.com/kaytu-io/kaytu-util v0.0.0-20240408150102-eb4ac66d21f3 h1:bIXpxT0nyn+0QPujd/rB+i84d8sQj/N9hyRCG1KsfCU=
-github.com/kaytu-io/kaytu-util v0.0.0-20240408150102-eb4ac66d21f3/go.mod h1:LEsBgc4DQsBhaZTuJvv9Z7FIaoOO3rGBvf9fxb4O9fo=
+github.com/kaytu-io/kaytu-util v0.0.0-20240409153906-f3d2fecf925a h1:kGxBwncCA829RXWGPj8CqN/Ff6UZDeap+ZU4nIvARyc=
+github.com/kaytu-io/kaytu-util v0.0.0-20240409153906-f3d2fecf925a/go.mod h1:5Pif5o08ddyh4KhFNTroEJjfB0+59vdpoSOxYd+3a64=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
 github.com/kaytu-io/pennywise v1.1.5/go.mod h1:hmfCDFdnQJdwjwqt5XpAi5tOHNvl4XhJuAkVm5kX+To=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=

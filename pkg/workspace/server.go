@@ -116,7 +116,7 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 			return nil, fmt.Errorf("new kms vaultClient source config: %w", err)
 		}
 	case vault.AzureKeyVault:
-		s.vault, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure.ClientId, cfg.Vault.Azure.ClientSecret, cfg.Vault.Azure.BaseUrl)
+		s.vault, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure)
 		if err != nil {
 			logger.Error("new azure vaultClient source config", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
