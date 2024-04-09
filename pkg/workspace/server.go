@@ -127,7 +127,7 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 
 	s.StateManager, err = statemanager.New(ctx, cfg, s.vault)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load initiate state manager: %v", err)
 	}
 
 	return s, nil

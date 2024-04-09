@@ -77,7 +77,7 @@ func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.Vaul
 
 	awsConfigMaster, err := aws2.GetConfig(ctx, cfg.AWSMasterAccessKey, cfg.AWSMasterSecretKey, "", "", nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load aws master config: %v", err)
 	}
 	iamClientMaster := iam.NewFromConfig(awsConfigMaster)
 
@@ -94,7 +94,7 @@ func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.Vaul
 
 	awsConfig, err := aws2.GetConfig(ctx, cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load aws config: %v", err)
 	}
 	awsConfig.Region = "us-east-1"
 	s3Client := s3.NewFromConfig(awsConfig)
