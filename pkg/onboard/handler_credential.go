@@ -56,6 +56,7 @@ func (h HttpHandler) GetOrgAccounts(ctx context.Context, sdkConfig aws.Config) (
 	org, err := describer.OrganizationOrganization(ctx, sdkConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
+			h.logger.Error("failed to get organization", zap.Error(err))
 			return nil, nil, err
 		}
 	}
@@ -63,6 +64,7 @@ func (h HttpHandler) GetOrgAccounts(ctx context.Context, sdkConfig aws.Config) (
 	accounts, err := describer.OrganizationAccounts(ctx, sdkConfig)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
+			h.logger.Error("failed to get organization accounts", zap.Error(err))
 			return nil, nil, err
 		}
 	}
@@ -335,10 +337,12 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 
 		metadata, err := h.ExtractCredentialMetadata(awsConfig.AccountID, org, accounts)
 		if err != nil {
+			h.logger.Error("failed to extract metadata", zap.Error(err))
 			return false, err
 		}
 		jsonMetadata, err := json.Marshal(metadata)
 		if err != nil {
+			h.logger.Error("failed to marshal metadata", zap.Error(err))
 			return false, err
 		}
 		cred.Metadata = jsonMetadata
@@ -351,6 +355,7 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 		for paginator.HasMorePages() {
 			page, err := paginator.NextPage(ctx)
 			if err != nil {
+				h.logger.Error("failed to list attached role policies", zap.Error(err))
 				return false, err
 			}
 			for _, policy := range page.AttachedPolicies {
@@ -363,9 +368,8 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 		ctx2.Ctx = ctx
 		awsSpendDiscovery, err := h.metadataClient.GetConfigMetadata(ctx2, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
 		if err != nil {
-			if err != nil {
-				return false, err
-			}
+			h.logger.Error("failed to get spend discovery aws policy arns", zap.Error(err))
+			return false, err
 		}
 		for _, policyARN := range strings.Split(awsSpendDiscovery.GetValue().(string), ",") {
 			policyARN = strings.ReplaceAll(policyARN, "${accountID}", awsConfig.AccountID)
