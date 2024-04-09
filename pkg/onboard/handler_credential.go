@@ -71,6 +71,7 @@ func (h HttpHandler) GetOrgAccounts(ctx context.Context, sdkConfig aws.Config) (
 
 	return org, accounts, nil
 }
+
 func (h HttpHandler) ExtractCredentialMetadata(accountID string, org *awsOrgTypes.Organization, childAccounts []awsOrgTypes.Account) (*AWSCredentialMetadata, error) {
 	metadata := AWSCredentialMetadata{
 		AccountID:             accountID,

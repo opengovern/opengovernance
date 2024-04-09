@@ -213,12 +213,8 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 		settings.Vault.Azure.TenantId = cfg.Vault.Azure.TenantId
 		needsUpdate = true
 	}
-	if settings.Vault.Azure.Username != cfg.Vault.Azure.Username {
-		settings.Vault.Azure.Username = cfg.Vault.Azure.Username
-		needsUpdate = true
-	}
-	if settings.Vault.Azure.Password != cfg.Vault.Azure.Password {
-		settings.Vault.Azure.Password = cfg.Vault.Azure.Password
+	if settings.Vault.Azure.ClientSecret != cfg.Vault.Azure.ClientSecret {
+		settings.Vault.Azure.ClientSecret = cfg.Vault.Azure.ClientSecret
 		needsUpdate = true
 	}
 	if settings.Vault.KeyID != cfg.Vault.KeyId {
