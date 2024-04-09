@@ -307,7 +307,10 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 	}()
 
 	config, err := h.vaultSc.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
+	// TODO REMOVE THIS
+	h.logger.Info("checking credential health", zap.String("credentialId", cred.ID.String()), zap.Any("config", config))
 	if err != nil {
+		h.logger.Error("failed to decrypt credential", zap.Error(err))
 		return false, err
 	}
 
@@ -315,15 +318,18 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 	case source.CloudAWS:
 		awsConfig, err := apiv2.AWSCredentialV2ConfigFromMap(config)
 		if err != nil {
+			h.logger.Error("failed to parse aws config", zap.Error(err))
 			return false, err
 		}
 		sdkCnf, err := h.GetAWSSDKConfig(ctx, generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName), awsConfig.ExternalId)
 		if err != nil {
+			h.logger.Error("failed to get aws sdk config", zap.Error(err))
 			return false, err
 		}
 
 		org, accounts, err := h.GetOrgAccounts(ctx, sdkCnf)
 		if err != nil {
+			h.logger.Error("failed to get org accounts", zap.Error(err))
 			return false, err
 		}
 
@@ -381,7 +387,6 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 	}
 
 	config, err := h.vaultSc.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
-	h.logger.Info("checking credential health", zap.String("credentialId", cred.ID.String()), zap.Any("config", config))
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
