@@ -1891,14 +1891,12 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 	} else {
 		isHealthy, err := h.checkCredentialHealth(outputS, connection.Credential)
 		if err != nil {
-			if herr, ok := err.(*echo.HTTPError); ok {
+			var herr *echo.HTTPError
+			if errors.As(err, &herr) {
 				if herr.Code == http.StatusInternalServerError {
 					h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 					return herr
 				}
-			} else {
-				h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", connection.SourceId))
-				return err
 			}
 		}
 		if !isHealthy {

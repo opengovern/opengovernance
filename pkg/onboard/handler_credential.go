@@ -381,7 +381,9 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 	}
 
 	config, err := h.vaultSc.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
+	h.logger.Info("checking credential health", zap.String("credentialId", cred.ID.String()), zap.Any("config", config))
 	if err != nil {
+		h.logger.Error("failed to decrypt credential", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	switch cred.ConnectorType {
