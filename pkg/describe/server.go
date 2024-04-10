@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgtype"
 	runner2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"regexp"
