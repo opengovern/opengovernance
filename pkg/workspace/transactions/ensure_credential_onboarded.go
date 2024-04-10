@@ -85,7 +85,7 @@ func (t *EnsureCredentialOnboarded) addCredentialToWorkspace(ctx context.Context
 
 	var request api.AddCredentialRequest
 
-	result, err := t.vault.Decrypt(ctx, cred.Metadata, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
+	result, err := t.vault.Decrypt(ctx, cred.Metadata)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}

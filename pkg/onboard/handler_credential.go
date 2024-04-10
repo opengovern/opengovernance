@@ -116,12 +116,7 @@ func (h HttpHandler) createAWSCredential(ctx context.Context, req apiv2.CreateCr
 	}
 	cred.HealthStatus = source.HealthStatusHealthy
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx, h.vaultKeyId)
-	if err != nil {
-		return nil, err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx, req.AWSConfig.AsMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx, req.AWSConfig.AsMap())
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +134,7 @@ func (h HttpHandler) createAWSCredential(ctx context.Context, req apiv2.CreateCr
 
 func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret)
 	if err != nil {
 		return nil, err
 	}
@@ -309,9 +304,7 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 		}
 	}()
 
-	config, err := h.vaultSc.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
-	// TODO REMOVE THIS
-	h.logger.Info("checking credential health", zap.String("credentialId", cred.ID.String()), zap.Any("config", config))
+	config, err := h.vaultSc.Decrypt(ctx, cred.Secret)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err))
 		return false, err
@@ -391,7 +384,7 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 		return h.checkCredentialHealthV2(ctx, cred)
 	}
 
-	config, err := h.vaultSc.Decrypt(ctx, cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
+	config, err := h.vaultSc.Decrypt(ctx, cred.Secret)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())

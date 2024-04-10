@@ -22,7 +22,7 @@ import (
 
 func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
 	var cnf map[string]any
-	cnf, err := h.vaultSc.Decrypt(ctx, connection.Credential.Secret, connection.Credential.CredentialStoreKeyID, connection.Credential.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx, connection.Credential.Secret)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
 		return connection, err

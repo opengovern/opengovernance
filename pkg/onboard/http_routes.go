@@ -248,18 +248,11 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 
 	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap())
 	if err != nil {
 		return err
 	}
 	src.Credential.Secret = string(secretBytes)
-	src.Credential.CredentialStoreKeyID = h.vaultKeyId
-	src.Credential.CredentialStoreKeyVersion = latestVersion
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
@@ -306,19 +299,12 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 	}
 	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: h.masterAccessKey, SecretKey: h.masterSecretKey}, *acc, "")
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.AWSConfig.AsMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.AWSConfig.AsMap())
 	if err != nil {
 		return err
 	}
 	src.Credential.Version = 2
 	src.Credential.Secret = string(secretBytes)
-	src.Credential.CredentialStoreKeyID = h.vaultKeyId
-	src.Credential.CredentialStoreKeyVersion = latestVersion
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
@@ -395,18 +381,11 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 
 	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred, req.Config.TenantId)
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap())
 	if err != nil {
 		return err
 	}
 	src.Credential.Secret = string(secretBytes)
-	src.Credential.CredentialStoreKeyID = h.vaultKeyId
-	src.Credential.CredentialStoreKeyVersion = latestVersion
 	// trace :
 	//_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
 	//span2.SetName("new_CreateSource")
@@ -463,18 +442,11 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return err
 	}
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.AsMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.AsMap())
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
-	cred.CredentialStoreKeyID = h.vaultKeyId
-	cred.CredentialStoreKeyVersion = latestVersion
 
 	// trace :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
@@ -528,18 +500,11 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return err
 	}
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.AsMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.AsMap())
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
-	cred.CredentialStoreKeyID = h.vaultKeyId
-	cred.CredentialStoreKeyVersion = latestVersion
 	// trace :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction ", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_Transaction")
@@ -813,7 +778,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 
 	switch credential.ConnectorType {
 	case source.CloudAzure:
-		cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
+		cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), credential.Secret)
 		if err != nil {
 			return err
 		}
@@ -828,9 +793,8 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			SecretId:       azureCnf.SecretID,
 			ClientId:       azureCnf.ClientID,
 		}
-		apiCredential.CredentialStoreKeyVersion = credential.CredentialStoreKeyVersion
 	case source.CloudAWS:
-		cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
+		cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), credential.Secret)
 		if err != nil {
 			return err
 		}
@@ -846,7 +810,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 				AssumeRolePolicyName: awsCnf.AssumeRoleName,
 				ExternalId:           awsCnf.ExternalId,
 			}
-			apiCredential.CredentialStoreKeyVersion = credential.CredentialStoreKeyVersion
 		} else {
 			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
 			if err != nil {
@@ -860,7 +823,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 				AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
 				ExternalId:           awsCnf.ExternalID,
 			}
-			apiCredential.CredentialStoreKeyVersion = credential.CredentialStoreKeyVersion
 		}
 	}
 
@@ -874,7 +836,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 
 func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret)
 	if err != nil {
 		return nil, err
 	}
@@ -1050,7 +1012,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 
 func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
 	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret, credential.CredentialStoreKeyID, credential.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret)
 	if err != nil {
 		return nil, err
 	}
@@ -1396,7 +1358,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		cred.Name = req.Name
 	}
 
-	cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), cred.Secret)
 	if err != nil {
 		return err
 	}
@@ -1444,18 +1406,11 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	}
 	cred.Metadata = jsonMetadata
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.ToMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.ToMap())
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
-	cred.CredentialStoreKeyID = h.vaultKeyId
-	cred.CredentialStoreKeyVersion = latestVersion
 	if metadata.SpnName != "" {
 		cred.Name = &metadata.SpnName
 	}
@@ -1520,7 +1475,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		cred.Name = req.Name
 	}
 
-	cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), cred.Secret, cred.CredentialStoreKeyID, cred.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), cred.Secret)
 	if err != nil {
 		return err
 	}
@@ -1576,18 +1531,11 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 	}
 	cred.Metadata = jsonMetadata
 
-	latestVersion, err := h.vaultSc.GetLatestVersion(ctx.Request().Context(), h.vaultKeyId)
-	if err != nil {
-		return err
-	}
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.ToMap(), h.vaultKeyId, latestVersion)
+	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), config.ToMap())
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
-	cred.CredentialStoreKeyID = h.vaultKeyId
-	cred.CredentialStoreKeyVersion = latestVersion
 
 	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
 		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
@@ -1779,7 +1727,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	))
 	span.End()
 
-	cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), src.Credential.Secret, src.Credential.CredentialStoreKeyID, src.Credential.CredentialStoreKeyVersion)
+	cnf, err := h.vaultSc.Decrypt(ctx.Request().Context(), src.Credential.Secret)
 	if err != nil {
 		return err
 	}
@@ -1956,7 +1904,6 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 				return err
 			}
 		}
-		apiRes.Credential.CredentialStoreKeyVersion = src.Credential.CredentialStoreKeyVersion
 	}
 
 	return ctx.JSON(http.StatusOK, apiRes)
@@ -2162,7 +2109,6 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 					return err
 				}
 			}
-			apiRes.Credential.CredentialStoreKeyVersion = s.Credential.CredentialStoreKeyVersion
 		}
 		resp = append(resp, apiRes)
 	}
@@ -2183,7 +2129,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
 		}
 		return err
@@ -2202,7 +2148,6 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 					return err
 				}
 			}
-			apiRes.Credential.CredentialStoreKeyVersion = src.Credential.CredentialStoreKeyVersion
 		}
 
 		res = append(res, apiRes)

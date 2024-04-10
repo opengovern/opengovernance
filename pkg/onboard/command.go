@@ -40,13 +40,13 @@ func start(ctx context.Context) error {
 	var vaultSc vault.VaultSourceConfig
 	switch cfg.Vault.Provider {
 	case vault.AwsKMS:
-		vaultSc, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
+		vaultSc, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws, cfg.Vault.KeyId)
 		if err != nil {
 			logger.Error("failed to create vault source config", zap.Error(err))
 			return err
 		}
 	case vault.AzureKeyVault:
-		vaultSc, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure)
+		vaultSc, err = vault.NewAzureVaultClient(ctx, logger, cfg.Vault.Azure, cfg.Vault.KeyId)
 		if err != nil {
 			logger.Error("failed to create vault source config", zap.Error(err))
 			return err

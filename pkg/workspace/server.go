@@ -110,13 +110,13 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 
 	switch cfg.Vault.Provider {
 	case vault.AwsKMS:
-		s.vault, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws.AccessKey, cfg.Vault.Aws.SecretKey, cfg.Vault.Aws.Region)
+		s.vault, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws, cfg.Vault.KeyId)
 		if err != nil {
 			logger.Error("new kms vaultClient source config", zap.Error(err))
 			return nil, fmt.Errorf("new kms vaultClient source config: %w", err)
 		}
 	case vault.AzureKeyVault:
-		s.vault, err = vault.NewAzureVaultClient(logger, cfg.Vault.Azure)
+		s.vault, err = vault.NewAzureVaultClient(ctx, logger, cfg.Vault.Azure, cfg.Vault.KeyId)
 		if err != nil {
 			logger.Error("new azure vaultClient source config", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
@@ -558,7 +558,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 
 		var accessKey, secretKey string
 		if masterCred != nil {
-			result, err := s.vault.Decrypt(ctx.Request().Context(), masterCred.Credential, masterCred.CredentialStoreKeyID, masterCred.CredentialStoreKeyVersion)
+			result, err := s.vault.Decrypt(ctx.Request().Context(), masterCred.Credential)
 			if err != nil {
 				return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 			}
@@ -681,25 +681,17 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
-	latestVersion, err := s.vault.GetLatestVersion(ctx.Request().Context(), s.cfg.Vault.KeyId)
-	if err != nil {
-		s.logger.Error("failed to get latest version", zap.Error(err))
-		return err
-	}
-
-	result, err := s.vault.Encrypt(ctx.Request().Context(), configStrMap, s.cfg.Vault.KeyId, latestVersion)
+	result, err := s.vault.Encrypt(ctx.Request().Context(), configStrMap)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}
 
 	cred := db2.Credential{
-		ConnectorType:             request.ConnectorType,
-		WorkspaceID:               ws.ID,
-		Metadata:                  string(result),
-		ConnectionCount:           count,
-		SingleConnection:          request.SingleConnection,
-		CredentialStoreKeyID:      s.cfg.Vault.KeyId,
-		CredentialStoreKeyVersion: latestVersion,
+		ConnectorType:    request.ConnectorType,
+		WorkspaceID:      ws.ID,
+		Metadata:         string(result),
+		ConnectionCount:  count,
+		SingleConnection: request.SingleConnection,
 	}
 	err = s.db.CreateCredential(&cred)
 	if err != nil {
@@ -1119,7 +1111,7 @@ func (s *Server) DeleteOrganization(c echo.Context) error {
 	}
 	_, err = s.db.GetOrganization(uint(organizationID))
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "Organization not found")
 		}
 		return err
