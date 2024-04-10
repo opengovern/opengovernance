@@ -46,13 +46,13 @@ func (t *CreateWorkspaceKeyId) ApplyIdempotent(ctx context.Context, workspace db
 			t.logger.Error("failed to generate random bytes", zap.Error(err))
 			return err
 		}
-
-		id, err := t.azureSecretHandler.SetSecret(ctx, fmt.Sprintf("client-creds-key-%s", workspace.ID), b)
+		name := fmt.Sprintf("client-creds-key-%s", workspace.ID)
+		_, err = t.azureSecretHandler.SetSecret(ctx, name, b)
 		if err != nil {
 			t.logger.Error("failed to set secret", zap.Error(err))
 			return err
 		}
-		workspace.VaultKeyId = id
+		workspace.VaultKeyId = name
 	default:
 		t.logger.Error("unsupported vault provider", zap.Any("provider", t.cfg.Vault.Provider))
 		return fmt.Errorf("unsupported vault provider: %s", t.cfg.Vault.Provider)
