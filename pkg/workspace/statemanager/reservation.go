@@ -1,6 +1,7 @@
 package statemanager
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
@@ -60,7 +61,7 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 	return nil
 }
 
-func (s *Service) handleReservation() error {
+func (s *Service) handleReservation(ctx context.Context) error {
 	rs, err := s.db.GetReservedWorkspace(true)
 	if err != nil {
 		return err

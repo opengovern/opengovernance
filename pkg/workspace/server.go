@@ -60,15 +60,16 @@ var (
 )
 
 type Server struct {
-	logger       *zap.Logger
-	e            *echo.Echo
-	cfg          config.Config
-	db           *db.Database
-	authClient   authclient.AuthServiceClient
-	kubeClient   k8sclient.Client // the kubernetes client
-	StateManager *statemanager.Service
-	awsMasterCnf aws.Config
-	vault        vault.VaultSourceConfig
+	logger                  *zap.Logger
+	e                       *echo.Echo
+	cfg                     config.Config
+	db                      *db.Database
+	authClient              authclient.AuthServiceClient
+	kubeClient              k8sclient.Client // the kubernetes client
+	StateManager            *statemanager.Service
+	awsMasterCnf            aws.Config
+	vault                   vault.VaultSourceConfig
+	azureVaultSecretHandler *vault.AzureVaultSecretHandler
 }
 
 func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
@@ -121,11 +122,16 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 			logger.Error("new azure vaultClient source config", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
 		}
+		s.azureVaultSecretHandler, err = vault.NewAzureVaultSecretHandler(logger, cfg.Vault.Azure)
+		if err != nil {
+			logger.Error("new azure vaultClient secret handler", zap.Error(err))
+			return nil, fmt.Errorf("new azure vaultClient secret handler: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unsupported vault provider: %s", cfg.Vault.Provider)
 	}
 
-	s.StateManager, err = statemanager.New(ctx, cfg, s.vault)
+	s.StateManager, err = statemanager.New(ctx, cfg, s.vault, s.azureVaultSecretHandler)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load initiate state manager: %v", err)
 	}

@@ -217,8 +217,8 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 		settings.Vault.Azure.ClientSecret = cfg.Vault.Azure.ClientSecret
 		needsUpdate = true
 	}
-	if settings.Vault.KeyID != cfg.Vault.KeyId {
-		settings.Vault.KeyID = cfg.Vault.KeyId
+	if settings.Vault.KeyID != workspace.VaultKeyId {
+		settings.Vault.KeyID = workspace.VaultKeyId
 		needsUpdate = true
 	}
 

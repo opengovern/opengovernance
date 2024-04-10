@@ -34,20 +34,21 @@ const (
 )
 
 type Service struct {
-	cfg        workspaceConfig.Config
-	logger     *zap.Logger
-	db         *db.Database
-	vault      vault.VaultSourceConfig
-	authClient authclient.AuthServiceClient
-	kubeClient k8sclient.Client // the kubernetes client
-	opensearch *opensearch.Client
-	osis       *osis.Client
-	iam        *iam.Client
-	iamMaster  *iam.Client
-	s3Client   *s3.Client
+	cfg                     workspaceConfig.Config
+	logger                  *zap.Logger
+	db                      *db.Database
+	vault                   vault.VaultSourceConfig
+	azureVaultSecretHandler *vault.AzureVaultSecretHandler
+	authClient              authclient.AuthServiceClient
+	kubeClient              k8sclient.Client // the kubernetes client
+	opensearch              *opensearch.Client
+	osis                    *osis.Client
+	iam                     *iam.Client
+	iamMaster               *iam.Client
+	s3Client                *s3.Client
 }
 
-func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.VaultSourceConfig) (*Service, error) {
+func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.VaultSourceConfig, vaultSecretHandler *vault.AzureVaultSecretHandler) (*Service, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
@@ -100,17 +101,18 @@ func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.Vaul
 	s3Client := s3.NewFromConfig(awsConfig)
 
 	return &Service{
-		logger:     logger,
-		cfg:        cfg,
-		db:         dbs,
-		authClient: authClient,
-		kubeClient: kubeClient,
-		vault:      vaultClient,
-		iam:        iamClient,
-		iamMaster:  iamClientMaster,
-		s3Client:   s3Client,
-		opensearch: openSearchClient,
-		osis:       osisClient,
+		logger:                  logger,
+		cfg:                     cfg,
+		db:                      dbs,
+		authClient:              authClient,
+		kubeClient:              kubeClient,
+		vault:                   vaultClient,
+		azureVaultSecretHandler: vaultSecretHandler,
+		iam:                     iamClient,
+		iamMaster:               iamClientMaster,
+		s3Client:                s3Client,
+		opensearch:              openSearchClient,
+		osis:                    osisClient,
 	}, nil
 }
 
@@ -150,7 +152,7 @@ func (s *Service) StartReconciler(ctx context.Context) {
 			}
 		}
 		if s.cfg.EnvType == config.EnvTypeProd && s.cfg.DoReserve {
-			err = s.handleReservation()
+			err = s.handleReservation(ctx)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("reservation: %v", err))
 			}

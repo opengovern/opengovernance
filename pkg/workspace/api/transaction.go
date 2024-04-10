@@ -3,6 +3,7 @@ package api
 type TransactionID string
 
 const (
+	Transaction_CreateWorkspaceKeyId      TransactionID = "CreateWorkspaceKeyId"
 	Transaction_CreateServiceAccountRoles TransactionID = "CreateServiceAccountRoles"
 	Transaction_CreateOpenSearch          TransactionID = "CreateOpenSearch"
 	Transaction_CreateIngestionPipeline   TransactionID = "CreateIngestionPipeline"

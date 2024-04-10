@@ -17,6 +17,8 @@ import (
 func (s *Service) getTransactionByTransactionID(currentState state.State, tid api.TransactionID) transactions.Transaction {
 	var transaction transactions.Transaction
 	switch tid {
+	case api.Transaction_CreateWorkspaceKeyId:
+		transaction = transactions.NewCreateWorkspaceKeyId(s.logger, s.azureVaultSecretHandler, s.cfg, s.db)
 	case api.Transaction_EnsureCredentialExists:
 		transaction = transactions.NewEnsureCredentialExists(s.db)
 	case api.Transaction_CreateHelmRelease:
