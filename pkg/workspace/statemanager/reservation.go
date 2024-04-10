@@ -1,10 +1,12 @@
 package statemanager
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	workspaceVault "github.com/kaytu-io/kaytu-engine/pkg/workspace/internal/vault"
 	"github.com/sony/sonyflake"
 	"math/rand"
 )
@@ -60,7 +62,7 @@ func (s *Service) UseReservationIfPossible(workspace db.Workspace) error {
 	return nil
 }
 
-func (s *Service) handleReservation() error {
+func (s *Service) handleReservation(ctx context.Context) error {
 	rs, err := s.db.GetReservedWorkspace(true)
 	if err != nil {
 		return err
@@ -91,6 +93,11 @@ func (s *Service) handleReservation() error {
 		Tier:           api.Tier_Teams,
 		OrganizationID: nil,
 	}
+	vaultKeyId, err := workspaceVault.GetNewWorkspaceVaultKeyId(ctx, s.logger, s.azureVaultSecretHandler, s.cfg, workspace.ID)
+	if err != nil {
+		return err
+	}
+	workspace.VaultKeyId = vaultKeyId
 
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		return err

@@ -26,6 +26,7 @@ type Workspace struct {
 	ComplianceTriggered      bool              `json:"complianceTriggered"`
 	OpenSearchEndpoint       string            `json:"open_search_endpoint"`
 	PipelineEndpoint         string            `json:"pipeline_endpoint"`
+	VaultKeyId               string            `json:"vault_key_id"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {
