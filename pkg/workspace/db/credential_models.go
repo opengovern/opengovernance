@@ -14,9 +14,6 @@ type Credential struct {
 	IsCreated        bool        `gorm:"default:false" json:"is_created"`
 	ConnectionCount  int
 	SingleConnection bool
-
-	CredentialStoreKeyID      string `json:"credentialStoreKeyId"`
-	CredentialStoreKeyVersion string `json:"credentialStoreKeyVersion"`
 }
 
 type MasterCredential struct {
@@ -25,7 +22,4 @@ type MasterCredential struct {
 	WorkspaceID   string      `gorm:"not null" json:"workspaceID"`
 	ConnectorType source.Type `gorm:"not null" json:"connectorType"`
 	Credential    string
-
-	CredentialStoreKeyID      string `json:"credentialStoreKeyId"`
-	CredentialStoreKeyVersion string `json:"credentialStoreKeyVersion"`
 }

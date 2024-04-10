@@ -179,7 +179,7 @@ func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.
 			return err
 		}
 
-		result, err := t.vault.Decrypt(ctx, masterCred.Credential, masterCred.CredentialStoreKeyID, masterCred.CredentialStoreKeyVersion)
+		result, err := t.vault.Decrypt(ctx, masterCred.Credential)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 		}

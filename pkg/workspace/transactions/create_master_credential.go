@@ -114,25 +114,18 @@ func (t *CreateMasterCredential) ApplyIdempotent(ctx context.Context, workspace 
 		return err
 	}
 
-	latestVersion, err := t.vault.GetLatestVersion(ctx, t.cfg.Vault.KeyId)
-	if err != nil {
-		return fmt.Errorf("failed to get latest version of key for encryption: %v", err)
-	}
-
 	jsMap := make(map[string]any)
 	err = json.Unmarshal(js, &jsMap)
 
-	result, err := t.vault.Encrypt(ctx, jsMap, t.cfg.Vault.KeyId, latestVersion)
+	result, err := t.vault.Encrypt(ctx, jsMap)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}
 
 	err = t.db.CreateMasterCredential(&db.MasterCredential{
-		WorkspaceID:               *workspace.AWSUniqueId,
-		ConnectorType:             source.CloudAWS,
-		Credential:                string(result),
-		CredentialStoreKeyID:      t.cfg.Vault.KeyId,
-		CredentialStoreKeyVersion: latestVersion,
+		WorkspaceID:   *workspace.AWSUniqueId,
+		ConnectorType: source.CloudAWS,
+		Credential:    string(result),
 	})
 	if err != nil {
 		return err

@@ -18,9 +18,6 @@ type Credential struct {
 	Enabled            bool           `gorm:"default:true" json:"enabled"`
 	AutoOnboardEnabled bool           `gorm:"default:false" json:"autoOnboardEnabled"`
 
-	CredentialStoreKeyID      string `json:"credentialStoreKeyId"`
-	CredentialStoreKeyVersion string `json:"credentialStoreKeyVersion"`
-
 	LastHealthCheckTime time.Time           `gorm:"not null;default:now()" json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`

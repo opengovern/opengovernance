@@ -233,7 +233,7 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 			return false, nil, err
 		}
 
-		result, err := vault.Decrypt(ctx, masterCred.Credential, masterCred.CredentialStoreKeyID, masterCred.CredentialStoreKeyVersion)
+		result, err := vault.Decrypt(ctx, masterCred.Credential)
 		if err != nil {
 			return false, nil, fmt.Errorf("failed to encrypt ciphertext: %v", err)
 		}
