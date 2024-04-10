@@ -384,7 +384,11 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	ctx2.Ctx = ctx.Request().Context()
 	src, err := h.Scheduler.onboardClient.GetSource(ctx2, connectionID)
 	if err != nil || src == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		} else {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
+		}
 	}
 
 	resourceTypes := ctx.QueryParams()["resource_type"]
