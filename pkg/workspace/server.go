@@ -25,7 +25,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
-	workspaceVault "github.com/kaytu-io/kaytu-engine/pkg/workspace/internal/vault"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -248,11 +247,6 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		InsightJobsID:            "",
 		ComplianceTriggered:      false,
 	}
-	vaultKeyId, err := workspaceVault.GetNewWorkspaceVaultKeyId(c.Request().Context(), s.logger, s.azureVaultSecretHandler, s.cfg, workspace.ID)
-	if err != nil {
-		return err
-	}
-	workspace.VaultKeyId = vaultKeyId
 
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {

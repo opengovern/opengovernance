@@ -19,12 +19,14 @@ func (s WaitingForCredential) Requirements(workspace db.Workspace) []api.Transac
 
 	if len(creds) == 0 {
 		return []api.TransactionID{
+			api.Transaction_CreateWorkspaceKeyId,
 			api.Transaction_CreateMasterCredential,
 			api.Transaction_EnsureCredentialExists,
 		}
 	}
 
 	return []api.TransactionID{
+		api.Transaction_CreateWorkspaceKeyId,
 		api.Transaction_CreateInsightBucket,
 		api.Transaction_CreateMasterCredential,
 		api.Transaction_CreateServiceAccountRoles,
