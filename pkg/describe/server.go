@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgtype"
 	runner2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"regexp"
@@ -381,9 +380,11 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	forceFull := ctx.QueryParam("force_full") == "true"
 	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
 
-	src, err := h.Scheduler.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionID)
+	ctx2 := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	ctx2.Ctx = ctx.Request().Context()
+	src, err := h.Scheduler.onboardClient.GetSource(ctx2, connectionID)
 	if err != nil || src == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	resourceTypes := ctx.QueryParams()["resource_type"]
