@@ -104,6 +104,9 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				m.logger.Error("failed to retry indexing", zap.Error(err))
 				continue
 			}
+		case <-ctx.Done():
+			m.indexer.Close(context.Background())
+			return
 		}
 	}
 }
