@@ -23,10 +23,12 @@ type EsSinkModule struct {
 	existingIndices map[string]bool
 
 	inputChan chan es.Doc
+	retryChan chan opensearchutil.BulkIndexerItem
 }
 
 func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essdk.Client) (*EsSinkModule, error) {
 	inputChan := make(chan es.Doc, 1000)
+	retryChan := make(chan opensearchutil.BulkIndexerItem, 1000)
 	indexer, err := opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		Client: elasticSearch.ES(),
 	})
@@ -49,6 +51,7 @@ func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essd
 		logger:          logger,
 		elasticsearch:   elasticSearch,
 		inputChan:       inputChan,
+		retryChan:       retryChan,
 		indexer:         indexer,
 		existingIndices: existingIndices,
 	}, nil
@@ -95,12 +98,18 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				RetryOnConflict: utils.GetPointer(5),
 				OnFailure:       m.handleFailure,
 			})
+		case resource := <-m.retryChan:
+			err := m.indexer.Add(ctx, resource)
+			if err != nil {
+				m.logger.Error("failed to retry indexing", zap.Error(err))
+				continue
+			}
 		}
 	}
 }
 
 func (m *EsSinkModule) handleFailure(ctx context.Context, item opensearchutil.BulkIndexerItem, response opensearchutil.BulkIndexerResponseItem, err error) {
-	// TODO handle too many requests
+	// TODO handle too many requests with retry chan
 
 	resourceJson, err2 := io.ReadAll(item.Body)
 	if err != nil {
