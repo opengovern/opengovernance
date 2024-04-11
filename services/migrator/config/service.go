@@ -15,9 +15,4 @@ type MigratorConfig struct {
 	SupersetBaseURL         string `yaml:"superset_base_url"`
 	SupersetAdminPassword   string `yaml:"superset_admin_password"`
 	PrometheusPushAddress   string `yaml:"prometheus_push_address"`
-
-	RabbitMqService  string `yaml:"rabbit_mq_service"`
-	RabbitMqUsername string `yaml:"rabbit_mq_username"`
-	RabbitMqPassword string `yaml:"rabbit_mq_password"`
-	RabbitMqQueue    string `yaml:"rabbit_mq_queue"`
 }

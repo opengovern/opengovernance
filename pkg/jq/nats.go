@@ -59,7 +59,7 @@ func (jq *JobQueue) closeHandler(nc *nats.Conn) {
 
 func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics []string, maxMsgs int64) error {
 	// https://docs.nats.io/nats-concepts/jetstream/streams
-	if _, err := jq.js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+	config := jetstream.StreamConfig{
 		Name:         name,
 		Description:  description,
 		Subjects:     topics,
@@ -71,10 +71,18 @@ func (jq *JobQueue) Stream(ctx context.Context, name, description string, topics
 		Duplicates:   15 * time.Minute,
 		Replicas:     1,
 		Storage:      jetstream.MemoryStorage,
-	}); err != nil {
+	}
+	return jq.StreamWithConfig(ctx, name, description, topics, config)
+}
+
+func (jq *JobQueue) StreamWithConfig(ctx context.Context, name, description string, topics []string, config jetstream.StreamConfig) error {
+	// https://docs.nats.io/nats-concepts/jetstream/streams
+	config.Name = name
+	config.Description = description
+	config.Subjects = topics
+	if _, err := jq.js.CreateOrUpdateStream(ctx, config); err != nil {
 		return err
 	}
-
 	return nil
 }
 

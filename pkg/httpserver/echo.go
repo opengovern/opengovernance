@@ -30,6 +30,10 @@ type Routes interface {
 	Register(router *echo.Echo)
 }
 
+type EmptyRoutes struct{}
+
+func (EmptyRoutes) Register(router *echo.Echo) {}
+
 func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerProvider) {
 	e := echo.New()
 	e.HideBanner = true

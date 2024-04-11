@@ -44,7 +44,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/kaytu-io/kaytu-aws-describer v0.34.8
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
-	github.com/kaytu-io/kaytu-util v0.0.0-20240411110141-6f2f000cd6dd
+	github.com/kaytu-io/kaytu-util v0.0.0-20240411163445-946efb6b5476
 	github.com/kaytu-io/pennywise v1.1.5
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
@@ -54,6 +54,7 @@ require (
 	github.com/microsoft/kiota-authentication-azure-go v1.0.2
 	github.com/microsoftgraph/msgraph-sdk-go v1.36.0
 	github.com/nats-io/nats.go v1.32.0
+	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/projectcontour/contour v1.22.0
 	github.com/prometheus/client_golang v1.18.0
@@ -498,7 +499,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/opencontainers/runc v1.1.12 // indirect
-	github.com/opensearch-project/opensearch-go/v2 v2.3.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pganalyze/pg_query_go/v4 v4.2.3 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
