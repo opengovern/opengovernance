@@ -82,6 +82,10 @@ func UpdateHelmRelease(ctx context.Context, cfg config.Config, kubeClient k8scli
 		return fmt.Errorf("find helm release: %w", err)
 	}
 
+	if helmRelease.Spec.Values == nil {
+		helmRelease.Spec.Values = &apiextensionsv1.JSON{}
+	}
+
 	helmRelease.Spec.Values.Raw = valuesJson
 	err = kubeClient.Update(ctx, helmRelease)
 	if err != nil {
