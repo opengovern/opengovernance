@@ -25,14 +25,14 @@ func FindHelmRelease(ctx context.Context, cfg config.Config, kubeClient k8sclien
 		Name:      workspace.ID,
 		Namespace: cfg.FluxSystemNamespace,
 	}
-	var helmRelease *helmv2.HelmRelease
-	if err := kubeClient.Get(ctx, key, helmRelease); err != nil {
+	var helmRelease helmv2.HelmRelease
+	if err := kubeClient.Get(ctx, key, &helmRelease); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return helmRelease, nil
+	return &helmRelease, nil
 }
 
 func CreateHelmRelease(ctx context.Context, cfg config.Config, kubeClient k8sclient.Client, workspace db.Workspace, valuesJson []byte) error {
