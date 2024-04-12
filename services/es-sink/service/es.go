@@ -62,20 +62,11 @@ func (m *EsSinkModule) QueueDoc(doc es.Doc) {
 }
 
 func (m *EsSinkModule) Start(ctx context.Context) {
-	statsTicker := time.NewTicker(30 * time.Second)
-
+	utils.EnsureRunGoroutine(func() {
+		m.updateStatsCycle()
+	})
 	for {
 		select {
-		case <-statsTicker.C:
-			stats := m.indexer.Stats()
-			metrics.EsSinkDocsNumAdded.Set(float64(stats.NumAdded))
-			metrics.EsSinkDocsNumFlushed.Set(float64(stats.NumFlushed))
-			metrics.EsSinkDocsNumFailed.Set(float64(stats.NumFailed))
-			metrics.EsSinkDocsNumIndexed.Set(float64(stats.NumIndexed))
-			metrics.EsSinkDocsNumCreated.Set(float64(stats.NumCreated))
-			metrics.EsSinkDocsNumUpdated.Set(float64(stats.NumUpdated))
-			metrics.EsSinkDocsNumDeleted.Set(float64(stats.NumDeleted))
-			metrics.EsSinkDocsNumRequests.Set(float64(stats.NumRequests))
 		case resource := <-m.inputChan:
 			if resource == nil {
 				continue
@@ -125,4 +116,20 @@ func (m *EsSinkModule) handleFailure(ctx context.Context, item opensearchutil.Bu
 	}
 	m.logger.Error("failed to index resource", zap.Error(err), zap.String("resource", string(resourceJson)), zap.Any("item", item), zap.Any("response", response))
 	//TODO write to a DLQ
+}
+
+func (m *EsSinkModule) updateStatsCycle() {
+	statsTicker := time.NewTicker(30 * time.Second)
+	defer statsTicker.Stop()
+	for range statsTicker.C {
+		stats := m.indexer.Stats()
+		metrics.EsSinkDocsNumAdded.Set(float64(stats.NumAdded))
+		metrics.EsSinkDocsNumFlushed.Set(float64(stats.NumFlushed))
+		metrics.EsSinkDocsNumFailed.Set(float64(stats.NumFailed))
+		metrics.EsSinkDocsNumIndexed.Set(float64(stats.NumIndexed))
+		metrics.EsSinkDocsNumCreated.Set(float64(stats.NumCreated))
+		metrics.EsSinkDocsNumUpdated.Set(float64(stats.NumUpdated))
+		metrics.EsSinkDocsNumDeleted.Set(float64(stats.NumDeleted))
+		metrics.EsSinkDocsNumRequests.Set(float64(stats.NumRequests))
+	}
 }
