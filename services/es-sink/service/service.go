@@ -81,7 +81,7 @@ func (s *EsSinkService) Start(ctx context.Context) {
 
 func (s *EsSinkService) ConsumeCycle(ctx context.Context) {
 	consumeCtx, err := s.nats.Consume(ctx, "es-sink", StreamName, []string{SinkQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
-		var doc es.Doc
+		var doc es.DocBase
 		err := json.Unmarshal(msg.Data(), &doc)
 		if err != nil {
 			s.logger.Error("failed to unmarshal doc", zap.Error(err), zap.Any("msg", msg))
@@ -106,16 +106,16 @@ func (s *EsSinkService) ConsumeCycle(ctx context.Context) {
 	consumeCtx.Stop()
 }
 
-func (s *EsSinkService) Ingest(ctx context.Context, docs []es.Doc) error {
+func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) error {
 	failedCount := 0
 	for _, doc := range docs {
-		keys, _ := doc.KeysAndIndex()
+		id, _ := doc.GetIdAndIndex()
 		docJson, err := json.Marshal(doc)
 		if err != nil {
 			s.logger.Error("failed to marshal doc", zap.Error(err))
 			return err
 		}
-		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, es.HashOf(keys...))
+		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, id)
 		if err != nil {
 			s.logger.Error("failed to produce message", zap.Error(err), zap.Any("doc", doc))
 			failedCount++

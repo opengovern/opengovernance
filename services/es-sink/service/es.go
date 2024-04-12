@@ -22,12 +22,12 @@ type EsSinkModule struct {
 
 	existingIndices map[string]bool
 
-	inputChan chan es.Doc
+	inputChan chan es.DocBase
 	retryChan chan opensearchutil.BulkIndexerItem
 }
 
 func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essdk.Client) (*EsSinkModule, error) {
-	inputChan := make(chan es.Doc, 1000)
+	inputChan := make(chan es.DocBase, 1000)
 	retryChan := make(chan opensearchutil.BulkIndexerItem, 1000)
 	indexer, err := opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		Client: elasticSearch.ES(),
@@ -57,7 +57,7 @@ func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essd
 	}, nil
 }
 
-func (m *EsSinkModule) QueueDoc(doc es.Doc) {
+func (m *EsSinkModule) QueueDoc(doc es.DocBase) {
 	m.inputChan <- doc
 }
 
@@ -71,7 +71,7 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 			if resource == nil {
 				continue
 			}
-			key, idx := resource.KeysAndIndex()
+			id, idx := resource.GetIdAndIndex()
 			if _, ok := m.existingIndices[idx]; !ok {
 				err := m.elasticsearch.CreateIndexIfNotExist(ctx, m.logger, idx)
 				if err != nil {
@@ -88,7 +88,7 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 			err = m.indexer.Add(ctx, opensearchutil.BulkIndexerItem{
 				Index:           idx,
 				Action:          "index",
-				DocumentID:      es.HashOf(key...),
+				DocumentID:      id,
 				Body:            bytes.NewReader(resourceJson),
 				RetryOnConflict: utils.GetPointer(5),
 				OnFailure:       m.handleFailure,

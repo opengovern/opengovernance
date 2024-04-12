@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/api/entity"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
 type EsSinkServiceClient interface {
-	Ingest(ctx *httpclient.Context, req entity.IngestRequest) error
+	Ingest(ctx *httpclient.Context, docs []es.Doc) error
 }
 
 type esSinkServiceClient struct {
@@ -23,8 +24,22 @@ func NewEsSinkServiceClient(baseUrl string) EsSinkServiceClient {
 	}
 }
 
-func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, req entity.IngestRequest) error {
+func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, docs []es.Doc) error {
 	url := fmt.Sprintf("%s/api/v1/ingest", c.baseUrl)
+
+	jsonDocs, err := json.Marshal(docs)
+	if err != nil {
+		return err
+	}
+	var baseDocs []es.DocBase
+	err = json.Unmarshal(jsonDocs, &baseDocs)
+	if err != nil {
+		return err
+	}
+
+	req := entity.IngestRequest{
+		Docs: baseDocs,
+	}
 
 	reqJson, err := json.Marshal(req)
 	if err != nil {
