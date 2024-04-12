@@ -3,6 +3,7 @@ package es_sink
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
+	"github.com/kaytu-io/kaytu-engine/services/es-sink/api"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/config"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/service"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -60,7 +61,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				httpserver.EmptyRoutes{},
+				api.New(logger, sinkService),
 			)
 		},
 	}

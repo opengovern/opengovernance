@@ -57,6 +57,10 @@ func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essd
 	}, nil
 }
 
+func (m *EsSinkModule) QueueDoc(doc es.Doc) {
+	m.inputChan <- doc
+}
+
 func (m *EsSinkModule) Start(ctx context.Context) {
 	statsTicker := time.NewTicker(30 * time.Second)
 
