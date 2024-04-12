@@ -26,7 +26,7 @@ func (s API) Ingest(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
-	if err := s.esSinkService.Ingest(c.Request().Context(), req.Doc); err != nil {
+	if err := s.esSinkService.Ingest(c.Request().Context(), req.Docs); err != nil {
 		s.logger.Error("failed to ingest data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to ingest data")
 	}

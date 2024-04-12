@@ -7,6 +7,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/labstack/echo/v4"
+	"net/http"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
@@ -104,19 +106,23 @@ func (s *EsSinkService) ConsumeCycle(ctx context.Context) {
 	consumeCtx.Stop()
 }
 
-func (s *EsSinkService) Ingest(ctx context.Context, doc es.Doc) error {
-	keys, _ := doc.KeysAndIndex()
-
-	docJson, err := json.Marshal(doc)
-	if err != nil {
-		s.logger.Error("failed to marshal doc", zap.Error(err))
-		return err
+func (s *EsSinkService) Ingest(ctx context.Context, docs []es.Doc) error {
+	failedCount := 0
+	for _, doc := range docs {
+		keys, _ := doc.KeysAndIndex()
+		docJson, err := json.Marshal(doc)
+		if err != nil {
+			s.logger.Error("failed to marshal doc", zap.Error(err))
+			return err
+		}
+		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, es.HashOf(keys...))
+		if err != nil {
+			s.logger.Error("failed to produce message", zap.Error(err), zap.Any("doc", doc))
+			failedCount++
+		}
 	}
-
-	err = s.nats.Produce(ctx, SinkQueueTopic, docJson, es.HashOf(keys...))
-	if err != nil {
-		s.logger.Error("failed to produce message", zap.Error(err))
-		return err
+	if failedCount > len(docs)/2 {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to produce messages")
 	}
 
 	return nil
