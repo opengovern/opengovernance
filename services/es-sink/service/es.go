@@ -1,8 +1,8 @@
 package service
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/metrics"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -25,13 +26,22 @@ type EsSinkModule struct {
 	inputChan chan es.DocBase
 	retryChan chan opensearchutil.BulkIndexerItem
 }
+type debugLogger struct {
+	logger *zap.Logger
+}
+
+func (d debugLogger) Printf(format string, args ...any) {
+	d.logger.Warn(fmt.Sprintf(format, args...))
+}
 
 func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essdk.Client) (*EsSinkModule, error) {
 	inputChan := make(chan es.DocBase, 1000)
 	retryChan := make(chan opensearchutil.BulkIndexerItem, 1000)
+
 	indexer, err := opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
-		NumWorkers: 4,
-		Client:     elasticSearch.ES(),
+		NumWorkers:  4,
+		Client:      elasticSearch.ES(),
+		DebugLogger: debugLogger{logger: logger},
 		OnError: func(ctx context.Context, err error) {
 			logger.Error("bulk indexer error", zap.Error(err))
 		},
@@ -94,7 +104,7 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				Index:           idx,
 				Action:          "index",
 				DocumentID:      id,
-				Body:            bytes.NewReader(resourceJson),
+				Body:            strings.NewReader(string(resourceJson)),
 				RetryOnConflict: utils.GetPointer(5),
 				OnFailure:       m.handleFailure,
 				OnSuccess: func(ctx context.Context, item opensearchutil.BulkIndexerItem, response opensearchutil.BulkIndexerResponseItem) {
