@@ -33,6 +33,7 @@ func Command() *cobra.Command {
 				Username:      &cnf.ElasticSearch.Username,
 				Password:      &cnf.ElasticSearch.Password,
 				IsOpenSearch:  &cnf.ElasticSearch.IsOpenSearch,
+				IsOnAks:       &cnf.ElasticSearch.IsOnAks,
 				AwsRegion:     &cnf.ElasticSearch.AWSRegion,
 				AssumeRoleArn: &cnf.ElasticSearch.AssumeRoleARN,
 				ExternalID:    &cnf.ElasticSearch.ExternalID,

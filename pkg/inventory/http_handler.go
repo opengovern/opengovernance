@@ -87,6 +87,7 @@ func InitializeHttpHandler(
 		Addresses:     []string{esConf.Address},
 		Username:      &esConf.Username,
 		Password:      &esConf.Password,
+		IsOnAks:       &esConf.IsOnAks,
 		IsOpenSearch:  &esConf.IsOpenSearch,
 		AwsRegion:     &esConf.AwsRegion,
 		AssumeRoleArn: &esConf.AssumeRoleArn,
