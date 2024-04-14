@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -117,7 +118,11 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 }
 
 func (m *EsSinkModule) handleFailure(ctx context.Context, item opensearchutil.BulkIndexerItem, response opensearchutil.BulkIndexerResponseItem, err error) {
-	// TODO handle too many requests with retry chan
+	if response.Status == http.StatusTooManyRequests {
+		time.Sleep(5 * time.Second)
+		m.retryChan <- item
+		return
+	}
 
 	resourceJson, err2 := io.ReadAll(item.Body)
 	if err != nil {
