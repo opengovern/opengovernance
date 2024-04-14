@@ -37,7 +37,7 @@ func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essd
 		return nil, err
 	}
 
-	indices, err := elasticSearch.ListIndices(ctx)
+	indices, err := elasticSearch.ListIndices(ctx, logger)
 	if err != nil {
 		logger.Error("failed to list indices", zap.Error(err))
 		return nil, err
