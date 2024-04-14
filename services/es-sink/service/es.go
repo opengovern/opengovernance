@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/metrics"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
@@ -26,22 +25,14 @@ type EsSinkModule struct {
 	inputChan chan es.DocBase
 	retryChan chan opensearchutil.BulkIndexerItem
 }
-type debugLogger struct {
-	logger *zap.Logger
-}
-
-func (d debugLogger) Printf(format string, args ...any) {
-	d.logger.Warn(fmt.Sprintf(format, args...))
-}
 
 func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essdk.Client) (*EsSinkModule, error) {
 	inputChan := make(chan es.DocBase, 1000)
 	retryChan := make(chan opensearchutil.BulkIndexerItem, 1000)
 
 	indexer, err := opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
-		NumWorkers:  4,
-		Client:      elasticSearch.ES(),
-		DebugLogger: debugLogger{logger: logger},
+		NumWorkers: 4,
+		Client:     elasticSearch.ES(),
 		OnError: func(ctx context.Context, err error) {
 			logger.Error("bulk indexer error", zap.Error(err))
 		},
@@ -99,7 +90,7 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				m.logger.Error("failed to marshal resource", zap.Error(err))
 				continue
 			}
-			m.logger.Info("indexing resource", zap.String("id", id), zap.String("index", idx), zap.String("resource", string(resourceJson)))
+
 			err = m.indexer.Add(ctx, opensearchutil.BulkIndexerItem{
 				Index:           idx,
 				Action:          "index",
@@ -107,9 +98,6 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				Body:            strings.NewReader(string(resourceJson)),
 				RetryOnConflict: utils.GetPointer(5),
 				OnFailure:       m.handleFailure,
-				OnSuccess: func(ctx context.Context, item opensearchutil.BulkIndexerItem, response opensearchutil.BulkIndexerResponseItem) {
-					m.logger.Info("resource indexed", zap.String("id", id), zap.String("index", idx))
-				},
 			})
 			if err != nil {
 				m.logger.Error("failed to add resource to bulk indexer", zap.Error(err))
