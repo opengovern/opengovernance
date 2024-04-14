@@ -94,6 +94,10 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				RetryOnConflict: utils.GetPointer(5),
 				OnFailure:       m.handleFailure,
 			})
+			if err != nil {
+				m.logger.Error("failed to add resource to bulk indexer", zap.Error(err))
+				continue
+			}
 		case resource := <-m.retryChan:
 			err := m.indexer.Add(ctx, resource)
 			if err != nil {
