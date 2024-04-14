@@ -93,6 +93,9 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				Body:            bytes.NewReader(resourceJson),
 				RetryOnConflict: utils.GetPointer(5),
 				OnFailure:       m.handleFailure,
+				OnSuccess: func(ctx context.Context, item opensearchutil.BulkIndexerItem, response opensearchutil.BulkIndexerResponseItem) {
+					m.logger.Info("resource indexed", zap.String("id", id), zap.String("index", idx))
+				},
 			})
 			if err != nil {
 				m.logger.Error("failed to add resource to bulk indexer", zap.Error(err))
