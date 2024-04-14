@@ -30,7 +30,8 @@ func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essd
 	inputChan := make(chan es.DocBase, 1000)
 	retryChan := make(chan opensearchutil.BulkIndexerItem, 1000)
 	indexer, err := opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
-		Client: elasticSearch.ES(),
+		NumWorkers: 4,
+		Client:     elasticSearch.ES(),
 	})
 	if err != nil {
 		logger.Error("failed to create bulk indexer", zap.Error(err))
@@ -131,6 +132,7 @@ func (m *EsSinkModule) updateStatsCycle() {
 	defer statsTicker.Stop()
 	for range statsTicker.C {
 		stats := m.indexer.Stats()
+		m.logger.Info("updating metric es sink stats", zap.Any("stats", stats))
 		metrics.EsSinkDocsNumAdded.Set(float64(stats.NumAdded))
 		metrics.EsSinkDocsNumFlushed.Set(float64(stats.NumFlushed))
 		metrics.EsSinkDocsNumFailed.Set(float64(stats.NumFailed))
