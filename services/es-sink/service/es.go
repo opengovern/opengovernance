@@ -32,6 +32,9 @@ func NewEsSinkModule(ctx context.Context, logger *zap.Logger, elasticSearch essd
 	indexer, err := opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		NumWorkers: 4,
 		Client:     elasticSearch.ES(),
+		OnError: func(ctx context.Context, err error) {
+			logger.Error("bulk indexer error", zap.Error(err))
+		},
 	})
 	if err != nil {
 		logger.Error("failed to create bulk indexer", zap.Error(err))
