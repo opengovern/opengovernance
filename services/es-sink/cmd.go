@@ -28,9 +28,6 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			// TODO remove this
-			logger.Info("starting es-sink service", zap.Any("config", cnf))
-
 			esClient, err := es.NewClient(es.ClientConfig{
 				Addresses:     []string{cnf.ElasticSearch.Address},
 				Username:      &cnf.ElasticSearch.Username,
