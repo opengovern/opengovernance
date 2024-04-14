@@ -1744,6 +1744,10 @@ github.com/kaytu-io/kaytu-util v0.0.0-20240411163445-946efb6b5476 h1:ksujy+WGDnz
 github.com/kaytu-io/kaytu-util v0.0.0-20240411163445-946efb6b5476/go.mod h1:+jID//Ba8bxVxbWJ0Bf4G7esFMVGXcUURUfUMaiUNhQ=
 github.com/kaytu-io/kaytu-util v0.0.0-20240412142956-aa95e9a4381b h1:gcCU6paTvHp8vVsZlPJWc++exiIdUTjH8EdqF3UwthU=
 github.com/kaytu-io/kaytu-util v0.0.0-20240412142956-aa95e9a4381b/go.mod h1:+jID//Ba8bxVxbWJ0Bf4G7esFMVGXcUURUfUMaiUNhQ=
+github.com/kaytu-io/kaytu-util v0.0.0-20240414090047-4b1cc8ac0c19 h1:nR7MDhKRRVeLxq2D5O258Os3E4erWWfG5+U1CxmB/jE=
+github.com/kaytu-io/kaytu-util v0.0.0-20240414090047-4b1cc8ac0c19/go.mod h1:+jID//Ba8bxVxbWJ0Bf4G7esFMVGXcUURUfUMaiUNhQ=
+github.com/kaytu-io/kaytu-util v0.0.0-20240414094610-c16d76b52b1e h1:P/IIgCUti9pcxyCfyaXQuLYBeotIDRT1Uh4vsP/1GlA=
+github.com/kaytu-io/kaytu-util v0.0.0-20240414094610-c16d76b52b1e/go.mod h1:+jID//Ba8bxVxbWJ0Bf4G7esFMVGXcUURUfUMaiUNhQ=
 github.com/kaytu-io/pennywise v1.1.5 h1:AkenC45KamckKyWXLpsSrs3nf9Y8QKLblMa0clJuI88=
 github.com/kaytu-io/pennywise v1.1.5/go.mod h1:hmfCDFdnQJdwjwqt5XpAi5tOHNvl4XhJuAkVm5kX+To=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
