@@ -36,6 +36,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Username:      &conf.ElasticSearch.Username,
 		Password:      &conf.ElasticSearch.Password,
 		IsOpenSearch:  &conf.ElasticSearch.IsOpenSearch,
+		IsOnAks:       &conf.ElasticSearch.IsOnAks,
 		AwsRegion:     &conf.ElasticSearch.AwsRegion,
 		AssumeRoleArn: &conf.ElasticSearch.AssumeRoleArn,
 		ExternalID:    externalID,

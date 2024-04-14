@@ -76,6 +76,7 @@ func NewWorker(
 		Addresses:     []string{config.ElasticSearch.Address},
 		Username:      &config.ElasticSearch.Username,
 		Password:      &config.ElasticSearch.Password,
+		IsOnAks:       &config.ElasticSearch.IsOnAks,
 		IsOpenSearch:  &config.ElasticSearch.IsOpenSearch,
 		AwsRegion:     &config.ElasticSearch.AwsRegion,
 		AssumeRoleArn: &config.ElasticSearch.AssumeRoleArn,

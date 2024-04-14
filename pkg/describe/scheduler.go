@@ -253,6 +253,7 @@ func InitializeScheduler(
 		Addresses:     []string{conf.ElasticSearch.Address},
 		Username:      &conf.ElasticSearch.Username,
 		Password:      &conf.ElasticSearch.Password,
+		IsOnAks:       &conf.ElasticSearch.IsOnAks,
 		IsOpenSearch:  &conf.ElasticSearch.IsOpenSearch,
 		AwsRegion:     &conf.ElasticSearch.AwsRegion,
 		AssumeRoleArn: &conf.ElasticSearch.AssumeRoleArn,
