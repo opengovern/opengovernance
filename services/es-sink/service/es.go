@@ -85,6 +85,7 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				m.logger.Error("failed to marshal resource", zap.Error(err))
 				continue
 			}
+			m.logger.Info("indexing resource", zap.String("id", id), zap.String("index", idx), zap.String("resource", string(resourceJson)))
 			err = m.indexer.Add(ctx, opensearchutil.BulkIndexerItem{
 				Index:           idx,
 				Action:          "index",
