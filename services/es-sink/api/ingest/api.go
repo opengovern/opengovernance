@@ -30,5 +30,5 @@ func (s API) Ingest(c echo.Context) error {
 		s.logger.Error("failed to ingest data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to ingest data")
 	}
-	return c.String(http.StatusOK, "OK")
+	return c.JSON(http.StatusOK, "OK")
 }

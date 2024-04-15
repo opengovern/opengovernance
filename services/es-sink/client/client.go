@@ -53,11 +53,11 @@ func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, docs []es.Doc) err
 	}
 
 	var res string
-
 	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), reqJson, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return echo.NewHTTPError(statusCode, err.Error())
 		}
+		c.logger.Error("failed to do request", zap.Error(err), zap.String("url", url), zap.String("reqJson", string(reqJson)))
 		return err
 	}
 
