@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +25,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/prometheus/client_golang/prometheus"
@@ -74,6 +74,7 @@ func (j Job) Do(
 	onboardClient client.OnboardServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient,
 	schedulerClient describeClient.SchedulerServiceClient,
+	sinkClient esSinkClient.EsSinkServiceClient,
 	uploader *s3manager.Uploader,
 	bucket string, currentWorkspaceID string,
 	logger *zap.Logger,
@@ -317,10 +318,8 @@ func (j Job) Do(
 
 				logger.Info("sending docs to nats", zap.Int("count", len(resources)))
 
-				if esConfig.IsOpenSearch {
-					if err := pipeline.SendToPipeline(esConfig.IngestionEndpoint, resources); err != nil {
-						fail(fmt.Errorf("send to elastic: %w", err))
-					}
+				if err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, resources); err != nil {
+					fail(fmt.Errorf("send to elastic: %w", err))
 				}
 			} else {
 				logger.Error("failed to upload to s3", zap.Error(err))

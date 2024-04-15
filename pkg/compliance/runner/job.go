@@ -17,7 +17,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 )
@@ -347,7 +346,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			totalFindingCountMap[mapKey.String()] = len(newFindings)
 		}
 
-		if err := pipeline.SendToPipeline(w.config.ElasticSearch.IngestionEndpoint, docs); err != nil {
+		if err := w.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
 			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}

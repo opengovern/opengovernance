@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 
 	workerConfig "github.com/kaytu-io/kaytu-engine/pkg/analytics/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -74,6 +75,7 @@ type Worker struct {
 	onboardClient   onboardClient.OnboardServiceClient
 	schedulerClient describeClient.SchedulerServiceClient
 	inventoryClient inventoryClient.InventoryServiceClient
+	sinkClient      esSinkClient.EsSinkServiceClient
 }
 
 func NewWorker(
@@ -133,6 +135,7 @@ func NewWorker(
 	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
+	w.sinkClient = esSinkClient.NewEsSinkServiceClient(conf.EsSink.BaseURL)
 	return w, nil
 }
 
@@ -186,7 +189,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 		w.logger.Info("Running the job", zap.Uint("id", job.JobID))
 
-		result := job.Do(w.jq, w.db, steampipeConn, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger, w.config, ctx)
+		result := job.Do(w.jq, w.db, steampipeConn, w.onboardClient, w.schedulerClient, w.inventoryClient, w.sinkClient, w.logger, w.config, ctx)
 
 		w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
