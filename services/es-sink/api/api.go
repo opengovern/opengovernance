@@ -1,6 +1,8 @@
 package api
 
 import (
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/api/ingest"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/service"
 	"github.com/labstack/echo/v4"
@@ -24,5 +26,5 @@ func New(logger *zap.Logger, esSinkService *service.EsSinkService) *API {
 func (api *API) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.POST("/ingest", api.ingestApi.Ingest)
+	v1.POST("/ingest", httpserver.AuthorizeHandler(api.ingestApi.Ingest, authApi.InternalRole))
 }

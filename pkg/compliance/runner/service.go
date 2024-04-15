@@ -7,6 +7,7 @@ import (
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"time"
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -29,6 +30,7 @@ type Config struct {
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
 	Metadata              config.KaytuService
+	EsSink                config.KaytuService
 	Steampipe             config.Postgres
 	PennywiseBaseURL      string `yaml:"pennywise_base_url"`
 	PrometheusPushAddress string
@@ -44,6 +46,7 @@ type Worker struct {
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
 	metadataClient   metadataClient.MetadataServiceClient
+	sinkClient       esSinkClient.EsSinkServiceClient
 
 	benchmarkCache map[string]complianceApi.Benchmark
 }
@@ -104,6 +107,7 @@ func NewWorker(
 		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
+		sinkClient:       esSinkClient.NewEsSinkServiceClient(config.EsSink.BaseURL),
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
 	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}

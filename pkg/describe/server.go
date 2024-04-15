@@ -30,8 +30,6 @@ import (
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -82,8 +80,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/discovery/resourcetypes/list", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
 	v1.POST("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver2.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
-
-	v1.PUT("/elastic/to/opensearch/migrate", httpserver2.AuthorizeHandler(h.DoOpenSearchMigrate, apiAuth.InternalRole))
 }
 
 // ListJobs godoc
@@ -1112,73 +1108,6 @@ type MigrateSource map[string]any
 
 func (m MigrateSource) KeysAndIndex() ([]string, string) {
 	return nil, ""
-}
-
-func (h HttpServer) DoOpenSearchMigrate(ctx echo.Context) error {
-	indexesToMigrate := []string{
-		"analytics_connection_summary",
-		"analytics_connector_summary",
-		"analytics_spend_connection_summary",
-		"analytics_spend_connector_summary",
-		"rc_analytics_connection_summary",
-		"rc_analytics_connector_summary",
-		"insights",
-		"benchmark_summary",
-	}
-
-	ingestionPipeUrl := ctx.QueryParam("ingestion_pipeline_url")
-
-	for _, indexToMigrate := range indexesToMigrate {
-		paginator, err := kaytu.NewPaginator(h.Scheduler.es.ES(), indexToMigrate, nil, nil)
-		if err != nil {
-			return err
-		}
-
-		for {
-			if paginator.Done() {
-				break
-			}
-
-			h.Scheduler.logger.Info("migration: next page", zap.String("index", indexToMigrate))
-			var res MigratorResponse
-			err = paginator.SearchWithLog(ctx.Request().Context(), &res, true)
-			if err != nil {
-				return err
-			}
-
-			var items []es2.Doc
-			for _, hit := range res.Hits.Hits {
-				item := hit.Source
-				item["es_id"] = hit.ID
-				item["es_index"] = indexToMigrate
-				items = append(items, hit.Source)
-			}
-
-			h.Scheduler.logger.Info("migration: piping data", zap.String("index", indexToMigrate), zap.Int("count", len(items)))
-
-			for startPageIdx := 0; startPageIdx < len(items); startPageIdx += 100 {
-				msgsToSend := items[startPageIdx:min(startPageIdx+100, len(items))]
-				err := pipeline.SendToPipeline(ingestionPipeUrl, msgsToSend)
-				if err != nil {
-					return err
-				}
-			}
-
-			hits := int64(len(res.Hits.Hits))
-			if hits > 0 {
-				paginator.UpdateState(hits, res.Hits.Hits[hits-1].Sort, res.PitID)
-			} else {
-				paginator.UpdateState(hits, nil, "")
-			}
-		}
-
-		err = paginator.Deallocate(ctx.Request().Context())
-		if err != nil {
-			return err
-		}
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

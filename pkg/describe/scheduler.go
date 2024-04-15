@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"net"
 	"net/http"
 	"strconv"
@@ -128,6 +129,7 @@ type Scheduler struct {
 	complianceClient client.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
+	sinkClient       esSinkClient.EsSinkServiceClient
 	authGrpcClient   envoyAuth.AuthorizationClient
 	es               kaytu.Client
 
@@ -316,6 +318,7 @@ func InitializeScheduler(
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
+	s.sinkClient = esSinkClient.NewEsSinkServiceClient(EsSinkBaseURL)
 	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
 		return nil, err

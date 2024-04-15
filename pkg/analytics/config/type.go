@@ -10,5 +10,6 @@ type WorkerConfig struct {
 	Onboard          config.KaytuService
 	Scheduler        config.KaytuService
 	Inventory        config.KaytuService
+	EsSink           config.KaytuService
 	PennywiseBaseURL string `yaml:"pennywise_base_url"`
 }

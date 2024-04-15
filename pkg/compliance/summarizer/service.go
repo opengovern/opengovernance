@@ -11,6 +11,7 @@ import (
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/nats-io/nats.go/jetstream"
@@ -23,6 +24,7 @@ type Config struct {
 	PrometheusPushAddress string
 	Inventory             config.KaytuService
 	Onboard               config.KaytuService
+	EsSink                config.KaytuService
 }
 
 type Worker struct {
@@ -33,6 +35,7 @@ type Worker struct {
 
 	inventoryClient inventoryClient.InventoryServiceClient
 	onboardClient   onboardClient.OnboardServiceClient
+	esSinkClient    esSinkClient.EsSinkServiceClient
 }
 
 func NewWorker(
@@ -70,6 +73,7 @@ func NewWorker(
 		jq:              jq,
 		inventoryClient: inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		onboardClient:   onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
+		esSinkClient:    esSinkClient.NewEsSinkServiceClient(config.EsSink.BaseURL),
 	}
 
 	return w, nil

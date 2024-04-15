@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"reflect"
 	"regexp"
 	"strings"
@@ -24,7 +25,6 @@ import (
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 )
@@ -47,6 +47,7 @@ func (j *Job) Do(
 	onboardClient onboardClient.OnboardServiceClient,
 	schedulerClient describeClient.SchedulerServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient,
+	sinkClient esSinkClient.EsSinkServiceClient,
 	logger *zap.Logger,
 	config config.WorkerConfig,
 	ctx context.Context,
@@ -94,13 +95,13 @@ func (j *Job) Do(
 	}
 	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 
-	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, logger, config); err != nil {
+	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, sinkClient, logger, config); err != nil {
 		fail(err)
 	}
 	return result
 }
 
-func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
+func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics([]db.AnalyticMetricStatus{db.AnalyticMetricStatusActive, db.AnalyticMetricStatusInvisible})
 	if err != nil {
@@ -142,6 +143,7 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 				steampipeDB,
 				encodedResourceCollectionFilters,
 				onboardClient,
+				sinkClient,
 				logger,
 				metric,
 				connectionCache,
@@ -189,6 +191,7 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 				jq,
 				steampipeDB,
 				onboardClient,
+				sinkClient,
 				logger,
 				metric,
 				connectionCache,
@@ -322,7 +325,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 		}, nil
 }
 
-func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
@@ -390,16 +393,16 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		connectorMetricTrendSummary,
 	}
 
-	if err := pipeline.SendToPipeline(conf.ElasticSearch.IngestionEndpoint, msgs); err != nil {
+	if err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
+		logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
-
 	logger.Info("done sending result to elastic", zap.String("metric", metric.ID), zap.Bool("isOpenSearch", conf.ElasticSearch.IsOpenSearch))
 
 	return nil
 }
 
-func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
@@ -587,10 +590,10 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		msgs = append(msgs, item)
 	}
 
-	if err := pipeline.SendToPipeline(conf.ElasticSearch.IngestionEndpoint, msgs); err != nil {
+	if err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
+		logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
-
 	logger.Info("done with spend metric",
 		zap.String("metric", metric.ID),
 		zap.Int("connector_count", len(connectorResultMap)),

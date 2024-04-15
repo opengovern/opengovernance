@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"strings"
 	"time"
@@ -14,7 +16,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/pipeline"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"github.com/nats-io/nats.go/jetstream"
@@ -323,7 +324,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 			task.EsIndex = taskIdx
 
 			if len(task.DeletingResources) > 0 {
-				if err = pipeline.SendToPipeline(s.conf.ElasticSearch.IngestionEndpoint, []es2.Doc{task}); err != nil {
+				if err := s.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
 					s.logger.Error("failed to send delete message to elastic",
 						zap.Uint("jobId", res.JobID),
 						zap.String("connection_id", res.DescribeJob.SourceID),
@@ -337,7 +338,6 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 					continue
 				}
 			}
-
 			break
 		}
 	}

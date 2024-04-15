@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -31,6 +32,7 @@ type Worker struct {
 	onboardClient   client.OnboardServiceClient
 	inventoryClient inventoryClient.InventoryServiceClient
 	schedulerClient describeClient.SchedulerServiceClient
+	sinkClient      esSinkClient.EsSinkServiceClient
 	pusher          *push.Pusher
 
 	s3Bucket string
@@ -43,6 +45,7 @@ type WorkerConfig struct {
 	Onboard               config.KaytuService
 	Inventory             config.KaytuService
 	Scheduler             config.KaytuService
+	EsSink                config.KaytuService
 	SteampipePg           config.Postgres
 	PrometheusPushAddress string
 }
@@ -69,6 +72,7 @@ func NewWorker(
 	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(workerConfig.Inventory.BaseURL)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(workerConfig.Scheduler.BaseURL)
+	w.sinkClient = esSinkClient.NewEsSinkServiceClient(workerConfig.EsSink.BaseURL)
 
 	if s3Region == "" {
 		s3Region = "us-west-2"
@@ -126,6 +130,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			w.onboardClient,
 			w.inventoryClient,
 			w.schedulerClient,
+			w.sinkClient,
 			w.uploader, w.s3Bucket,
 			CurrentWorkspaceID, w.logger,
 		)
