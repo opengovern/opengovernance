@@ -8,6 +8,12 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
+const (
+	QueryEngine_Odysseues    = "odysseus-v0.0.1"
+	QueryEngine_OdysseusSQL  = "odysseus-sql"
+	QueryEngine_OdysseusRego = "odysseus-rego"
+)
+
 type BenchmarkAssignment struct {
 	BenchmarkId          string    `json:"benchmarkId" example:"azure_cis_v140"`                        // Benchmark ID
 	ConnectionId         *string   `json:"connectionId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
