@@ -2275,6 +2275,11 @@ func (h *HttpHandler) RunSQLSmartQuery(ctx context.Context, title, query string,
 	return &resp, nil
 }
 
+type resourceFieldItem struct {
+	fieldName string
+	value     interface{}
+}
+
 func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
@@ -2342,21 +2347,32 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 				return nil, errors.New("x not defined")
 			}
 
-			if allowed {
+			if !allowed {
 				h.logger.Info("rego resource not allowed", zap.Any("resource", v))
 				continue
 			}
 
+			var cells []resourceFieldItem
+			for k, vv := range v {
+				cells = append(cells, resourceFieldItem{
+					fieldName: k,
+					value:     vv,
+				})
+			}
+			sort.Slice(cells, func(i, j int) bool {
+				return cells[i].fieldName < cells[j].fieldName
+			})
+
 			if len(header) == 0 {
-				for k := range v {
-					header = append(header, k)
+				for _, c := range cells {
+					header = append(header, c.fieldName)
 				}
 			}
 
 			size--
 			var res []any
-			for _, va := range v {
-				res = append(res, va)
+			for _, va := range cells {
+				res = append(res, va.value)
 			}
 			result = append(result, res)
 		}
