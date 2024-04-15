@@ -135,7 +135,7 @@ func NewWorker(
 	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
-	w.sinkClient = esSinkClient.NewEsSinkServiceClient(conf.EsSink.BaseURL)
+	w.sinkClient = esSinkClient.NewEsSinkServiceClient(logger, conf.EsSink.BaseURL)
 	return w, nil
 }
 

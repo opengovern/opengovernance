@@ -73,7 +73,7 @@ func NewWorker(
 		jq:              jq,
 		inventoryClient: inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		onboardClient:   onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
-		esSinkClient:    esSinkClient.NewEsSinkServiceClient(config.EsSink.BaseURL),
+		esSinkClient:    esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
 	}
 
 	return w, nil

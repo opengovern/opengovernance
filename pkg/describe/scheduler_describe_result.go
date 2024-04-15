@@ -329,8 +329,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 						zap.Uint("jobId", res.JobID),
 						zap.String("connection_id", res.DescribeJob.SourceID),
 						zap.String("resource_type", res.DescribeJob.ResourceType),
-						zap.Error(err),
-						zap.Any("task", task))
+						zap.Error(err))
 					if i > 10 {
 						CleanupJobCount.WithLabelValues("failure").Inc()
 						return 0, err

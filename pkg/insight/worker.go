@@ -72,7 +72,7 @@ func NewWorker(
 	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(workerConfig.Inventory.BaseURL)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(workerConfig.Scheduler.BaseURL)
-	w.sinkClient = esSinkClient.NewEsSinkServiceClient(workerConfig.EsSink.BaseURL)
+	w.sinkClient = esSinkClient.NewEsSinkServiceClient(logger, workerConfig.EsSink.BaseURL)
 
 	if s3Region == "" {
 		s3Region = "us-west-2"

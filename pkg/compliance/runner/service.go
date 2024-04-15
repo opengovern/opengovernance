@@ -107,7 +107,7 @@ func NewWorker(
 		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
-		sinkClient:       esSinkClient.NewEsSinkServiceClient(config.EsSink.BaseURL),
+		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
 	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
