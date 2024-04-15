@@ -2297,14 +2297,18 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 	if !ok {
 		return nil, errors.New("resource_type not defined")
 	}
+	h.logger.Info("reqo runner", zap.String("resource_type", resourceType))
 
 	paginator, err := rego_runner.Client{ES: h.client}.NewResourcePaginator(nil, nil, types.ResourceTypeToESIndex(resourceType))
 	if err != nil {
 		return nil, err
 	}
+	defer paginator.Close(ctx)
 
 	ignore := lastIdx
 	size := req.Page.Size
+
+	h.logger.Info("reqo runner page", zap.Int("ignoreInit", ignore), zap.Int("sizeInit", size), zap.Bool("hasPage", paginator.HasNext()))
 	var header []string
 	var result [][]any
 	for paginator.HasNext() {
@@ -2315,11 +2319,13 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 
 		for _, v := range page {
 			if ignore > 0 {
+				h.logger.Info("rego ignoring resource", zap.Int("ignore", ignore))
 				ignore--
 				continue
 			}
 
 			if size <= 0 {
+				h.logger.Info("rego pagination finished", zap.Int("size", size))
 				break
 			}
 
@@ -2337,6 +2343,7 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 			}
 
 			if allowed {
+				h.logger.Info("rego resource not allowed", zap.Any("resource", v))
 				continue
 			}
 
@@ -2353,10 +2360,6 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 			}
 			result = append(result, res)
 		}
-	}
-	err = paginator.Close(ctx)
-	if err != nil {
-		return nil, err
 	}
 
 	_, span := tracer.Start(ctx, "new_UpdateQueryHistory", trace.WithSpanKind(trace.SpanKindServer))
