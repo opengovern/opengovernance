@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/api"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/config"
+	"github.com/kaytu-io/kaytu-engine/services/es-sink/grpcApi"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/service"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
@@ -57,6 +58,14 @@ func Command() *cobra.Command {
 			}
 
 			go sinkService.Start(ctx)
+
+			grpcServer, err := grpcApi.NewGRPCSinkServer(logger, sinkService, cnf.Grpc.AuthUri, cnf.Grpc.Address)
+			if err != nil {
+				logger.Error("failed to create grpc server", zap.Error(err))
+				return err
+			}
+
+			go grpcServer.Start()
 
 			return httpserver.RegisterAndStart(
 				ctx,

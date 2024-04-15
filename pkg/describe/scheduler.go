@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"net"
 	"net/http"
 	"strconv"
@@ -24,6 +22,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
@@ -39,6 +38,8 @@ import (
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
+	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
@@ -328,8 +329,8 @@ func InitializeScheduler(
 	describeServer := NewDescribeServer(s.db, s.jq, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
-		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
-		grpc.StreamInterceptor(describeServer.grpcStreamAuthInterceptor),
+		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(s.authGrpcClient)),
+		grpc.StreamInterceptor(kaytuGrpc.CheckGRPCAuthStreamInterceptorWrapper(s.authGrpcClient)),
 	)
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)

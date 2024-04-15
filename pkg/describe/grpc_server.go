@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
@@ -18,10 +15,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 type GRPCDescribeServer struct {
@@ -51,53 +44,6 @@ func NewDescribeServer(
 		authGrpcClient:            authGrpcClient,
 		conf:                      conf,
 	}
-}
-
-func (s *GRPCDescribeServer) checkGRPCAuth(ctx context.Context) error {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return status.Errorf(codes.Unauthenticated, "missing metadata")
-	}
-
-	mdHeaders := make(map[string]string)
-	for k, v := range md {
-		if len(v) > 0 {
-			mdHeaders[k] = v[0]
-		}
-	}
-
-	result, err := s.authGrpcClient.Check(ctx, &envoyAuth.CheckRequest{
-		Attributes: &envoyAuth.AttributeContext{
-			Request: &envoyAuth.AttributeContext_Request{
-				Http: &envoyAuth.AttributeContext_HttpRequest{
-					Headers: mdHeaders,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return status.Errorf(codes.Unauthenticated, "authentication failed: %v", err)
-	}
-
-	if result.GetStatus() == nil || result.GetStatus().GetCode() != int32(rpc.OK) {
-		return status.Errorf(codes.Unauthenticated, http.StatusText(http.StatusUnauthorized))
-	}
-
-	return nil
-}
-
-func (s *GRPCDescribeServer) grpcUnaryAuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	if err := s.checkGRPCAuth(ctx); err != nil {
-		return nil, err
-	}
-	return handler(ctx, req)
-}
-
-func (s *GRPCDescribeServer) grpcStreamAuthInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	if err := s.checkGRPCAuth(ss.Context()); err != nil {
-		return err
-	}
-	return handler(srv, ss)
 }
 
 func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetInProgressRequest) (*golang.ResponseOK, error) {
