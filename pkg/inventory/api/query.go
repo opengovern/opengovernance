@@ -2,10 +2,18 @@ package api
 
 import "time"
 
+type QueryEngine string
+
+const (
+	QueryEngine_OdysseusSQL  = "odysseus-sql"
+	QueryEngine_OdysseusRego = "odysseus-rego"
+)
+
 type RunQueryRequest struct {
-	Page  Page                 `json:"page" validate:"required"`
-	Query *string              `json:"query"`
-	Sorts []SmartQuerySortItem `json:"sorts"`
+	Page   Page                 `json:"page" validate:"required"`
+	Query  *string              `json:"query"`
+	Engine *QueryEngine         `json:"engine"`
+	Sorts  []SmartQuerySortItem `json:"sorts"`
 }
 
 type RunQueryResponse struct {

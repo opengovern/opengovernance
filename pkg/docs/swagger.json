@@ -11258,6 +11258,9 @@
                 "page"
             ],
             "properties": {
+                "engine": {
+                    "type": "string"
+                },
                 "page": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page"
                 },

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/rego_runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"math"
 	"net/http"
 	"sort"
@@ -32,6 +34,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/labstack/echo/v4"
+	"github.com/open-policy-agent/opa/rego"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -2108,12 +2111,25 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 		return fmt.Errorf("failed to execute query template: %w", err)
 	}
 
-	resp, err := h.RunSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return err
+	var resp *inventoryApi.RunQueryResponse
+	if req.Engine == nil || *req.Engine == inventoryApi.QueryEngine_OdysseusSQL {
+		resp, err = h.RunSQLSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
+	} else if *req.Engine == inventoryApi.QueryEngine_OdysseusRego {
+		resp, err = h.RunRegoSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
+	} else {
+		return fmt.Errorf("invalid query engine: %s", *req.Engine)
 	}
+
 	span.AddEvent("information", trace.WithAttributes(
 		attribute.String("query title ", resp.Title),
 	))
@@ -2165,7 +2181,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, totalCount)
 }
 
-func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
+func (h *HttpHandler) RunSQLSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
@@ -2255,6 +2271,111 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 		Query:   query,
 		Headers: res.Headers,
 		Result:  res.Data,
+	}
+	return &resp, nil
+}
+
+func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
+	var err error
+	lastIdx := (req.Page.No - 1) * req.Page.Size
+
+	reqoQuery, err := rego.New(
+		rego.Query("x = data.odysseus.query.allow; resource_type = data.odysseus.query.resource_type"),
+		rego.Module("odysseus.query", query),
+	).PrepareForEval(ctx)
+	if err != nil {
+		return nil, err
+	}
+	results, err := reqoQuery.Eval(ctx, rego.EvalInput(map[string]interface{}{}))
+	if err != nil {
+		return nil, err
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("undefined result")
+	}
+	resourceType, ok := results[0].Bindings["resource_type"].(string)
+	if !ok {
+		return nil, errors.New("resource_type not defined")
+	}
+
+	paginator, err := rego_runner.Client{ES: h.client}.NewResourcePaginator(nil, nil, types.ResourceTypeToESIndex(resourceType))
+	if err != nil {
+		return nil, err
+	}
+
+	ignore := lastIdx
+	size := req.Page.Size
+	var header []string
+	var result [][]any
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			if ignore > 0 {
+				ignore--
+				continue
+			}
+
+			if size <= 0 {
+				break
+			}
+
+			evalResults, err := reqoQuery.Eval(ctx, rego.EvalInput(v))
+			if err != nil {
+				return nil, err
+			}
+			if len(evalResults) == 0 {
+				return nil, fmt.Errorf("undefined result")
+			}
+
+			allowed, ok := evalResults[0].Bindings["x"].(bool)
+			if !ok {
+				return nil, errors.New("x not defined")
+			}
+
+			if allowed {
+				continue
+			}
+
+			if len(header) == 0 {
+				for k := range v {
+					header = append(header, k)
+				}
+			}
+
+			size--
+			var res []any
+			for _, va := range v {
+				res = append(res, va)
+			}
+			result = append(result, res)
+		}
+	}
+	err = paginator.Close(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, span := tracer.Start(ctx, "new_UpdateQueryHistory", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_UpdateQueryHistory")
+
+	err = h.db.UpdateQueryHistory(query)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		h.logger.Error("failed to update query history", zap.Error(err))
+		return nil, err
+	}
+	span.End()
+
+	resp := inventoryApi.RunQueryResponse{
+		Title:   title,
+		Query:   query,
+		Headers: header,
+		Result:  result,
 	}
 	return &resp, nil
 }
