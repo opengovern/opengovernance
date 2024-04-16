@@ -12,3 +12,4 @@ swagger-ui
 workspace-service
 alerting-service
 cost-estimator-service
+wastage-service

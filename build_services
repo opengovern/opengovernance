@@ -19,3 +19,4 @@ gpt-service
 analytics-worker
 alerting-service
 cost-estimator-service
+wastage-service

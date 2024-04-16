@@ -26,6 +26,8 @@ func Command() *cobra.Command {
 
 			if cnf.Http.Address == "" {
 				cnf.Http.Address = "localhost:8000"
+			}
+			if cnf.Pennywise.BaseURL == "" {
 				cnf.Pennywise.BaseURL = "http://localhost:8080"
 			}
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
