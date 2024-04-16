@@ -4,16 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/rego_runner"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	esSdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/open-policy-agent/opa/rego"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"io"
 	"strings"
 	"text/template"
@@ -125,37 +120,18 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			queryParamMap[param.Key] = ""
 		}
 	}
+	var res *steampipe.Result
 
 	if j.ExecutionPlan.Query.Engine == api.QueryEngine_Odysseues || j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusSQL {
-		return w.runSqlWorkerJob(ctx, j, queryParamMap)
+		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
 	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusRego {
-		return w.runRegoWorkerJob(ctx, j, queryParamMap)
+		res, err = w.runRegoWorkerJob(ctx, j, queryParamMap)
 	} else {
-		return 0, fmt.Errorf("query engine not valid")
+		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
 	}
 
-}
-
-func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (int, error) {
-	queryTemplate, err := template.New(j.ExecutionPlan.Query.ID).Parse(j.ExecutionPlan.Query.QueryToExecute)
 	if err != nil {
-		w.logger.Error("failed to parse query template", zap.Error(err))
-		return 0, err
-	}
-	var queryOutput bytes.Buffer
-	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
-		w.logger.Error("failed to execute query template",
-			zap.Error(err),
-			zap.String("query_id", j.ExecutionPlan.Query.ID),
-			zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
-			zap.Uint("job_id", j.ID),
-		)
-		return 0, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
-	}
-
-	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
-	if err != nil {
-		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID))
+		w.logger.Error("failed to get results", zap.Error(err))
 		return 0, err
 	}
 
@@ -383,103 +359,55 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 	return totalFindingCount, nil
 }
 
-func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (int, error) {
-	var err error
-
-	reqoQuery, err := rego.New(
-		rego.Query("x = data.odysseus.query.allow; resource_type = data.odysseus.query.resource_type;"+
-			" account_id = data.odysseus.query.account_id; source_id = data.odysseus.query.source_id;"),
-		rego.Module("odysseus.query", j.ExecutionPlan.Query.QueryToExecute),
-	).PrepareForEval(ctx)
+func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
+	queryTemplate, err := template.New(j.ExecutionPlan.Query.ID).Parse(j.ExecutionPlan.Query.QueryToExecute)
 	if err != nil {
-		return 0, err
+		w.logger.Error("failed to parse query template", zap.Error(err))
+		return nil, err
 	}
-	results, err := reqoQuery.Eval(ctx, rego.EvalInput(map[string]interface{}{}))
+	var queryOutput bytes.Buffer
+	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
+		w.logger.Error("failed to execute query template",
+			zap.Error(err),
+			zap.String("query_id", j.ExecutionPlan.Query.ID),
+			zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+			zap.Uint("job_id", j.ID),
+		)
+		return nil, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
+	}
+
+	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
-		return 0, err
-	}
-	if len(results) == 0 {
-		return 0, fmt.Errorf("undefined result")
-	}
-	resourceType, ok := results[0].Bindings["resource_type"].(string)
-	if !ok {
-		return 0, errors.New("resource_type not defined")
-	}
-	w.logger.Info("reqo runner", zap.String("resource_type", resourceType))
-
-	var filters []esSdk.BoolFilter
-	accountID, ok := results[0].Bindings["account_id"].(string)
-	if ok {
-		if len(accountID) > 0 && accountID != "all" {
-			var accountFieldName string
-			awsRTypes := onboardApi.GetAWSSupportedResourceTypeMap()
-			if _, ok := awsRTypes[strings.ToLower(resourceType)]; ok {
-				accountFieldName = "AccountID"
-			}
-			azureRTypes := onboardApi.GetAzureSupportedResourceTypeMap()
-			if _, ok := azureRTypes[strings.ToLower(resourceType)]; ok {
-				accountFieldName = "SubscriptionID"
-			}
-
-			filters = append(filters, esSdk.NewTermFilter("metadata."+accountFieldName, accountID))
-		}
+		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID))
+		return nil, err
 	}
 
-	sourceID, ok := results[0].Bindings["source_id"].(string)
-	if ok {
-		filters = append(filters, esSdk.NewTermFilter("source_id", sourceID))
-	}
+	return res, nil
+}
 
-	jsonFilters, _ := json.Marshal(filters)
-	plugin.Logger(ctx).Trace("reqo runner", "filters", filters, "jsonFilters", string(jsonFilters))
-
-	paginator, err := rego_runner.Client{ES: w.esClient}.NewResourcePaginator(filters, nil, types.ResourceTypeToESIndex(resourceType))
+func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
+	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2.Ctx = ctx
+	var engine inventoryApi.QueryEngine
+	engine = inventoryApi.QueryEngine_OdysseusRego
+	queryResponse, err := w.inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
+		Page: inventoryApi.Page{
+			No:   1,
+			Size: 1000,
+		},
+		Engine: &engine,
+		Query:  &j.ExecutionPlan.Query.QueryToExecute,
+		Sorts:  nil,
+	})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	defer paginator.Close(ctx)
 
-	var header []string
-	var result [][]any
-	for paginator.HasNext() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return 0, err
-		}
-
-		for _, v := range page {
-			evalResults, err := reqoQuery.Eval(ctx, rego.EvalInput(v))
-			if err != nil {
-				return 0, err
-			}
-			if len(evalResults) == 0 {
-				return 0, fmt.Errorf("undefined result")
-			}
-
-			allowed, ok := evalResults[0].Bindings["x"].(bool)
-			if !ok {
-				return 0, errors.New("x not defined")
-			}
-
-			if allowed {
-				w.logger.Info("rego resource not allowed", zap.Any("resource", v))
-				continue
-			}
-
-			if len(header) == 0 {
-				for k := range v {
-					header = append(header, k)
-				}
-			}
-
-			var res []any
-			for _, va := range v {
-				res = append(res, va)
-			}
-			result = append(result, res)
-		}
+	results := &steampipe.Result{
+		Headers: queryResponse.Headers,
+		Data:    queryResponse.Result,
 	}
-	return 0, nil
+	return results, nil
 }
 
 type FindingsMultiGetResponse struct {
