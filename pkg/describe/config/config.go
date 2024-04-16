@@ -17,10 +17,11 @@ func (s ServerlessProviderType) String() string {
 }
 
 type SchedulerConfig struct {
-	ComplianceIntervalHours  int    `yaml:"compliance_interval_hours"`
-	EventHubConnectionString string `yaml:"event_hub_connection_string"`
-	ServerlessProvider       string `yaml:"serverless_provider"`
-	ElasticSearch            config.ElasticSearch
-	NATS                     config.NATS
-	Vault                    vault.Config `yaml:"vault" koanf:"vault"`
+	ComplianceIntervalHours    int    `yaml:"compliance_interval_hours"`
+	EventHubConnectionString   string `yaml:"event_hub_connection_string"`
+	ServiceBusConnectionString string `yaml:"service_bus_connection_string"`
+	ServerlessProvider         string `yaml:"serverless_provider"`
+	ElasticSearch              config.ElasticSearch
+	NATS                       config.NATS
+	Vault                      vault.Config `yaml:"vault" koanf:"vault"`
 }
