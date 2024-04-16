@@ -171,11 +171,6 @@ func InitializeScheduler(
 	mustSummarizeIntervalHours string,
 	ctx context.Context,
 ) (s *Scheduler, err error) {
-	s.logger, err = zap.NewProduction()
-	if err != nil {
-		return nil, err
-	}
-
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
 	}
@@ -193,6 +188,10 @@ func InitializeScheduler(
 			s.Stop()
 		}
 	}()
+	s.logger, err = zap.NewProduction()
+	if err != nil {
+		return nil, err
+	}
 
 	lambdaCfg, err := awsConfig.LoadDefaultConfig(ctx)
 	lambdaCfg.Region = KeyRegion
