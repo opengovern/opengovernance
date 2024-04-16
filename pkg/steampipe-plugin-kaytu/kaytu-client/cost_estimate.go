@@ -11,7 +11,6 @@ import (
 	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
-	"github.com/kaytu-io/pennywise/pkg/submission"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"net/http"
@@ -399,7 +398,7 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 		}
 	}
 
-	req := submission.Submission{
+	req := schema.Submission{
 		ID:        "submittion-1",
 		CreatedAt: time.Now(),
 		Resources: []schema.ResourceDef{},
