@@ -20,5 +20,6 @@ type EC2InstanceWastageRequest struct {
 
 type EC2InstanceWastageResponse struct {
 	CurrentCost     float64          `json:"currentCost"`
+	TotalSavings    float64          `json:"totalSavings"`
 	Recommendations []Recommendation `json:"recommendations"`
 }

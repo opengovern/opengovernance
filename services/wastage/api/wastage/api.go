@@ -158,12 +158,14 @@ func (s API) EC2Instance(c echo.Context) error {
 	}
 
 	var recomResponse []entity.Recommendation
+	totalSavings := float64(0)
 	for _, recom := range recoms {
 		newCost, err := s.costSvc.GetEC2InstanceCost(req.Region, recom.NewInstance, recom.NewVolumes, metrics)
 		if err != nil {
 			return err
 		}
 
+		totalSavings += currentCost - newCost
 		recomResponse = append(recomResponse, entity.Recommendation{
 			Description: recom.Description,
 			Saving:      currentCost - newCost,
@@ -172,6 +174,7 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
 		CurrentCost:     currentCost,
+		TotalSavings:    totalSavings,
 		Recommendations: recomResponse,
 	})
 }
