@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/rego_runner"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"math"
 	"net/http"
 	"sort"
@@ -30,6 +32,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/describe"
+	esSdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -2304,7 +2307,31 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 	}
 	h.logger.Info("reqo runner", zap.String("resource_type", resourceType))
 
-	paginator, err := rego_runner.Client{ES: h.client}.NewResourcePaginator(nil, nil, types.ResourceTypeToESIndex(resourceType))
+	var filters []esSdk.BoolFilter
+	if req.AccountId != nil {
+		if len(*req.AccountId) > 0 && *req.AccountId != "all" {
+			var accountFieldName string
+			awsRTypes := onboardApi.GetAWSSupportedResourceTypeMap()
+			if _, ok := awsRTypes[strings.ToLower(resourceType)]; ok {
+				accountFieldName = "AccountID"
+			}
+			azureRTypes := onboardApi.GetAzureSupportedResourceTypeMap()
+			if _, ok := azureRTypes[strings.ToLower(resourceType)]; ok {
+				accountFieldName = "SubscriptionID"
+			}
+
+			filters = append(filters, esSdk.NewTermFilter("metadata."+accountFieldName, *req.AccountId))
+		}
+	}
+
+	if req.SourceId != nil {
+		filters = append(filters, esSdk.NewTermFilter("source_id", *req.SourceId))
+	}
+
+	jsonFilters, _ := json.Marshal(filters)
+	plugin.Logger(ctx).Trace("reqo runner", "filters", filters, "jsonFilters", string(jsonFilters))
+
+	paginator, err := rego_runner.Client{ES: h.client}.NewResourcePaginator(filters, nil, types.ResourceTypeToESIndex(resourceType))
 	if err != nil {
 		return nil, err
 	}

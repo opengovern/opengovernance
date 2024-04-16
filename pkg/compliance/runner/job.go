@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"io"
 	"strings"
 	"text/template"
@@ -118,26 +120,18 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			queryParamMap[param.Key] = ""
 		}
 	}
+	var res *steampipe.Result
 
-	queryTemplate, err := template.New(j.ExecutionPlan.Query.ID).Parse(j.ExecutionPlan.Query.QueryToExecute)
-	if err != nil {
-		w.logger.Error("failed to parse query template", zap.Error(err))
-		return 0, err
-	}
-	var queryOutput bytes.Buffer
-	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
-		w.logger.Error("failed to execute query template",
-			zap.Error(err),
-			zap.String("query_id", j.ExecutionPlan.Query.ID),
-			zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
-			zap.Uint("job_id", j.ID),
-		)
-		return 0, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
+	if j.ExecutionPlan.Query.Engine == api.QueryEngine_Odysseues || j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusSQL {
+		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
+	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusRego {
+		res, err = w.runRegoWorkerJob(ctx, j, queryParamMap)
+	} else {
+		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
 	}
 
-	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
-		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID))
+		w.logger.Error("failed to get results", zap.Error(err))
 		return 0, err
 	}
 
@@ -363,6 +357,57 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
 	)
 	return totalFindingCount, nil
+}
+
+func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
+	queryTemplate, err := template.New(j.ExecutionPlan.Query.ID).Parse(j.ExecutionPlan.Query.QueryToExecute)
+	if err != nil {
+		w.logger.Error("failed to parse query template", zap.Error(err))
+		return nil, err
+	}
+	var queryOutput bytes.Buffer
+	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
+		w.logger.Error("failed to execute query template",
+			zap.Error(err),
+			zap.String("query_id", j.ExecutionPlan.Query.ID),
+			zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+			zap.Uint("job_id", j.ID),
+		)
+		return nil, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
+	}
+
+	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
+	if err != nil {
+		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID))
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
+	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2.Ctx = ctx
+	var engine inventoryApi.QueryEngine
+	engine = inventoryApi.QueryEngine_OdysseusRego
+	queryResponse, err := w.inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
+		Page: inventoryApi.Page{
+			No:   1,
+			Size: 1000,
+		},
+		Engine: &engine,
+		Query:  &j.ExecutionPlan.Query.QueryToExecute,
+		Sorts:  nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	results := &steampipe.Result{
+		Headers: queryResponse.Headers,
+		Data:    queryResponse.Result,
+	}
+	return results, nil
 }
 
 type FindingsMultiGetResponse struct {

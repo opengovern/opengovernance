@@ -83,6 +83,24 @@ func (c *Connection) TenantID() string {
 	return TenantID
 }
 
+func GetAWSSupportedResourceTypeMap() map[string]bool {
+	supportedMap := make(map[string]bool)
+	rts := kaytuAws.GetResourceTypesMap()
+	for rt := range rts {
+		supportedMap[strings.ToLower(rt)] = true
+	}
+	return supportedMap
+}
+
+func GetAzureSupportedResourceTypeMap() map[string]bool {
+	supportedMap := make(map[string]bool)
+	rts := kaytuAzure.GetResourceTypesMap()
+	for rt := range rts {
+		supportedMap[strings.ToLower(rt)] = true
+	}
+	return supportedMap
+}
+
 func (c *Connection) GetSupportedResourceTypeMap() map[string]bool {
 	if c.supportedResourceTypes != nil {
 		return c.supportedResourceTypes

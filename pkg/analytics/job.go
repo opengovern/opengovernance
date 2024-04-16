@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 	"reflect"
 	"regexp"
@@ -95,13 +96,13 @@ func (j *Job) Do(
 	}
 	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 
-	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, sinkClient, logger, config); err != nil {
+	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, sinkClient, inventoryClient, logger, config); err != nil {
 		fail(err)
 	}
 	return result
 }
 
-func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
+func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics([]db.AnalyticMetricStatus{db.AnalyticMetricStatusActive, db.AnalyticMetricStatusInvisible})
 	if err != nil {
@@ -144,6 +145,7 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 				encodedResourceCollectionFilters,
 				onboardClient,
 				sinkClient,
+				inventoryClient,
 				logger,
 				metric,
 				connectionCache,
@@ -192,6 +194,7 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 				steampipeDB,
 				onboardClient,
 				sinkClient,
+				inventoryClient,
 				logger,
 				metric,
 				connectionCache,
@@ -209,15 +212,42 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steampipeDB *steampipe.Database, metric db.AnalyticMetric,
 	connectionCache map[string]onboardApi.Connection,
 	status []describeApi.DescribeStatus,
-	onboardClient onboardClient.OnboardServiceClient) (
+	onboardClient onboardClient.OnboardServiceClient,
+	inventoryClient inventoryClient.InventoryServiceClient) (
 	*resource.ConnectionMetricTrendSummaryResult,
 	*resource.ConnectorMetricTrendSummaryResult,
 	error,
 ) {
+	var res *steampipe.Result
+	var err error
+
 	logger.Info("assets ==== ", zap.String("query", metric.Query))
-	res, err := steampipeDB.QueryAll(ctx, metric.Query)
-	if err != nil {
-		return nil, nil, err
+	if metric.Engine == db.QueryEngine_OdysseusRego {
+		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2.Ctx = ctx
+		var engine inventoryApi.QueryEngine
+		engine = inventoryApi.QueryEngine_OdysseusRego
+		results, err := inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
+			Page: inventoryApi.Page{
+				No:   1,
+				Size: 1000,
+			},
+			Engine: &engine,
+			Query:  &metric.Query,
+			Sorts:  nil,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		res = &steampipe.Result{
+			Headers: results.Headers,
+			Data:    results.Result,
+		}
+	} else {
+		res, err = steampipeDB.QueryAll(ctx, metric.Query)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	logger.Info("assets ==== ", zap.Int("count", len(res.Data)))
 
@@ -325,7 +355,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 		}, nil
 }
 
-func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
@@ -357,7 +387,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 					zap.String("resource_collection", rcId))
 				return err
 			}
-			perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient)
+			perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient, inventoryClient)
 			if err != nil {
 				logger.Error("failed to do single asset metric for rc", zap.Error(err), zap.String("metric", metric.ID), zap.String("resource_collection_filters", encodedFilter))
 				return err
@@ -371,7 +401,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 			logger.Error("failed to unset steampipe context config for resource collection filters", zap.Error(err))
 			return err
 		}
-		perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient)
+		perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient, inventoryClient)
 		if err != nil {
 			logger.Error("failed to do single asset metric", zap.Error(err), zap.String("metric", metric.ID))
 			return err
@@ -402,16 +432,43 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	return nil
 }
 
-func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
 
 	logger.Info("spend ==== ", zap.String("query", query))
-	res, err := steampipeDB.QueryAll(ctx, query)
-	if err != nil {
-		return err
+
+	var res *steampipe.Result
+	var err error
+
+	if metric.Engine == db.QueryEngine_OdysseusRego {
+		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2.Ctx = ctx
+		var engine inventoryApi.QueryEngine
+		engine = inventoryApi.QueryEngine_OdysseusRego
+		results, err := inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
+			Page: inventoryApi.Page{
+				No:   1,
+				Size: 1000,
+			},
+			Engine: &engine,
+			Query:  &metric.Query,
+			Sorts:  nil,
+		})
+		if err != nil {
+			return err
+		}
+		res = &steampipe.Result{
+			Headers: results.Headers,
+			Data:    results.Result,
+		}
+	} else {
+		res, err = steampipeDB.QueryAll(ctx, metric.Query)
+		if err != nil {
+			return err
+		}
 	}
 
 	connectorCount := map[string]int64{}

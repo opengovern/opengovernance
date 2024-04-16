@@ -10,10 +10,12 @@ const (
 )
 
 type RunQueryRequest struct {
-	Page   Page                 `json:"page" validate:"required"`
-	Query  *string              `json:"query"`
-	Engine *QueryEngine         `json:"engine"`
-	Sorts  []SmartQuerySortItem `json:"sorts"`
+	Page      Page                 `json:"page" validate:"required"`
+	Query     *string              `json:"query"`
+	AccountId *string              `json:"account_id"`
+	SourceId  *string              `json:"source_id"`
+	Engine    *QueryEngine         `json:"engine"`
+	Sorts     []SmartQuerySortItem `json:"sorts"`
 }
 
 type RunQueryResponse struct {
