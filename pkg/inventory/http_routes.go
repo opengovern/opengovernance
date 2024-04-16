@@ -2283,8 +2283,7 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	reqoQuery, err := rego.New(
-		rego.Query("x = data.odysseus.query.allow; resource_type = data.odysseus.query.resource_type;"+
-			" account_id = data.odysseus.query.account_id; source_id = data.odysseus.query.source_id;"),
+		rego.Query("x = data.odysseus.query.allow; resource_type = data.odysseus.query.resource_type"),
 		rego.Module("odysseus.query", query),
 	).PrepareForEval(ctx)
 	if err != nil {
@@ -2304,9 +2303,8 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 	h.logger.Info("reqo runner", zap.String("resource_type", resourceType))
 
 	var filters []esSdk.BoolFilter
-	accountID, ok := results[0].Bindings["account_id"].(string)
-	if ok {
-		if len(accountID) > 0 && accountID != "all" {
+	if req.AccountId != nil {
+		if len(*req.AccountId) > 0 && *req.AccountId != "all" {
 			var accountFieldName string
 			awsRTypes := onboardApi.GetAWSSupportedResourceTypeMap()
 			if _, ok := awsRTypes[strings.ToLower(resourceType)]; ok {
@@ -2317,13 +2315,12 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 				accountFieldName = "SubscriptionID"
 			}
 
-			filters = append(filters, esSdk.NewTermFilter("metadata."+accountFieldName, accountID))
+			filters = append(filters, esSdk.NewTermFilter("metadata."+accountFieldName, *req.AccountId))
 		}
 	}
 
-	sourceID, ok := results[0].Bindings["source_id"].(string)
-	if ok {
-		filters = append(filters, esSdk.NewTermFilter("source_id", sourceID))
+	if req.SourceId != nil {
+		filters = append(filters, esSdk.NewTermFilter("source_id", *req.SourceId))
 	}
 
 	jsonFilters, _ := json.Marshal(filters)
