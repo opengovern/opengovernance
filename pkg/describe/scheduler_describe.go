@@ -677,7 +677,17 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			isFailed = true
 			return fmt.Errorf("failed to send message to service bus due to %v", err)
 		}
-
+		err = sender.Close(ctx)
+		if err != nil {
+			s.logger.Error("failed to close service bus sender",
+				zap.Uint("jobID", dc.ID),
+				zap.String("connectionID", dc.ConnectionID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to close service bus sender due to %v", err)
+		}
 	default:
 		s.logger.Error("unknown serverless provider", zap.String("provider", s.conf.ServerlessProvider))
 		isFailed = true
