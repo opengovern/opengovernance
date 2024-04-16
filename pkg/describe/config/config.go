@@ -20,7 +20,6 @@ type SchedulerConfig struct {
 	ComplianceIntervalHours    int    `yaml:"compliance_interval_hours"`
 	EventHubConnectionString   string `yaml:"event_hub_connection_string"`
 	ServiceBusConnectionString string `yaml:"service_bus_connection_string"`
-	ServiceBusQueueName        string `yaml:"service_bus_queue_name"`
 	ServerlessProvider         string `yaml:"serverless_provider"`
 	ElasticSearch              config.ElasticSearch
 	NATS                       config.NATS

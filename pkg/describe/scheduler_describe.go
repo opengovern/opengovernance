@@ -651,7 +651,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			isFailed = true
 			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 		}
-		sender, err := s.serviceBusClient.NewSender(s.conf.ServiceBusQueueName, nil)
+		sender, err := s.serviceBusClient.NewSender(fmt.Sprintf("describe-service-bus-queue-%s", strings.ToLower(dc.Connector.String())), nil)
 		if err != nil {
 			s.logger.Error("failed to create service bus sender",
 				zap.Uint("jobID", dc.ID),
