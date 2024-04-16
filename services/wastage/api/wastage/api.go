@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -22,16 +23,18 @@ import (
 )
 
 type API struct {
-	tracer  trace.Tracer
-	logger  *zap.Logger
-	costSvc *cost.Service
+	tracer   trace.Tracer
+	logger   *zap.Logger
+	costSvc  *cost.Service
+	recomSvc *recommendation.Service
 }
 
-func New(costSvc *cost.Service, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, logger *zap.Logger) API {
 	return API{
-		costSvc: costSvc,
-		tracer:  otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:  logger.Named("wastage-api"),
+		costSvc:  costSvc,
+		recomSvc: recomSvc,
+		tracer:   otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:   logger.Named("wastage-api"),
 	}
 }
 
@@ -149,8 +152,27 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
+	recoms, err := s.recomSvc.EC2InstanceRecommendation(req.Region, instance, volumes, metrics)
+	if err != nil {
+		return err
+	}
+
+	var recomResponse []entity.Recommendation
+	for _, recom := range recoms {
+		newCost, err := s.costSvc.GetEC2InstanceCost(req.Region, recom.NewInstance, recom.NewVolumes, metrics)
+		if err != nil {
+			return err
+		}
+
+		recomResponse = append(recomResponse, entity.Recommendation{
+			Description: recom.Description,
+			Saving:      currentCost - newCost,
+		})
+	}
+
 	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
-		CurrentCost: currentCost,
+		CurrentCost:     currentCost,
+		Recommendations: recomResponse,
 	})
 }
 
