@@ -19,6 +19,14 @@ type MetricTag struct {
 	ID string `gorm:"primaryKey; type:citext"`
 }
 
+type QueryEngine string
+
+const (
+	QueryEngine_OdysseusSQL  QueryEngine = "odysseus-sql"
+	QueryEngine_OdysseusRego QueryEngine = "odysseus-rego"
+	QueryEngine_NotDefined   QueryEngine = ""
+)
+
 type AnalyticMetricStatus string
 
 const (
@@ -28,7 +36,8 @@ const (
 )
 
 type AnalyticMetric struct {
-	ID                       string         `gorm:"primaryKey"`
+	ID                       string `gorm:"primaryKey"`
+	Engine                   QueryEngine
 	Connectors               pq.StringArray `gorm:"type:text[]"`
 	Type                     MetricType
 	Name                     string
