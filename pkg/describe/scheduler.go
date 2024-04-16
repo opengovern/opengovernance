@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
 	"net"
 	"net/http"
 	"strconv"
@@ -147,7 +148,8 @@ type Scheduler struct {
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
 
-	lambdaClient *lambda.Client
+	lambdaClient     *lambda.Client
+	serviceBusClient *azservicebus.Client
 
 	complianceScheduler *compliance.JobScheduler
 	discoveryScheduler  *discovery.Scheduler
@@ -157,8 +159,6 @@ type Scheduler struct {
 func InitializeScheduler(
 	id string,
 	conf config.SchedulerConfig,
-	checkupJobQueueName string,
-	checkupJobResultQueueName string,
 	postgresUsername string,
 	postgresPassword string,
 	postgresHost string,
@@ -171,6 +171,11 @@ func InitializeScheduler(
 	mustSummarizeIntervalHours string,
 	ctx context.Context,
 ) (s *Scheduler, err error) {
+	s.logger, err = zap.NewProduction()
+	if err != nil {
+		return nil, err
+	}
+
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
 	}
@@ -195,10 +200,12 @@ func InitializeScheduler(
 	s.conf = conf
 	s.lambdaClient = lambda.NewFromConfig(lambdaCfg)
 
-	s.logger, err = zap.NewProduction()
+	serviceBusClient, err := azservicebus.NewClientFromConnectionString(conf.ServiceBusConnectionString, nil)
 	if err != nil {
+		s.logger.Error("Failed to create service bus client", zap.Error(err))
 		return nil, err
 	}
+	s.serviceBusClient = serviceBusClient
 
 	cfg := postgres.Config{
 		Host:    postgresHost,

@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
-	"github.com/kaytu-io/kaytu-util/pkg/describe"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"math/rand"
 	"net/http"
 	"sort"
@@ -23,13 +21,16 @@ import (
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
+	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
@@ -650,58 +651,33 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			isFailed = true
 			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 		}
-
-		eventHubProducerClient, err := azeventhubs.NewProducerClientFromConnectionString(s.conf.EventHubConnectionString,
-			fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String())), nil)
+		sender, err := s.serviceBusClient.NewSender(s.conf.ServiceBusQueueName, nil)
 		if err != nil {
-			s.logger.Error("failed to create event hub producer client",
+			s.logger.Error("failed to create service bus sender",
 				zap.Uint("jobID", dc.ID),
 				zap.String("connectionID", dc.ConnectionID),
 				zap.String("resourceType", dc.ResourceType),
 				zap.Error(err),
 			)
 			isFailed = true
-			return fmt.Errorf("failed to create event hub producer client due to %v", err)
+			return fmt.Errorf("failed to create service bus sender due to %v", err)
 		}
-		defer eventHubProducerClient.Close(ctx)
-
-		batch, err := eventHubProducerClient.NewEventDataBatch(ctx, nil)
-		if err != nil {
-			s.logger.Error("failed to create event hub producer data batch",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
-			isFailed = true
-			return fmt.Errorf("failed to create event hub producer data batch due to %v", err)
-		}
-
-		err = batch.AddEventData(&azeventhubs.EventData{
-			Body: eventHubPayload,
+		defer sender.Close(ctx)
+		err = sender.SendMessage(ctx, &azservicebus.Message{
+			Body:        eventHubPayload,
+			ContentType: utils.GetPointer("application/json"),
 		}, nil)
 		if err != nil {
-			s.logger.Error("failed to add data to event hub producer data batch",
+			s.logger.Error("failed to send message to service bus",
 				zap.Uint("jobID", dc.ID),
 				zap.String("connectionID", dc.ConnectionID),
 				zap.String("resourceType", dc.ResourceType),
 				zap.Error(err),
 			)
 			isFailed = true
-			return fmt.Errorf("failed to add data to event hub producer data batch due to %v", err)
+			return fmt.Errorf("failed to send message to service bus due to %v", err)
 		}
 
-		err = eventHubProducerClient.SendEventDataBatch(ctx, batch, nil)
-		if err != nil {
-			s.logger.Error("failed to send event hub producer data batch",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
-			isFailed = true
-			return fmt.Errorf("failed to send event hub producer data batch due to %v", err)
-		}
 	default:
 		s.logger.Error("unknown serverless provider", zap.String("provider", s.conf.ServerlessProvider))
 		isFailed = true

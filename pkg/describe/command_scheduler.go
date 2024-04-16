@@ -75,8 +75,6 @@ func SchedulerCommand() *cobra.Command {
 			s, err := InitializeScheduler(
 				id,
 				conf,
-				CheckupJobsQueueName,
-				CheckupResultsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,
 				PostgreSQLHost,
