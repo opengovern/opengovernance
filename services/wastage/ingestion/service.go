@@ -66,7 +66,6 @@ func (s *Service) Start() error {
 				}
 			}
 		}
-
 	}
 	return nil
 }
