@@ -92,6 +92,10 @@ func (s *Service) IngestEc2Instances() error {
 		}
 	}
 
+	err = s.ec2InstanceRepo.Truncate()
+	if err != nil {
+		return err
+	}
 	// Read through each row in the CSV file and send a price.WithProduct on the results channel.
 	for {
 		row, err := csvr.Read()

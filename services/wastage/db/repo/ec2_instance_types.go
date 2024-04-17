@@ -13,7 +13,8 @@ type EC2InstanceTypeRepo interface {
 	Update(id uint, m model.EC2InstanceType) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
-	GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64) (*model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64, os string) (*model.EC2InstanceType, error)
+	Truncate() error
 }
 
 type EC2InstanceTypeRepoImpl struct {
@@ -42,11 +43,15 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	return &m, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64) (*model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64, os string) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("v_cpu > ?", cpu).
 		Where("network_max_bandwidth > ?", bandwidth).
+		Where("pre_installed_sw = 'NA'").
+		Where("tenancy = 'Shared'").
+		Where("capacity_status = 'Used'").
+		Where("operating_system = ?", os).
 		Order("price_per_unit ASC").
 		First(&m)
 	if tx.Error != nil {
@@ -73,4 +78,12 @@ func (r *EC2InstanceTypeRepoImpl) List() ([]model.EC2InstanceType, error) {
 		return nil, tx.Error
 	}
 	return ms, nil
+}
+
+func (r *EC2InstanceTypeRepoImpl) Truncate() error {
+	tx := r.db.Conn().Delete(&model.EC2InstanceType{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }

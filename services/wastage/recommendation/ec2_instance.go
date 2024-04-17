@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"context"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -21,6 +22,16 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 
 func (s *Service) EC2InstanceRecommendation(client *ec2.Client, region string, instance model.EC2InstanceDescription,
 	volumes []model.EC2VolumeDescription, metrics map[string][]types2.Datapoint) ([]Recommendation, error) {
+	imgs, err := client.DescribeImages(context.Background(), &ec2.DescribeImagesInput{
+		ImageIds: []string{*instance.Instance.ImageId},
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, img := range imgs.Images {
+		fmt.Println(img)
+	}
+
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
@@ -37,7 +48,7 @@ func (s *Service) EC2InstanceRecommendation(client *ec2.Client, region string, i
 	)
 	vCPU := *instance.Instance.CpuOptions.ThreadsPerCore * *instance.Instance.CpuOptions.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
-	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededCPU, averageNetworkIn+averageNetworkOut)
+	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededCPU, averageNetworkIn+averageNetworkOut, "Linux")
 	if err != nil {
 		return nil, err
 	}
