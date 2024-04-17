@@ -112,6 +112,8 @@ func (s *Service) IngestEc2Instances() error {
 			switch col {
 			case "vCPU":
 				v.VCpu, _ = strconv.ParseInt(row[index], 10, 64)
+			case "Memory":
+				v.MemoryGB = parseMemory(row[index])
 			case "PricePerUnit":
 				v.PricePerUnit, _ = strconv.ParseFloat(row[index], 64)
 			case "Instance Type":
@@ -165,6 +167,16 @@ func (s *Service) IngestEc2Instances() error {
 			return err
 		}
 	}
+}
+
+func parseMemory(str string) int64 {
+	str = strings.TrimSpace(strings.ToLower(str))
+	if str == "na" {
+		return -1
+	}
+	str = strings.TrimSuffix(str, " gib")
+	n, _ := strconv.ParseInt(str, 10, 64)
+	return n
 }
 
 // readColumnPositions maps column names to their position in the CSV file.

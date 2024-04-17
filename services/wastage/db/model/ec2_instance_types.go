@@ -7,6 +7,7 @@ type EC2InstanceType struct {
 
 	InstanceType           string
 	VCpu                   int64 `gorm:"cpu_net"`
+	MemoryGB               int64 `gorm:"cpu_net"`
 	NetworkMaxBandwidth    int64 `gorm:"cpu_net"`
 	NetworkIsBandwidthUpTo bool  `gorm:"cpu_net"`
 	TermType               string

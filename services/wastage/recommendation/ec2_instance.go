@@ -24,9 +24,17 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
 
+	i, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType))
+	if err != nil {
+		return nil, err
+	}
+	if len(i) == 0 {
+		return nil, fmt.Errorf("instance type not found: %s", string(instance.InstanceType))
+	}
+
 	vCPU := *instance.CpuOptions.ThreadsPerCore * *instance.CpuOptions.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
-	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededCPU, averageNetworkIn+averageNetworkOut, "Linux", region)
+	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededCPU, i[0].MemoryGB, averageNetworkIn+averageNetworkOut, "Linux", region)
 	if err != nil {
 		return nil, err
 	}
