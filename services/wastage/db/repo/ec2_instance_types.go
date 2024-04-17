@@ -83,7 +83,7 @@ func (r *EC2InstanceTypeRepoImpl) List() ([]model.EC2InstanceType, error) {
 }
 
 func (r *EC2InstanceTypeRepoImpl) Truncate() error {
-	tx := r.db.Conn().Delete(&model.EC2InstanceType{})
+	tx := r.db.Conn().Where("1 = 1").Delete(&model.EC2InstanceType{})
 	if tx.Error != nil {
 		return tx.Error
 	}
