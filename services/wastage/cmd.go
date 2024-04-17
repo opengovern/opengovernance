@@ -47,9 +47,10 @@ func Command() *cobra.Command {
 				return err
 			}
 			ec2InstanceRepo := repo.NewEC2InstanceTypeRepo(db)
+			dataAgeRepo := repo.NewDataAgeRepo(db)
 			recomSvc := recommendation.New(ec2InstanceRepo)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
-			ingestionSvc := ingestion.New(ec2InstanceRepo)
+			ingestionSvc := ingestion.New(ec2InstanceRepo, dataAgeRepo)
 			go func() {
 				err = ingestionSvc.Start()
 				panic(err)

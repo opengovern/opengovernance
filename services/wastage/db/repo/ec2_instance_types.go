@@ -13,7 +13,7 @@ type EC2InstanceTypeRepo interface {
 	Update(id uint, m model.EC2InstanceType) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
-	GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64, os string) (*model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64, os, region string) (*model.EC2InstanceType, error)
 	Truncate() error
 }
 
@@ -43,7 +43,7 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	return &m, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64, os string) (*model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64, os, region string) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("v_cpu > ?", cpu).
@@ -52,6 +52,8 @@ func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, bandw
 		Where("tenancy = 'Shared'").
 		Where("capacity_status = 'Used'").
 		Where("operating_system = ?", os).
+		Where("region = ?", region).
+		Where("price_per_unit != 0").
 		Order("price_per_unit ASC").
 		First(&m)
 	if tx.Error != nil {

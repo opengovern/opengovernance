@@ -18,9 +18,10 @@ type Service struct {
 	ec2InstanceRepo repo.EC2InstanceTypeRepo
 }
 
-func New(ec2InstanceRepo repo.EC2InstanceTypeRepo) *Service {
+func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
 	return &Service{
 		ec2InstanceRepo: ec2InstanceRepo,
+		dataAgeRepo:     dataAgeRepo,
 	}
 }
 
