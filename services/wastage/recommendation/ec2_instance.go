@@ -33,12 +33,12 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 
 	var recoms []Recommendation
 	if instanceType != nil {
-		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
 		recoms = append(recoms, Recommendation{
 			Description: fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType),
 			NewInstance: instance,
 			NewVolumes:  volumes,
 		})
+		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
 	} else {
 		fmt.Println("instance type not found")
 	}
