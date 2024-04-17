@@ -5,7 +5,6 @@ import (
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	kaytu_client "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-client"
 	"github.com/kaytu-io/pennywise/pkg/cost"
@@ -14,7 +13,7 @@ import (
 	"time"
 )
 
-func (s *Service) GetEC2InstanceCost(region string, instance model.EC2InstanceDescription, volumes []model.EC2VolumeDescription, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, volumes []types.Volume, metrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
 		ID:        "submittion-1",
 		CreatedAt: time.Now(),
@@ -22,47 +21,47 @@ func (s *Service) GetEC2InstanceCost(region string, instance model.EC2InstanceDe
 	}
 
 	valuesMap := map[string]interface{}{}
-	valuesMap["instance_type"] = instance.Instance.InstanceType
-	if instance.Instance.Placement != nil {
-		valuesMap["tenancy"] = instance.Instance.Placement.Tenancy
-		valuesMap["availability_zone"] = *instance.Instance.Placement.AvailabilityZone
+	valuesMap["instance_type"] = instance.InstanceType
+	if instance.Placement != nil {
+		valuesMap["tenancy"] = instance.Placement.Tenancy
+		valuesMap["availability_zone"] = *instance.Placement.AvailabilityZone
 	}
-	valuesMap["ebs_optimized"] = *instance.Instance.EbsOptimized
-	if instance.Instance.Monitoring != nil {
-		if instance.Instance.Monitoring.State == "disabled" || instance.Instance.Monitoring.State == "disabling" {
+	valuesMap["ebs_optimized"] = *instance.EbsOptimized
+	if instance.Monitoring != nil {
+		if instance.Monitoring.State == "disabled" || instance.Monitoring.State == "disabling" {
 			valuesMap["monitoring"] = false
 		} else {
 			valuesMap["monitoring"] = true
 		}
 	}
-	if instance.Instance.CpuOptions != nil {
+	if instance.CpuOptions != nil {
 		valuesMap["credit_specification"] = []map[string]interface{}{{
-			"cpu_credits": *instance.Instance.CpuOptions, //TODO - not sure
+			"cpu_credits": *instance.CpuOptions, //TODO - not sure
 		}}
 	}
 	var blockDevices []map[string]interface{}
 	for _, v := range volumes {
 		blockDevices = append(blockDevices, map[string]interface{}{
-			"device_name": *v.Volume.VolumeId,
-			"volume_type": v.Volume.VolumeType,
-			"volume_size": *v.Volume.Size,
-			"iops":        *v.Volume.Iops,
+			"device_name": *v.VolumeId,
+			"volume_type": v.VolumeType,
+			"volume_size": *v.Size,
+			"iops":        *v.Iops,
 		})
 	}
 	valuesMap["ebs_block_device"] = blockDevices
-	valuesMap["launch_template"] = []map[string]interface{}{
-		{
-			"id":   instance.LaunchTemplateData.KeyName,
-			"name": instance.LaunchTemplateData.KeyName,
-		},
-	}
-	if instance.Instance.InstanceLifecycle == types.InstanceLifecycleTypeSpot {
+	//valuesMap["launch_template"] = []map[string]interface{}{
+	//	{
+	//		"id":   instance.LaunchTemplateData.KeyName,
+	//		"name": instance.LaunchTemplateData.KeyName,
+	//	},
+	//}
+	if instance.InstanceLifecycle == types.InstanceLifecycleTypeSpot {
 		valuesMap["spot_price"] = "Spot"
 	}
 	// valuesMap["host_id"] = WTF??
 	os := "Linux"
-	if instance.Instance.Platform != "" {
-		os = string(instance.Instance.Platform)
+	if instance.Platform != "" {
+		os = string(instance.Platform)
 	}
 	valuesMap["pennywise_usage"] = []map[string]interface{}{{
 		"operating_system": os,
@@ -75,7 +74,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance model.EC2InstanceDe
 	}}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
-		Address:      *instance.Instance.InstanceId,
+		Address:      *instance.InstanceId,
 		Type:         kaytu_client.ResourceTypeConversion("aws::ec2::instance"),
 		Name:         "",
 		RegionCode:   region,

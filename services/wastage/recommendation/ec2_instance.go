@@ -3,9 +3,7 @@ package recommendation
 import (
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 )
 
 func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
@@ -20,13 +18,13 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 	return avg
 }
 
-func (s *Service) EC2InstanceRecommendation(client *ec2.Client, region string, instance model.EC2InstanceDescription,
-	volumes []model.EC2VolumeDescription, metrics map[string][]types2.Datapoint) ([]Recommendation, error) {
+func (s *Service) EC2InstanceRecommendation(region string, instance types.Instance,
+	volumes []types.Volume, metrics map[string][]types2.Datapoint) ([]Recommendation, error) {
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
 
-	vCPU := *instance.Instance.CpuOptions.ThreadsPerCore * *instance.Instance.CpuOptions.CoreCount
+	vCPU := *instance.CpuOptions.ThreadsPerCore * *instance.CpuOptions.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
 	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededCPU, averageNetworkIn+averageNetworkOut, "Linux", region)
 	if err != nil {
@@ -35,9 +33,9 @@ func (s *Service) EC2InstanceRecommendation(client *ec2.Client, region string, i
 
 	var recoms []Recommendation
 	if instanceType != nil {
-		instance.Instance.InstanceType = types.InstanceType(instanceType.InstanceType)
+		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
 		recoms = append(recoms, Recommendation{
-			Description: fmt.Sprintf("change your vms from %s to %s", instance.Instance.InstanceType, instanceType.InstanceType),
+			Description: fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType),
 			NewInstance: instance,
 			NewVolumes:  volumes,
 		})

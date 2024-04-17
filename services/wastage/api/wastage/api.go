@@ -1,15 +1,7 @@
 package wastage
 
 import (
-	"errors"
-	aws2 "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
@@ -21,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
-	"time"
 )
 
 type API struct {
@@ -63,104 +54,103 @@ func (s API) EC2Instance(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	cfg, err := aws.GetConfig(ctx, req.Credential.AccessKey, req.Credential.SecretKey, "", "", nil)
-	if err != nil {
-		return err
-	}
-	dctx := describer.WithDescribeContext(ctx, describer.DescribeContext{
-		AccountID:   req.Credential.AccountID,
-		Region:      req.Region,
-		KaytuRegion: req.Region,
-		Partition:   "",
-	})
-	cfg.Region = req.Region
-	resources, err := describer.GetEC2Instance(dctx, cfg, map[string]string{"id": req.InstanceId})
-	if err != nil {
-		return err
-	}
-
-	if len(resources) == 0 {
-		return errors.New("instance not found")
-	}
-	instance := resources[0].Description.(model.EC2InstanceDescription)
-	if instance.InstanceStatus.InstanceState.Name != types2.InstanceStateNameRunning {
+	//cfg, err := aws.GetConfig(ctx, req.Credential.AccessKey, req.Credential.SecretKey, "", "", nil)
+	//if err != nil {
+	//	return err
+	//}
+	//dctx := describer.WithDescribeContext(ctx, describer.DescribeContext{
+	//	AccountID:   req.Credential.AccountID,
+	//	Region:      req.Region,
+	//	KaytuRegion: req.Region,
+	//	Partition:   "",
+	//})
+	//cfg.Region = req.Region
+	//resources, err := describer.GetEC2Instance(dctx, cfg, map[string]string{"id": req.InstanceId})
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if len(resources) == 0 {
+	//	return errors.New("instance not found")
+	//}
+	//instance := resources[0].Description.(model.EC2InstanceDescription)
+	if req.Instance.State.Name != types2.InstanceStateNameRunning {
 		return echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
 	}
+	//
+	//var volumes []model.EC2VolumeDescription
+	//for _, bd := range instance.Instance.BlockDeviceMappings {
+	//	res, err := describer.GetEC2Volume(dctx, cfg, map[string]string{"id": *bd.Ebs.VolumeId})
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if len(res) == 0 {
+	//		return errors.New("volume not found")
+	//	}
+	//	volume := res[0].Description.(model.EC2VolumeDescription)
+	//	volumes = append(volumes, volume)
+	//}
+	//
+	//client := cloudwatch.NewFromConfig(cfg)
+	//paginator := cloudwatch.NewListMetricsPaginator(client, &cloudwatch.ListMetricsInput{
+	//	Namespace: aws2.String("AWS/EC2"),
+	//	Dimensions: []types.DimensionFilter{
+	//		{
+	//			Name:  aws2.String("InstanceId"),
+	//			Value: req.Instance.InstanceId,
+	//		},
+	//	},
+	//})
+	//startTime := time.Now().Add(-24 * 7 * time.Hour)
+	//endTime := time.Now()
+	//
+	//metrics := map[string][]types.Datapoint{}
+	//for paginator.HasMorePages() {
+	//	page, err := paginator.NextPage(ctx)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	for _, p := range page.Metrics {
+	//		statistics := []types.Statistic{
+	//			types.StatisticAverage,
+	//			types.StatisticMinimum,
+	//			types.StatisticMaximum,
+	//		}
+	//
+	//		// Create input for GetMetricStatistics
+	//		input := &cloudwatch.GetMetricStatisticsInput{
+	//			Namespace:  aws2.String("AWS/EC2"),
+	//			MetricName: p.MetricName,
+	//			Dimensions: []types.Dimension{
+	//				{
+	//					Name:  aws2.String("InstanceId"),
+	//					Value: req.Instance.InstanceId,
+	//				},
+	//			},
+	//			StartTime:  aws2.Time(startTime),
+	//			EndTime:    aws2.Time(endTime),
+	//			Period:     aws2.Int32(60 * 60), // 1 hour intervals
+	//			Statistics: statistics,
+	//		}
+	//
+	//		// Get metric data
+	//		resp, err := client.GetMetricStatistics(ctx, input)
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		metrics[*p.MetricName] = resp.Datapoints
+	//	}
+	//}
 
-	var volumes []model.EC2VolumeDescription
-	for _, bd := range instance.Instance.BlockDeviceMappings {
-		res, err := describer.GetEC2Volume(dctx, cfg, map[string]string{"id": *bd.Ebs.VolumeId})
-		if err != nil {
-			return err
-		}
-
-		if len(res) == 0 {
-			return errors.New("volume not found")
-		}
-		volume := res[0].Description.(model.EC2VolumeDescription)
-		volumes = append(volumes, volume)
-	}
-
-	client := cloudwatch.NewFromConfig(cfg)
-	paginator := cloudwatch.NewListMetricsPaginator(client, &cloudwatch.ListMetricsInput{
-		Namespace: aws2.String("AWS/EC2"),
-		Dimensions: []types.DimensionFilter{
-			{
-				Name:  aws2.String("InstanceId"),
-				Value: instance.Instance.InstanceId,
-			},
-		},
-	})
-	startTime := time.Now().Add(-24 * 7 * time.Hour)
-	endTime := time.Now()
-
-	metrics := map[string][]types.Datapoint{}
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return err
-		}
-
-		for _, p := range page.Metrics {
-			statistics := []types.Statistic{
-				types.StatisticAverage,
-				types.StatisticMinimum,
-				types.StatisticMaximum,
-			}
-
-			// Create input for GetMetricStatistics
-			input := &cloudwatch.GetMetricStatisticsInput{
-				Namespace:  aws2.String("AWS/EC2"),
-				MetricName: p.MetricName,
-				Dimensions: []types.Dimension{
-					{
-						Name:  aws2.String("InstanceId"),
-						Value: instance.Instance.InstanceId,
-					},
-				},
-				StartTime:  aws2.Time(startTime),
-				EndTime:    aws2.Time(endTime),
-				Period:     aws2.Int32(60 * 60), // 1 hour intervals
-				Statistics: statistics,
-			}
-
-			// Get metric data
-			resp, err := client.GetMetricStatistics(ctx, input)
-			if err != nil {
-				return err
-			}
-
-			metrics[*p.MetricName] = resp.Datapoints
-		}
-	}
-
-	currentCost, err := s.costSvc.GetEC2InstanceCost(req.Region, instance, volumes, metrics)
+	currentCost, err := s.costSvc.GetEC2InstanceCost(req.Region, req.Instance, req.Volumes, req.Metrics)
 	if err != nil {
 		return err
 	}
 
-	ec2Client := ec2.NewFromConfig(cfg)
-	recoms, err := s.recomSvc.EC2InstanceRecommendation(ec2Client, req.Region, instance, volumes, metrics)
+	recoms, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics)
 	if err != nil {
 		return err
 	}
@@ -168,7 +158,7 @@ func (s API) EC2Instance(c echo.Context) error {
 	var recomResponse []entity.Recommendation
 	totalSavings := float64(0)
 	for _, recom := range recoms {
-		newCost, err := s.costSvc.GetEC2InstanceCost(req.Region, recom.NewInstance, recom.NewVolumes, metrics)
+		newCost, err := s.costSvc.GetEC2InstanceCost(req.Region, recom.NewInstance, recom.NewVolumes, req.Metrics)
 		if err != nil {
 			return err
 		}
