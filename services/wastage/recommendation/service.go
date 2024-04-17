@@ -2,11 +2,11 @@ package recommendation
 
 import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 )
 
 type Service struct {
-	db *connector.Database
+	ec2InstanceRepo repo.EC2InstanceTypeRepo
 }
 
 type Recommendation struct {
@@ -15,8 +15,8 @@ type Recommendation struct {
 	NewVolumes  []model.EC2VolumeDescription
 }
 
-func New(db *connector.Database) *Service {
+func New(ec2InstanceRepo repo.EC2InstanceTypeRepo) *Service {
 	return &Service{
-		db: db,
+		ec2InstanceRepo: ec2InstanceRepo,
 	}
 }

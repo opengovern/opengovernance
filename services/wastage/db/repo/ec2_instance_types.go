@@ -13,6 +13,7 @@ type EC2InstanceTypeRepo interface {
 	Update(id uint, m model.EC2InstanceType) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64) (*model.EC2InstanceType, error)
 }
 
 type EC2InstanceTypeRepoImpl struct {
@@ -32,6 +33,22 @@ func (r *EC2InstanceTypeRepoImpl) Create(m *model.EC2InstanceType) error {
 func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).Where("id=?", id).First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
+}
+
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, bandwidth float64) (*model.EC2InstanceType, error) {
+	var m model.EC2InstanceType
+	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
+		Where("v_cpu > ?", cpu).
+		Where("network_max_bandwidth > ?", bandwidth).
+		Order("price_per_unit ASC").
+		First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

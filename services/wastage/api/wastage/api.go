@@ -5,6 +5,8 @@ import (
 	aws2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
@@ -81,6 +83,9 @@ func (s API) EC2Instance(c echo.Context) error {
 		return errors.New("instance not found")
 	}
 	instance := resources[0].Description.(model.EC2InstanceDescription)
+	if instance.InstanceStatus.InstanceState.Name != types2.InstanceStateNameRunning {
+		return echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
+	}
 
 	var volumes []model.EC2VolumeDescription
 	for _, bd := range instance.Instance.BlockDeviceMappings {
@@ -119,6 +124,8 @@ func (s API) EC2Instance(c echo.Context) error {
 		for _, p := range page.Metrics {
 			statistics := []types.Statistic{
 				types.StatisticAverage,
+				types.StatisticMinimum,
+				types.StatisticMaximum,
 			}
 
 			// Create input for GetMetricStatistics
@@ -152,7 +159,8 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
-	recoms, err := s.recomSvc.EC2InstanceRecommendation(req.Region, instance, volumes, metrics)
+	ec2Client := ec2.NewFromConfig(cfg)
+	recoms, err := s.recomSvc.EC2InstanceRecommendation(ec2Client, req.Region, instance, volumes, metrics)
 	if err != nil {
 		return err
 	}

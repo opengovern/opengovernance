@@ -6,6 +6,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/ingestion"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/spf13/cobra"
@@ -28,17 +31,30 @@ func Command() *cobra.Command {
 
 			if cnf.Http.Address == "" {
 				cnf.Http.Address = "localhost:8000"
-			}
-			if cnf.Pennywise.BaseURL == "" {
-				cnf.Http.Address = "localhost:8000"
 				cnf.Pennywise.BaseURL = "http://localhost:8080"
+				cnf.Postgres.Host = "localhost"
+				cnf.Postgres.Port = "5432"
+				cnf.Postgres.Username = "postgres"
+				cnf.Postgres.Password = "mysecretpassword"
+				cnf.Postgres.DB = "postgres"
 			}
 			db, err := connector.New(cnf.Postgres)
 			if err != nil {
 				return err
 			}
-			recomSvc := recommendation.New(db)
+			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.DataAge{})
+			if err != nil {
+				return err
+			}
+			ec2InstanceRepo := repo.NewEC2InstanceTypeRepo(db)
+			recomSvc := recommendation.New(ec2InstanceRepo)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
+			ingestionSvc := ingestion.New(ec2InstanceRepo)
+			go func() {
+				err = ingestionSvc.Start()
+				panic(err)
+			}()
+
 			return httpserver.RegisterAndStart(
 				cmd.Context(),
 				logger,
