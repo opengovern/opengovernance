@@ -212,8 +212,6 @@ github.com/Azure/azure-sdk-for-go/sdk/keyvault/azcertificates v0.9.0 h1:btEsytNr
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/azcertificates v0.9.0/go.mod h1:5SlTxxL1U4LLipEr7pAbnu6Ck5y3aIEu4L/tVbGmpsY=
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.1 h1:FbH3BbSb4bvGluTesZZ+ttN/MDsnMmQP36OSnDuSXqw=
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.1/go.mod h1:9V2j0jn9jDEkCkv8w/bKTNppX/d0FVA1ud77xCIP4KA=
-github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v1.1.0 h1:vEe09cdSBy7evqoVUvuitnsjyozsSzI4TbGgwu01+TI=
-github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v1.1.0/go.mod h1:PgOlzIlvwIagKI8N6hCsfFDpAijHCmlHqOwA5GsSh9w=
 github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0 h1:QISzMrspEvZj4zrrN2wlNwfum5RmnKQhQNiSujwH7oU=
 github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0/go.mod h1:xNjFERdhyMqZncbNJSPBsTCddk5kwsUVUzELQPMj/LA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/analysisservices/armanalysisservices v1.1.1 h1:N0C3osDHYD5N4U9Amu/ct1SGD3JJjaAYGSkiO2Fkplg=
@@ -1776,6 +1774,8 @@ github.com/kaytu-io/kaytu-util v0.0.0-20240415102306-fdc35c00b134 h1:jGyORiQHufY
 github.com/kaytu-io/kaytu-util v0.0.0-20240415102306-fdc35c00b134/go.mod h1:yamP/TyZEqmBoCNvGAUWoE7YRUdbbokb5ATrJGA1UbQ=
 github.com/kaytu-io/pennywise v1.7.16 h1:ppZ80MNFuch4GRpEYzYZgxms4QkLCZWJPAnkxa1THgo=
 github.com/kaytu-io/pennywise v1.7.16/go.mod h1:Egr3Z/zzT/K93sOG+QVSgrgQbkcnK+odwjnl1OQUjpQ=
+github.com/kaytu-io/pennywise-server v0.3.22 h1:YQpHOZ8sF0t6BZF79/4aqgdN1HilD5rznYqtoVk8RDE=
+github.com/kaytu-io/pennywise-server v0.3.22/go.mod h1:8BQ4eewalDvDFTQIX/DR1ihL2Y66l1rhDq/lsj5Bqrg=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762/go.mod h1:EPUNW7l/wmL4bCCJgUmViGr5mS7cLmo+y/DPEb3azaU=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
@@ -2209,8 +2209,8 @@ github.com/rogpeppe/go-internal v1.4.0/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTE
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
-github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
-github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=
+github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
+github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/rs/xid v1.3.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=
 github.com/rs/zerolog v1.13.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OKkWU=

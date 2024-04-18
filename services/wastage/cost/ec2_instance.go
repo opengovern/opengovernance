@@ -61,7 +61,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 	if instance.Platform != "" {
 		os = string(instance.Platform)
 	}
-	valuesMap["pennywise_usage"] = []map[string]interface{}{{
+	valuesMap["pennywise_usage"] = map[string]interface{}{
 		"operating_system": os,
 		//"reserved_instance_type": "",
 		//"reserved_instance_term": "",
@@ -69,7 +69,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 		//"monthly_cpu_credit_hrs": "",
 		//"vcpu_count": "",
 		"monthly_hrs": "720",
-	}}
+	}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      *instance.InstanceId,
