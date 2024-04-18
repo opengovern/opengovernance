@@ -16,6 +16,12 @@ type Recommendation struct {
 	Saving      float64 `json:"saving"`
 }
 
+type Limitations struct {
+	MemoryGB     *int64 `json:"memoryGB"`
+	ENASupport   *bool  `json:"ENASupport"`
+	EBSOptimized *bool  `json:"EBSOptimized"`
+}
+
 type EC2InstanceWastageRequest struct {
 	Instance types.Instance                `json:"instance"`
 	Volumes  []types.Volume                `json:"volumes"`
