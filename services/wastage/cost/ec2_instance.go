@@ -3,10 +3,12 @@ package cost
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	kaytu_client "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-client"
+	awsResources "github.com/kaytu-io/pennywise-server/pkg/aws/resources"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	"net/http"
@@ -20,19 +22,19 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 		Resources: []schema.ResourceDef{},
 	}
 
-	valuesMap := map[string]interface{}{}
-	valuesMap["instance_type"] = instance.InstanceType
+	var valuesMap awsResources.InstanceValues
+	valuesMap.InstanceType = string(instance.InstanceType)
 	if instance.Placement != nil {
-		valuesMap["tenancy"] = instance.Placement.Tenancy
-		valuesMap["availability_zone"] = *instance.Placement.AvailabilityZone
-		valuesMap["host_id"] = instance.Placement.HostId
+		valuesMap.Tenancy = string(instance.Placement.Tenancy)
+		valuesMap.AvailabilityZone = *instance.Placement.AvailabilityZone
+		valuesMap.HostId = instance.Placement.HostId
 	}
-	valuesMap["ebs_optimized"] = *instance.EbsOptimized
+	valuesMap.EBSOptimized = instance.EbsOptimized
 	if instance.Monitoring != nil {
 		if instance.Monitoring.State == "disabled" || instance.Monitoring.State == "disabling" {
-			valuesMap["monitoring"] = false
+			valuesMap.EnableMonitoring = aws.Bool(false)
 		} else {
-			valuesMap["monitoring"] = true
+			valuesMap.EnableMonitoring = aws.Bool(true)
 		}
 	}
 	//if instance.CpuOptions != nil {
@@ -40,35 +42,68 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 	//		"cpu_credits": *instance.CpuOptions, //TODO - not sure
 	//	}}
 	//}
-	var blockDevices []map[string]interface{}
+	var blockDevices []struct {
+		DeviceName string  `mapstructure:"device_name"`
+		VolumeType string  `mapstructure:"volume_type"`
+		VolumeSize float64 `mapstructure:"volume_size"`
+		IOPS       float64 `mapstructure:"iops"`
+	}
 	for _, v := range volumes {
-		blockDevices = append(blockDevices, map[string]interface{}{
-			"device_name": *v.VolumeId,
-			"volume_type": v.VolumeType,
-			"volume_size": *v.Size,
-			"iops":        *v.Iops,
+		blockDevices = append(blockDevices, struct {
+			DeviceName string  `mapstructure:"device_name"`
+			VolumeType string  `mapstructure:"volume_type"`
+			VolumeSize float64 `mapstructure:"volume_size"`
+			IOPS       float64 `mapstructure:"iops"`
+		}{
+			DeviceName: *v.VolumeId,
+			VolumeType: string(v.VolumeType),
+			VolumeSize: float64(*v.Size),
+			IOPS:       float64(*v.Iops),
 		})
 	}
-	valuesMap["ebs_block_device"] = blockDevices
-	valuesMap["launch_template"] = []map[string]interface{}{}
+	valuesMap.EbsBlockDevice = blockDevices
+	valuesMap.LaunchTemplate = []struct {
+		Id   *string `mapstructure:"id"`
+		Name *string `mapstructure:"name"`
+	}{}
 	if instance.InstanceLifecycle == types.InstanceLifecycleTypeSpot {
-		valuesMap["spot_price"] = "Spot"
+		valuesMap.SpotPrice = "Spot"
 	} else {
-		valuesMap["spot_price"] = ""
+		valuesMap.SpotPrice = ""
 	}
 
 	os := "Linux"
 	if instance.Platform != "" {
 		os = string(instance.Platform)
 	}
-	valuesMap["pennywise_usage"] = map[string]interface{}{
-		"operating_system": os,
+	valuesMap.Usage = struct {
+		OperatingSystem               *string  `mapstructure:"operating_system"`
+		ReservedInstanceType          *string  `mapstructure:"reserved_instance_type"`
+		ReservedInstanceTerm          *string  `mapstructure:"reserved_instance_term"`
+		ReservedInstancePaymentOption *string  `mapstructure:"reserved_instance_payment_option"`
+		MonthlyCPUCreditHours         *int64   `mapstructure:"monthly_cpu_credit_hrs"`
+		VcpuCount                     *int64   `mapstructure:"vcpu_count"`
+		MonthlyHours                  *float64 `mapstructure:"monthly_hrs"`
+	}{
+		OperatingSystem: &os,
 		//"reserved_instance_type": "",
 		//"reserved_instance_term": "",
 		//"reserved_instance_payment_option": "",
 		//"monthly_cpu_credit_hrs": "",
 		//"vcpu_count": "",
-		"monthly_hrs": "720",
+		MonthlyHours: aws.Float64(720),
+	}
+
+	jsonData, err := json.Marshal(instance)
+	if err != nil {
+		return 0, err
+	}
+
+	// Unmarshal the JSON to a map
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonData, &result)
+	if err != nil {
+		return 0, err
 	}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
@@ -77,7 +112,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 		Name:         "",
 		RegionCode:   region,
 		ProviderName: schema.AWSProvider,
-		Values:       valuesMap,
+		Values:       result,
 	})
 
 	reqBody, err := json.Marshal(req)
