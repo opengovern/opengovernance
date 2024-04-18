@@ -35,11 +35,11 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 			valuesMap["monitoring"] = true
 		}
 	}
-	if instance.CpuOptions != nil {
-		valuesMap["credit_specification"] = []map[string]interface{}{{
-			"cpu_credits": *instance.CpuOptions, //TODO - not sure
-		}}
-	}
+	//if instance.CpuOptions != nil {
+	//	valuesMap["credit_specification"] = []map[string]interface{}{{
+	//		"cpu_credits": *instance.CpuOptions, //TODO - not sure
+	//	}}
+	//}
 	var blockDevices []map[string]interface{}
 	for _, v := range volumes {
 		blockDevices = append(blockDevices, map[string]interface{}{
