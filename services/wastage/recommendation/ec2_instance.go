@@ -58,7 +58,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 		pref[fmt.Sprintf("%s %s ?", PreferenceDBKey[k], cond)] = vl
 	}
 	if _, ok := preferences["vCPU"]; !ok {
-		pref["v_cpu >= ?"] = fmt.Sprintf("%.2f", neededCPU)
+		pref["v_cpu >= ?"] = neededCPU
 	}
 
 	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(averageNetworkIn+averageNetworkOut, pref)
