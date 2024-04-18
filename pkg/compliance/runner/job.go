@@ -340,7 +340,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			totalFindingCountMap[mapKey.String()] = len(newFindings)
 		}
 
-		if err := w.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
+		if _, err := w.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
 			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}

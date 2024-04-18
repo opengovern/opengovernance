@@ -12,7 +12,7 @@ import (
 )
 
 type EsSinkServiceClient interface {
-	Ingest(ctx *httpclient.Context, docs []es.Doc) error
+	Ingest(ctx *httpclient.Context, docs []es.Doc) ([]entity.FailedDoc, error)
 }
 
 type esSinkServiceClient struct {
@@ -27,19 +27,19 @@ func NewEsSinkServiceClient(logger *zap.Logger, baseUrl string) EsSinkServiceCli
 	}
 }
 
-func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, docs []es.Doc) error {
+func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, docs []es.Doc) ([]entity.FailedDoc, error) {
 	url := fmt.Sprintf("%s/api/v1/ingest", c.baseUrl)
 
 	jsonDocs, err := json.Marshal(docs)
 	if err != nil {
 		c.logger.Error("failed to marshal docs", zap.Error(err), zap.Any("docs", docs))
-		return err
+		return nil, err
 	}
 	var baseDocs []es.DocBase
 	err = json.Unmarshal(jsonDocs, &baseDocs)
 	if err != nil {
 		c.logger.Error("failed to unmarshal docs", zap.Error(err), zap.Any("docs", docs), zap.String("jsonDocs", string(jsonDocs)))
-		return err
+		return nil, err
 	}
 
 	req := entity.IngestRequest{
@@ -49,17 +49,21 @@ func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, docs []es.Doc) err
 	reqJson, err := json.Marshal(req)
 	if err != nil {
 		c.logger.Error("failed to marshal request", zap.Error(err), zap.Any("request", req))
-		return err
+		return nil, err
 	}
 
-	var res string
+	var res entity.IngestResponse
 	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), reqJson, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
+			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		c.logger.Error("failed to do request", zap.Error(err), zap.String("url", url), zap.String("reqJson", string(reqJson)))
-		return err
+		return nil, err
 	}
 
-	return nil
+	for _, failedDoc := range res.FailedDocs {
+		c.logger.Error("failed to ingest doc", zap.Any("doc", failedDoc.Doc), zap.String("err", failedDoc.Err))
+	}
+
+	return res.FailedDocs, nil
 }

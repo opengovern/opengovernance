@@ -423,7 +423,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		connectorMetricTrendSummary,
 	}
 
-	if err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
+	if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
 		logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
@@ -647,7 +647,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		msgs = append(msgs, item)
 	}
 
-	if err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
+	if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
 		logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}

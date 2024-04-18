@@ -324,7 +324,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 			task.EsIndex = taskIdx
 
 			if len(task.DeletingResources) > 0 {
-				if err := s.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
+				if _, err := s.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
 					s.logger.Error("failed to send delete message to elastic",
 						zap.Uint("jobId", res.JobID),
 						zap.String("connection_id", res.DescribeJob.SourceID),

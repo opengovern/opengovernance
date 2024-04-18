@@ -318,7 +318,7 @@ func (j Job) Do(
 
 				logger.Info("sending docs to nats", zap.Int("count", len(resources)))
 
-				if err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, resources); err != nil {
+				if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, resources); err != nil {
 					fail(fmt.Errorf("send to elastic: %w", err))
 				}
 			} else {
