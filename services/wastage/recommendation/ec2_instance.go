@@ -39,18 +39,23 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	vCPU := *instance.CpuOptions.ThreadsPerCore * *instance.CpuOptions.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
 
-	pref := map[string]string{}
+	pref := map[string]interface{}{}
 	for k, v := range preferences {
+		var vl interface{}
 		if v == nil {
-			value := extractFromInstance(instance, i[0], region, k)
-			v = &value
+			vl = extractFromInstance(instance, i[0], region, k)
+		} else {
+			vl = *v
+		}
+		if PreferenceDBKey[k] == "" {
+			continue
 		}
 
 		cond := "="
 		if sc, ok := PreferenceSpecialCond[k]; ok {
 			cond = sc
 		}
-		pref[fmt.Sprintf("%s %s ?", PreferenceDBKey[k], cond)] = *v
+		pref[fmt.Sprintf("%s %s ?", PreferenceDBKey[k], cond)] = vl
 	}
 	if _, ok := preferences["vCPU"]; !ok {
 		pref["v_cpu >= ?"] = fmt.Sprintf("%.2f", neededCPU)
@@ -79,7 +84,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	return nil, nil
 }
 
-func extractFromInstance(instance types.Instance, i model.EC2InstanceType, region string, k string) string {
+func extractFromInstance(instance types.Instance, i model.EC2InstanceType, region string, k string) interface{} {
 	switch k {
 	case "Tenancy":
 		return i.Tenancy
@@ -114,9 +119,9 @@ func extractFromInstance(instance types.Instance, i model.EC2InstanceType, regio
 	case "Threads":
 		return "" //TODO
 	case "vCPU":
-		return fmt.Sprintf("%d", i.VCpu)
+		return i.VCpu
 	case "MemoryGB":
-		return fmt.Sprintf("%d", i.MemoryGB)
+		return i.MemoryGB
 	}
 	return ""
 }
