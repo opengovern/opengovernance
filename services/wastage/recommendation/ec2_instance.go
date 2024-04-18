@@ -89,6 +89,13 @@ func extractFromInstance(instance types.Instance, i model.EC2InstanceType, regio
 	case "Tenancy":
 		return i.Tenancy
 	case "EBSOptimized":
+		if instance.EbsOptimized != nil {
+			if *instance.EbsOptimized {
+				return "Yes"
+			} else {
+				return "No"
+			}
+		}
 		return i.EBSOptimized
 	case "OperatingSystem":
 		return i.OperatingSystem
