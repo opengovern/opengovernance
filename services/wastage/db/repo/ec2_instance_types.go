@@ -54,7 +54,7 @@ func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, memor
 		Where("tenancy = 'Shared'").
 		Where("capacity_status = 'Used'").
 		Where("operating_system = ?", os).
-		Where("region = ?", region).
+		Where("region_code = ?", region).
 		Where("price_per_unit != 0").
 		Order("price_per_unit ASC").
 		First(&m)
