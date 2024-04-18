@@ -19,7 +19,7 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 }
 
 func (s *Service) EC2InstanceRecommendation(region string, instance types.Instance,
-	volumes []types.Volume, metrics map[string][]types2.Datapoint) ([]Recommendation, error) {
+	volumes []types.Volume, metrics map[string][]types2.Datapoint) (*Recommendation, error) {
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
@@ -43,16 +43,17 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 		return nil, err
 	}
 
-	var recoms []Recommendation
 	if instanceType != nil {
-		recoms = append(recoms, Recommendation{
-			Description: fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType),
-			NewInstance: instance,
-			NewVolumes:  volumes,
-		})
+		description := fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType)
 		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
+		return &Recommendation{
+			Description:     description,
+			NewInstance:     instance,
+			NewInstanceType: instanceType,
+			NewVolumes:      volumes,
+		}, nil
 	} else {
 		fmt.Println("instance type not found")
 	}
-	return recoms, nil
+	return nil, nil
 }

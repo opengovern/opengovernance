@@ -11,11 +11,6 @@ type AWSCredential struct {
 	SecretKey string `json:"secretKey"`
 }
 
-type Recommendation struct {
-	Description string  `json:"description"`
-	Saving      float64 `json:"saving"`
-}
-
 type Limitations struct {
 	MemoryGB     *int64 `json:"memoryGB"`
 	ENASupport   *bool  `json:"ENASupport"`
@@ -29,8 +24,13 @@ type EC2InstanceWastageRequest struct {
 	Region   string                        `json:"region"`
 }
 
+type RightSizingRecommendation struct {
+	Saving             float64 `json:"saving"`
+	TargetInstanceType string  `json:"targetInstanceType"`
+}
+
 type EC2InstanceWastageResponse struct {
-	CurrentCost     float64          `json:"currentCost"`
-	TotalSavings    float64          `json:"totalSavings"`
-	Recommendations []Recommendation `json:"recommendations"`
+	CurrentCost  float64                   `json:"currentCost"`
+	TotalSavings float64                   `json:"totalSavings"`
+	RightSizing  RightSizingRecommendation `json:"rightSizing"`
 }
