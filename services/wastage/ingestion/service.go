@@ -150,15 +150,6 @@ func (s *Service) IngestEc2Instances() error {
 		if v.TermType != "OnDemand" {
 			continue
 		}
-		//if v.PreInstalledSW != "NA" {
-		//	continue
-		//}
-		//if v.Tenancy != "Shared" {
-		//	continue
-		//}
-		//if v.CapacityStatus != "Used" {
-		//	continue
-		//}
 
 		fmt.Println(v)
 		err = s.ec2InstanceRepo.Create(&v)

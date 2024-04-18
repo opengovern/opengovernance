@@ -31,6 +31,10 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	if len(i) == 0 {
 		return nil, fmt.Errorf("instance type not found: %s", string(instance.InstanceType))
 	}
+	// Burst in CPU & Network
+	// Network: UpTo
+	// Memory: -> User , Arch , EbsOptimized , EnaSupport
+	// Volume ===> Optimization
 
 	vCPU := *instance.CpuOptions.ThreadsPerCore * *instance.CpuOptions.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
