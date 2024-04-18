@@ -78,8 +78,6 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 			AvgNetworkBandwidth: fmt.Sprintf("%.0f Bytes", averageNetworkOut+averageNetworkIn),
 			AvgCPUUsage:         fmt.Sprintf("%.1f vCPUs", neededCPU),
 		}, nil
-	} else {
-		fmt.Println("instance type not found")
 	}
 	return nil, nil
 }

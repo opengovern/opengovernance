@@ -74,11 +74,9 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
-	totalSavings += currentCost - costAfterRightSizing
-	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
-		CurrentCost:  currentCost,
-		TotalSavings: totalSavings,
-		RightSizing: entity.RightSizingRecommendation{
+	var rightSizingRecomResp *entity.RightSizingRecommendation
+	if rightSizingRecom != nil {
+		rightSizingRecomResp = &entity.RightSizingRecommendation{
 			TargetInstanceType:        rightSizingRecom.NewInstanceType.InstanceType,
 			Saving:                    currentCost - costAfterRightSizing,
 			CurrentCost:               currentCost,
@@ -90,7 +88,14 @@ func (s API) EC2Instance(c echo.Context) error {
 			CurrentNetworkPerformance: rightSizingRecom.CurrentInstanceType.NetworkPerformance,
 			CurrentMemory:             rightSizingRecom.CurrentInstanceType.Memory,
 			TargetMemory:              rightSizingRecom.NewInstanceType.Memory,
-		},
+		}
+	}
+
+	totalSavings += currentCost - costAfterRightSizing
+	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
+		CurrentCost:  currentCost,
+		TotalSavings: totalSavings,
+		RightSizing:  rightSizingRecomResp,
 	})
 }
 
