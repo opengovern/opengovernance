@@ -65,5 +65,10 @@ func (c *esSinkServiceClient) Ingest(ctx *httpclient.Context, docs []es.Doc) ([]
 		c.logger.Error("failed to ingest doc", zap.Any("doc", failedDoc.Doc), zap.String("err", failedDoc.Err))
 	}
 
+	if len(res.FailedDocs) > len(docs)/2 {
+		c.logger.Error("failed to ingest more than half of the docs", zap.Any("failedDocs", res.FailedDocs))
+		return nil, fmt.Errorf("failed to ingest more than half of the docs")
+	}
+
 	return res.FailedDocs, nil
 }
