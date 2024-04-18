@@ -3,13 +3,13 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
-	"strings"
 	"time"
 )
 
@@ -113,9 +113,6 @@ func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) ([]Failed
 	failedDocs := make([]FailedDoc, 0)
 	for _, doc := range docs {
 		id, idx := doc.GetIdAndIndex()
-		if strings.Contains(idx, "connector") {
-			s.logger.Warn("received connector doc", zap.String("index", idx), zap.String("id", id), zap.Any("doc", doc))
-		}
 		docJson, err := json.Marshal(doc)
 		if err != nil {
 			s.logger.Error("failed to marshal doc", zap.Error(err))
@@ -124,7 +121,7 @@ func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) ([]Failed
 				Err: err.Error(),
 			})
 		}
-		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, id)
+		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s_-_-_%s", idx, id))
 		if err != nil {
 			s.logger.Error("failed to produce message", zap.Error(err), zap.Any("doc", doc))
 			failedDocs = append(failedDocs, FailedDoc{

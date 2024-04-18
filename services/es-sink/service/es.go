@@ -91,9 +91,6 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				m.logger.Error("failed to marshal resource", zap.Error(err))
 				continue
 			}
-			if strings.Contains(idx, "connector") {
-				m.logger.Warn("sending connector resource to indexer", zap.String("index", idx), zap.String("id", id), zap.Any("doc", resource))
-			}
 			err = m.indexer.Add(ctx, opensearchutil.BulkIndexerItem{
 				Index:           idx,
 				Action:          "index",
