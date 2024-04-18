@@ -63,7 +63,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
-	rightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics)
+	rightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.Preferences)
 	if err != nil {
 		return err
 	}

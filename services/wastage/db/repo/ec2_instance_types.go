@@ -13,7 +13,7 @@ type EC2InstanceTypeRepo interface {
 	Update(id uint, m model.EC2InstanceType) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
-	GetCheapestByCoreAndNetwork(cpu float64, memory int64, bandwidth float64, os, region string) (*model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]string) (*model.EC2InstanceType, error)
 	Truncate() error
 	ListByInstanceType(instanceType string) ([]model.EC2InstanceType, error)
 }
@@ -44,20 +44,17 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	return &m, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(cpu float64, memory int64, bandwidth float64, os, region string) (*model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]string) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
-		Where("v_cpu >= ?", cpu).
-		Where("memory_gb >= ?", memory).
 		Where("network_max_bandwidth >= ?", bandwidth).
 		Where("pre_installed_sw = 'NA'").
-		Where("tenancy = 'Shared'").
 		Where("capacity_status = 'Used'").
-		Where("operating_system = ?", os).
-		Where("region_code = ?", region).
-		Where("price_per_unit != 0").
-		Order("price_per_unit ASC").
-		First(&m)
+		Where("price_per_unit != 0")
+	for k, v := range pref {
+		tx = tx.Where(k, v)
+	}
+	tx = tx.Order("price_per_unit ASC").First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

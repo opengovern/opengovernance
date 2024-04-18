@@ -4,6 +4,7 @@ import (
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 )
 
 func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
@@ -18,8 +19,7 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 	return avg
 }
 
-func (s *Service) EC2InstanceRecommendation(region string, instance types.Instance,
-	volumes []types.Volume, metrics map[string][]types2.Datapoint) (*Recommendation, error) {
+func (s *Service) EC2InstanceRecommendation(region string, instance types.Instance, volumes []types.Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*Recommendation, error) {
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
@@ -38,7 +38,25 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 
 	vCPU := *instance.CpuOptions.ThreadsPerCore * *instance.CpuOptions.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
-	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededCPU, i[0].MemoryGB, averageNetworkIn+averageNetworkOut, "Linux", region)
+
+	pref := map[string]string{}
+	for k, v := range preferences {
+		if v == nil {
+			value := extractFromInstance(instance, i[0], region, k)
+			v = &value
+		}
+
+		cond := "="
+		if sc, ok := PreferenceSpecialCond[k]; ok {
+			cond = sc
+		}
+		pref[fmt.Sprintf("%s %s ?", PreferenceDBKey[k], cond)] = *v
+	}
+	if _, ok := preferences["vCPU"]; !ok {
+		pref["v_cpu >= ?"] = fmt.Sprintf("%.2f", neededCPU)
+	}
+
+	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(averageNetworkIn+averageNetworkOut, pref)
 	if err != nil {
 		return nil, err
 	}
@@ -59,4 +77,46 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 		fmt.Println("instance type not found")
 	}
 	return nil, nil
+}
+
+func extractFromInstance(instance types.Instance, i model.EC2InstanceType, region string, k string) string {
+	switch k {
+	case "Tenancy":
+		return i.Tenancy
+	case "EBSOptimized":
+		return i.EBSOptimized
+	case "OperatingSystem":
+		return i.OperatingSystem
+	case "LicenseModel":
+		return i.LicenseModel
+	case "Region":
+		return region
+	case "Hypervisor":
+		return "" //TODO
+	case "CurrentGeneration":
+		return i.CurrentGeneration
+	case "PhysicalProcessor":
+		return i.PhysicalProcessor
+	case "ClockSpeed":
+		return i.ClockSpeed
+	case "ProcessorArchitecture":
+		return i.ProcessorArchitecture
+	case "SupportedArchitectures":
+		return "" //TODO
+	case "ENASupported":
+		return i.EnhancedNetworkingSupported
+	case "EncryptionInTransitSupported":
+		return "" //TODO
+	case "SupportedRootDeviceTypes":
+		return "" //TODO
+	case "Cores":
+		return "" //TODO
+	case "Threads":
+		return "" //TODO
+	case "vCPU":
+		return fmt.Sprintf("%d", i.VCpu)
+	case "MemoryGB":
+		return fmt.Sprintf("%d", i.MemoryGB)
+	}
+	return ""
 }
