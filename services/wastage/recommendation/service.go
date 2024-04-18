@@ -11,10 +11,15 @@ type Service struct {
 }
 
 type Recommendation struct {
-	Description     string
-	NewInstance     types.Instance
-	NewVolumes      []types.Volume
-	NewInstanceType *model.EC2InstanceType
+	Description string
+	NewInstance types.Instance
+	NewVolumes  []types.Volume
+
+	CurrentInstanceType *model.EC2InstanceType
+	NewInstanceType     *model.EC2InstanceType
+
+	AvgNetworkBandwidth string
+	AvgCPUUsage         string
 }
 
 func New(ec2InstanceRepo repo.EC2InstanceTypeRepo) *Service {

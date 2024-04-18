@@ -47,10 +47,13 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 		description := fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType)
 		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
 		return &Recommendation{
-			Description:     description,
-			NewInstance:     instance,
-			NewInstanceType: instanceType,
-			NewVolumes:      volumes,
+			Description:         description,
+			NewInstance:         instance,
+			NewVolumes:          volumes,
+			CurrentInstanceType: &i[0],
+			NewInstanceType:     instanceType,
+			AvgNetworkBandwidth: fmt.Sprintf("%.0f Bytes", averageNetworkOut+averageNetworkIn),
+			AvgCPUUsage:         fmt.Sprintf("%.1f vCPUs", neededCPU),
 		}, nil
 	} else {
 		fmt.Println("instance type not found")

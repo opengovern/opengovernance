@@ -79,8 +79,14 @@ func (s API) EC2Instance(c echo.Context) error {
 		CurrentCost:  currentCost,
 		TotalSavings: totalSavings,
 		RightSizing: entity.RightSizingRecommendation{
-			Saving:             currentCost - costAfterRightSizing,
-			TargetInstanceType: rightSizingRecom.NewInstanceType.InstanceType,
+			TargetInstanceType:       rightSizingRecom.NewInstanceType.InstanceType,
+			Saving:                   currentCost - costAfterRightSizing,
+			AvgCPUUsage:              rightSizingRecom.AvgCPUUsage,
+			TargetCores:              rightSizingRecom.NewInstanceType.VCPUStr,
+			AvgNetworkBandwidth:      rightSizingRecom.AvgNetworkBandwidth,
+			TargetNetworkPerformance: rightSizingRecom.NewInstanceType.NetworkPerformance,
+			CurrentMemory:            rightSizingRecom.CurrentInstanceType.Memory,
+			TargetMemory:             rightSizingRecom.NewInstanceType.Memory,
 		},
 	})
 }
