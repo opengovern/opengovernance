@@ -140,7 +140,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
 
-		if err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
+		if _, err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
 			w.logger.Error("failed to send to ingest", zap.Error(err))
 			return err
 		}
@@ -174,7 +174,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		rf.EsIndex = idx
 		docs = append(docs, rf)
 	}
-	if err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
 		w.logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
@@ -225,7 +225,7 @@ func (w *Worker) deleteOldResourceFindings(j types2.Job, currentResourceIds []st
 	keys, idx := task.KeysAndIndex()
 	task.EsID = es2.HashOf(keys...)
 	task.EsIndex = idx
-	if err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
 		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
 		return err
 	}

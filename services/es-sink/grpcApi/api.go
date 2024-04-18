@@ -76,7 +76,7 @@ func (s *GRPCSinkServer) Ingest(ctx context.Context, req *golang.IngestRequest) 
 		}
 		docs = append(docs, d)
 	}
-	if err := s.esSinkService.Ingest(ctx, docs); err != nil {
+	if _, err := s.esSinkService.Ingest(ctx, docs); err != nil {
 		s.logger.Error("failed to ingest data", zap.Error(err))
 		return nil, err
 	}

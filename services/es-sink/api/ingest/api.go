@@ -26,9 +26,19 @@ func (s API) Ingest(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
-	if err := s.esSinkService.Ingest(c.Request().Context(), req.Docs); err != nil {
+	failedDocs, err := s.esSinkService.Ingest(c.Request().Context(), req.Docs)
+	if err != nil {
 		s.logger.Error("failed to ingest data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to ingest data")
 	}
-	return c.JSON(http.StatusOK, "OK")
+
+	apiFailedDocs := make([]entity.FailedDoc, 0, len(failedDocs))
+	for _, failedDoc := range failedDocs {
+		apiFailedDocs = append(apiFailedDocs, entity.FailedDoc{
+			Doc: failedDoc.Doc,
+			Err: failedDoc.Err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, entity.IngestResponse{FailedDocs: apiFailedDocs})
 }
