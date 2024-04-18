@@ -9,6 +9,7 @@ import (
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -111,7 +112,10 @@ type FailedDoc struct {
 func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) ([]FailedDoc, error) {
 	failedDocs := make([]FailedDoc, 0)
 	for _, doc := range docs {
-		id, _ := doc.GetIdAndIndex()
+		id, idx := doc.GetIdAndIndex()
+		if strings.Contains(idx, "connector") {
+			s.logger.Warn("received connector doc", zap.String("index", idx), zap.String("id", id), zap.Any("doc", doc))
+		}
 		docJson, err := json.Marshal(doc)
 		if err != nil {
 			s.logger.Error("failed to marshal doc", zap.Error(err))

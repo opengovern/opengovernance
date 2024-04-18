@@ -91,7 +91,9 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				m.logger.Error("failed to marshal resource", zap.Error(err))
 				continue
 			}
-
+			if strings.Contains(idx, "connector") {
+				m.logger.Warn("sending connector resource to indexer", zap.String("index", idx), zap.String("id", id), zap.Any("doc", resource))
+			}
 			err = m.indexer.Add(ctx, opensearchutil.BulkIndexerItem{
 				Index:           idx,
 				Action:          "index",
@@ -119,6 +121,7 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 
 func (m *EsSinkModule) handleFailure(ctx context.Context, item opensearchutil.BulkIndexerItem, response opensearchutil.BulkIndexerResponseItem, err error) {
 	if response.Status == http.StatusTooManyRequests {
+		m.logger.Warn("too many requests, retrying after 5 seconds")
 		time.Sleep(5 * time.Second)
 		m.retryChan <- item
 		return
