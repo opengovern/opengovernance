@@ -27,12 +27,15 @@ type EC2InstanceWastageRequest struct {
 type RightSizingRecommendation struct {
 	TargetInstanceType string  `json:"targetInstanceType"`
 	Saving             float64 `json:"saving"`
+	CurrentCost        float64 `json:"currentCost"`
+	TargetCost         float64 `json:"targetCost"`
 
 	AvgCPUUsage string `json:"avgCPUUsage"`
 	TargetCores string `json:"targetCores"`
 
-	AvgNetworkBandwidth      string `json:"avgNetworkBandwidth"`
-	TargetNetworkPerformance string `json:"targetNetworkBandwidth"`
+	AvgNetworkBandwidth       string `json:"avgNetworkBandwidth"`
+	TargetNetworkPerformance  string `json:"targetNetworkBandwidth"`
+	CurrentNetworkPerformance string `json:"currentNetworkPerformance"`
 
 	CurrentMemory string `json:"currentMemory"`
 	TargetMemory  string `json:"targetMemory"`
