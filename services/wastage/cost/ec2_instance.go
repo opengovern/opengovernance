@@ -25,6 +25,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 	if instance.Placement != nil {
 		valuesMap["tenancy"] = instance.Placement.Tenancy
 		valuesMap["availability_zone"] = *instance.Placement.AvailabilityZone
+		valuesMap["host_id"] = instance.Placement.HostId
 	}
 	valuesMap["ebs_optimized"] = *instance.EbsOptimized
 	if instance.Monitoring != nil {
@@ -49,16 +50,13 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 		})
 	}
 	valuesMap["ebs_block_device"] = blockDevices
-	//valuesMap["launch_template"] = []map[string]interface{}{
-	//	{
-	//		"id":   instance.LaunchTemplateData.KeyName,
-	//		"name": instance.LaunchTemplateData.KeyName,
-	//	},
-	//}
+	valuesMap["launch_template"] = []map[string]interface{}{}
 	if instance.InstanceLifecycle == types.InstanceLifecycleTypeSpot {
 		valuesMap["spot_price"] = "Spot"
+	} else {
+		valuesMap["spot_price"] = ""
 	}
-	// valuesMap["host_id"] = WTF??
+
 	os := "Linux"
 	if instance.Platform != "" {
 		os = string(instance.Platform)
