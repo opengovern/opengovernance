@@ -6,7 +6,6 @@ toolchain go1.21.6
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
-	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0
@@ -15,6 +14,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/config v1.26.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
+	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.32.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.141.0
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.23.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5
@@ -47,6 +48,7 @@ require (
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
 	github.com/kaytu-io/kaytu-util v0.0.0-20240415102306-fdc35c00b134
 	github.com/kaytu-io/pennywise v1.7.16
+	github.com/kaytu-io/pennywise-server v0.3.22
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
@@ -80,6 +82,7 @@ require (
 	google.golang.org/grpc v1.62.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/datatypes v1.1.0
+	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.6
 	k8s.io/api v0.29.3
 	k8s.io/apiextensions-apiserver v0.29.0
@@ -246,7 +249,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.32.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/cloudsearch v1.20.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.35.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.32.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.30.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/codeartifact v1.23.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.26.5 // indirect
@@ -265,7 +267,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/drs v1.21.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.26.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.18.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.141.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.35.5 // indirect
@@ -574,14 +575,12 @@ require (
 	google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.4.4 // indirect
-	gorm.io/driver/postgres v1.5.4 // indirect
 	gorm.io/plugin/prometheus v0.1.0 // indirect
 	k8s.io/client-go v0.29.3 // indirect
 	k8s.io/component-base v0.29.0 // indirect
