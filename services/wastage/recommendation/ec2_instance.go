@@ -4,10 +4,15 @@ import (
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 )
 
 func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
+	if len(datapoints) == 0 {
+		return 0.0
+	}
+
 	avg := float64(0)
 	for _, dp := range datapoints {
 		if dp.Average == nil {
@@ -19,10 +24,11 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 	return avg
 }
 
-func (s *Service) EC2InstanceRecommendation(region string, instance types.Instance, volumes []types.Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*Recommendation, error) {
+func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*Recommendation, error) {
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
+	averageMemPercent := averageOfDatapoints(metrics["mem_used_percent"])
 
 	i, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType))
 	if err != nil {
@@ -36,8 +42,9 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	// Memory: -> User , Arch , EbsOptimized , EnaSupport
 	// Volume ===> Optimization
 
-	vCPU := *instance.CpuOptions.ThreadsPerCore * *instance.CpuOptions.CoreCount
+	vCPU := instance.ThreadsPerCore * instance.CoreCount
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
+	neededMemory := float64(i[0].MemoryGB) * averageMemPercent / 100.0
 
 	pref := map[string]interface{}{}
 	for k, v := range preferences {
@@ -59,6 +66,11 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	}
 	if _, ok := preferences["vCPU"]; !ok {
 		pref["v_cpu >= ?"] = neededCPU
+	}
+	if _, ok := metrics["mem_used_percent"]; ok {
+		if _, ok := preferences["MemoryGB"]; !ok {
+			pref["memory_gb >= ?"] = neededMemory
+		}
 	}
 
 	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(averageNetworkIn+averageNetworkOut, pref)
@@ -82,19 +94,16 @@ func (s *Service) EC2InstanceRecommendation(region string, instance types.Instan
 	return nil, nil
 }
 
-func extractFromInstance(instance types.Instance, i model.EC2InstanceType, region string, k string) interface{} {
+func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, region string, k string) interface{} {
 	switch k {
 	case "Tenancy":
 		return i.Tenancy
 	case "EBSOptimized":
-		if instance.EbsOptimized != nil {
-			if *instance.EbsOptimized {
-				return "Yes"
-			} else {
-				return "No"
-			}
+		if instance.EbsOptimized {
+			return "Yes"
+		} else {
+			return "No"
 		}
-		return i.EBSOptimized
 	case "OperatingSystem":
 		return i.OperatingSystem
 	case "LicenseModel":

@@ -17,12 +17,39 @@ type Limitations struct {
 	EBSOptimized *bool  `json:"EBSOptimized"`
 }
 
+type EC2Placement struct {
+	Tenancy          types.Tenancy `json:"tenancy"`
+	AvailabilityZone string        `json:"availabilityZone"`
+	HashedHostId     string        `json:"hashedHostId"`
+}
+
+type EC2Instance struct {
+	HashedInstanceId  string                      `json:"hashedInstanceId"`
+	State             types.InstanceStateName     `json:"state"`
+	InstanceType      types.InstanceType          `json:"instanceType"`
+	Platform          types.PlatformValues        `json:"platform"`
+	ThreadsPerCore    int32                       `json:"threadsPerCore"`
+	CoreCount         int32                       `json:"coreCount"`
+	EbsOptimized      bool                        `json:"ebsOptimized"`
+	InstanceLifecycle types.InstanceLifecycleType `json:"instanceLifecycle"`
+	Monitoring        *string                     `json:"monitoring"`
+	Placement         *EC2Placement               `json:"placement"`
+}
+
+type EC2Volume struct {
+	HashedVolumeId string           `json:"hashedVolumeId"`
+	VolumeType     types.VolumeType `json:"volumeType"`
+	Size           int32            `json:"size"`
+	Iops           int32            `json:"iops"`
+}
+
 type EC2InstanceWastageRequest struct {
-	Instance    types.Instance                `json:"instance"`
-	Volumes     []types.Volume                `json:"volumes"`
-	Metrics     map[string][]types2.Datapoint `json:"metrics"`
-	Region      string                        `json:"region"`
-	Preferences map[string]*string            `json:"preferences"`
+	HashedAccountID string                        `json:"hashedAccountID"`
+	Instance        EC2Instance                   `json:"instance"`
+	Volumes         []EC2Volume                   `json:"volumes"`
+	Metrics         map[string][]types2.Datapoint `json:"metrics"`
+	Region          string                        `json:"region"`
+	Preferences     map[string]*string            `json:"preferences"`
 }
 
 type RightSizingRecommendation struct {

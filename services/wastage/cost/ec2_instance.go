@@ -7,13 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	kaytu_client "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-client"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	"net/http"
 	"time"
 )
 
-func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, volumes []types.Volume, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
 		ID:        "submittion-1",
 		CreatedAt: time.Now(),
@@ -24,12 +25,12 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 	valuesMap["instance_type"] = instance.InstanceType
 	if instance.Placement != nil {
 		valuesMap["tenancy"] = instance.Placement.Tenancy
-		valuesMap["availability_zone"] = *instance.Placement.AvailabilityZone
-		valuesMap["host_id"] = instance.Placement.HostId
+		valuesMap["availability_zone"] = instance.Placement.AvailabilityZone
+		valuesMap["host_id"] = instance.Placement.HashedHostId
 	}
-	valuesMap["ebs_optimized"] = *instance.EbsOptimized
+	valuesMap["ebs_optimized"] = instance.EbsOptimized
 	if instance.Monitoring != nil {
-		if instance.Monitoring.State == "disabled" || instance.Monitoring.State == "disabling" {
+		if *instance.Monitoring == "disabled" || *instance.Monitoring == "disabling" {
 			valuesMap["monitoring"] = false
 		} else {
 			valuesMap["monitoring"] = true
@@ -43,10 +44,10 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 	var blockDevices []map[string]interface{}
 	for _, v := range volumes {
 		blockDevices = append(blockDevices, map[string]interface{}{
-			"device_name": *v.VolumeId,
+			"device_name": v.HashedVolumeId,
 			"volume_type": v.VolumeType,
-			"volume_size": *v.Size,
-			"iops":        *v.Iops,
+			"volume_size": v.Size,
+			"iops":        v.Iops,
 		})
 	}
 	valuesMap["ebs_block_device"] = blockDevices
@@ -72,7 +73,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance types.Instance, vol
 	}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
-		Address:      *instance.InstanceId,
+		Address:      instance.HashedInstanceId,
 		Type:         kaytu_client.ResourceTypeConversion("aws::ec2::instance"),
 		Name:         "",
 		RegionCode:   region,
