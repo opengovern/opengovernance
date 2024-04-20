@@ -42,7 +42,7 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.DataAge{}, &model.Usage{})
+			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{})
 			if err != nil {
 				return err
 			}
