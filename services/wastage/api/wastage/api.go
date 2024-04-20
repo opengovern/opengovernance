@@ -110,6 +110,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
+	newVolumes := make([]entity.EC2Volume, 0)
 	ebsRightSizingRecoms := make(map[string]*recommendation.EbsVolumeRecommendation)
 	for _, vol := range req.Volumes {
 		ebsRightSizingRecom, err := s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
@@ -117,13 +118,13 @@ func (s API) EC2Instance(c echo.Context) error {
 			return err
 		}
 		if ebsRightSizingRecom == nil {
+			newVolumes = append(newVolumes, vol)
 			continue
 		}
 		ebsRightSizingRecoms[vol.HashedVolumeId] = ebsRightSizingRecom
 	}
-	newVolumes := make([]entity.EC2Volume, 0)
-	for _, vol := range ebsRightSizingRecoms {
-		newVolumes = append(newVolumes, vol.NewVolume)
+	for _, recom := range ebsRightSizingRecoms {
+		newVolumes = append(newVolumes, recom.NewVolume)
 	}
 	ec2RightSizingRecom.NewVolumes = newVolumes
 
