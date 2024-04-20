@@ -167,6 +167,7 @@ func (s API) EC2Instance(c echo.Context) error {
 			VolumesTargetThroughput:   make(map[string]int32),
 			VolumesCurrentCosts:       make(map[string]float64),
 			VolumesTargetCosts:        make(map[string]float64),
+			VolumesSaving:             make(map[string]float64),
 		}
 	}
 
@@ -183,10 +184,12 @@ func (s API) EC2Instance(c echo.Context) error {
 				VolumesTargetThroughput:  make(map[string]int32),
 				VolumesCurrentCosts:      make(map[string]float64),
 				VolumesTargetCosts:       make(map[string]float64),
+				VolumesSaving:            make(map[string]float64),
 			}
 		}
 		rightSizingRecomResp.VolumesCurrentCosts[k] = currentVolumeCosts[k]
 		rightSizingRecomResp.VolumesTargetCosts[k] = ebsCostAfterRightSizing[k]
+		rightSizingRecomResp.VolumesSaving[k] = ebsTotalSavings[k]
 		rightSizingRecomResp.VolumesCurrentSizes[k] = v.CurrentSize
 		rightSizingRecomResp.VolumesTargetSizes[k] = v.NewSize
 		rightSizingRecomResp.VolumesCurrentTypes[k] = v.CurrentVolumeType
