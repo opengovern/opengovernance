@@ -13,13 +13,15 @@ import (
 type Service struct {
 	dataAgeRepo repo.DataAgeRepo
 
-	ec2InstanceRepo repo.EC2InstanceTypeRepo
+	ec2InstanceRepo   repo.EC2InstanceTypeRepo
+	ebsVolumeTypeRepo repo.EBSVolumeTypeRepo
 }
 
-func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
+func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
 	return &Service{
-		ec2InstanceRepo: ec2InstanceRepo,
-		dataAgeRepo:     dataAgeRepo,
+		ec2InstanceRepo:   ec2InstanceRepo,
+		ebsVolumeTypeRepo: ebsVolumeRepo,
+		dataAgeRepo:       dataAgeRepo,
 	}
 }
 
@@ -104,21 +106,39 @@ func (s *Service) IngestEc2Instances() error {
 			return nil
 		}
 
-		v := model.EC2InstanceType{}
-		v.PopulateFromMap(columns, row)
+		switch row[columns["Product Family"]] {
+		case "Compute Instance", "Compute Instance (bare metal)":
+			v := model.EC2InstanceType{}
+			v.PopulateFromMap(columns, row)
 
-		if v.InstanceType == "" {
-			continue
-		}
-		if v.TermType != "OnDemand" {
-			continue
-		}
+			if v.InstanceType == "" {
+				continue
+			}
+			if v.TermType != "OnDemand" {
+				continue
+			}
 
-		fmt.Println(v)
-		err = s.ec2InstanceRepo.Create(&v)
-		if err != nil {
+			fmt.Println("Instance", v)
+			err = s.ec2InstanceRepo.Create(&v)
+			if err != nil {
 
-			return err
+				return err
+			}
+		case "Storage", "System Operation", "Provisioned Throughput":
+			v := model.EBSVolumeType{}
+			v.PopulateFromMap(columns, row)
+
+			if v.VolumeType == "" {
+				continue
+			}
+			if v.TermType != "OnDemand" {
+				continue
+			}
+			fmt.Println("Volume", v)
+			err = s.ebsVolumeTypeRepo.Create(&v)
+			if err != nil {
+				return err
+			}
 		}
 	}
 }

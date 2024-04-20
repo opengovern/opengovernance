@@ -16,12 +16,12 @@ import (
 
 func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
-		ID:        "submittion-1",
+		ID:        "submission-1",
 		CreatedAt: time.Now(),
 		Resources: []schema.ResourceDef{},
 	}
 
-	valuesMap := map[string]interface{}{}
+	valuesMap := map[string]any{}
 	valuesMap["instance_type"] = instance.InstanceType
 	if instance.Placement != nil {
 		valuesMap["tenancy"] = instance.Placement.Tenancy
@@ -37,21 +37,21 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 		}
 	}
 	//if instance.CpuOptions != nil {
-	//	valuesMap["credit_specification"] = []map[string]interface{}{{
+	//	valuesMap["credit_specification"] = []map[string]any{{
 	//		"cpu_credits": *instance.CpuOptions, //TODO - not sure
 	//	}}
 	//}
-	var blockDevices []map[string]interface{}
+	var blockDevices []map[string]any
 	for _, v := range volumes {
-		blockDevices = append(blockDevices, map[string]interface{}{
+		blockDevices = append(blockDevices, map[string]any{
 			"device_name": v.HashedVolumeId,
 			"volume_type": v.VolumeType,
-			"volume_size": v.Size,
-			"iops":        v.Iops,
+			"volume_size": *v.Size,
+			"iops":        *v.Iops,
 		})
 	}
 	valuesMap["ebs_block_device"] = blockDevices
-	valuesMap["launch_template"] = []map[string]interface{}{}
+	valuesMap["launch_template"] = []map[string]any{}
 	if instance.InstanceLifecycle == types.InstanceLifecycleTypeSpot {
 		valuesMap["spot_price"] = "Spot"
 	} else {
@@ -62,7 +62,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 	if instance.Platform != "" {
 		os = string(instance.Platform)
 	}
-	valuesMap["pennywise_usage"] = map[string]interface{}{
+	valuesMap["pennywise_usage"] = map[string]any{
 		"operating_system": os,
 		//"reserved_instance_type": "",
 		//"reserved_instance_term": "",
@@ -75,6 +75,52 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      instance.HashedInstanceId,
 		Type:         kaytu_client.ResourceTypeConversion("aws::ec2::instance"),
+		Name:         "",
+		RegionCode:   region,
+		ProviderName: schema.AWSProvider,
+		Values:       valuesMap,
+	})
+
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return 0, err
+	}
+
+	var response cost.State
+	statusCode, err := httpclient.DoRequest("GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	if err != nil {
+		return 0, err
+	}
+
+	if statusCode != http.StatusOK {
+		return 0, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+	}
+
+	resourceCost, err := response.Cost()
+	if err != nil {
+		return 0, err
+	}
+
+	return resourceCost.Decimal.InexactFloat64(), nil
+}
+
+func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volumeMetrics map[string][]types2.Datapoint) (float64, error) {
+	req := schema.Submission{
+		ID:        "submission-1",
+		CreatedAt: time.Now(),
+		Resources: []schema.ResourceDef{},
+	}
+
+	valuesMap := map[string]any{}
+	valuesMap["availability_zone"] = *volume.AvailabilityZone
+	valuesMap["type"] = volume.VolumeType
+	valuesMap["size"] = *volume.Size
+	valuesMap["iops"] = *volume.Iops
+	valuesMap["throughput"] = *volume.Throughput
+
+	req.Resources = append(req.Resources, schema.ResourceDef{
+		Address:      volume.HashedVolumeId,
+		Type:         kaytu_client.ResourceTypeConversion("aws::ebs::volume"),
 		Name:         "",
 		RegionCode:   region,
 		ProviderName: schema.AWSProvider,
