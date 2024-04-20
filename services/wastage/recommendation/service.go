@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
@@ -25,7 +26,7 @@ type Ec2InstanceRecommendation struct {
 
 type EbsVolumeRecommendation struct {
 	Description string
-	NewVolume   types.Volume
+	NewVolume   entity.EC2Volume
 
 	CurrentSize                  int32
 	NewSize                      int32

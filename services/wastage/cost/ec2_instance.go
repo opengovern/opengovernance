@@ -104,7 +104,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
 
-func (s *Service) GetEBSVolumeCost(region string, volume types.Volume, volumeMetrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volumeMetrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -112,14 +112,14 @@ func (s *Service) GetEBSVolumeCost(region string, volume types.Volume, volumeMet
 	}
 
 	valuesMap := map[string]any{}
-	valuesMap["availability_zone"] = *volume.AvailabilityZone
+	valuesMap["availability_zone"] = volume.AvailabilityZone
 	valuesMap["type"] = volume.VolumeType
-	valuesMap["size"] = *volume.Size
-	valuesMap["iops"] = *volume.Iops
-	valuesMap["throughput"] = *volume.Throughput
+	valuesMap["size"] = volume.Size
+	valuesMap["iops"] = volume.Iops
+	valuesMap["throughput"] = volume.Throughput
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
-		Address:      *volume.VolumeId,
+		Address:      volume.HashedVolumeId,
 		Type:         kaytu_client.ResourceTypeConversion("aws::ebs::volume"),
 		Name:         "",
 		RegionCode:   region,

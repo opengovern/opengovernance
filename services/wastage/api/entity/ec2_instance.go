@@ -5,18 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
-type AWSCredential struct {
-	AccountID string `json:"accountID"`
-	AccessKey string `json:"accessKey"`
-	SecretKey string `json:"secretKey"`
-}
-
-type Limitations struct {
-	MemoryGB     *int64 `json:"memoryGB"`
-	ENASupport   *bool  `json:"ENASupport"`
-	EBSOptimized *bool  `json:"EBSOptimized"`
-}
-
 type EC2Placement struct {
 	Tenancy          types.Tenancy `json:"tenancy"`
 	AvailabilityZone string        `json:"availabilityZone"`
@@ -37,20 +25,22 @@ type EC2Instance struct {
 }
 
 type EC2Volume struct {
-	HashedVolumeId string           `json:"hashedVolumeId"`
-	VolumeType     types.VolumeType `json:"volumeType"`
-	Size           int32            `json:"size"`
-	Iops           int32            `json:"iops"`
+	HashedVolumeId   string           `json:"hashedVolumeId"`
+	VolumeType       types.VolumeType `json:"volumeType"`
+	Size             *int32           `json:"size"`
+	Iops             *int32           `json:"iops"`
+	AvailabilityZone *string          `json:"availabilityZone"`
+	Throughput       *int32           `json:"throughput"`
 }
 
 type EC2InstanceWastageRequest struct {
-	HashedAccountID string                        `json:"hashedAccountID"`
-	Instance        EC2Instance                   `json:"instance"`
-	Volumes         []EC2Volume                   `json:"volumes"`
-	Metrics         map[string][]types2.Datapoint `json:"metrics"`
-	VolumeMetrics map[string]map[string][]types2.Datapoint `json:"volumeMetrics"`
-	Region          string                        `json:"region"`
-	Preferences     map[string]*string            `json:"preferences"`
+	HashedAccountID string                                   `json:"hashedAccountID"`
+	Instance        EC2Instance                              `json:"instance"`
+	Volumes         []EC2Volume                              `json:"volumes"`
+	Metrics         map[string][]types2.Datapoint            `json:"metrics"`
+	VolumeMetrics   map[string]map[string][]types2.Datapoint `json:"volumeMetrics"`
+	Region          string                                   `json:"region"`
+	Preferences     map[string]*string                       `json:"preferences"`
 }
 
 type RightSizingRecommendation struct {

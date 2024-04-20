@@ -97,12 +97,12 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	currentVolumeCosts := make(map[string]float64)
 	for _, vol := range req.Volumes {
-		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[*vol.VolumeId])
+		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId])
 		if err != nil {
 			s.logger.Error("failed to get ebs volume cost", zap.Error(err))
 			return err
 		}
-		currentVolumeCosts[*vol.VolumeId] = volumeCost
+		currentVolumeCosts[vol.HashedVolumeId] = volumeCost
 	}
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.Preferences)
@@ -112,16 +112,16 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	ebsRightSizingRecoms := make(map[string]*recommendation.EbsVolumeRecommendation)
 	for _, vol := range req.Volumes {
-		ebsRightSizingRecom, err := s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[*vol.VolumeId], req.Preferences)
+		ebsRightSizingRecom, err := s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
 		if err != nil {
 			return err
 		}
 		if ebsRightSizingRecom == nil {
 			continue
 		}
-		ebsRightSizingRecoms[*vol.VolumeId] = ebsRightSizingRecom
+		ebsRightSizingRecoms[vol.HashedVolumeId] = ebsRightSizingRecom
 	}
-	newVolumes := make([]types2.Volume, 0)
+	newVolumes := make([]entity.EC2Volume, 0)
 	for _, vol := range ebsRightSizingRecoms {
 		newVolumes = append(newVolumes, vol.NewVolume)
 	}
@@ -134,13 +134,13 @@ func (s API) EC2Instance(c echo.Context) error {
 	ebsTotalSavings := make(map[string]float64)
 	ebsCostAfterRightSizing := make(map[string]float64)
 	for _, vol := range ec2RightSizingRecom.NewVolumes {
-		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[*vol.VolumeId])
+		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId])
 		if err != nil {
 			s.logger.Error("failed to get ebs volume cost", zap.Error(err))
 			return err
 		}
-		ebsCostAfterRightSizing[*vol.VolumeId] = volumeCost
-		ebsTotalSavings[*vol.VolumeId] = currentVolumeCosts[*vol.VolumeId] - volumeCost
+		ebsCostAfterRightSizing[vol.HashedVolumeId] = volumeCost
+		ebsTotalSavings[vol.HashedVolumeId] = currentVolumeCosts[vol.HashedVolumeId] - volumeCost
 	}
 
 	var rightSizingRecomResp *entity.RightSizingRecommendation
