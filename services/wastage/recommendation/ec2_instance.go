@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"strings"
 )
 
 func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
@@ -166,6 +167,9 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 
 	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, averageIops, averageThroughput)
 	if err != nil {
+		if strings.Contains(err.Error(), "no feasible volume types found") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
