@@ -20,7 +20,7 @@ type EC2Instance struct {
 	CoreCount         int32                       `json:"coreCount"`
 	EbsOptimized      bool                        `json:"ebsOptimized"`
 	InstanceLifecycle types.InstanceLifecycleType `json:"instanceLifecycle"`
-	Monitoring        *string                     `json:"monitoring"`
+	Monitoring        *types.MonitoringState      `json:"monitoring"`
 	Placement         *EC2Placement               `json:"placement"`
 }
 
