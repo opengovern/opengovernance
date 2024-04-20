@@ -46,8 +46,8 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 		blockDevices = append(blockDevices, map[string]any{
 			"device_name": v.HashedVolumeId,
 			"volume_type": v.VolumeType,
-			"volume_size": v.Size,
-			"iops":        v.Iops,
+			"volume_size": *v.Size,
+			"iops":        *v.Iops,
 		})
 	}
 	valuesMap["ebs_block_device"] = blockDevices
@@ -112,11 +112,11 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 	}
 
 	valuesMap := map[string]any{}
-	valuesMap["availability_zone"] = volume.AvailabilityZone
+	valuesMap["availability_zone"] = *volume.AvailabilityZone
 	valuesMap["type"] = volume.VolumeType
-	valuesMap["size"] = volume.Size
-	valuesMap["iops"] = volume.Iops
-	valuesMap["throughput"] = volume.Throughput
+	valuesMap["size"] = *volume.Size
+	valuesMap["iops"] = *volume.Iops
+	valuesMap["throughput"] = *volume.Throughput
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      volume.HashedVolumeId,
