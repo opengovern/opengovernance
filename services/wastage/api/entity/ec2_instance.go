@@ -48,6 +48,7 @@ type EC2InstanceWastageRequest struct {
 	Instance        EC2Instance                   `json:"instance"`
 	Volumes         []EC2Volume                   `json:"volumes"`
 	Metrics         map[string][]types2.Datapoint `json:"metrics"`
+	VolumeMetrics map[string]map[string][]types2.Datapoint `json:"volumeMetrics"`
 	Region          string                        `json:"region"`
 	Preferences     map[string]*string            `json:"preferences"`
 }
@@ -67,10 +68,22 @@ type RightSizingRecommendation struct {
 
 	CurrentMemory string `json:"currentMemory"`
 	TargetMemory  string `json:"targetMemory"`
+
+	VolumesCurrentSizes      map[string]int32            `json:"volumeCurrentSizes"`
+	VolumesTargetSizes       map[string]int32            `json:"volumeTargetSizes"`
+	VolumesCurrentTypes      map[string]types.VolumeType `json:"volumeCurrentTypes"`
+	VolumesTargetTypes       map[string]types.VolumeType `json:"volumeTargetTypes"`
+	VolumesCurrentIOPS       map[string]int32            `json:"volumeCurrentIOPS"`
+	VolumesTargetIOPS        map[string]int32            `json:"volumeTargetIOPS"`
+	VolumesCurrentThroughput map[string]int32            `json:"volumeCurrentThroughput"`
+	VolumesTargetThroughput  map[string]int32            `json:"volumeTargetThroughput"`
+	VolumesCurrentCosts      map[string]float64          `json:"volumeCurrentCosts"`
+	VolumesTargetCosts       map[string]float64          `json:"volumeTargetCosts"`
 }
 
 type EC2InstanceWastageResponse struct {
-	CurrentCost  float64                    `json:"currentCost"`
-	TotalSavings float64                    `json:"totalSavings"`
-	RightSizing  *RightSizingRecommendation `json:"rightSizing"`
+	CurrentCost     float64                    `json:"currentCost"`
+	TotalSavings    float64                    `json:"totalSavings"`
+	EbsTotalSavings map[string]float64         `json:"ebsTotalSavings"`
+	RightSizing     *RightSizingRecommendation `json:"rightSizing"`
 }

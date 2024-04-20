@@ -69,7 +69,7 @@ func (r *EC2InstanceTypeRepoImpl) Update(id uint, m model.EC2InstanceType) error
 }
 
 func (r *EC2InstanceTypeRepoImpl) Delete(id uint) error {
-	return r.db.Conn().Delete(&model.EC2InstanceType{}, id).Error
+	return r.db.Conn().Unscoped().Delete(&model.EC2InstanceType{}, id).Error
 }
 
 func (r *EC2InstanceTypeRepoImpl) List() ([]model.EC2InstanceType, error) {
@@ -91,7 +91,7 @@ func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType string) ([]mod
 }
 
 func (r *EC2InstanceTypeRepoImpl) Truncate() error {
-	tx := r.db.Conn().Where("1 = 1").Delete(&model.EC2InstanceType{})
+	tx := r.db.Conn().Unscoped().Where("1 = 1").Delete(&model.EC2InstanceType{})
 	if tx.Error != nil {
 		return tx.Error
 	}

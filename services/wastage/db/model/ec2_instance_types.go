@@ -10,10 +10,10 @@ type EC2InstanceType struct {
 	gorm.Model
 
 	InstanceType        string
-	VCpu                int64 `gorm:"cpu_net"`
-	MemoryGB            int64 `gorm:"cpu_net"`
-	NetworkMaxBandwidth int64 `gorm:"cpu_net"`
-	NetworkIsDedicated  bool  `gorm:"cpu_net"`
+	VCpu                int64
+	MemoryGB            int64
+	NetworkMaxBandwidth int64
+	NetworkIsDedicated  bool
 	PricePerUnit        float64
 
 	PricePerUnitStr             string

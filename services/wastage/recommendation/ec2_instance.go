@@ -24,7 +24,7 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 	return avg
 }
 
-func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*Recommendation, error) {
+func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*Ec2InstanceRecommendation, error) {
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
@@ -46,9 +46,9 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
 	neededMemory := float64(i[0].MemoryGB) * averageMemPercent / 100.0
 
-	pref := map[string]interface{}{}
+	pref := map[string]any{}
 	for k, v := range preferences {
-		var vl interface{}
+		var vl any
 		if v == nil {
 			vl = extractFromInstance(instance, i[0], region, k)
 		} else {
@@ -81,7 +81,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if instanceType != nil {
 		description := fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType)
 		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
-		return &Recommendation{
+		return &Ec2InstanceRecommendation{
 			Description:         description,
 			NewInstance:         instance,
 			NewVolumes:          volumes,
@@ -94,7 +94,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	return nil, nil
 }
 
-func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, region string, k string) interface{} {
+func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, region string, k string) any {
 	switch k {
 	case "Tenancy":
 		return i.Tenancy
@@ -138,4 +138,108 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 		return i.MemoryGB
 	}
 	return ""
+}
+
+func (s *Service) EBSVolumeRecommendation(region string, volume types.Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*EbsVolumeRecommendation, error) {
+	averageIops := int32(averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"]))
+	averageThroughput := int32(averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"]))
+
+	size := int32(0)
+	if volume.Size != nil {
+		size = *volume.Size
+	}
+
+	result := &EbsVolumeRecommendation{
+		Description:                  "",
+		NewVolume:                    volume,
+		CurrentSize:                  size,
+		NewSize:                      size,
+		CurrentProvisionedIOPS:       volume.Iops,
+		NewProvisionedIOPS:           nil,
+		CurrentProvisionedThroughput: volume.Throughput,
+		NewProvisionedThroughput:     nil,
+		CurrentVolumeType:            volume.VolumeType,
+		NewVolumeType:                "",
+		AvgIOPS:                      averageIops,
+		AvgThroughput:                averageThroughput,
+	}
+
+	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, averageIops, averageThroughput)
+	if err != nil {
+		return nil, err
+	}
+
+	hasResult := false
+
+	if newType != volume.VolumeType {
+		hasResult = true
+		result.NewVolumeType = newType
+		result.NewVolume.VolumeType = newType
+		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
+	}
+
+	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {
+		if volume.Iops == nil {
+			hasResult = true
+			result.NewProvisionedIOPS = &averageIops
+			result.NewVolume.Iops = &averageIops
+			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", averageIops)
+		} else if averageIops > *volume.Iops {
+			hasResult = true
+			result.NewProvisionedIOPS = &averageIops
+			result.NewVolume.Iops = &averageIops
+			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, averageIops)
+		} else if averageIops < *volume.Iops {
+			hasResult = true
+			result.NewProvisionedIOPS = &averageIops
+			result.NewVolume.Iops = &averageIops
+			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, averageIops)
+		}
+	}
+
+	if newType == types.VolumeTypeGp3 && averageIops > model.Gp3BaseIops {
+		provIops := averageIops - model.Gp3BaseIops
+		if volume.Iops == nil {
+			hasResult = true
+			result.NewProvisionedIOPS = &provIops
+			result.NewVolume.Iops = &provIops
+			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", provIops)
+		} else if provIops > *volume.Iops {
+			hasResult = true
+			result.NewProvisionedIOPS = &provIops
+			result.NewVolume.Iops = &provIops
+			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, provIops)
+		} else if provIops < *volume.Iops {
+			hasResult = true
+			result.NewProvisionedIOPS = &provIops
+			result.NewVolume.Iops = &provIops
+			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, provIops)
+		}
+	}
+
+	if newType == types.VolumeTypeGp3 && averageThroughput > model.Gp3BaseThroughput {
+		provThroughput := averageThroughput - model.Gp3BaseThroughput
+		if volume.Throughput == nil {
+			hasResult = true
+			result.NewProvisionedThroughput = &provThroughput
+			result.NewVolume.Throughput = &provThroughput
+			result.Description += fmt.Sprintf("- add provisioned throughput: %d\n", provThroughput)
+		} else if provThroughput > *volume.Throughput {
+			hasResult = true
+			result.NewProvisionedThroughput = &provThroughput
+			result.NewVolume.Throughput = &provThroughput
+			result.Description += fmt.Sprintf("- increase provisioned throughput from %d to %d\n", *volume.Throughput, provThroughput)
+		} else if provThroughput < *volume.Throughput {
+			hasResult = true
+			result.NewProvisionedThroughput = &provThroughput
+			result.NewVolume.Throughput = &provThroughput
+			result.Description += fmt.Sprintf("- decrease provisioned throughput from %d to %d\n", *volume.Throughput, provThroughput)
+		}
+	}
+
+	if !hasResult {
+		return nil, nil
+	}
+
+	return result, nil
 }
