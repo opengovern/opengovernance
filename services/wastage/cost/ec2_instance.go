@@ -116,7 +116,7 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 	valuesMap["type"] = volume.VolumeType
 	valuesMap["size"] = *volume.Size
 	valuesMap["iops"] = *volume.Iops
-	valuesMap["throughput"] = *volume.Throughput
+	valuesMap["throughput"] = volume.Throughput
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      volume.HashedVolumeId,
