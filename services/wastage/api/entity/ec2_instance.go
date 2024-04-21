@@ -30,7 +30,7 @@ type EC2Volume struct {
 	Size             *int32           `json:"size"`
 	Iops             *int32           `json:"iops"`
 	AvailabilityZone *string          `json:"availabilityZone"`
-	Throughput       *int32           `json:"throughput"`
+	Throughput       *float64         `json:"throughput"`
 }
 
 type EC2InstanceWastageRequest struct {

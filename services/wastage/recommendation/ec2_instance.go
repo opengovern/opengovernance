@@ -203,7 +203,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		AvgThroughput:                averageThroughput,
 	}
 
-	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, int32(averageIops), int32(averageThroughput))
+	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, int32(averageIops), averageThroughput)
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return nil, nil
@@ -261,22 +261,22 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	}
 
 	if newType == types.VolumeTypeGp3 && averageThroughput > model.Gp3BaseThroughput {
-		provThroughput := int32(averageThroughput) - model.Gp3BaseThroughput
+		provThroughput := averageThroughput - model.Gp3BaseThroughput
 		if volume.Throughput == nil {
 			hasResult = true
 			result.NewProvisionedThroughput = &provThroughput
 			result.NewVolume.Throughput = &provThroughput
-			result.Description += fmt.Sprintf("- add provisioned throughput: %d\n", provThroughput)
+			result.Description += fmt.Sprintf("- add provisioned throughput: %.2f\n", provThroughput)
 		} else if provThroughput > *volume.Throughput {
 			hasResult = true
 			result.NewProvisionedThroughput = &provThroughput
 			result.NewVolume.Throughput = &provThroughput
-			result.Description += fmt.Sprintf("- increase provisioned throughput from %d to %d\n", *volume.Throughput, provThroughput)
+			result.Description += fmt.Sprintf("- increase provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
 		} else if provThroughput < *volume.Throughput {
 			hasResult = true
 			result.NewProvisionedThroughput = &provThroughput
 			result.NewVolume.Throughput = &provThroughput
-			result.Description += fmt.Sprintf("- decrease provisioned throughput from %d to %d\n", *volume.Throughput, provThroughput)
+			result.Description += fmt.Sprintf("- decrease provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
 		}
 	}
 

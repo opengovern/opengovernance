@@ -33,8 +33,8 @@ type EbsVolumeRecommendation struct {
 	NewSize                      int32
 	CurrentProvisionedIOPS       *int32
 	NewProvisionedIOPS           *int32
-	CurrentProvisionedThroughput *int32
-	NewProvisionedThroughput     *int32
+	CurrentProvisionedThroughput *float64
+	NewProvisionedThroughput     *float64
 	CurrentVolumeType            types.VolumeType
 	NewVolumeType                types.VolumeType
 
