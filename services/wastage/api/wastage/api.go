@@ -3,8 +3,6 @@ package wastage
 import (
 	"encoding/json"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -216,5 +214,5 @@ func (s API) EC2Instance(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
-	g.POST("/ec2-instance", httpserver.AuthorizeHandler(s.EC2Instance, api.ViewerRole))
+	g.POST("/ec2-instance", s.EC2Instance)
 }
