@@ -68,8 +68,8 @@ type RightSizingRecommendation struct {
 	VolumesTargetTypes       map[string]types.VolumeType `json:"volumeTargetTypes"`
 	VolumesCurrentIOPS       map[string]int32            `json:"volumeCurrentIOPS"`
 	VolumesTargetIOPS        map[string]int32            `json:"volumeTargetIOPS"`
-	VolumesCurrentThroughput map[string]int32            `json:"volumeCurrentThroughput"`
-	VolumesTargetThroughput  map[string]int32            `json:"volumeTargetThroughput"`
+	VolumesCurrentThroughput map[string]float64          `json:"volumeCurrentThroughput"`
+	VolumesTargetThroughput  map[string]float64          `json:"volumeTargetThroughput"`
 	VolumesCurrentCosts      map[string]float64          `json:"volumeCurrentCosts"`
 	VolumesTargetCosts       map[string]float64          `json:"volumeTargetCosts"`
 	VolumesSaving            map[string]float64          `json:"volumeSaving"`
