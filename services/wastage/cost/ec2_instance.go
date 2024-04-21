@@ -120,7 +120,7 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      volume.HashedVolumeId,
-		Type:         kaytu_client.ResourceTypeConversion("aws::ebs::volume"),
+		Type:         kaytu_client.ResourceTypeConversion("aws::ec2::volume"),
 		Name:         "",
 		RegionCode:   region,
 		ProviderName: schema.AWSProvider,
