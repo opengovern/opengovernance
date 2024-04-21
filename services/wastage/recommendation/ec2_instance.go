@@ -222,60 +222,46 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 
 	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {
 		avgIOps := int32(averageIops)
+		hasResult = true
+		result.NewProvisionedIOPS = &avgIOps
+		result.NewVolume.Iops = &avgIOps
+
 		if volume.Iops == nil {
-			hasResult = true
-			result.NewProvisionedIOPS = &avgIOps
-			result.NewVolume.Iops = &avgIOps
 			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", avgIOps)
 		} else if avgIOps > *volume.Iops {
-			hasResult = true
-			result.NewProvisionedIOPS = &avgIOps
-			result.NewVolume.Iops = &avgIOps
 			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, avgIOps)
 		} else if avgIOps < *volume.Iops {
-			hasResult = true
-			result.NewProvisionedIOPS = &avgIOps
-			result.NewVolume.Iops = &avgIOps
 			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, avgIOps)
 		}
 	}
 
 	if newType == types.VolumeTypeGp3 && averageIops > model.Gp3BaseIops {
 		provIops := int32(averageIops) - model.Gp3BaseIops
+		hasResult = true
+		result.NewProvisionedIOPS = &provIops
+		result.NewVolume.Iops = &provIops
+
 		if volume.Iops == nil {
-			hasResult = true
-			result.NewProvisionedIOPS = &provIops
-			result.NewVolume.Iops = &provIops
 			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", provIops)
 		} else if provIops > *volume.Iops {
-			hasResult = true
-			result.NewProvisionedIOPS = &provIops
-			result.NewVolume.Iops = &provIops
 			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, provIops)
 		} else if provIops < *volume.Iops {
-			hasResult = true
-			result.NewProvisionedIOPS = &provIops
-			result.NewVolume.Iops = &provIops
 			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, provIops)
 		}
 	}
 
 	if newType == types.VolumeTypeGp3 && averageThroughput > model.Gp3BaseThroughput {
 		provThroughput := averageThroughput - model.Gp3BaseThroughput
+
+		hasResult = true
+		result.NewProvisionedThroughput = &provThroughput
+		result.NewVolume.Throughput = &provThroughput
+
 		if volume.Throughput == nil {
-			hasResult = true
-			result.NewProvisionedThroughput = &provThroughput
-			result.NewVolume.Throughput = &provThroughput
 			result.Description += fmt.Sprintf("- add provisioned throughput: %.2f\n", provThroughput)
 		} else if provThroughput > *volume.Throughput {
-			hasResult = true
-			result.NewProvisionedThroughput = &provThroughput
-			result.NewVolume.Throughput = &provThroughput
 			result.Description += fmt.Sprintf("- increase provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
 		} else if provThroughput < *volume.Throughput {
-			hasResult = true
-			result.NewProvisionedThroughput = &provThroughput
-			result.NewVolume.Throughput = &provThroughput
 			result.Description += fmt.Sprintf("- decrease provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
 		}
 	}
