@@ -42,15 +42,17 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.DataAge{})
+			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{})
 			if err != nil {
 				return err
 			}
 			ec2InstanceRepo := repo.NewEC2InstanceTypeRepo(db)
+			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
-			recomSvc := recommendation.New(ec2InstanceRepo)
+			usageRepo := repo.NewUsageRepo(db)
+			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
-			ingestionSvc := ingestion.New(ec2InstanceRepo, dataAgeRepo)
+			ingestionSvc := ingestion.New(ec2InstanceRepo, ebsVolumeRepo, dataAgeRepo)
 			go func() {
 				err = ingestionSvc.Start()
 				panic(err)
@@ -60,7 +62,7 @@ func Command() *cobra.Command {
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(costSvc, recomSvc, logger),
+				api.New(costSvc, recomSvc, usageRepo, logger),
 			)
 		},
 	}

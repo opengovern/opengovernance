@@ -7,21 +7,21 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 )
 
 type Service struct {
 	dataAgeRepo repo.DataAgeRepo
 
-	ec2InstanceRepo repo.EC2InstanceTypeRepo
+	ec2InstanceRepo   repo.EC2InstanceTypeRepo
+	ebsVolumeTypeRepo repo.EBSVolumeTypeRepo
 }
 
-func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
+func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
 	return &Service{
-		ec2InstanceRepo: ec2InstanceRepo,
-		dataAgeRepo:     dataAgeRepo,
+		ec2InstanceRepo:   ec2InstanceRepo,
+		ebsVolumeTypeRepo: ebsVolumeRepo,
+		dataAgeRepo:       dataAgeRepo,
 	}
 }
 
@@ -106,68 +106,41 @@ func (s *Service) IngestEc2Instances() error {
 			return nil
 		}
 
-		data := make(map[string]string)
-		v := model.EC2InstanceType{}
-		for col, index := range columns {
-			switch col {
-			case "vCPU":
-				v.VCpu, _ = strconv.ParseInt(row[index], 10, 64)
-			case "Memory":
-				v.MemoryGB = parseMemory(row[index])
-			case "PricePerUnit":
-				v.PricePerUnit, _ = strconv.ParseFloat(row[index], 64)
-			case "Instance Type":
-				v.InstanceType = row[index]
-			case "Network Performance":
-				bandwidth, upTo := parseNetworkPerformance(row[index])
-				v.NetworkMaxBandwidth = bandwidth
-				v.NetworkIsBandwidthUpTo = upTo
-			case "Unit":
-				v.Unit = row[index]
-			case "TermType":
-				v.TermType = row[index]
-			case "Region Code":
-				v.Region = row[index]
-			case "Operating System":
-				v.OperatingSystem = row[index]
-			case "License Model":
-				v.LicenseModel = row[index]
-			case "usageType":
-				v.UsageType = row[index]
-			case "Pre Installed S/W":
-				v.PreInstalledSW = row[index]
-			case "CapacityStatus":
-				v.CapacityStatus = row[index]
-			case "Tenancy":
-				v.Tenancy = row[index]
+		switch row[columns["Product Family"]] {
+		case "Compute Instance", "Compute Instance (bare metal)":
+			v := model.EC2InstanceType{}
+			v.PopulateFromMap(columns, row)
+
+			if v.InstanceType == "" {
+				continue
 			}
-			data[col] = row[index]
-		}
+			if v.TermType != "OnDemand" {
+				continue
+			}
 
-		if v.InstanceType == "" {
-			continue
-		}
-		if v.TermType != "OnDemand" {
-			continue
-		}
+			fmt.Println("Instance", v)
+			err = s.ec2InstanceRepo.Create(&v)
+			if err != nil {
 
-		fmt.Println(v)
-		err = s.ec2InstanceRepo.Create(&v)
-		if err != nil {
+				return err
+			}
+		case "Storage", "System Operation", "Provisioned Throughput":
+			v := model.EBSVolumeType{}
+			v.PopulateFromMap(columns, row)
 
-			return err
+			if v.VolumeType == "" {
+				continue
+			}
+			if v.TermType != "OnDemand" {
+				continue
+			}
+			fmt.Println("Volume", v)
+			err = s.ebsVolumeTypeRepo.Create(&v)
+			if err != nil {
+				return err
+			}
 		}
 	}
-}
-
-func parseMemory(str string) int64 {
-	str = strings.TrimSpace(strings.ToLower(str))
-	if str == "na" {
-		return -1
-	}
-	str = strings.TrimSuffix(str, " gib")
-	n, _ := strconv.ParseInt(str, 10, 64)
-	return n
 }
 
 // readColumnPositions maps column names to their position in the CSV file.
@@ -177,24 +150,4 @@ func readColumnPositions(values []string) map[string]int {
 		columns[v] = i
 	}
 	return columns
-}
-
-func parseNetworkPerformance(v string) (int64, bool) {
-	v = strings.ToLower(v)
-	upTo := strings.HasPrefix(v, "up to ")
-	v = strings.TrimPrefix(v, "up to ")
-
-	factor := int64(0)
-	if strings.HasSuffix(v, "gigabit") {
-		factor = 1000000000
-		v = strings.TrimSuffix(v, " gigabit")
-	} else if strings.HasSuffix(v, "megabit") {
-		factor = 1000000
-		v = strings.TrimSuffix(v, " megabit")
-	}
-	b, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return 0, false
-	}
-	return b * factor, upTo
 }

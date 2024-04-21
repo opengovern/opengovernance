@@ -1,11 +1,12 @@
 package wastage
 
 import (
+	"encoding/json"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -16,18 +17,20 @@ import (
 )
 
 type API struct {
-	tracer   trace.Tracer
-	logger   *zap.Logger
-	costSvc  *cost.Service
-	recomSvc *recommendation.Service
+	tracer    trace.Tracer
+	logger    *zap.Logger
+	costSvc   *cost.Service
+	usageRepo repo.UsageRepo
+	recomSvc  *recommendation.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, usageRepo repo.UsageRepo, logger *zap.Logger) API {
 	return API{
-		costSvc:  costSvc,
-		recomSvc: recomSvc,
-		tracer:   otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:   logger.Named("wastage-api"),
+		costSvc:   costSvc,
+		recomSvc:  recomSvc,
+		usageRepo: usageRepo,
+		tracer:    otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:    logger.Named("wastage-api"),
 	}
 }
 
@@ -54,129 +57,163 @@ func (s API) EC2Instance(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	//cfg, err := aws.GetConfig(ctx, req.Credential.AccessKey, req.Credential.SecretKey, "", "", nil)
-	//if err != nil {
-	//	return err
-	//}
-	//dctx := describer.WithDescribeContext(ctx, describer.DescribeContext{
-	//	AccountID:   req.Credential.AccountID,
-	//	Region:      req.Region,
-	//	KaytuRegion: req.Region,
-	//	Partition:   "",
-	//})
-	//cfg.Region = req.Region
-	//resources, err := describer.GetEC2Instance(dctx, cfg, map[string]string{"id": req.InstanceId})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if len(resources) == 0 {
-	//	return errors.New("instance not found")
-	//}
-	//instance := resources[0].Description.(model.EC2InstanceDescription)
-	if req.Instance.State.Name != types2.InstanceStateNameRunning {
-		return echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
-	}
-	//
-	//var volumes []model.EC2VolumeDescription
-	//for _, bd := range instance.Instance.BlockDeviceMappings {
-	//	res, err := describer.GetEC2Volume(dctx, cfg, map[string]string{"id": *bd.Ebs.VolumeId})
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	if len(res) == 0 {
-	//		return errors.New("volume not found")
-	//	}
-	//	volume := res[0].Description.(model.EC2VolumeDescription)
-	//	volumes = append(volumes, volume)
-	//}
-	//
-	//client := cloudwatch.NewFromConfig(cfg)
-	//paginator := cloudwatch.NewListMetricsPaginator(client, &cloudwatch.ListMetricsInput{
-	//	Namespace: aws2.String("AWS/EC2"),
-	//	Dimensions: []types.DimensionFilter{
-	//		{
-	//			Name:  aws2.String("InstanceId"),
-	//			Value: req.Instance.InstanceId,
-	//		},
-	//	},
-	//})
-	//startTime := time.Now().Add(-24 * 7 * time.Hour)
-	//endTime := time.Now()
-	//
-	//metrics := map[string][]types.Datapoint{}
-	//for paginator.HasMorePages() {
-	//	page, err := paginator.NextPage(ctx)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	for _, p := range page.Metrics {
-	//		statistics := []types.Statistic{
-	//			types.StatisticAverage,
-	//			types.StatisticMinimum,
-	//			types.StatisticMaximum,
-	//		}
-	//
-	//		// Create input for GetMetricStatistics
-	//		input := &cloudwatch.GetMetricStatisticsInput{
-	//			Namespace:  aws2.String("AWS/EC2"),
-	//			MetricName: p.MetricName,
-	//			Dimensions: []types.Dimension{
-	//				{
-	//					Name:  aws2.String("InstanceId"),
-	//					Value: req.Instance.InstanceId,
-	//				},
-	//			},
-	//			StartTime:  aws2.Time(startTime),
-	//			EndTime:    aws2.Time(endTime),
-	//			Period:     aws2.Int32(60 * 60), // 1 hour intervals
-	//			Statistics: statistics,
-	//		}
-	//
-	//		// Get metric data
-	//		resp, err := client.GetMetricStatistics(ctx, input)
-	//		if err != nil {
-	//			return err
-	//		}
-	//
-	//		metrics[*p.MetricName] = resp.Datapoints
-	//	}
-	//}
+	var resp entity.EC2InstanceWastageResponse
+	var err error
 
-	currentCost, err := s.costSvc.GetEC2InstanceCost(req.Region, req.Instance, req.Volumes, req.Metrics)
+	reqJson, _ := json.Marshal(req)
+	usage := model.Usage{
+		Request:  reqJson,
+		Response: nil,
+	}
+	err = s.usageRepo.Create(&usage)
 	if err != nil {
 		return err
 	}
 
-	recoms, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics)
+	defer func() {
+		if err != nil {
+			usage.Response, _ = json.Marshal(err)
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+
+	if req.Instance.State != types2.InstanceStateNameRunning {
+		err = echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
+		return err
+	}
+
+	resp.CurrentCost, err = s.costSvc.GetEC2InstanceCost(req.Region, req.Instance, req.Volumes, req.Metrics)
+	if err != nil {
+		s.logger.Error("failed to get ec2 instance cost", zap.Error(err))
+		return err
+	}
+
+	currentVolumeCosts := make(map[string]float64)
+	for _, vol := range req.Volumes {
+		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId])
+		if err != nil {
+			s.logger.Error("failed to get ebs volume cost", zap.Error(err))
+			return err
+		}
+		currentVolumeCosts[vol.HashedVolumeId] = volumeCost
+	}
+
+	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.Preferences)
 	if err != nil {
 		return err
 	}
 
-	var recomResponse []entity.Recommendation
-	totalSavings := float64(0)
-	for _, recom := range recoms {
-		newCost, err := s.costSvc.GetEC2InstanceCost(req.Region, recom.NewInstance, recom.NewVolumes, req.Metrics)
+	newVolumes := make([]entity.EC2Volume, 0)
+	ebsRightSizingRecoms := make(map[string]*recommendation.EbsVolumeRecommendation)
+	for _, vol := range req.Volumes {
+		ebsRightSizingRecom, err := s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
 		if err != nil {
 			return err
 		}
+		if ebsRightSizingRecom == nil {
+			newVolumes = append(newVolumes, vol)
+			continue
+		}
+		ebsRightSizingRecoms[vol.HashedVolumeId] = ebsRightSizingRecom
+	}
+	for _, recom := range ebsRightSizingRecoms {
+		newVolumes = append(newVolumes, recom.NewVolume)
+	}
+	ec2RightSizingRecom.NewVolumes = newVolumes
 
-		totalSavings += currentCost - newCost
-		recomResponse = append(recomResponse, entity.Recommendation{
-			Description: recom.Description,
-			Saving:      currentCost - newCost,
-		})
+	costAfterRightSizing, err := s.costSvc.GetEC2InstanceCost(req.Region, ec2RightSizingRecom.NewInstance, ec2RightSizingRecom.NewVolumes, req.Metrics)
+	if err != nil {
+		return err
+	}
+	ebsTotalSavings := make(map[string]float64)
+	ebsCostAfterRightSizing := make(map[string]float64)
+	for _, vol := range ec2RightSizingRecom.NewVolumes {
+		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId])
+		if err != nil {
+			s.logger.Error("failed to get ebs volume cost", zap.Error(err))
+			return err
+		}
+		ebsCostAfterRightSizing[vol.HashedVolumeId] = volumeCost
+		ebsTotalSavings[vol.HashedVolumeId] = currentVolumeCosts[vol.HashedVolumeId] - volumeCost
 	}
 
-	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
-		CurrentCost:     currentCost,
-		TotalSavings:    totalSavings,
-		Recommendations: recomResponse,
-	})
+	var rightSizingRecomResp *entity.RightSizingRecommendation
+	if ec2RightSizingRecom != nil {
+		rightSizingRecomResp = &entity.RightSizingRecommendation{
+			TargetInstanceType:        ec2RightSizingRecom.NewInstanceType.InstanceType,
+			Saving:                    resp.CurrentCost - costAfterRightSizing,
+			CurrentCost:               resp.CurrentCost,
+			TargetCost:                costAfterRightSizing,
+			AvgCPUUsage:               ec2RightSizingRecom.AvgCPUUsage,
+			TargetCores:               ec2RightSizingRecom.NewInstanceType.VCPUStr,
+			AvgNetworkBandwidth:       ec2RightSizingRecom.AvgNetworkBandwidth,
+			TargetNetworkPerformance:  ec2RightSizingRecom.NewInstanceType.NetworkPerformance,
+			CurrentNetworkPerformance: ec2RightSizingRecom.CurrentInstanceType.NetworkPerformance,
+			CurrentMemory:             ec2RightSizingRecom.CurrentInstanceType.Memory,
+			TargetMemory:              ec2RightSizingRecom.NewInstanceType.Memory,
+			MaxMemoryUsagePercentage:  ec2RightSizingRecom.MaxMemoryUsagePercentage,
+			VolumesCurrentSizes:       make(map[string]int32),
+			VolumesTargetSizes:        make(map[string]int32),
+			VolumesCurrentTypes:       make(map[string]types2.VolumeType),
+			VolumesTargetTypes:        make(map[string]types2.VolumeType),
+			VolumesCurrentIOPS:        make(map[string]int32),
+			VolumesTargetIOPS:         make(map[string]int32),
+			VolumesCurrentThroughput:  make(map[string]int32),
+			VolumesTargetThroughput:   make(map[string]int32),
+			VolumesCurrentCosts:       make(map[string]float64),
+			VolumesTargetCosts:        make(map[string]float64),
+			VolumesSaving:             make(map[string]float64),
+		}
+	}
+
+	for k, v := range ebsRightSizingRecoms {
+		if rightSizingRecomResp == nil {
+			rightSizingRecomResp = &entity.RightSizingRecommendation{
+				VolumesCurrentSizes:      make(map[string]int32),
+				VolumesTargetSizes:       make(map[string]int32),
+				VolumesCurrentTypes:      make(map[string]types2.VolumeType),
+				VolumesTargetTypes:       make(map[string]types2.VolumeType),
+				VolumesCurrentIOPS:       make(map[string]int32),
+				VolumesTargetIOPS:        make(map[string]int32),
+				VolumesCurrentThroughput: make(map[string]int32),
+				VolumesTargetThroughput:  make(map[string]int32),
+				VolumesCurrentCosts:      make(map[string]float64),
+				VolumesTargetCosts:       make(map[string]float64),
+				VolumesSaving:            make(map[string]float64),
+			}
+		}
+		rightSizingRecomResp.VolumesCurrentCosts[k] = currentVolumeCosts[k]
+		rightSizingRecomResp.VolumesTargetCosts[k] = ebsCostAfterRightSizing[k]
+		rightSizingRecomResp.VolumesSaving[k] = ebsTotalSavings[k]
+		rightSizingRecomResp.VolumesCurrentSizes[k] = v.CurrentSize
+		rightSizingRecomResp.VolumesTargetSizes[k] = v.NewSize
+		rightSizingRecomResp.VolumesCurrentTypes[k] = v.CurrentVolumeType
+		rightSizingRecomResp.VolumesTargetTypes[k] = v.NewVolumeType
+		if v.CurrentProvisionedIOPS != nil {
+			rightSizingRecomResp.VolumesCurrentIOPS[k] = *v.CurrentProvisionedIOPS
+		}
+		if v.NewProvisionedIOPS != nil {
+			rightSizingRecomResp.VolumesTargetIOPS[k] = *v.NewProvisionedIOPS
+		}
+		if v.CurrentProvisionedThroughput != nil {
+			rightSizingRecomResp.VolumesCurrentThroughput[k] = *v.CurrentProvisionedThroughput
+		}
+		if v.NewProvisionedThroughput != nil {
+			rightSizingRecomResp.VolumesTargetThroughput[k] = *v.NewProvisionedThroughput
+		}
+	}
+
+	resp.TotalSavings += resp.CurrentCost - costAfterRightSizing
+	resp.RightSizing = rightSizingRecomResp
+	resp.EbsTotalSavings = ebsTotalSavings
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (s API) Register(g *echo.Group) {
-	g.POST("/ec2-instance", httpserver.AuthorizeHandler(s.EC2Instance, api.ViewerRole))
+	g.POST("/ec2-instance", s.EC2Instance)
 }
