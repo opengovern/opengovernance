@@ -37,8 +37,8 @@ type EbsVolumeRecommendation struct {
 	CurrentVolumeType            types.VolumeType
 	NewVolumeType                types.VolumeType
 
-	AvgIOPS       int32
-	AvgThroughput int32
+	AvgIOPS       float64
+	AvgThroughput float64
 }
 
 func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo) *Service {

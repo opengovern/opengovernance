@@ -142,8 +142,8 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 }
 
 func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*EbsVolumeRecommendation, error) {
-	averageIops := int32(averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"]))
-	averageThroughput := int32(averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"]))
+	averageIops := averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"])
+	averageThroughput := averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"])
 
 	size := int32(0)
 	if volume.Size != nil {
@@ -162,10 +162,10 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		CurrentVolumeType:            volume.VolumeType,
 		NewVolumeType:                "",
 		AvgIOPS:                      averageIops,
-		AvgThroughput:                averageThroughput,
+		AvgThroughput:                averageThroughput / 1000000.0,
 	}
 
-	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, averageIops, averageThroughput)
+	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, int32(averageIops), int32(averageThroughput/1000000.0))
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return nil, nil
@@ -183,26 +183,27 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	}
 
 	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {
+		avgIOps := int32(averageIops)
 		if volume.Iops == nil {
 			hasResult = true
-			result.NewProvisionedIOPS = &averageIops
-			result.NewVolume.Iops = &averageIops
-			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", averageIops)
-		} else if averageIops > *volume.Iops {
+			result.NewProvisionedIOPS = &avgIOps
+			result.NewVolume.Iops = &avgIOps
+			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", avgIOps)
+		} else if avgIOps > *volume.Iops {
 			hasResult = true
-			result.NewProvisionedIOPS = &averageIops
-			result.NewVolume.Iops = &averageIops
-			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, averageIops)
-		} else if averageIops < *volume.Iops {
+			result.NewProvisionedIOPS = &avgIOps
+			result.NewVolume.Iops = &avgIOps
+			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, avgIOps)
+		} else if avgIOps < *volume.Iops {
 			hasResult = true
-			result.NewProvisionedIOPS = &averageIops
-			result.NewVolume.Iops = &averageIops
-			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, averageIops)
+			result.NewProvisionedIOPS = &avgIOps
+			result.NewVolume.Iops = &avgIOps
+			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, avgIOps)
 		}
 	}
 
 	if newType == types.VolumeTypeGp3 && averageIops > model.Gp3BaseIops {
-		provIops := averageIops - model.Gp3BaseIops
+		provIops := int32(averageIops) - model.Gp3BaseIops
 		if volume.Iops == nil {
 			hasResult = true
 			result.NewProvisionedIOPS = &provIops
@@ -222,7 +223,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	}
 
 	if newType == types.VolumeTypeGp3 && averageThroughput > model.Gp3BaseThroughput {
-		provThroughput := averageThroughput - model.Gp3BaseThroughput
+		provThroughput := int32(averageThroughput) - model.Gp3BaseThroughput
 		if volume.Throughput == nil {
 			hasResult = true
 			result.NewProvisionedThroughput = &provThroughput
