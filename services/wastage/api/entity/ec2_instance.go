@@ -35,6 +35,8 @@ type EC2Volume struct {
 
 type EC2InstanceWastageRequest struct {
 	HashedAccountID string                                   `json:"hashedAccountID"`
+	HashedUserID    string                                   `json:"hashedUserID"`
+	HashedARN       string                                   `json:"hashedARN"`
 	Instance        EC2Instance                              `json:"instance"`
 	Volumes         []EC2Volume                              `json:"volumes"`
 	Metrics         map[string][]types2.Datapoint            `json:"metrics"`
