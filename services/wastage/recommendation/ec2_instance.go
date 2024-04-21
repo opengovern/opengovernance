@@ -182,7 +182,7 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*EbsVolumeRecommendation, error) {
 	averageIops := averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"])
 	averageThroughput := averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"])
-
+	averageThroughput = averageThroughput / 1000000.0
 	size := int32(0)
 	if volume.Size != nil {
 		size = *volume.Size
@@ -200,10 +200,10 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		CurrentVolumeType:            volume.VolumeType,
 		NewVolumeType:                "",
 		AvgIOPS:                      averageIops,
-		AvgThroughput:                averageThroughput / 1000000.0,
+		AvgThroughput:                averageThroughput,
 	}
 
-	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, int32(averageIops), int32(averageThroughput/1000000.0))
+	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, int32(averageIops), int32(averageThroughput))
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return nil, nil
