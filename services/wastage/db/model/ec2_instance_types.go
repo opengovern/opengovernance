@@ -311,10 +311,10 @@ func parseNetworkPerformance(v string) (int64, bool) {
 
 	factor := int64(0)
 	if strings.HasSuffix(v, "gigabit") {
-		factor = 1000000000
+		factor = 1000000000 / 8
 		v = strings.TrimSuffix(v, " gigabit")
 	} else if strings.HasSuffix(v, "megabit") {
-		factor = 1000000
+		factor = 1000000 / 8
 		v = strings.TrimSuffix(v, " megabit")
 	}
 	b, err := strconv.ParseInt(v, 10, 64)

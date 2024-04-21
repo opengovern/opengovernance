@@ -156,6 +156,7 @@ func (s API) EC2Instance(c echo.Context) error {
 			CurrentNetworkPerformance: ec2RightSizingRecom.CurrentInstanceType.NetworkPerformance,
 			CurrentMemory:             ec2RightSizingRecom.CurrentInstanceType.Memory,
 			TargetMemory:              ec2RightSizingRecom.NewInstanceType.Memory,
+			MaxMemoryUsagePercentage:  ec2RightSizingRecom.MaxMemoryUsagePercentage,
 			VolumesCurrentSizes:       make(map[string]int32),
 			VolumesTargetSizes:        make(map[string]int32),
 			VolumesCurrentTypes:       make(map[string]types2.VolumeType),

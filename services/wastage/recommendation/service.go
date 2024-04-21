@@ -20,8 +20,9 @@ type Ec2InstanceRecommendation struct {
 	CurrentInstanceType *model.EC2InstanceType
 	NewInstanceType     *model.EC2InstanceType
 
-	AvgNetworkBandwidth string
-	AvgCPUUsage         string
+	AvgNetworkBandwidth      string
+	AvgCPUUsage              string
+	MaxMemoryUsagePercentage string
 }
 
 type EbsVolumeRecommendation struct {

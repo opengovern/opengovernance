@@ -6,8 +6,29 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"strconv"
 	"strings"
 )
+
+func maxOfDatapoints(datapoints []types2.Datapoint) float64 {
+	if len(datapoints) == 0 {
+		return 0.0
+	}
+
+	avg := float64(0)
+	for _, dp := range datapoints {
+		if dp.Maximum == nil {
+			if dp.Average == nil {
+				continue
+			}
+			avg += *dp.Average
+			continue
+		}
+		avg += *dp.Maximum
+	}
+	avg = avg / float64(len(datapoints))
+	return avg
+}
 
 func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 	if len(datapoints) == 0 {
@@ -29,7 +50,11 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
-	averageMemPercent := averageOfDatapoints(metrics["mem_used_percent"])
+	maxMemPercent := maxOfDatapoints(metrics["mem_used_percent"])
+	maxMemUsagePercentage := "NA"
+	if len(metrics["mem_used_percent"]) > 0 {
+		maxMemUsagePercentage = fmt.Sprintf("%.1f%", maxMemPercent)
+	}
 
 	i, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType))
 	if err != nil {
@@ -38,14 +63,26 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if len(i) == 0 {
 		return nil, fmt.Errorf("instance type not found: %s", string(instance.InstanceType))
 	}
-	// Burst in CPU & Network
-	// Network: UpTo
-	// Memory: -> User , Arch , EbsOptimized , EnaSupport
-	// Volume ===> Optimization
+
+	//TODO Burst in CPU & Network
+	//TODO Network: UpTo
 
 	vCPU := instance.ThreadsPerCore * instance.CoreCount
-	neededCPU := float64(vCPU) * averageCPUUtilization / 100.0
-	neededMemory := float64(i[0].MemoryGB) * averageMemPercent / 100.0
+	cpuBreathingRoom := int64(0)
+	if preferences["CPUBreathingRoom"] != nil {
+		cpuBreathingRoom, _ = strconv.ParseInt(*preferences["CPUBreathingRoom"], 10, 64)
+	}
+	memoryBreathingRoom := int64(0)
+	if preferences["MemoryBreathingRoom"] != nil {
+		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
+	}
+	neededCPU := float64(vCPU) * (averageCPUUtilization + float64(cpuBreathingRoom)) / 100.0
+	neededMemory := float64(i[0].MemoryGB) * (maxMemPercent + float64(memoryBreathingRoom)) / 100.0
+	neededNetworkThroughput := averageNetworkIn + averageNetworkOut
+	if preferences["NetworkBreathingRoom"] != nil {
+		room, _ := strconv.ParseInt(*preferences["NetworkBreathingRoom"], 10, 64)
+		neededNetworkThroughput += neededNetworkThroughput * float64(room) / 100.0
+	}
 
 	pref := map[string]any{}
 	for k, v := range preferences {
@@ -74,7 +111,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		}
 	}
 
-	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(averageNetworkIn+averageNetworkOut, pref)
+	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
 	if err != nil {
 		return nil, err
 	}
@@ -83,13 +120,14 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		description := fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType)
 		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
 		return &Ec2InstanceRecommendation{
-			Description:         description,
-			NewInstance:         instance,
-			NewVolumes:          volumes,
-			CurrentInstanceType: &i[0],
-			NewInstanceType:     instanceType,
-			AvgNetworkBandwidth: fmt.Sprintf("%.0f Bytes", averageNetworkOut+averageNetworkIn),
-			AvgCPUUsage:         fmt.Sprintf("%.1f vCPUs", neededCPU),
+			Description:              description,
+			NewInstance:              instance,
+			NewVolumes:               volumes,
+			CurrentInstanceType:      &i[0],
+			NewInstanceType:          instanceType,
+			AvgNetworkBandwidth:      fmt.Sprintf("%.1f Mbps", (averageNetworkOut+averageNetworkIn)/1000000.0*8.0),
+			AvgCPUUsage:              fmt.Sprintf("%.1f%", averageCPUUtilization),
+			MaxMemoryUsagePercentage: maxMemUsagePercentage,
 		}, nil
 	}
 	return nil, nil

@@ -56,8 +56,9 @@ type RightSizingRecommendation struct {
 	TargetNetworkPerformance  string `json:"targetNetworkBandwidth"`
 	CurrentNetworkPerformance string `json:"currentNetworkPerformance"`
 
-	CurrentMemory string `json:"currentMemory"`
-	TargetMemory  string `json:"targetMemory"`
+	MaxMemoryUsagePercentage string `json:"maxMemoryUsagePercentage"`
+	CurrentMemory            string `json:"currentMemory"`
+	TargetMemory             string `json:"targetMemory"`
 
 	VolumesCurrentSizes      map[string]int32            `json:"volumeCurrentSizes"`
 	VolumesTargetSizes       map[string]int32            `json:"volumeTargetSizes"`
