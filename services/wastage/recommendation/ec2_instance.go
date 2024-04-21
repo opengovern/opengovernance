@@ -53,7 +53,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	maxMemPercent := maxOfDatapoints(metrics["mem_used_percent"])
 	maxMemUsagePercentage := "NA"
 	if len(metrics["mem_used_percent"]) > 0 {
-		maxMemUsagePercentage = fmt.Sprintf("%.1f%%", maxMemPercent)
+		maxMemUsagePercentage = fmt.Sprintf("Max: %.1f%%", maxMemPercent)
 	}
 
 	i, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType))
@@ -125,8 +125,8 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 			NewVolumes:               volumes,
 			CurrentInstanceType:      &i[0],
 			NewInstanceType:          instanceType,
-			AvgNetworkBandwidth:      fmt.Sprintf("%.1f Mbps", (averageNetworkOut+averageNetworkIn)/1000000.0*8.0),
-			AvgCPUUsage:              fmt.Sprintf("%.1f%%", averageCPUUtilization),
+			AvgNetworkBandwidth:      fmt.Sprintf("Avg: %.1f Megabit", (averageNetworkOut+averageNetworkIn)/1000000.0*8.0),
+			AvgCPUUsage:              fmt.Sprintf("Avg: %.1f%%", averageCPUUtilization),
 			MaxMemoryUsagePercentage: maxMemUsagePercentage,
 		}, nil
 	}
