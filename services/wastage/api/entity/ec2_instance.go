@@ -58,21 +58,30 @@ type RightSizingRecommendation struct {
 	TargetNetworkPerformance  string `json:"targetNetworkBandwidth"`
 	CurrentNetworkPerformance string `json:"currentNetworkPerformance"`
 
+	TargetEBSBandwidth  string `json:"targetEBSBandwidth"`
+	CurrentEBSBandwidth string `json:"currentEBSBandwidth"`
+
 	MaxMemoryUsagePercentage string `json:"maxMemoryUsagePercentage"`
 	CurrentMemory            string `json:"currentMemory"`
 	TargetMemory             string `json:"targetMemory"`
 
-	VolumesCurrentSizes      map[string]int32            `json:"volumeCurrentSizes"`
-	VolumesTargetSizes       map[string]int32            `json:"volumeTargetSizes"`
-	VolumesCurrentTypes      map[string]types.VolumeType `json:"volumeCurrentTypes"`
-	VolumesTargetTypes       map[string]types.VolumeType `json:"volumeTargetTypes"`
-	VolumesCurrentIOPS       map[string]int32            `json:"volumeCurrentIOPS"`
-	VolumesTargetIOPS        map[string]int32            `json:"volumeTargetIOPS"`
-	VolumesCurrentThroughput map[string]float64          `json:"volumeCurrentThroughput"`
-	VolumesTargetThroughput  map[string]float64          `json:"volumeTargetThroughput"`
-	VolumesCurrentCosts      map[string]float64          `json:"volumeCurrentCosts"`
-	VolumesTargetCosts       map[string]float64          `json:"volumeTargetCosts"`
-	VolumesSaving            map[string]float64          `json:"volumeSaving"`
+	VolumesCurrentSizes map[string]int32 `json:"volumeCurrentSizes"`
+	VolumesTargetSizes  map[string]int32 `json:"volumeTargetSizes"`
+
+	VolumesCurrentTypes map[string]types.VolumeType `json:"volumeCurrentTypes"`
+	VolumesTargetTypes  map[string]types.VolumeType `json:"volumeTargetTypes"`
+
+	VolumesCurrentIOPS     map[string]int32   `json:"volumeCurrentIOPS"`
+	VolumesTargetIOPS      map[string]int32   `json:"volumeTargetIOPS"`
+	VolumesIOPSUtilization map[string]float64 `json:"volumesIOPSUtilization"`
+
+	VolumesCurrentThroughput     map[string]float64 `json:"volumeCurrentThroughput"`
+	VolumesTargetThroughput      map[string]float64 `json:"volumeTargetThroughput"`
+	VolumesThroughputUtilization map[string]float64 `json:"volumesThroughputUtilization"`
+
+	VolumesCurrentCosts map[string]float64 `json:"volumeCurrentCosts"`
+	VolumesTargetCosts  map[string]float64 `json:"volumeTargetCosts"`
+	VolumesSaving       map[string]float64 `json:"volumeSaving"`
 }
 
 type EC2InstanceWastageResponse struct {
