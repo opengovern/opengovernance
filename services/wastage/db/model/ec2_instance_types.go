@@ -38,6 +38,7 @@ type EC2InstanceType struct {
 	CurrentGeneration           string
 	InstanceFamily              string
 	PhysicalProcessor           string
+	PhysicalProcessorArch       string
 	ClockSpeed                  string
 	Storage                     string
 	ProcessorArchitecture       string
@@ -152,6 +153,15 @@ func (v *EC2InstanceType) PopulateFromMap(columns map[string]int, row []string) 
 			v.VCPUStr = row[index]
 		case "Physical Processor":
 			v.PhysicalProcessor = row[index]
+			ph := strings.ToLower(row[index])
+			switch {
+			case strings.Contains(ph, "graviton"):
+				v.PhysicalProcessorArch = "arm64"
+			case strings.Contains(ph, "apple"):
+				v.PhysicalProcessorArch = "arm64_mac"
+			default:
+				v.PhysicalProcessorArch = "x86_64"
+			}
 		case "Clock Speed":
 			v.ClockSpeed = row[index]
 		case "Memory":

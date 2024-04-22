@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -111,6 +112,9 @@ func (s *Service) IngestEc2Instances() error {
 			v := model.EC2InstanceType{}
 			v.PopulateFromMap(columns, row)
 
+			if strings.ToLower(v.PhysicalProcessor) == "variable" {
+				continue
+			}
 			if v.InstanceType == "" {
 				continue
 			}

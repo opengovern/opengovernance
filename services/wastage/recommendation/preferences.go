@@ -11,7 +11,7 @@ var (
 		"CurrentGeneration":            "current_generation",
 		"PhysicalProcessor":            "physical_processor",
 		"ClockSpeed":                   "clock_speed",
-		"ProcessorArchitecture":        "processor_architecture",
+		"ProcessorArchitecture":        "physical_processor_arch",
 		"SupportedArchitectures":       "",
 		"ENASupported":                 "enhanced_networking_supported",
 		"EncryptionInTransitSupported": "",

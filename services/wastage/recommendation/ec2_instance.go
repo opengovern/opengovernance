@@ -179,7 +179,7 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 	case "ClockSpeed":
 		return i.ClockSpeed
 	case "ProcessorArchitecture":
-		return i.ProcessorArchitecture
+		return i.PhysicalProcessorArch
 	case "SupportedArchitectures":
 		return "" //TODO
 	case "ENASupported":
