@@ -234,7 +234,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 				validTypes = []types.VolumeType{types.VolumeTypeGp2, types.VolumeTypeGp3}
 			case "io", "io optimized":
 				validTypes = []types.VolumeType{types.VolumeTypeIo1, types.VolumeTypeIo2}
-			case "hdd", "sc", "cold", "hard disk drive":
+			case "hdd", "sc", "cold", "hard disk drive", "st":
 				validTypes = []types.VolumeType{types.VolumeTypeSc1, types.VolumeTypeSt1}
 			}
 		}
@@ -280,11 +280,11 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
 	}
 
-	if int32(neededSize) > *volume.Size {
+	if int32(neededSize) != *volume.Size {
 		hasResult = true
 		result.NewVolume.Size = utils.GetPointer(int32(neededSize))
 		result.NewSize = int32(neededSize)
-		result.Description += fmt.Sprintf("- increase volume size from %d to %d\n", *volume.Size, int32(neededSize))
+		result.Description += fmt.Sprintf("- change volume size from %d to %d\n", *volume.Size, int32(neededSize))
 	}
 
 	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {
