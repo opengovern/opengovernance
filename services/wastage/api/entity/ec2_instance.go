@@ -60,6 +60,7 @@ type RightSizingRecommendation struct {
 
 	TargetEBSBandwidth  string `json:"targetEBSBandwidth"`
 	CurrentEBSBandwidth string `json:"currentEBSBandwidth"`
+	AvgEBSBandwidth     string `json:"avgEBSBandwidth"`
 
 	MaxMemoryUsagePercentage string `json:"maxMemoryUsagePercentage"`
 	CurrentMemory            string `json:"currentMemory"`

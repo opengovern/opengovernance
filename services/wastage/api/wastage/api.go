@@ -103,7 +103,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		currentVolumeCosts[vol.HashedVolumeId] = volumeCost
 	}
 
-	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.Preferences)
+	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
 	if err != nil {
 		return err
 	}
@@ -156,6 +156,7 @@ func (s API) EC2Instance(c echo.Context) error {
 			CurrentNetworkPerformance: ec2RightSizingRecom.CurrentInstanceType.NetworkPerformance,
 			TargetEBSBandwidth:        ec2RightSizingRecom.NewInstanceType.DedicatedEBSThroughput,
 			CurrentEBSBandwidth:       ec2RightSizingRecom.CurrentInstanceType.DedicatedEBSThroughput,
+			AvgEBSBandwidth:           ec2RightSizingRecom.AvgEBSBandwidth,
 			CurrentMemory:             ec2RightSizingRecom.CurrentInstanceType.Memory,
 			TargetMemory:              ec2RightSizingRecom.NewInstanceType.Memory,
 			MaxMemoryUsagePercentage:  ec2RightSizingRecom.MaxMemoryUsagePercentage,

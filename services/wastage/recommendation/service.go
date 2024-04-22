@@ -23,6 +23,7 @@ type Ec2InstanceRecommendation struct {
 	AvgNetworkBandwidth      string
 	AvgCPUUsage              string
 	MaxMemoryUsagePercentage string
+	AvgEBSBandwidth          string
 }
 
 type EbsVolumeRecommendation struct {

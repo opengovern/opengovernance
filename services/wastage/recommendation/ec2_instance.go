@@ -47,10 +47,19 @@ func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
 	return avg
 }
 
-func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*Ec2InstanceRecommendation, error) {
+func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, volumeMetrics map[string]map[string][]types2.Datapoint, preferences map[string]*string) (*Ec2InstanceRecommendation, error) {
 	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
 	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
 	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
+	averageEBSIn, averageEBSOut := 0.0, 0.0
+	for _, v := range volumeMetrics {
+		readBytesAvg, writeBytesAvg := averageOfDatapoints(v["VolumeReadBytes"]), averageOfDatapoints(v["VolumeWriteBytes"])
+		averageEBSIn += readBytesAvg
+		averageEBSOut += writeBytesAvg
+	}
+	averageEBSIn = averageEBSIn / float64(len(volumeMetrics))
+	averageEBSOut = averageEBSOut / float64(len(volumeMetrics))
+
 	maxMemPercent := maxOfDatapoints(metrics["mem_used_percent"])
 	maxMemUsagePercentage := "NA"
 	if len(metrics["mem_used_percent"]) > 0 {
@@ -128,6 +137,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 			CurrentInstanceType:      &i[0],
 			NewInstanceType:          instanceType,
 			AvgNetworkBandwidth:      fmt.Sprintf("Avg: %.1f Megabit", (averageNetworkOut+averageNetworkIn)/1000000.0*8.0),
+			AvgEBSBandwidth:          fmt.Sprintf("Avg: %.1f Megabit", (averageEBSOut+averageEBSIn)/1000000.0*8.0),
 			AvgCPUUsage:              fmt.Sprintf("Avg: %.1f%%", averageCPUUtilization),
 			MaxMemoryUsagePercentage: maxMemUsagePercentage,
 		}, nil
