@@ -15,7 +15,7 @@ type EC2Instance struct {
 	HashedInstanceId  string                      `json:"hashedInstanceId"`
 	State             types.InstanceStateName     `json:"state"`
 	InstanceType      types.InstanceType          `json:"instanceType"`
-	Platform          types.PlatformValues        `json:"platform"`
+	Platform          string                      `json:"platform"`
 	ThreadsPerCore    int32                       `json:"threadsPerCore"`
 	CoreCount         int32                       `json:"coreCount"`
 	EbsOptimized      bool                        `json:"ebsOptimized"`
