@@ -306,6 +306,18 @@ func parseMemory(str string) int64 {
 
 func parseNetworkPerformance(v string) (int64, bool) {
 	v = strings.ToLower(v)
+	switch v {
+	case "very low":
+		return 50000000, true
+	case "low":
+		return 175000000, true
+	case "low to moderate":
+		return 475000000, true
+	case "moderate":
+		return 600000000, true
+	case "high":
+		return 1500000000, true
+	}
 	upTo := strings.HasPrefix(v, "up to ")
 	v = strings.TrimPrefix(v, "up to ")
 
