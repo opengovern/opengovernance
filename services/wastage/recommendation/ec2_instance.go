@@ -66,7 +66,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		maxMemUsagePercentage = fmt.Sprintf("Max: %.1f%%", maxMemPercent)
 	}
 
-	i, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType))
+	i, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, region)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 			return "No"
 		}
 	case "OperatingSystem":
-		return i.OperatingSystem
+		return instance.Platform
 	case "LicenseModel":
 		return i.LicenseModel
 	case "Region":

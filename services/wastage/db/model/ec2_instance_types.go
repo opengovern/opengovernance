@@ -52,6 +52,7 @@ type EC2InstanceType struct {
 	Tenancy                     string
 	EBSOptimized                string
 	OperatingSystem             string
+	OperatingSystemFamily       string
 	LicenseModel                string
 	Group                       string
 	GroupDescription            string
@@ -196,6 +197,22 @@ func (v *EC2InstanceType) PopulateFromMap(columns map[string]int, row []string) 
 			v.EBSOptimized = row[index]
 		case "Operating System":
 			v.OperatingSystem = row[index]
+			switch v.OperatingSystem {
+			case "RHEL":
+				v.OperatingSystemFamily = "Linux/UNIX"
+			case "Red Hat Enterprise Linux with HA":
+				v.OperatingSystemFamily = "Linux/UNIX"
+			case "Ubuntu Pro":
+				v.OperatingSystemFamily = "Linux/UNIX"
+			case "SUSE":
+				v.OperatingSystemFamily = "Linux/UNIX"
+			case "Linux":
+				v.OperatingSystemFamily = "Linux/UNIX"
+			case "Windows":
+				v.OperatingSystemFamily = "Windows"
+			default:
+				v.OperatingSystemFamily = ""
+			}
 		case "License Model":
 			v.LicenseModel = row[index]
 		case "Group":

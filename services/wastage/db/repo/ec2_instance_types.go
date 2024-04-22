@@ -15,7 +15,7 @@ type EC2InstanceTypeRepo interface {
 	List() ([]model.EC2InstanceType, error)
 	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
 	Truncate() error
-	ListByInstanceType(instanceType string) ([]model.EC2InstanceType, error)
+	ListByInstanceType(instanceType, os, region string) ([]model.EC2InstanceType, error)
 	GetCurrentInstanceType(instanceType, tenancy, os string) (*model.EC2InstanceType, error)
 }
 
@@ -82,9 +82,13 @@ func (r *EC2InstanceTypeRepoImpl) List() ([]model.EC2InstanceType, error) {
 	return ms, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType string) ([]model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, region string) ([]model.EC2InstanceType, error) {
 	var ms []model.EC2InstanceType
-	tx := r.db.Conn().Model(&model.EC2InstanceType{}).Where("instance_type = ?", instanceType).Find(&ms)
+	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
+		Where("instance_type = ? AND capacity_status = 'Used' AND pre_installed_sw = 'NA'", instanceType).
+		Where("operating_system_family = ?").
+		Where("region_code = ?").
+		Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

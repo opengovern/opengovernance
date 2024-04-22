@@ -4,7 +4,7 @@ var (
 	PreferenceDBKey = map[string]string{
 		"Tenancy":                      "tenancy",
 		"EBSOptimized":                 "ebs_optimized",
-		"OperatingSystem":              "operating_system",
+		"OperatingSystem":              "operating_system_family",
 		"LicenseModel":                 "license_model",
 		"Region":                       "region_code",
 		"Hypervisor":                   "",
