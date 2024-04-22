@@ -60,7 +60,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 
 	os := "Linux"
 	if instance.Platform != "" {
-		os = instance.Platform
+		os = string(instance.Platform)
 	}
 	valuesMap["pennywise_usage"] = map[string]any{
 		"operating_system": os,
