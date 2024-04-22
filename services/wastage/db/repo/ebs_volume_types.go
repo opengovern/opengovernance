@@ -15,7 +15,7 @@ type EBSVolumeTypeRepo interface {
 	Delete(id uint) error
 	List() ([]model.EBSVolumeType, error)
 	Truncate() error
-	GetMinimumVolumeTotalPrice(region string, volumeSize int32, iops int32, throughput float64) (types.VolumeType, error)
+	GetMinimumVolumeTotalPrice(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, error)
 }
 
 type EBSVolumeTypeRepoImpl struct {
@@ -241,21 +241,24 @@ func (r *EBSVolumeTypeRepoImpl) getStandardTotalPrice(region string, volumeSize 
 	return standardSizePrice * float64(volumeSize), nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize int32, iops int32, throughput float64) ([]types.VolumeType, error) {
+func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) ([]types.VolumeType, error) {
 	var res []types.VolumeType
 	tx := r.db.Conn().Model(&model.EBSVolumeType{}).Where("region_code = ?", region).
 		Where("max_iops >= ?", iops).
 		Where("max_throughput >= ?", throughput).
-		Where("max_size >= ?", volumeSize).
-		Select("volume_type").Group("volume_type").Find(&res)
+		Where("max_size >= ?", volumeSize)
+	if len(validTypes) > 0 {
+		tx = tx.Where("volume_type IN ?", validTypes)
+	}
+	tx = tx.Select("volume_type").Group("volume_type").Find(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return res, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) GetMinimumVolumeTotalPrice(region string, volumeSize int32, iops int32, throughput float64) (types.VolumeType, error) {
-	volumeTypes, err := r.getFeasibleVolumeTypes(region, volumeSize, iops, throughput)
+func (r *EBSVolumeTypeRepoImpl) GetMinimumVolumeTotalPrice(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, error) {
+	volumeTypes, err := r.getFeasibleVolumeTypes(region, volumeSize, iops, throughput, validTypes)
 	if err != nil {
 		return "", err
 	}
