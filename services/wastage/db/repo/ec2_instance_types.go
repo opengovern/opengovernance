@@ -52,7 +52,7 @@ func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(currPrice float64,
 		Where("pre_installed_sw = 'NA'").
 		Where("capacity_status = 'Used'").
 		Where("price_per_unit != 0").
-		Where("price_per_unit > ?", currPrice)
+		Where("price_per_unit < ?", currPrice)
 	for k, v := range pref {
 		tx = tx.Where(k, v)
 	}
