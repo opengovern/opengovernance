@@ -13,7 +13,7 @@ type EC2InstanceTypeRepo interface {
 	Update(id uint, m model.EC2InstanceType) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
-	GetCheapestByCoreAndNetwork(currPrice float64, bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
 	Truncate() error
 	ListByInstanceType(instanceType string) ([]model.EC2InstanceType, error)
 	GetCurrentInstanceType(instanceType, tenancy, os string) (*model.EC2InstanceType, error)
@@ -45,14 +45,13 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	return &m, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(currPrice float64, bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("network_max_bandwidth >= ?", bandwidth).
 		Where("pre_installed_sw = 'NA'").
 		Where("capacity_status = 'Used'").
-		Where("price_per_unit != 0").
-		Where("price_per_unit < ?", currPrice)
+		Where("price_per_unit != 0")
 	for k, v := range pref {
 		tx = tx.Where(k, v)
 	}

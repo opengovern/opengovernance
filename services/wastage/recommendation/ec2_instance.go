@@ -120,13 +120,13 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 			pref["memory_gb >= ?"] = neededMemory
 		}
 	}
-	os := "Linux"
-	if instance.Platform != "" {
-		os = string(instance.Platform)
-	}
-	currInstanceType, err := s.ec2InstanceRepo.GetCurrentInstanceType(string(instance.InstanceType), string(instance.Placement.Tenancy), os)
+	//os := "Linux"
+	//if instance.Platform != "" {
+	//	os = string(instance.Platform)
+	//}
+	//currInstanceType, err := s.ec2InstanceRepo.GetCurrentInstanceType(string(instance.InstanceType), string(instance.Placement.Tenancy), os)
 
-	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(currInstanceType.PricePerUnit, neededNetworkThroughput, pref)
+	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
 	if err != nil {
 		return nil, err
 	}
@@ -134,11 +134,11 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if instanceType != nil {
 		description := fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType)
 		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
-		if instanceType.OperatingSystem == "Windows" {
-			instance.Platform = types.PlatformValuesWindows
-		} else {
-			instance.Platform = ""
-		}
+		//if instanceType.OperatingSystem == "Windows" {
+		//	instance.Platform = types.PlatformValuesWindows
+		//} else {
+		//	instance.Platform = ""
+		//}
 		return &Ec2InstanceRecommendation{
 			Description:              description,
 			NewInstance:              instance,
