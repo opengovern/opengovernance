@@ -120,8 +120,13 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 			pref["memory_gb >= ?"] = neededMemory
 		}
 	}
+	os := "Linux"
+	if instance.Platform != "" {
+		os = string(instance.Platform)
+	}
+	currInstanceType, err := s.ec2InstanceRepo.GetCurrentInstanceType(string(instance.InstanceType), string(instance.Placement.Tenancy), os)
 
-	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
+	instanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(currInstanceType.PricePerUnit, neededNetworkThroughput, pref)
 	if err != nil {
 		return nil, err
 	}
