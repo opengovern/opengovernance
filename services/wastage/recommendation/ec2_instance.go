@@ -4,6 +4,7 @@ import (
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"strconv"
@@ -183,16 +184,75 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	averageIops := averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"])
 	averageThroughput := averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"])
 	averageThroughput = averageThroughput / 1000000.0
-	size := int32(0)
+	size := float64(0)
 	if volume.Size != nil {
-		size = *volume.Size
+		size = float64(*volume.Size)
+	}
+
+	iopsBreathingRoom := int64(0)
+	if preferences["IOPSBreathingRoom"] != nil {
+		iopsBreathingRoom, _ = strconv.ParseInt(*preferences["IOPSBreathingRoom"], 10, 32)
+	}
+	throughputBreathingRoom := int64(0)
+	if preferences["ThroughputBreathingRoom"] != nil {
+		throughputBreathingRoom, _ = strconv.ParseInt(*preferences["ThroughputBreathingRoom"], 10, 32)
+	}
+	neededIops := averageIops * (1 + float64(iopsBreathingRoom)/100.0)
+	neededThroughput := averageThroughput * (1 + float64(throughputBreathingRoom)/100.0)
+	neededSize := size
+	var validTypes []types.VolumeType
+	if v, ok := preferences["IOPS"]; ok {
+		if v == nil && volume.Iops != nil {
+			neededIops = float64(*volume.Iops)
+		} else {
+			neededIops, _ = strconv.ParseFloat(*v, 64)
+		}
+	}
+	if v, ok := preferences["Throughput"]; ok {
+		if v == nil && volume.Throughput != nil {
+			neededThroughput = *volume.Throughput
+		} else {
+			neededThroughput, _ = strconv.ParseFloat(*v, 64)
+		}
+	}
+	if v, ok := preferences["Size"]; ok {
+		if v == nil && volume.Size != nil {
+			neededSize = float64(*volume.Size)
+		} else {
+			neededSize, _ = strconv.ParseFloat(*v, 64)
+		}
+	} else if volume.Size != nil {
+		neededSize = float64(*volume.Size)
+	}
+
+	if v, ok := preferences["VolumeFamily"]; ok {
+		if preferences["VolumeFamily"] == nil {
+			validTypes = []types.VolumeType{volume.VolumeType}
+		} else {
+			switch strings.ToLower(*v) {
+			case "general purpose", "ssd", "solid state drive", "gp":
+				validTypes = []types.VolumeType{types.VolumeTypeGp2, types.VolumeTypeGp3}
+			case "io", "io optimized":
+				validTypes = []types.VolumeType{types.VolumeTypeIo1, types.VolumeTypeIo2}
+			case "hdd", "sc", "cold", "hard disk drive":
+				validTypes = []types.VolumeType{types.VolumeTypeSc1, types.VolumeTypeSt1}
+			}
+		}
+	}
+
+	if v, ok := preferences["VolumeType"]; ok {
+		if preferences["VolumeType"] == nil {
+			validTypes = []types.VolumeType{volume.VolumeType}
+		} else {
+			validTypes = []types.VolumeType{types.VolumeType(*v)}
+		}
 	}
 
 	result := &EbsVolumeRecommendation{
 		Description:                  "",
 		NewVolume:                    volume,
-		CurrentSize:                  size,
-		NewSize:                      size,
+		CurrentSize:                  int32(size),
+		NewSize:                      int32(size),
 		CurrentProvisionedIOPS:       volume.Iops,
 		NewProvisionedIOPS:           nil,
 		CurrentProvisionedThroughput: volume.Throughput,
@@ -203,7 +263,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		AvgThroughput:                averageThroughput,
 	}
 
-	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, size, int32(averageIops), averageThroughput)
+	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return nil, nil
@@ -220,8 +280,15 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
 	}
 
+	if int32(neededSize) > *volume.Size {
+		hasResult = true
+		result.NewVolume.Size = utils.GetPointer(int32(neededSize))
+		result.NewSize = int32(neededSize)
+		result.Description += fmt.Sprintf("- increase volume size from %d to %d\n", *volume.Size, int32(neededSize))
+	}
+
 	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {
-		avgIOps := int32(averageIops)
+		avgIOps := int32(neededIops)
 		hasResult = true
 		result.NewProvisionedIOPS = &avgIOps
 		result.NewVolume.Iops = &avgIOps
@@ -238,8 +305,8 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
-	if newType == types.VolumeTypeGp3 && averageIops > model.Gp3BaseIops {
-		provIops := max(int32(averageIops), model.Gp3BaseIops)
+	if newType == types.VolumeTypeGp3 {
+		provIops := max(int32(neededIops), model.Gp3BaseIops)
 		hasResult = true
 		result.NewProvisionedIOPS = &provIops
 		result.NewVolume.Iops = &provIops
@@ -256,8 +323,8 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
-	if newType == types.VolumeTypeGp3 && averageThroughput > model.Gp3BaseThroughput {
-		provThroughput := max(averageThroughput, model.Gp3BaseThroughput)
+	if newType == types.VolumeTypeGp3 {
+		provThroughput := max(neededThroughput, model.Gp3BaseThroughput)
 
 		hasResult = true
 		result.NewProvisionedThroughput = &provThroughput
