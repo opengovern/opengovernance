@@ -86,8 +86,8 @@ func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, region st
 	var ms []model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("instance_type = ? AND capacity_status = 'Used' AND pre_installed_sw = 'NA'", instanceType).
-		Where("operating_system_family = ?").
-		Where("region_code = ?").
+		Where("operating_system_family = ?", os).
+		Where("region_code = ?", region).
 		Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
