@@ -13,9 +13,10 @@ type EC2InstanceTypeRepo interface {
 	Update(id uint, m model.EC2InstanceType) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
-	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(currPrice float64, bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
 	Truncate() error
 	ListByInstanceType(instanceType string) ([]model.EC2InstanceType, error)
+	GetCurrentInstanceType(instanceType, tenancy, os string) (*model.EC2InstanceType, error)
 }
 
 type EC2InstanceTypeRepoImpl struct {
@@ -44,13 +45,14 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	return &m, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(currPrice float64, bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("network_max_bandwidth >= ?", bandwidth).
 		Where("pre_installed_sw = 'NA'").
 		Where("capacity_status = 'Used'").
-		Where("price_per_unit != 0")
+		Where("price_per_unit != 0").
+		Where("price_per_unit > ?", currPrice)
 	for k, v := range pref {
 		tx = tx.Where(k, v)
 	}
@@ -96,4 +98,24 @@ func (r *EC2InstanceTypeRepoImpl) Truncate() error {
 		return tx.Error
 	}
 	return nil
+}
+
+func (r *EC2InstanceTypeRepoImpl) GetCurrentInstanceType(instanceType, tenancy, os string) (*model.EC2InstanceType, error) {
+	var m model.EC2InstanceType
+	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
+		Where("tenancy = ?", tenancy).
+		Where("instance_type = ?", instanceType).
+		Where("pre_installed_sw = 'NA'").
+		Where("operating_system = ?", os).
+		Where("license_model = 'No License required'").
+		Where("capacity_status = 'Used'")
+
+	tx = tx.Order("price_per_unit ASC").First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
 }
