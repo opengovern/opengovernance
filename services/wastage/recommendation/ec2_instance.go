@@ -119,7 +119,7 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if instanceType != nil {
 		description := fmt.Sprintf("change your vms from %s to %s", instance.InstanceType, instanceType.InstanceType)
 		instance.InstanceType = types.InstanceType(instanceType.InstanceType)
-		instance.Platform = types.PlatformValues(instanceType.OperatingSystem)
+		instance.Platform = instanceType.OperatingSystem
 		return &Ec2InstanceRecommendation{
 			Description:              description,
 			NewInstance:              instance,
