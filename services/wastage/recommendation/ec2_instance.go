@@ -204,6 +204,8 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	averageIops := averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"])
 	averageThroughput := averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"])
 	averageThroughput = averageThroughput / 1000000.0
+	averageSizeUsage := averageOfDatapoints(metrics["disk_used_percent"])
+
 	size := float64(0)
 	if size == 0 && volume.Size != nil {
 		size = float64(*volume.Size)
@@ -217,9 +219,18 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	if preferences["ThroughputBreathingRoom"] != nil {
 		throughputBreathingRoom, _ = strconv.ParseInt(*preferences["ThroughputBreathingRoom"], 10, 32)
 	}
+	sizeBreathingRoom := int64(0)
+	if preferences["SizeBreathingRoom"] != nil {
+		sizeBreathingRoom, _ = strconv.ParseInt(*preferences["SizeBreathingRoom"], 10, 32)
+	}
 	neededIops := averageIops * (1 + float64(iopsBreathingRoom)/100.0)
 	neededThroughput := averageThroughput * (1 + float64(throughputBreathingRoom)/100.0)
 	neededSize := size
+	if _, ok := metrics["disk_used_percent"]; ok {
+		neededSize = max(1, neededSize*(averageSizeUsage/100.0))
+		neededSize = neededSize * (1 + float64(sizeBreathingRoom)/100.0)
+	}
+
 	var validTypes []types.VolumeType
 	if v, ok := preferences["IOPS"]; ok {
 		if v == nil && volume.Iops != nil {
@@ -241,8 +252,6 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		} else {
 			neededSize, _ = strconv.ParseFloat(*v, 64)
 		}
-	} else if volume.Size != nil {
-		neededSize = float64(*volume.Size)
 	}
 
 	if v, ok := preferences["VolumeFamily"]; ok {
@@ -272,7 +281,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		Description:                  "",
 		NewVolume:                    volume,
 		CurrentSize:                  int32(size),
-		NewSize:                      int32(size),
+		NewSize:                      int32(neededSize),
 		CurrentProvisionedIOPS:       volume.Iops,
 		NewProvisionedIOPS:           nil,
 		CurrentProvisionedThroughput: volume.Throughput,
