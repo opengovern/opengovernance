@@ -250,7 +250,7 @@ func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize
 	if len(validTypes) > 0 {
 		tx = tx.Where("volume_type IN ?", validTypes)
 	}
-	tx = tx.Group("volume_type").Find(&res)
+	tx = tx.Find(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
