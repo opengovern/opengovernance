@@ -171,8 +171,10 @@ func (s API) EC2Instance(c echo.Context) error {
 			VolumesCurrentTypes:       make(map[string]types2.VolumeType),
 			VolumesTargetTypes:        make(map[string]types2.VolumeType),
 			VolumesCurrentIOPS:        make(map[string]int32),
+			VolumesTargetBaselineIOPS:       make(map[string]int32),
 			VolumesTargetIOPS:         make(map[string]int32),
 			VolumesCurrentThroughput:  make(map[string]float64),
+			VolumesTargetBaselineThroughput: make(map[string]float64),
 			VolumesTargetThroughput:   make(map[string]float64),
 			VolumesCurrentCosts:       make(map[string]float64),
 			VolumesTargetCosts:        make(map[string]float64),
@@ -183,17 +185,19 @@ func (s API) EC2Instance(c echo.Context) error {
 	for k, v := range ebsRightSizingRecoms {
 		if rightSizingRecomResp == nil {
 			rightSizingRecomResp = &entity.RightSizingRecommendation{
-				VolumesCurrentSizes:      make(map[string]int32),
-				VolumesTargetSizes:       make(map[string]int32),
-				VolumesCurrentTypes:      make(map[string]types2.VolumeType),
-				VolumesTargetTypes:       make(map[string]types2.VolumeType),
-				VolumesCurrentIOPS:       make(map[string]int32),
-				VolumesTargetIOPS:        make(map[string]int32),
-				VolumesCurrentThroughput: make(map[string]float64),
-				VolumesTargetThroughput:  make(map[string]float64),
-				VolumesCurrentCosts:      make(map[string]float64),
-				VolumesTargetCosts:       make(map[string]float64),
-				VolumesSaving:            make(map[string]float64),
+				VolumesCurrentSizes:             make(map[string]int32),
+				VolumesTargetSizes:              make(map[string]int32),
+				VolumesCurrentTypes:             make(map[string]types2.VolumeType),
+				VolumesTargetTypes:              make(map[string]types2.VolumeType),
+				VolumesCurrentIOPS:              make(map[string]int32),
+				VolumesTargetBaselineIOPS:       make(map[string]int32),
+				VolumesTargetIOPS:               make(map[string]int32),
+				VolumesCurrentThroughput:        make(map[string]float64),
+				VolumesTargetBaselineThroughput: make(map[string]float64),
+				VolumesTargetThroughput:         make(map[string]float64),
+				VolumesCurrentCosts:             make(map[string]float64),
+				VolumesTargetCosts:              make(map[string]float64),
+				VolumesSaving:                   make(map[string]float64),
 			}
 		}
 		rightSizingRecomResp.VolumesCurrentCosts[k] = currentVolumeCosts[k]
@@ -214,6 +218,12 @@ func (s API) EC2Instance(c echo.Context) error {
 		}
 		if v.NewProvisionedThroughput != nil {
 			rightSizingRecomResp.VolumesTargetThroughput[k] = *v.NewProvisionedThroughput
+		}
+		if v.NewBaselineIOPS != nil {
+			rightSizingRecomResp.VolumesTargetBaselineIOPS[k] = *v.NewBaselineIOPS
+		}
+		if v.NewBaselineThroughput != nil {
+			rightSizingRecomResp.VolumesTargetBaselineThroughput[k] = *v.NewBaselineThroughput
 		}
 	}
 

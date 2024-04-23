@@ -15,7 +15,7 @@ type EBSVolumeTypeRepo interface {
 	Delete(id uint) error
 	List() ([]model.EBSVolumeType, error)
 	Truncate() error
-	GetMinimumVolumeTotalPrice(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, error)
+	GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, float64, error)
 }
 
 type EBSVolumeTypeRepoImpl struct {
@@ -241,8 +241,8 @@ func (r *EBSVolumeTypeRepoImpl) getStandardTotalPrice(region string, volumeSize 
 	return standardSizePrice * float64(volumeSize), nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) ([]types.VolumeType, error) {
-	var res []types.VolumeType
+func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) ([]model.EBSVolumeType, error) {
+	var res []model.EBSVolumeType
 	tx := r.db.Conn().Model(&model.EBSVolumeType{}).Where("region_code = ?", region).
 		Where("max_iops >= ?", iops).
 		Where("max_throughput >= ?", throughput).
@@ -250,51 +250,71 @@ func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize
 	if len(validTypes) > 0 {
 		tx = tx.Where("volume_type IN ?", validTypes)
 	}
-	tx = tx.Select("volume_type").Group("volume_type").Find(&res)
+	tx = tx.Group("volume_type").Find(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return res, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) GetMinimumVolumeTotalPrice(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, error) {
+func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, float64, error) {
 	volumeTypes, err := r.getFeasibleVolumeTypes(region, volumeSize, iops, throughput, validTypes)
 	if err != nil {
-		return "", err
+		return "", 0, 0, err
 	}
 
 	if len(volumeTypes) == 0 {
-		return "", errors.New("no feasible volume types found")
+		return "", 0, 0, errors.New("no feasible volume types found")
 	}
 
 	minPrice := 0.0
-	minVolumeType := ""
+	resVolumeType := ""
+	resBaselineIOPS := int32(0)
+	resBaselineThroughput := 0.0
 	for _, vt := range volumeTypes {
 		var price float64
-		switch vt {
+		var volIops int32
+		var volThroughput float64
+		switch vt.VolumeType {
 		case types.VolumeTypeIo1:
 			price, err = r.getIo1TotalPrice(region, volumeSize, iops)
+			volIops = 0
+			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeIo2:
 			price, err = r.getIo2TotalPrice(region, volumeSize, iops)
+			volIops = 0
+			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp2:
 			price, err = r.getGp2TotalPrice(region, volumeSize)
+			volIops = vt.MaxIops
+			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp3:
 			price, err = r.getGp3TotalPrice(region, volumeSize, iops, throughput)
+			volIops = model.Gp3BaseIops
+			volThroughput = model.Gp3BaseThroughput
 		case types.VolumeTypeSc1:
 			price, err = r.getSc1TotalPrice(region, volumeSize)
+			volIops = vt.MaxIops
+			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeSt1:
 			price, err = r.getSt1TotalPrice(region, volumeSize)
+			volIops = vt.MaxIops
+			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeStandard:
 			price, err = r.getStandardTotalPrice(region, volumeSize)
+			volIops = vt.MaxIops
+			volThroughput = float64(vt.MaxThroughput)
 		}
 		if err != nil {
-			return "", err
+			return "", 0, 0, err
 		}
-		if minVolumeType == "" || price < minPrice {
+		if resVolumeType == "" || price < minPrice {
 			minPrice = price
-			minVolumeType = string(vt)
+			resVolumeType = string(vt.VolumeType)
+			resBaselineIOPS = volIops
+			resBaselineThroughput = volThroughput
 		}
 	}
 
-	return types.VolumeType(minVolumeType), nil
+	return types.VolumeType(resVolumeType), resBaselineIOPS, resBaselineThroughput, nil
 }

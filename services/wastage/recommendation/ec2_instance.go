@@ -205,7 +205,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	averageThroughput := averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"])
 	averageThroughput = averageThroughput / 1000000.0
 	size := float64(0)
-	if volume.Size != nil {
+	if size == 0 && volume.Size != nil {
 		size = float64(*volume.Size)
 	}
 
@@ -283,13 +283,15 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		AvgThroughput:                averageThroughput,
 	}
 
-	newType, err := s.ebsVolumeRepo.GetMinimumVolumeTotalPrice(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
+	newType, newBaselineIops, newBaselineThroughput, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return nil, nil
 		}
 		return nil, err
 	}
+	result.NewBaselineIOPS = utils.GetPointer(newBaselineIops)
+	result.NewBaselineThroughput = utils.GetPointer(newBaselineThroughput)
 
 	hasResult := false
 
@@ -326,7 +328,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	}
 
 	if newType == types.VolumeTypeGp3 {
-		provIops := max(int32(neededIops), model.Gp3BaseIops)
+		provIops := max(int32(neededIops)-model.Gp3BaseIops, 0)
 		hasResult = true
 		result.NewProvisionedIOPS = &provIops
 		result.NewVolume.Iops = &provIops
@@ -344,7 +346,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	}
 
 	if newType == types.VolumeTypeGp3 {
-		provThroughput := max(neededThroughput, model.Gp3BaseThroughput)
+		provThroughput := max(neededThroughput-model.Gp3BaseThroughput, 0)
 
 		hasResult = true
 		result.NewProvisionedThroughput = &provThroughput
