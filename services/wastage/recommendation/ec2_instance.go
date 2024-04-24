@@ -106,7 +106,7 @@ func maxOfDatapoints(datapoints []types2.Datapoint) float64 {
 		if dp.Maximum == nil {
 			continue
 		}
-		maxV = min(maxV, *dp.Maximum)
+		maxV = max(maxV, *dp.Maximum)
 	}
 	return maxV
 }
@@ -202,9 +202,10 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		(minEBSThroughput)/1000000.0*8.0, (maxEBSThroughput)/1000000.0*8.0)
 
 	if rightSizedInstanceType != nil {
+		description := generateDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, preferences, neededCPU, neededMemory, neededNetworkThroughput)
 		instance.InstanceType = types.InstanceType(rightSizedInstanceType.InstanceType)
 		return &Ec2InstanceRecommendation{
-			Description:              generateDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, preferences, neededCPU, neededMemory, neededNetworkThroughput),
+			Description:              description,
 			NewInstance:              instance,
 			NewVolumes:               volumes,
 			CurrentInstanceType:      &currentInstanceType,
