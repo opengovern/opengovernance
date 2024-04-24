@@ -200,10 +200,10 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		return nil, err
 	}
 	avgCPUUsage := fmt.Sprintf("Avg: %.1f%%, Min: %.1f%%, Max: %.1f%%", avgCPU, minCPU, maxCPU)
-	avgNetworkBandwidth := fmt.Sprintf("Avg: %.1f Megabit, Min: %.1f Megabit, Max: %.1f Megabit", avgNetwork/1000000.0*8.0,
+	avgNetworkBandwidth := fmt.Sprintf("Avg: %.1f Mbps, Min: %.1f Mbps, Max: %.1f Mbps", avgNetwork/1000000.0*8.0,
 		minNetwork/1000000.0*8.0, maxNetwork/1000000.0*8.0)
 
-	avgEbsBandwidth := fmt.Sprintf("Avg: %.1f Megabit, Min: %.1f Megabit, Max: %.1f Megabit", (avgEBSThroughput)/1000000.0*8.0,
+	avgEbsBandwidth := fmt.Sprintf("Avg: %.1f Mbps, Min: %.1f Mbps, Max: %.1f Mbps", (avgEBSThroughput)/1000000.0*8.0,
 		(minEBSThroughput)/1000000.0*8.0, (maxEBSThroughput)/1000000.0*8.0)
 
 	if rightSizedInstanceType != nil {
@@ -278,7 +278,7 @@ Here's usage data:
 
 User's needs:
 %s
-`, currentInstanceType.InstanceType, rightSizedInstanceType.InstanceType, usage, needs)
+`, rightSizedInstanceType.InstanceType, currentInstanceType.InstanceType, usage, needs)
 	resp, err := s.openaiSvc.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
