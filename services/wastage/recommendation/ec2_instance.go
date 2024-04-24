@@ -129,9 +129,11 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	avgEBSThroughput = avgEBSThroughput / float64(len(volumeMetrics))
 
 	maxMemPercent := maxOfDatapoints(metrics["mem_used_percent"])
+	avgMemPercent := averageOfDatapoints(metrics["mem_used_percent"])
+	minMemPercent := minOfDatapoints(metrics["mem_used_percent"])
 	maxMemUsagePercentage := "Not available"
 	if len(metrics["mem_used_percent"]) > 0 {
-		maxMemUsagePercentage = fmt.Sprintf("Max: %.1f%%", maxMemPercent)
+		maxMemUsagePercentage = fmt.Sprintf("Avg: %.f%%, Min: %.f%%, Max: %.1f%%", avgMemPercent, minMemPercent, maxMemPercent)
 	}
 
 	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, region)

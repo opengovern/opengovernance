@@ -2,7 +2,6 @@ package wastage
 
 import (
 	"encoding/json"
-	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
@@ -127,15 +126,11 @@ func (s API) EC2Instance(c echo.Context) error {
 	}
 	ec2RightSizingRecom.NewVolumes = newVolumes
 
-	s.logger.Info("======================HERE======================")
-	s.logger.Info(fmt.Sprintf("New Instance: %v", ec2RightSizingRecom.NewInstance))
-	s.logger.Info("======================HERE======================")
 	costAfterRightSizing, err := s.costSvc.GetEC2InstanceCost(req.Region, ec2RightSizingRecom.NewInstance, ec2RightSizingRecom.NewVolumes, req.Metrics)
 	if err != nil {
 		return err
 	}
-	s.logger.Info("======================HERE======================")
-	s.logger.Info(fmt.Sprintf("New Instance Price: %v", costAfterRightSizing))
+
 	ebsTotalSavings := make(map[string]float64)
 	ebsCostAfterRightSizing := make(map[string]float64)
 	for _, vol := range ec2RightSizingRecom.NewVolumes {
