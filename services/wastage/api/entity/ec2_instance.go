@@ -89,6 +89,8 @@ type RightSizingRecommendation struct {
 	VolumesCurrentCosts map[string]float64 `json:"volumeCurrentCosts"`
 	VolumesTargetCosts  map[string]float64 `json:"volumeTargetCosts"`
 	VolumesSaving       map[string]float64 `json:"volumeSaving"`
+
+	Description string `json:"description"`
 }
 
 type EC2InstanceWastageResponse struct {

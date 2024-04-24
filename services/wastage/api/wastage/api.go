@@ -146,6 +146,7 @@ func (s API) EC2Instance(c echo.Context) error {
 	var rightSizingRecomResp *entity.RightSizingRecommendation
 	if ec2RightSizingRecom != nil {
 		rightSizingRecomResp = &entity.RightSizingRecommendation{
+			Description:                     ec2RightSizingRecom.Description,
 			TargetInstanceType:              ec2RightSizingRecom.NewInstanceType.InstanceType,
 			Saving:                          resp.CurrentCost - costAfterRightSizing,
 			CurrentCost:                     resp.CurrentCost,
