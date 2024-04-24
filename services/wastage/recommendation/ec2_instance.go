@@ -242,6 +242,9 @@ func generateDescription(
 	description += fmt.Sprintf("Currently the workload's network performance is %s. Throughput over the course of last week is min=%.2f MB/s, avg=%.2f MB/s, max=%.2f MB/s, so you only need %.2f MB/s and the right sized one has %s.\n", currentInstanceType.NetworkPerformance, minNetwork/1000000.0, avgNetwork/1000000.0, maxNetwork/1000000.0, neededNetworkThroughput/1000000.0, rightSizedInstanceType.NetworkPerformance)
 
 	for k, v := range preferences {
+		if PreferenceDBKey[k] == "" {
+			continue
+		}
 		if v == nil {
 			vl := extractFromInstance(instance, *currentInstanceType, region, k)
 			description += fmt.Sprintf("You asked %s to be same as the current instance value which is %v\n", k, vl)
