@@ -50,7 +50,7 @@ func Command() *cobra.Command {
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageRepo := repo.NewUsageRepo(db)
-			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo)
+			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo, cnf.OpenAIToken)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			ingestionSvc := ingestion.New(ec2InstanceRepo, ebsVolumeRepo, dataAgeRepo)
 			go func() {

@@ -5,11 +5,13 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
+	"github.com/sashabaranov/go-openai"
 )
 
 type Service struct {
 	ec2InstanceRepo repo.EC2InstanceTypeRepo
 	ebsVolumeRepo   repo.EBSVolumeTypeRepo
+	openaiSvc       *openai.Client
 }
 
 type Ec2InstanceRecommendation struct {
@@ -45,9 +47,11 @@ type EbsVolumeRecommendation struct {
 	AvgThroughput float64
 }
 
-func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo) *Service {
+func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, token string) *Service {
+
 	return &Service{
 		ec2InstanceRepo: ec2InstanceRepo,
 		ebsVolumeRepo:   ebsVolumeRepo,
+		openaiSvc:       openai.NewClient(token),
 	}
 }
