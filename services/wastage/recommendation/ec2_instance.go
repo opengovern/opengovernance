@@ -112,33 +112,21 @@ func maxOfDatapoints(datapoints []types2.Datapoint) float64 {
 }
 
 func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, volumeMetrics map[string]map[string][]types2.Datapoint, preferences map[string]*string) (*Ec2InstanceRecommendation, error) {
-	averageCPUUtilization := averageOfDatapoints(metrics["CPUUtilization"])
-	averageNetworkIn := averageOfDatapoints(metrics["NetworkIn"])
-	averageNetworkOut := averageOfDatapoints(metrics["NetworkOut"])
-	minCPUUtilization := minOfDatapoints(metrics["CPUUtilization"])
-	minNetworkIn := minOfDatapoints(metrics["NetworkIn"])
-	minNetworkOut := minOfDatapoints(metrics["NetworkOut"])
-	maxCPUUtilization := maxOfDatapoints(metrics["CPUUtilization"])
-	maxNetworkIn := maxOfDatapoints(metrics["NetworkIn"])
-	maxNetworkOut := maxOfDatapoints(metrics["NetworkOut"])
-	averageEBSIn, averageEBSOut := 0.0, 0.0
-	minEBSIn, minEBSOut := 0.0, 0.0
-	maxEBSIn, maxEBSOut := 0.0, 0.0
+	minCPU, avgCPU, maxCPU := minOfDatapoints(metrics["CPUUtilization"]), averageOfDatapoints(metrics["CPUUtilization"]), maxOfDatapoints(metrics["CPUUtilization"])
+	networkDatapoints := mergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
+	minNetwork, avgNetwork, maxNetwork := minOfDatapoints(networkDatapoints), averageOfDatapoints(networkDatapoints), maxOfDatapoints(networkDatapoints)
+
+	avgEBSThroughput := 0.0
+	minEBSThroughput := math.MaxFloat64
+	maxEBSThroughput := 0.0
 	for _, v := range volumeMetrics {
-		readBytesAvg, writeBytesAvg := averageOfDatapoints(v["VolumeReadBytes"]), averageOfDatapoints(v["VolumeWriteBytes"])
-		averageEBSIn += readBytesAvg
-		averageEBSOut += writeBytesAvg
+		ebsThroughput := mergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"])
 
-		readBytesMin, writeBytesMin := minOfDatapoints(v["VolumeReadBytes"]), minOfDatapoints(v["VolumeWriteBytes"])
-		minEBSIn += readBytesMin
-		minEBSOut += writeBytesMin
-
-		readBytesMax, writeBytesMax := minOfDatapoints(v["VolumeReadBytes"]), minOfDatapoints(v["VolumeWriteBytes"])
-		maxEBSIn += readBytesMax
-		maxEBSOut += writeBytesMax
+		avgEBSThroughput += averageOfDatapoints(ebsThroughput)
+		minEBSThroughput = min(minEBSThroughput, minOfDatapoints(ebsThroughput))
+		maxEBSThroughput = max(maxEBSThroughput, maxOfDatapoints(ebsThroughput))
 	}
-	averageEBSIn = averageEBSIn / float64(len(volumeMetrics))
-	averageEBSOut = averageEBSOut / float64(len(volumeMetrics))
+	avgEBSThroughput = avgEBSThroughput / float64(len(volumeMetrics))
 
 	maxMemPercent := maxOfDatapoints(metrics["mem_used_percent"])
 	maxMemUsagePercentage := "Not available"
@@ -167,9 +155,9 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if preferences["MemoryBreathingRoom"] != nil {
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
-	neededCPU := float64(vCPU) * (averageCPUUtilization + float64(cpuBreathingRoom)) / 100.0
+	neededCPU := float64(vCPU) * (avgCPU + float64(cpuBreathingRoom)) / 100.0
 	neededMemory := float64(currentInstanceType.MemoryGB) * (maxMemPercent + float64(memoryBreathingRoom)) / 100.0
-	neededNetworkThroughput := averageNetworkIn + averageNetworkOut
+	neededNetworkThroughput := avgNetwork
 	if preferences["NetworkBreathingRoom"] != nil {
 		room, _ := strconv.ParseInt(*preferences["NetworkBreathingRoom"], 10, 64)
 		neededNetworkThroughput += neededNetworkThroughput * float64(room) / 100.0
@@ -206,13 +194,12 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if err != nil {
 		return nil, err
 	}
-	avgCPUUsage := fmt.Sprintf("Avg: %.1f%%, Min: %.1f%%, Max: %.1f%%", averageCPUUtilization, minCPUUtilization, maxCPUUtilization)
-	avgNetworkBandwidth := fmt.Sprintf("Avg: %.1f Megabit, Min: %.1f Megabit, Max: %.1f Megabit", (averageNetworkOut+averageNetworkIn)/1000000.0*8.0,
-		(minNetworkOut+minNetworkIn)/1000000.0*8.0, (maxNetworkOut+maxNetworkIn)/1000000.0*8.0)
+	avgCPUUsage := fmt.Sprintf("Avg: %.1f%%, Min: %.1f%%, Max: %.1f%%", avgCPU, minCPU, maxCPU)
+	avgNetworkBandwidth := fmt.Sprintf("Avg: %.1f Megabit, Min: %.1f Megabit, Max: %.1f Megabit", avgNetwork/1000000.0*8.0,
+		minNetwork/1000000.0*8.0, maxNetwork/1000000.0*8.0)
 
-	avgEbsBandwidth := fmt.Sprintf("Avg: %.1f Megabit, Min: %.1f Megabit, Max: %.1f Megabit", (averageEBSOut+averageEBSIn)/1000000.0*8.0,
-		(minEBSIn+minEBSOut)/1000000.0*8.0, (maxEBSIn+maxEBSOut)/1000000.0*8.0)
-
+	avgEbsBandwidth := fmt.Sprintf("Avg: %.1f Megabit, Min: %.1f Megabit, Max: %.1f Megabit", (avgEBSThroughput)/1000000.0*8.0,
+		(minEBSThroughput)/1000000.0*8.0, (maxEBSThroughput)/1000000.0*8.0)
 
 	if rightSizedInstanceType != nil {
 		instance.InstanceType = types.InstanceType(rightSizedInstanceType.InstanceType)
