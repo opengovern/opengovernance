@@ -17,10 +17,6 @@ import (
 )
 
 func mergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Datapoint {
-	if len(in) != len(out) {
-		return nil
-	}
-
 	funcP := func(a, b *float64, f func(aa, bb float64) float64) *float64 {
 		if a == nil && b == nil {
 			return nil
