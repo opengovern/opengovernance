@@ -25,17 +25,17 @@ const (
 type EBSVolumeType struct {
 	gorm.Model
 
-	VolumeType   types.VolumeType
-	ChargeType   EBSVolumeChargeType
-	PricePerUnit float64
+	VolumeType   types.VolumeType    `gorm:index`
+	ChargeType   EBSVolumeChargeType `gorm:index`
+	PricePerUnit float64             `gorm:index:price_idx,sort:asc`
 	PriceGroup   string
 
-	MaxIops       int32
-	MaxThroughput int32
-	MaxSize       int
+	MaxIops       int32 `gorm:index`
+	MaxThroughput int32 `gorm:index`
+	MaxSize       int   `gorm:index`
 
 	TermType   string
-	RegionCode string
+	RegionCode string `gorm:index`
 }
 
 func (v *EBSVolumeType) PopulateFromMap(columns map[string]int, row []string) {
