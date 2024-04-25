@@ -35,13 +35,14 @@ func Command() *cobra.Command {
 				cnf.Postgres.Host = "localhost"
 				cnf.Postgres.Port = "5432"
 				cnf.Postgres.Username = "postgres"
-				cnf.Postgres.Password = "AmEUdRgixkBMmObL"
-				cnf.Postgres.DB = "wastage"
+				cnf.Postgres.Password = ""
+				cnf.Postgres.DB = ""
 			}
 			db, err := connector.New(cnf.Postgres)
 			if err != nil {
 				return err
 			}
+			db.Conn().Logger = logger
 			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{})
 			if err != nil {
 				return err
