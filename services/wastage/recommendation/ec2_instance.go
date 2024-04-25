@@ -489,7 +489,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 
 	result.Recommended = &entity.RightsizingEBSVolume{
 		Tier:                  "",
-		VolumeSize:            nil,
+		VolumeSize:            utils.GetPointer(int32(neededSize)),
 		BaselineIOPS:          newBaselineIops,
 		ProvisionedIOPS:       nil,
 		BaselineThroughput:    newBaselineThroughput,
@@ -561,7 +561,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
-	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(region, volume, metrics)
+	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(region, newVolume, metrics)
 	if err != nil {
 		return nil, err
 	}
