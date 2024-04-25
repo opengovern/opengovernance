@@ -14,7 +14,6 @@ type Service struct {
 }
 
 func New(ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, token string, costSvc *cost.Service) *Service {
-
 	return &Service{
 		ec2InstanceRepo: ec2InstanceRepo,
 		ebsVolumeRepo:   ebsVolumeRepo,

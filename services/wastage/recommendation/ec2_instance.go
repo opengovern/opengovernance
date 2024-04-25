@@ -222,6 +222,7 @@ func (s *Service) EC2InstanceRecommendation(
 		if err != nil {
 			return nil, err
 		}
+
 		recommended = &entity.RightsizingEC2Instance{
 			InstanceType:      rightSizedInstanceType.InstanceType,
 			Processor:         rightSizedInstanceType.PhysicalProcessor,
@@ -260,23 +261,6 @@ func (s *Service) generateDescription(instance entity.EC2Instance, region string
 	networkDatapoints := mergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
 	minNetwork, avgNetwork, maxNetwork := minOfDatapoints(networkDatapoints), averageOfDatapoints(networkDatapoints), maxOfDatapoints(networkDatapoints)
 
-	/*
-		I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use t3a.large instead of m7i.large. I need help summarizing the explanation into 3 lines while keeping these rules:
-		- mention the requirements from user side.
-		- for those fields which are changing make sure you mention the change.
-
-		Here's usage data:
-		- Currently the workload is running on m7i.large instance type. right sized suggested instance type is t3a.large
-		- Currently the workload has 2 vCPUs. Usage over the course of last week is min=3.59%, avg=6.08%, max=0.00%, so you only need 0.32 vCPUs and the right sized one has 2 vCPUs.
-		- Currently the workload has 8GB Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. The right sized one has 8GB Memory.
-		- Currently the workload's network performance is Up to 12500 Megabit. Throughput over the course of last week is min=0.12 MB/s, avg=0.43 MB/s, max=0.00 MB/s, so you only need 0.48 MB/s and the right sized one has Up to 5 Gigabit.
-
-		User's needs:
-		- You asked MemoryGB to be same as the current instance value which is 8
-		- You asked OperatingSystem to be same as the current instance value which is Linux/UNIX
-		- You asked ProcessorArchitecture to be same as the current instance value which is x86_64
-		- You asked Region to be same as the current instance value which is us-east-2
-	*/
 	usage := fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", currentInstanceType.InstanceType, currentInstanceType.VCpu, minCPU, avgCPU, maxCPU, neededCPU, rightSizedInstanceType.InstanceType, rightSizedInstanceType.VCpu)
 	if len(metrics["mem_used_percent"]) > 0 {
 		usage += fmt.Sprintf("- %s has %dGB Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fGB Memory. %s has %dGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, minMemory, avgMemory, maxMemory, neededMemory, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
