@@ -9,12 +9,12 @@ import (
 type EC2InstanceType struct {
 	gorm.Model
 
-	InstanceType        string
-	VCpu                int64
-	MemoryGB            int64
-	NetworkMaxBandwidth int64
-	NetworkIsDedicated  bool
-	PricePerUnit        float64
+	InstanceType        string  `gorm:"index"`
+	VCpu                int64   `gorm:"index:compute_idx"`
+	MemoryGB            int64   `gorm:"index:compute_idx"`
+	NetworkMaxBandwidth int64   `gorm:"index:network_idx"`
+	NetworkIsDedicated  bool    `gorm:"index:network_idx"`
+	PricePerUnit        float64 `gorm:"index:price_idx,sort:asc"`
 
 	PricePerUnitStr             string
 	NetworkPerformance          string
@@ -38,10 +38,10 @@ type EC2InstanceType struct {
 	CurrentGeneration           string
 	InstanceFamily              string
 	PhysicalProcessor           string
-	PhysicalProcessorArch       string
+	PhysicalProcessorArch       string `gorm:"index"`
 	ClockSpeed                  string
 	Storage                     string
-	ProcessorArchitecture       string
+	ProcessorArchitecture       string `gorm:"index"`
 	StorageMedia                string
 	VolumeType                  string
 	MaxVolumeSize               string
@@ -49,11 +49,11 @@ type EC2InstanceType struct {
 	MaxIOPSBurstPerformance     string
 	MaxThroughputVolume         string
 	Provisioned                 string
-	Tenancy                     string
+	Tenancy                     string `gorm:"index"`
 	EBSOptimized                string
 	OperatingSystem             string
-	OperatingSystemFamily       string
-	LicenseModel                string
+	OperatingSystemFamily       string `gorm:"index"`
+	LicenseModel                string `gorm:"index"`
 	Group                       string
 	GroupDescription            string
 	TransferType                string
@@ -98,7 +98,7 @@ type EC2InstanceType struct {
 	PreInstalledSW              string
 	ProcessorFeatures           string
 	ProductType                 string
-	RegionCode                  string
+	RegionCode                  string `gorm:"index"`
 	ResourceType                string
 	ServiceName                 string
 	SnapshotArchiveFeeType      string
