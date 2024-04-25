@@ -42,7 +42,6 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			db.Conn().Logger = logger
 			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{})
 			if err != nil {
 				return err
