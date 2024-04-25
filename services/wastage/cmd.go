@@ -35,8 +35,8 @@ func Command() *cobra.Command {
 				cnf.Postgres.Host = "localhost"
 				cnf.Postgres.Port = "5432"
 				cnf.Postgres.Username = "postgres"
-				cnf.Postgres.Password = "mysecretpassword"
-				cnf.Postgres.DB = "postgres"
+				cnf.Postgres.Password = "AmEUdRgixkBMmObL"
+				cnf.Postgres.DB = "wastage"
 			}
 			db, err := connector.New(cnf.Postgres)
 			if err != nil {
@@ -50,8 +50,8 @@ func Command() *cobra.Command {
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageRepo := repo.NewUsageRepo(db)
-			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo, cnf.OpenAIToken)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
+			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(ec2InstanceRepo, ebsVolumeRepo, dataAgeRepo)
 			go func() {
 				err = ingestionSvc.Start()

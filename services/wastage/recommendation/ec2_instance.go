@@ -114,30 +114,33 @@ func maxOfDatapoints(datapoints []types2.Datapoint) float64 {
 	return maxV
 }
 
-func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2Instance, volumes []entity.EC2Volume, metrics map[string][]types2.Datapoint, volumeMetrics map[string]map[string][]types2.Datapoint, preferences map[string]*string) (*Ec2InstanceRecommendation, error) {
-	minCPU, avgCPU, maxCPU := minOfDatapoints(metrics["CPUUtilization"]), averageOfDatapoints(metrics["CPUUtilization"]), maxOfDatapoints(metrics["CPUUtilization"])
+func extractUsage(dps []types2.Datapoint) entity.Usage {
+	minV, avgV, maxV := minOfDatapoints(dps), averageOfDatapoints(dps), maxOfDatapoints(dps)
+	return entity.Usage{
+		Avg: &avgV,
+		Min: &minV,
+		Max: &maxV,
+	}
+}
+
+func (s *Service) EC2InstanceRecommendation(
+	region string,
+	instance entity.EC2Instance,
+	volumes []entity.EC2Volume,
+	metrics map[string][]types2.Datapoint,
+	volumeMetrics map[string]map[string][]types2.Datapoint,
+	preferences map[string]*string,
+) (*entity.RightSizingRecommendation, error) {
 	networkDatapoints := mergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
-	minNetwork, avgNetwork, maxNetwork := minOfDatapoints(networkDatapoints), averageOfDatapoints(networkDatapoints), maxOfDatapoints(networkDatapoints)
+	cpuUsage := extractUsage(metrics["CPUUtilization"])
+	memoryUsage := extractUsage(metrics["mem_used_percent"])
+	networkUsage := extractUsage(networkDatapoints)
 
-	avgEBSThroughput := 0.0
-	minEBSThroughput := math.MaxFloat64
-	maxEBSThroughput := 0.0
+	var ebsDatapoints []types2.Datapoint
 	for _, v := range volumeMetrics {
-		ebsThroughput := mergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"])
-
-		avgEBSThroughput += averageOfDatapoints(ebsThroughput)
-		minEBSThroughput = min(minEBSThroughput, minOfDatapoints(ebsThroughput))
-		maxEBSThroughput = max(maxEBSThroughput, maxOfDatapoints(ebsThroughput))
+		ebsDatapoints = mergeDatapoints(mergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsDatapoints)
 	}
-	avgEBSThroughput = avgEBSThroughput / float64(len(volumeMetrics))
-
-	maxMemPercent := maxOfDatapoints(metrics["mem_used_percent"])
-	avgMemPercent := averageOfDatapoints(metrics["mem_used_percent"])
-	minMemPercent := minOfDatapoints(metrics["mem_used_percent"])
-	maxMemUsagePercentage := "Not available"
-	if len(metrics["mem_used_percent"]) > 0 {
-		maxMemUsagePercentage = fmt.Sprintf("Avg: %.f%%, Min: %.f%%, Max: %.1f%%", avgMemPercent, minMemPercent, maxMemPercent)
-	}
+	ebsThroughputUsage := extractUsage(ebsDatapoints)
 
 	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, region)
 	if err != nil {
@@ -147,6 +150,21 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		return nil, fmt.Errorf("instance type not found: %s", string(instance.InstanceType))
 	}
 	currentInstanceType := currentInstanceTypeList[0]
+	currentCost, err := s.costSvc.GetEC2InstanceCost(region, instance, volumes, metrics)
+	if err != nil {
+		return nil, err
+	}
+	current := entity.RightsizingEC2Instance{
+		InstanceType:      currentInstanceType.InstanceType,
+		Processor:         currentInstanceType.PhysicalProcessor,
+		Architecture:      currentInstanceType.PhysicalProcessorArch,
+		VCPU:              currentInstanceType.VCpu,
+		Memory:            currentInstanceType.MemoryGB,
+		EBSBandwidth:      currentInstanceType.DedicatedEBSThroughput,
+		NetworkThroughput: currentInstanceType.NetworkPerformance,
+		ENASupported:      currentInstanceType.EnhancedNetworkingSupported,
+		Cost:              currentCost,
+	}
 
 	//TODO Burst in CPU & Network
 	//TODO Network: UpTo
@@ -160,9 +178,9 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 	if preferences["MemoryBreathingRoom"] != nil {
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
-	neededCPU := float64(vCPU) * (avgCPU + float64(cpuBreathingRoom)) / 100.0
-	neededMemory := float64(currentInstanceType.MemoryGB) * (maxMemPercent + float64(memoryBreathingRoom)) / 100.0
-	neededNetworkThroughput := avgNetwork
+	neededCPU := float64(vCPU) * (*cpuUsage.Avg + float64(cpuBreathingRoom)) / 100.0
+	neededMemory := float64(currentInstanceType.MemoryGB) * (*memoryUsage.Max + float64(memoryBreathingRoom)) / 100.0
+	neededNetworkThroughput := *networkUsage.Avg
 	if preferences["NetworkBreathingRoom"] != nil {
 		room, _ := strconv.ParseInt(*preferences["NetworkBreathingRoom"], 10, 64)
 		neededNetworkThroughput += neededNetworkThroughput * float64(room) / 100.0
@@ -195,33 +213,49 @@ func (s *Service) EC2InstanceRecommendation(region string, instance entity.EC2In
 		}
 	}
 
+	var recommended *entity.RightsizingEC2Instance
 	rightSizedInstanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
 	if err != nil {
 		return nil, err
 	}
-	avgCPUUsage := fmt.Sprintf("Avg: %.1f%%, Min: %.1f%%, Max: %.1f%%", avgCPU, minCPU, maxCPU)
-	avgNetworkBandwidth := fmt.Sprintf("Avg: %.1f Mbps, Min: %.1f Mbps, Max: %.1f Mbps", avgNetwork/1000000.0*8.0,
-		minNetwork/1000000.0*8.0, maxNetwork/1000000.0*8.0)
+	if rightSizedInstanceType != nil {
+		newInstance := instance
+		newInstance.InstanceType = types.InstanceType(rightSizedInstanceType.InstanceType)
 
-	avgEbsBandwidth := fmt.Sprintf("Avg: %.1f Mbps, Min: %.1f Mbps, Max: %.1f Mbps", (avgEBSThroughput)/1000000.0*8.0,
-		(minEBSThroughput)/1000000.0*8.0, (maxEBSThroughput)/1000000.0*8.0)
+		recommendedCost, err := s.costSvc.GetEC2InstanceCost(region, newInstance, volumes, metrics)
+		if err != nil {
+			return nil, err
+		}
+		recommended = &entity.RightsizingEC2Instance{
+			InstanceType:      rightSizedInstanceType.InstanceType,
+			Processor:         rightSizedInstanceType.PhysicalProcessor,
+			Architecture:      rightSizedInstanceType.PhysicalProcessorArch,
+			VCPU:              rightSizedInstanceType.VCpu,
+			Memory:            rightSizedInstanceType.MemoryGB,
+			EBSBandwidth:      rightSizedInstanceType.DedicatedEBSThroughput,
+			NetworkThroughput: rightSizedInstanceType.NetworkPerformance,
+			ENASupported:      rightSizedInstanceType.EnhancedNetworkingSupported,
+			Cost:              recommendedCost,
+		}
+	}
+
+	recommendation := entity.RightSizingRecommendation{
+		Current:           current,
+		Recommended:       recommended,
+		VCPU:              cpuUsage,
+		EBSBandwidth:      ebsThroughputUsage,
+		NetworkThroughput: networkUsage,
+		Description:       "",
+	}
+	if len(metrics["mem_used_percent"]) > 0 {
+		recommendation.Memory = memoryUsage
+	}
 
 	if rightSizedInstanceType != nil {
-		description, _ := s.generateDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, preferences, neededCPU, neededMemory, neededNetworkThroughput)
-		instance.InstanceType = types.InstanceType(rightSizedInstanceType.InstanceType)
-		return &Ec2InstanceRecommendation{
-			Description:              description,
-			NewInstance:              instance,
-			NewVolumes:               volumes,
-			CurrentInstanceType:      &currentInstanceType,
-			NewInstanceType:          rightSizedInstanceType,
-			AvgNetworkBandwidth:      avgNetworkBandwidth,
-			AvgEBSBandwidth:          avgEbsBandwidth,
-			AvgCPUUsage:              avgCPUUsage,
-			MaxMemoryUsagePercentage: maxMemUsagePercentage,
-		}, nil
+		recommendation.Description, _ = s.generateDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, preferences, neededCPU, neededMemory, neededNetworkThroughput)
 	}
-	return nil, nil
+
+	return &recommendation, nil
 }
 
 func (s *Service) generateDescription(instance entity.EC2Instance, region string, currentInstanceType, rightSizedInstanceType *model.EC2InstanceType, metrics map[string][]types2.Datapoint, preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64) (string, error) {
@@ -348,11 +382,10 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 	return ""
 }
 
-func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*EbsVolumeRecommendation, error) {
-	averageIops := averageOfDatapoints(metrics["VolumeReadOps"]) + averageOfDatapoints(metrics["VolumeWriteOps"])
-	averageThroughput := averageOfDatapoints(metrics["VolumeReadBytes"]) + averageOfDatapoints(metrics["VolumeWriteBytes"])
-	averageThroughput = averageThroughput / 1000000.0
-	averageSizeUsage := averageOfDatapoints(metrics["disk_used_percent"])
+func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*entity.EBSVolumeRecommendation, error) {
+	iopsUsage := extractUsage(mergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]))
+	throughputUsage := extractUsage(mergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
+	sizeUsage := extractUsage(metrics["disk_used_percent"])
 
 	size := float64(0)
 	if size == 0 && volume.Size != nil {
@@ -371,11 +404,11 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	if preferences["SizeBreathingRoom"] != nil {
 		sizeBreathingRoom, _ = strconv.ParseInt(*preferences["SizeBreathingRoom"], 10, 32)
 	}
-	neededIops := averageIops * (1 + float64(iopsBreathingRoom)/100.0)
-	neededThroughput := averageThroughput * (1 + float64(throughputBreathingRoom)/100.0)
+	neededIops := *iopsUsage.Avg * (1 + float64(iopsBreathingRoom)/100.0)
+	neededThroughput := *throughputUsage.Avg * (1 + float64(throughputBreathingRoom)/100.0)
 	neededSize := size
 	if _, ok := metrics["disk_used_percent"]; ok {
-		neededSize = max(1, neededSize*(averageSizeUsage/100.0))
+		neededSize = max(1, neededSize*(*sizeUsage.Avg/100.0))
 		neededSize = neededSize * (1 + float64(sizeBreathingRoom)/100.0)
 	}
 
@@ -425,52 +458,62 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
-	result := &EbsVolumeRecommendation{
-		Description:                  "",
-		NewVolume:                    volume,
-		CurrentSize:                  int32(size),
-		NewSize:                      int32(neededSize),
-		CurrentProvisionedIOPS:       volume.Iops,
-		NewProvisionedIOPS:           nil,
-		CurrentProvisionedThroughput: volume.Throughput,
-		NewProvisionedThroughput:     nil,
-		CurrentVolumeType:            volume.VolumeType,
-		NewVolumeType:                "",
-		AvgIOPS:                      averageIops,
-		AvgThroughput:                averageThroughput,
+	volumeCost, err := s.costSvc.GetEBSVolumeCost(region, volume, metrics)
+	if err != nil {
+		return nil, err
+	}
+
+	var result = &entity.EBSVolumeRecommendation{
+		Current: entity.RightsizingEBSVolume{
+			Tier:                  volume.VolumeType,
+			VolumeSize:            volume.Size,
+			BaselineIOPS:          0, //TODO-Saleh
+			ProvisionedIOPS:       volume.Iops,
+			BaselineThroughput:    0, //TODO-Saleh
+			ProvisionedThroughput: volume.Throughput,
+			Cost:                  volumeCost,
+		},
+		Recommended: nil,
+		IOPS:        iopsUsage,
+		Throughput:  throughputUsage,
+		Description: "",
 	}
 
 	newType, newBaselineIops, newBaselineThroughput, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
-			return nil, nil
+			return result, nil
 		}
 		return nil, err
 	}
-	result.NewBaselineIOPS = utils.GetPointer(newBaselineIops)
-	result.NewBaselineThroughput = utils.GetPointer(newBaselineThroughput)
 
-	hasResult := false
+	result.Recommended = &entity.RightsizingEBSVolume{
+		Tier:                  "",
+		VolumeSize:            nil,
+		BaselineIOPS:          newBaselineIops,
+		ProvisionedIOPS:       nil,
+		BaselineThroughput:    newBaselineThroughput,
+		ProvisionedThroughput: nil,
+		Cost:                  0,
+	}
+	newVolume := volume
 
 	if newType != volume.VolumeType {
-		hasResult = true
-		result.NewVolumeType = newType
-		result.NewVolume.VolumeType = newType
+		result.Recommended.Tier = newType
+		newVolume.VolumeType = newType
 		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
 	}
 
 	if int32(neededSize) != *volume.Size {
-		hasResult = true
-		result.NewVolume.Size = utils.GetPointer(int32(neededSize))
-		result.NewSize = int32(neededSize)
+		result.Recommended.VolumeSize = utils.GetPointer(int32(neededSize))
+		newVolume.Size = utils.GetPointer(int32(neededSize))
 		result.Description += fmt.Sprintf("- change volume size from %d to %d\n", *volume.Size, int32(neededSize))
 	}
 
 	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {
 		avgIOps := int32(neededIops)
-		hasResult = true
-		result.NewProvisionedIOPS = &avgIOps
-		result.NewVolume.Iops = &avgIOps
+		result.Recommended.ProvisionedIOPS = &avgIOps
+		newVolume.Iops = &avgIOps
 
 		if volume.Iops == nil {
 			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", avgIOps)
@@ -479,16 +522,15 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		} else if avgIOps < *volume.Iops {
 			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, avgIOps)
 		} else {
-			result.NewProvisionedIOPS = nil
-			result.NewVolume.Iops = volume.Iops
+			result.Recommended.ProvisionedIOPS = nil
+			newVolume.Iops = volume.Iops
 		}
 	}
 
 	if newType == types.VolumeTypeGp3 {
 		provIops := max(int32(neededIops)-model.Gp3BaseIops, 0)
-		hasResult = true
-		result.NewProvisionedIOPS = &provIops
-		result.NewVolume.Iops = &provIops
+		result.Recommended.ProvisionedIOPS = &provIops
+		newVolume.Iops = &provIops
 
 		if volume.Iops == nil {
 			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", provIops)
@@ -497,17 +539,15 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		} else if provIops < *volume.Iops {
 			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, provIops)
 		} else {
-			result.NewProvisionedIOPS = nil
-			result.NewVolume.Iops = volume.Iops
+			result.Recommended.ProvisionedIOPS = nil
+			newVolume.Iops = volume.Iops
 		}
 	}
 
 	if newType == types.VolumeTypeGp3 {
 		provThroughput := max(neededThroughput-model.Gp3BaseThroughput, 0)
-
-		hasResult = true
-		result.NewProvisionedThroughput = &provThroughput
-		result.NewVolume.Throughput = &provThroughput
+		result.Recommended.ProvisionedThroughput = &provThroughput
+		newVolume.Throughput = &provThroughput
 
 		if volume.Throughput == nil {
 			result.Description += fmt.Sprintf("- add provisioned throughput: %.2f\n", provThroughput)
@@ -516,14 +556,16 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		} else if provThroughput < *volume.Throughput {
 			result.Description += fmt.Sprintf("- decrease provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
 		} else {
-			result.NewProvisionedThroughput = nil
-			result.NewVolume.Throughput = volume.Throughput
+			result.Recommended.ProvisionedThroughput = nil
+			newVolume.Throughput = volume.Throughput
 		}
 	}
 
-	if !hasResult {
-		return nil, nil
+	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(region, volume, metrics)
+	if err != nil {
+		return nil, err
 	}
+	result.Recommended.Cost = newVolumeCost
 
 	return result, nil
 }

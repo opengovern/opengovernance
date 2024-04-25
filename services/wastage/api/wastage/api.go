@@ -87,146 +87,25 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
-	resp.CurrentCost, err = s.costSvc.GetEC2InstanceCost(req.Region, req.Instance, req.Volumes, req.Metrics)
-	if err != nil {
-		s.logger.Error("failed to get ec2 instance cost", zap.Error(err))
-		return err
-	}
-
-	currentVolumeCosts := make(map[string]float64)
-	for _, vol := range req.Volumes {
-		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId])
-		if err != nil {
-			s.logger.Error("failed to get ebs volume cost", zap.Error(err))
-			return err
-		}
-		currentVolumeCosts[vol.HashedVolumeId] = volumeCost
-	}
-
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
 	if err != nil {
 		return err
 	}
 
-	newVolumes := make([]entity.EC2Volume, 0)
-	ebsRightSizingRecoms := make(map[string]*recommendation.EbsVolumeRecommendation)
+	ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
-		ebsRightSizingRecom, err := s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
+		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
+		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
 		if err != nil {
 			return err
 		}
-		if ebsRightSizingRecom == nil {
-			newVolumes = append(newVolumes, vol)
-			continue
-		}
-		ebsRightSizingRecoms[vol.HashedVolumeId] = ebsRightSizingRecom
-	}
-	for _, recom := range ebsRightSizingRecoms {
-		newVolumes = append(newVolumes, recom.NewVolume)
-	}
-	ec2RightSizingRecom.NewVolumes = newVolumes
-
-	costAfterRightSizing, err := s.costSvc.GetEC2InstanceCost(req.Region, ec2RightSizingRecom.NewInstance, ec2RightSizingRecom.NewVolumes, req.Metrics)
-	if err != nil {
-		return err
+		ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
 	}
 
-	ebsTotalSavings := make(map[string]float64)
-	ebsCostAfterRightSizing := make(map[string]float64)
-	for _, vol := range ec2RightSizingRecom.NewVolumes {
-		volumeCost, err := s.costSvc.GetEBSVolumeCost(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId])
-		if err != nil {
-			s.logger.Error("failed to get ebs volume cost", zap.Error(err))
-			return err
-		}
-		ebsCostAfterRightSizing[vol.HashedVolumeId] = volumeCost
-		ebsTotalSavings[vol.HashedVolumeId] = currentVolumeCosts[vol.HashedVolumeId] - volumeCost
-	}
-
-	var rightSizingRecomResp *entity.RightSizingRecommendation
-	if ec2RightSizingRecom != nil {
-		rightSizingRecomResp = &entity.RightSizingRecommendation{
-			Description:                     ec2RightSizingRecom.Description,
-			TargetInstanceType:              ec2RightSizingRecom.NewInstanceType.InstanceType,
-			Saving:                          resp.CurrentCost - costAfterRightSizing,
-			CurrentCost:                     resp.CurrentCost,
-			TargetCost:                      costAfterRightSizing,
-			AvgCPUUsage:                     ec2RightSizingRecom.AvgCPUUsage,
-			TargetCores:                     ec2RightSizingRecom.NewInstanceType.VCPUStr,
-			AvgNetworkBandwidth:             ec2RightSizingRecom.AvgNetworkBandwidth,
-			TargetNetworkPerformance:        ec2RightSizingRecom.NewInstanceType.NetworkPerformance,
-			CurrentNetworkPerformance:       ec2RightSizingRecom.CurrentInstanceType.NetworkPerformance,
-			TargetEBSBandwidth:              ec2RightSizingRecom.NewInstanceType.DedicatedEBSThroughput,
-			CurrentEBSBandwidth:             ec2RightSizingRecom.CurrentInstanceType.DedicatedEBSThroughput,
-			AvgEBSBandwidth:                 ec2RightSizingRecom.AvgEBSBandwidth,
-			CurrentMemory:                   ec2RightSizingRecom.CurrentInstanceType.Memory,
-			TargetMemory:                    ec2RightSizingRecom.NewInstanceType.Memory,
-			MaxMemoryUsagePercentage:        ec2RightSizingRecom.MaxMemoryUsagePercentage,
-			VolumesCurrentSizes:             make(map[string]int32),
-			VolumesTargetSizes:              make(map[string]int32),
-			VolumesCurrentTypes:             make(map[string]types2.VolumeType),
-			VolumesTargetTypes:              make(map[string]types2.VolumeType),
-			VolumesCurrentIOPS:              make(map[string]int32),
-			VolumesTargetBaselineIOPS:       make(map[string]int32),
-			VolumesTargetIOPS:               make(map[string]int32),
-			VolumesCurrentThroughput:        make(map[string]float64),
-			VolumesTargetBaselineThroughput: make(map[string]float64),
-			VolumesTargetThroughput:         make(map[string]float64),
-			VolumesCurrentCosts:             make(map[string]float64),
-			VolumesTargetCosts:              make(map[string]float64),
-			VolumesSaving:                   make(map[string]float64),
-		}
-	}
-
-	for k, v := range ebsRightSizingRecoms {
-		if rightSizingRecomResp == nil {
-			rightSizingRecomResp = &entity.RightSizingRecommendation{
-				VolumesCurrentSizes:             make(map[string]int32),
-				VolumesTargetSizes:              make(map[string]int32),
-				VolumesCurrentTypes:             make(map[string]types2.VolumeType),
-				VolumesTargetTypes:              make(map[string]types2.VolumeType),
-				VolumesCurrentIOPS:              make(map[string]int32),
-				VolumesTargetBaselineIOPS:       make(map[string]int32),
-				VolumesTargetIOPS:               make(map[string]int32),
-				VolumesCurrentThroughput:        make(map[string]float64),
-				VolumesTargetBaselineThroughput: make(map[string]float64),
-				VolumesTargetThroughput:         make(map[string]float64),
-				VolumesCurrentCosts:             make(map[string]float64),
-				VolumesTargetCosts:              make(map[string]float64),
-				VolumesSaving:                   make(map[string]float64),
-			}
-		}
-		rightSizingRecomResp.VolumesCurrentCosts[k] = currentVolumeCosts[k]
-		rightSizingRecomResp.VolumesTargetCosts[k] = ebsCostAfterRightSizing[k]
-		rightSizingRecomResp.VolumesSaving[k] = ebsTotalSavings[k]
-		rightSizingRecomResp.VolumesCurrentSizes[k] = v.CurrentSize
-		rightSizingRecomResp.VolumesTargetSizes[k] = v.NewSize
-		rightSizingRecomResp.VolumesCurrentTypes[k] = v.CurrentVolumeType
-		rightSizingRecomResp.VolumesTargetTypes[k] = v.NewVolumeType
-		if v.CurrentProvisionedIOPS != nil {
-			rightSizingRecomResp.VolumesCurrentIOPS[k] = *v.CurrentProvisionedIOPS
-		}
-		if v.NewProvisionedIOPS != nil {
-			rightSizingRecomResp.VolumesTargetIOPS[k] = *v.NewProvisionedIOPS
-		}
-		if v.CurrentProvisionedThroughput != nil {
-			rightSizingRecomResp.VolumesCurrentThroughput[k] = *v.CurrentProvisionedThroughput
-		}
-		if v.NewProvisionedThroughput != nil {
-			rightSizingRecomResp.VolumesTargetThroughput[k] = *v.NewProvisionedThroughput
-		}
-		if v.NewBaselineIOPS != nil {
-			rightSizingRecomResp.VolumesTargetBaselineIOPS[k] = *v.NewBaselineIOPS
-		}
-		if v.NewBaselineThroughput != nil {
-			rightSizingRecomResp.VolumesTargetBaselineThroughput[k] = *v.NewBaselineThroughput
-		}
-	}
-
-	resp.TotalSavings += resp.CurrentCost - costAfterRightSizing
-	resp.RightSizing = rightSizingRecomResp
-	resp.EbsTotalSavings = ebsTotalSavings
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
+		RightSizing:       *ec2RightSizingRecom,
+		VolumeRightSizing: ebsRightSizingRecoms,
+	})
 }
 
 func (s API) Register(g *echo.Group) {
