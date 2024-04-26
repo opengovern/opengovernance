@@ -26,7 +26,7 @@ func New(config koanf.Postgres) (*Database, error) {
 			Colorful:                  false,       // Disable color
 		},
 	)
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", config.Host, config.Username, config.Password, config.DB, config.Port)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s", config.Host, config.Username, config.Password, config.DB, config.Port, config.SSLMode)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: newLogger,
 	})
