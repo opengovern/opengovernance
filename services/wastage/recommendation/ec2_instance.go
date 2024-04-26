@@ -345,6 +345,8 @@ User's needs:
 func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, region string, k string) any {
 	switch k {
 	case "InstanceFamily":
+		return i.InstanceFamily
+	case "Tenancy":
 		switch instance.Tenancy {
 		case types.TenancyDefault:
 			return "Shared"
