@@ -217,7 +217,16 @@ func (s *Service) EC2InstanceRecommendation(
 	if rightSizedInstanceType != nil {
 		newInstance := instance
 		newInstance.InstanceType = types.InstanceType(rightSizedInstanceType.InstanceType)
-
+		if newInstance.Placement == nil {
+			newInstance.Placement = &entity.EC2Placement{}
+		}
+		if rightSizedInstanceType.Tenancy == "Dedicated" {
+			newInstance.Placement.Tenancy = types.TenancyDedicated
+		} else if rightSizedInstanceType.Tenancy == "Host" {
+			newInstance.Placement.Tenancy = types.TenancyHost
+		} else {
+			newInstance.Placement.Tenancy = types.TenancyDefault
+		}
 		recommendedCost, err := s.costSvc.GetEC2InstanceCost(region, newInstance, volumes, metrics)
 		if err != nil {
 			return nil, err
