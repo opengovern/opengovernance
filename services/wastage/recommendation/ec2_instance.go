@@ -344,10 +344,17 @@ User's needs:
 
 func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, region string, k string) any {
 	switch k {
-	case "Tenancy":
-		return i.Tenancy
 	case "InstanceFamily":
-		return i.InstanceFamily
+		switch instance.Tenancy {
+		case types.TenancyDefault:
+			return "Shared"
+		case types.TenancyDedicated:
+			return "Dedicated"
+		case types.TenancyHost:
+			return "Host"
+		default:
+			return ""
+		}
 	case "UsageOperation":
 		return instance.UsageOperation
 	case "EBSOptimized":
