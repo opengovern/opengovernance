@@ -27,6 +27,7 @@ type EC2InstanceType struct {
 	Tenancy               string `gorm:"index"`
 	LicenseModel          string `gorm:"index"`
 	RegionCode            string `gorm:"index"`
+	Operation             string `gorm:"index"`
 
 	PricePerUnitStr             string
 	NetworkPerformance          string
@@ -68,7 +69,6 @@ type EC2InstanceType struct {
 	ToLocation                  string
 	ToLocationType              string
 	UsageType                   string
-	Operation                   string
 	AvailabilityZone            string
 	CapacityStatus              string
 	ClassicNetworkingSupport    string

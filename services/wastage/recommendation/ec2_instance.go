@@ -138,7 +138,7 @@ func (s *Service) EC2InstanceRecommendation(
 	}
 	ebsThroughputUsage := extractUsage(ebsDatapoints)
 
-	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, region)
+	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, instance.UsageOperation, region)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +212,13 @@ func (s *Service) EC2InstanceRecommendation(
 		if *value == "Yes" {
 			pref["NOT(instance_type like ?)"] = "t%"
 		}
+	}
+	if value, ok := preferences["UsageOperation"]; ok && value != nil {
+		pref["operation = ?"] = UsageOperationHumanToMachine[*value]
+	}
+	// if operation is not provided, limit the results to one with no pre-installed software
+	if _, ok := pref["operation = ?"]; !ok {
+		pref["pre_installed_sw = ?"] = "NA"
 	}
 
 	var recommended *entity.RightsizingEC2Instance
@@ -336,6 +343,8 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 		return i.Tenancy
 	case "InstanceFamily":
 		return i.InstanceFamily
+	case "UsageOperation":
+		return instance.UsageOperation
 	case "EBSOptimized":
 		if instance.EbsOptimized {
 			return "Yes"

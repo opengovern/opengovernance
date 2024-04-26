@@ -15,8 +15,7 @@ type EC2InstanceTypeRepo interface {
 	List() ([]model.EC2InstanceType, error)
 	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
 	Truncate() error
-	ListByInstanceType(instanceType, os, region string) ([]model.EC2InstanceType, error)
-	GetCurrentInstanceType(instanceType, tenancy, os string) (*model.EC2InstanceType, error)
+	ListByInstanceType(instanceType, os, operation, region string) ([]model.EC2InstanceType, error)
 }
 
 type EC2InstanceTypeRepoImpl struct {
@@ -49,7 +48,6 @@ func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(bandwidth float64,
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("network_max_bandwidth >= ?", bandwidth).
-		Where("pre_installed_sw = 'NA'").
 		Where("capacity_status = 'Used'").
 		Where("price_per_unit != 0")
 	for k, v := range pref {
@@ -82,12 +80,13 @@ func (r *EC2InstanceTypeRepoImpl) List() ([]model.EC2InstanceType, error) {
 	return ms, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, region string) ([]model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, operation, region string) ([]model.EC2InstanceType, error) {
 	var ms []model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
-		Where("instance_type = ? AND capacity_status = 'Used' AND pre_installed_sw = 'NA'", instanceType).
+		Where("instance_type = ? AND capacity_status = 'Used'", instanceType).
 		Where("operating_system_family = ?", os).
 		Where("region_code = ?", region).
+		Where("operation = ?", operation).
 		Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -101,24 +100,4 @@ func (r *EC2InstanceTypeRepoImpl) Truncate() error {
 		return tx.Error
 	}
 	return nil
-}
-
-func (r *EC2InstanceTypeRepoImpl) GetCurrentInstanceType(instanceType, tenancy, os string) (*model.EC2InstanceType, error) {
-	var m model.EC2InstanceType
-	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
-		Where("tenancy = ?", tenancy).
-		Where("instance_type = ?", instanceType).
-		Where("pre_installed_sw = 'NA'").
-		Where("operating_system = ?", os).
-		Where("license_model = 'No License required'").
-		Where("capacity_status = 'Used'")
-
-	tx = tx.Order("price_per_unit ASC").First(&m)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-	return &m, nil
 }
