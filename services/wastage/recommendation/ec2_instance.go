@@ -229,6 +229,7 @@ func (s *Service) EC2InstanceRecommendation(
 	if rightSizedInstanceType != nil {
 		newInstance := instance
 		newInstance.InstanceType = types.InstanceType(rightSizedInstanceType.InstanceType)
+		newInstance.UsageOperation = rightSizedInstanceType.Operation
 		if newInstance.Placement == nil {
 			newInstance.Placement = &entity.EC2Placement{}
 		}
