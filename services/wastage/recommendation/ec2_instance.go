@@ -214,7 +214,11 @@ func (s *Service) EC2InstanceRecommendation(
 		}
 	}
 	if value, ok := preferences["UsageOperation"]; ok && value != nil {
-		pref["operation = ?"] = UsageOperationHumanToMachine[*value]
+		if v, ok := UsageOperationHumanToMachine[*value]; ok {
+			pref["operation = ?"] = v
+		} else {
+			delete(pref, "operation = ?")
+		}
 	}
 	// if operation is not provided, limit the results to one with no pre-installed software
 	if _, ok := pref["operation = ?"]; !ok {
