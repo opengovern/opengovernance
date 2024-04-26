@@ -208,6 +208,11 @@ func (s *Service) EC2InstanceRecommendation(
 			pref["memory_gb >= ?"] = neededMemory
 		}
 	}
+	if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
+		if *value == "Yes" {
+			pref["NOT(instance_type like ?)"] = "t%"
+		}
+	}
 
 	var recommended *entity.RightsizingEC2Instance
 	rightSizedInstanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)

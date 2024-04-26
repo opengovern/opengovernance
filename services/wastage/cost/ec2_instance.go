@@ -69,7 +69,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 		//"reserved_instance_payment_option": "",
 		//"monthly_cpu_credit_hrs": "",
 		//"vcpu_count": "",
-		"monthly_hrs": "720",
+		"monthly_hrs": "730",
 	}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
