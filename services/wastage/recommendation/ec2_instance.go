@@ -329,6 +329,8 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 	switch k {
 	case "Tenancy":
 		return i.Tenancy
+	case "InstanceFamily":
+		return i.InstanceFamily
 	case "EBSOptimized":
 		if instance.EbsOptimized {
 			return "Yes"
