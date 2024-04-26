@@ -20,6 +20,7 @@ var (
 		"Threads":                      "",
 		"vCPU":                         "v_cpu",
 		"MemoryGB":                     "memory_gb",
+		"InstanceFamily":               "instance_family",
 	}
 
 	PreferenceSpecialCond = map[string]string{

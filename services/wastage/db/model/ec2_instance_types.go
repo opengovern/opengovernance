@@ -9,12 +9,24 @@ import (
 type EC2InstanceType struct {
 	gorm.Model
 
+	// Basic fields
 	InstanceType        string  `gorm:"index"`
 	VCpu                int64   `gorm:"index:compute_idx"`
 	MemoryGB            int64   `gorm:"index:compute_idx"`
 	NetworkMaxBandwidth int64   `gorm:"index:network_idx"`
 	NetworkIsDedicated  bool    `gorm:"index:network_idx"`
 	PricePerUnit        float64 `gorm:"index:price_idx,sort:asc"`
+
+	// Computed fields
+	OperatingSystemFamily string `gorm:"index"`
+	PhysicalProcessorArch string `gorm:"index"`
+	InstanceFamily        string `gorm:"index"`
+
+	// Important non-computed fields
+	ProcessorArchitecture string `gorm:"index"`
+	Tenancy               string `gorm:"index"`
+	LicenseModel          string `gorm:"index"`
+	RegionCode            string `gorm:"index"`
 
 	PricePerUnitStr             string
 	NetworkPerformance          string
@@ -36,12 +48,9 @@ type EC2InstanceType struct {
 	Location                    string
 	LocationType                string
 	CurrentGeneration           string
-	InstanceFamily              string
 	PhysicalProcessor           string
-	PhysicalProcessorArch       string `gorm:"index"`
 	ClockSpeed                  string
 	Storage                     string
-	ProcessorArchitecture       string `gorm:"index"`
 	StorageMedia                string
 	VolumeType                  string
 	MaxVolumeSize               string
@@ -49,11 +58,8 @@ type EC2InstanceType struct {
 	MaxIOPSBurstPerformance     string
 	MaxThroughputVolume         string
 	Provisioned                 string
-	Tenancy                     string `gorm:"index"`
 	EBSOptimized                string
 	OperatingSystem             string
-	OperatingSystemFamily       string `gorm:"index"`
-	LicenseModel                string `gorm:"index"`
 	Group                       string
 	GroupDescription            string
 	TransferType                string
@@ -98,7 +104,6 @@ type EC2InstanceType struct {
 	PreInstalledSW              string
 	ProcessorFeatures           string
 	ProductType                 string
-	RegionCode                  string `gorm:"index"`
 	ResourceType                string
 	ServiceName                 string
 	SnapshotArchiveFeeType      string
