@@ -12,7 +12,7 @@ type EC2InstanceType struct {
 	// Basic fields
 	InstanceType        string  `gorm:"index"`
 	VCpu                int64   `gorm:"index:compute_idx"`
-	MemoryGB            int64   `gorm:"index:compute_idx"`
+	MemoryGB            float64 `gorm:"index:compute_idx"`
 	NetworkMaxBandwidth int64   `gorm:"index:network_idx"`
 	NetworkIsDedicated  bool    `gorm:"index:network_idx"`
 	PricePerUnit        float64 `gorm:"index:price_idx,sort:asc"`
@@ -326,13 +326,13 @@ func (v *EC2InstanceType) PopulateFromMap(columns map[string]int, row []string) 
 	}
 }
 
-func parseMemory(str string) int64 {
+func parseMemory(str string) float64 {
 	str = strings.TrimSpace(strings.ToLower(str))
 	if str == "na" {
 		return -1
 	}
 	str = strings.TrimSuffix(str, " gib")
-	n, _ := strconv.ParseInt(str, 10, 64)
+	n, _ := strconv.ParseFloat(str, 64)
 	return n
 }
 

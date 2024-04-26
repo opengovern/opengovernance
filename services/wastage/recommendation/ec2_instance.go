@@ -289,9 +289,9 @@ func (s *Service) generateDescription(instance entity.EC2Instance, region string
 
 	usage := fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", currentInstanceType.InstanceType, currentInstanceType.VCpu, minCPU, avgCPU, maxCPU, neededCPU, rightSizedInstanceType.InstanceType, rightSizedInstanceType.VCpu)
 	if len(metrics["mem_used_percent"]) > 0 {
-		usage += fmt.Sprintf("- %s has %dGB Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fGB Memory. %s has %dGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, minMemory, avgMemory, maxMemory, neededMemory, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
+		usage += fmt.Sprintf("- %s has %.1fGB Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fGB Memory. %s has %.1fGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, minMemory, avgMemory, maxMemory, neededMemory, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
 	} else {
-		usage += fmt.Sprintf("- %s has %dGB Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %dGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
+		usage += fmt.Sprintf("- %s has %.1fGB Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %.1fGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
 	}
 	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is min=%.2f MB/s, avg=%.2f MB/s, max=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, minNetwork/1000000.0, avgNetwork/1000000.0, maxNetwork/1000000.0, neededNetworkThroughput/1000000.0, rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
 
