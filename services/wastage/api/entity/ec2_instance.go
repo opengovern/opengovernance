@@ -56,6 +56,7 @@ type RightsizingEC2Instance struct {
 	NetworkThroughput string  `json:"networkThroughput"`
 	ENASupported      string  `json:"enaSupported"`
 	LicensePrice      float64 `json:"licensePrice"`
+	License           string  `json:"license"`
 }
 
 type Usage struct {
