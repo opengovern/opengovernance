@@ -150,3 +150,41 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
+
+func (s *Service) EstimateLicensePrice(region string, instance entity.EC2Instance) (float64, error) {
+	withLicense, err := s.GetEC2InstanceCost(region, instance, nil, nil)
+	if err != nil {
+		return 0, err
+	}
+	instance.UsageOperation = mapLicenseToNoLicense[instance.UsageOperation]
+	withoutLicense, err := s.GetEC2InstanceCost(region, instance, nil, nil)
+	if err != nil {
+		return 0, err
+	}
+	return withLicense - withoutLicense, nil
+}
+
+var mapLicenseToNoLicense = map[string]string{
+	// Red Hat
+	"RunInstances:00g0": "RunInstances:00g0",
+	"RunInstances:0010": "RunInstances:00g0",
+	"RunInstances:1010": "RunInstances:00g0",
+	"RunInstances:1014": "RunInstances:00g0",
+	"RunInstances:1110": "RunInstances:00g0",
+	"RunInstances:0014": "RunInstances:00g0",
+	"RunInstances:0210": "RunInstances:00g0",
+	"RunInstances:0110": "RunInstances:00g0",
+	// Windows
+	"RunInstances:0002": "RunInstances:0800",
+	"RunInstances:0800": "RunInstances:0800",
+	"RunInstances:0102": "RunInstances:0800",
+	"RunInstances:0006": "RunInstances:0800",
+	"RunInstances:0202": "RunInstances:0800",
+	// Linux/UNIX
+	"RunInstances":      "RunInstances",
+	"RunInstances:0004": "RunInstances",
+	"RunInstances:0200": "RunInstances",
+	"RunInstances:000g": "RunInstances",
+	"RunInstances:0g00": "RunInstances",
+	"RunInstances:0100": "RunInstances",
+}

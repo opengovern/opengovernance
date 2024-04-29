@@ -150,6 +150,10 @@ func (s *Service) EC2InstanceRecommendation(
 	if err != nil {
 		return nil, err
 	}
+	currLicensePrice, err := s.costSvc.EstimateLicensePrice(region, instance)
+	if err != nil {
+		return nil, err
+	}
 	current := entity.RightsizingEC2Instance{
 		InstanceType:      currentInstanceType.InstanceType,
 		Processor:         currentInstanceType.PhysicalProcessor,
@@ -160,7 +164,7 @@ func (s *Service) EC2InstanceRecommendation(
 		NetworkThroughput: currentInstanceType.NetworkPerformance,
 		ENASupported:      currentInstanceType.EnhancedNetworkingSupported,
 		Cost:              currentCost,
-		Operation:         currentInstanceType.Operation,
+		LicensePrice:      currLicensePrice,
 	}
 
 	//TODO Burst in CPU & Network
@@ -249,7 +253,10 @@ func (s *Service) EC2InstanceRecommendation(
 		if err != nil {
 			return nil, err
 		}
-
+		recomLicensePrice, err := s.costSvc.EstimateLicensePrice(region, newInstance)
+		if err != nil {
+			return nil, err
+		}
 		recommended = &entity.RightsizingEC2Instance{
 			InstanceType:      rightSizedInstanceType.InstanceType,
 			Processor:         rightSizedInstanceType.PhysicalProcessor,
@@ -260,7 +267,7 @@ func (s *Service) EC2InstanceRecommendation(
 			NetworkThroughput: rightSizedInstanceType.NetworkPerformance,
 			ENASupported:      rightSizedInstanceType.EnhancedNetworkingSupported,
 			Cost:              recommendedCost,
-			Operation:         rightSizedInstanceType.Operation,
+			LicensePrice:      recomLicensePrice,
 		}
 	}
 
