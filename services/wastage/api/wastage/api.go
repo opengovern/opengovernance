@@ -101,11 +101,11 @@ func (s API) EC2Instance(c echo.Context) error {
 		}
 		ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
 	}
-
-	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
+	resp = entity.EC2InstanceWastageResponse{
 		RightSizing:       *ec2RightSizingRecom,
 		VolumeRightSizing: ebsRightSizingRecoms,
-	})
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (s API) Register(g *echo.Group) {
