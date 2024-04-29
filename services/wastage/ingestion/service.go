@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -186,17 +185,14 @@ func (s *Service) IngestEc2Instances() error {
 }
 
 func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
-	sdkConfig, err := config.LoadDefaultConfig(ctx)
+	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
 		s.logger.Error("failed to load SDK config", zap.Error(err))
 		return err
 	}
-	if sdkConfig.Region == "" {
-		sdkConfig.Region = "us-east-1"
-	}
 	baseEc2Client := ec2.NewFromConfig(sdkConfig)
 
-	regions, err := baseEc2Client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{AllRegions: aws.Bool(true)})
+	regions, err := baseEc2Client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
 	if err != nil {
 		s.logger.Error("failed to describe regions", zap.Error(err))
 		return err
