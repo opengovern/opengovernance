@@ -20,6 +20,7 @@ func Command() *cobra.Command {
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 			logger, err := zap.NewProduction()
 			if err != nil {
 				return err
@@ -52,14 +53,14 @@ func Command() *cobra.Command {
 			usageRepo := repo.NewUsageRepo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo, cnf.OpenAIToken, costSvc)
-			ingestionSvc := ingestion.New(ec2InstanceRepo, ebsVolumeRepo, dataAgeRepo)
+			ingestionSvc := ingestion.New(logger, ec2InstanceRepo, ebsVolumeRepo, dataAgeRepo)
 			go func() {
-				err = ingestionSvc.Start()
+				err = ingestionSvc.Start(ctx)
 				panic(err)
 			}()
 
 			return httpserver.RegisterAndStart(
-				cmd.Context(),
+				ctx,
 				logger,
 				cnf.Http.Address,
 				api.New(costSvc, recomSvc, usageRepo, logger),

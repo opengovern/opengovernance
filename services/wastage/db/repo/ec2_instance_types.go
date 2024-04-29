@@ -11,6 +11,7 @@ type EC2InstanceTypeRepo interface {
 	Create(m *model.EC2InstanceType) error
 	Get(id uint) (*model.EC2InstanceType, error)
 	Update(id uint, m model.EC2InstanceType) error
+	UpdateExtrasByRegionAndType(region, instanceType string, extras map[string]any) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
 	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
@@ -78,6 +79,17 @@ func (r *EC2InstanceTypeRepoImpl) List() ([]model.EC2InstanceType, error) {
 		return nil, tx.Error
 	}
 	return ms, nil
+}
+
+func (r *EC2InstanceTypeRepoImpl) UpdateExtrasByRegionAndType(region, instanceType string, extras map[string]any) error {
+	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
+		Where("region_code = ?", region).
+		Where("instance_type = ?", instanceType).
+		Updates(extras)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, operation, region string) ([]model.EC2InstanceType, error) {
