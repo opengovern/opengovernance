@@ -82,6 +82,7 @@ func (s *Service) Start(ctx context.Context) error {
 		}
 
 		if ec2InstanceExtraData == nil || ec2InstanceExtraData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
+			s.logger.Info("ingesting ec2 instance extra data")
 			err = s.IngestEc2InstancesExtra(ctx)
 			if err != nil {
 				return err
@@ -103,7 +104,6 @@ func (s *Service) Start(ctx context.Context) error {
 					return err
 				}
 			}
-
 		}
 	}
 	return nil
@@ -234,6 +234,11 @@ func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
 						extras["ebs_maximum_throughput"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumThroughputInMBps
 					}
 				}
+				if len(extras) == 0 {
+					s.logger.Warn("no extras found", zap.String("region", *region.RegionName), zap.String("instanceType", string(instanceType.InstanceType)))
+					continue
+				}
+				s.logger.Info("updating extras", zap.String("region", *region.RegionName), zap.String("instanceType", string(instanceType.InstanceType)), zap.Any("extras", extras))
 				err = s.ec2InstanceRepo.UpdateExtrasByRegionAndType(*region.RegionName, string(instanceType.InstanceType), extras)
 				if err != nil {
 					s.logger.Error("failed to update extras", zap.Error(err), zap.String("region", *region.RegionName), zap.String("instanceType", string(instanceType.InstanceType)))
