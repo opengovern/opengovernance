@@ -30,12 +30,12 @@ type EC2InstanceType struct {
 	Operation             string `gorm:"index"`
 
 	// Extra fields extracted from describe instance types
-	EbsBaselineBandwidth  *int32 `gorm:"index"`
-	EbsMaximumBandwidth   *int32 `gorm:"index"`
-	EbsBaselineIops       *int32 `gorm:"index"`
-	EbsMaximumIops        *int32 `gorm:"index"`
-	EbsBaselineThroughput *int32 `gorm:"index"`
-	EbsMaximumThroughput  *int32 `gorm:"index"`
+	EbsBaselineBandwidth  *int32   `gorm:"index"`
+	EbsMaximumBandwidth   *int32   `gorm:"index"`
+	EbsBaselineIops       *int32   `gorm:"index"`
+	EbsMaximumIops        *int32   `gorm:"index"`
+	EbsBaselineThroughput *float64 `gorm:"index"`
+	EbsMaximumThroughput  *float64 `gorm:"index"`
 
 	PricePerUnitStr             string
 	NetworkPerformance          string
