@@ -150,7 +150,7 @@ func (s *Service) EC2InstanceRecommendation(
 	if err != nil {
 		return nil, err
 	}
-	currLicensePrice, err := s.costSvc.EstimateLicensePrice(region, instance)
+	currLicensePrice, err := s.costSvc.EstimateLicensePrice(instance)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (s *Service) EC2InstanceRecommendation(
 		if err != nil {
 			return nil, err
 		}
-		recomLicensePrice, err := s.costSvc.EstimateLicensePrice(region, newInstance)
+		recomLicensePrice, err := s.costSvc.EstimateLicensePrice(newInstance)
 		if err != nil {
 			return nil, err
 		}

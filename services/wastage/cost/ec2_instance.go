@@ -151,8 +151,8 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
 
-func (s *Service) EstimateLicensePrice(region string, instance entity.EC2Instance) (float64, error) {
-	withLicense, err := s.GetEC2InstanceCost(region, instance, nil, nil)
+func (s *Service) EstimateLicensePrice(instance entity.EC2Instance) (float64, error) {
+	withLicense, err := s.GetEC2InstanceCost("us-east-1", instance, nil, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -160,7 +160,7 @@ func (s *Service) EstimateLicensePrice(region string, instance entity.EC2Instanc
 	fmt.Println("With License Price: ", instance, withLicense)
 	fmt.Println("=========================================")
 	instance.UsageOperation = mapLicenseToNoLicense[instance.UsageOperation]
-	withoutLicense, err := s.GetEC2InstanceCost(region, instance, nil, nil)
+	withoutLicense, err := s.GetEC2InstanceCost("us-east-1", instance, nil, nil)
 	if err != nil {
 		return 0, err
 	}
