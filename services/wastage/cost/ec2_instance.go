@@ -152,6 +152,7 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 }
 
 func (s *Service) EstimateLicensePrice(instance entity.EC2Instance) (float64, error) {
+	instance.Placement.AvailabilityZone = "us-east-1a"
 	withLicense, err := s.GetEC2InstanceCost("us-east-1", instance, nil, nil)
 	if err != nil {
 		return 0, err
