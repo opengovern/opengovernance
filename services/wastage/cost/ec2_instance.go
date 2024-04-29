@@ -64,6 +64,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 	}
 	valuesMap["pennywise_usage"] = map[string]any{
 		"operating_system": os,
+		"operation":        instance.UsageOperation,
 		//"reserved_instance_type": "",
 		//"reserved_instance_term": "",
 		//"reserved_instance_payment_option": "",
