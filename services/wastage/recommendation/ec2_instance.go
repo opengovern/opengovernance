@@ -160,6 +160,7 @@ func (s *Service) EC2InstanceRecommendation(
 		NetworkThroughput: currentInstanceType.NetworkPerformance,
 		ENASupported:      currentInstanceType.EnhancedNetworkingSupported,
 		Cost:              currentCost,
+		Operation:         currentInstanceType.Operation,
 	}
 
 	//TODO Burst in CPU & Network
@@ -259,6 +260,7 @@ func (s *Service) EC2InstanceRecommendation(
 			NetworkThroughput: rightSizedInstanceType.NetworkPerformance,
 			ENASupported:      rightSizedInstanceType.EnhancedNetworkingSupported,
 			Cost:              recommendedCost,
+			Operation:         rightSizedInstanceType.Operation,
 		}
 	}
 
