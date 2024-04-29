@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -192,15 +193,18 @@ func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
 	}
 	baseEc2Client := ec2.NewFromConfig(sdkConfig)
 
-	regions, err := baseEc2Client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
+	regions, err := baseEc2Client.DescribeRegions(ctx, &ec2.DescribeRegionsInput{AllRegions: aws.Bool(false)})
 	if err != nil {
 		s.logger.Error("failed to describe regions", zap.Error(err))
 		return err
 	}
 	for _, region := range regions.Regions {
-		ec2Client := ec2.NewFromConfig(sdkConfig, func(o *ec2.Options) {
-			o.Region = *region.RegionName
-		})
+		cnf, err := config.LoadDefaultConfig(ctx, config.WithRegion(*region.RegionName))
+		if err != nil {
+			s.logger.Error("failed to load SDK config", zap.Error(err), zap.String("region", *region.RegionName))
+			return err
+		}
+		ec2Client := ec2.NewFromConfig(cnf)
 		paginator := ec2.NewDescribeInstanceTypesPaginator(ec2Client, &ec2.DescribeInstanceTypesInput{})
 		for paginator.HasMorePages() {
 			output, err := paginator.NextPage(ctx)
