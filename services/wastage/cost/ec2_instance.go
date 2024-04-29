@@ -156,11 +156,17 @@ func (s *Service) EstimateLicensePrice(region string, instance entity.EC2Instanc
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println("=========================================")
+	fmt.Println("With License Price: ", instance, withLicense)
+	fmt.Println("=========================================")
 	instance.UsageOperation = mapLicenseToNoLicense[instance.UsageOperation]
 	withoutLicense, err := s.GetEC2InstanceCost(region, instance, nil, nil)
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println("=========================================")
+	fmt.Println("WithOUT License Price: ", instance, withoutLicense)
+	fmt.Println("=========================================")
 	return withLicense - withoutLicense, nil
 }
 

@@ -165,6 +165,7 @@ func (s *Service) EC2InstanceRecommendation(
 		ENASupported:      currentInstanceType.EnhancedNetworkingSupported,
 		Cost:              currentCost,
 		LicensePrice:      currLicensePrice,
+		License:           instance.UsageOperation,
 	}
 
 	//TODO Burst in CPU & Network
@@ -268,6 +269,7 @@ func (s *Service) EC2InstanceRecommendation(
 			ENASupported:      rightSizedInstanceType.EnhancedNetworkingSupported,
 			Cost:              recommendedCost,
 			LicensePrice:      recomLicensePrice,
+			License:           newInstance.UsageOperation,
 		}
 	}
 
