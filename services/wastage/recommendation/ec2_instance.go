@@ -241,9 +241,9 @@ func (s *Service) EC2InstanceRecommendation(
 	if ebsIopsUsage.Avg != nil && *ebsIopsUsage.Avg > 0 {
 		pref["ebs_baseline_iops IS NULL OR ebs_baseline_iops >= ?"] = *ebsIopsUsage.Avg
 	}
-	// Metric is in bits so we convert
+	// Metric is in bytes so we convert to Mbytes
 	if ebsThroughputUsage.Avg != nil && *ebsThroughputUsage.Avg > 0 {
-		pref["ebs_baseline_throughput IS NULL OR ebs_baseline_throughput >= ?"] = *ebsThroughputUsage.Avg / (1000000 * 8)
+		pref["ebs_baseline_throughput IS NULL OR ebs_baseline_throughput >= ?"] = *ebsThroughputUsage.Avg / 1000000
 	}
 
 	var recommended *entity.RightsizingEC2Instance
