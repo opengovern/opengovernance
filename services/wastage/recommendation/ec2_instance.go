@@ -132,11 +132,14 @@ func (s *Service) EC2InstanceRecommendation(
 	memoryUsage := extractUsage(metrics["mem_used_percent"])
 	networkUsage := extractUsage(networkDatapoints)
 
-	var ebsDatapoints []types2.Datapoint
+	var ebsThroughputDatapoints []types2.Datapoint
+	var ebsIopsDatapoints []types2.Datapoint
 	for _, v := range volumeMetrics {
-		ebsDatapoints = mergeDatapoints(mergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsDatapoints)
+		ebsThroughputDatapoints = mergeDatapoints(mergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
+		ebsIopsDatapoints = mergeDatapoints(mergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
 	}
-	ebsThroughputUsage := extractUsage(ebsDatapoints)
+	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints)
+	ebsIopsUsage := extractUsage(ebsIopsDatapoints)
 
 	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, instance.UsageOperation, region)
 	if err != nil {
@@ -160,12 +163,17 @@ func (s *Service) EC2InstanceRecommendation(
 		Architecture:      currentInstanceType.PhysicalProcessorArch,
 		VCPU:              currentInstanceType.VCpu,
 		Memory:            currentInstanceType.MemoryGB,
-		EBSBandwidth:      currentInstanceType.DedicatedEBSThroughput,
 		NetworkThroughput: currentInstanceType.NetworkPerformance,
 		ENASupported:      currentInstanceType.EnhancedNetworkingSupported,
 		Cost:              currentCost,
 		LicensePrice:      currLicensePrice,
 		License:           instance.UsageOperation,
+	}
+	if currentInstanceType.EbsBaselineThroughput != nil {
+		current.EBSBandwidth = fmt.Sprintf("%.2f MB/s", *currentInstanceType.EbsBaselineThroughput)
+	}
+	if currentInstanceType.EbsBaselineIops != nil {
+		current.EBSIops = fmt.Sprintf("%d io/s", *currentInstanceType.EbsBaselineIops)
 	}
 
 	//TODO Burst in CPU & Network
@@ -230,6 +238,12 @@ func (s *Service) EC2InstanceRecommendation(
 	if _, ok := pref["operation = ?"]; !ok {
 		pref["pre_installed_sw = ?"] = "NA"
 	}
+	if ebsIopsUsage.Avg != nil && *ebsIopsUsage.Avg > 0 {
+		pref["ebs_baseline_iops >= ?"] = *ebsIopsUsage.Avg
+	}
+	if ebsThroughputUsage.Avg != nil && *ebsThroughputUsage.Avg > 0 {
+		pref["ebs_baseline_throughput >= ?"] = *ebsThroughputUsage.Avg
+	}
 
 	var recommended *entity.RightsizingEC2Instance
 	rightSizedInstanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
@@ -264,12 +278,17 @@ func (s *Service) EC2InstanceRecommendation(
 			Architecture:      rightSizedInstanceType.PhysicalProcessorArch,
 			VCPU:              rightSizedInstanceType.VCpu,
 			Memory:            rightSizedInstanceType.MemoryGB,
-			EBSBandwidth:      rightSizedInstanceType.DedicatedEBSThroughput,
 			NetworkThroughput: rightSizedInstanceType.NetworkPerformance,
 			ENASupported:      rightSizedInstanceType.EnhancedNetworkingSupported,
 			Cost:              recommendedCost,
 			LicensePrice:      recomLicensePrice,
 			License:           newInstance.UsageOperation,
+		}
+		if rightSizedInstanceType.EbsBaselineThroughput != nil {
+			recommended.EBSBandwidth = fmt.Sprintf("%.2f MB/s", *rightSizedInstanceType.EbsBaselineThroughput)
+		}
+		if rightSizedInstanceType.EbsBaselineIops != nil {
+			recommended.EBSIops = fmt.Sprintf("%d io/s", *rightSizedInstanceType.EbsBaselineIops)
 		}
 	}
 
@@ -278,6 +297,7 @@ func (s *Service) EC2InstanceRecommendation(
 		Recommended:       recommended,
 		VCPU:              cpuUsage,
 		EBSBandwidth:      ebsThroughputUsage,
+		EBSIops:           ebsIopsUsage,
 		NetworkThroughput: networkUsage,
 		Description:       "",
 	}

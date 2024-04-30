@@ -12,6 +12,7 @@ type EC2InstanceTypeRepo interface {
 	Get(id uint) (*model.EC2InstanceType, error)
 	Update(id uint, m model.EC2InstanceType) error
 	UpdateExtrasByRegionAndType(region, instanceType string, extras map[string]any) error
+	UpdateNullExtrasByType(instanceType string, extras map[string]any) error
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
 	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
@@ -88,6 +89,19 @@ func (r *EC2InstanceTypeRepoImpl) UpdateExtrasByRegionAndType(region, instanceTy
 		Updates(extras)
 	if tx.Error != nil {
 		return tx.Error
+	}
+	return nil
+}
+
+func (r *EC2InstanceTypeRepoImpl) UpdateNullExtrasByType(instanceType string, extras map[string]any) error {
+	for k, v := range extras {
+		tx := r.db.Conn().Model(&model.EC2InstanceType{}).
+			Where("instance_type = ?", instanceType).
+			Where(k+" IS NULL").
+			Update(k, v)
+		if tx.Error != nil {
+			return tx.Error
+		}
 	}
 	return nil
 }
