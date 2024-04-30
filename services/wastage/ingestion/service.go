@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"go.uber.org/zap"
@@ -185,6 +186,31 @@ func (s *Service) IngestEc2Instances() error {
 	}
 }
 
+func getExtrasMap(instanceType ec2types.InstanceTypeInfo) map[string]any {
+	extras := map[string]any{}
+	if instanceType.EbsInfo != nil && instanceType.EbsInfo.EbsOptimizedInfo != nil {
+		if instanceType.EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps != nil {
+			extras["ebs_baseline_bandwidth"] = *instanceType.EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps
+		}
+		if instanceType.EbsInfo.EbsOptimizedInfo.MaximumBandwidthInMbps != nil {
+			extras["ebs_maximum_bandwidth"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumBandwidthInMbps
+		}
+		if instanceType.EbsInfo.EbsOptimizedInfo.BaselineIops != nil {
+			extras["ebs_baseline_iops"] = *instanceType.EbsInfo.EbsOptimizedInfo.BaselineIops
+		}
+		if instanceType.EbsInfo.EbsOptimizedInfo.MaximumIops != nil {
+			extras["ebs_maximum_iops"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumIops
+		}
+		if instanceType.EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps != nil {
+			extras["ebs_baseline_throughput"] = *instanceType.EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps
+		}
+		if instanceType.EbsInfo.EbsOptimizedInfo.MaximumThroughputInMBps != nil {
+			extras["ebs_maximum_throughput"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumThroughputInMBps
+		}
+	}
+	return extras
+}
+
 func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
 	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
@@ -198,6 +224,7 @@ func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
 		s.logger.Error("failed to describe regions", zap.Error(err))
 		return err
 	}
+
 	for _, region := range regions.Regions {
 		cnf, err := config.LoadDefaultConfig(ctx, config.WithRegion(*region.RegionName))
 		if err != nil {
@@ -213,27 +240,7 @@ func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
 				return err
 			}
 			for _, instanceType := range output.InstanceTypes {
-				extras := map[string]any{}
-				if instanceType.EbsInfo != nil && instanceType.EbsInfo.EbsOptimizedInfo != nil {
-					if instanceType.EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps != nil {
-						extras["ebs_baseline_bandwidth"] = *instanceType.EbsInfo.EbsOptimizedInfo.BaselineBandwidthInMbps
-					}
-					if instanceType.EbsInfo.EbsOptimizedInfo.MaximumBandwidthInMbps != nil {
-						extras["ebs_maximum_bandwidth"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumBandwidthInMbps
-					}
-					if instanceType.EbsInfo.EbsOptimizedInfo.BaselineIops != nil {
-						extras["ebs_baseline_iops"] = *instanceType.EbsInfo.EbsOptimizedInfo.BaselineIops
-					}
-					if instanceType.EbsInfo.EbsOptimizedInfo.MaximumIops != nil {
-						extras["ebs_maximum_iops"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumIops
-					}
-					if instanceType.EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps != nil {
-						extras["ebs_baseline_throughput"] = *instanceType.EbsInfo.EbsOptimizedInfo.BaselineThroughputInMBps
-					}
-					if instanceType.EbsInfo.EbsOptimizedInfo.MaximumThroughputInMBps != nil {
-						extras["ebs_maximum_throughput"] = *instanceType.EbsInfo.EbsOptimizedInfo.MaximumThroughputInMBps
-					}
-				}
+				extras := getExtrasMap(instanceType)
 				if len(extras) == 0 {
 					s.logger.Warn("no extras found", zap.String("region", *region.RegionName), zap.String("instanceType", string(instanceType.InstanceType)))
 					continue
@@ -247,6 +254,30 @@ func (s *Service) IngestEc2InstancesExtra(ctx context.Context) error {
 			}
 		}
 	}
+
+	// Populate the still missing extras with the us-east-1 region data
+	paginator := ec2.NewDescribeInstanceTypesPaginator(baseEc2Client, &ec2.DescribeInstanceTypesInput{})
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			s.logger.Error("failed to get next page", zap.Error(err), zap.String("region", "all"))
+			return err
+		}
+		for _, instanceType := range output.InstanceTypes {
+			extras := getExtrasMap(instanceType)
+			if len(extras) == 0 {
+				s.logger.Warn("no extras found", zap.String("region", "all"), zap.String("instanceType", string(instanceType.InstanceType)))
+				continue
+			}
+			s.logger.Info("updating extras", zap.String("region", "all"), zap.String("instanceType", string(instanceType.InstanceType)), zap.Any("extras", extras))
+			err = s.ec2InstanceRepo.UpdateNullExtrasByType(string(instanceType.InstanceType), extras)
+			if err != nil {
+				s.logger.Error("failed to update extras", zap.Error(err), zap.String("region", "all"), zap.String("instanceType", string(instanceType.InstanceType)))
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
