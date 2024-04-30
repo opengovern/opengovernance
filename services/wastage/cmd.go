@@ -48,12 +48,15 @@ func Command() *cobra.Command {
 				return err
 			}
 			ec2InstanceRepo := repo.NewEC2InstanceTypeRepo(db)
+			rdsRepo := repo.NewRDSProductRepo(db)
+			rdsInstanceRepo := repo.NewRDSDBInstanceRepo(db)
+			rdsStorageRepo := repo.NewRDSDBStorageRepo(db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageRepo := repo.NewUsageRepo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(ec2InstanceRepo, ebsVolumeRepo, cnf.OpenAIToken, costSvc)
-			ingestionSvc := ingestion.New(logger, ec2InstanceRepo, ebsVolumeRepo, dataAgeRepo)
+			ingestionSvc := ingestion.New(logger, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
 			go func() {
 				err = ingestionSvc.Start(ctx)
 				panic(err)

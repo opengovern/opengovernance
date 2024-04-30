@@ -23,13 +23,19 @@ type Service struct {
 	dataAgeRepo repo.DataAgeRepo
 
 	ec2InstanceRepo   repo.EC2InstanceTypeRepo
+	rdsRepo           repo.RDSProductRepo
+	rdsInstanceRepo   repo.RDSDBInstanceRepo
 	ebsVolumeTypeRepo repo.EBSVolumeTypeRepo
+	storageRepo       repo.RDSDBStorageRepo
 }
 
-func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
+func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, rdsRepo repo.RDSProductRepo, rdsInstanceRepo repo.RDSDBInstanceRepo, storageRepo repo.RDSDBStorageRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
 	return &Service{
 		logger:            logger,
 		ec2InstanceRepo:   ec2InstanceRepo,
+		rdsInstanceRepo:   rdsInstanceRepo,
+		rdsRepo:           rdsRepo,
+		storageRepo:       storageRepo,
 		ebsVolumeTypeRepo: ebsVolumeRepo,
 		dataAgeRepo:       dataAgeRepo,
 	}
@@ -47,12 +53,15 @@ func (s *Service) Start(ctx context.Context) error {
 		}
 
 		var ec2InstanceData *model.DataAge
+		var rdsData *model.DataAge
 		var ec2InstanceExtraData *model.DataAge
 		for _, data := range dataAge {
 			data := data
 			switch data.DataType {
 			case "AWS::EC2::Instance":
 				ec2InstanceData = &data
+			case "AWS::RDS::Instance":
+				rdsData = &data
 			case "AWS::EC2::Instance::Extra":
 				ec2InstanceExtraData = &data
 			}
@@ -74,6 +83,30 @@ func (s *Service) Start(ctx context.Context) error {
 			} else {
 				err = s.dataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
 					DataType:  "AWS::EC2::Instance",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if rdsData == nil || rdsData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
+			err = s.IngestRDS()
+			if err != nil {
+				return err
+			}
+			if rdsData == nil {
+				err = s.dataAgeRepo.Create(&model.DataAge{
+					DataType:  "AWS::RDS::Instance",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					return err
+				}
+			} else {
+				err = s.dataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
+					DataType:  "AWS::RDS::Instance",
 					UpdatedAt: time.Now(),
 				})
 				if err != nil {
@@ -179,6 +212,88 @@ func (s *Service) IngestEc2Instances() error {
 			}
 			fmt.Println("Volume", v)
 			err = s.ebsVolumeTypeRepo.Create(&v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (s *Service) IngestRDS() error {
+	url := "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/index.csv"
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	csvr := csv.NewReader(resp.Body)
+	csvr.FieldsPerRecord = -1
+
+	var columns map[string]int
+	for {
+		values, err := csvr.Read()
+		if err != nil {
+			return err
+		}
+
+		if len(values) > 2 {
+			columns = readColumnPositions(values)
+			break
+		}
+	}
+
+	err = s.rdsRepo.Truncate()
+	if err != nil {
+		return err
+	}
+	err = s.rdsInstanceRepo.Truncate()
+	if err != nil {
+		return err
+	}
+	err = s.storageRepo.Truncate()
+	if err != nil {
+		return err
+	}
+	// Read through each row in the CSV file and send a price.WithProduct on the results channel.
+	for {
+		row, err := csvr.Read()
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			return nil
+		}
+
+		switch row[columns["Product Family"]] {
+		case "Database Storage":
+			v := model.RDSDBStorage{}
+			v.PopulateFromMap(columns, row)
+
+			fmt.Println("RDSDBStorage", v)
+			err = s.storageRepo.Create(&v)
+			if err != nil {
+				return err
+			}
+
+		case "Database Instance":
+			v := model.RDSDBInstance{}
+			v.PopulateFromMap(columns, row)
+
+			if v.TermType != "OnDemand" {
+				continue
+			}
+
+			fmt.Println("RDSDBInstance", v)
+			err = s.rdsInstanceRepo.Create(&v)
+			if err != nil {
+				return err
+			}
+
+		default:
+			v := model.RDSProduct{}
+			v.PopulateFromMap(columns, row)
+
+			fmt.Println("RDS", v)
+			err = s.rdsRepo.Create(&v)
 			if err != nil {
 				return err
 			}
