@@ -298,7 +298,7 @@ func (s *Service) EC2InstanceRecommendation(
 		} else {
 			newInstance.Placement.Tenancy = types.TenancyDefault
 		}
-		recommendedCost, err := s.costSvc.GetEC2InstanceCost(region, newInstance, volumes, metrics)
+		recommendedCost, err := s.costSvc.GetEC2InstanceCost(rightSizedInstanceType.RegionCode, newInstance, volumes, metrics)
 		if err != nil {
 			return nil, err
 		}
