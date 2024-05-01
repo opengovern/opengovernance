@@ -8,6 +8,7 @@ import (
 type Usage struct {
 	gorm.Model
 
-	Request  datatypes.JSON
-	Response datatypes.JSON
+	Request      datatypes.JSON
+	Response     datatypes.JSON
+	ResponseTime *float64 //Seconds
 }
