@@ -110,10 +110,13 @@ func (s API) EC2Instance(c echo.Context) error {
 		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
 	}
 
-	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
+	// DO NOT change this, resp is used in updating usage
+	resp = entity.EC2InstanceWastageResponse{
 		RightSizing:       *ec2RightSizingRecom,
 		VolumeRightSizing: ebsRightSizingRecoms,
-	})
+	}
+	// DO NOT change this, resp is used in updating usage
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (s API) Register(g *echo.Group) {
