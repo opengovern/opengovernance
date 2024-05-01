@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type API struct {
@@ -45,6 +46,7 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, usageRepo repo
 //	@Success		200				{object}	entity.EC2InstanceWastageResponse
 //	@Router			/wastage/api/v1/wastage/ec2-instance [post]
 func (s API) EC2Instance(c echo.Context) error {
+	start := time.Now()
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
@@ -100,6 +102,12 @@ func (s API) EC2Instance(c echo.Context) error {
 			return err
 		}
 		ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
+	}
+	elapsed := time.Since(start).Seconds()
+	usage.ResponseTime = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
 	}
 
 	return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{
