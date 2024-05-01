@@ -16,20 +16,20 @@ import (
 	"strings"
 )
 
-func mergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Datapoint {
-	funcP := func(a, b *float64, f func(aa, bb float64) float64) *float64 {
-		if a == nil && b == nil {
-			return nil
-		} else if a == nil {
-			return b
-		} else if b == nil {
-			return a
-		} else {
-			tmp := f(*a, *b)
-			return &tmp
-		}
+func funcP(a, b *float64, f func(aa, bb float64) float64) *float64 {
+	if a == nil && b == nil {
+		return nil
+	} else if a == nil {
+		return b
+	} else if b == nil {
+		return a
+	} else {
+		tmp := f(*a, *b)
+		return &tmp
 	}
+}
 
+func mergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Datapoint {
 	avg := func(aa, bb float64) float64 {
 		return (aa + bb) / 2.0
 	}
@@ -62,6 +62,39 @@ func mergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Dat
 		return dpArr[i].Timestamp.Unix() < dpArr[j].Timestamp.Unix()
 	})
 	return dpArr
+}
+
+func sumMergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Datapoint {
+	sum := func(aa, bb float64) float64 {
+		return aa + bb
+	}
+
+	dps := map[int64]*types2.Datapoint{}
+	for _, dp := range in {
+		dps[dp.Timestamp.Unix()] = &dp
+	}
+	for _, dp := range out {
+		if dps[dp.Timestamp.Unix()] == nil {
+			dps[dp.Timestamp.Unix()] = &dp
+			break
+		}
+
+		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, sum)
+		dps[dp.Timestamp.Unix()].Maximum = funcP(dps[dp.Timestamp.Unix()].Maximum, dp.Maximum, sum)
+		dps[dp.Timestamp.Unix()].Minimum = funcP(dps[dp.Timestamp.Unix()].Minimum, dp.Minimum, sum)
+		dps[dp.Timestamp.Unix()].SampleCount = funcP(dps[dp.Timestamp.Unix()].SampleCount, dp.SampleCount, sum)
+		dps[dp.Timestamp.Unix()].Sum = funcP(dps[dp.Timestamp.Unix()].Sum, dp.Sum, sum)
+	}
+
+	var dpArr []types2.Datapoint
+	for _, dp := range dps {
+		dpArr = append(dpArr, *dp)
+	}
+	sort.Slice(dpArr, func(i, j int) bool {
+		return dpArr[i].Timestamp.Unix() < dpArr[j].Timestamp.Unix()
+	})
+	return dpArr
+
 }
 
 func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
@@ -127,7 +160,7 @@ func (s *Service) EC2InstanceRecommendation(
 	volumeMetrics map[string]map[string][]types2.Datapoint,
 	preferences map[string]*string,
 ) (*entity.RightSizingRecommendation, error) {
-	networkDatapoints := mergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
+	networkDatapoints := sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
 	cpuUsage := extractUsage(metrics["CPUUtilization"])
 	memoryUsage := extractUsage(metrics["mem_used_percent"])
 	networkUsage := extractUsage(networkDatapoints)
@@ -135,8 +168,8 @@ func (s *Service) EC2InstanceRecommendation(
 	var ebsThroughputDatapoints []types2.Datapoint
 	var ebsIopsDatapoints []types2.Datapoint
 	for _, v := range volumeMetrics {
-		ebsThroughputDatapoints = mergeDatapoints(mergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
-		ebsIopsDatapoints = mergeDatapoints(mergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
+		ebsThroughputDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
+		ebsIopsDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
 	}
 	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints)
 	ebsIopsUsage := extractUsage(ebsIopsDatapoints)
@@ -316,7 +349,7 @@ func (s *Service) EC2InstanceRecommendation(
 func (s *Service) generateDescription(instance entity.EC2Instance, region string, currentInstanceType, rightSizedInstanceType *model.EC2InstanceType, metrics map[string][]types2.Datapoint, preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64) (string, error) {
 	minCPU, avgCPU, maxCPU := minOfDatapoints(metrics["CPUUtilization"]), averageOfDatapoints(metrics["CPUUtilization"]), maxOfDatapoints(metrics["CPUUtilization"])
 	minMemory, avgMemory, maxMemory := minOfDatapoints(metrics["mem_used_percent"]), averageOfDatapoints(metrics["mem_used_percent"]), maxOfDatapoints(metrics["mem_used_percent"])
-	networkDatapoints := mergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
+	networkDatapoints := sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
 	minNetwork, avgNetwork, maxNetwork := minOfDatapoints(networkDatapoints), averageOfDatapoints(networkDatapoints), maxOfDatapoints(networkDatapoints)
 
 	usage := fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", currentInstanceType.InstanceType, currentInstanceType.VCpu, minCPU, avgCPU, maxCPU, neededCPU, rightSizedInstanceType.InstanceType, rightSizedInstanceType.VCpu)
@@ -434,8 +467,8 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 }
 
 func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*entity.EBSVolumeRecommendation, error) {
-	iopsUsage := extractUsage(mergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]))
-	throughputUsage := extractUsage(mergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
+	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]))
+	throughputUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
 	sizeUsage := extractUsage(metrics["disk_used_percent"])
 
 	size := float64(0)
