@@ -13,6 +13,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	logger2 "gorm.io/gorm/logger"
 )
 
 func Command() *cobra.Command {
@@ -39,7 +40,11 @@ func Command() *cobra.Command {
 				cnf.Postgres.Password = ""
 				cnf.Postgres.DB = ""
 			}
-			db, err := connector.New(cnf.Postgres)
+			db, err := connector.New(cnf.Postgres, logger2.Info)
+			if err != nil {
+				return err
+			}
+			usageDb, err := connector.New(cnf.Postgres, logger2.Warn)
 			if err != nil {
 				return err
 			}
@@ -49,9 +54,15 @@ func Command() *cobra.Command {
 				logger.Error("failed to create citext extension", zap.Error(err))
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{},
+			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{},
 				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{})
 			if err != nil {
+				logger.Error("failed to auto migrate", zap.Error(err))
+				return err
+			}
+			err = usageDb.Conn().AutoMigrate(&model.Usage{})
+			if err != nil {
+				logger.Error("failed to auto migrate", zap.Error(err))
 				return err
 			}
 			ec2InstanceRepo := repo.NewEC2InstanceTypeRepo(db)
@@ -60,7 +71,7 @@ func Command() *cobra.Command {
 			rdsStorageRepo := repo.NewRDSDBStorageRepo(db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
-			usageRepo := repo.NewUsageRepo(db)
+			usageRepo := repo.NewUsageRepo(usageDb)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
