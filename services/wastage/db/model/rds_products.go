@@ -2,12 +2,14 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"strconv"
 )
 
 type RDSProduct struct {
 	gorm.Model
 
-	DatabaseEngine string `gorm:"index;type:citext"`
+	DatabaseEngine string  `gorm:"index;type:citext"`
+	PricePerUnit   float64 `gorm:"index:price_idx,sort:asc"`
 
 	// Basic fields
 	SKU                        string
@@ -19,7 +21,7 @@ type RDSProduct struct {
 	StartingRange              string
 	EndingRange                string
 	Unit                       string
-	PricePerUnit               string
+	PricePerUnitStr            string
 	Currency                   string
 	RelatedTo                  string
 	ProductFamily              string
@@ -76,7 +78,8 @@ func (p *RDSProduct) PopulateFromMap(columns map[string]int, row []string) {
 		case "Unit":
 			p.Unit = row[index]
 		case "PricePerUnit":
-			p.PricePerUnit = row[index]
+			p.PricePerUnit, _ = strconv.ParseFloat(row[index], 64)
+			p.PricePerUnitStr = row[index]
 		case "Currency":
 			p.Currency = row[index]
 		case "RelatedTo":

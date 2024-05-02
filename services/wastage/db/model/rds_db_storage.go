@@ -2,13 +2,15 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"strconv"
 )
 
 type RDSDBStorage struct {
 	gorm.Model
 
 	// Basic fields
-	DatabaseEngine string `gorm:"index;type:citext"`
+	DatabaseEngine string  `gorm:"index;type:citext"`
+	PricePerUnit   float64 `gorm:"index:price_idx,sort:asc"`
 
 	SKU              string
 	OfferTermCode    string
@@ -19,7 +21,7 @@ type RDSDBStorage struct {
 	StartingRange    string
 	EndingRange      string
 	Unit             string
-	PricePerUnit     string
+	PricePerUnitStr  string
 	Currency         string
 	ProductFamily    string
 	serviceCode      string
@@ -65,7 +67,8 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 		case "Unit":
 			p.Unit = row[index]
 		case "PricePerUnit":
-			p.PricePerUnit = row[index]
+			p.PricePerUnit, _ = strconv.ParseFloat(row[index], 64)
+			p.PricePerUnitStr = row[index]
 		case "Currency":
 			p.Currency = row[index]
 		case "Product Family":
