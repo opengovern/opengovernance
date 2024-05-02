@@ -8,6 +8,8 @@ type RDSDBStorage struct {
 	gorm.Model
 
 	// Basic fields
+	DatabaseEngine string `gorm:"index,type:citext"`
+
 	SKU              string
 	OfferTermCode    string
 	RateCode         string
@@ -28,7 +30,6 @@ type RDSDBStorage struct {
 	MinVolumeSize    string
 	MaxVolumeSize    string
 	EngineCode       string
-	DatabaseEngine   string
 	DatabaseEdition  string
 	LicenseModel     string
 	DeploymentOption string
