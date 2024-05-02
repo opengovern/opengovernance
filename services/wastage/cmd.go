@@ -54,8 +54,8 @@ func Command() *cobra.Command {
 				logger.Error("failed to create citext extension", zap.Error(err))
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{},
-				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{})
+			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{},
+				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{}, &model.UsageV2{})
 			if err != nil {
 				logger.Error("failed to auto migrate", zap.Error(err))
 				return err
@@ -71,7 +71,7 @@ func Command() *cobra.Command {
 			rdsStorageRepo := repo.NewRDSDBStorageRepo(db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
-			usageRepo := repo.NewUsageRepo(usageDb)
+			usageV2Repo := repo.NewUsageV2Repo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
@@ -84,7 +84,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(costSvc, recomSvc, ingestionSvc, usageRepo, logger),
+				api.New(costSvc, recomSvc, ingestionSvc, usageV2Repo, logger),
 			)
 		},
 	}

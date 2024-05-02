@@ -3,6 +3,9 @@ package wastage
 import (
 	"encoding/json"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -22,12 +25,12 @@ type API struct {
 	tracer       trace.Tracer
 	logger       *zap.Logger
 	costSvc      *cost.Service
-	usageRepo    repo.UsageRepo
+	usageRepo    repo.UsageV2Repo
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageRepo repo.UsageRepo, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageRepo repo.UsageV2Repo, logger *zap.Logger) API {
 	return API{
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
@@ -38,10 +41,12 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionServi
 	}
 }
 
-func (s API) Register(g *echo.Group) {
+func (s API) Register(e *echo.Echo) {
+	g := e.Group("/api/v1/wastage")
 	g.POST("/ec2-instance", s.EC2Instance)
 	g.POST("/aws-rds", s.AwsRDS)
-	g.PUT("/ingest/:service", s.TriggerIngest)
+	i := e.Group("/api/v1/wastage-ingestion")
+	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 }
 
 // EC2Instance godoc
@@ -72,10 +77,11 @@ func (s API) EC2Instance(c echo.Context) error {
 	var err error
 
 	reqJson, _ := json.Marshal(req)
-	usage := model.Usage{
-		Endpoint: "ec2-instance",
-		Request:  reqJson,
-		Response: nil,
+	usage := model.UsageV2{
+		ApiEndpoint:    "ec2-instance",
+		Request:        reqJson,
+		Response:       nil,
+		FailureMessage: nil,
 	}
 	err = s.usageRepo.Create(&usage)
 	if err != nil {
@@ -84,9 +90,13 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	defer func() {
 		if err != nil {
-			usage.Response, _ = json.Marshal(err)
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
 		} else {
 			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
 		}
 		err = s.usageRepo.Update(usage.ID, usage)
 		if err != nil {
@@ -114,7 +124,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
 	}
 	elapsed := time.Since(start).Seconds()
-	usage.ResponseTime = &elapsed
+	usage.Latency = &elapsed
 	err = s.usageRepo.Update(usage.ID, usage)
 	if err != nil {
 		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
@@ -157,10 +167,11 @@ func (s API) AwsRDS(c echo.Context) error {
 	var err error
 
 	reqJson, _ := json.Marshal(req)
-	usage := model.Usage{
-		Endpoint: "aws-rds",
-		Request:  reqJson,
-		Response: nil,
+	usage := model.UsageV2{
+		ApiEndpoint:    "aws-rds",
+		Request:        reqJson,
+		Response:       nil,
+		FailureMessage: nil,
 	}
 	err = s.usageRepo.Create(&usage)
 	if err != nil {
@@ -170,7 +181,8 @@ func (s API) AwsRDS(c echo.Context) error {
 
 	defer func() {
 		if err != nil {
-			usage.Response, _ = json.Marshal(err)
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
 		} else {
 			usage.Response, _ = json.Marshal(resp)
 		}
@@ -187,7 +199,7 @@ func (s API) AwsRDS(c echo.Context) error {
 	}
 
 	elapsed := time.Since(start).Seconds()
-	usage.ResponseTime = &elapsed
+	usage.Latency = &elapsed
 	err = s.usageRepo.Update(usage.ID, usage)
 	if err != nil {
 		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
@@ -236,75 +248,80 @@ func (s API) TriggerIngest(c echo.Context) error {
 			ec2InstanceExtraData = &data
 		}
 	}
-	switch service {
-	case "aws-ec2-instance":
-		err := s.ingestionSvc.IngestEc2Instances()
-		if err != nil {
-			return err
-		}
-		if ec2InstanceData == nil {
-			err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
-				DataType:  "AWS::EC2::Instance",
-				UpdatedAt: time.Now(),
-			})
+	go func() {
+		switch service {
+		case "aws-ec2-instance":
+			s.logger.Info("Ingestion for EC2 started")
+			err := s.ingestionSvc.IngestEc2Instances()
 			if err != nil {
-				return err
+				s.logger.Error(err.Error())
 			}
-		} else {
-			err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
-				DataType:  "AWS::EC2::Instance",
-				UpdatedAt: time.Now(),
-			})
+			if ec2InstanceData == nil {
+				err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
+					DataType:  "AWS::EC2::Instance",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error(err.Error())
+				}
+			} else {
+				err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
+					DataType:  "AWS::EC2::Instance",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error(err.Error())
+				}
+			}
+		case "aws-rds":
+			s.logger.Info("Ingestion for RDS started")
+			err = s.ingestionSvc.IngestRDS()
 			if err != nil {
-				return err
+				s.logger.Error(err.Error())
+			}
+			if rdsData == nil {
+				err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
+					DataType:  "AWS::RDS::Instance",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error(err.Error())
+				}
+			} else {
+				err = s.ingestionSvc.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
+					DataType:  "AWS::RDS::Instance",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error(err.Error())
+				}
+			}
+		case "aws-ec2-instance-extra":
+			s.logger.Info("Ingestion for EC2 extra started")
+			s.logger.Info("ingesting ec2 instance extra data")
+			err = s.ingestionSvc.IngestEc2InstancesExtra(ctx)
+			if err != nil {
+				s.logger.Error(err.Error())
+			}
+			if ec2InstanceExtraData == nil {
+				err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
+					DataType:  "AWS::EC2::Instance::Extra",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error(err.Error())
+				}
+			} else {
+				err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance::Extra", model.DataAge{
+					DataType:  "AWS::EC2::Instance::Extra",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error(err.Error())
+				}
 			}
 		}
-	case "aws-rds":
-		err = s.ingestionSvc.IngestRDS()
-		if err != nil {
-			return err
-		}
-		if rdsData == nil {
-			err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
-				DataType:  "AWS::RDS::Instance",
-				UpdatedAt: time.Now(),
-			})
-			if err != nil {
-				return err
-			}
-		} else {
-			err = s.ingestionSvc.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
-				DataType:  "AWS::RDS::Instance",
-				UpdatedAt: time.Now(),
-			})
-			if err != nil {
-				return err
-			}
-		}
-	case "aws-ec2-instance-extra":
-		s.logger.Info("ingesting ec2 instance extra data")
-		err = s.ingestionSvc.IngestEc2InstancesExtra(ctx)
-		if err != nil {
-			return err
-		}
-		if ec2InstanceExtraData == nil {
-			err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
-				DataType:  "AWS::EC2::Instance::Extra",
-				UpdatedAt: time.Now(),
-			})
-			if err != nil {
-				return err
-			}
-		} else {
-			err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance::Extra", model.DataAge{
-				DataType:  "AWS::EC2::Instance::Extra",
-				UpdatedAt: time.Now(),
-			})
-			if err != nil {
-				return err
-			}
-		}
-	}
+	}()
 
 	return c.NoContent(http.StatusOK)
 }

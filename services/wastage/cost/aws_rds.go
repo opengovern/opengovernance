@@ -57,7 +57,7 @@ func (s *Service) GetRDSInstanceCost(region string, rdsInstance entity.AwsRds, m
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      rdsInstance.HashedInstanceId,
-		Type:         kaytu_client.ResourceTypeConversion("aws::ec2::instance"),
+		Type:         kaytu_client.ResourceTypeConversion("aws::rds::dbinstance"),
 		Name:         "",
 		RegionCode:   region,
 		ProviderName: schema.AWSProvider,
