@@ -24,7 +24,7 @@ func (s *Service) AwsRdsRecommendation(
 	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]))
 	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]))
 
-	currentInstanceTypeList, err := s.awsRDSDBInstanceRepo.ListByInstanceType(region, rdsInstance.InstanceType, "", "")
+	currentInstanceTypeList, err := s.awsRDSDBInstanceRepo.ListByInstanceType(region, rdsInstance.InstanceType, rdsInstance.Engine, string(rdsInstance.ClusterType))
 	if err != nil {
 		return nil, err
 	}

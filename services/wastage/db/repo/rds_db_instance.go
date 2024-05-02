@@ -2,6 +2,7 @@ package repo
 
 import (
 	"errors"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"gorm.io/gorm"
@@ -74,7 +75,7 @@ func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine,
 	tx := r.db.Conn().Model(&model.RDSDBInstance{}).
 		Where("region_code = ?", region).
 		Where("instance_type = ?", instanceType).
-		Where("database_engine = ?", engine).
+		Where("database_engine LIKE ?", fmt.Sprintf("%%%s%%", engine)).
 		Where("deployment_option = ?", clusterType).
 		Find(&ms)
 	if tx.Error != nil {
