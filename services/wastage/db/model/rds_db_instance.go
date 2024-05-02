@@ -44,8 +44,8 @@ type RDSDBInstance struct {
 	EngineCode                  string
 	DatabaseEdition             string
 	LicenseModel                string
-	usageType                   string
-	operation                   string
+	UsageType                   string
+	Operation                   string
 	DedicatedEBSThroughput      string
 	DeploymentModel             string
 	EngineMediaType             string
@@ -55,7 +55,7 @@ type RDSDBInstance struct {
 	PricingUnit                 string
 	ProcessorFeatures           string
 	RegionCode                  string
-	serviceName                 string
+	ServiceName                 string
 }
 
 func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
@@ -143,9 +143,9 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Deployment Option":
 			p.DeploymentOption = row[index]
 		case "usageType":
-			p.usageType = row[index]
+			p.UsageType = row[index]
 		case "operation":
-			p.operation = row[index]
+			p.Operation = row[index]
 		case "Dedicated EBS Throughput":
 			p.DedicatedEBSThroughput = row[index]
 		case "Deployment Model":
@@ -165,7 +165,7 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Region Code":
 			p.RegionCode = row[index]
 		case "serviceName":
-			p.serviceName = row[index]
+			p.ServiceName = row[index]
 		}
 	}
 }
