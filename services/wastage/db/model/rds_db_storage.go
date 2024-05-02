@@ -8,7 +8,7 @@ type RDSDBStorage struct {
 	gorm.Model
 
 	// Basic fields
-	DatabaseEngine string `gorm:"index,type:citext"`
+	DatabaseEngine string `gorm:"index;type:citext"`
 
 	SKU              string
 	OfferTermCode    string
