@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"go.uber.org/zap"
@@ -22,6 +23,7 @@ type Service struct {
 
 	DataAgeRepo repo.DataAgeRepo
 
+	db                *connector.Database
 	ec2InstanceRepo   repo.EC2InstanceTypeRepo
 	rdsRepo           repo.RDSProductRepo
 	rdsInstanceRepo   repo.RDSDBInstanceRepo
@@ -29,9 +31,10 @@ type Service struct {
 	storageRepo       repo.RDSDBStorageRepo
 }
 
-func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, rdsRepo repo.RDSProductRepo, rdsInstanceRepo repo.RDSDBInstanceRepo, storageRepo repo.RDSDBStorageRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
+func New(logger *zap.Logger, db *connector.Database, ec2InstanceRepo repo.EC2InstanceTypeRepo, rdsRepo repo.RDSProductRepo, rdsInstanceRepo repo.RDSDBInstanceRepo, storageRepo repo.RDSDBStorageRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, dataAgeRepo repo.DataAgeRepo) *Service {
 	return &Service{
 		logger:            logger,
+		db:                db,
 		ec2InstanceRepo:   ec2InstanceRepo,
 		rdsInstanceRepo:   rdsInstanceRepo,
 		rdsRepo:           rdsRepo,
@@ -165,7 +168,17 @@ func (s *Service) IngestEc2Instances() error {
 		}
 	}
 
-	err = s.ec2InstanceRepo.Truncate()
+	transaction := s.db.Conn().Begin()
+	defer func() {
+		transaction.Rollback()
+	}()
+
+	err = s.ec2InstanceRepo.Truncate(transaction)
+	if err != nil {
+		return err
+	}
+
+	err = s.ebsVolumeTypeRepo.Truncate(transaction)
 	if err != nil {
 		return err
 	}
@@ -176,7 +189,7 @@ func (s *Service) IngestEc2Instances() error {
 			if err != io.EOF {
 				return err
 			}
-			return nil
+			break
 		}
 
 		switch row[columns["Product Family"]] {
@@ -195,7 +208,7 @@ func (s *Service) IngestEc2Instances() error {
 			}
 
 			fmt.Println("Instance", v)
-			err = s.ec2InstanceRepo.Create(&v)
+			err = s.ec2InstanceRepo.Create(transaction, &v)
 			if err != nil {
 
 				return err
@@ -211,12 +224,17 @@ func (s *Service) IngestEc2Instances() error {
 				continue
 			}
 			fmt.Println("Volume", v)
-			err = s.ebsVolumeTypeRepo.Create(&v)
+			err = s.ebsVolumeTypeRepo.Create(transaction, &v)
 			if err != nil {
 				return err
 			}
 		}
 	}
+	err = transaction.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) IngestRDS() error {
@@ -241,15 +259,20 @@ func (s *Service) IngestRDS() error {
 		}
 	}
 
-	err = s.rdsRepo.Truncate()
+	transaction := s.db.Conn().Begin()
+	defer func() {
+		transaction.Rollback()
+	}()
+
+	err = s.rdsRepo.Truncate(transaction)
 	if err != nil {
 		return err
 	}
-	err = s.rdsInstanceRepo.Truncate()
+	err = s.rdsInstanceRepo.Truncate(transaction)
 	if err != nil {
 		return err
 	}
-	err = s.storageRepo.Truncate()
+	err = s.storageRepo.Truncate(transaction)
 	if err != nil {
 		return err
 	}
@@ -260,7 +283,7 @@ func (s *Service) IngestRDS() error {
 			if err != io.EOF {
 				return err
 			}
-			return nil
+			break
 		}
 
 		switch row[columns["Product Family"]] {
@@ -268,9 +291,16 @@ func (s *Service) IngestRDS() error {
 			v := model.RDSDBStorage{}
 			v.PopulateFromMap(columns, row)
 
+			if v.TermType != "OnDemand" {
+				continue
+			}
+			if v.LocationType == "AWS Outposts" {
+				continue
+			}
+
 			fmt.Println("RDSDBStorage", v)
 
-			err = s.storageRepo.Create(&v)
+			err = s.storageRepo.Create(transaction, &v)
 			if err != nil {
 				return err
 			}
@@ -282,10 +312,13 @@ func (s *Service) IngestRDS() error {
 			if v.TermType != "OnDemand" {
 				continue
 			}
+			if v.LocationType == "AWS Outposts" {
+				continue
+			}
 
 			fmt.Println("RDSDBInstance", v)
 
-			err = s.rdsInstanceRepo.Create(&v)
+			err = s.rdsInstanceRepo.Create(transaction, &v)
 			if err != nil {
 				return err
 			}
@@ -294,14 +327,26 @@ func (s *Service) IngestRDS() error {
 			v := model.RDSProduct{}
 			v.PopulateFromMap(columns, row)
 
+			if v.TermType != "OnDemand" {
+				continue
+			}
+			if v.LocationType == "AWS Outposts" {
+				continue
+			}
+
 			fmt.Println("RDS", v)
 
-			err = s.rdsRepo.Create(&v)
+			err = s.rdsRepo.Create(transaction, &v)
 			if err != nil {
 				return err
 			}
 		}
 	}
+	err = transaction.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getExtrasMap(instanceType ec2types.InstanceTypeInfo) map[string]any {

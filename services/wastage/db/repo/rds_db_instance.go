@@ -8,13 +8,13 @@ import (
 )
 
 type RDSDBInstanceRepo interface {
-	Create(m *model.RDSDBInstance) error
+	Create(tx *gorm.DB, m *model.RDSDBInstance) error
 	Get(id uint) (*model.RDSDBInstance, error)
 	Update(id uint, m model.RDSDBInstance) error
 	Delete(id uint) error
 	List() ([]model.RDSDBInstance, error)
-	Truncate() error
-	ListByInstanceType(region, instanceType, engine, clusterType string) ([]model.RDSDBInstance, error)
+	Truncate(tx *gorm.DB) error
+	ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
 	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
 }
 
@@ -28,8 +28,11 @@ func NewRDSDBInstanceRepo(db *connector.Database) RDSDBInstanceRepo {
 	}
 }
 
-func (r *RDSDBInstanceRepoImpl) Create(m *model.RDSDBInstance) error {
-	return r.db.Conn().Create(&m).Error
+func (r *RDSDBInstanceRepoImpl) Create(tx *gorm.DB, m *model.RDSDBInstance) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	return tx.Create(&m).Error
 }
 
 func (r *RDSDBInstanceRepoImpl) Get(id uint) (*model.RDSDBInstance, error) {
@@ -61,22 +64,28 @@ func (r *RDSDBInstanceRepoImpl) List() ([]model.RDSDBInstance, error) {
 	return ms, nil
 }
 
-func (r *RDSDBInstanceRepoImpl) Truncate() error {
-	tx := r.db.Conn().Unscoped().Where("1 = 1").Delete(&model.RDSDBInstance{})
+func (r *RDSDBInstanceRepoImpl) Truncate(tx *gorm.DB) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	tx = tx.Unscoped().Where("1 = 1").Delete(&model.RDSDBInstance{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine, clusterType string) ([]model.RDSDBInstance, error) {
+func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error) {
 	var ms []model.RDSDBInstance
 	tx := r.db.Conn().Model(&model.RDSDBInstance{}).
 		Where("region_code = ?", region).
 		Where("instance_type = ?", instanceType).
 		Where("database_engine = ?", engine).
-		Where("deployment_option = ?", clusterType).
-		Find(&ms)
+		Where("deployment_option = ?", clusterType)
+	if engineEdition != "" {
+		tx = tx.Where("database_edition = ?", engineEdition)
+	}
+	tx = tx.Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

@@ -15,7 +15,10 @@ type RDSDBInstance struct {
 	MemoryGb          int64    `gorm:"index"`
 	NetworkThroughput *float64 `gorm:"index"` // In bytes/s
 	DatabaseEngine    string   `gorm:"index;type:citext"`
+	DatabaseEdition   string   `gorm:"index;type:citext"`
 	DeploymentOption  string   `gorm:"index"`
+
+	PricePerUnit float64 `gorm:"index:price_idx,sort:asc"`
 
 	SKU                         string
 	OfferTermCode               string
@@ -26,7 +29,7 @@ type RDSDBInstance struct {
 	StartingRange               string
 	EndingRange                 string
 	Unit                        string
-	PricePerUnit                string
+	PricePerUnitStr             string
 	Currency                    string
 	ProductFamily               string
 	serviceCode                 string
@@ -42,10 +45,9 @@ type RDSDBInstance struct {
 	NetworkPerformance          string
 	ProcessorArchitecture       string
 	EngineCode                  string
-	DatabaseEdition             string
 	LicenseModel                string
-	usageType                   string
-	operation                   string
+	UsageType                   string
+	Operation                   string
 	DedicatedEBSThroughput      string
 	DeploymentModel             string
 	EngineMediaType             string
@@ -55,7 +57,7 @@ type RDSDBInstance struct {
 	PricingUnit                 string
 	ProcessorFeatures           string
 	RegionCode                  string
-	serviceName                 string
+	ServiceName                 string
 }
 
 func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
@@ -80,7 +82,8 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Unit":
 			p.Unit = row[index]
 		case "PricePerUnit":
-			p.PricePerUnit = row[index]
+			p.PricePerUnit, _ = strconv.ParseFloat(row[index], 64)
+			p.PricePerUnitStr = row[index]
 		case "Currency":
 			p.Currency = row[index]
 		case "Product Family":
@@ -143,9 +146,9 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Deployment Option":
 			p.DeploymentOption = row[index]
 		case "usageType":
-			p.usageType = row[index]
+			p.UsageType = row[index]
 		case "operation":
-			p.operation = row[index]
+			p.Operation = row[index]
 		case "Dedicated EBS Throughput":
 			p.DedicatedEBSThroughput = row[index]
 		case "Deployment Model":
@@ -165,7 +168,7 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Region Code":
 			p.RegionCode = row[index]
 		case "serviceName":
-			p.serviceName = row[index]
+			p.ServiceName = row[index]
 		}
 	}
 }
