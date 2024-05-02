@@ -137,7 +137,7 @@ func (s *Service) AwsRdsRecommendation(
 		return nil, err
 	}
 
-	// Aurora instances storage preferences are very different from other RDS instances
+	// Aurora instance types storage configs are very different from other RDS instance types
 	if (rightSizedInstanceRow != nil && !strings.Contains(strings.ToLower(rightSizedInstanceRow.InstanceType), "aurora")) ||
 		(rightSizedInstanceRow == nil && !strings.Contains(strings.ToLower(currentInstanceRow.InstanceType), "aurora")) {
 		storagePref := map[string]any{}

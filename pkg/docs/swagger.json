@@ -7084,6 +7084,78 @@
                 }
             }
         },
+        "/wastage/api/v1/wastage/aws-rds": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "List wastage in AWS RDS",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wastage"
+                ],
+                "summary": "List wastage in AWS RDS",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wastage/api/v1/wastage/ec2-instance": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "List wastage in EC2 Instances",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wastage"
+                ],
+                "summary": "List wastage in EC2 Instances",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/bootstrap/{workspace_name}": {
             "get": {
                 "security": [
@@ -11258,6 +11330,9 @@
                 "page"
             ],
             "properties": {
+                "account_id": {
+                    "type": "string"
+                },
                 "engine": {
                     "type": "string"
                 },
@@ -11272,6 +11347,9 @@
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem"
                     }
+                },
+                "source_id": {
+                    "type": "string"
                 }
             }
         },
@@ -13240,6 +13318,362 @@
                 "MeterType_AlertCount"
             ]
         },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds": {
+            "type": "object",
+            "properties": {
+                "clusterType": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType"
+                },
+                "engine": {
+                    "type": "string"
+                },
+                "engineVersion": {
+                    "type": "string"
+                },
+                "instanceType": {
+                    "type": "string"
+                },
+                "storageIops": {
+                    "type": "integer"
+                },
+                "storageSize": {
+                    "type": "integer"
+                },
+                "storageThroughput": {
+                    "type": "integer"
+                },
+                "storageType": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType": {
+            "type": "string",
+            "enum": [
+                "Single-AZ",
+                "Multi-AZ",
+                "Multi-AZ (readable standbys)"
+            ],
+            "x-enum-varnames": [
+                "AwsRdsClusterTypeSingleInstance",
+                "AwsRdsClusterTypeMultiAzOneInstance",
+                "AwsRdsClusterTypeMultiAzTwoInstance"
+            ]
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsRightsizingRecommendation": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "recommended": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageRequest": {
+            "type": "object",
+            "properties": {
+                "instance": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds"
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/types.Datapoint"
+                        }
+                    }
+                },
+                "preferences": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "region": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageResponse": {
+            "type": "object",
+            "properties": {
+                "rightSizing": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsRightsizingRecommendation"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EBSVolumeRecommendation": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEBSVolume"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "iops": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "recommended": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEBSVolume"
+                },
+                "throughput": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Instance": {
+            "type": "object",
+            "properties": {
+                "coreCount": {
+                    "type": "integer"
+                },
+                "ebsOptimized": {
+                    "type": "boolean"
+                },
+                "hashedInstanceId": {
+                    "type": "string"
+                },
+                "instanceLifecycle": {
+                    "type": "string"
+                },
+                "instanceType": {
+                    "type": "string"
+                },
+                "monitoring": {
+                    "type": "string"
+                },
+                "placement": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Placement"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "tenancy": {
+                    "type": "string"
+                },
+                "threadsPerCore": {
+                    "type": "integer"
+                },
+                "usageOperation": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageRequest": {
+            "type": "object"
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageResponse": {
+            "type": "object",
+            "properties": {
+                "rightSizing": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightSizingRecommendation"
+                },
+                "volumes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EBSVolumeRecommendation"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Placement": {
+            "type": "object",
+            "properties": {
+                "availabilityZone": {
+                    "type": "string"
+                },
+                "hashedHostId": {
+                    "type": "string"
+                },
+                "tenancy": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Volume": {
+            "type": "object",
+            "properties": {
+                "availabilityZone": {
+                    "type": "string"
+                },
+                "hashedVolumeId": {
+                    "type": "string"
+                },
+                "iops": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "throughput": {
+                    "type": "number"
+                },
+                "volumeType": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightSizingRecommendation": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEC2Instance"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "ebsBandwidth": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "ebsIops": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "memory": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "networkThroughput": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "recommended": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEC2Instance"
+                },
+                "vCPU": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds": {
+            "type": "object",
+            "properties": {
+                "clusterType": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "engine": {
+                    "type": "string"
+                },
+                "engineVersion": {
+                    "type": "string"
+                },
+                "instanceType": {
+                    "type": "string"
+                },
+                "memoryGb": {
+                    "type": "integer"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "storageIops": {
+                    "type": "integer"
+                },
+                "storageSize": {
+                    "type": "integer"
+                },
+                "storageThroughput": {
+                    "type": "integer"
+                },
+                "storageType": {
+                    "type": "string"
+                },
+                "vCPU": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEBSVolume": {
+            "type": "object",
+            "properties": {
+                "baselineIOPS": {
+                    "type": "integer"
+                },
+                "baselineThroughput": {
+                    "type": "number"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "provisionedIOPS": {
+                    "type": "integer"
+                },
+                "provisionedThroughput": {
+                    "type": "number"
+                },
+                "tier": {
+                    "type": "string"
+                },
+                "volumeSize": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEC2Instance": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "ebsBandwidth": {
+                    "type": "string"
+                },
+                "ebsIops": {
+                    "type": "string"
+                },
+                "enaSupported": {
+                    "type": "string"
+                },
+                "instanceType": {
+                    "type": "string"
+                },
+                "license": {
+                    "type": "string"
+                },
+                "licensePrice": {
+                    "type": "number"
+                },
+                "memory": {
+                    "type": "number"
+                },
+                "networkThroughput": {
+                    "type": "string"
+                },
+                "processor": {
+                    "type": "string"
+                },
+                "vCPU": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage": {
+            "type": "object",
+            "properties": {
+                "avg": {
+                    "type": "number"
+                },
+                "max": {
+                    "type": "number"
+                },
+                "min": {
+                    "type": "number"
+                }
+            }
+        },
         "kaytu.ResourceCollectionFilter": {
             "type": "object",
             "properties": {
@@ -13335,6 +13769,9 @@
                 "CloudAWS",
                 "CloudAzure"
             ]
+        },
+        "types.Datapoint": {
+            "type": "object"
         },
         "types.FindingSeverity": {
             "type": "string",

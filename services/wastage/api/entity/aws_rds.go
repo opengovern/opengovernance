@@ -1,5 +1,7 @@
 package entity
 
+import types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+
 type AwsRdsClusterType string
 
 const (
@@ -49,4 +51,15 @@ type AwsRdsRightsizingRecommendation struct {
 	Recommended *RightsizingAwsRds `json:"recommended"`
 
 	Description string `json:"description"`
+}
+
+type AwsRdsWastageRequest struct {
+	Instance    AwsRds                        `json:"instance"`
+	Metrics     map[string][]types2.Datapoint `json:"metrics"`
+	Region      string                        `json:"region"`
+	Preferences map[string]*string            `json:"preferences"`
+}
+
+type AwsRdsWastageResponse struct {
+	RightSizing AwsRdsRightsizingRecommendation `json:"rightSizing"`
 }
