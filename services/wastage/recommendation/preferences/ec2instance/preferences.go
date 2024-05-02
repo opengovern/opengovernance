@@ -1,4 +1,4 @@
-package recommendation
+package ec2instance
 
 var (
 	PreferenceDBKey = map[string]string{
