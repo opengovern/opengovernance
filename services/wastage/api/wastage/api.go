@@ -155,6 +155,7 @@ func (s API) AwsRDS(c echo.Context) error {
 	}
 	err = s.usageRepo.Create(&usage)
 	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
 		return err
 	}
 
@@ -172,6 +173,7 @@ func (s API) AwsRDS(c echo.Context) error {
 
 	ec2RightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences)
 	if err != nil {
+		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
 		return err
 	}
 

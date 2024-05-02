@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/aws_rds"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 )
@@ -28,12 +29,14 @@ func (s *Service) AwsRdsRecommendation(
 		return nil, err
 	}
 	if len(currentInstanceTypeList) == 0 {
+		s.logger.Error("rds instance type not found", zap.String("instance_type", rdsInstance.InstanceType))
 		return nil, fmt.Errorf("rds instance type not found: %s", rdsInstance.InstanceType)
 	}
 	currentInstanceRow := currentInstanceTypeList[0]
 
 	currentCost, err := s.costSvc.GetRDSInstanceCost(region, rdsInstance, metrics)
 	if err != nil {
+		s.logger.Error("failed to get rds instance cost", zap.Error(err))
 		return nil, err
 	}
 
@@ -56,6 +59,7 @@ func (s *Service) AwsRdsRecommendation(
 	if v, ok := preferences["CpuBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
+			s.logger.Error("invalid CpuBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid CpuBreathingRoom value: %s", *v)
 		}
 		neededVCPU = (1 + float64(vPercent)/100) * neededVCPU
@@ -64,6 +68,7 @@ func (s *Service) AwsRdsRecommendation(
 	if v, ok := preferences["MemoryBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
+			s.logger.Error("invalid MemoryBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid MemoryBreathingRoom value: %s", *v)
 		}
 		neededMemoryGb = (1 + float64(vPercent)/100) * neededMemoryGb
@@ -75,6 +80,7 @@ func (s *Service) AwsRdsRecommendation(
 	if v, ok := preferences["NetworkBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
+			s.logger.Error("invalid NetworkBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid NetworkBreathingRoom value: %s", *v)
 		}
 		neededNetworkThroughput = (1 + float64(vPercent)/100) * neededNetworkThroughput
@@ -83,6 +89,7 @@ func (s *Service) AwsRdsRecommendation(
 	if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
+			s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
 		}
 		neededStorageSize = (1 + float64(vPercent)/100) * neededStorageSize
@@ -91,6 +98,7 @@ func (s *Service) AwsRdsRecommendation(
 	if v, ok := preferences["StorageIopsBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
+			s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
 		}
 		neededStorageIops = (1 + float64(vPercent)/100) * neededStorageIops
@@ -99,6 +107,7 @@ func (s *Service) AwsRdsRecommendation(
 	if v, ok := preferences["StorageThroughputBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
+			s.logger.Error("invalid StorageThroughputBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid StorageThroughputBreathingRoom value: %s", *v)
 		}
 		neededStorageThroughput = (1 + float64(vPercent)/100) * neededStorageThroughput
@@ -131,9 +140,14 @@ func (s *Service) AwsRdsRecommendation(
 	if _, ok := preferences["NetworkThroughput"]; !ok {
 		instancePref["network_throughput IS NULL OR network_throughput >= ?"] = neededNetworkThroughput
 	}
+	if v, ok := instancePref["database_engine = ?"]; ok {
+		delete(instancePref, "database_engine = ?")
+		instancePref["database_engine LIKE ?"] = fmt.Sprintf("%%%s%%", v)
+	}
 
 	rightSizedInstanceRow, err := s.awsRDSDBInstanceRepo.GetCheapestByPref(instancePref)
 	if err != nil {
+		s.logger.Error("failed to get rds instance type", zap.Error(err))
 		return nil, err
 	}
 
@@ -172,6 +186,7 @@ func (s *Service) AwsRdsRecommendation(
 
 		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
 		if err != nil {
+			s.logger.Error("failed to get rds instance cost", zap.Error(err))
 			return nil, err
 		}
 
