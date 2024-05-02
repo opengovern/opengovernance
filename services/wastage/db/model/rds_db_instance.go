@@ -15,6 +15,7 @@ type RDSDBInstance struct {
 	MemoryGb          int64    `gorm:"index"`
 	NetworkThroughput *float64 `gorm:"index"` // In bytes/s
 	DatabaseEngine    string   `gorm:"index;type:citext"`
+	DatabaseEdition   string   `gorm:"index;type:citext"`
 	DeploymentOption  string   `gorm:"index"`
 
 	SKU                         string
@@ -42,7 +43,6 @@ type RDSDBInstance struct {
 	NetworkPerformance          string
 	ProcessorArchitecture       string
 	EngineCode                  string
-	DatabaseEdition             string
 	LicenseModel                string
 	UsageType                   string
 	Operation                   string

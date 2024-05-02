@@ -11,6 +11,30 @@ import (
 	"strings"
 )
 
+type awsRdsDbType struct {
+	Engine  string
+	Edition string
+}
+
+var dbTypeMap = map[string]awsRdsDbType{
+	"aurora":            {"Aurora MySQL", ""},
+	"aurora-mysql":      {"Aurora MySQL", ""},
+	"aurora-postgresql": {"Aurora PostgreSQL", ""},
+	"mariadb":           {"MariaDB", ""},
+	"mysql":             {"MySQL", ""},
+	"postgres":          {"PostgreSQL", ""},
+	"oracle-se":         {"Oracle", "Standard"},
+	"oracle-se1":        {"Oracle", "Standard One"},
+	"oracle-se2":        {"Oracle", "Standard Two"},
+	"oracle-se2-cdb":    {"Oracle", "Standard Two"},
+	"oracle-ee":         {"Oracle", "Enterprise"},
+	"oracle-ee-cdb":     {"Oracle", "Enterprise"},
+	"sqlserver-se":      {"SQL Server", "Standard"},
+	"sqlserver-ee":      {"SQL Server", "Enterprise"},
+	"sqlserver-ex":      {"SQL Server", "Express"},
+	"sqlserver-web":     {"SQL Server", "Web"},
+}
+
 func (s *Service) AwsRdsRecommendation(
 	region string,
 	rdsInstance entity.AwsRds,
@@ -24,7 +48,13 @@ func (s *Service) AwsRdsRecommendation(
 	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]))
 	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]))
 
-	currentInstanceTypeList, err := s.awsRDSDBInstanceRepo.ListByInstanceType(region, rdsInstance.InstanceType, rdsInstance.Engine, string(rdsInstance.ClusterType))
+	awsRdsDbKind, ok := dbTypeMap[strings.ToLower(rdsInstance.Engine)]
+	if !ok {
+		s.logger.Warn("rds engine not found", zap.String("engine", rdsInstance.Engine))
+		awsRdsDbKind = awsRdsDbType{strings.ToLower(rdsInstance.Engine), ""}
+	}
+
+	currentInstanceTypeList, err := s.awsRDSDBInstanceRepo.ListByInstanceType(region, rdsInstance.InstanceType, awsRdsDbKind.Engine, awsRdsDbKind.Edition, string(rdsInstance.ClusterType))
 	if err != nil {
 		return nil, err
 	}
@@ -141,8 +171,11 @@ func (s *Service) AwsRdsRecommendation(
 		instancePref["network_throughput IS NULL OR network_throughput >= ?"] = neededNetworkThroughput
 	}
 	if v, ok := instancePref["database_engine = ?"]; ok {
-		delete(instancePref, "database_engine = ?")
-		instancePref["database_engine LIKE ?"] = fmt.Sprintf("%%%s%%", v)
+		kind := dbTypeMap[strings.ToLower(v.(string))]
+		instancePref["database_engine = ?"] = kind.Engine
+		if kind.Edition != "" {
+			instancePref["database_edition = ?"] = kind.Edition
+		}
 	}
 
 	rightSizedInstanceRow, err := s.awsRDSDBInstanceRepo.GetCheapestByPref(instancePref)

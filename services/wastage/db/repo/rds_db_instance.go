@@ -2,7 +2,6 @@ package repo
 
 import (
 	"errors"
-	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"gorm.io/gorm"
@@ -15,7 +14,7 @@ type RDSDBInstanceRepo interface {
 	Delete(id uint) error
 	List() ([]model.RDSDBInstance, error)
 	Truncate() error
-	ListByInstanceType(region, instanceType, engine, clusterType string) ([]model.RDSDBInstance, error)
+	ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
 	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
 }
 
@@ -70,14 +69,17 @@ func (r *RDSDBInstanceRepoImpl) Truncate() error {
 	return nil
 }
 
-func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine, clusterType string) ([]model.RDSDBInstance, error) {
+func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error) {
 	var ms []model.RDSDBInstance
 	tx := r.db.Conn().Model(&model.RDSDBInstance{}).
 		Where("region_code = ?", region).
 		Where("instance_type = ?", instanceType).
-		Where("database_engine LIKE ?", fmt.Sprintf("%%%s%%", engine)).
-		Where("deployment_option = ?", clusterType).
-		Find(&ms)
+		Where("database_engine = ?", engine).
+		Where("deployment_option = ?", clusterType)
+	if engineEdition != "" {
+		tx = tx.Where("database_edition = ?", engineEdition)
+	}
+	tx = tx.Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
