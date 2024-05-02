@@ -23,10 +23,10 @@ func (s *Service) GetRDSInstanceCost(region string, rdsInstance entity.AwsRds, m
 	valuesMap := map[string]any{}
 	valuesMap["region"] = region
 	valuesMap["instance_class"] = rdsInstance.InstanceType
-	valuesMap["availability_zone"] = "" // TODO: Check aws api rds response (it's important if it's different from region)
+	valuesMap["availability_zone"] = rdsInstance.AvailabilityZone
 	valuesMap["engine"] = rdsInstance.Engine
 	valuesMap["engine_version"] = rdsInstance.EngineVersion
-	valuesMap["license_model"] = rdsInstance.LicenseModel
+	valuesMap["license_model"] = "bring-your-own-license"
 	if rdsInstance.ClusterType == entity.AwsRdsClusterTypeSingleInstance {
 		valuesMap["multi_az"] = false
 	} else {
