@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/ingestion"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -18,21 +19,29 @@ import (
 )
 
 type API struct {
-	tracer    trace.Tracer
-	logger    *zap.Logger
-	costSvc   *cost.Service
-	usageRepo repo.UsageRepo
-	recomSvc  *recommendation.Service
+	tracer       trace.Tracer
+	logger       *zap.Logger
+	costSvc      *cost.Service
+	usageRepo    repo.UsageRepo
+	recomSvc     *recommendation.Service
+	ingestionSvc *ingestion.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, usageRepo repo.UsageRepo, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageRepo repo.UsageRepo, logger *zap.Logger) API {
 	return API{
-		costSvc:   costSvc,
-		recomSvc:  recomSvc,
-		usageRepo: usageRepo,
-		tracer:    otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:    logger.Named("wastage-api"),
+		costSvc:      costSvc,
+		recomSvc:     recomSvc,
+		usageRepo:    usageRepo,
+		ingestionSvc: ingestionService,
+		tracer:       otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:       logger.Named("wastage-api"),
 	}
+}
+
+func (s API) Register(g *echo.Group) {
+	g.POST("/ec2-instance", s.EC2Instance)
+	g.POST("/aws-rds", s.AwsRDS)
+	g.PUT("/ingest/:service", s.TriggerIngest)
 }
 
 // EC2Instance godoc
@@ -192,7 +201,110 @@ func (s API) AwsRDS(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (s API) Register(g *echo.Group) {
-	g.POST("/ec2-instance", s.EC2Instance)
-	g.POST("/aws-rds", s.AwsRDS)
+// TriggerIngest godoc
+//
+//	@Summary		Trigger Ingest for the requested service
+//	@Description	Trigger Ingest for the requested service
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			service		path	string		true	"service"
+//	@Success		200
+//	@Router			/wastage/api/v1/wastage/ingest/{service} [post]
+func (s API) TriggerIngest(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	service := c.Param("service")
+	dataAge, err := s.ingestionSvc.DataAgeRepo.List()
+	if err != nil {
+		return err
+	}
+
+	var ec2InstanceData *model.DataAge
+	var rdsData *model.DataAge
+	var ec2InstanceExtraData *model.DataAge
+	for _, data := range dataAge {
+		data := data
+		switch data.DataType {
+		case "AWS::EC2::Instance":
+			ec2InstanceData = &data
+		case "AWS::RDS::Instance":
+			rdsData = &data
+		case "AWS::EC2::Instance::Extra":
+			ec2InstanceExtraData = &data
+		}
+	}
+	switch service {
+	case "aws-ec2-instance":
+		err := s.ingestionSvc.IngestEc2Instances()
+		if err != nil {
+			return err
+		}
+		if ec2InstanceData == nil {
+			err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
+				DataType:  "AWS::EC2::Instance",
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
+				DataType:  "AWS::EC2::Instance",
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+		}
+	case "aws-rds":
+		err = s.ingestionSvc.IngestRDS()
+		if err != nil {
+			return err
+		}
+		if rdsData == nil {
+			err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
+				DataType:  "AWS::RDS::Instance",
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			err = s.ingestionSvc.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
+				DataType:  "AWS::RDS::Instance",
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+		}
+	case "aws-ec2-instance-extra":
+		s.logger.Info("ingesting ec2 instance extra data")
+		err = s.ingestionSvc.IngestEc2InstancesExtra(ctx)
+		if err != nil {
+			return err
+		}
+		if ec2InstanceExtraData == nil {
+			err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
+				DataType:  "AWS::EC2::Instance::Extra",
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance::Extra", model.DataAge{
+				DataType:  "AWS::EC2::Instance::Extra",
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return c.NoContent(http.StatusOK)
 }

@@ -20,7 +20,7 @@ import (
 type Service struct {
 	logger *zap.Logger
 
-	dataAgeRepo repo.DataAgeRepo
+	DataAgeRepo repo.DataAgeRepo
 
 	ec2InstanceRepo   repo.EC2InstanceTypeRepo
 	rdsRepo           repo.RDSProductRepo
@@ -37,7 +37,7 @@ func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, rdsRepo r
 		rdsRepo:           rdsRepo,
 		storageRepo:       storageRepo,
 		ebsVolumeTypeRepo: ebsVolumeRepo,
-		dataAgeRepo:       dataAgeRepo,
+		DataAgeRepo:       dataAgeRepo,
 	}
 }
 
@@ -46,7 +46,7 @@ func (s *Service) Start(ctx context.Context) error {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		dataAge, err := s.dataAgeRepo.List()
+		dataAge, err := s.DataAgeRepo.List()
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -73,7 +73,7 @@ func (s *Service) Start(ctx context.Context) error {
 				return err
 			}
 			if ec2InstanceData == nil {
-				err = s.dataAgeRepo.Create(&model.DataAge{
+				err = s.DataAgeRepo.Create(&model.DataAge{
 					DataType:  "AWS::EC2::Instance",
 					UpdatedAt: time.Now(),
 				})
@@ -81,7 +81,7 @@ func (s *Service) Start(ctx context.Context) error {
 					return err
 				}
 			} else {
-				err = s.dataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
+				err = s.DataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
 					DataType:  "AWS::EC2::Instance",
 					UpdatedAt: time.Now(),
 				})
@@ -97,7 +97,7 @@ func (s *Service) Start(ctx context.Context) error {
 				return err
 			}
 			if rdsData == nil {
-				err = s.dataAgeRepo.Create(&model.DataAge{
+				err = s.DataAgeRepo.Create(&model.DataAge{
 					DataType:  "AWS::RDS::Instance",
 					UpdatedAt: time.Now(),
 				})
@@ -105,7 +105,7 @@ func (s *Service) Start(ctx context.Context) error {
 					return err
 				}
 			} else {
-				err = s.dataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
+				err = s.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
 					DataType:  "AWS::RDS::Instance",
 					UpdatedAt: time.Now(),
 				})
@@ -122,7 +122,7 @@ func (s *Service) Start(ctx context.Context) error {
 				return err
 			}
 			if ec2InstanceExtraData == nil {
-				err = s.dataAgeRepo.Create(&model.DataAge{
+				err = s.DataAgeRepo.Create(&model.DataAge{
 					DataType:  "AWS::EC2::Instance::Extra",
 					UpdatedAt: time.Now(),
 				})
@@ -130,7 +130,7 @@ func (s *Service) Start(ctx context.Context) error {
 					return err
 				}
 			} else {
-				err = s.dataAgeRepo.Update("AWS::EC2::Instance::Extra", model.DataAge{
+				err = s.DataAgeRepo.Update("AWS::EC2::Instance::Extra", model.DataAge{
 					DataType:  "AWS::EC2::Instance::Extra",
 					UpdatedAt: time.Now(),
 				})
