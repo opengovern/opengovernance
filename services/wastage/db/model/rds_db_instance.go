@@ -18,6 +18,8 @@ type RDSDBInstance struct {
 	DatabaseEdition   string   `gorm:"index;type:citext"`
 	DeploymentOption  string   `gorm:"index"`
 
+	PricePerUnit float64 `gorm:"index:price_idx,sort:asc"`
+
 	SKU                         string
 	OfferTermCode               string
 	RateCode                    string
@@ -27,7 +29,7 @@ type RDSDBInstance struct {
 	StartingRange               string
 	EndingRange                 string
 	Unit                        string
-	PricePerUnit                string
+	PricePerUnitStr             string
 	Currency                    string
 	ProductFamily               string
 	serviceCode                 string
@@ -80,7 +82,8 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Unit":
 			p.Unit = row[index]
 		case "PricePerUnit":
-			p.PricePerUnit = row[index]
+			p.PricePerUnit, _ = strconv.ParseFloat(row[index], 64)
+			p.PricePerUnitStr = row[index]
 		case "Currency":
 			p.Currency = row[index]
 		case "Product Family":
