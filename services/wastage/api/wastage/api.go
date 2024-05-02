@@ -42,8 +42,8 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, usageRepo repo
 //	@Security		BearerToken
 //	@Tags			wastage
 //	@Produce		json
-//	@Param			request			body		entity.EC2InstanceWastageRequest	true	"Request"
-//	@Success		200				{object}	entity.EC2InstanceWastageResponse
+//	@Param			request	body		entity.EC2InstanceWastageRequest	true	"Request"
+//	@Success		200		{object}	entity.EC2InstanceWastageResponse
 //	@Router			/wastage/api/v1/wastage/ec2-instance [post]
 func (s API) EC2Instance(c echo.Context) error {
 	start := time.Now()
@@ -64,6 +64,7 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	reqJson, _ := json.Marshal(req)
 	usage := model.Usage{
+		Endpoint: "ec2-instance",
 		Request:  reqJson,
 		Response: nil,
 	}
@@ -119,6 +120,77 @@ func (s API) EC2Instance(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+// AwsRDS godoc
+//
+//	@Summary		List wastage in AWS RDS
+//	@Description	List wastage in AWS RDS
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			request	body		entity.AwsRdsWastageRequest	true	"Request"
+//	@Success		200		{object}	entity.AwsRdsWastageResponse
+//	@Router			/wastage/api/v1/wastage/aws-rds [post]
+func (s API) AwsRDS(c echo.Context) error {
+	start := time.Now()
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var req entity.AwsRdsWastageRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var resp entity.AwsRdsWastageResponse
+	var err error
+
+	reqJson, _ := json.Marshal(req)
+	usage := model.Usage{
+		Endpoint: "aws-rds",
+		Request:  reqJson,
+		Response: nil,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			usage.Response, _ = json.Marshal(err)
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+
+	ec2RightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences)
+	if err != nil {
+		return err
+	}
+
+	elapsed := time.Since(start).Seconds()
+	usage.ResponseTime = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+	}
+
+	// DO NOT change this, resp is used in updating usage
+	resp = entity.AwsRdsWastageResponse{
+		RightSizing: *ec2RightSizingRecom,
+	}
+	// DO NOT change this, resp is used in updating usage
+	return c.JSON(http.StatusOK, resp)
+}
+
 func (s API) Register(g *echo.Group) {
 	g.POST("/ec2-instance", s.EC2Instance)
+	g.POST("/aws-rds", s.AwsRDS)
 }

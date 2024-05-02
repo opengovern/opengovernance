@@ -2679,6 +2679,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
     properties:
+      account_id:
+        type: string
       engine:
         type: string
       page:
@@ -2689,6 +2691,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem'
         type: array
+      source_id:
+        type: string
     required:
     - page
     type: object
@@ -4083,6 +4087,240 @@ definitions:
     - MeterType_TotalApiKeys
     - MeterType_TotalRules
     - MeterType_AlertCount
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds:
+    properties:
+      clusterType:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType'
+      engine:
+        type: string
+      engineVersion:
+        type: string
+      instanceType:
+        type: string
+      storageIops:
+        type: integer
+      storageSize:
+        type: integer
+      storageThroughput:
+        type: integer
+      storageType:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType:
+    enum:
+    - Single-AZ
+    - Multi-AZ
+    - Multi-AZ (readable standbys)
+    type: string
+    x-enum-varnames:
+    - AwsRdsClusterTypeSingleInstance
+    - AwsRdsClusterTypeMultiAzOneInstance
+    - AwsRdsClusterTypeMultiAzTwoInstance
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsRightsizingRecommendation:
+    properties:
+      current:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds'
+      description:
+        type: string
+      recommended:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds'
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageRequest:
+    properties:
+      instance:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds'
+      metrics:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/types.Datapoint'
+          type: array
+        type: object
+      preferences:
+        additionalProperties:
+          type: string
+        type: object
+      region:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageResponse:
+    properties:
+      rightSizing:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsRightsizingRecommendation'
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EBSVolumeRecommendation:
+    properties:
+      current:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEBSVolume'
+      description:
+        type: string
+      iops:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      recommended:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEBSVolume'
+      throughput:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Instance:
+    properties:
+      coreCount:
+        type: integer
+      ebsOptimized:
+        type: boolean
+      hashedInstanceId:
+        type: string
+      instanceLifecycle:
+        type: string
+      instanceType:
+        type: string
+      monitoring:
+        type: string
+      placement:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Placement'
+      platform:
+        type: string
+      state:
+        type: string
+      tenancy:
+        type: string
+      threadsPerCore:
+        type: integer
+      usageOperation:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageRequest:
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageResponse:
+    properties:
+      rightSizing:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightSizingRecommendation'
+      volumes:
+        additionalProperties:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EBSVolumeRecommendation'
+        type: object
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Placement:
+    properties:
+      availabilityZone:
+        type: string
+      hashedHostId:
+        type: string
+      tenancy:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2Volume:
+    properties:
+      availabilityZone:
+        type: string
+      hashedVolumeId:
+        type: string
+      iops:
+        type: integer
+      size:
+        type: integer
+      throughput:
+        type: number
+      volumeType:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightSizingRecommendation:
+    properties:
+      current:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEC2Instance'
+      description:
+        type: string
+      ebsBandwidth:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      ebsIops:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      memory:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      networkThroughput:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      recommended:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEC2Instance'
+      vCPU:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds:
+    properties:
+      clusterType:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType'
+      cost:
+        type: number
+      engine:
+        type: string
+      engineVersion:
+        type: string
+      instanceType:
+        type: string
+      memoryGb:
+        type: integer
+      region:
+        type: string
+      storageIops:
+        type: integer
+      storageSize:
+        type: integer
+      storageThroughput:
+        type: integer
+      storageType:
+        type: string
+      vCPU:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEBSVolume:
+    properties:
+      baselineIOPS:
+        type: integer
+      baselineThroughput:
+        type: number
+      cost:
+        type: number
+      provisionedIOPS:
+        type: integer
+      provisionedThroughput:
+        type: number
+      tier:
+        type: string
+      volumeSize:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingEC2Instance:
+    properties:
+      architecture:
+        type: string
+      cost:
+        type: number
+      ebsBandwidth:
+        type: string
+      ebsIops:
+        type: string
+      enaSupported:
+        type: string
+      instanceType:
+        type: string
+      license:
+        type: string
+      licensePrice:
+        type: number
+      memory:
+        type: number
+      networkThroughput:
+        type: string
+      processor:
+        type: string
+      vCPU:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage:
+    properties:
+      avg:
+        type: number
+      max:
+        type: number
+      min:
+        type: number
+    type: object
   kaytu.ResourceCollectionFilter:
     properties:
       account_ids:
@@ -4152,6 +4390,8 @@ definitions:
     - Nil
     - CloudAWS
     - CloudAzure
+  types.Datapoint:
+    type: object
   types.FindingSeverity:
     enum:
     - none
@@ -8792,6 +9032,50 @@ paths:
       summary: Get meters
       tags:
       - subscription
+  /wastage/api/v1/wastage/aws-rds:
+    post:
+      description: List wastage in AWS RDS
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageResponse'
+      security:
+      - BearerToken: []
+      summary: List wastage in AWS RDS
+      tags:
+      - wastage
+  /wastage/api/v1/wastage/ec2-instance:
+    post:
+      description: List wastage in EC2 Instances
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.EC2InstanceWastageResponse'
+      security:
+      - BearerToken: []
+      summary: List wastage in EC2 Instances
+      tags:
+      - wastage
   /workspace/api/v1/bootstrap/{workspace_name}:
     get:
       consumes:
