@@ -8,7 +8,7 @@ import (
 )
 
 type EC2InstanceTypeRepo interface {
-	Create(m *model.EC2InstanceType) error
+	Create(tx *gorm.DB, m *model.EC2InstanceType) error
 	Get(id uint) (*model.EC2InstanceType, error)
 	Update(id uint, m model.EC2InstanceType) error
 	UpdateExtrasByRegionAndType(region, instanceType string, extras map[string]any) error
@@ -16,7 +16,7 @@ type EC2InstanceTypeRepo interface {
 	Delete(id uint) error
 	List() ([]model.EC2InstanceType, error)
 	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
-	Truncate() error
+	Truncate(tx *gorm.DB) error
 	ListByInstanceType(instanceType, os, operation, region string) ([]model.EC2InstanceType, error)
 }
 
@@ -30,8 +30,11 @@ func NewEC2InstanceTypeRepo(db *connector.Database) EC2InstanceTypeRepo {
 	}
 }
 
-func (r *EC2InstanceTypeRepoImpl) Create(m *model.EC2InstanceType) error {
-	return r.db.Conn().Create(&m).Error
+func (r *EC2InstanceTypeRepoImpl) Create(tx *gorm.DB, m *model.EC2InstanceType) error {
+	if tx != nil {
+		tx = r.db.Conn()
+	}
+	return tx.Create(&m).Error
 }
 
 func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
@@ -120,8 +123,11 @@ func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, operation
 	return ms, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) Truncate() error {
-	tx := r.db.Conn().Unscoped().Where("1 = 1").Delete(&model.EC2InstanceType{})
+func (r *EC2InstanceTypeRepoImpl) Truncate(tx *gorm.DB) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	tx = tx.Unscoped().Where("1 = 1").Delete(&model.EC2InstanceType{})
 	if tx.Error != nil {
 		return tx.Error
 	}

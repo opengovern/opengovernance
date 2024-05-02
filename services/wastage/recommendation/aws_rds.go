@@ -214,7 +214,12 @@ func (s *Service) AwsRdsRecommendation(
 		newInstance := rdsInstance
 		newInstance.InstanceType = rightSizedInstanceRow.InstanceType
 		newInstance.ClusterType = entity.AwsRdsClusterType(rightSizedInstanceRow.DeploymentOption)
-		newInstance.Engine = rightSizedInstanceRow.DatabaseEngine
+		for k, v := range dbTypeMap {
+			if strings.ToLower(v.Engine) == strings.ToLower(rightSizedInstanceRow.DatabaseEngine) && (v.Edition == "" || strings.ToLower(v.Edition) == strings.ToLower(rightSizedInstanceRow.DatabaseEdition)) {
+				newInstance.Engine = k
+				break
+			}
+		}
 		newInstance.LicenseModel = rightSizedInstanceRow.LicenseModel
 
 		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
@@ -231,10 +236,10 @@ func (s *Service) AwsRdsRecommendation(
 			ClusterType:       newInstance.ClusterType,
 			VCPU:              rightSizedInstanceRow.VCpu,
 			MemoryGb:          rightSizedInstanceRow.MemoryGb,
-			StorageType:       nil,
-			StorageSize:       nil,
-			StorageIops:       nil,
-			StorageThroughput: nil,
+			StorageType:       newInstance.StorageType,
+			StorageSize:       newInstance.StorageSize,
+			StorageIops:       newInstance.StorageIops,
+			StorageThroughput: newInstance.StorageThroughput,
 			Cost:              recommendedCost,
 		}
 	}

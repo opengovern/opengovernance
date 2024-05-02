@@ -9,12 +9,12 @@ import (
 )
 
 type EBSVolumeTypeRepo interface {
-	Create(m *model.EBSVolumeType) error
+	Create(tx *gorm.DB, m *model.EBSVolumeType) error
 	Get(id uint) (*model.EBSVolumeType, error)
 	Update(id uint, m model.EBSVolumeType) error
 	Delete(id uint) error
 	List() ([]model.EBSVolumeType, error)
-	Truncate() error
+	Truncate(tx *gorm.DB) error
 	GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, float64, error)
 }
 
@@ -28,8 +28,11 @@ func NewEBSVolumeTypeRepo(db *connector.Database) EBSVolumeTypeRepo {
 	}
 }
 
-func (r *EBSVolumeTypeRepoImpl) Create(m *model.EBSVolumeType) error {
-	return r.db.Conn().Create(&m).Error
+func (r *EBSVolumeTypeRepoImpl) Create(tx *gorm.DB, m *model.EBSVolumeType) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	return tx.Create(&m).Error
 }
 
 func (r *EBSVolumeTypeRepoImpl) Get(id uint) (*model.EBSVolumeType, error) {
@@ -61,8 +64,11 @@ func (r *EBSVolumeTypeRepoImpl) List() ([]model.EBSVolumeType, error) {
 	return ms, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) Truncate() error {
-	tx := r.db.Conn().Unscoped().Where("1 = 1").Delete(&model.EBSVolumeType{})
+func (r *EBSVolumeTypeRepoImpl) Truncate(tx *gorm.DB) error {
+	if tx != nil {
+		tx = r.db.Conn()
+	}
+	tx = tx.Unscoped().Where("1 = 1").Delete(&model.EBSVolumeType{})
 	if tx.Error != nil {
 		return tx.Error
 	}

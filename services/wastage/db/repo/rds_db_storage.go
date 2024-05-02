@@ -8,12 +8,12 @@ import (
 )
 
 type RDSDBStorageRepo interface {
-	Create(m *model.RDSDBStorage) error
+	Create(tx *gorm.DB, m *model.RDSDBStorage) error
 	Get(id uint) (*model.RDSDBStorage, error)
 	Update(id uint, m model.RDSDBStorage) error
 	Delete(id uint) error
 	List() ([]model.RDSDBStorage, error)
-	Truncate() error
+	Truncate(tx *gorm.DB) error
 }
 
 type RDSDBStorageRepoImpl struct {
@@ -26,8 +26,11 @@ func NewRDSDBStorageRepo(db *connector.Database) RDSDBStorageRepo {
 	}
 }
 
-func (r *RDSDBStorageRepoImpl) Create(m *model.RDSDBStorage) error {
-	return r.db.Conn().Create(&m).Error
+func (r *RDSDBStorageRepoImpl) Create(tx *gorm.DB, m *model.RDSDBStorage) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	return tx.Create(&m).Error
 }
 
 func (r *RDSDBStorageRepoImpl) Get(id uint) (*model.RDSDBStorage, error) {
@@ -59,8 +62,11 @@ func (r *RDSDBStorageRepoImpl) List() ([]model.RDSDBStorage, error) {
 	return ms, nil
 }
 
-func (r *RDSDBStorageRepoImpl) Truncate() error {
-	tx := r.db.Conn().Unscoped().Where("1 = 1").Delete(&model.RDSDBStorage{})
+func (r *RDSDBStorageRepoImpl) Truncate(tx *gorm.DB) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	tx = tx.Unscoped().Where("1 = 1").Delete(&model.RDSDBStorage{})
 	if tx.Error != nil {
 		return tx.Error
 	}

@@ -8,12 +8,12 @@ import (
 )
 
 type RDSProductRepo interface {
-	Create(m *model.RDSProduct) error
+	Create(tx *gorm.DB, m *model.RDSProduct) error
 	Get(id uint) (*model.RDSProduct, error)
 	Update(id uint, m model.RDSProduct) error
 	Delete(id uint) error
 	List() ([]model.RDSProduct, error)
-	Truncate() error
+	Truncate(tx *gorm.DB) error
 }
 
 type RDSProductRepoImpl struct {
@@ -26,8 +26,11 @@ func NewRDSProductRepo(db *connector.Database) RDSProductRepo {
 	}
 }
 
-func (r *RDSProductRepoImpl) Create(m *model.RDSProduct) error {
-	return r.db.Conn().Create(&m).Error
+func (r *RDSProductRepoImpl) Create(tx *gorm.DB, m *model.RDSProduct) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	return tx.Create(&m).Error
 }
 
 func (r *RDSProductRepoImpl) Get(id uint) (*model.RDSProduct, error) {
@@ -59,8 +62,11 @@ func (r *RDSProductRepoImpl) List() ([]model.RDSProduct, error) {
 	return ms, nil
 }
 
-func (r *RDSProductRepoImpl) Truncate() error {
-	tx := r.db.Conn().Unscoped().Where("1 = 1").Delete(&model.RDSProduct{})
+func (r *RDSProductRepoImpl) Truncate(tx *gorm.DB) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	tx = tx.Unscoped().Where("1 = 1").Delete(&model.RDSProduct{})
 	if tx.Error != nil {
 		return tx.Error
 	}
