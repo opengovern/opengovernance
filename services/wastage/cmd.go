@@ -43,6 +43,12 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// create citext extension if not exists
+			err = db.Conn().Exec("CREATE EXTENSION IF NOT EXISTS citext").Error
+			if err != nil {
+				logger.Error("failed to create citext extension", zap.Error(err))
+				return err
+			}
 			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{},
 				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{})
 			if err != nil {
