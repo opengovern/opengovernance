@@ -85,7 +85,7 @@ func (s *Service) AwsRdsRecommendation(
 		Cost:              currentCost,
 	}
 
-	neededVCPU := *usageCpuPercent.Avg * float64(currentInstanceRow.VCpu)
+	neededVCPU := (*usageCpuPercent.Avg / 100) * float64(currentInstanceRow.VCpu)
 	if v, ok := preferences["CpuBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
