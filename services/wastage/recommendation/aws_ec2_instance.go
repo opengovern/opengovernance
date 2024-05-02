@@ -9,148 +9,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/ec2instance"
 	"github.com/sashabaranov/go-openai"
-	"math"
-	"sort"
 	"strconv"
 	"strings"
 )
-
-func funcP(a, b *float64, f func(aa, bb float64) float64) *float64 {
-	if a == nil && b == nil {
-		return nil
-	} else if a == nil {
-		return b
-	} else if b == nil {
-		return a
-	} else {
-		tmp := f(*a, *b)
-		return &tmp
-	}
-}
-
-func mergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Datapoint {
-	avg := func(aa, bb float64) float64 {
-		return (aa + bb) / 2.0
-	}
-	sum := func(aa, bb float64) float64 {
-		return aa + bb
-	}
-
-	dps := map[int64]*types2.Datapoint{}
-	for _, dp := range in {
-		dps[dp.Timestamp.Unix()] = &dp
-	}
-	for _, dp := range out {
-		if dps[dp.Timestamp.Unix()] == nil {
-			dps[dp.Timestamp.Unix()] = &dp
-			break
-		}
-
-		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, avg)
-		dps[dp.Timestamp.Unix()].Maximum = funcP(dps[dp.Timestamp.Unix()].Maximum, dp.Maximum, math.Max)
-		dps[dp.Timestamp.Unix()].Minimum = funcP(dps[dp.Timestamp.Unix()].Minimum, dp.Minimum, math.Min)
-		dps[dp.Timestamp.Unix()].SampleCount = funcP(dps[dp.Timestamp.Unix()].SampleCount, dp.SampleCount, sum)
-		dps[dp.Timestamp.Unix()].Sum = funcP(dps[dp.Timestamp.Unix()].Sum, dp.Sum, sum)
-	}
-
-	var dpArr []types2.Datapoint
-	for _, dp := range dps {
-		dpArr = append(dpArr, *dp)
-	}
-	sort.Slice(dpArr, func(i, j int) bool {
-		return dpArr[i].Timestamp.Unix() < dpArr[j].Timestamp.Unix()
-	})
-	return dpArr
-}
-
-func sumMergeDatapoints(in []types2.Datapoint, out []types2.Datapoint) []types2.Datapoint {
-	sum := func(aa, bb float64) float64 {
-		return aa + bb
-	}
-
-	dps := map[int64]*types2.Datapoint{}
-	for _, dp := range in {
-		dps[dp.Timestamp.Unix()] = &dp
-	}
-	for _, dp := range out {
-		if dps[dp.Timestamp.Unix()] == nil {
-			dps[dp.Timestamp.Unix()] = &dp
-			break
-		}
-
-		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, sum)
-		dps[dp.Timestamp.Unix()].Maximum = funcP(dps[dp.Timestamp.Unix()].Maximum, dp.Maximum, sum)
-		dps[dp.Timestamp.Unix()].Minimum = funcP(dps[dp.Timestamp.Unix()].Minimum, dp.Minimum, sum)
-		dps[dp.Timestamp.Unix()].SampleCount = funcP(dps[dp.Timestamp.Unix()].SampleCount, dp.SampleCount, sum)
-		dps[dp.Timestamp.Unix()].Sum = funcP(dps[dp.Timestamp.Unix()].Sum, dp.Sum, sum)
-	}
-
-	var dpArr []types2.Datapoint
-	for _, dp := range dps {
-		dpArr = append(dpArr, *dp)
-	}
-	sort.Slice(dpArr, func(i, j int) bool {
-		return dpArr[i].Timestamp.Unix() < dpArr[j].Timestamp.Unix()
-	})
-	return dpArr
-
-}
-
-func averageOfDatapoints(datapoints []types2.Datapoint) float64 {
-	if len(datapoints) == 0 {
-		return 0.0
-	}
-
-	avg := float64(0)
-	for _, dp := range datapoints {
-		if dp.Average == nil {
-			continue
-		}
-		avg += *dp.Average
-	}
-	avg = avg / float64(len(datapoints))
-	return avg
-}
-
-func minOfDatapoints(datapoints []types2.Datapoint) float64 {
-	if len(datapoints) == 0 {
-		return 0.0
-	}
-
-	minV := math.MaxFloat64
-	for _, dp := range datapoints {
-		if dp.Minimum == nil {
-			continue
-		}
-		minV = min(minV, *dp.Minimum)
-	}
-	return minV
-}
-
-func maxOfDatapoints(datapoints []types2.Datapoint) float64 {
-	if len(datapoints) == 0 {
-		return 0.0
-	}
-
-	maxV := 0.0
-	for _, dp := range datapoints {
-		if dp.Maximum == nil {
-			continue
-		}
-		maxV = max(maxV, *dp.Maximum)
-	}
-	return maxV
-}
-
-func extractUsage(dps []types2.Datapoint) entity.Usage {
-	minV, avgV, maxV := minOfDatapoints(dps), averageOfDatapoints(dps), maxOfDatapoints(dps)
-	return entity.Usage{
-		Avg: &avgV,
-		Min: &minV,
-		Max: &maxV,
-	}
-}
 
 func (s *Service) EC2InstanceRecommendation(
 	region string,
@@ -160,10 +23,9 @@ func (s *Service) EC2InstanceRecommendation(
 	volumeMetrics map[string]map[string][]types2.Datapoint,
 	preferences map[string]*string,
 ) (*entity.RightSizingRecommendation, error) {
-	networkDatapoints := sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
 	cpuUsage := extractUsage(metrics["CPUUtilization"])
 	memoryUsage := extractUsage(metrics["mem_used_percent"])
-	networkUsage := extractUsage(networkDatapoints)
+	networkUsage := extractUsage(sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"]))
 
 	var ebsThroughputDatapoints []types2.Datapoint
 	var ebsIopsDatapoints []types2.Datapoint
@@ -237,15 +99,15 @@ func (s *Service) EC2InstanceRecommendation(
 		} else {
 			vl = *v
 		}
-		if PreferenceDBKey[k] == "" {
+		if ec2instance.PreferenceDBKey[k] == "" {
 			continue
 		}
 
 		cond := "="
-		if sc, ok := PreferenceSpecialCond[k]; ok {
+		if sc, ok := ec2instance.PreferenceSpecialCond[k]; ok {
 			cond = sc
 		}
-		pref[fmt.Sprintf("%s %s ?", PreferenceDBKey[k], cond)] = vl
+		pref[fmt.Sprintf("%s %s ?", ec2instance.PreferenceDBKey[k], cond)] = vl
 	}
 	if _, ok := preferences["vCPU"]; !ok {
 		pref["v_cpu >= ?"] = neededCPU
@@ -261,7 +123,7 @@ func (s *Service) EC2InstanceRecommendation(
 		}
 	}
 	if value, ok := preferences["UsageOperation"]; ok && value != nil {
-		if v, ok := UsageOperationHumanToMachine[*value]; ok {
+		if v, ok := ec2instance.UsageOperationHumanToMachine[*value]; ok {
 			pref["operation = ?"] = v
 		} else {
 			delete(pref, "operation = ?")
@@ -362,7 +224,7 @@ func (s *Service) generateDescription(instance entity.EC2Instance, region string
 
 	needs := ""
 	for k, v := range preferences {
-		if PreferenceDBKey[k] == "" {
+		if ec2instance.PreferenceDBKey[k] == "" {
 			continue
 		}
 		if v == nil {

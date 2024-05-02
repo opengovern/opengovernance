@@ -2,12 +2,21 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"strconv"
+	"strings"
 )
 
 type RDSDBInstance struct {
 	gorm.Model
 
 	// Basic fields
+
+	VCpu              int64    `gorm:"index"`
+	MemoryGb          int64    `gorm:"index"`
+	NetworkThroughput *float64 `gorm:"index"` // In bytes/s
+	DatabaseEngine    string   `gorm:"index"`
+	DeploymentOption  string   `gorm:"index"`
+
 	SKU                         string
 	OfferTermCode               string
 	RateCode                    string
@@ -26,7 +35,6 @@ type RDSDBInstance struct {
 	InstanceType                string
 	CurrentGeneration           string
 	InstanceFamily              string
-	vCPU                        string
 	PhysicalProcessor           string
 	ClockSpeed                  string
 	Memory                      string
@@ -34,10 +42,8 @@ type RDSDBInstance struct {
 	NetworkPerformance          string
 	ProcessorArchitecture       string
 	EngineCode                  string
-	DatabaseEngine              string
 	DatabaseEdition             string
 	LicenseModel                string
-	DeploymentOption            string
 	usageType                   string
 	operation                   string
 	DedicatedEBSThroughput      string
@@ -92,17 +98,38 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "InstanceFamily":
 			p.InstanceFamily = row[index]
 		case "vCPU":
-			p.vCPU = row[index]
+			i, err := strconv.ParseInt(row[index], 10, 64)
+			if err == nil {
+				p.VCpu = i
+			}
 		case "PhysicalProcessor":
 			p.PhysicalProcessor = row[index]
 		case "ClockSpeed":
 			p.ClockSpeed = row[index]
 		case "Memory":
 			p.Memory = row[index]
+			for _, part := range strings.Split(row[index], " ") {
+				i, err := strconv.ParseInt(part, 10, 64)
+				if err == nil {
+					p.MemoryGb = max(p.MemoryGb, i)
+				}
+			}
 		case "Storage":
 			p.Storage = row[index]
 		case "NetworkPerformance":
 			p.NetworkPerformance = row[index]
+			for _, part := range strings.Split(row[index], " ") {
+				i, err := strconv.ParseFloat(part, 64)
+				// convert from Gbps to bytes/s
+				i = i * 1e9 / 8
+				if err == nil {
+					if p.NetworkThroughput == nil {
+						p.NetworkThroughput = &i
+					} else {
+						*p.NetworkThroughput = max(*p.NetworkThroughput, i)
+					}
+				}
+			}
 		case "ProcessorArchitecture":
 			p.ProcessorArchitecture = row[index]
 		case "EngineCode":

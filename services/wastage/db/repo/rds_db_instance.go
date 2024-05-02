@@ -14,6 +14,8 @@ type RDSDBInstanceRepo interface {
 	Delete(id uint) error
 	List() ([]model.RDSDBInstance, error)
 	Truncate() error
+	ListByInstanceType(region, instanceType, engine, clusterType string) ([]model.RDSDBInstance, error)
+	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
 }
 
 type RDSDBInstanceRepoImpl struct {
@@ -65,4 +67,35 @@ func (r *RDSDBInstanceRepoImpl) Truncate() error {
 		return tx.Error
 	}
 	return nil
+}
+
+func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine, clusterType string) ([]model.RDSDBInstance, error) {
+	var ms []model.RDSDBInstance
+	tx := r.db.Conn().Model(&model.RDSDBInstance{}).
+		Where("region_code = ?", region).
+		Where("instance_type = ?", instanceType).
+		Where("database_engine = ?", engine).
+		Where("deployment_option = ?", clusterType).
+		Find(&ms)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return ms, nil
+}
+
+func (r *RDSDBInstanceRepoImpl) GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error) {
+	var m model.RDSDBInstance
+	tx := r.db.Conn().Model(&model.RDSDBInstance{}).
+		Where("price_per_unit != 0")
+	for k, v := range pref {
+		tx = tx.Where(k, v)
+	}
+	tx = tx.Order("price_per_unit ASC").First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
 }
