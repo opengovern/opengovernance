@@ -32,7 +32,10 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	currentInstanceRow := currentInstanceTypeList[0]
 
-	// TODO get current cost
+	currentCost, err := s.costSvc.GetRDSInstanceCost(region, rdsInstance, metrics)
+	if err != nil {
+		return nil, err
+	}
 
 	current := entity.RightsizingAwsRds{
 		Region:            region,
@@ -46,7 +49,7 @@ func (s *Service) AwsRdsRecommendation(
 		StorageSize:       rdsInstance.StorageSize,
 		StorageIops:       rdsInstance.StorageIops,
 		StorageThroughput: rdsInstance.StorageThroughput,
-		Cost:              0,
+		Cost:              currentCost,
 	}
 
 	neededVCPU := *usageCpuPercent.Avg * float64(currentInstanceRow.VCpu)
@@ -165,8 +168,12 @@ func (s *Service) AwsRdsRecommendation(
 		newInstance.InstanceType = rightSizedInstanceRow.InstanceType
 		newInstance.ClusterType = entity.AwsRdsClusterType(rightSizedInstanceRow.DeploymentOption)
 		newInstance.Engine = rightSizedInstanceRow.DatabaseEngine
+		newInstance.LicenseModel = rightSizedInstanceRow.LicenseModel
 
-		// TODO get new cost
+		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
+		if err != nil {
+			return nil, err
+		}
 
 		recommended = &entity.RightsizingAwsRds{
 			Region:            rightSizedInstanceRow.RegionCode,
@@ -180,7 +187,7 @@ func (s *Service) AwsRdsRecommendation(
 			StorageSize:       nil,
 			StorageIops:       nil,
 			StorageThroughput: nil,
-			Cost:              0,
+			Cost:              recommendedCost,
 		}
 	}
 

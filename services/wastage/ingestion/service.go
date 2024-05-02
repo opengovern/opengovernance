@@ -269,8 +269,7 @@ func (s *Service) IngestRDS() error {
 			v.PopulateFromMap(columns, row)
 
 			fmt.Println("RDSDBStorage", v)
-			fmt.Println("RDSDBStorageColumns", columns)
-			fmt.Println("RDSDBStorageRow", row)
+
 			err = s.storageRepo.Create(&v)
 			if err != nil {
 				return err
@@ -280,12 +279,11 @@ func (s *Service) IngestRDS() error {
 			v := model.RDSDBInstance{}
 			v.PopulateFromMap(columns, row)
 
-			fmt.Println("RDSDBInstance", v)
-			fmt.Println("RDSDBInstanceColumns", columns)
-			fmt.Println("RDSDBInstanceRow", row)
 			if v.TermType != "OnDemand" {
 				continue
 			}
+
+			fmt.Println("RDSDBInstance", v)
 
 			err = s.rdsInstanceRepo.Create(&v)
 			if err != nil {
@@ -297,8 +295,7 @@ func (s *Service) IngestRDS() error {
 			v.PopulateFromMap(columns, row)
 
 			fmt.Println("RDS", v)
-			fmt.Println("RDSColumns", columns)
-			fmt.Println("RDSRow", row)
+
 			err = s.rdsRepo.Create(&v)
 			if err != nil {
 				return err

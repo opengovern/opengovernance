@@ -80,41 +80,41 @@ func (p *RDSProduct) PopulateFromMap(columns map[string]int, row []string) {
 			p.Currency = row[index]
 		case "RelatedTo":
 			p.RelatedTo = row[index]
-		case "ProductFamily":
+		case "Product Family":
 			p.ProductFamily = row[index]
 		case "serviceCode":
 			p.serviceCode = row[index]
 		case "Location":
 			p.Location = row[index]
-		case "LocationType":
+		case "Location Type":
 			p.LocationType = row[index]
-		case "InstanceFamily":
+		case "Instance Family":
 			p.InstanceFamily = row[index]
 		case "vCPU":
 			p.vCPU = row[index]
 		case "Storage":
 			p.Storage = row[index]
-		case "StorageMedia":
+		case "Storage Media":
 			p.StorageMedia = row[index]
-		case "VolumeType":
+		case "Volume Type":
 			p.VolumeType = row[index]
-		case "MinVolumeSize":
+		case "Min Volume Size":
 			p.MinVolumeSize = row[index]
-		case "MaxVolumeSize":
+		case "Max Volume Size":
 			p.MaxVolumeSize = row[index]
-		case "EngineCode":
+		case "Engine Code":
 			p.EngineCode = row[index]
-		case "DatabaseEngine":
+		case "Database Engine":
 			p.DatabaseEngine = row[index]
-		case "DatabaseEdition":
+		case "Database Edition":
 			p.DatabaseEdition = row[index]
-		case "LicenseModel":
+		case "License Model":
 			p.LicenseModel = row[index]
-		case "DeploymentOption":
+		case "Deployment Option":
 			p.DeploymentOption = row[index]
 		case "Group":
 			p.Group = row[index]
-		case "GroupDescription":
+		case "Group Description":
 			p.GroupDescription = row[index]
 		case "usageType":
 			p.usageType = row[index]
@@ -122,25 +122,25 @@ func (p *RDSProduct) PopulateFromMap(columns map[string]int, row []string) {
 			p.operation = row[index]
 		case "ACU":
 			p.ACU = row[index]
-		case "DeploymentModel":
+		case "Deployment Model":
 			p.DeploymentModel = row[index]
-		case "EngineMajorVersion":
+		case "Engine Major Version":
 			p.EngineMajorVersion = row[index]
-		case "EngineMediaType":
+		case "Engine Media Type":
 			p.EngineMediaType = row[index]
-		case "ExtendedSupportPricingYear":
+		case "Extended Support Pricing Year":
 			p.ExtendedSupportPricingYear = row[index]
-		case "InstanceTypeFamily":
+		case "Instance Type Family":
 			p.InstanceTypeFamily = row[index]
 		case "LimitlessPreview":
 			p.LimitlessPreview = row[index]
-		case "NormalizationSizeFactor":
+		case "Normalization Size Factor":
 			p.NormalizationSizeFactor = row[index]
-		case "RegionCode":
+		case "Region Code":
 			p.RegionCode = row[index]
 		case "serviceName":
 			p.serviceName = row[index]
-		case "VolumeName":
+		case "Volume Name":
 			p.VolumeName = row[index]
 		}
 	}

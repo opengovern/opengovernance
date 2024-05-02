@@ -67,31 +67,31 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 			p.PricePerUnit = row[index]
 		case "Currency":
 			p.Currency = row[index]
-		case "ProductFamily":
+		case "Product Family":
 			p.ProductFamily = row[index]
 		case "serviceCode":
 			p.serviceCode = row[index]
 		case "Location":
 			p.Location = row[index]
-		case "LocationType":
+		case "Location Type":
 			p.LocationType = row[index]
-		case "StorageMedia":
+		case "Storage Media":
 			p.StorageMedia = row[index]
-		case "VolumeType":
+		case "Volume Type":
 			p.VolumeType = row[index]
-		case "MinVolumeSize":
+		case "Min Volume Size":
 			p.MinVolumeSize = row[index]
-		case "MaxVolumeSize":
+		case "Max Volume Size":
 			p.MaxVolumeSize = row[index]
-		case "EngineCode":
+		case "Engine Code":
 			p.EngineCode = row[index]
-		case "DatabaseEngine":
+		case "Database Engine":
 			p.DatabaseEngine = row[index]
-		case "DatabaseEdition":
+		case "Database Edition":
 			p.DatabaseEdition = row[index]
-		case "LicenseModel":
+		case "License Model":
 			p.LicenseModel = row[index]
-		case "DeploymentOption":
+		case "Deployment Option":
 			p.DeploymentOption = row[index]
 		case "Group":
 			p.Group = row[index]
@@ -99,15 +99,15 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 			p.usageType = row[index]
 		case "operation":
 			p.operation = row[index]
-		case "DeploymentModel":
+		case "Deployment Model":
 			p.DeploymentModel = row[index]
 		case "LimitlessPreview":
 			p.LimitlessPreview = row[index]
-		case "RegionCode":
+		case "Region Code":
 			p.RegionCode = row[index]
 		case "serviceName":
 			p.serviceName = row[index]
-		case "VolumeName":
+		case "Volume Name":
 			p.VolumeName = row[index]
 		}
 	}

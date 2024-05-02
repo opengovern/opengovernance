@@ -9,10 +9,16 @@ const (
 )
 
 type AwsRds struct {
-	InstanceType  string            `json:"instanceType"`
-	Engine        string            `json:"engine"`
-	EngineVersion string            `json:"engineVersion"`
-	ClusterType   AwsRdsClusterType `json:"clusterType"`
+	HashedInstanceId                   string            `json:"hashedInstanceId"`
+	AvailabilityZone                   string            `json:"availabilityZone"`
+	InstanceType                       string            `json:"instanceType"`
+	Engine                             string            `json:"engine"`
+	EngineVersion                      string            `json:"engineVersion"`
+	LicenseModel                       string            `json:"licenseModel"`
+	BackupRetentionPeriod              *int32            `json:"backupRetentionPeriod"`
+	ClusterType                        AwsRdsClusterType `json:"clusterType"`
+	PerformanceInsightsEnabled         bool              `json:"performanceInsightsEnabled"`
+	PerformanceInsightsRetentionPeriod *int32            `json:"performanceInsightsRetentionPeriod"`
 
 	StorageType       *string `json:"storageType"`
 	StorageSize       *int32  `json:"storageSize"`

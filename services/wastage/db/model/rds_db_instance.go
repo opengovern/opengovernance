@@ -83,28 +83,28 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 			p.PricePerUnit = row[index]
 		case "Currency":
 			p.Currency = row[index]
-		case "ProductFamily":
+		case "Product Family":
 			p.ProductFamily = row[index]
 		case "serviceCode":
 			p.serviceCode = row[index]
 		case "Location":
 			p.Location = row[index]
-		case "LocationType":
+		case "Location Type":
 			p.LocationType = row[index]
-		case "InstanceType":
+		case "Instance Type":
 			p.InstanceType = row[index]
-		case "CurrentGeneration":
+		case "Current Generation":
 			p.CurrentGeneration = row[index]
-		case "InstanceFamily":
+		case "Instance Family":
 			p.InstanceFamily = row[index]
 		case "vCPU":
 			i, err := strconv.ParseInt(row[index], 10, 64)
 			if err == nil {
 				p.VCpu = i
 			}
-		case "PhysicalProcessor":
+		case "Physical Processor":
 			p.PhysicalProcessor = row[index]
-		case "ClockSpeed":
+		case "Clock Speed":
 			p.ClockSpeed = row[index]
 		case "Memory":
 			p.Memory = row[index]
@@ -116,7 +116,7 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 			}
 		case "Storage":
 			p.Storage = row[index]
-		case "NetworkPerformance":
+		case "Network Performance":
 			p.NetworkPerformance = row[index]
 			for _, part := range strings.Split(row[index], " ") {
 				i, err := strconv.ParseFloat(part, 64)
@@ -130,39 +130,39 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 					}
 				}
 			}
-		case "ProcessorArchitecture":
+		case "Processor Architecture":
 			p.ProcessorArchitecture = row[index]
-		case "EngineCode":
+		case "Engine Code":
 			p.EngineCode = row[index]
-		case "DatabaseEngine":
+		case "Database Engine":
 			p.DatabaseEngine = row[index]
-		case "DatabaseEdition":
+		case "Database Edition":
 			p.DatabaseEdition = row[index]
-		case "LicenseModel":
+		case "License Model":
 			p.LicenseModel = row[index]
-		case "DeploymentOption":
+		case "Deployment Option":
 			p.DeploymentOption = row[index]
 		case "usageType":
 			p.usageType = row[index]
 		case "operation":
 			p.operation = row[index]
-		case "DedicatedEBSThroughput":
+		case "Dedicated EBS Throughput":
 			p.DedicatedEBSThroughput = row[index]
-		case "DeploymentModel":
+		case "Deployment Model":
 			p.DeploymentModel = row[index]
-		case "EngineMediaType":
+		case "Engine Media Type":
 			p.EngineMediaType = row[index]
-		case "EnhancedNetworkingSupported":
+		case "Enhanced Networking Supported":
 			p.EnhancedNetworkingSupported = row[index]
-		case "InstanceTypeFamily":
+		case "Instance Type Family":
 			p.InstanceTypeFamily = row[index]
-		case "NormalizationSizeFactor":
+		case "Normalization Size Factor":
 			p.NormalizationSizeFactor = row[index]
-		case "PricingUnit":
+		case "Pricing Unit":
 			p.PricingUnit = row[index]
-		case "ProcessorFeatures":
+		case "Processor Features":
 			p.ProcessorFeatures = row[index]
-		case "RegionCode":
+		case "Region Code":
 			p.RegionCode = row[index]
 		case "serviceName":
 			p.serviceName = row[index]
