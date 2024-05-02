@@ -7,6 +7,8 @@ import (
 type RDSProduct struct {
 	gorm.Model
 
+	DatabaseEngine string `gorm:"index;type:citext"`
+
 	// Basic fields
 	SKU                        string
 	OfferTermCode              string
@@ -32,7 +34,6 @@ type RDSProduct struct {
 	MinVolumeSize              string
 	MaxVolumeSize              string
 	EngineCode                 string
-	DatabaseEngine             string
 	DatabaseEdition            string
 	LicenseModel               string
 	DeploymentOption           string
