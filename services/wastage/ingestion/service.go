@@ -291,6 +291,13 @@ func (s *Service) IngestRDS() error {
 			v := model.RDSDBStorage{}
 			v.PopulateFromMap(columns, row)
 
+			if v.TermType != "OnDemand" {
+				continue
+			}
+			if v.LocationType == "AWS Outposts" {
+				continue
+			}
+
 			fmt.Println("RDSDBStorage", v)
 
 			err = s.storageRepo.Create(transaction, &v)
@@ -305,6 +312,9 @@ func (s *Service) IngestRDS() error {
 			if v.TermType != "OnDemand" {
 				continue
 			}
+			if v.LocationType == "AWS Outposts" {
+				continue
+			}
 
 			fmt.Println("RDSDBInstance", v)
 
@@ -316,6 +326,13 @@ func (s *Service) IngestRDS() error {
 		default:
 			v := model.RDSProduct{}
 			v.PopulateFromMap(columns, row)
+
+			if v.TermType != "OnDemand" {
+				continue
+			}
+			if v.LocationType == "AWS Outposts" {
+				continue
+			}
 
 			fmt.Println("RDS", v)
 
