@@ -115,32 +115,42 @@ func (s *Service) AwsRdsRecommendation(
 		}
 		neededNetworkThroughput = (1 + float64(vPercent)/100) * neededNetworkThroughput
 	}
-	neededStorageSize := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / 1e9)
-	if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
-		vPercent, err := strconv.ParseInt(*v, 10, 64)
-		if err != nil {
-			s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
-			return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
+
+	neededStorageSize := 0.0
+	if rdsInstance.StorageSize != nil {
+		neededStorageSize = float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / 1e9)
+		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
+			vPercent, err := strconv.ParseInt(*v, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
+				return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
+			}
+			neededStorageSize = (1 + float64(vPercent)/100) * neededStorageSize
 		}
-		neededStorageSize = (1 + float64(vPercent)/100) * neededStorageSize
 	}
-	neededStorageIops := float64(*rdsInstance.StorageIops) - *usageStorageIops.Avg
-	if v, ok := preferences["StorageIopsBreathingRoom"]; ok {
-		vPercent, err := strconv.ParseInt(*v, 10, 64)
-		if err != nil {
-			s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
-			return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
+	neededStorageIops := 0.0
+	if rdsInstance.StorageIops != nil {
+		neededStorageIops = float64(*rdsInstance.StorageIops) - *usageStorageIops.Avg
+		if v, ok := preferences["StorageIopsBreathingRoom"]; ok {
+			vPercent, err := strconv.ParseInt(*v, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
+				return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
+			}
+			neededStorageIops = (1 + float64(vPercent)/100) * neededStorageIops
 		}
-		neededStorageIops = (1 + float64(vPercent)/100) * neededStorageIops
 	}
-	neededStorageThroughput := float64(*rdsInstance.StorageThroughput) - *usageStorageThroughputBytes.Avg
-	if v, ok := preferences["StorageThroughputBreathingRoom"]; ok {
-		vPercent, err := strconv.ParseInt(*v, 10, 64)
-		if err != nil {
-			s.logger.Error("invalid StorageThroughputBreathingRoom value", zap.String("value", *v))
-			return nil, fmt.Errorf("invalid StorageThroughputBreathingRoom value: %s", *v)
+	neededStorageThroughput := 0.0
+	if rdsInstance.StorageThroughput != nil {
+		neededStorageThroughput = float64(*rdsInstance.StorageThroughput) - *usageStorageThroughputBytes.Avg
+		if v, ok := preferences["StorageThroughputBreathingRoom"]; ok {
+			vPercent, err := strconv.ParseInt(*v, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid StorageThroughputBreathingRoom value", zap.String("value", *v))
+				return nil, fmt.Errorf("invalid StorageThroughputBreathingRoom value: %s", *v)
+			}
+			neededStorageThroughput = (1 + float64(vPercent)/100) * neededStorageThroughput
 		}
-		neededStorageThroughput = (1 + float64(vPercent)/100) * neededStorageThroughput
 	}
 
 	instancePref := map[string]any{}
