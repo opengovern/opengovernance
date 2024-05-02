@@ -42,7 +42,7 @@ type RDSDBStorage struct {
 	VolumeName       string
 }
 
-func (p RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
+func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 	for col, index := range columns {
 		switch col {
 		case "SKU":

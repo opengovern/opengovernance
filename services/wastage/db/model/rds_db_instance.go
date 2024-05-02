@@ -52,7 +52,7 @@ type RDSDBInstance struct {
 	serviceName                 string
 }
 
-func (p RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
+func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 	for col, index := range columns {
 		switch col {
 		case "SKU":
