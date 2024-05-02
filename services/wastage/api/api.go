@@ -14,11 +14,11 @@ type API struct {
 	costSvc      *cost.Service
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
-	usageRepo    repo.UsageRepo
+	usageRepo    repo.UsageV2Repo
 	logger       *zap.Logger
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *ingestion.Service, usageRepo repo.UsageRepo, logger *zap.Logger) *API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *ingestion.Service, usageRepo repo.UsageV2Repo, logger *zap.Logger) *API {
 	return &API{
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
@@ -30,5 +30,5 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *
 
 func (api *API) Register(e *echo.Echo) {
 	qThr := wastage.New(api.costSvc, api.recomSvc, api.ingestionSvc, api.usageRepo, api.logger)
-	qThr.Register(e.Group("/api/v1/wastage"))
+	qThr.Register(e)
 }

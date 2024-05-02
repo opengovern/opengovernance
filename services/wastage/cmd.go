@@ -50,7 +50,7 @@ func Command() *cobra.Command {
 				return err
 			}
 			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{},
-				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{})
+				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{}, &model.UsageV2{})
 			if err != nil {
 				return err
 			}
@@ -60,7 +60,7 @@ func Command() *cobra.Command {
 			rdsStorageRepo := repo.NewRDSDBStorageRepo(db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
-			usageRepo := repo.NewUsageRepo(db)
+			usageV2Repo := repo.NewUsageV2Repo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
@@ -73,7 +73,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(costSvc, recomSvc, ingestionSvc, usageRepo, logger),
+				api.New(costSvc, recomSvc, ingestionSvc, usageV2Repo, logger),
 			)
 		},
 	}
