@@ -91,7 +91,7 @@ func (s *Service) Start(ctx context.Context) error {
 			}
 		}
 
-		if rdsData == nil || rdsData.UpdatedAt.Before(time.Now().Add(-24*time.Hour)) || true {
+		if rdsData == nil || rdsData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
 			err = s.IngestRDS()
 			if err != nil {
 				return err
