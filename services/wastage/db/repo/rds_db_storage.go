@@ -14,6 +14,7 @@ type RDSDBStorageRepo interface {
 	Delete(id uint) error
 	List() ([]model.RDSDBStorage, error)
 	Truncate(tx *gorm.DB) error
+	GetCheapestBySpecs(region string, engine, edition string, volumeSize int32, iops int32, throughput float64) (*model.RDSDBStorage, int32, float64, error)
 }
 
 type RDSDBStorageRepoImpl struct {
@@ -71,4 +72,8 @@ func (r *RDSDBStorageRepoImpl) Truncate(tx *gorm.DB) error {
 		return tx.Error
 	}
 	return nil
+}
+
+func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition string, volumeSize int32, iops int32, throughput float64) (*model.RDSDBStorage, int32, float64, error) {
+
 }

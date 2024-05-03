@@ -287,7 +287,7 @@ func (s *Service) IngestRDS() error {
 		}
 
 		switch row[columns["Product Family"]] {
-		case "Database Storage":
+		case "Database Storage", "Provisioned IOPS", "Provisioned Throughput":
 			v := model.RDSDBStorage{}
 			v.PopulateFromMap(columns, row)
 
