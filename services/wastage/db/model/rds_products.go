@@ -8,8 +8,9 @@ import (
 type RDSProduct struct {
 	gorm.Model
 
-	DatabaseEngine string  `gorm:"index;type:citext"`
-	PricePerUnit   float64 `gorm:"index:price_idx,sort:asc"`
+	DatabaseEngine  string  `gorm:"index;type:citext"`
+	DatabaseEdition string  `gorm:"index;type:citext"`
+	PricePerUnit    float64 `gorm:"index:price_idx,sort:asc"`
 
 	// Basic fields
 	SKU                        string
@@ -36,13 +37,12 @@ type RDSProduct struct {
 	MinVolumeSize              string
 	MaxVolumeSize              string
 	EngineCode                 string
-	DatabaseEdition            string
 	LicenseModel               string
 	DeploymentOption           string
 	Group                      string
 	GroupDescription           string
-	usageType                  string
-	operation                  string
+	UsageType                  string
+	Operation                  string
 	ACU                        string
 	DeploymentModel            string
 	EngineMajorVersion         string
@@ -52,7 +52,7 @@ type RDSProduct struct {
 	LimitlessPreview           string
 	NormalizationSizeFactor    string
 	RegionCode                 string
-	serviceName                string
+	ServiceName                string
 	VolumeName                 string
 }
 
@@ -121,9 +121,9 @@ func (p *RDSProduct) PopulateFromMap(columns map[string]int, row []string) {
 		case "Group Description":
 			p.GroupDescription = row[index]
 		case "usageType":
-			p.usageType = row[index]
+			p.UsageType = row[index]
 		case "operation":
-			p.operation = row[index]
+			p.Operation = row[index]
 		case "ACU":
 			p.ACU = row[index]
 		case "Deployment Model":
@@ -143,7 +143,7 @@ func (p *RDSProduct) PopulateFromMap(columns map[string]int, row []string) {
 		case "Region Code":
 			p.RegionCode = row[index]
 		case "serviceName":
-			p.serviceName = row[index]
+			p.ServiceName = row[index]
 		case "Volume Name":
 			p.VolumeName = row[index]
 		}
