@@ -258,6 +258,13 @@ func (s *Service) AwsRdsRecommendation(
 		Current:     current,
 		Recommended: recommended,
 
+		VCPU:                   usageCpuPercent,
+		StorageIops:            usageStorageIops,
+		FreeMemoryBytes:        usageFreeMemoryBytes,
+		NetworkThroughputBytes: usageNetworkThroughputBytes,
+		FreeStorageBytes:       usageFreeStorageBytes,
+		StorageThroughputBytes: usageStorageThroughputBytes,
+
 		Description: "",
 	}
 
