@@ -80,6 +80,8 @@ func (s API) EC2Instance(c echo.Context) error {
 	usage := model.UsageV2{
 		ApiEndpoint:    "ec2-instance",
 		Request:        reqJson,
+		RequestId:      req.RequestId,
+		CliVersion:     req.CliVersion,
 		Response:       nil,
 		FailureMessage: nil,
 	}
@@ -170,6 +172,8 @@ func (s API) AwsRDS(c echo.Context) error {
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds",
 		Request:        reqJson,
+		RequestId:      req.RequestId,
+		CliVersion:     req.CliVersion,
 		Response:       nil,
 		FailureMessage: nil,
 	}
@@ -185,6 +189,9 @@ func (s API) AwsRDS(c echo.Context) error {
 			usage.FailureMessage = &fmsg
 		} else {
 			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
 		}
 		err = s.usageRepo.Update(usage.ID, usage)
 		if err != nil {
