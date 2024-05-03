@@ -195,8 +195,8 @@ func (s *Service) AwsRdsRecommendation(
 	}
 
 	// Aurora instance types storage configs are very different from other RDS instance types
-	if (rightSizedInstanceRow != nil && !strings.Contains(strings.ToLower(rightSizedInstanceRow.InstanceType), "aurora")) ||
-		(rightSizedInstanceRow == nil && !strings.Contains(strings.ToLower(currentInstanceRow.InstanceType), "aurora")) {
+	isResultAurora := !((rightSizedInstanceRow != nil && !strings.Contains(strings.ToLower(rightSizedInstanceRow.InstanceType), "aurora")) || (rightSizedInstanceRow == nil && !strings.Contains(strings.ToLower(currentInstanceRow.InstanceType), "aurora")))
+	if !isResultAurora {
 		storagePref := map[string]any{}
 		for k, v := range preferences {
 			var vl any
@@ -239,18 +239,20 @@ func (s *Service) AwsRdsRecommendation(
 		}
 
 		recommended = &entity.RightsizingAwsRds{
-			Region:            rightSizedInstanceRow.RegionCode,
-			InstanceType:      rightSizedInstanceRow.InstanceType,
-			Engine:            rightSizedInstanceRow.DatabaseEngine,
-			EngineVersion:     newInstance.EngineVersion,
-			ClusterType:       newInstance.ClusterType,
-			VCPU:              rightSizedInstanceRow.VCpu,
-			MemoryGb:          rightSizedInstanceRow.MemoryGb,
-			StorageType:       newInstance.StorageType,
-			StorageSize:       newInstance.StorageSize,
-			StorageIops:       newInstance.StorageIops,
-			StorageThroughput: newInstance.StorageThroughput,
-			Cost:              recommendedCost,
+			Region:        rightSizedInstanceRow.RegionCode,
+			InstanceType:  rightSizedInstanceRow.InstanceType,
+			Engine:        rightSizedInstanceRow.DatabaseEngine,
+			EngineVersion: newInstance.EngineVersion,
+			ClusterType:   newInstance.ClusterType,
+			VCPU:          rightSizedInstanceRow.VCpu,
+			MemoryGb:      rightSizedInstanceRow.MemoryGb,
+			Cost:          recommendedCost,
+		}
+		if !isResultAurora || (rightSizedInstanceRow == nil && isResultAurora) {
+			recommended.StorageType = newInstance.StorageType
+			recommended.StorageSize = newInstance.StorageSize
+			recommended.StorageIops = newInstance.StorageIops
+			recommended.StorageThroughput = newInstance.StorageThroughput
 		}
 	}
 

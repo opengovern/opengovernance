@@ -291,10 +291,7 @@ func (s *Service) IngestRDS() error {
 			v := model.RDSDBStorage{}
 			v.PopulateFromMap(columns, row)
 
-			if v.TermType != "OnDemand" {
-				continue
-			}
-			if v.LocationType == "AWS Outposts" {
+			if !v.DoIngest() {
 				continue
 			}
 

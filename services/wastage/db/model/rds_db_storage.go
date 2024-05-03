@@ -16,6 +16,8 @@ type RDSDBStorage struct {
 	PricePerUnit    float64 `gorm:"index:price_idx,sort:asc"`
 	MinVolumeSizeGb int32   `gorm:"index"`
 	MaxVolumeSizeGb int32   `gorm:"index"`
+	MaxThroughputMB float64 `gorm:"index"`
+	MaxIops         int32   `gorm:"index"`
 
 	SKU              string
 	OfferTermCode    string
@@ -160,4 +162,93 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 			p.VolumeName = row[index]
 		}
 	}
+
+	// Computed fields
+	if p.ProductFamily == "Database Storage" {
+		engine := strings.ToLower(p.DatabaseEngine)
+		volType := p.VolumeType
+		// Using https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Storage.html to fill in the iops/throughput values
+		switch {
+		case volType == "General Purpose" && !strings.Contains(engine, "aurora"): // GP2 non-aurora
+			switch {
+			case strings.Contains(engine, "mariadb"), strings.Contains(engine, "mysql"),
+				strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
+				p.MaxThroughputMB = 1000
+				p.MaxIops = 64000
+			case strings.Contains(engine, "oracle"):
+				p.MaxThroughputMB = 1000
+				p.MaxIops = 64000
+			case strings.Contains(engine, "sql server"):
+				p.MaxThroughputMB = 250
+				p.MaxIops = 16000
+			}
+		case volType == "General Purpose-GP3" && !strings.Contains(engine, "aurora"): // GP3 non-aurora
+			switch {
+			case strings.Contains(engine, "db2"), strings.Contains(engine, "mariadb"),
+				strings.Contains(engine, "mysql"), strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 64000
+			case strings.Contains(engine, "oracle"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 64000
+			case strings.Contains(engine, "sql server"):
+				p.MaxThroughputMB = 1000
+				p.MaxIops = 16000
+			}
+		case volType == "Provisioned IOPS" && !strings.Contains(engine, "aurora"): // IO1 non-aurora
+			switch {
+			case strings.Contains(engine, "db2"), strings.Contains(engine, "mariadb"),
+				strings.Contains(engine, "mysql"), strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 256000
+			case strings.Contains(engine, "oracle"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 256000
+			case strings.Contains(engine, "sql server"):
+				p.MaxThroughputMB = 1000
+				p.MaxIops = 64000
+			}
+		case volType == "Provisioned IOPS-IO2" && !strings.Contains(engine, "aurora"): // IO2 non-aurora
+			switch {
+			case strings.Contains(engine, "db2"), strings.Contains(engine, "mariadb"),
+				strings.Contains(engine, "mysql"), strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 256000
+			case strings.Contains(engine, "oracle"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 256000
+			case strings.Contains(engine, "sql server"):
+				p.MaxThroughputMB = 4000
+				p.MaxIops = 64000
+			}
+		case volType == "Magnetic" && !strings.Contains(engine, "aurora"): // Magnetic non-aurora
+			p.MaxIops = 1000
+			// This is an estimate, as the docs don't specify and leaving as 0 would make it unsuggestable (which you can make a case for)
+			p.MaxThroughputMB = 100
+		// aurora cases are not in the docs, so these are populated based on the general purpose and io optimized values
+		// it shouldn't be too far off or matter too much as aurora is a managed service, and you can't change the storage type except between general purpose and io optimized
+		// and for those we will use the cost and only cost to determine the cheapest option since other things are managed
+		case volType == "General Purpose-Aurora" && strings.Contains(engine, "aurora"): // General Purpose Aurora
+			p.MaxThroughputMB = 4000
+			p.MaxIops = 64000
+		case volType == "IO Optimized-Aurora" && strings.Contains(engine, "aurora"): // IO Optimized Aurora
+			p.MaxThroughputMB = 4000
+			p.MaxIops = 256000
+		}
+	}
+}
+
+func (p *RDSDBStorage) DoIngest() bool {
+	if p.TermType != "OnDemand" ||
+		p.LocationType == "AWS Outposts" ||
+		p.VolumeType == "General Purpose (SSD)" ||
+		p.VolumeType == "Provisioned IOPS (SSD)" {
+		return false
+	}
+	if (p.ProductFamily == "Database Storage" && p.VolumeType == "General Purpose-GP3" && p.MinVolumeSize == "") ||
+		(p.ProductFamily == "Database Storage" && p.VolumeType == "Provisioned IOPS-IO2" && p.MinVolumeSize == "") {
+		return false
+	}
+
+	return true
 }

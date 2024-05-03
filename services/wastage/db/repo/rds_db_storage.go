@@ -75,5 +75,5 @@ func (r *RDSDBStorageRepoImpl) Truncate(tx *gorm.DB) error {
 }
 
 func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition string, volumeSize int32, iops int32, throughput float64) (*model.RDSDBStorage, int32, float64, error) {
-	return nil, 0, 0, nil
+	return nil, 0, 0, errors.New("not implemented")
 }
