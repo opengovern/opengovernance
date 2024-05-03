@@ -305,7 +305,7 @@ func (s *Service) IngestRDS() error {
 				return err
 			}
 
-		case "Database Instance":
+		case "Database Instance", "Provisioned IOPS", "Provisioned Throughput":
 			v := model.RDSDBInstance{}
 			v.PopulateFromMap(columns, row)
 
