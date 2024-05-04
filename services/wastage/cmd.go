@@ -73,7 +73,7 @@ func Command() *cobra.Command {
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageV2Repo := repo.NewUsageV2Repo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
-			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, cnf.OpenAIToken, costSvc)
+			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
 			go func() {
 				err = ingestionSvc.Start(ctx)
