@@ -103,7 +103,8 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 	throughputCost := 0.0
 
 	if volumeSize > model.RDSDBStorageTier1Gp3SizeThreshold {
-		pIops := max(int(iops)-model.RDSDBStorageTier2Gp3BaseIops, 0)
+		pIops := int(iops) - model.RDSDBStorageTier2Gp3BaseIops
+		pIops = max(pIops, 0)
 		if pIops > 0 {
 			tx := r.db.Conn().Model(&model.RDSDBStorage{}).
 				Where("product_family = ?", "Provisioned IOPS").
@@ -123,7 +124,8 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 			iopsCost = iopsStorage.PricePerUnit * float64(pIops)
 		}
 
-		pThroughput := max(throughput-model.RDSDBStorageTier2Gp3BaseThroughput, 0)
+		pThroughput := throughput - model.RDSDBStorageTier2Gp3BaseThroughput
+		pThroughput = max(pThroughput, 0)
 		if pThroughput > 0 {
 			tx := r.db.Conn().Model(&model.RDSDBStorage{}).
 				Where("product_family = ?", "Provisioned Throughput").
