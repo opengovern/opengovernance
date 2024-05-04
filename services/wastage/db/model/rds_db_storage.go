@@ -6,18 +6,28 @@ import (
 	"strings"
 )
 
+const (
+	RDSDBStorageTier1Gp3BaseThroughput = 125.0
+	RDSDBStorageTier1Gp3BaseIops       = 3000
+	RDSDBStorageTier2Gp3BaseThroughput = 500.0
+	RDSDBStorageTier2Gp3BaseIops       = 12000
+	RDSDBStorageTier1Gp3SizeThreshold  = 400
+)
+
 type RDSDBStorage struct {
 	gorm.Model
 
 	// Basic fields
-	RegionCode      string  `gorm:"index;type:citext"`
-	DatabaseEngine  string  `gorm:"index;type:citext"`
-	DatabaseEdition string  `gorm:"index;type:citext"`
-	PricePerUnit    float64 `gorm:"index:price_idx,sort:asc"`
-	MinVolumeSizeGb int32   `gorm:"index"`
-	MaxVolumeSizeGb int32   `gorm:"index"`
-	MaxThroughputMB float64 `gorm:"index"`
-	MaxIops         int32   `gorm:"index"`
+	RegionCode       string  `gorm:"index;type:citext"`
+	DatabaseEngine   string  `gorm:"index;type:citext"`
+	DatabaseEdition  string  `gorm:"index;type:citext"`
+	PricePerUnit     float64 `gorm:"index:price_idx,sort:asc"`
+	MinVolumeSizeGb  int32   `gorm:"index"`
+	MaxVolumeSizeGb  int32   `gorm:"index"`
+	MaxThroughputMB  float64 `gorm:"index"`
+	MaxIops          int32   `gorm:"index"`
+	VolumeType       string  `gorm:"index"`
+	DeploymentOption string  `gorm:"index"`
 
 	SKU              string
 	OfferTermCode    string
@@ -35,13 +45,12 @@ type RDSDBStorage struct {
 	Location         string
 	LocationType     string
 	StorageMedia     string
-	VolumeType       string
 	MinVolumeSize    string
 	MaxVolumeSize    string
 	EngineCode       string
 	LicenseModel     string
-	DeploymentOption string
 	Group            string
+	GroupDescription string
 	UsageType        string
 	Operation        string
 	DeploymentModel  string
@@ -49,6 +58,18 @@ type RDSDBStorage struct {
 	ServiceName      string
 	VolumeName       string
 }
+
+type RDSDBStorageVolumeType string
+
+const (
+	RDSDBStorageVolumeTypeGP2                  RDSDBStorageVolumeType = "General Purpose"
+	RDSDBStorageVolumeTypeGP3                  RDSDBStorageVolumeType = "General Purpose-GP3"
+	RDSDBStorageVolumeTypeIO1                  RDSDBStorageVolumeType = "Provisioned IOPS"
+	RDSDBStorageVolumeTypeIO2                  RDSDBStorageVolumeType = "Provisioned IOPS-IO2"
+	RDSDBStorageVolumeTypeMagnetic             RDSDBStorageVolumeType = "Magnetic"
+	RDSDBStorageVolumeTypeGeneralPurposeAurora RDSDBStorageVolumeType = "General Purpose-Aurora"
+	RDSDBStorageVolumeTypeIOOptimizedAurora    RDSDBStorageVolumeType = "IO Optimized-Aurora"
+)
 
 func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 	for col, index := range columns {
@@ -146,6 +167,8 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 			p.DeploymentOption = row[index]
 		case "Group":
 			p.Group = row[index]
+		case "Group Description":
+			p.GroupDescription = row[index]
 		case "usageType":
 			p.UsageType = row[index]
 		case "operation":
@@ -169,7 +192,7 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 		volType := p.VolumeType
 		// Using https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Storage.html to fill in the iops/throughput values
 		switch {
-		case volType == "General Purpose" && !strings.Contains(engine, "aurora"): // GP2 non-aurora
+		case volType == string(RDSDBStorageVolumeTypeGP2) && !strings.Contains(engine, "aurora"): // GP2 non-aurora
 			switch {
 			case strings.Contains(engine, "mariadb"), strings.Contains(engine, "mysql"),
 				strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
@@ -182,7 +205,7 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 				p.MaxThroughputMB = 250
 				p.MaxIops = 16000
 			}
-		case volType == "General Purpose-GP3" && !strings.Contains(engine, "aurora"): // GP3 non-aurora
+		case volType == string(RDSDBStorageVolumeTypeGP3) && !strings.Contains(engine, "aurora"): // GP3 non-aurora
 			switch {
 			case strings.Contains(engine, "db2"), strings.Contains(engine, "mariadb"),
 				strings.Contains(engine, "mysql"), strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
@@ -195,7 +218,7 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 				p.MaxThroughputMB = 1000
 				p.MaxIops = 16000
 			}
-		case volType == "Provisioned IOPS" && !strings.Contains(engine, "aurora"): // IO1 non-aurora
+		case volType == string(RDSDBStorageVolumeTypeIO1) && !strings.Contains(engine, "aurora"): // IO1 non-aurora
 			switch {
 			case strings.Contains(engine, "db2"), strings.Contains(engine, "mariadb"),
 				strings.Contains(engine, "mysql"), strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
@@ -208,7 +231,7 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 				p.MaxThroughputMB = 1000
 				p.MaxIops = 64000
 			}
-		case volType == "Provisioned IOPS-IO2" && !strings.Contains(engine, "aurora"): // IO2 non-aurora
+		case volType == string(RDSDBStorageVolumeTypeIO2) && !strings.Contains(engine, "aurora"): // IO2 non-aurora
 			switch {
 			case strings.Contains(engine, "db2"), strings.Contains(engine, "mariadb"),
 				strings.Contains(engine, "mysql"), strings.Contains(engine, "postgres"), strings.Contains(engine, "any"):
@@ -221,17 +244,17 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 				p.MaxThroughputMB = 4000
 				p.MaxIops = 64000
 			}
-		case volType == "Magnetic" && !strings.Contains(engine, "aurora"): // Magnetic non-aurora
+		case volType == string(RDSDBStorageVolumeTypeMagnetic) && !strings.Contains(engine, "aurora"): // Magnetic non-aurora
 			p.MaxIops = 1000
 			// This is an estimate, as the docs don't specify and leaving as 0 would make it unsuggestable (which you can make a case for)
 			p.MaxThroughputMB = 100
 		// aurora cases are not in the docs, so these are populated based on the general purpose and io optimized values
 		// it shouldn't be too far off or matter too much as aurora is a managed service, and you can't change the storage type except between general purpose and io optimized
 		// and for those we will use the cost and only cost to determine the cheapest option since other things are managed
-		case volType == "General Purpose-Aurora" && strings.Contains(engine, "aurora"): // General Purpose Aurora
+		case volType == string(RDSDBStorageVolumeTypeGeneralPurposeAurora) && strings.Contains(engine, "aurora"): // General Purpose Aurora
 			p.MaxThroughputMB = 4000
 			p.MaxIops = 64000
-		case volType == "IO Optimized-Aurora" && strings.Contains(engine, "aurora"): // IO Optimized Aurora
+		case volType == string(RDSDBStorageVolumeTypeIOOptimizedAurora) && strings.Contains(engine, "aurora"): // IO Optimized Aurora
 			p.MaxThroughputMB = 4000
 			p.MaxIops = 256000
 		}
