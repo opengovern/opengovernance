@@ -45,9 +45,7 @@ func (s *Service) AwsRdsRecommendation(
 	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"])
 	usageFreeStorageBytes := extractUsage(metrics["FreeStorageSpace"])
 	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]))
-	s.logger.Info("rds iops metric", zap.Any("ReadIOPS + WriteIOPS", sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"])))
 	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]))
-	s.logger.Info("rds storage iops usage", zap.Any("usageStorageIops", usageStorageIops))
 	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]))
 	usageStorageThroughputMB := entity.Usage{
 		Avg: funcP(usageStorageThroughputBytes.Avg, usageStorageThroughputBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
