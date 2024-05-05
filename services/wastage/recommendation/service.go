@@ -124,13 +124,18 @@ func averageOfDatapoints(datapoints []types.Datapoint) float64 {
 		return 0.0
 	}
 
+	hasNonNil := false
 	avg := float64(0)
 	for _, dp := range datapoints {
 		dp := dp
 		if dp.Average == nil {
 			continue
 		}
+		hasNonNil = true
 		avg += *dp.Average
+	}
+	if !hasNonNil {
+		return 0.0
 	}
 	avg = avg / float64(len(datapoints))
 	return avg
@@ -141,13 +146,18 @@ func minOfDatapoints(datapoints []types.Datapoint) float64 {
 		return 0.0
 	}
 
+	hasNonNil := false
 	minV := math.MaxFloat64
 	for _, dp := range datapoints {
 		dp := dp
 		if dp.Minimum == nil {
 			continue
 		}
+		hasNonNil = true
 		minV = min(minV, *dp.Minimum)
+	}
+	if !hasNonNil {
+		return 0.0
 	}
 	return minV
 }
@@ -157,13 +167,18 @@ func maxOfDatapoints(datapoints []types.Datapoint) float64 {
 		return 0.0
 	}
 
+	hasNonNil := false
 	maxV := 0.0
 	for _, dp := range datapoints {
 		dp := dp
 		if dp.Maximum == nil {
 			continue
 		}
+		hasNonNil = true
 		maxV = max(maxV, *dp.Maximum)
+	}
+	if !hasNonNil {
+		return 0.0
 	}
 	return maxV
 }
