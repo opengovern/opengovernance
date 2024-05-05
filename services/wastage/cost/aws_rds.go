@@ -46,7 +46,7 @@ func (s *Service) GetRDSInstanceCost(region string, rdsInstance entity.AwsRds, m
 	}
 	valuesMap["performance_insights_enabled"] = rdsInstance.PerformanceInsightsEnabled
 	valuesMap["performance_insights_retention_period"] = rdsInstance.PerformanceInsightsRetentionPeriod
-	valuesMap["io_optimized"] = false // TODO: Check aws api rds response
+	valuesMap["io_optimized"] = false // TODO: Check aws api rds response // Maybe needs some changes in pennywise logic
 
 	valuesMap["pennywise_usage"] = map[string]any{
 		//"monthly_io_requests":                              "",
