@@ -48,9 +48,9 @@ func (s *Service) AwsRdsRecommendation(
 	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]))
 	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]))
 	usageStorageThroughputMB := entity.Usage{
-		Avg: funcP(usageStorageThroughputBytes.Avg, usageStorageThroughputBytes.Avg, func(a, _ float64) float64 { return a / 1e6 }),
-		Min: funcP(usageStorageThroughputBytes.Min, usageStorageThroughputBytes.Min, func(a, _ float64) float64 { return a / 1e6 }),
-		Max: funcP(usageStorageThroughputBytes.Max, usageStorageThroughputBytes.Max, func(a, _ float64) float64 { return a / 1e6 }),
+		Avg: funcP(usageStorageThroughputBytes.Avg, nil, func(a, _ float64) float64 { return a / 1e6 }),
+		Min: funcP(usageStorageThroughputBytes.Min, nil, func(a, _ float64) float64 { return a / 1e6 }),
+		Max: funcP(usageStorageThroughputBytes.Max, nil, func(a, _ float64) float64 { return a / 1e6 }),
 	}
 
 	awsRdsDbKind, ok := dbTypeMap[strings.ToLower(rdsInstance.Engine)]
