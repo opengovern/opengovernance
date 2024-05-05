@@ -227,8 +227,9 @@ func (s *Service) AwsRdsRecommendation(
 	}
 
 	var recommended *entity.RightsizingAwsRds
+	var newInstance entity.AwsRds
 	if rightSizedInstanceRow != nil {
-		newInstance := rdsInstance
+		newInstance = rdsInstance
 		newInstance.InstanceType = rightSizedInstanceRow.InstanceType
 		newInstance.ClusterType = entity.AwsRdsClusterType(rightSizedInstanceRow.DeploymentOption)
 		for k, v := range dbTypeMap {
@@ -239,12 +240,6 @@ func (s *Service) AwsRdsRecommendation(
 		}
 		newInstance.LicenseModel = rightSizedInstanceRow.LicenseModel
 
-		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
-		if err != nil {
-			s.logger.Error("failed to get rds instance cost", zap.Error(err))
-			return nil, err
-		}
-
 		recommended = &entity.RightsizingAwsRds{
 			Region:        rightSizedInstanceRow.RegionCode,
 			InstanceType:  rightSizedInstanceRow.InstanceType,
@@ -253,7 +248,7 @@ func (s *Service) AwsRdsRecommendation(
 			ClusterType:   newInstance.ClusterType,
 			VCPU:          rightSizedInstanceRow.VCpu,
 			MemoryGb:      rightSizedInstanceRow.MemoryGb,
-			Cost:          recommendedCost,
+			Cost:          0,
 		}
 		if !isResultAurora || (rightSizedInstanceRow == nil && isResultAurora) {
 			recommended.StorageType = newInstance.StorageType
@@ -262,7 +257,7 @@ func (s *Service) AwsRdsRecommendation(
 			recommended.StorageThroughput = newInstance.StorageThroughput
 		}
 	}
-	if rightSizedStorageRow != nil {
+	if rightSizedStorageRow != nil && !isResultAurora {
 		if recommended == nil {
 			recommended = &entity.RightsizingAwsRds{
 				Region:        region,
@@ -279,6 +274,20 @@ func (s *Service) AwsRdsRecommendation(
 		recommended.StorageSize = &neededStorageSize
 		recommended.StorageIops = &neededStorageIops
 		recommended.StorageThroughput = &neededStorageThroughput
+
+		newInstance.StorageType = &rightSizedStorageRow.VolumeType
+		newInstance.StorageSize = &neededStorageSize
+		newInstance.StorageIops = &neededStorageIops
+		newInstance.StorageThroughput = &neededStorageThroughput
+	}
+
+	if recommended != nil {
+		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
+		if err != nil {
+			s.logger.Error("failed to get rds instance cost", zap.Error(err))
+			return nil, err
+		}
+		recommended.Cost = recommendedCost
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{
