@@ -147,16 +147,16 @@ func (s *Service) AwsRdsRecommendation(
 		}
 		neededStorageIops = int32(neededStorageIopsFloat)
 	}
-	neededStorageThroughput := 0.0
+	neededStorageThroughputMB := 0.0
 	if usageStorageThroughputMB.Avg != nil {
-		neededStorageThroughput = *usageStorageThroughputMB.Avg
+		neededStorageThroughputMB = *usageStorageThroughputMB.Avg
 		if v, ok := preferences["StorageThroughputBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid StorageThroughputBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageThroughputBreathingRoom value: %s", *v)
 			}
-			neededStorageThroughput = (1 + float64(vPercent)/100) * neededStorageThroughput
+			neededStorageThroughputMB = (1 + float64(vPercent)/100) * neededStorageThroughputMB
 		}
 	}
 
@@ -217,11 +217,16 @@ func (s *Service) AwsRdsRecommendation(
 
 	var rightSizedStorageRow *model.RDSDBStorage
 	if !isResultAurora {
-		rightSizedStorageRow, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughput, nil)
+		var resSize, resIops int32
+		var resThroughputMB float64
+		rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, nil)
 		if err != nil {
 			s.logger.Error("failed to get rds storage type", zap.Error(err))
 			return nil, err
 		}
+		neededStorageSize = resSize
+		neededStorageIops = resIops
+		neededStorageThroughputMB = resThroughputMB
 	} else {
 		// TODO handle aurora, suggest normal or io optimized storage
 	}
@@ -250,7 +255,7 @@ func (s *Service) AwsRdsRecommendation(
 			MemoryGb:      rightSizedInstanceRow.MemoryGb,
 			Cost:          0,
 		}
-		if !isResultAurora || (rightSizedInstanceRow == nil && isResultAurora) {
+		if !isResultAurora || (rightSizedInstanceRow == nil && isResultAurora) || (rightSizedStorageRow == nil) {
 			recommended.StorageType = newInstance.StorageType
 			recommended.StorageSize = newInstance.StorageSize
 			recommended.StorageIops = newInstance.StorageIops
@@ -272,14 +277,25 @@ func (s *Service) AwsRdsRecommendation(
 		}
 		ebsType := model.RDSDBStorageVolumeTypeToEBSType[rightSizedStorageRow.VolumeType]
 		recommended.StorageType = &ebsType
-		recommended.StorageSize = &neededStorageSize
-		recommended.StorageIops = &neededStorageIops
-		recommended.StorageThroughput = &neededStorageThroughput
-
 		newInstance.StorageType = &ebsType
+
+		recommended.StorageSize = &neededStorageSize
 		newInstance.StorageSize = &neededStorageSize
-		newInstance.StorageIops = &neededStorageIops
-		newInstance.StorageThroughput = &neededStorageThroughput
+
+		if ebsType == "io1" || ebsType == "io2" || ebsType == "gp3" {
+			recommended.StorageIops = &neededStorageIops
+			newInstance.StorageIops = &neededStorageIops
+		} else {
+			recommended.StorageIops = nil
+			newInstance.StorageIops = nil
+		}
+		if ebsType == "gp3" {
+			recommended.StorageThroughput = &neededStorageThroughputMB
+			newInstance.StorageThroughput = &neededStorageThroughputMB
+		} else {
+			recommended.StorageThroughput = nil
+			newInstance.StorageThroughput = nil
+		}
 	}
 
 	if recommended != nil {
