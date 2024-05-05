@@ -124,7 +124,7 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 			for _, part := range strings.Split(row[index], " ") {
 				i, err := strconv.ParseFloat(part, 64)
 				// convert from Gbps to bytes/s
-				i = i * 1e9 / 8
+				i = i * (1024 * 1024 * 1024) / 8
 				if err == nil {
 					if p.NetworkThroughput == nil {
 						p.NetworkThroughput = &i

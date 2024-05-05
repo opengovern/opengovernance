@@ -101,7 +101,7 @@ func (v *EBSVolumeType) PopulateFromMap(columns map[string]int, row []string) {
 				}
 			}
 			// TiB to GiB
-			v.MaxSize *= 1000
+			v.MaxSize *= 1024
 		}
 	}
 }

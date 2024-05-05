@@ -138,7 +138,7 @@ func (s *Service) EC2InstanceRecommendation(
 	}
 	// Metric is in bytes so we convert to Mbytes
 	if ebsThroughputUsage.Avg != nil && *ebsThroughputUsage.Avg > 0 {
-		pref["ebs_baseline_throughput IS NULL OR ebs_baseline_throughput >= ?"] = *ebsThroughputUsage.Avg / 1000000
+		pref["ebs_baseline_throughput IS NULL OR ebs_baseline_throughput >= ?"] = *ebsThroughputUsage.Avg / (1024 * 1024)
 	}
 
 	var recommended *entity.RightsizingEC2Instance
@@ -220,7 +220,7 @@ func (s *Service) generateDescription(instance entity.EC2Instance, region string
 	} else {
 		usage += fmt.Sprintf("- %s has %.1fGB Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %.1fGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
 	}
-	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is min=%.2f MB/s, avg=%.2f MB/s, max=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, minNetwork/1000000.0, avgNetwork/1000000.0, maxNetwork/1000000.0, neededNetworkThroughput/1000000.0, rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
+	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is min=%.2f MB/s, avg=%.2f MB/s, max=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, minNetwork/(1024.0*1024.0), avgNetwork/(1024*1024), maxNetwork/(1024.0*1024.0), neededNetworkThroughput/(1024.0*1024.0), rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
 
 	needs := ""
 	for k, v := range preferences {
@@ -332,9 +332,9 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]))
 	throughputUsageBytes := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
 	usageStorageThroughputMB := entity.Usage{
-		Avg: funcP(throughputUsageBytes.Avg, throughputUsageBytes.Avg, func(a, _ float64) float64 { return a / 1e6 }),
-		Min: funcP(throughputUsageBytes.Min, throughputUsageBytes.Min, func(a, _ float64) float64 { return a / 1e6 }),
-		Max: funcP(throughputUsageBytes.Max, throughputUsageBytes.Max, func(a, _ float64) float64 { return a / 1e6 }),
+		Avg: funcP(throughputUsageBytes.Avg, throughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(throughputUsageBytes.Min, throughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(throughputUsageBytes.Max, throughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
 	sizeUsage := extractUsage(metrics["disk_used_percent"])
 

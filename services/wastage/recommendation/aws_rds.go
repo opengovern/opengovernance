@@ -125,7 +125,7 @@ func (s *Service) AwsRdsRecommendation(
 
 	neededStorageSize := int32(0)
 	if rdsInstance.StorageSize != nil {
-		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / 1e9)
+		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / (1024 * 1024 * 1024))
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
