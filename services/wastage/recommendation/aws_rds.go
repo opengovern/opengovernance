@@ -109,8 +109,8 @@ func (s *Service) AwsRdsRecommendation(
 		neededMemoryGb = (1 + float64(vPercent)/100) * neededMemoryGb
 	}
 	neededNetworkThroughput := 0.0
-	if currentInstanceRow.NetworkThroughput != nil {
-		neededNetworkThroughput = *currentInstanceRow.NetworkThroughput - *usageNetworkThroughputBytes.Avg
+	if usageNetworkThroughputBytes.Avg != nil {
+		neededNetworkThroughput = *usageNetworkThroughputBytes.Avg
 	}
 	if v, ok := preferences["NetworkBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
@@ -135,8 +135,8 @@ func (s *Service) AwsRdsRecommendation(
 		neededStorageSize = int32(neededStorageSizeFloat)
 	}
 	neededStorageIops := int32(0)
-	if rdsInstance.StorageIops != nil {
-		neededStorageIopsFloat := float64(*rdsInstance.StorageIops) - *usageStorageIops.Avg
+	if usageStorageIops.Avg != nil {
+		neededStorageIopsFloat := *usageStorageIops.Avg
 		if v, ok := preferences["StorageIopsBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
@@ -148,8 +148,8 @@ func (s *Service) AwsRdsRecommendation(
 		neededStorageIops = int32(neededStorageIopsFloat)
 	}
 	neededStorageThroughput := 0.0
-	if rdsInstance.StorageThroughput != nil {
-		neededStorageThroughput = *rdsInstance.StorageThroughput - *usageStorageThroughputMB.Avg
+	if usageStorageThroughputMB.Avg != nil {
+		neededStorageThroughput = *usageStorageThroughputMB.Avg
 		if v, ok := preferences["StorageThroughputBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
@@ -290,7 +290,7 @@ func (s *Service) AwsRdsRecommendation(
 		FreeMemoryBytes:        usageFreeMemoryBytes,
 		NetworkThroughputBytes: usageNetworkThroughputBytes,
 		FreeStorageBytes:       usageFreeStorageBytes,
-		StorageThroughput:      usageStorageThroughputMB,
+		StorageThroughput:      usageStorageThroughputBytes,
 
 		Description: "",
 	}
