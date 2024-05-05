@@ -330,7 +330,12 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 
 func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*entity.EBSVolumeRecommendation, error) {
 	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]))
-	throughputUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
+	throughputUsageBytes := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
+	usageStorageThroughputMB := entity.Usage{
+		Avg: funcP(throughputUsageBytes.Avg, throughputUsageBytes.Avg, func(a, _ float64) float64 { return a / 1e6 }),
+		Min: funcP(throughputUsageBytes.Min, throughputUsageBytes.Min, func(a, _ float64) float64 { return a / 1e6 }),
+		Max: funcP(throughputUsageBytes.Max, throughputUsageBytes.Max, func(a, _ float64) float64 { return a / 1e6 }),
+	}
 	sizeUsage := extractUsage(metrics["disk_used_percent"])
 
 	size := float64(0)
@@ -351,7 +356,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		sizeBreathingRoom, _ = strconv.ParseInt(*preferences["SizeBreathingRoom"], 10, 32)
 	}
 	neededIops := *iopsUsage.Avg * (1 + float64(iopsBreathingRoom)/100.0)
-	neededThroughput := *throughputUsage.Avg * (1 + float64(throughputBreathingRoom)/100.0)
+	neededThroughput := *usageStorageThroughputMB.Avg * (1 + float64(throughputBreathingRoom)/100.0)
 	neededSize := size
 	if _, ok := metrics["disk_used_percent"]; ok {
 		neededSize = max(1, neededSize*(*sizeUsage.Avg/100.0))
@@ -421,7 +426,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		},
 		Recommended: nil,
 		IOPS:        iopsUsage,
-		Throughput:  throughputUsage,
+		Throughput:  usageStorageThroughputMB,
 		Description: "",
 	}
 
