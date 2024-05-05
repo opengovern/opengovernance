@@ -243,7 +243,6 @@ func (s API) TriggerIngest(c echo.Context) error {
 
 	var ec2InstanceData *model.DataAge
 	var rdsData *model.DataAge
-	var ec2InstanceExtraData *model.DataAge
 	for _, data := range dataAge {
 		data := data
 		switch data.DataType {
@@ -251,15 +250,13 @@ func (s API) TriggerIngest(c echo.Context) error {
 			ec2InstanceData = &data
 		case "AWS::RDS::Instance":
 			rdsData = &data
-		case "AWS::EC2::Instance::Extra":
-			ec2InstanceExtraData = &data
 		}
 	}
 	go func() {
 		switch service {
 		case "aws-ec2-instance":
 			s.logger.Info("Ingestion for EC2 started")
-			err := s.ingestionSvc.IngestEc2Instances()
+			err := s.ingestionSvc.IngestEc2Instances(ctx)
 			if err != nil {
 				s.logger.Error(err.Error())
 			}
@@ -297,30 +294,6 @@ func (s API) TriggerIngest(c echo.Context) error {
 			} else {
 				err = s.ingestionSvc.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
 					DataType:  "AWS::RDS::Instance",
-					UpdatedAt: time.Now(),
-				})
-				if err != nil {
-					s.logger.Error(err.Error())
-				}
-			}
-		case "aws-ec2-instance-extra":
-			s.logger.Info("Ingestion for EC2 extra started")
-			s.logger.Info("ingesting ec2 instance extra data")
-			err = s.ingestionSvc.IngestEc2InstancesExtra(ctx)
-			if err != nil {
-				s.logger.Error(err.Error())
-			}
-			if ec2InstanceExtraData == nil {
-				err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
-					DataType:  "AWS::EC2::Instance::Extra",
-					UpdatedAt: time.Now(),
-				})
-				if err != nil {
-					s.logger.Error(err.Error())
-				}
-			} else {
-				err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance::Extra", model.DataAge{
-					DataType:  "AWS::EC2::Instance::Extra",
 					UpdatedAt: time.Now(),
 				})
 				if err != nil {

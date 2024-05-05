@@ -210,7 +210,6 @@ func (s *Service) AwsRdsRecommendation(
 		resultEngine = awsRdsDbKind.Engine
 		resultEdition = awsRdsDbKind.Edition
 		resultClusterType = string(rdsInstance.ClusterType)
-
 	}
 	// Aurora instance types storage configs are very different from other RDS instance types
 	isResultAurora := !((rightSizedInstanceRow != nil && !strings.Contains(strings.ToLower(rightSizedInstanceRow.InstanceType), "aurora")) || (rightSizedInstanceRow == nil && !strings.Contains(strings.ToLower(currentInstanceRow.InstanceType), "aurora")))

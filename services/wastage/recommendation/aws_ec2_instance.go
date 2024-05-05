@@ -53,6 +53,7 @@ func (s *Service) EC2InstanceRecommendation(
 		return nil, err
 	}
 	current := entity.RightsizingEC2Instance{
+		Region:            currentInstanceType.RegionCode,
 		InstanceType:      currentInstanceType.InstanceType,
 		Processor:         currentInstanceType.PhysicalProcessor,
 		Architecture:      currentInstanceType.PhysicalProcessorArch,
@@ -169,6 +170,7 @@ func (s *Service) EC2InstanceRecommendation(
 			return nil, err
 		}
 		recommended = &entity.RightsizingEC2Instance{
+			Region:            rightSizedInstanceType.RegionCode,
 			InstanceType:      rightSizedInstanceType.InstanceType,
 			Processor:         rightSizedInstanceType.PhysicalProcessor,
 			Architecture:      rightSizedInstanceType.PhysicalProcessorArch,
