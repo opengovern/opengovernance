@@ -55,12 +55,12 @@ func Command() *cobra.Command {
 				return err
 			}
 			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{},
-				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{}, &model.UsageV2{})
+				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{})
 			if err != nil {
 				logger.Error("failed to auto migrate", zap.Error(err))
 				return err
 			}
-			err = usageDb.Conn().AutoMigrate(&model.Usage{})
+			err = usageDb.Conn().AutoMigrate(&model.Usage{}, &model.UsageV2{})
 			if err != nil {
 				logger.Error("failed to auto migrate", zap.Error(err))
 				return err
@@ -71,7 +71,7 @@ func Command() *cobra.Command {
 			rdsStorageRepo := repo.NewRDSDBStorageRepo(db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
-			usageV2Repo := repo.NewUsageV2Repo(db)
+			usageV2Repo := repo.NewUsageV2Repo(usageDb)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
