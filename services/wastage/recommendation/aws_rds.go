@@ -47,6 +47,11 @@ func (s *Service) AwsRdsRecommendation(
 	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]))
 	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]))
 	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]))
+	usageStorageThroughputMB := entity.Usage{
+		Avg: funcP(usageStorageThroughputBytes.Avg, nil, func(a, _ float64) float64 { return a / 1e6 }),
+		Min: funcP(usageStorageThroughputBytes.Min, nil, func(a, _ float64) float64 { return a / 1e6 }),
+		Max: funcP(usageStorageThroughputBytes.Max, nil, func(a, _ float64) float64 { return a / 1e6 }),
+	}
 
 	awsRdsDbKind, ok := dbTypeMap[strings.ToLower(rdsInstance.Engine)]
 	if !ok {
@@ -116,33 +121,35 @@ func (s *Service) AwsRdsRecommendation(
 		neededNetworkThroughput = (1 + float64(vPercent)/100) * neededNetworkThroughput
 	}
 
-	neededStorageSize := 0.0
+	neededStorageSize := int32(0)
 	if rdsInstance.StorageSize != nil {
-		neededStorageSize = float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / 1e9)
+		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / 1e9)
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
 			}
-			neededStorageSize = (1 + float64(vPercent)/100) * neededStorageSize
+			neededStorageSizeFloat = (1 + float64(vPercent)/100) * neededStorageSizeFloat
 		}
+		neededStorageSize = int32(neededStorageSizeFloat)
 	}
-	neededStorageIops := 0.0
+	neededStorageIops := int32(0)
 	if rdsInstance.StorageIops != nil {
-		neededStorageIops = float64(*rdsInstance.StorageIops) - *usageStorageIops.Avg
+		neededStorageIopsFloat := float64(*rdsInstance.StorageIops) - *usageStorageIops.Avg
 		if v, ok := preferences["StorageIopsBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
 			}
-			neededStorageIops = (1 + float64(vPercent)/100) * neededStorageIops
+			neededStorageIopsFloat = (1 + float64(vPercent)/100) * neededStorageIopsFloat
 		}
+		neededStorageIops = int32(neededStorageIopsFloat)
 	}
 	neededStorageThroughput := 0.0
 	if rdsInstance.StorageThroughput != nil {
-		neededStorageThroughput = float64(*rdsInstance.StorageThroughput) - *usageStorageThroughputBytes.Avg
+		neededStorageThroughput = *rdsInstance.StorageThroughput - *usageStorageThroughputMB.Avg
 		if v, ok := preferences["StorageThroughputBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
@@ -194,26 +201,26 @@ func (s *Service) AwsRdsRecommendation(
 		return nil, err
 	}
 
-	// Aurora instance types storage configs are very different from other RDS instance types
-	if (rightSizedInstanceRow != nil && !strings.Contains(strings.ToLower(rightSizedInstanceRow.InstanceType), "aurora")) ||
-		(rightSizedInstanceRow == nil && !strings.Contains(strings.ToLower(currentInstanceRow.InstanceType), "aurora")) {
-		storagePref := map[string]any{}
-		for k, v := range preferences {
-			var vl any
-			if v == nil {
-				vl = extractFromRdsInstance(rdsInstance, currentInstanceRow, region, k)
-			} else {
-				vl = *v
-			}
-			if aws_rds.PreferenceStorageDBKey[k] == "" {
-				continue
-			}
+	var resultEngine, resultEdition, resultClusterType string
+	if rightSizedInstanceRow != nil {
+		resultEngine = rightSizedInstanceRow.DatabaseEngine
+		resultEdition = rightSizedInstanceRow.DatabaseEdition
+		resultClusterType = rightSizedInstanceRow.DeploymentOption
+	} else {
+		resultEngine = awsRdsDbKind.Engine
+		resultEdition = awsRdsDbKind.Edition
+		resultClusterType = string(rdsInstance.ClusterType)
 
-			cond := "="
-			if sc, ok := aws_rds.PreferenceStorageSpecialCond[k]; ok {
-				cond = sc
-			}
-			storagePref[fmt.Sprintf("%s %s ?", aws_rds.PreferenceInstanceDBKey[k], cond)] = vl
+	}
+	// Aurora instance types storage configs are very different from other RDS instance types
+	isResultAurora := !((rightSizedInstanceRow != nil && !strings.Contains(strings.ToLower(rightSizedInstanceRow.InstanceType), "aurora")) || (rightSizedInstanceRow == nil && !strings.Contains(strings.ToLower(currentInstanceRow.InstanceType), "aurora")))
+
+	var rightSizedStorageRow *model.RDSDBStorage
+	if !isResultAurora {
+		rightSizedStorageRow, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughput, nil)
+		if err != nil {
+			s.logger.Error("failed to get rds storage type", zap.Error(err))
+			return nil, err
 		}
 	} else {
 		// TODO handle aurora, suggest normal or io optimized storage
@@ -239,19 +246,39 @@ func (s *Service) AwsRdsRecommendation(
 		}
 
 		recommended = &entity.RightsizingAwsRds{
-			Region:            rightSizedInstanceRow.RegionCode,
-			InstanceType:      rightSizedInstanceRow.InstanceType,
-			Engine:            rightSizedInstanceRow.DatabaseEngine,
-			EngineVersion:     newInstance.EngineVersion,
-			ClusterType:       newInstance.ClusterType,
-			VCPU:              rightSizedInstanceRow.VCpu,
-			MemoryGb:          rightSizedInstanceRow.MemoryGb,
-			StorageType:       newInstance.StorageType,
-			StorageSize:       newInstance.StorageSize,
-			StorageIops:       newInstance.StorageIops,
-			StorageThroughput: newInstance.StorageThroughput,
-			Cost:              recommendedCost,
+			Region:        rightSizedInstanceRow.RegionCode,
+			InstanceType:  rightSizedInstanceRow.InstanceType,
+			Engine:        rightSizedInstanceRow.DatabaseEngine,
+			EngineVersion: newInstance.EngineVersion,
+			ClusterType:   newInstance.ClusterType,
+			VCPU:          rightSizedInstanceRow.VCpu,
+			MemoryGb:      rightSizedInstanceRow.MemoryGb,
+			Cost:          recommendedCost,
 		}
+		if !isResultAurora || (rightSizedInstanceRow == nil && isResultAurora) {
+			recommended.StorageType = newInstance.StorageType
+			recommended.StorageSize = newInstance.StorageSize
+			recommended.StorageIops = newInstance.StorageIops
+			recommended.StorageThroughput = newInstance.StorageThroughput
+		}
+	}
+	if rightSizedStorageRow != nil {
+		if recommended == nil {
+			recommended = &entity.RightsizingAwsRds{
+				Region:        region,
+				InstanceType:  currentInstanceRow.InstanceType,
+				Engine:        currentInstanceRow.DatabaseEngine,
+				EngineVersion: rdsInstance.EngineVersion,
+				ClusterType:   rdsInstance.ClusterType,
+				VCPU:          currentInstanceRow.VCpu,
+				MemoryGb:      currentInstanceRow.MemoryGb,
+				Cost:          currentCost,
+			}
+		}
+		recommended.StorageType = &rightSizedStorageRow.VolumeType
+		recommended.StorageSize = &neededStorageSize
+		recommended.StorageIops = &neededStorageIops
+		recommended.StorageThroughput = &neededStorageThroughput
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{
@@ -263,7 +290,7 @@ func (s *Service) AwsRdsRecommendation(
 		FreeMemoryBytes:        usageFreeMemoryBytes,
 		NetworkThroughputBytes: usageNetworkThroughputBytes,
 		FreeStorageBytes:       usageFreeStorageBytes,
-		StorageThroughputBytes: usageStorageThroughputBytes,
+		StorageThroughput:      usageStorageThroughputMB,
 
 		Description: "",
 	}
@@ -287,12 +314,6 @@ func extractFromRdsInstance(instance entity.AwsRds, i model.RDSDBInstance, regio
 		return instance.ClusterType
 	case "StorageType":
 		return instance.StorageType
-	case "StorageSize":
-		return instance.StorageSize
-	case "StorageIops":
-		return instance.StorageIops
-	case "StorageThroughput":
-		return instance.StorageThroughput
 	}
 	return ""
 }
