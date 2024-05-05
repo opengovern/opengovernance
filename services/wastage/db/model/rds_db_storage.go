@@ -136,7 +136,7 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 			case "gb":
 				p.MinVolumeSizeGb = val
 			case "tb":
-				p.MinVolumeSizeGb = val * 1000
+				p.MinVolumeSizeGb = val * 1024
 			default:
 				p.MinVolumeSizeGb = val
 			}
@@ -159,7 +159,7 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 			case "gb":
 				p.MaxVolumeSizeGb = val
 			case "tb":
-				p.MaxVolumeSizeGb = val * 1000
+				p.MaxVolumeSizeGb = val * 1024
 			default:
 				p.MaxVolumeSizeGb = val
 			}
