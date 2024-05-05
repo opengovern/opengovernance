@@ -57,9 +57,11 @@ func mergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Datapo
 
 	dps := map[int64]*types.Datapoint{}
 	for _, dp := range in {
+		dp := dp
 		dps[dp.Timestamp.Unix()] = &dp
 	}
 	for _, dp := range out {
+		dp := dp
 		if dps[dp.Timestamp.Unix()] == nil {
 			dps[dp.Timestamp.Unix()] = &dp
 			break
@@ -89,9 +91,11 @@ func sumMergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Dat
 
 	dps := map[int64]*types.Datapoint{}
 	for _, dp := range in {
+		dp := dp
 		dps[dp.Timestamp.Unix()] = &dp
 	}
 	for _, dp := range out {
+		dp := dp
 		if dps[dp.Timestamp.Unix()] == nil {
 			dps[dp.Timestamp.Unix()] = &dp
 			break
@@ -122,6 +126,7 @@ func averageOfDatapoints(datapoints []types.Datapoint) float64 {
 
 	avg := float64(0)
 	for _, dp := range datapoints {
+		dp := dp
 		if dp.Average == nil {
 			continue
 		}
@@ -138,6 +143,7 @@ func minOfDatapoints(datapoints []types.Datapoint) float64 {
 
 	minV := math.MaxFloat64
 	for _, dp := range datapoints {
+		dp := dp
 		if dp.Minimum == nil {
 			continue
 		}
@@ -153,6 +159,7 @@ func maxOfDatapoints(datapoints []types.Datapoint) float64 {
 
 	maxV := 0.0
 	for _, dp := range datapoints {
+		dp := dp
 		if dp.Maximum == nil {
 			continue
 		}
