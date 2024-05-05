@@ -270,12 +270,13 @@ func (s *Service) AwsRdsRecommendation(
 				Cost:          currentCost,
 			}
 		}
-		recommended.StorageType = &rightSizedStorageRow.VolumeType
+		ebsType := model.RDSDBStorageVolumeTypeToEBSType[rightSizedStorageRow.VolumeType]
+		recommended.StorageType = &ebsType
 		recommended.StorageSize = &neededStorageSize
 		recommended.StorageIops = &neededStorageIops
 		recommended.StorageThroughput = &neededStorageThroughput
 
-		newInstance.StorageType = &rightSizedStorageRow.VolumeType
+		newInstance.StorageType = &ebsType
 		newInstance.StorageSize = &neededStorageSize
 		newInstance.StorageIops = &neededStorageIops
 		newInstance.StorageThroughput = &neededStorageThroughput
