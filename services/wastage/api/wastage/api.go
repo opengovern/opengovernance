@@ -305,6 +305,7 @@ func (s API) MigrateUsages(c echo.Context) error {
 					s.logger.Error("failed to make request", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
+				req.Header.Set("Content-Type", "application/json")
 
 				rec := httptest.NewRecorder()
 				c := echo.New().NewContext(req, rec)
@@ -337,6 +338,7 @@ func (s API) MigrateUsages(c echo.Context) error {
 					s.logger.Error("failed to make request", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
+				req.Header.Set("Content-Type", "application/json")
 
 				rec := httptest.NewRecorder()
 				c := echo.New().NewContext(req, rec)
