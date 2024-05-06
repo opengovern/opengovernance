@@ -168,6 +168,9 @@ func (s *Service) AwsRdsRecommendation(
 		} else {
 			vl = *v
 		}
+		if _, ok := aws_rds.PreferenceInstanceDBKey[k]; !ok {
+			continue
+		}
 		if aws_rds.PreferenceInstanceDBKey[k] == "" {
 			continue
 		}
@@ -202,6 +205,9 @@ func (s *Service) AwsRdsRecommendation(
 		} else {
 			if v, ok := preferences["InstanceFamily"]; ok && v != nil {
 				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%s%%", *v)
+			} else {
+				currInstanceFamily := rdsInstance.InstanceType[3]
+				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%c%%", currInstanceFamily)
 			}
 		}
 	}
