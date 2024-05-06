@@ -202,13 +202,6 @@ func (s *Service) AwsRdsRecommendation(
 			if *value == "Yes" {
 				instancePref["NOT(instance_type like ?)"] = "db.t%"
 			}
-		} else {
-			if v, ok := preferences["InstanceFamily"]; ok && v != nil {
-				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%s%%", *v)
-			} else {
-				currInstanceFamily := rdsInstance.InstanceType[3]
-				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%c%%", currInstanceFamily)
-			}
 		}
 	}
 
@@ -368,6 +361,10 @@ func extractFromRdsInstance(instance entity.AwsRds, i model.RDSDBInstance, regio
 		return instance.ClusterType
 	case "StorageType":
 		return instance.StorageType
+	case "InstanceFamily":
+		return i.InstanceFamily
+	case "LicenseModel":
+		return i.LicenseModel
 	}
 	return ""
 }
