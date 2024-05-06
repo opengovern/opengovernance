@@ -38,6 +38,7 @@ func (s *Service) EC2InstanceRecommendation(
 
 	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, instance.UsageOperation, region)
 	if err != nil {
+		err = fmt.Errorf("failed to list instances by types: %s", err.Error())
 		return nil, err
 	}
 	if len(currentInstanceTypeList) == 0 {
@@ -46,10 +47,12 @@ func (s *Service) EC2InstanceRecommendation(
 	currentInstanceType := currentInstanceTypeList[0]
 	currentCost, err := s.costSvc.GetEC2InstanceCost(region, instance, volumes, metrics)
 	if err != nil {
+		err = fmt.Errorf("failed to get current ec2 instance cost: %s", err.Error())
 		return nil, err
 	}
 	currLicensePrice, err := s.costSvc.EstimateLicensePrice(instance)
 	if err != nil {
+		err = fmt.Errorf("failed to get current ec2 instance license price: %s", err.Error())
 		return nil, err
 	}
 	current := entity.RightsizingEC2Instance{
@@ -145,6 +148,7 @@ func (s *Service) EC2InstanceRecommendation(
 	var recommended *entity.RightsizingEC2Instance
 	rightSizedInstanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
 	if err != nil {
+		err = fmt.Errorf("failed to find cheapest ec2 instance: %s", err.Error())
 		return nil, err
 	}
 	if rightSizedInstanceType != nil {
@@ -163,10 +167,12 @@ func (s *Service) EC2InstanceRecommendation(
 		}
 		recommendedCost, err := s.costSvc.GetEC2InstanceCost(rightSizedInstanceType.RegionCode, newInstance, volumes, metrics)
 		if err != nil {
+			err = fmt.Errorf("failed to get recommended ec2 instance cost: %s", err.Error())
 			return nil, err
 		}
 		recomLicensePrice, err := s.costSvc.EstimateLicensePrice(newInstance)
 		if err != nil {
+			err = fmt.Errorf("failed to get recommended ec2 instance license price: %s", err.Error())
 			return nil, err
 		}
 		recommended = &entity.RightsizingEC2Instance{
@@ -413,6 +419,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 
 	volumeCost, err := s.costSvc.GetEBSVolumeCost(region, volume, metrics)
 	if err != nil {
+		err = fmt.Errorf("failed to get current ebs volume %s cost: %s", volume.HashedVolumeId, err.Error())
 		return nil, err
 	}
 
@@ -437,6 +444,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return result, nil
 		}
+		err = fmt.Errorf("failed to find cheapest ebs volume: %s", err.Error())
 		return nil, err
 	}
 
@@ -516,6 +524,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 
 	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(region, newVolume, metrics)
 	if err != nil {
+		err = fmt.Errorf("failed to get recommended ebs volume %s cost: %s", newVolume.HashedVolumeId, err.Error())
 		return nil, err
 	}
 	result.Recommended.Cost = newVolumeCost
