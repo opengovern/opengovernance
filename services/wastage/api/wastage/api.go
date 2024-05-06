@@ -294,21 +294,12 @@ func (s API) MigrateUsages(c echo.Context) error {
 				cliVersion := "unknown"
 				requestBody.RequestId = &requestId
 				requestBody.CliVersion = &cliVersion
-				requestBodyBytes, err := json.Marshal(requestBody)
+
+				err = c.Bind(&requestBody)
 				if err != nil {
-					s.logger.Error("failed to marshal request to bytes", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("failed to bind request to context", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
-
-				req, err := http.NewRequest("POST", "/wastage/api/v1/wastage/aws-rds", bytes.NewBuffer(requestBodyBytes))
-				if err != nil {
-					s.logger.Error("failed to make request", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
-				}
-				req.Header.Set("Content-Type", "application/json")
-
-				rec := httptest.NewRecorder()
-				c := echo.New().NewContext(req, rec)
 				err = s.AwsRDS(c)
 				if err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
