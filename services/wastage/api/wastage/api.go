@@ -324,9 +324,6 @@ func (s API) TriggerIngest(c echo.Context) error {
 //	@Success		200
 //	@Router			/wastage/api/v1/wastage-ingestion/usages/migrate [post]
 func (s API) MigrateUsages(c echo.Context) error {
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
-	ctx, span := s.tracer.Start(ctx, "get")
-	defer span.End()
 	go func() {
 		s.logger.Info("Usage table migration started")
 
