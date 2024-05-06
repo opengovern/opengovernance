@@ -80,6 +80,14 @@ var RDSDBStorageVolumeTypeToEBSType = map[string]string{
 	// Aurora not included as we don't know the mapping yet
 }
 
+var RDSDBStorageEBSTypeToVolumeType = map[string]RDSDBStorageVolumeType{
+	"gp2":      RDSDBStorageVolumeTypeGP2,
+	"gp3":      RDSDBStorageVolumeTypeGP3,
+	"io1":      RDSDBStorageVolumeTypeIO1,
+	"io2":      RDSDBStorageVolumeTypeIO2,
+	"standard": RDSDBStorageVolumeTypeMagnetic,
+}
+
 func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 	for col, index := range columns {
 		switch col {
