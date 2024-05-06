@@ -12,4 +12,5 @@ type Usage struct {
 	Request      datatypes.JSON
 	Response     datatypes.JSON
 	ResponseTime *float64 //Seconds
+	Moved        bool
 }
