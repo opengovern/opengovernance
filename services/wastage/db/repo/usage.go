@@ -43,7 +43,7 @@ func (r *UsageRepoImpl) List() ([]model.Usage, error) {
 
 func (r *UsageRepoImpl) GetRandomNotMoved() (*model.Usage, error) {
 	var m model.Usage
-	tx := r.db.Conn().Model(&model.Usage{}).Or("moved=? OR moved IS NULL", false).First(&m)
+	tx := r.db.Conn().Model(&model.Usage{}).Where("moved=? OR moved IS NULL", false).Where("endpoint<>?", "aws-rds").First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

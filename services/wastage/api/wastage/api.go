@@ -334,92 +334,28 @@ func (s API) MigrateUsages(c echo.Context) error {
 			if u == nil {
 				break
 			}
-			if u.Endpoint == "aws-rds" {
-				continue
-			} else {
-				start := time.Now()
-				var req entity.EC2InstanceWastageRequest
-				err = u.Request.Scan(&req)
-				requestId := fmt.Sprintf("usage_v1_%v", u.ID)
-				cliVersion := "unknown"
-				req.RequestId = &requestId
-				req.CliVersion = &cliVersion
+			start := time.Now()
+			var req entity.EC2InstanceWastageRequest
+			err = u.Request.Scan(&req)
+			requestId := fmt.Sprintf("usage_v1_%v", u.ID)
+			cliVersion := "unknown"
+			req.RequestId = &requestId
+			req.CliVersion = &cliVersion
 
-				usage := model.UsageV2{
-					ApiEndpoint:    "ec2-instance",
-					Request:        u.Request,
-					RequestId:      &requestId,
-					CliVersion:     &cliVersion,
-					Response:       nil,
-					FailureMessage: nil,
-				}
-				err = s.usageRepo.Create(&usage)
-				if err != nil {
-					s.logger.Error("error while putting usage in database",
-						zap.Any("usage_id", u.ID),
-						zap.Any("usage", usage),
-						zap.Error(err))
-					return
-				}
-
-				if req.Instance.State != types2.InstanceStateNameRunning {
-					err = echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
-					s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
-					fmsg := err.Error()
-					usage.FailureMessage = &fmsg
-					err = s.usageRepo.Update(usage.ID, usage)
-					if err != nil {
-						s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
-					}
-					continue
-				}
-
-				ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
-				if err != nil {
-					s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
-					fmsg := err.Error()
-					usage.FailureMessage = &fmsg
-					err = s.usageRepo.Update(usage.ID, usage)
-					if err != nil {
-						s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
-					}
-					continue
-				}
-
-				ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
-				for _, vol := range req.Volumes {
-					var ebsRightSizingRecom *entity.EBSVolumeRecommendation
-					ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
-					if err != nil {
-						s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
-						fmsg := err.Error()
-						usage.FailureMessage = &fmsg
-						err = s.usageRepo.Update(usage.ID, usage)
-						if err != nil {
-							s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
-						}
-						continue
-					}
-					ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
-				}
-				elapsed := time.Since(start).Seconds()
-				usage.Latency = &elapsed
-
-				// DO NOT change this, resp is used in updating usage
-				resp := entity.EC2InstanceWastageResponse{
-					RightSizing:       *ec2RightSizingRecom,
-					VolumeRightSizing: ebsRightSizingRecoms,
-				}
-				// DO NOT change this, resp is used in updating usage
-
-				usage.Response, _ = json.Marshal(resp)
-				id := uuid.New()
-				responseId := id.String()
-				usage.ResponseId = &responseId
-				err = s.usageRepo.Update(usage.ID, usage)
-				if err != nil {
-					s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage))
-				}
+			usage := model.UsageV2{
+				ApiEndpoint:    "ec2-instance",
+				Request:        u.Request,
+				RequestId:      &requestId,
+				CliVersion:     &cliVersion,
+				Response:       nil,
+				FailureMessage: nil,
+			}
+			err = s.usageRepo.Create(&usage)
+			if err != nil {
+				s.logger.Error("error while putting usage in database",
+					zap.Any("usage_id", u.ID),
+					zap.Any("usage", usage),
+					zap.Error(err))
 
 				u.Moved = true
 				err = s.usageV1Repo.Update(usage.ID, *u)
@@ -427,7 +363,93 @@ func (s API) MigrateUsages(c echo.Context) error {
 					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", u.ID), zap.Error(err))
 					continue
 				}
+				continue
 			}
+
+			if req.Instance.State != types2.InstanceStateNameRunning {
+				err = echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
+				s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+				fmsg := err.Error()
+				usage.FailureMessage = &fmsg
+				err = s.usageRepo.Update(usage.ID, usage)
+				if err != nil {
+					s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+				}
+				u.Moved = true
+				err = s.usageV1Repo.Update(usage.ID, *u)
+				if err != nil {
+					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", u.ID), zap.Error(err))
+					continue
+				}
+				continue
+			}
+
+			ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
+			if err != nil {
+				s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+				fmsg := err.Error()
+				usage.FailureMessage = &fmsg
+				err = s.usageRepo.Update(usage.ID, usage)
+				if err != nil {
+					s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+				}
+				u.Moved = true
+				err = s.usageV1Repo.Update(usage.ID, *u)
+				if err != nil {
+					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", u.ID), zap.Error(err))
+					continue
+				}
+				continue
+			}
+
+			ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
+			for _, vol := range req.Volumes {
+				var ebsRightSizingRecom *entity.EBSVolumeRecommendation
+				ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
+				if err != nil {
+					s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+					fmsg := err.Error()
+					usage.FailureMessage = &fmsg
+					err = s.usageRepo.Update(usage.ID, usage)
+					if err != nil {
+						s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+					}
+					u.Moved = true
+					err = s.usageV1Repo.Update(usage.ID, *u)
+					if err != nil {
+						s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", u.ID), zap.Error(err))
+						continue
+					}
+					continue
+				}
+				ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
+			}
+			elapsed := time.Since(start).Seconds()
+			usage.Latency = &elapsed
+
+			// DO NOT change this, resp is used in updating usage
+			resp := entity.EC2InstanceWastageResponse{
+				RightSizing:       *ec2RightSizingRecom,
+				VolumeRightSizing: ebsRightSizingRecoms,
+			}
+			// DO NOT change this, resp is used in updating usage
+
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+			err = s.usageRepo.Update(usage.ID, usage)
+			if err != nil {
+				s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage))
+			}
+
+			u.Moved = true
+			err = s.usageV1Repo.Update(usage.ID, *u)
+			if err != nil {
+				s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", u.ID), zap.Error(err))
+				continue
+			}
+
 		}
 
 	}()
