@@ -1,6 +1,7 @@
 package wastage
 
 import (
+	"context"
 	"encoding/json"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
@@ -253,10 +254,12 @@ func (s API) TriggerIngest(c echo.Context) error {
 		}
 	}
 	go func() {
+		// This is background job, it should not get canceled by the request context
+		bCtx := context.Background()
 		switch service {
 		case "aws-ec2-instance":
 			s.logger.Info("Ingestion for EC2 started")
-			err := s.ingestionSvc.IngestEc2Instances(ctx)
+			err := s.ingestionSvc.IngestEc2Instances(bCtx)
 			if err != nil {
 				s.logger.Error(err.Error())
 			}

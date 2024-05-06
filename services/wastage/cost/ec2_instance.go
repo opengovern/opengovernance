@@ -43,12 +43,15 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 	//}
 	var blockDevices []map[string]any
 	for _, v := range volumes {
-		blockDevices = append(blockDevices, map[string]any{
+		vParams := map[string]any{
 			"device_name": v.HashedVolumeId,
 			"volume_type": v.VolumeType,
 			"volume_size": *v.Size,
-			"iops":        *v.Iops,
-		})
+		}
+		if v.Iops != nil {
+			vParams["iops"] = *v.Iops
+		}
+		blockDevices = append(blockDevices, vParams)
 	}
 	valuesMap["ebs_block_device"] = blockDevices
 	valuesMap["launch_template"] = []map[string]any{}
