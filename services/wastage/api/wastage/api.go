@@ -1,7 +1,6 @@
 package wastage
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -20,7 +19,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
-	"net/http/httptest"
 	"time"
 )
 
@@ -328,69 +326,105 @@ func (s API) MigrateUsages(c echo.Context) error {
 		s.logger.Info("Usage table migration started")
 
 		for true {
-			usage, err := s.usageV1Repo.GetRandomNotMoved()
+			u, err := s.usageV1Repo.GetRandomNotMoved()
 			if err != nil {
 				s.logger.Error("error while getting usage_v1 usages list", zap.Error(err))
 				break
 			}
-			if usage == nil {
+			if u == nil {
 				break
 			}
-			if usage.Endpoint == "aws-rds" {
-				var requestBody entity.AwsRdsWastageRequest
-				err = usage.Request.Scan(&requestBody)
-				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
-				cliVersion := "unknown"
-				requestBody.RequestId = &requestId
-				requestBody.CliVersion = &cliVersion
-
-				err = c.Bind(&requestBody)
-				if err != nil {
-					s.logger.Error("failed to bind request to context", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
-				}
-				err = s.AwsRDS(c)
-				if err != nil {
-					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
-				}
-				usage.Moved = true
-				err = s.usageV1Repo.Update(usage.ID, *usage)
-				if err != nil {
-					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
-				}
+			if u.Endpoint == "aws-rds" {
+				continue
 			} else {
-				var requestBody entity.EC2InstanceWastageRequest
-				err = usage.Request.Scan(&requestBody)
-				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
+				start := time.Now()
+				var req entity.EC2InstanceWastageRequest
+				err = u.Request.Scan(&req)
+				requestId := fmt.Sprintf("usage_v1_%v", u.ID)
 				cliVersion := "unknown"
-				requestBody.RequestId = &requestId
-				requestBody.CliVersion = &cliVersion
-				requestBodyBytes, err := json.Marshal(requestBody)
+				req.RequestId = &requestId
+				req.CliVersion = &cliVersion
+
+				usage := model.UsageV2{
+					ApiEndpoint:    "ec2-instance",
+					Request:        u.Request,
+					RequestId:      &requestId,
+					CliVersion:     &cliVersion,
+					Response:       nil,
+					FailureMessage: nil,
+				}
+				err = s.usageRepo.Create(&usage)
 				if err != nil {
-					s.logger.Error("failed to marshal request to bytes", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("error while putting usage in database",
+						zap.Any("usage_id", u.ID),
+						zap.Any("usage", usage),
+						zap.Error(err))
+					return
+				}
+
+				if req.Instance.State != types2.InstanceStateNameRunning {
+					err = echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
+					s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+					fmsg := err.Error()
+					usage.FailureMessage = &fmsg
+					err = s.usageRepo.Update(usage.ID, usage)
+					if err != nil {
+						s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+					}
 					continue
 				}
 
-				req, err := http.NewRequest("POST", "/wastage/api/v1/wastage/ec2-instance", bytes.NewBuffer(requestBodyBytes))
+				ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
 				if err != nil {
-					s.logger.Error("failed to make request", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+					fmsg := err.Error()
+					usage.FailureMessage = &fmsg
+					err = s.usageRepo.Update(usage.ID, usage)
+					if err != nil {
+						s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+					}
 					continue
 				}
-				req.Header.Set("Content-Type", "application/json")
 
-				rec := httptest.NewRecorder()
-				c := echo.New().NewContext(req, rec)
-				err = s.EC2Instance(c)
-				if err != nil {
-					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
+				ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
+				for _, vol := range req.Volumes {
+					var ebsRightSizingRecom *entity.EBSVolumeRecommendation
+					ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
+					if err != nil {
+						s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+						fmsg := err.Error()
+						usage.FailureMessage = &fmsg
+						err = s.usageRepo.Update(usage.ID, usage)
+						if err != nil {
+							s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+						}
+						continue
+					}
+					ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
 				}
-				usage.Moved = true
-				err = s.usageV1Repo.Update(usage.ID, *usage)
+				elapsed := time.Since(start).Seconds()
+				usage.Latency = &elapsed
+
+				// DO NOT change this, resp is used in updating usage
+				resp := entity.EC2InstanceWastageResponse{
+					RightSizing:       *ec2RightSizingRecom,
+					VolumeRightSizing: ebsRightSizingRecoms,
+				}
+				// DO NOT change this, resp is used in updating usage
+
+				usage.Response, _ = json.Marshal(resp)
+				id := uuid.New()
+				responseId := id.String()
+				usage.ResponseId = &responseId
+				err = s.usageRepo.Update(usage.ID, usage)
 				if err != nil {
-					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage))
+				}
+
+				u.Moved = true
+				err = s.usageV1Repo.Update(usage.ID, *u)
+				if err != nil {
+					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", u.ID), zap.Error(err))
 					continue
 				}
 			}
