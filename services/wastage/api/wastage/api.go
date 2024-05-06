@@ -117,6 +117,7 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
 	if err != nil {
+		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
 		return err
 	}
 
@@ -125,6 +126,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
 		if err != nil {
+			err = fmt.Errorf("failed to get ebs volume %s recommendation: %s", vol.HashedVolumeId, err.Error())
 			return err
 		}
 		ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
