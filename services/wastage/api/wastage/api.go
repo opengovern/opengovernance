@@ -2,6 +2,7 @@ package wastage
 
 import (
 	"encoding/json"
+	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -26,15 +27,17 @@ type API struct {
 	logger       *zap.Logger
 	costSvc      *cost.Service
 	usageRepo    repo.UsageV2Repo
+	usageV1Repo  repo.UsageRepo
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageRepo repo.UsageV2Repo, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, logger *zap.Logger) API {
 	return API{
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
 		usageRepo:    usageRepo,
+		usageV1Repo:  usageV1Repo,
 		ingestionSvc: ingestionService,
 		tracer:       otel.GetTracerProvider().Tracer("wastage.http.sources"),
 		logger:       logger.Named("wastage-api"),
@@ -47,6 +50,7 @@ func (s API) Register(e *echo.Echo) {
 	g.POST("/aws-rds", s.AwsRDS)
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
+	i.PUT("/usages/migrate", httpserver.AuthorizeHandler(s.MigrateUsages, api.InternalRole))
 }
 
 // EC2Instance godoc
@@ -229,7 +233,7 @@ func (s API) AwsRDS(c echo.Context) error {
 //	@Produce		json
 //	@Param			service		path	string		true	"service"
 //	@Success		200
-//	@Router			/wastage/api/v1/wastage/ingest/{service} [post]
+//	@Router			/wastage/api/v1/wastage-ingestion/ingest/{service} [post]
 func (s API) TriggerIngest(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
@@ -253,6 +257,119 @@ func (s API) TriggerIngest(c echo.Context) error {
 		}
 		s.logger.Info("deleted data age for AWS::RDS::Instance ingestion will be triggered soon")
 	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// MigrateUsages godoc
+//
+//	@Summary		Migrate all usages from v1 to v2 and recall and get the response for each again
+//	@Description	Migrate all usages from v1 to v2 and recall and get the response for each again
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Success		200
+//	@Router			/wastage/api/v1/wastage-ingestion/usages/migrate [post]
+func (s API) MigrateUsages(c echo.Context) error {
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+	go func() {
+		s.logger.Info("Usage table migration started")
+
+		usages, err := s.usageV1Repo.List()
+		if err != nil {
+			s.logger.Error("error while getting usage_v1 usages list", zap.Error(err))
+			return
+		}
+		s.logger.Info("fetched all usage_v1 usages list successfully")
+
+		for _, u := range usages {
+			start := time.Now()
+			var req entity.EC2InstanceWastageRequest
+			err = u.Request.Scan(&req)
+			requestId := fmt.Sprintf("usage_v1_%v", u.ID)
+			cliVersion := "unknown"
+			usage := model.UsageV2{
+				ApiEndpoint:    "ec2-instance",
+				Request:        u.Request,
+				RequestId:      &requestId,
+				CliVersion:     &cliVersion,
+				Response:       nil,
+				FailureMessage: nil,
+			}
+			err = s.usageRepo.Create(&usage)
+			if err != nil {
+				s.logger.Error("error while putting usage in database",
+					zap.Any("usage_id", u.ID),
+					zap.Any("usage", usage),
+					zap.Error(err))
+				return
+			}
+
+			if req.Instance.State != types2.InstanceStateNameRunning {
+				err = echo.NewHTTPError(http.StatusBadRequest, "instance is not running")
+				s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+				fmsg := err.Error()
+				usage.FailureMessage = &fmsg
+				err = s.usageRepo.Update(usage.ID, usage)
+				if err != nil {
+					s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+				}
+				continue
+			}
+
+			ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
+			if err != nil {
+				s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+				fmsg := err.Error()
+				usage.FailureMessage = &fmsg
+				err = s.usageRepo.Update(usage.ID, usage)
+				if err != nil {
+					s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+				}
+				continue
+			}
+
+			ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
+			for _, vol := range req.Volumes {
+				var ebsRightSizingRecom *entity.EBSVolumeRecommendation
+				ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
+				if err != nil {
+					s.logger.Error("request failed", zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage), zap.Error(err))
+					fmsg := err.Error()
+					usage.FailureMessage = &fmsg
+					err = s.usageRepo.Update(usage.ID, usage)
+					if err != nil {
+						s.logger.Error("failed to update usage", zap.Any("usage_v1_id", u.ID), zap.Error(err), zap.Any("usage", usage))
+					}
+					continue
+				}
+				ebsRightSizingRecoms[vol.HashedVolumeId] = *ebsRightSizingRecom
+			}
+			elapsed := time.Since(start).Seconds()
+			usage.Latency = &elapsed
+
+			// DO NOT change this, resp is used in updating usage
+			resp := entity.EC2InstanceWastageResponse{
+				RightSizing:       *ec2RightSizingRecom,
+				VolumeRightSizing: ebsRightSizingRecoms,
+			}
+			// DO NOT change this, resp is used in updating usage
+
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+			err = s.usageRepo.Update(usage.ID, usage)
+			if err != nil {
+				s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage_v1_id", u.ID), zap.Any("usage", usage))
+			}
+		}
+
+		s.logger.Info("Usage table migration finished")
+		return
+	}()
 
 	return c.NoContent(http.StatusOK)
 }

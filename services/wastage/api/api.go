@@ -15,20 +15,22 @@ type API struct {
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
 	usageRepo    repo.UsageV2Repo
+	usageV1Repo  repo.UsageRepo
 	logger       *zap.Logger
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *ingestion.Service, usageRepo repo.UsageV2Repo, logger *zap.Logger) *API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, logger *zap.Logger) *API {
 	return &API{
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
 		ingestionSvc: ingestionSvc,
+		usageV1Repo:  usageV1Repo,
 		usageRepo:    usageRepo,
 		logger:       logger.Named("api"),
 	}
 }
 
 func (api *API) Register(e *echo.Echo) {
-	qThr := wastage.New(api.costSvc, api.recomSvc, api.ingestionSvc, api.usageRepo, api.logger)
+	qThr := wastage.New(api.costSvc, api.recomSvc, api.ingestionSvc, api.usageV1Repo, api.usageRepo, api.logger)
 	qThr.Register(e)
 }
