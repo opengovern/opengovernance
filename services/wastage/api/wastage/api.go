@@ -6,6 +6,7 @@ import (
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
@@ -293,15 +294,18 @@ func (s API) MigrateUsages(c echo.Context) error {
 				requestBody.RequestId = &requestId
 				requestBody.CliVersion = &cliVersion
 
-				err = c.Bind(&requestBody)
+				url := "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/aws-rds"
+
+				payload, err := json.Marshal(requestBody)
 				if err != nil {
-					s.logger.Error("failed to marshal request to bytes", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("failed to marshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
-				err = s.AwsRDS(c)
-				if err != nil {
+
+				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
 				}
+
 				usage.Moved = true
 				err = s.usageV1Repo.Update(usage.ID, *usage)
 				if err != nil {
@@ -316,16 +320,18 @@ func (s API) MigrateUsages(c echo.Context) error {
 				requestBody.RequestId = &requestId
 				requestBody.CliVersion = &cliVersion
 
-				err = c.Bind(&requestBody)
+				url := "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/ec2-instance"
+
+				payload, err := json.Marshal(requestBody)
 				if err != nil {
-					s.logger.Error("failed to marshal request to bytes", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("failed to marshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
 
-				err = s.EC2Instance(c)
-				if err != nil {
+				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
 				}
+
 				usage.Moved = true
 				err = s.usageV1Repo.Update(usage.ID, *usage)
 				if err != nil {
