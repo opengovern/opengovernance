@@ -194,6 +194,17 @@ func (s *Service) AwsRdsRecommendation(
 			instancePref["database_edition = ?"] = kind.Edition
 		}
 	}
+	if _, ok := instancePref["instance_type = ?"]; !ok {
+		if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
+			if *value == "Yes" {
+				instancePref["NOT(instance_type like ?)"] = "db.t%"
+			}
+		} else {
+			if v, ok := preferences["InstanceFamily"]; ok && v != nil {
+				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%s%%", *v)
+			}
+		}
+	}
 
 	rightSizedInstanceRow, err := s.awsRDSDBInstanceRepo.GetCheapestByPref(instancePref)
 	if err != nil {
