@@ -244,7 +244,6 @@ func (s *Service) AwsRdsRecommendation(
 			} else if *v != "" {
 				validTypes = append(validTypes, model.RDSDBStorageVolumeType(*v))
 			}
-			s.logger.Info("valid storage types", zap.Any("types", validTypes))
 		}
 
 		var resSize, resIops int32

@@ -238,7 +238,6 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 		}
 		validTypes = filteredValidTypes
 	} else {
-		r.logger.Info("filtering out aurora volume types", zap.Any("valid_types", validTypes))
 		var filteredValidTypes []model.RDSDBStorageVolumeType
 		for _, t := range validTypes {
 			if t != model.RDSDBStorageVolumeTypeIOOptimizedAurora &&
@@ -247,7 +246,6 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 			}
 		}
 		validTypes = filteredValidTypes
-		r.logger.Info("filtered out aurora volume types", zap.Any("valid_types", validTypes))
 		tx = tx.Where("database_engine = ?", engine)
 		if len(edition) > 0 {
 			tx = tx.Where("edition = ?", edition)
@@ -288,7 +286,6 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 		return nil, 0, 0, 0, nil
 	}
 
-	var cheapestVolume *model.RDSDBStorage
 	var cheapestPrice float64
 
 	for _, v := range volumes {
@@ -311,6 +308,7 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 		}
 
 		if err != nil {
+			r.logger.Error("failed to calculate total cost", zap.Error(err), zap.Any("volume", v))
 			return nil, 0, 0, 0, err
 		}
 
@@ -323,5 +321,5 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 		}
 	}
 
-	return cheapestVolume, cheapestVSize, cheapestIops, cheapestThroughput, nil
+	return res, cheapestVSize, cheapestIops, cheapestThroughput, nil
 }
