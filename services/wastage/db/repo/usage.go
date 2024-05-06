@@ -1,14 +1,17 @@
 package repo
 
 import (
+	"errors"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"gorm.io/gorm"
 )
 
 type UsageRepo interface {
 	Create(m *model.Usage) error
 	Update(id uint, m model.Usage) error
 	List() ([]model.Usage, error)
+	GetRandomNotMoved() (*model.Usage, error)
 }
 
 type UsageRepoImpl struct {
@@ -36,4 +39,16 @@ func (r *UsageRepoImpl) List() ([]model.Usage, error) {
 		return nil, tx.Error
 	}
 	return ms, nil
+}
+
+func (r *UsageRepoImpl) GetRandomNotMoved() (*model.Usage, error) {
+	var m model.Usage
+	tx := r.db.Conn().Model(&model.Usage{}).Or("moved=? OR moved IS NULL", false).First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
 }
