@@ -288,7 +288,11 @@ func (s API) MigrateUsages(c echo.Context) error {
 			}
 			if usage.Endpoint == "aws-rds" {
 				var requestBody entity.AwsRdsWastageRequest
-				err = usage.Request.Scan(&requestBody)
+				err = json.Unmarshal(usage.Request, &requestBody)
+				if err != nil {
+					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
 				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
 				cliVersion := "unknown"
 				requestBody.RequestId = &requestId
@@ -314,7 +318,11 @@ func (s API) MigrateUsages(c echo.Context) error {
 				}
 			} else {
 				var requestBody entity.EC2InstanceWastageRequest
-				err = usage.Request.Scan(&requestBody)
+				err = json.Unmarshal(usage.Request, &requestBody)
+				if err != nil {
+					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
 				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
 				cliVersion := "unknown"
 				requestBody.RequestId = &requestId
