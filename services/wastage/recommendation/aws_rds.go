@@ -216,9 +216,21 @@ func (s *Service) AwsRdsRecommendation(
 
 	var rightSizedStorageRow *model.RDSDBStorage
 	if !isResultAurora {
+		var validTypes []model.RDSDBStorageVolumeType
+		if v, ok := preferences["StorageType"]; ok {
+			if v == nil {
+				st := extractFromRdsInstance(rdsInstance, currentInstanceRow, region, "StorageType")
+				volType := model.RDSDBStorageEBSTypeToVolumeType[st.(string)]
+				validTypes = append(validTypes, volType)
+			} else {
+				volType := model.RDSDBStorageEBSTypeToVolumeType[*v]
+				validTypes = append(validTypes, volType)
+			}
+		}
+
 		var resSize, resIops int32
 		var resThroughputMB float64
-		rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, nil)
+		rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)
 		if err != nil {
 			s.logger.Error("failed to get rds storage type", zap.Error(err))
 			return nil, err
