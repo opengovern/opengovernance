@@ -35,6 +35,15 @@ var dbTypeMap = map[string]awsRdsDbType{
 	"sqlserver-web":     {"SQL Server", "Web"},
 }
 
+func awsRdsDbTypeToAPIDbType(engine, edition string) string {
+	for k, v := range dbTypeMap {
+		if strings.ToLower(v.Engine) == strings.ToLower(engine) && (v.Edition == "" || strings.ToLower(v.Edition) == strings.ToLower(edition)) {
+			return k
+		}
+	}
+	return ""
+}
+
 func (s *Service) AwsRdsRecommendation(
 	region string,
 	rdsInstance entity.AwsRds,
@@ -269,7 +278,7 @@ func (s *Service) AwsRdsRecommendation(
 		recommended = &entity.RightsizingAwsRds{
 			Region:        rightSizedInstanceRow.RegionCode,
 			InstanceType:  rightSizedInstanceRow.InstanceType,
-			Engine:        rightSizedInstanceRow.DatabaseEngine,
+			Engine:        awsRdsDbTypeToAPIDbType(rightSizedInstanceRow.DatabaseEngine, rightSizedInstanceRow.DatabaseEdition),
 			EngineVersion: newInstance.EngineVersion,
 			ClusterType:   newInstance.ClusterType,
 			VCPU:          rightSizedInstanceRow.VCpu,
