@@ -241,9 +241,8 @@ func (s *Service) AwsRdsRecommendation(
 				st := extractFromRdsInstance(rdsInstance, currentInstanceRow, region, "StorageType")
 				volType := model.RDSDBStorageEBSTypeToVolumeType[st.(string)]
 				validTypes = append(validTypes, volType)
-			} else {
-				volType := model.RDSDBStorageEBSTypeToVolumeType[*v]
-				validTypes = append(validTypes, volType)
+			} else if *v != "" {
+				validTypes = append(validTypes, model.RDSDBStorageVolumeType(*v))
 			}
 		}
 
