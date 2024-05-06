@@ -52,7 +52,7 @@ func (s API) Register(e *echo.Echo) {
 	g.POST("/aws-rds", s.AwsRDS)
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
-	i.PUT("/usages/migrate", httpserver.AuthorizeHandler(s.MigrateUsages, api.InternalRole))
+	i.PUT("/usages/migrate", s.MigrateUsages)
 }
 
 // EC2Instance godoc
