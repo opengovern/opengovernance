@@ -8,6 +8,7 @@ import (
 type UsageRepo interface {
 	Create(m *model.Usage) error
 	Update(id uint, m model.Usage) error
+	List() ([]model.Usage, error)
 }
 
 type UsageRepoImpl struct {
@@ -26,4 +27,13 @@ func (r *UsageRepoImpl) Create(m *model.Usage) error {
 
 func (r *UsageRepoImpl) Update(id uint, m model.Usage) error {
 	return r.db.Conn().Model(&model.Usage{}).Where("id=?", id).Updates(&m).Error
+}
+
+func (r *UsageRepoImpl) List() ([]model.Usage, error) {
+	var ms []model.Usage
+	tx := r.db.Conn().Model(&model.Usage{}).Find(&ms)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return ms, nil
 }

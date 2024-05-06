@@ -72,6 +72,7 @@ func Command() *cobra.Command {
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageV2Repo := repo.NewUsageV2Repo(usageDb)
+			usageV1Repo := repo.NewUsageRepo(usageDb)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
@@ -84,7 +85,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(costSvc, recomSvc, ingestionSvc, usageV2Repo, logger),
+				api.New(costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, logger),
 			)
 		},
 	}
