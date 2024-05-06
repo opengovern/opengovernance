@@ -168,6 +168,9 @@ func (s *Service) AwsRdsRecommendation(
 		} else {
 			vl = *v
 		}
+		if _, ok := aws_rds.PreferenceInstanceDBKey[k]; !ok {
+			continue
+		}
 		if aws_rds.PreferenceInstanceDBKey[k] == "" {
 			continue
 		}
@@ -192,6 +195,20 @@ func (s *Service) AwsRdsRecommendation(
 		instancePref["database_engine = ?"] = kind.Engine
 		if kind.Edition != "" {
 			instancePref["database_edition = ?"] = kind.Edition
+		}
+	}
+	if _, ok := instancePref["instance_type = ?"]; !ok {
+		if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
+			if *value == "Yes" {
+				instancePref["NOT(instance_type like ?)"] = "db.t%"
+			}
+		} else {
+			if v, ok := preferences["InstanceFamily"]; ok && v != nil {
+				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%s%%", *v)
+			} else {
+				currInstanceFamily := rdsInstance.InstanceType[3]
+				instancePref["(instance_type like ?)"] = fmt.Sprintf("db.%c%%", currInstanceFamily)
+			}
 		}
 	}
 
