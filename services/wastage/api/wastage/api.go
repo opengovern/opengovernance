@@ -1,7 +1,6 @@
 package wastage
 
 import (
-	"context"
 	"encoding/json"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
@@ -237,74 +236,23 @@ func (s API) TriggerIngest(c echo.Context) error {
 	defer span.End()
 
 	service := c.Param("service")
-	dataAge, err := s.ingestionSvc.DataAgeRepo.List()
-	if err != nil {
-		return err
-	}
 
-	var ec2InstanceData *model.DataAge
-	var rdsData *model.DataAge
-	for _, data := range dataAge {
-		data := data
-		switch data.DataType {
-		case "AWS::EC2::Instance":
-			ec2InstanceData = &data
-		case "AWS::RDS::Instance":
-			rdsData = &data
+	switch service {
+	case "aws-ec2-instance":
+		err := s.ingestionSvc.DataAgeRepo.Delete("AWS::EC2::Instance")
+		if err != nil {
+			s.logger.Error("failed to delete data age", zap.Error(err), zap.String("service", service))
+			return err
 		}
+		s.logger.Info("deleted data age for AWS::EC2::Instance ingestion will be triggered soon")
+	case "aws-rds":
+		err := s.ingestionSvc.DataAgeRepo.Delete("AWS::RDS::Instance")
+		if err != nil {
+			s.logger.Error("failed to delete data age", zap.Error(err), zap.String("service", service))
+			return err
+		}
+		s.logger.Info("deleted data age for AWS::RDS::Instance ingestion will be triggered soon")
 	}
-	go func() {
-		// This is background job, it should not get canceled by the request context
-		bCtx := context.Background()
-		switch service {
-		case "aws-ec2-instance":
-			s.logger.Info("Ingestion for EC2 started")
-			err := s.ingestionSvc.IngestEc2Instances(bCtx)
-			if err != nil {
-				s.logger.Error(err.Error())
-			}
-			if ec2InstanceData == nil {
-				err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
-					DataType:  "AWS::EC2::Instance",
-					UpdatedAt: time.Now(),
-				})
-				if err != nil {
-					s.logger.Error(err.Error())
-				}
-			} else {
-				err = s.ingestionSvc.DataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
-					DataType:  "AWS::EC2::Instance",
-					UpdatedAt: time.Now(),
-				})
-				if err != nil {
-					s.logger.Error(err.Error())
-				}
-			}
-		case "aws-rds":
-			s.logger.Info("Ingestion for RDS started")
-			err = s.ingestionSvc.IngestRDS()
-			if err != nil {
-				s.logger.Error(err.Error())
-			}
-			if rdsData == nil {
-				err = s.ingestionSvc.DataAgeRepo.Create(&model.DataAge{
-					DataType:  "AWS::RDS::Instance",
-					UpdatedAt: time.Now(),
-				})
-				if err != nil {
-					s.logger.Error(err.Error())
-				}
-			} else {
-				err = s.ingestionSvc.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
-					DataType:  "AWS::RDS::Instance",
-					UpdatedAt: time.Now(),
-				})
-				if err != nil {
-					s.logger.Error(err.Error())
-				}
-			}
-		}
-	}()
 
 	return c.NoContent(http.StatusOK)
 }
