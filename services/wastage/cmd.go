@@ -68,7 +68,7 @@ func Command() *cobra.Command {
 			ec2InstanceRepo := repo.NewEC2InstanceTypeRepo(db)
 			rdsRepo := repo.NewRDSProductRepo(db)
 			rdsInstanceRepo := repo.NewRDSDBInstanceRepo(db)
-			rdsStorageRepo := repo.NewRDSDBStorageRepo(db)
+			rdsStorageRepo := repo.NewRDSDBStorageRepo(logger, db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageV2Repo := repo.NewUsageV2Repo(usageDb)

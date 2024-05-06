@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"strings"
 )
@@ -19,12 +20,14 @@ type RDSDBStorageRepo interface {
 }
 
 type RDSDBStorageRepoImpl struct {
-	db *connector.Database
+	logger *zap.Logger
+	db     *connector.Database
 }
 
-func NewRDSDBStorageRepo(db *connector.Database) RDSDBStorageRepo {
+func NewRDSDBStorageRepo(logger *zap.Logger, db *connector.Database) RDSDBStorageRepo {
 	return &RDSDBStorageRepoImpl{
-		db: db,
+		logger: logger,
+		db:     db,
 	}
 }
 
@@ -234,11 +237,8 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 			}
 		}
 		validTypes = filteredValidTypes
-		tx = tx.Where("database_engine = ?", engine)
-		if len(edition) > 0 {
-			tx = tx.Where("edition = ?", edition)
-		}
 	} else {
+		r.logger.Info("filtering out aurora volume types", zap.Any("valid_types", validTypes))
 		var filteredValidTypes []model.RDSDBStorageVolumeType
 		for _, t := range validTypes {
 			if t != model.RDSDBStorageVolumeTypeIOOptimizedAurora &&
@@ -247,6 +247,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 			}
 		}
 		validTypes = filteredValidTypes
+		r.logger.Info("filtered out aurora volume types", zap.Any("valid_types", validTypes))
 		tx = tx.Where("database_engine = ?", engine)
 		if len(edition) > 0 {
 			tx = tx.Where("edition = ?", edition)
