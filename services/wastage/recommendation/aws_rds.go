@@ -320,9 +320,8 @@ func (s *Service) AwsRdsRecommendation(
 			newInstance.StorageIops = nil
 		}
 		if ebsType == "gp3" {
-			neededStorageThroughputBytes := neededStorageThroughputMB * 1024 * 1024
-			recommended.StorageThroughput = &neededStorageThroughputBytes
-			newInstance.StorageThroughput = &neededStorageThroughputBytes
+			recommended.StorageThroughput = &neededStorageThroughputMB
+			newInstance.StorageThroughput = &neededStorageThroughputMB
 		} else {
 			recommended.StorageThroughput = nil
 			newInstance.StorageThroughput = nil
