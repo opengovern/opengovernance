@@ -350,7 +350,6 @@ func (s API) MigrateUsages(c echo.Context) error {
 				err = s.AwsRDS(c)
 				if err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
 				}
 				usage.Moved = true
 				err = s.usageV1Repo.Update(usage.ID, *usage)
