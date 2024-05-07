@@ -111,6 +111,9 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 		*iops = model.RDSDBStorageTier1Gp3BaseIops
 		*throughput = model.RDSDBStorageTier1Gp3BaseThroughput
 	}
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
+	}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 	iopsCost := 0.0
 	throughputCost := 0.0
