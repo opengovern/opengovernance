@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"math"
 	"strings"
 )
 
@@ -78,15 +79,33 @@ func (r *RDSDBStorageRepoImpl) Truncate(tx *gorm.DB) error {
 	return nil
 }
 
-func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32) (float64, error) {
+func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32, iops *int32) (float64, error) {
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeMagnetic) {
 		return 0, errors.New("invalid volume type")
 	}
 	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
 		*volumeSize = dbStorage.MinVolumeSizeGb
 	}
+	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 
-	return dbStorage.PricePerUnit * float64(*volumeSize), nil
+	millionIoPerMonth := math.Ceil(float64(*iops) * 30 * 24 * 60 * 60 / 1e6) // 30 days, 24 hours, 60 minutes, 60 seconds
+	iopsCost := 0.0
+
+	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+		Where("product_family = ?", "System Operation").
+		Where("region_code = ?", dbStorage.RegionCode).
+		Where("volume_type = ?", "Magnetic").
+		Where("group = ?", "RDS I/O Operation").
+		Where("database_engine IN ?", []string{dbStorage.DatabaseEngine, "Any"})
+	tx = tx.Order("price_per_unit asc")
+	var iopsStorage model.RDSDBStorage
+	err := tx.First(&iopsStorage).Error
+	if err != nil {
+		return 0, tx.Error
+	}
+	iopsCost = iopsStorage.PricePerUnit * millionIoPerMonth
+
+	return sizeCost + iopsCost, nil
 }
 
 func (r *RDSDBStorageRepoImpl) getGp2TotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32) (float64, error) {
@@ -226,6 +245,47 @@ func (r *RDSDBStorageRepoImpl) getIo2TotalPrice(dbStorage model.RDSDBStorage, vo
 	return sizeCost + iopsCost, nil
 }
 
+func (r *RDSDBStorageRepoImpl) getAuroraGeneralPurposeTotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32, iops *int32) (float64, error) {
+	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeGeneralPurposeAurora) {
+		return 0, errors.New("invalid volume type")
+	}
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
+	}
+	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
+
+	millionIoPerMonth := math.Ceil(float64(*iops) * 30 * 24 * 60 * 60 / 1e6) // 30 days, 24 hours, 60 minutes, 60 seconds
+	iopsCost := 0.0
+
+	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+		Where("product_family = ?", "System Operation").
+		Where("region_code = ?", dbStorage.RegionCode).
+		Where("group = ?", "Aurora I/O Operation").
+		Where("database_engine IN ?", []string{dbStorage.DatabaseEngine, "Any"})
+	tx = tx.Order("price_per_unit asc")
+	var iopsStorage model.RDSDBStorage
+	err := tx.First(&iopsStorage).Error
+	if err != nil {
+		return 0, tx.Error
+	}
+	iopsCost = iopsStorage.PricePerUnit * millionIoPerMonth
+
+	return sizeCost + iopsCost, nil
+
+}
+
+func (r *RDSDBStorageRepoImpl) getAuroraIOOptimizedTotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32) (float64, error) {
+	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeIOOptimizedAurora) {
+		return 0, errors.New("invalid volume type")
+	}
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
+	}
+	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
+
+	return sizeCost, nil
+}
+
 func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) ([]model.RDSDBStorage, error) {
 	var res []model.RDSDBStorage
 	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
@@ -251,6 +311,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 			}
 		}
 		validTypes = filteredValidTypes
+		tx = tx.Where("database_engine IN ?", []string{engine, "Any"})
 	} else {
 		var filteredValidTypes []model.RDSDBStorageVolumeType
 		for _, t := range validTypes {
@@ -310,7 +371,7 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 		var totalCost float64
 		switch model.RDSDBStorageVolumeType(v.VolumeType) {
 		case model.RDSDBStorageVolumeTypeMagnetic:
-			totalCost, err = r.getMagneticTotalPrice(v, &vSize)
+			totalCost, err = r.getMagneticTotalPrice(v, &vSize, &vIops)
 		case model.RDSDBStorageVolumeTypeGP2:
 			totalCost, err = r.getGp2TotalPrice(v, &vSize)
 		case model.RDSDBStorageVolumeTypeGP3:
@@ -319,6 +380,10 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 			totalCost, err = r.getIo1TotalPrice(v, &vSize, &vIops)
 		case model.RDSDBStorageVolumeTypeIO2:
 			totalCost, err = r.getIo2TotalPrice(v, &vSize, &vIops)
+		case model.RDSDBStorageVolumeTypeGeneralPurposeAurora:
+			totalCost, err = r.getAuroraGeneralPurposeTotalPrice(v, &vSize, &vIops)
+		case model.RDSDBStorageVolumeTypeIOOptimizedAurora:
+			totalCost, err = r.getAuroraIOOptimizedTotalPrice(v, &vSize)
 		}
 
 		if err != nil {

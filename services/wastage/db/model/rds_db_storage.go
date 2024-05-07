@@ -28,6 +28,7 @@ type RDSDBStorage struct {
 	MaxIops          int32   `gorm:"index"`
 	VolumeType       string  `gorm:"index"`
 	DeploymentOption string  `gorm:"index"`
+	Group            string  `gorm:"index"`
 
 	SKU              string
 	OfferTermCode    string
@@ -49,7 +50,6 @@ type RDSDBStorage struct {
 	MaxVolumeSize    string
 	EngineCode       string
 	LicenseModel     string
-	Group            string
 	GroupDescription string
 	UsageType        string
 	Operation        string
@@ -72,20 +72,23 @@ const (
 )
 
 var RDSDBStorageVolumeTypeToEBSType = map[string]string{
-	string(RDSDBStorageVolumeTypeGP2):      "gp2",
-	string(RDSDBStorageVolumeTypeGP3):      "gp3",
-	string(RDSDBStorageVolumeTypeIO1):      "io1",
-	string(RDSDBStorageVolumeTypeIO2):      "io2",
-	string(RDSDBStorageVolumeTypeMagnetic): "standard",
-	// Aurora not included as we don't know the mapping yet
+	string(RDSDBStorageVolumeTypeGP2):                  "gp2",
+	string(RDSDBStorageVolumeTypeGP3):                  "gp3",
+	string(RDSDBStorageVolumeTypeIO1):                  "io1",
+	string(RDSDBStorageVolumeTypeIO2):                  "io2",
+	string(RDSDBStorageVolumeTypeMagnetic):             "standard",
+	string(RDSDBStorageVolumeTypeGeneralPurposeAurora): "aurora",
+	string(RDSDBStorageVolumeTypeIOOptimizedAurora):    "aurora-iopt1",
 }
 
 var RDSDBStorageEBSTypeToVolumeType = map[string]RDSDBStorageVolumeType{
-	"gp2":      RDSDBStorageVolumeTypeGP2,
-	"gp3":      RDSDBStorageVolumeTypeGP3,
-	"io1":      RDSDBStorageVolumeTypeIO1,
-	"io2":      RDSDBStorageVolumeTypeIO2,
-	"standard": RDSDBStorageVolumeTypeMagnetic,
+	"gp2":          RDSDBStorageVolumeTypeGP2,
+	"gp3":          RDSDBStorageVolumeTypeGP3,
+	"io1":          RDSDBStorageVolumeTypeIO1,
+	"io2":          RDSDBStorageVolumeTypeIO2,
+	"standard":     RDSDBStorageVolumeTypeMagnetic,
+	"aurora":       RDSDBStorageVolumeTypeGeneralPurposeAurora,
+	"aurora-iopt1": RDSDBStorageVolumeTypeIOOptimizedAurora,
 }
 
 func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
