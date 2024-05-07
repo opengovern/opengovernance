@@ -95,7 +95,7 @@ func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorag
 		Where("product_family = ?", "System Operation").
 		Where("region_code = ?", dbStorage.RegionCode).
 		Where("volume_type = ?", "Magnetic").
-		Where("group = ?", "RDS I/O Operation").
+		Where("'group' = ?", "RDS I/O Operation").
 		Where("database_engine IN ?", []string{dbStorage.DatabaseEngine, "Any"})
 	tx = tx.Order("price_per_unit asc")
 	var iopsStorage model.RDSDBStorage
@@ -260,7 +260,7 @@ func (r *RDSDBStorageRepoImpl) getAuroraGeneralPurposeTotalPrice(dbStorage model
 	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
 		Where("product_family = ?", "System Operation").
 		Where("region_code = ?", dbStorage.RegionCode).
-		Where("group = ?", "Aurora I/O Operation").
+		Where("'group' = ?", "Aurora I/O Operation").
 		Where("database_engine IN ?", []string{dbStorage.DatabaseEngine, "Any"})
 	tx = tx.Order("price_per_unit asc")
 	var iopsStorage model.RDSDBStorage
