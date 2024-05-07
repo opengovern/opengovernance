@@ -124,8 +124,8 @@ func (s *Service) IngestEc2Instances(ctx context.Context) error {
 	defer func() {
 		transaction.Rollback()
 	}()
-
-	//err := s.ingestEc2InstancesBase(ctx, transaction)
+	var err error
+	//err = s.ingestEc2InstancesBase(ctx, transaction)
 	//if err != nil {
 	//	s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
 	//	return err
