@@ -49,12 +49,12 @@ func (s *Service) Start(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			s.logger.Error("paniced", zap.Error(fmt.Errorf("%v", r)))
-			time.Sleep(10 * time.Second)
+			time.Sleep(15 * time.Minute)
 			go s.Start(ctx)
 		}
 	}()
 
-	ticker := time.NewTimer(1 * time.Minute)
+	ticker := time.NewTimer(2 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -62,6 +62,7 @@ func (s *Service) Start(ctx context.Context) {
 		dataAge, err := s.DataAgeRepo.List()
 		if err != nil {
 			s.logger.Error("failed to list data age", zap.Error(err))
+			time.Sleep(5 * time.Minute)
 			continue
 		}
 
@@ -81,6 +82,7 @@ func (s *Service) Start(ctx context.Context) {
 			err = s.IngestEc2Instances(ctx)
 			if err != nil {
 				s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
+				time.Sleep(5 * time.Minute)
 				continue
 			}
 			if ec2InstanceData == nil {
@@ -90,6 +92,7 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to create data age", zap.Error(err))
+					time.Sleep(5 * time.Minute)
 					continue
 				}
 			} else {
@@ -99,6 +102,7 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to update data age", zap.Error(err))
+					time.Sleep(5 * time.Minute)
 					continue
 				}
 			}
@@ -108,6 +112,7 @@ func (s *Service) Start(ctx context.Context) {
 			err = s.IngestRDS()
 			if err != nil {
 				s.logger.Error("failed to ingest rds", zap.Error(err))
+				time.Sleep(5 * time.Minute)
 				continue
 			}
 			if rdsData == nil {
@@ -117,6 +122,7 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to create rds data age", zap.Error(err))
+					time.Sleep(5 * time.Minute)
 					continue
 				}
 			} else {
@@ -126,6 +132,7 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to update rds data age", zap.Error(err))
+					time.Sleep(5 * time.Minute)
 					continue
 				}
 			}
