@@ -141,28 +141,28 @@ func (s *Service) Start(ctx context.Context) {
 }
 
 func (s *Service) IngestEc2Instances(ctx context.Context) error {
-	transaction := s.db.Conn().Begin()
-	defer func() {
-		transaction.Rollback()
-	}()
+	//transaction := s.db.Conn().Begin()
+	//defer func() {
+	//	transaction.Rollback()
+	//}()
 	var err error
-	err = s.ingestEc2InstancesBase(ctx, transaction)
+	err = s.ingestEc2InstancesBase(ctx, nil)
 	if err != nil {
 		s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
 		return err
 	}
 
-	err = s.ingestEc2InstancesExtra(ctx, transaction)
+	err = s.ingestEc2InstancesExtra(ctx, nil)
 	if err != nil {
 		s.logger.Error("failed to ingest ec2 instances extra", zap.Error(err))
 		return err
 	}
 
-	err = transaction.Commit().Error
-	if err != nil {
-		s.logger.Error("failed to commit transaction", zap.Error(err))
-		return err
-	}
+	//err = transaction.Commit().Error
+	//if err != nil {
+	//	s.logger.Error("failed to commit transaction", zap.Error(err))
+	//	return err
+	//}
 
 	s.logger.Info("ingested ec2 instances")
 
@@ -342,12 +342,14 @@ func (s *Service) IngestRDS() error {
 			break
 		}
 	}
+	//
+	//transaction := s.db.Conn().Begin()
+	//defer func() {
+	//	transaction.Rollback()
+	//}()
 
-	transaction := s.db.Conn().Begin()
-	defer func() {
-		transaction.Rollback()
-	}()
-
+	var transaction *gorm.DB
+	
 	err = s.rdsRepo.Truncate(transaction)
 	if err != nil {
 		return err
@@ -423,10 +425,10 @@ func (s *Service) IngestRDS() error {
 			}
 		}
 	}
-	err = transaction.Commit().Error
-	if err != nil {
-		return err
-	}
+	//err = transaction.Commit().Error
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
