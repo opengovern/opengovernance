@@ -100,7 +100,7 @@ func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorag
 	tx = tx.Order("price_per_unit asc")
 	var iopsStorage model.RDSDBStorage
 	err := tx.First(&iopsStorage).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, tx.Error
 	}
 	iopsCost = iopsStorage.PricePerUnit * millionIoPerMonth
@@ -153,7 +153,7 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 			tx = tx.Order("price_per_unit asc")
 			var iopsStorage model.RDSDBStorage
 			err := tx.First(&iopsStorage).Error
-			if err != nil {
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return 0, tx.Error
 			}
 			iopsCost = iopsStorage.PricePerUnit * float64(provisionedIops)
@@ -175,7 +175,7 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 			tx = tx.Order("price_per_unit asc")
 			var throughputStorage model.RDSDBStorage
 			err := tx.First(&throughputStorage).Error
-			if err != nil {
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return 0, tx.Error
 			}
 			throughputCost = throughputStorage.PricePerUnit * provisionedThroughput
@@ -208,7 +208,7 @@ func (r *RDSDBStorageRepoImpl) getIo1TotalPrice(dbStorage model.RDSDBStorage, vo
 	tx = tx.Order("price_per_unit asc")
 	var iopsStorage model.RDSDBStorage
 	err := tx.First(&iopsStorage).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, tx.Error
 	}
 	iopsCost = iopsStorage.PricePerUnit * float64(*iops)
@@ -237,7 +237,7 @@ func (r *RDSDBStorageRepoImpl) getIo2TotalPrice(dbStorage model.RDSDBStorage, vo
 	tx = tx.Order("price_per_unit asc")
 	var iopsStorage model.RDSDBStorage
 	err := tx.First(&iopsStorage).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, tx.Error
 	}
 	iopsCost = iopsStorage.PricePerUnit * float64(*iops)
@@ -265,7 +265,7 @@ func (r *RDSDBStorageRepoImpl) getAuroraGeneralPurposeTotalPrice(dbStorage model
 	tx = tx.Order("price_per_unit asc")
 	var iopsStorage model.RDSDBStorage
 	err := tx.First(&iopsStorage).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, tx.Error
 	}
 	iopsCost = iopsStorage.PricePerUnit * millionIoPerMonth
