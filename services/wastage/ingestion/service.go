@@ -143,6 +143,8 @@ func (s *Service) IngestEc2Instances(ctx context.Context) error {
 		return err
 	}
 
+	s.logger.Info("ingested ec2 instances")
+
 	return nil
 }
 
