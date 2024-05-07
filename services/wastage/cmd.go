@@ -76,10 +76,7 @@ func Command() *cobra.Command {
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
-			go func() {
-				err = ingestionSvc.Start(ctx)
-				panic(err)
-			}()
+			go ingestionSvc.Start(ctx)
 
 			return httpserver.RegisterAndStart(
 				ctx,

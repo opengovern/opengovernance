@@ -45,14 +45,23 @@ func New(logger *zap.Logger, db *connector.Database, ec2InstanceRepo repo.EC2Ins
 	}
 }
 
-func (s *Service) Start(ctx context.Context) error {
-	ticker := time.NewTimer(5 * time.Minute)
+func (s *Service) Start(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Error("paniced", zap.Error(fmt.Errorf("%v", r)))
+			time.Sleep(10 * time.Second)
+			go s.Start(ctx)
+		}
+	}()
+
+	ticker := time.NewTimer(1 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
+		s.logger.Info("checking data age")
 		dataAge, err := s.DataAgeRepo.List()
 		if err != nil {
-			fmt.Println(err)
+			s.logger.Error("failed to list data age", zap.Error(err))
 			continue
 		}
 
@@ -71,7 +80,8 @@ func (s *Service) Start(ctx context.Context) error {
 		if ec2InstanceData == nil || ec2InstanceData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
 			err = s.IngestEc2Instances(ctx)
 			if err != nil {
-				return err
+				s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
+				continue
 			}
 			if ec2InstanceData == nil {
 				err = s.DataAgeRepo.Create(&model.DataAge{
@@ -79,7 +89,8 @@ func (s *Service) Start(ctx context.Context) error {
 					UpdatedAt: time.Now(),
 				})
 				if err != nil {
-					return err
+					s.logger.Error("failed to create data age", zap.Error(err))
+					continue
 				}
 			} else {
 				err = s.DataAgeRepo.Update("AWS::EC2::Instance", model.DataAge{
@@ -87,7 +98,8 @@ func (s *Service) Start(ctx context.Context) error {
 					UpdatedAt: time.Now(),
 				})
 				if err != nil {
-					return err
+					s.logger.Error("failed to update data age", zap.Error(err))
+					continue
 				}
 			}
 		}
@@ -95,7 +107,8 @@ func (s *Service) Start(ctx context.Context) error {
 		if rdsData == nil || rdsData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
 			err = s.IngestRDS()
 			if err != nil {
-				return err
+				s.logger.Error("failed to ingest rds", zap.Error(err))
+				continue
 			}
 			if rdsData == nil {
 				err = s.DataAgeRepo.Create(&model.DataAge{
@@ -103,7 +116,8 @@ func (s *Service) Start(ctx context.Context) error {
 					UpdatedAt: time.Now(),
 				})
 				if err != nil {
-					return err
+					s.logger.Error("failed to create rds data age", zap.Error(err))
+					continue
 				}
 			} else {
 				err = s.DataAgeRepo.Update("AWS::RDS::Instance", model.DataAge{
@@ -111,12 +125,12 @@ func (s *Service) Start(ctx context.Context) error {
 					UpdatedAt: time.Now(),
 				})
 				if err != nil {
-					return err
+					s.logger.Error("failed to update rds data age", zap.Error(err))
+					continue
 				}
 			}
 		}
 	}
-	return nil
 }
 
 func (s *Service) IngestEc2Instances(ctx context.Context) error {
