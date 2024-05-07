@@ -225,10 +225,6 @@ func (s *Service) ingestEc2InstancesBase(ctx context.Context, transaction *gorm.
 			}
 		}
 	}
-	err = transaction.Commit().Error
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
