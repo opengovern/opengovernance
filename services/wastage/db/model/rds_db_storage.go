@@ -289,6 +289,9 @@ func (p *RDSDBStorage) DoIngest() bool {
 		(p.ProductFamily == "Database Storage" && p.VolumeType == "Provisioned IOPS-IO2" && p.MinVolumeSize == "") {
 		return false
 	}
+	if p.LimitlessPreview == "Yes" {
+		return false
+	}
 
 	return true
 }
