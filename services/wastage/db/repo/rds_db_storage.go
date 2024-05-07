@@ -82,12 +82,19 @@ func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorag
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeMagnetic) {
 		return 0, errors.New("invalid volume type")
 	}
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
+	}
+
 	return dbStorage.PricePerUnit * float64(*volumeSize), nil
 }
 
 func (r *RDSDBStorageRepoImpl) getGp2TotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32) (float64, error) {
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeGP2) {
 		return 0, errors.New("invalid volume type")
+	}
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
 	}
 	return dbStorage.PricePerUnit * float64(*volumeSize), nil
 }
@@ -162,7 +169,9 @@ func (r *RDSDBStorageRepoImpl) getIo1TotalPrice(dbStorage model.RDSDBStorage, vo
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeIO1) {
 		return 0, errors.New("invalid volume type")
 	}
-
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
+	}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 	iopsCost := 0.0
 	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
@@ -189,7 +198,9 @@ func (r *RDSDBStorageRepoImpl) getIo2TotalPrice(dbStorage model.RDSDBStorage, vo
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeIO2) {
 		return 0, errors.New("invalid volume type")
 	}
-
+	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+		*volumeSize = dbStorage.MinVolumeSizeGb
+	}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 	iopsCost := 0.0
 	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
