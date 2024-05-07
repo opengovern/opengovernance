@@ -291,7 +291,6 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
 		Where("product_family = ?", "Database Storage").
 		Where("region_code = ?", region).
-		Where("deployment_option = ?", clusterType).
 		Where("max_volume_size_gb >= ?", volumeSize).
 		Where("max_iops >= ?", iops).
 		Where("max_throughput_mb >= ?", throughput)
@@ -312,6 +311,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 		}
 		validTypes = filteredValidTypes
 		tx = tx.Where("database_engine IN ?", []string{engine, "Any"})
+		tx = tx.Where("deployment_option = ?", "Single-AZ")
 	} else {
 		var filteredValidTypes []model.RDSDBStorageVolumeType
 		for _, t := range validTypes {
@@ -325,6 +325,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 		if len(edition) > 0 {
 			tx = tx.Where("edition = ?", edition)
 		}
+		tx = tx.Where("deployment_option = ?", clusterType)
 	}
 
 	if len(validTypes) > 0 {
