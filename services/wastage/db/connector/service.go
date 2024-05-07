@@ -34,6 +34,13 @@ func New(config koanf.Postgres, logLevel logger.LogLevel) (*Database, error) {
 		return nil, err
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqlDB.SetMaxOpenConns(20)
+	sqlDB.SetMaxIdleConns(10)
+
 	return &Database{
 		db: db,
 	}, nil
