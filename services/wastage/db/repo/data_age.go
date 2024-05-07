@@ -46,7 +46,7 @@ func (r *DataAgeRepoImpl) Update(dataType string, m model.DataAge) error {
 }
 
 func (r *DataAgeRepoImpl) Delete(dataType string) error {
-	return r.db.Conn().Delete(&model.DataAge{}, dataType).Error
+	return r.db.Conn().Unscoped().Delete(&model.DataAge{DataType: dataType}).Error
 }
 
 func (r *DataAgeRepoImpl) List() ([]model.DataAge, error) {
