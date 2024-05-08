@@ -349,7 +349,7 @@ func (s *Service) IngestRDS() error {
 	//}()
 
 	var transaction *gorm.DB
-	
+
 	err = s.rdsRepo.Truncate(transaction)
 	if err != nil {
 		return err

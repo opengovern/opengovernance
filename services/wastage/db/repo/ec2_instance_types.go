@@ -31,7 +31,7 @@ func NewEC2InstanceTypeRepo(db *connector.Database) EC2InstanceTypeRepo {
 }
 
 func (r *EC2InstanceTypeRepoImpl) Create(tx *gorm.DB, m *model.EC2InstanceType) error {
-	if tx != nil {
+	if tx == nil {
 		tx = r.db.Conn()
 	}
 	return tx.Create(&m).Error

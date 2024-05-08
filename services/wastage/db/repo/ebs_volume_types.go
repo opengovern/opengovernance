@@ -65,7 +65,7 @@ func (r *EBSVolumeTypeRepoImpl) List() ([]model.EBSVolumeType, error) {
 }
 
 func (r *EBSVolumeTypeRepoImpl) Truncate(tx *gorm.DB) error {
-	if tx != nil {
+	if tx == nil {
 		tx = r.db.Conn()
 	}
 	tx = tx.Unscoped().Where("1 = 1").Delete(&model.EBSVolumeType{})
