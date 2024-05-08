@@ -227,16 +227,6 @@ func (s API) AwsRDS(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// TriggerIngest godoc
-//
-//	@Summary		Trigger Ingest for the requested service
-//	@Description	Trigger Ingest for the requested service
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Param			service		path	string		true	"service"
-//	@Success		200
-//	@Router			/wastage/api/v1/wastage-ingestion/ingest/{service} [post]
 func (s API) TriggerIngest(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
@@ -264,16 +254,88 @@ func (s API) TriggerIngest(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// MigrateUsages godoc
-//
-//	@Summary		Migrate all usages from v1 to v2 and recall and get the response for each again
-//	@Description	Migrate all usages from v1 to v2 and recall and get the response for each again
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Success		200
-//	@Router			/wastage/api/v1/wastage-ingestion/usages/migrate [post]
 func (s API) MigrateUsages(c echo.Context) error {
+	go func() {
+		s.logger.Info("Usage table migration started")
+
+		for true {
+			usage, err := s.usageV1Repo.GetRandomNotMoved()
+			if err != nil {
+				s.logger.Error("error while getting usage_v1 usages list", zap.Error(err))
+				break
+			}
+			if usage == nil {
+				break
+			}
+			if usage.Endpoint == "aws-rds" {
+				var requestBody entity.AwsRdsWastageRequest
+				err = json.Unmarshal(usage.Request, &requestBody)
+				if err != nil {
+					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
+				cliVersion := "unknown"
+				requestBody.RequestId = &requestId
+				requestBody.CliVersion = &cliVersion
+
+				url := "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/aws-rds"
+
+				payload, err := json.Marshal(requestBody)
+				if err != nil {
+					s.logger.Error("failed to marshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+
+				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
+					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
+				}
+
+				usage.Moved = true
+				err = s.usageV1Repo.Update(usage.ID, *usage)
+				if err != nil {
+					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+			} else {
+				var requestBody entity.EC2InstanceWastageRequest
+				err = json.Unmarshal(usage.Request, &requestBody)
+				if err != nil {
+					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
+				cliVersion := "unknown"
+				requestBody.RequestId = &requestId
+				requestBody.CliVersion = &cliVersion
+
+				url := "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/ec2-instance"
+
+				payload, err := json.Marshal(requestBody)
+				if err != nil {
+					s.logger.Error("failed to marshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+
+				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
+					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
+				}
+
+				usage.Moved = true
+				err = s.usageV1Repo.Update(usage.ID, *usage)
+				if err != nil {
+					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+			}
+		}
+
+	}()
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (s API) MigrateUsagesV2(c echo.Context) error {
 	go func() {
 		s.logger.Info("Usage table migration started")
 
