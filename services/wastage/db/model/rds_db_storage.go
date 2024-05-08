@@ -136,17 +136,15 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 				v, err := strconv.ParseInt(c, 10, 32)
 				if err == nil {
 					val = max(val, int32(v))
-					break
 				}
 				if strings.Contains(c, "gb") || strings.Contains(c, "tb") {
-					unit = c
-					break
+					unit = strings.ToLower(c)
 				}
 			}
-			switch unit {
-			case "gb":
+			switch {
+			case strings.Contains(unit, "gb"):
 				p.MinVolumeSizeGb = val
-			case "tb":
+			case strings.Contains(unit, "tb"):
 				p.MinVolumeSizeGb = val * 1024
 			default:
 				p.MinVolumeSizeGb = val
@@ -159,17 +157,15 @@ func (p *RDSDBStorage) PopulateFromMap(columns map[string]int, row []string) {
 				v, err := strconv.ParseInt(c, 10, 32)
 				if err == nil {
 					val = max(val, int32(v))
-					break
 				}
 				if strings.Contains(c, "gb") || strings.Contains(c, "tb") {
-					unit = c
-					break
+					unit = strings.ToLower(c)
 				}
 			}
-			switch unit {
-			case "gb":
+			switch {
+			case strings.Contains(unit, "gb"):
 				p.MaxVolumeSizeGb = val
-			case "tb":
+			case strings.Contains(unit, "tb"):
 				p.MaxVolumeSizeGb = val * 1024
 			default:
 				p.MaxVolumeSizeGb = val
