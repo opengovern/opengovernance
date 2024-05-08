@@ -435,7 +435,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		},
 		Recommended: nil,
 		IOPS:        iopsUsage,
-		Throughput:  usageStorageThroughputMB,
+		Throughput:  throughputUsageBytes,
 		Description: "",
 	}
 
