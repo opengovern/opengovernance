@@ -78,7 +78,7 @@ func (s *Service) Start(ctx context.Context) {
 			}
 		}
 
-		if ec2InstanceData == nil || ec2InstanceData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
+		if ec2InstanceData == nil || ec2InstanceData.UpdatedAt.Before(time.Now().Add(-365*24*time.Hour)) {
 			err = s.IngestEc2Instances(ctx)
 			if err != nil {
 				s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
