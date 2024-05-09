@@ -184,7 +184,7 @@ func maxOfDatapoints(datapoints []types.Datapoint) float64 {
 }
 
 func extractUsage(dps []types.Datapoint) entity.Usage {
-	minV, avgV, maxV := minOfDatapoints(dps), averageOfDatapoints(dps), maxOfDatapoints(dps)
+	minV, avgV, maxV := minOfDatapoints(dps), maxOfDatapoints(dps), maxOfDatapoints(dps)
 	return entity.Usage{
 		Avg: &avgV,
 		Min: &minV,
