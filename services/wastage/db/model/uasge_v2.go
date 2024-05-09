@@ -20,8 +20,9 @@ type UsageV2 struct {
 }
 
 type Statistics struct {
-	AccountID string `json:"accountID"`
-	OrgEmail  string `json:"orgEmail"`
+	AccountID  string `json:"accountID"`
+	OrgEmail   string `json:"orgEmail"`
+	ResourceID string `json:"resourceID"`
 
 	CurrentCost     float64 `json:"currentCost"`
 	RecommendedCost float64 `json:"recommendedCost"`

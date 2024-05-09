@@ -82,6 +82,13 @@ func (s API) EC2Instance(c echo.Context) error {
 	var resp entity.EC2InstanceWastageResponse
 	var err error
 
+	stats := model.Statistics{
+		AccountID:  req.Identification["account"],
+		OrgEmail:   req.Identification["org_m_email"],
+		ResourceID: req.Instance.HashedInstanceId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
 	reqJson, _ := json.Marshal(req)
 	usage := model.UsageV2{
 		ApiEndpoint:    "ec2-instance",
@@ -90,6 +97,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		CliVersion:     req.CliVersion,
 		Response:       nil,
 		FailureMessage: nil,
+		Statistics:     statsOut,
 	}
 	err = s.usageRepo.Create(&usage)
 	if err != nil {
@@ -105,6 +113,37 @@ func (s API) EC2Instance(c echo.Context) error {
 			id := uuid.New()
 			responseId := id.String()
 			usage.ResponseId = &responseId
+
+			recom := entity.RightsizingEC2Instance{}
+			if resp.RightSizing.Recommended != nil {
+				recom = *resp.RightSizing.Recommended
+			}
+
+			instanceCost := resp.RightSizing.Current.Cost
+			recomInstanceCost := recom.Cost
+
+			volumeCurrentCost := 0.0
+			volumeRecomCost := 0.0
+			for _, v := range resp.VolumeRightSizing {
+				volumeCurrentCost += v.Current.Cost
+				if v.Recommended != nil {
+					volumeRecomCost += v.Recommended.Cost
+				}
+			}
+
+			stats.CurrentCost = instanceCost + volumeCurrentCost
+			stats.RecommendedCost = recomInstanceCost + volumeRecomCost
+			stats.Savings = (instanceCost + volumeCurrentCost) - (recomInstanceCost + volumeRecomCost)
+			stats.EC2InstanceCurrentCost = instanceCost
+			stats.EC2InstanceRecommendedCost = recomInstanceCost
+			stats.EC2InstanceSavings = instanceCost - recomInstanceCost
+			stats.EBSCurrentCost = volumeCurrentCost
+			stats.EBSRecommendedCost = volumeRecomCost
+			stats.EBSSavings = volumeCurrentCost - volumeRecomCost
+			stats.EBSVolumeCount = len(resp.VolumeRightSizing)
+
+			statsOut, _ := json.Marshal(stats)
+			usage.Statistics = statsOut
 		}
 		err = s.usageRepo.Update(usage.ID, usage)
 		if err != nil {
@@ -176,6 +215,13 @@ func (s API) AwsRDS(c echo.Context) error {
 	var resp entity.AwsRdsWastageResponse
 	var err error
 
+	stats := model.Statistics{
+		AccountID:  req.Identification["account"],
+		OrgEmail:   req.Identification["org_m_email"],
+		ResourceID: req.Instance.HashedInstanceId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
 	reqJson, _ := json.Marshal(req)
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds",
@@ -184,6 +230,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		CliVersion:     req.CliVersion,
 		Response:       nil,
 		FailureMessage: nil,
+		Statistics:     statsOut,
 	}
 	err = s.usageRepo.Create(&usage)
 	if err != nil {
@@ -200,6 +247,20 @@ func (s API) AwsRDS(c echo.Context) error {
 			id := uuid.New()
 			responseId := id.String()
 			usage.ResponseId = &responseId
+
+			recom := entity.RightsizingAwsRds{}
+			if resp.RightSizing.Recommended != nil {
+				recom = *resp.RightSizing.Recommended
+			}
+			stats.CurrentCost = resp.RightSizing.Current.Cost
+			stats.RecommendedCost = recom.Cost
+			stats.Savings = resp.RightSizing.Current.Cost - recom.Cost
+			stats.RDSInstanceCurrentCost = resp.RightSizing.Current.Cost
+			stats.RDSInstanceRecommendedCost = recom.Cost
+			stats.RDSInstanceSavings = resp.RightSizing.Current.Cost - recom.Cost
+
+			statsOut, _ := json.Marshal(stats)
+			usage.Statistics = statsOut
 		}
 		err = s.usageRepo.Update(usage.ID, usage)
 		if err != nil {
@@ -358,8 +419,9 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 					continue
 				}
 				stats := model.Statistics{
-					AccountID: requestBody.Identification["account"],
-					OrgEmail:  requestBody.Identification["org_m_email"],
+					AccountID:  requestBody.Identification["account"],
+					OrgEmail:   requestBody.Identification["org_m_email"],
+					ResourceID: requestBody.Instance.HashedInstanceId,
 				}
 
 				err = json.Unmarshal(usage.Response, &responseBody)
@@ -371,13 +433,6 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 					stats.CurrentCost = responseBody.RightSizing.Current.Cost
 					stats.RecommendedCost = recom.Cost
 					stats.Savings = responseBody.RightSizing.Current.Cost - recom.Cost
-					stats.EC2InstanceCurrentCost = 0
-					stats.EC2InstanceRecommendedCost = 0
-					stats.EC2InstanceSavings = 0
-					stats.EBSCurrentCost = 0
-					stats.EBSRecommendedCost = 0
-					stats.EBSSavings = 0
-					stats.EBSVolumeCount = 0
 					stats.RDSInstanceCurrentCost = responseBody.RightSizing.Current.Cost
 					stats.RDSInstanceRecommendedCost = recom.Cost
 					stats.RDSInstanceSavings = responseBody.RightSizing.Current.Cost - recom.Cost
@@ -404,8 +459,9 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 					continue
 				}
 				stats := model.Statistics{
-					AccountID: requestBody.Identification["account"],
-					OrgEmail:  requestBody.Identification["org_m_email"],
+					AccountID:  requestBody.Identification["account"],
+					OrgEmail:   requestBody.Identification["org_m_email"],
+					ResourceID: requestBody.Instance.HashedInstanceId,
 				}
 
 				err = json.Unmarshal(usage.Response, &responseBody)
@@ -437,9 +493,6 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 					stats.EBSRecommendedCost = volumeRecomCost
 					stats.EBSSavings = volumeCurrentCost - volumeRecomCost
 					stats.EBSVolumeCount = len(responseBody.VolumeRightSizing)
-					stats.RDSInstanceCurrentCost = 0
-					stats.RDSInstanceRecommendedCost = 0
-					stats.RDSInstanceSavings = 0
 				}
 
 				out, err := json.Marshal(stats)
