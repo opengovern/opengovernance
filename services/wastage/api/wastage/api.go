@@ -357,33 +357,32 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
-				err = json.Unmarshal(usage.Response, &responseBody)
-				if err != nil {
-					s.logger.Error("failed to unmarshal response body", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
+				stats := model.Statistics{
+					AccountID: requestBody.Identification["account"],
+					OrgEmail:  requestBody.Identification["org_m_email"],
 				}
 
-				recom := entity.RightsizingAwsRds{}
-				if responseBody.RightSizing.Recommended != nil {
-					recom = *responseBody.RightSizing.Recommended
+				err = json.Unmarshal(usage.Response, &responseBody)
+				if err == nil {
+					recom := entity.RightsizingAwsRds{}
+					if responseBody.RightSizing.Recommended != nil {
+						recom = *responseBody.RightSizing.Recommended
+					}
+					stats.CurrentCost = responseBody.RightSizing.Current.Cost
+					stats.RecommendedCost = recom.Cost
+					stats.Savings = responseBody.RightSizing.Current.Cost - recom.Cost
+					stats.EC2InstanceCurrentCost = 0
+					stats.EC2InstanceRecommendedCost = 0
+					stats.EC2InstanceSavings = 0
+					stats.EBSCurrentCost = 0
+					stats.EBSRecommendedCost = 0
+					stats.EBSSavings = 0
+					stats.EBSVolumeCount = 0
+					stats.RDSInstanceCurrentCost = responseBody.RightSizing.Current.Cost
+					stats.RDSInstanceRecommendedCost = recom.Cost
+					stats.RDSInstanceSavings = responseBody.RightSizing.Current.Cost - recom.Cost
 				}
-				stats := model.Statistics{
-					AccountID:                  requestBody.Identification["account"],
-					OrgEmail:                   requestBody.Identification["org_m_email"],
-					CurrentCost:                responseBody.RightSizing.Current.Cost,
-					RecommendedCost:            recom.Cost,
-					Savings:                    responseBody.RightSizing.Current.Cost - recom.Cost,
-					EC2InstanceCurrentCost:     0,
-					EC2InstanceRecommendedCost: 0,
-					EC2InstanceSavings:         0,
-					EBSCurrentCost:             0,
-					EBSRecommendedCost:         0,
-					EBSSavings:                 0,
-					EBSVolumeCount:             0,
-					RDSInstanceCurrentCost:     responseBody.RightSizing.Current.Cost,
-					RDSInstanceRecommendedCost: recom.Cost,
-					RDSInstanceSavings:         responseBody.RightSizing.Current.Cost - recom.Cost,
-				}
+
 				out, err := json.Marshal(stats)
 				if err != nil {
 					s.logger.Error("failed to marshal stats", zap.Any("usage_id", usage.ID), zap.Error(err))
@@ -404,46 +403,45 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
-				err = json.Unmarshal(usage.Response, &responseBody)
-				if err != nil {
-					s.logger.Error("failed to unmarshal response body", zap.Any("usage_id", usage.ID), zap.Error(err))
-					continue
-				}
-
-				recom := entity.RightsizingEC2Instance{}
-				if responseBody.RightSizing.Recommended != nil {
-					recom = *responseBody.RightSizing.Recommended
-				}
-
-				instanceCost := responseBody.RightSizing.Current.Cost
-				recomInstanceCost := recom.Cost
-
-				volumeCurrentCost := 0.0
-				volumeRecomCost := 0.0
-				for _, v := range responseBody.VolumeRightSizing {
-					volumeCurrentCost += v.Current.Cost
-					if v.Recommended != nil {
-						volumeRecomCost += v.Recommended.Cost
-					}
-				}
-
 				stats := model.Statistics{
-					AccountID:                  requestBody.Identification["account"],
-					OrgEmail:                   requestBody.Identification["org_m_email"],
-					CurrentCost:                instanceCost + volumeCurrentCost,
-					RecommendedCost:            recomInstanceCost + volumeRecomCost,
-					Savings:                    (instanceCost + volumeCurrentCost) - (recomInstanceCost + volumeRecomCost),
-					EC2InstanceCurrentCost:     instanceCost,
-					EC2InstanceRecommendedCost: recomInstanceCost,
-					EC2InstanceSavings:         instanceCost - recomInstanceCost,
-					EBSCurrentCost:             volumeCurrentCost,
-					EBSRecommendedCost:         volumeRecomCost,
-					EBSSavings:                 volumeCurrentCost - volumeRecomCost,
-					EBSVolumeCount:             len(responseBody.VolumeRightSizing),
-					RDSInstanceCurrentCost:     0,
-					RDSInstanceRecommendedCost: 0,
-					RDSInstanceSavings:         0,
+					AccountID: requestBody.Identification["account"],
+					OrgEmail:  requestBody.Identification["org_m_email"],
 				}
+
+				err = json.Unmarshal(usage.Response, &responseBody)
+				if err == nil {
+					recom := entity.RightsizingEC2Instance{}
+					if responseBody.RightSizing.Recommended != nil {
+						recom = *responseBody.RightSizing.Recommended
+					}
+
+					instanceCost := responseBody.RightSizing.Current.Cost
+					recomInstanceCost := recom.Cost
+
+					volumeCurrentCost := 0.0
+					volumeRecomCost := 0.0
+					for _, v := range responseBody.VolumeRightSizing {
+						volumeCurrentCost += v.Current.Cost
+						if v.Recommended != nil {
+							volumeRecomCost += v.Recommended.Cost
+						}
+					}
+
+					stats.CurrentCost = instanceCost + volumeCurrentCost
+					stats.RecommendedCost = recomInstanceCost + volumeRecomCost
+					stats.Savings = (instanceCost + volumeCurrentCost) - (recomInstanceCost + volumeRecomCost)
+					stats.EC2InstanceCurrentCost = instanceCost
+					stats.EC2InstanceRecommendedCost = recomInstanceCost
+					stats.EC2InstanceSavings = instanceCost - recomInstanceCost
+					stats.EBSCurrentCost = volumeCurrentCost
+					stats.EBSRecommendedCost = volumeRecomCost
+					stats.EBSSavings = volumeCurrentCost - volumeRecomCost
+					stats.EBSVolumeCount = len(responseBody.VolumeRightSizing)
+					stats.RDSInstanceCurrentCost = 0
+					stats.RDSInstanceRecommendedCost = 0
+					stats.RDSInstanceSavings = 0
+				}
+
 				out, err := json.Marshal(stats)
 				if err != nil {
 					s.logger.Error("failed to marshal stats", zap.Any("usage_id", usage.ID), zap.Error(err))
