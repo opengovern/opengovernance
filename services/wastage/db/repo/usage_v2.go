@@ -33,7 +33,7 @@ func (r *UsageV2RepoImpl) Update(id uint, m model.UsageV2) error {
 
 func (r *UsageV2RepoImpl) GetRandomNullStatistics() (*model.UsageV2, error) {
 	var m model.UsageV2
-	tx := r.db.Conn().Model(&model.UsageV2{}).Where("statistics IS NULL").First(&m)
+	tx := r.db.Conn().Model(&model.UsageV2{}).Where("statistics IS NULL and response != null").First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
