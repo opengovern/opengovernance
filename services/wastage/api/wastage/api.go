@@ -52,6 +52,7 @@ func (s API) Register(e *echo.Echo) {
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
+	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 }
 
 // EC2Instance godoc
@@ -339,71 +340,118 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 	go func() {
 		s.logger.Info("Usage table migration started")
 
-		for true {
-			usage, err := s.usageV1Repo.GetRandomNotMoved()
+		for {
+			usage, err := s.usageRepo.GetRandomNullStatistics()
 			if err != nil {
-				s.logger.Error("error while getting usage_v1 usages list", zap.Error(err))
+				s.logger.Error("error while getting null statistic usages list", zap.Error(err))
 				break
 			}
 			if usage == nil {
 				break
 			}
-			if usage.Endpoint == "aws-rds" {
+			if usage.ApiEndpoint == "aws-rds" {
 				var requestBody entity.AwsRdsWastageRequest
+				var responseBody entity.AwsRdsWastageResponse
 				err = json.Unmarshal(usage.Request, &requestBody)
 				if err != nil {
 					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
-				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
-				cliVersion := "unknown"
-				requestBody.RequestId = &requestId
-				requestBody.CliVersion = &cliVersion
-
-				url := "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/aws-rds"
-
-				payload, err := json.Marshal(requestBody)
+				err = json.Unmarshal(usage.Response, &responseBody)
 				if err != nil {
-					s.logger.Error("failed to marshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("failed to unmarshal response body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
 
-				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
-					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
+				recom := entity.RightsizingAwsRds{}
+				if responseBody.RightSizing.Recommended != nil {
+					recom = *responseBody.RightSizing.Recommended
 				}
+				stats := model.Statistics{
+					AccountID:                  requestBody.Identification["account"],
+					OrgEmail:                   requestBody.Identification["org_m_email"],
+					CurrentCost:                responseBody.RightSizing.Current.Cost,
+					RecommendedCost:            recom.Cost,
+					Savings:                    responseBody.RightSizing.Current.Cost - recom.Cost,
+					EC2InstanceCurrentCost:     0,
+					EC2InstanceRecommendedCost: 0,
+					EC2InstanceSavings:         0,
+					EBSCurrentCost:             0,
+					EBSRecommendedCost:         0,
+					EBSSavings:                 0,
+					EBSVolumeCount:             0,
+					RDSInstanceCurrentCost:     responseBody.RightSizing.Current.Cost,
+					RDSInstanceRecommendedCost: recom.Cost,
+					RDSInstanceSavings:         responseBody.RightSizing.Current.Cost - recom.Cost,
+				}
+				out, err := json.Marshal(stats)
+				if err != nil {
+					s.logger.Error("failed to marshal stats", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+				usage.Statistics = out
 
-				usage.Moved = true
-				err = s.usageV1Repo.Update(usage.ID, *usage)
+				err = s.usageRepo.Update(usage.ID, *usage)
 				if err != nil {
 					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
 			} else {
 				var requestBody entity.EC2InstanceWastageRequest
+				var responseBody entity.EC2InstanceWastageResponse
 				err = json.Unmarshal(usage.Request, &requestBody)
 				if err != nil {
 					s.logger.Error("failed to unmarshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
-				requestId := fmt.Sprintf("usage_v1_%v", usage.ID)
-				cliVersion := "unknown"
-				requestBody.RequestId = &requestId
-				requestBody.CliVersion = &cliVersion
-
-				url := "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/ec2-instance"
-
-				payload, err := json.Marshal(requestBody)
+				err = json.Unmarshal(usage.Response, &responseBody)
 				if err != nil {
-					s.logger.Error("failed to marshal request body", zap.Any("usage_id", usage.ID), zap.Error(err))
+					s.logger.Error("failed to unmarshal response body", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
 				}
 
-				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
-					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
+				recom := entity.RightsizingEC2Instance{}
+				if responseBody.RightSizing.Recommended != nil {
+					recom = *responseBody.RightSizing.Recommended
 				}
 
-				usage.Moved = true
-				err = s.usageV1Repo.Update(usage.ID, *usage)
+				instanceCost := responseBody.RightSizing.Current.Cost
+				recomInstanceCost := recom.Cost
+
+				volumeCurrentCost := 0.0
+				volumeRecomCost := 0.0
+				for _, v := range responseBody.VolumeRightSizing {
+					volumeCurrentCost += v.Current.Cost
+					if v.Recommended != nil {
+						volumeRecomCost += v.Recommended.Cost
+					}
+				}
+
+				stats := model.Statistics{
+					AccountID:                  requestBody.Identification["account"],
+					OrgEmail:                   requestBody.Identification["org_m_email"],
+					CurrentCost:                instanceCost + volumeCurrentCost,
+					RecommendedCost:            recomInstanceCost + volumeRecomCost,
+					Savings:                    (instanceCost + volumeCurrentCost) - (recomInstanceCost + volumeRecomCost),
+					EC2InstanceCurrentCost:     instanceCost,
+					EC2InstanceRecommendedCost: recomInstanceCost,
+					EC2InstanceSavings:         instanceCost - recomInstanceCost,
+					EBSCurrentCost:             volumeCurrentCost,
+					EBSRecommendedCost:         volumeRecomCost,
+					EBSSavings:                 volumeCurrentCost - volumeRecomCost,
+					EBSVolumeCount:             len(responseBody.VolumeRightSizing),
+					RDSInstanceCurrentCost:     0,
+					RDSInstanceRecommendedCost: 0,
+					RDSInstanceSavings:         0,
+				}
+				out, err := json.Marshal(stats)
+				if err != nil {
+					s.logger.Error("failed to marshal stats", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+				usage.Statistics = out
+
+				err = s.usageRepo.Update(usage.ID, *usage)
 				if err != nil {
 					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
 					continue
