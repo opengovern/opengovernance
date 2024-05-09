@@ -90,8 +90,8 @@ func (s *Service) AwsRdsRecommendation(
 		Engine:            rdsInstance.Engine,
 		EngineVersion:     rdsInstance.EngineVersion,
 		ClusterType:       rdsInstance.ClusterType,
-		VCPU:              currentInstanceRow.VCpu,
-		MemoryGb:          currentInstanceRow.MemoryGb,
+		VCPU:              int64(currentInstanceRow.VCpu),
+		MemoryGb:          int64(currentInstanceRow.MemoryGb),
 		StorageType:       rdsInstance.StorageType,
 		StorageSize:       rdsInstance.StorageSize,
 		StorageIops:       rdsInstance.StorageIops,
@@ -279,8 +279,8 @@ func (s *Service) AwsRdsRecommendation(
 			Engine:        awsRdsDbTypeToAPIDbType(rightSizedInstanceRow.DatabaseEngine, rightSizedInstanceRow.DatabaseEdition),
 			EngineVersion: newInstance.EngineVersion,
 			ClusterType:   newInstance.ClusterType,
-			VCPU:          rightSizedInstanceRow.VCpu,
-			MemoryGb:      rightSizedInstanceRow.MemoryGb,
+			VCPU:          int64(rightSizedInstanceRow.VCpu),
+			MemoryGb:      int64(rightSizedInstanceRow.MemoryGb),
 			Cost:          0,
 		}
 		if rightSizedStorageRow == nil {
@@ -298,8 +298,8 @@ func (s *Service) AwsRdsRecommendation(
 				Engine:        currentInstanceRow.DatabaseEngine,
 				EngineVersion: rdsInstance.EngineVersion,
 				ClusterType:   rdsInstance.ClusterType,
-				VCPU:          currentInstanceRow.VCpu,
-				MemoryGb:      currentInstanceRow.MemoryGb,
+				VCPU:          int64(currentInstanceRow.VCpu),
+				MemoryGb:      int64(currentInstanceRow.MemoryGb),
 				Cost:          currentCost,
 			}
 		}
