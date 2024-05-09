@@ -439,7 +439,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		Description: "",
 	}
 
-	newType, newBaselineIops, newBaselineThroughput, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(region, int32(neededSize), int32(neededIops), neededThroughput/1000000, validTypes)
+	newType, newBaselineIops, newBaselineThroughput, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return result, nil
