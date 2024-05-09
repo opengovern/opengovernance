@@ -11,8 +11,8 @@ type RDSDBInstance struct {
 
 	// Basic fields
 
-	VCpu              int64    `gorm:"index"`
-	MemoryGb          int64    `gorm:"index"`
+	VCpu              float64  `gorm:"index"`
+	MemoryGb          float64  `gorm:"index"`
 	NetworkThroughput *float64 `gorm:"index"` // In bytes/s
 	DatabaseEngine    string   `gorm:"index;type:citext"`
 	DatabaseEdition   string   `gorm:"index;type:citext"`
@@ -101,7 +101,7 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Instance Family":
 			p.InstanceFamily = row[index]
 		case "vCPU":
-			i, err := strconv.ParseInt(row[index], 10, 64)
+			i, err := strconv.ParseFloat(row[index], 64)
 			if err == nil {
 				p.VCpu = i
 			}
@@ -112,7 +112,7 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 		case "Memory":
 			p.Memory = row[index]
 			for _, part := range strings.Split(row[index], " ") {
-				i, err := strconv.ParseInt(part, 10, 64)
+				i, err := strconv.ParseFloat(part, 64)
 				if err == nil {
 					p.MemoryGb = max(p.MemoryGb, i)
 				}

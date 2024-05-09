@@ -11,9 +11,9 @@ type EC2InstanceType struct {
 
 	// Basic fields
 	InstanceType        string  `gorm:"index"`
-	VCpu                int64   `gorm:"index:compute_idx"`
+	VCpu                float64 `gorm:"index:compute_idx"`
 	MemoryGB            float64 `gorm:"index:compute_idx"`
-	NetworkMaxBandwidth int64   `gorm:"index:network_idx"`
+	NetworkMaxBandwidth float64 `gorm:"index:network_idx"`
 	NetworkIsDedicated  bool    `gorm:"index:network_idx"`
 	PricePerUnit        float64 `gorm:"index:price_idx,sort:asc"`
 
@@ -163,7 +163,7 @@ func (v *EC2InstanceType) PopulateFromMap(columns map[string]int, row []string) 
 		case "Instance Family":
 			v.InstanceFamily = row[index]
 		case "vCPU":
-			v.VCpu, _ = strconv.ParseInt(row[index], 10, 64)
+			v.VCpu, _ = strconv.ParseFloat(row[index], 64)
 			v.VCPUStr = row[index]
 		case "Physical Processor":
 			v.PhysicalProcessor = row[index]
@@ -344,7 +344,7 @@ func parseMemory(str string) float64 {
 	return n
 }
 
-func parseNetworkPerformance(v string) (int64, bool) {
+func parseNetworkPerformance(v string) (float64, bool) {
 	v = strings.ToLower(v)
 	switch v {
 	case "very low":
@@ -361,7 +361,7 @@ func parseNetworkPerformance(v string) (int64, bool) {
 	upTo := strings.HasPrefix(v, "up to ")
 	v = strings.TrimPrefix(v, "up to ")
 
-	factor := int64(0)
+	factor := 0.0
 	if strings.HasSuffix(v, "gigabit") {
 		factor = (1024 * 1024 * 1024) / 8
 		v = strings.TrimSuffix(v, " gigabit")
@@ -369,7 +369,7 @@ func parseNetworkPerformance(v string) (int64, bool) {
 		factor = (1024 * 1024) / 8
 		v = strings.TrimSuffix(v, " megabit")
 	}
-	b, err := strconv.ParseInt(v, 10, 64)
+	b, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return 0, false
 	}
