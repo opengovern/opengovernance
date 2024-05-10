@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"gorm.io/gorm"
+	"math"
 )
 
 type EBSVolumeTypeRepo interface {
@@ -168,7 +169,7 @@ func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize *int3
 	}
 
 	if iops > 0 {
-		minSizeReq := iops / model.Gp2IopsPerGiB
+		minSizeReq := int32(math.Ceil(float64(iops) / model.Gp2IopsPerGiB))
 		if minSizeReq > *volumeSize {
 			*volumeSize = minSizeReq
 		}

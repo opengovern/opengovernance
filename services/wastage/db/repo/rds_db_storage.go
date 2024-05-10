@@ -117,7 +117,7 @@ func (r *RDSDBStorageRepoImpl) getGp2TotalPrice(dbStorage model.RDSDBStorage, vo
 	}
 
 	if *iops > 100 {
-		minReqSize := *iops / model.Gp2IopsPerGiB
+		minReqSize := int32(math.Ceil(float64(*iops) / model.Gp2IopsPerGiB))
 		*volumeSize = max(*volumeSize, minReqSize)
 	}
 
