@@ -108,13 +108,19 @@ func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorag
 	return sizeCost + iopsCost, nil
 }
 
-func (r *RDSDBStorageRepoImpl) getGp2TotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32) (float64, error) {
+func (r *RDSDBStorageRepoImpl) getGp2TotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32, iops *int32) (float64, error) {
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeGP2) {
 		return 0, errors.New("invalid volume type")
 	}
 	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
 		*volumeSize = dbStorage.MinVolumeSizeGb
 	}
+
+	if *iops > 100 {
+		minReqSize := int32(math.Ceil(float64(*iops) / model.Gp2IopsPerGiB))
+		*volumeSize = max(*volumeSize, minReqSize)
+	}
+
 	return dbStorage.PricePerUnit * float64(*volumeSize), nil
 }
 
@@ -374,7 +380,7 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 		case model.RDSDBStorageVolumeTypeMagnetic:
 			totalCost, err = r.getMagneticTotalPrice(v, &vSize, &vIops)
 		case model.RDSDBStorageVolumeTypeGP2:
-			totalCost, err = r.getGp2TotalPrice(v, &vSize)
+			totalCost, err = r.getGp2TotalPrice(v, &vSize, &vIops)
 		case model.RDSDBStorageVolumeTypeGP3:
 			totalCost, err = r.getGp3TotalPrice(v, &vSize, &vIops, &vThroughput)
 		case model.RDSDBStorageVolumeTypeIO1:

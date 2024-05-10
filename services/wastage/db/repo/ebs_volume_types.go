@@ -6,6 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"gorm.io/gorm"
+	"math"
 )
 
 type EBSVolumeTypeRepo interface {
@@ -15,7 +16,7 @@ type EBSVolumeTypeRepo interface {
 	Delete(id uint) error
 	List() ([]model.EBSVolumeType, error)
 	Truncate(tx *gorm.DB) error
-	GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, float64, error)
+	GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, error)
 }
 
 type EBSVolumeTypeRepoImpl struct {
@@ -156,7 +157,7 @@ func (r *EBSVolumeTypeRepoImpl) getIo2TotalPrice(region string, volumeSize int32
 	return io2Price, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize int32) (float64, error) {
+func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize *int32, iops int32) (float64, error) {
 	gp2Prices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeGp2, model.ChargeTypeSize)
 	if err != nil {
 		return 0, err
@@ -166,7 +167,15 @@ func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize int32
 		gp2Price = gp2.PricePerUnit
 		break
 	}
-	return gp2Price * float64(volumeSize), nil
+
+	if iops > 100 {
+		minSizeReq := int32(math.Ceil(float64(iops) / model.Gp2IopsPerGiB))
+		if minSizeReq > *volumeSize {
+			*volumeSize = minSizeReq
+		}
+	}
+
+	return gp2Price * float64(*volumeSize), nil
 }
 
 func (r *EBSVolumeTypeRepoImpl) getGp3TotalPrice(region string, volumeSize int32, iops int32, throughput float64) (float64, error) {
@@ -263,64 +272,67 @@ func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize
 	return res, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, float64, error) {
+func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, error) {
 	volumeTypes, err := r.getFeasibleVolumeTypes(region, volumeSize, iops, throughput, validTypes)
 	if err != nil {
-		return "", 0, 0, err
+		return "", 0, 0, 0, err
 	}
 
 	if len(volumeTypes) == 0 {
-		return "", 0, 0, errors.New("no feasible volume types found")
+		return "", 0, 0, 0, errors.New("no feasible volume types found")
 	}
 
 	minPrice := 0.0
 	resVolumeType := ""
 	resBaselineIOPS := int32(0)
 	resBaselineThroughput := 0.0
+	resVolumeSize := volumeSize
 	for _, vt := range volumeTypes {
 		var price float64
 		var volIops int32
 		var volThroughput float64
+		var volSize int32 = volumeSize
 		switch vt.VolumeType {
 		case types.VolumeTypeIo1:
-			price, err = r.getIo1TotalPrice(region, volumeSize, iops)
+			price, err = r.getIo1TotalPrice(region, volSize, iops)
 			volIops = 0
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeIo2:
-			price, err = r.getIo2TotalPrice(region, volumeSize, iops)
+			price, err = r.getIo2TotalPrice(region, volSize, iops)
 			volIops = 0
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp2:
-			price, err = r.getGp2TotalPrice(region, volumeSize)
+			price, err = r.getGp2TotalPrice(region, &volSize, iops)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp3:
-			price, err = r.getGp3TotalPrice(region, volumeSize, iops, throughput)
+			price, err = r.getGp3TotalPrice(region, volSize, iops, throughput)
 			volIops = model.Gp3BaseIops
 			volThroughput = model.Gp3BaseThroughput
 		case types.VolumeTypeSc1:
-			price, err = r.getSc1TotalPrice(region, volumeSize)
+			price, err = r.getSc1TotalPrice(region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeSt1:
-			price, err = r.getSt1TotalPrice(region, volumeSize)
+			price, err = r.getSt1TotalPrice(region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeStandard:
-			price, err = r.getStandardTotalPrice(region, volumeSize)
+			price, err = r.getStandardTotalPrice(region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		}
 		if err != nil {
-			return "", 0, 0, err
+			return "", 0, 0, 0, err
 		}
 		if resVolumeType == "" || price < minPrice {
 			minPrice = price
 			resVolumeType = string(vt.VolumeType)
 			resBaselineIOPS = volIops
 			resBaselineThroughput = volThroughput
+			resVolumeSize = volSize
 		}
 	}
 
-	return types.VolumeType(resVolumeType), resBaselineIOPS, resBaselineThroughput, nil
+	return types.VolumeType(resVolumeType), resVolumeSize, resBaselineIOPS, resBaselineThroughput, nil
 }

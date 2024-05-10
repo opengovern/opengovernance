@@ -20,6 +20,7 @@ const (
 	Io2ProvisionedIopsTier2UpperBound = 64000
 	Gp3BaseThroughput                 = 125
 	Gp3BaseIops                       = 3000
+	Gp2IopsPerGiB                     = 3
 )
 
 type EBSVolumeType struct {
