@@ -300,8 +300,6 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 		} else {
 			return "No"
 		}
-	case "OperatingSystem":
-		return instance.Platform
 	case "LicenseModel":
 		return i.LicenseModel
 	case "Region":
