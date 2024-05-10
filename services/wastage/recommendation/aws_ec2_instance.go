@@ -103,7 +103,7 @@ func (s *Service) EC2InstanceRecommendation(
 		} else {
 			vl = *v
 		}
-		if ec2instance.PreferenceDBKey[k] == "" {
+		if ec2instance.PreferenceDBKey[k] == "" || vl == "" {
 			continue
 		}
 
