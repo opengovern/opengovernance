@@ -294,11 +294,11 @@ func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSi
 		var volSize int32 = volumeSize
 		switch vt.VolumeType {
 		case types.VolumeTypeIo1:
-			price, err = r.getIo1TotalPrice(region, volumeSize, iops)
+			price, err = r.getIo1TotalPrice(region, volSize, iops)
 			volIops = 0
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeIo2:
-			price, err = r.getIo2TotalPrice(region, volumeSize, iops)
+			price, err = r.getIo2TotalPrice(region, volSize, iops)
 			volIops = 0
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp2:
@@ -306,19 +306,19 @@ func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSi
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp3:
-			price, err = r.getGp3TotalPrice(region, volumeSize, iops, throughput)
+			price, err = r.getGp3TotalPrice(region, volSize, iops, throughput)
 			volIops = model.Gp3BaseIops
 			volThroughput = model.Gp3BaseThroughput
 		case types.VolumeTypeSc1:
-			price, err = r.getSc1TotalPrice(region, volumeSize)
+			price, err = r.getSc1TotalPrice(region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeSt1:
-			price, err = r.getSt1TotalPrice(region, volumeSize)
+			price, err = r.getSt1TotalPrice(region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeStandard:
-			price, err = r.getStandardTotalPrice(region, volumeSize)
+			price, err = r.getStandardTotalPrice(region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		}
