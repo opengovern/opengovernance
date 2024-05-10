@@ -17,7 +17,7 @@ type EC2InstanceTypeRepo interface {
 	List() ([]model.EC2InstanceType, error)
 	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
 	Truncate(tx *gorm.DB) error
-	ListByInstanceType(instanceType, os, operation, region string) ([]model.EC2InstanceType, error)
+	ListByInstanceType(instanceType, operation, region string) ([]model.EC2InstanceType, error)
 }
 
 type EC2InstanceTypeRepoImpl struct {
@@ -115,11 +115,10 @@ func (r *EC2InstanceTypeRepoImpl) UpdateNullExtrasByType(tx *gorm.DB, instanceTy
 	return nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, os, operation, region string) ([]model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, operation, region string) ([]model.EC2InstanceType, error) {
 	var ms []model.EC2InstanceType
 	tx := r.db.Conn().Model(&model.EC2InstanceType{}).
 		Where("instance_type = ? AND capacity_status = 'Used'", instanceType).
-		Where("operating_system_family = ?", os).
 		Where("region_code = ?", region).
 		Where("operation = ?", operation).
 		Find(&ms)

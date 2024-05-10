@@ -36,7 +36,7 @@ func (s *Service) EC2InstanceRecommendation(
 	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints)
 	ebsIopsUsage := extractUsage(ebsIopsDatapoints)
 
-	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.Platform, instance.UsageOperation, region)
+	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.UsageOperation, region)
 	if err != nil {
 		err = fmt.Errorf("failed to list instances by types: %s", err.Error())
 		return nil, err
