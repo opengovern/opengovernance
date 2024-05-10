@@ -323,7 +323,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 		validTypes = filteredValidTypes
 		tx = tx.Where("database_engine = ?", engine)
 		if len(edition) > 0 {
-			tx = tx.Where("edition = ?", edition)
+			tx = tx.Where("database_edition = ?", edition)
 		}
 		tx = tx.Where("deployment_option = ?", clusterType)
 	}
