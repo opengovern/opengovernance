@@ -168,7 +168,7 @@ func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize *int3
 		break
 	}
 
-	if iops > 0 {
+	if iops > 100 {
 		minSizeReq := int32(math.Ceil(float64(iops) / model.Gp2IopsPerGiB))
 		if minSizeReq > *volumeSize {
 			*volumeSize = minSizeReq
