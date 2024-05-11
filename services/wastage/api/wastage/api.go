@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -51,6 +52,7 @@ func (s API) Register(e *echo.Echo) {
 	g.POST("/aws-rds", s.AwsRDS)
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
+	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 }
@@ -513,4 +515,19 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 	}()
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (s API) GetUsage(c echo.Context) error {
+	idStr := c.QueryParam("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	usage, err := s.usageRepo.Get(uint(id))
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, usage)
 }

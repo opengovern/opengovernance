@@ -11,6 +11,7 @@ type UsageV2Repo interface {
 	Create(m *model.UsageV2) error
 	Update(id uint, m model.UsageV2) error
 	GetRandomNullStatistics() (*model.UsageV2, error)
+	Get(id uint) (*model.UsageV2, error)
 }
 
 type UsageV2RepoImpl struct {
@@ -29,6 +30,18 @@ func (r *UsageV2RepoImpl) Create(m *model.UsageV2) error {
 
 func (r *UsageV2RepoImpl) Update(id uint, m model.UsageV2) error {
 	return r.db.Conn().Model(&model.UsageV2{}).Where("id=?", id).Updates(&m).Error
+}
+
+func (r *UsageV2RepoImpl) Get(id uint) (*model.UsageV2, error) {
+	var m model.UsageV2
+	tx := r.db.Conn().Model(&model.UsageV2{}).Where("id=?", id).First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
 }
 
 func (r *UsageV2RepoImpl) GetRandomNullStatistics() (*model.UsageV2, error) {
