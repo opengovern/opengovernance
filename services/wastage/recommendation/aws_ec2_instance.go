@@ -437,6 +437,25 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		Throughput:  throughputUsageBytes,
 		Description: "",
 	}
+	if result.Current.ProvisionedIOPS != nil {
+		result.Current.BaselineIOPS = *result.Current.ProvisionedIOPS
+		result.Current.ProvisionedIOPS = nil
+	}
+	if result.Current.ProvisionedThroughput != nil {
+		result.Current.BaselineThroughput = *result.Current.ProvisionedThroughput
+		result.Current.ProvisionedThroughput = nil
+	}
+	if volume.VolumeType == types.VolumeTypeGp3 {
+		provIops := max(int32(result.Current.BaselineIOPS)-model.Gp3BaseIops, 0)
+		provThroughput := max(result.Current.BaselineThroughput-model.Gp3BaseThroughput, 0)
+		result.Current.ProvisionedIOPS = &provIops
+		result.Current.ProvisionedThroughput = &provThroughput
+	}
+	if volume.VolumeType == types.VolumeTypeIo1 || volume.VolumeType == types.VolumeTypeIo2 {
+		provIops := result.Current.BaselineIOPS
+		result.Current.ProvisionedIOPS = &provIops
+		result.Current.BaselineIOPS = 0
+	}
 
 	newType, newSize, newBaselineIops, newBaselineThroughput, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
 	if err != nil {
