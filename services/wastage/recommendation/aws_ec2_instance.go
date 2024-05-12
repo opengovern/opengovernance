@@ -457,10 +457,9 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		Cost:                  0,
 	}
 	newVolume := volume
-
+	result.Recommended.Tier = newType
+	newVolume.VolumeType = newType
 	if newType != volume.VolumeType {
-		result.Recommended.Tier = newType
-		newVolume.VolumeType = newType
 		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
 	}
 
@@ -492,12 +491,21 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		result.Recommended.ProvisionedIOPS = &provIops
 		newVolume.Iops = &provIops
 
+		oldProvIops := int32(0)
+		if volume.Iops != nil {
+			oldProvIops = *volume.Iops
+			if volume.VolumeType != types.VolumeTypeGp3 {
+				oldProvIops -= model.Gp3BaseIops
+				oldProvIops = max(oldProvIops, 0)
+			}
+		}
+
 		if volume.Iops == nil {
 			result.Description += fmt.Sprintf("- add provisioned iops: %d\n", provIops)
-		} else if provIops > *volume.Iops {
-			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", *volume.Iops, provIops)
-		} else if provIops < *volume.Iops {
-			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", *volume.Iops, provIops)
+		} else if provIops > oldProvIops {
+			result.Description += fmt.Sprintf("- increase provisioned iops from %d to %d\n", oldProvIops, provIops)
+		} else if provIops < oldProvIops {
+			result.Description += fmt.Sprintf("- decrease provisioned iops from %d to %d\n", oldProvIops, provIops)
 		} else {
 			result.Recommended.ProvisionedIOPS = nil
 			newVolume.Iops = volume.Iops
@@ -509,12 +517,21 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		result.Recommended.ProvisionedThroughput = &provThroughput
 		newVolume.Throughput = &provThroughput
 
+		oldProvThroughput := float64(0)
+		if volume.Throughput != nil {
+			oldProvThroughput = *volume.Throughput
+			if volume.VolumeType != types.VolumeTypeGp3 {
+				oldProvThroughput -= model.Gp3BaseThroughput
+				oldProvThroughput = max(oldProvThroughput, 0)
+			}
+		}
+
 		if volume.Throughput == nil {
 			result.Description += fmt.Sprintf("- add provisioned throughput: %.2f\n", provThroughput)
-		} else if provThroughput > *volume.Throughput {
-			result.Description += fmt.Sprintf("- increase provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
-		} else if provThroughput < *volume.Throughput {
-			result.Description += fmt.Sprintf("- decrease provisioned throughput from %.2f to %.2f\n", *volume.Throughput, provThroughput)
+		} else if provThroughput > oldProvThroughput {
+			result.Description += fmt.Sprintf("- increase provisioned throughput from %.2f to %.2f\n", oldProvThroughput, provThroughput)
+		} else if provThroughput < oldProvThroughput {
+			result.Description += fmt.Sprintf("- decrease provisioned throughput from %.2f to %.2f\n", oldProvThroughput, provThroughput)
 		} else {
 			result.Recommended.ProvisionedThroughput = nil
 			newVolume.Throughput = volume.Throughput
