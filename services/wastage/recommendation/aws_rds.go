@@ -85,6 +85,17 @@ func (s *Service) AwsRdsRecommendation(
 		return nil, err
 	}
 
+	currentComputeCost, err := s.costSvc.GetRDSComputeCost(region, rdsInstance, metrics)
+	if err != nil {
+		s.logger.Error("failed to get rds compute cost", zap.Error(err))
+		return nil, err
+	}
+	currentStorageCost, err := s.costSvc.GetRDSStorageCost(region, rdsInstance, metrics)
+	if err != nil {
+		s.logger.Error("failed to get rds storage cost", zap.Error(err))
+		return nil, err
+	}
+
 	current := entity.RightsizingAwsRds{
 		Region:            region,
 		InstanceType:      rdsInstance.InstanceType,
@@ -97,7 +108,10 @@ func (s *Service) AwsRdsRecommendation(
 		StorageSize:       rdsInstance.StorageSize,
 		StorageIops:       rdsInstance.StorageIops,
 		StorageThroughput: rdsInstance.StorageThroughput,
-		Cost:              currentCost,
+
+		Cost:        currentCost,
+		ComputeCost: currentComputeCost,
+		StorageCost: currentStorageCost,
 	}
 
 	neededVCPU := (*usageCpuPercent.Avg / 100) * float64(currentInstanceRow.VCpu)
@@ -283,6 +297,8 @@ func (s *Service) AwsRdsRecommendation(
 			VCPU:          int64(rightSizedInstanceRow.VCpu),
 			MemoryGb:      int64(rightSizedInstanceRow.MemoryGb),
 			Cost:          0,
+			ComputeCost:   0,
+			StorageCost:   0,
 		}
 		if rightSizedStorageRow == nil {
 			recommended.StorageType = newInstance.StorageType
@@ -302,6 +318,8 @@ func (s *Service) AwsRdsRecommendation(
 				VCPU:          int64(currentInstanceRow.VCpu),
 				MemoryGb:      int64(currentInstanceRow.MemoryGb),
 				Cost:          currentCost,
+				ComputeCost:   currentComputeCost,
+				StorageCost:   currentStorageCost,
 			}
 		}
 		ebsType := model.RDSDBStorageVolumeTypeToEBSType[rightSizedStorageRow.VolumeType]
@@ -334,6 +352,19 @@ func (s *Service) AwsRdsRecommendation(
 			return nil, err
 		}
 		recommended.Cost = recommendedCost
+
+		recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
+		if err != nil {
+			s.logger.Error("failed to get rds instance cost", zap.Error(err))
+			return nil, err
+		}
+		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(region, newInstance, metrics)
+		if err != nil {
+			s.logger.Error("failed to get rds instance cost", zap.Error(err))
+			return nil, err
+		}
+		recommended.ComputeCost = recommendedComputeCost
+		recommended.StorageCost = recommendedStorageCost
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{
