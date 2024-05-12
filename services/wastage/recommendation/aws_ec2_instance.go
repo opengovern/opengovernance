@@ -22,10 +22,11 @@ func (s *Service) EC2InstanceRecommendation(
 	metrics map[string][]types2.Datapoint,
 	volumeMetrics map[string]map[string][]types2.Datapoint,
 	preferences map[string]*string,
+	usageAverageType UsageAverageType,
 ) (*entity.RightSizingRecommendation, error) {
-	cpuUsage := extractUsage(metrics["CPUUtilization"])
-	memoryUsage := extractUsage(metrics["mem_used_percent"])
-	networkUsage := extractUsage(sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"]))
+	cpuUsage := extractUsage(metrics["CPUUtilization"], usageAverageType)
+	memoryUsage := extractUsage(metrics["mem_used_percent"], usageAverageType)
+	networkUsage := extractUsage(sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"]), usageAverageType)
 
 	var ebsThroughputDatapoints []types2.Datapoint
 	var ebsIopsDatapoints []types2.Datapoint
@@ -33,8 +34,8 @@ func (s *Service) EC2InstanceRecommendation(
 		ebsThroughputDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
 		ebsIopsDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
 	}
-	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints)
-	ebsIopsUsage := extractUsage(ebsIopsDatapoints)
+	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints, usageAverageType)
+	ebsIopsUsage := extractUsage(ebsIopsDatapoints, usageAverageType)
 
 	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.UsageOperation, region)
 	if err != nil {
@@ -334,15 +335,15 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 	return ""
 }
 
-func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string) (*entity.EBSVolumeRecommendation, error) {
-	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]))
-	throughputUsageBytes := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]))
+func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string, usageAverageType UsageAverageType) (*entity.EBSVolumeRecommendation, error) {
+	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]), usageAverageType)
+	throughputUsageBytes := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]), usageAverageType)
 	usageStorageThroughputMB := entity.Usage{
 		Avg: funcP(throughputUsageBytes.Avg, throughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 		Min: funcP(throughputUsageBytes.Min, throughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 		Max: funcP(throughputUsageBytes.Max, throughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
-	sizeUsage := extractUsage(metrics["disk_used_percent"])
+	sizeUsage := extractUsage(metrics["disk_used_percent"], usageAverageType)
 
 	size := float64(0)
 	if size == 0 && volume.Size != nil {

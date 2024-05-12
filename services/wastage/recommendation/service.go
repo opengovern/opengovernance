@@ -141,6 +141,27 @@ func averageOfDatapoints(datapoints []types.Datapoint) float64 {
 	return avg
 }
 
+func maxOfAverageOfDatapoints(datapoints []types.Datapoint) float64 {
+	if len(datapoints) == 0 {
+		return 0.0
+	}
+
+	hasNonNil := false
+	maxOfAvgs := float64(0)
+	for _, dp := range datapoints {
+		dp := dp
+		if dp.Average == nil {
+			continue
+		}
+		hasNonNil = true
+		maxOfAvgs = max(maxOfAvgs, *dp.Average)
+	}
+	if !hasNonNil {
+		return 0.0
+	}
+	return maxOfAvgs
+}
+
 func minOfDatapoints(datapoints []types.Datapoint) float64 {
 	if len(datapoints) == 0 {
 		return 0.0
@@ -183,8 +204,21 @@ func maxOfDatapoints(datapoints []types.Datapoint) float64 {
 	return maxV
 }
 
-func extractUsage(dps []types.Datapoint) entity.Usage {
-	minV, avgV, maxV := minOfDatapoints(dps), averageOfDatapoints(dps), maxOfDatapoints(dps)
+type UsageAverageType int
+
+const (
+	UsageAverageTypeAverage UsageAverageType = iota
+	UsageAverageTypeMax
+)
+
+func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage {
+	var minV, avgV, maxV float64
+	switch avgType {
+	case UsageAverageTypeAverage:
+		minV, avgV, maxV = minOfDatapoints(dps), averageOfDatapoints(dps), maxOfAverageOfDatapoints(dps)
+	case UsageAverageTypeMax:
+		minV, avgV, maxV = minOfDatapoints(dps), maxOfAverageOfDatapoints(dps), maxOfDatapoints(dps)
+	}
 	return entity.Usage{
 		Avg: &avgV,
 		Min: &minV,
