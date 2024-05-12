@@ -49,13 +49,14 @@ func (s *Service) AwsRdsRecommendation(
 	rdsInstance entity.AwsRds,
 	metrics map[string][]types2.Datapoint,
 	preferences map[string]*string,
+	usageAverageType UsageAverageType,
 ) (*entity.AwsRdsRightsizingRecommendation, error) {
-	usageCpuPercent := extractUsage(metrics["CPUUtilization"])
-	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"])
-	usageFreeStorageBytes := extractUsage(metrics["FreeStorageSpace"])
-	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]))
-	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]))
-	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]))
+	usageCpuPercent := extractUsage(metrics["CPUUtilization"], usageAverageType)
+	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"], usageAverageType)
+	usageFreeStorageBytes := extractUsage(metrics["FreeStorageSpace"], usageAverageType)
+	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]), usageAverageType)
+	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]), usageAverageType)
+	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]), usageAverageType)
 	usageStorageThroughputMB := entity.Usage{
 		Avg: funcP(usageStorageThroughputBytes.Avg, usageStorageThroughputBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 		Min: funcP(usageStorageThroughputBytes.Min, usageStorageThroughputBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),

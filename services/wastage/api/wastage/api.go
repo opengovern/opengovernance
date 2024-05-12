@@ -15,6 +15,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/ingestion"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	"github.com/labstack/echo/v4"
+	"github.com/rogpeppe/go-internal/semver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -158,7 +159,12 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
-	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences)
+	usageAverageType := recommendation.UsageAverageTypeMax
+	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
+		usageAverageType = recommendation.UsageAverageTypeAverage
+	}
+
+	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
 		return err
@@ -167,7 +173,7 @@ func (s API) EC2Instance(c echo.Context) error {
 	ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
-		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences)
+		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
 			err = fmt.Errorf("failed to get ebs volume %s recommendation: %s", vol.HashedVolumeId, err.Error())
 			return err
@@ -270,7 +276,12 @@ func (s API) AwsRDS(c echo.Context) error {
 		}
 	}()
 
-	ec2RightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences)
+	usageAverageType := recommendation.UsageAverageTypeMax
+	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
+		usageAverageType = recommendation.UsageAverageTypeAverage
+	}
+
+	ec2RightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
 	if err != nil {
 		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
 		return err
