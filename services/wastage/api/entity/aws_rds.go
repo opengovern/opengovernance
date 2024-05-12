@@ -43,7 +43,9 @@ type RightsizingAwsRds struct {
 	StorageIops       *int32   `json:"storageIops"`
 	StorageThroughput *float64 `json:"storageThroughput"`
 
-	Cost float64 `json:"cost"`
+	Cost        float64 `json:"cost"`
+	ComputeCost float64 `json:"computeCost"`
+	StorageCost float64 `json:"storageCost"`
 }
 
 type AwsRdsRightsizingRecommendation struct {
