@@ -365,10 +365,7 @@ func (s *Service) AwsRdsRecommendation(
 
 	if recommended != nil {
 		fmt.Println("New Instance", newInstance)
-		fmt.Println("New Instance Storage Type", *newInstance.StorageType)
-		fmt.Println("New Instance Storage Size", *newInstance.StorageSize)
-		fmt.Println("New Instance Storage IOPS", *newInstance.StorageIops)
-		fmt.Println("New Instance Storage Throughput", *newInstance.StorageThroughput)
+
 		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
 		if err != nil {
 			s.logger.Error("failed to get rds instance cost", zap.Error(err))
