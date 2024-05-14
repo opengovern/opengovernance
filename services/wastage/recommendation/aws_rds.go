@@ -85,11 +85,11 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	currentInstanceRow := currentInstanceTypeList[0]
 
-	currentCost, err := s.costSvc.GetRDSInstanceCost(region, rdsInstance, metrics)
-	if err != nil {
-		s.logger.Error("failed to get rds instance cost", zap.Error(err))
-		return nil, err
-	}
+	//currentCost, err := s.costSvc.GetRDSInstanceCost(region, rdsInstance, metrics)
+	//if err != nil {
+	//	s.logger.Error("failed to get rds instance cost", zap.Error(err))
+	//	return nil, err
+	//}
 
 	currentComputeCost, err := s.costSvc.GetRDSComputeCost(region, rdsInstance, metrics)
 	if err != nil {
@@ -115,7 +115,7 @@ func (s *Service) AwsRdsRecommendation(
 		StorageIops:       rdsInstance.StorageIops,
 		StorageThroughput: rdsInstance.StorageThroughput,
 
-		Cost:        currentCost,
+		Cost:        0,
 		ComputeCost: currentComputeCost,
 		StorageCost: currentStorageCost,
 	}
@@ -335,7 +335,7 @@ func (s *Service) AwsRdsRecommendation(
 				ClusterType:   rdsInstance.ClusterType,
 				VCPU:          int64(currentInstanceRow.VCpu),
 				MemoryGb:      int64(currentInstanceRow.MemoryGb),
-				Cost:          currentCost,
+				Cost:          0,
 				ComputeCost:   currentComputeCost,
 				StorageCost:   currentStorageCost,
 			}
@@ -365,16 +365,13 @@ func (s *Service) AwsRdsRecommendation(
 
 	if recommended != nil {
 		fmt.Println("New Instance", newInstance)
-		fmt.Println("New Instance Storage Type", *newInstance.StorageType)
-		fmt.Println("New Instance Storage Size", *newInstance.StorageSize)
-		fmt.Println("New Instance Storage IOPS", *newInstance.StorageIops)
-		fmt.Println("New Instance Storage Throughput", *newInstance.StorageThroughput)
-		recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
-		if err != nil {
-			s.logger.Error("failed to get rds instance cost", zap.Error(err))
-			return nil, err
-		}
-		recommended.Cost = recommendedCost
+
+		//recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
+		//if err != nil {
+		//	s.logger.Error("failed to get rds instance cost", zap.Error(err))
+		//	return nil, err
+		//}
+		//recommended.Cost = recommendedCost
 
 		recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
 		if err != nil {
