@@ -59,7 +59,9 @@ type AwsRdsRightsizingRecommendation struct {
 	StorageIops            Usage `json:"storageIops"`
 	StorageThroughput      Usage `json:"storageThroughputBytes"`
 
-	Description string `json:"description"`
+	Description        string `json:"description"`
+	ComputeDescription string `json:"computeDescription"`
+	StorageDescription string `json:"storageDescription"`
 }
 
 type AwsRdsWastageRequest struct {

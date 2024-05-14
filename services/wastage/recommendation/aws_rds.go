@@ -1,12 +1,15 @@
 package recommendation
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/aws_rds"
+	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"math"
 	"strconv"
@@ -389,7 +392,23 @@ func (s *Service) AwsRdsRecommendation(
 		FreeStorageBytes:       usageFreeStorageBytes,
 		StorageThroughput:      usageStorageThroughputBytes,
 
-		Description: "",
+		Description:        "",
+		ComputeDescription: "",
+		StorageDescription: "",
+	}
+
+	if rightSizedInstanceRow != nil {
+		recommendation.ComputeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
+			rightSizedInstanceRow, metrics, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if rightSizedStorageRow != nil && recommended != nil {
+		recommendation.StorageDescription, err = s.generateRdsInstanceStorageDescription(rdsInstance, region,
+			*rdsInstance.StorageType, rdsInstance.StorageSize, rdsInstance.StorageIops, rdsInstance.StorageThroughput,
+			*recommended.StorageType, recommended.StorageSize, recommended.StorageIops, rdsInstance.StorageThroughput, metrics,
+			preferences, neededStorageSize, neededStorageIops, neededStorageThroughputMB, usageAverageType)
 	}
 
 	return &recommendation, nil
@@ -417,4 +436,133 @@ func extractFromRdsInstance(instance entity.AwsRds, i model.RDSDBInstance, regio
 		return i.LicenseModel
 	}
 	return ""
+}
+
+func (s *Service) generateRdsInstanceComputeDescription(rdsInstance entity.AwsRds, region string, currentInstanceType,
+	rightSizedInstanceType *model.RDSDBInstance, metrics map[string][]types2.Datapoint,
+	preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64, usageAverageType UsageAverageType) (string, error) {
+	usageCpuPercent := extractUsage(metrics["CPUUtilization"], usageAverageType)
+	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"], usageAverageType)
+	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]), usageAverageType)
+
+	usage := fmt.Sprintf("- %s has %.1f vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f vCPUs. %s has %d vCPUs.\n", currentInstanceType.InstanceType, currentInstanceType.VCpu, *usageCpuPercent.Min, *usageCpuPercent.Avg, *usageCpuPercent.Max, neededCPU, rightSizedInstanceType.InstanceType, int32(rightSizedInstanceType.VCpu))
+	usage += fmt.Sprintf("- %s has %.1fGB Memory. Free Memory over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %.1fGB Memory. %s has %.1fGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGb, *usageFreeMemoryBytes.Min/(1024.0*1024.0*1024.0), *usageFreeMemoryBytes.Avg/(1024.0*1024.0*1024.0), *usageFreeMemoryBytes.Max/(1024.0*1024.0*1024.0), neededMemory, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGb)
+
+	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is min=%.2f MB/s, avg=%.2f MB/s, max=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, *usageNetworkThroughputBytes.Min/(1024.0*1024.0), *usageNetworkThroughputBytes.Avg/(1024*1024), *usageNetworkThroughputBytes.Max/(1024.0*1024.0), neededNetworkThroughput/(1024.0*1024.0), rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
+
+	needs := ""
+	for k, v := range preferences {
+		if _, ok := aws_rds.PreferenceInstanceDBKey[k]; !ok {
+			continue
+		}
+		if aws_rds.PreferenceInstanceDBKey[k] == "" {
+			continue
+		}
+		if v == nil {
+			vl := extractFromRdsInstance(rdsInstance, *currentInstanceType, region, k)
+			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
+		} else {
+			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
+		}
+	}
+
+	prompt := fmt.Sprintf(`
+I'm giving recommendation on aws rds db instance right sizing. Based on user's usage and needs I have concluded that the best option for them is to use %s instead of %s. I need help summarizing the explanation into 3 lines while keeping these rules:
+- mention the requirements from user side.
+- for those fields which are changing make sure you mention the change.
+
+Here's usage data:
+%s
+
+User's needs:
+%s
+`, rightSizedInstanceType.InstanceType, currentInstanceType.InstanceType, usage, needs)
+	resp, err := s.openaiSvc.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4TurboPreview,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Choices) == 0 {
+		return "", errors.New("empty choices")
+	}
+	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
+}
+
+func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRds, region string,
+	currStorageType string, currStorageSize *int32, currStorageIops *int32, currStorageThroughput *float64,
+	recStorageType string, recStorageSize *int32, recStorageIops *int32, recStorageThroughput *float64, metrics map[string][]types2.Datapoint,
+	preferences map[string]*string, neededStorageSize int32, neededStorageIops int32, neededStorageThroughputMB float64, usageAverageType UsageAverageType) (string, error) {
+	usageFreeStorageBytes := extractUsage(metrics["FreeStorageSpace"], usageAverageType)
+	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]), usageAverageType)
+	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]), usageAverageType)
+	usageStorageThroughputMB := entity.Usage{
+		Avg: funcP(usageStorageThroughputBytes.Avg, usageStorageThroughputBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(usageStorageThroughputBytes.Min, usageStorageThroughputBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(usageStorageThroughputBytes.Max, usageStorageThroughputBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	}
+
+	usage := fmt.Sprintf("- %s has %dGB Storage. Free storage over the course of last week is min=%.2fGB, avg=%.2f%%, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, *usageFreeStorageBytes.Min/(1024*1024*1024), *usageFreeStorageBytes.Avg/(1024*1024*1024), *usageFreeStorageBytes.Max/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+	usage += fmt.Sprintf("- %s has %d IOPS. Usage over the course of last week is min=%.2f io/s, avg=%.2f io/s, max=%.2f io/s, so you only need %d io/s. %s has %d IOPS.\n", currStorageType, *currStorageIops, *usageStorageIops.Min, *usageStorageIops.Avg, *usageStorageIops.Max, neededStorageIops, recStorageType, recStorageIops)
+	usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage over the course of last week is min=%.2fMB, avg=%.2fMB, max=%.2fMB, so you only need %.2f MB. %s has %.2fMB Throughput.\n", currStorageType, *currStorageThroughput, *usageStorageThroughputMB.Min, *usageStorageThroughputMB.Avg, *usageStorageThroughputMB.Max, neededStorageThroughputMB, recStorageType, *recStorageThroughput)
+
+	needs := ""
+	for k, v := range preferences {
+		if _, ok := aws_rds.PreferenceStorageDBKey[k]; !ok {
+			continue
+		}
+		if aws_rds.PreferenceStorageDBKey[k] == "" {
+			continue
+		}
+		if v == nil {
+			vl := extractFromRdsInstance(rdsInstance, model.RDSDBInstance{}, region, k)
+			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
+		} else {
+			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
+		}
+	}
+
+	prompt := fmt.Sprintf(`
+I'm giving recommendation on aws rds db instance storage right sizing. Based on user's usage and needs I have concluded that the best option for them is to use %s instead of %s. I need help summarizing the explanation into 3 lines while keeping these rules:
+- mention the requirements from user side.
+- for those fields which are changing make sure you mention the change.
+
+Here's usage data:
+%s
+
+User's needs:
+%s
+`, recStorageType, currStorageType, usage, needs)
+	resp, err := s.openaiSvc.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4TurboPreview,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Choices) == 0 {
+		return "", errors.New("empty choices")
+	}
+	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
 }
