@@ -324,6 +324,8 @@ func (s *Service) AwsRdsRecommendation(
 			recommended.StorageIops = newInstance.StorageIops
 			recommended.StorageThroughput = newInstance.StorageThroughput
 		}
+	} else {
+		newInstance = rdsInstance
 	}
 	if rightSizedStorageRow != nil {
 		if recommended == nil {
@@ -364,15 +366,6 @@ func (s *Service) AwsRdsRecommendation(
 	}
 
 	if recommended != nil {
-		fmt.Println("New Instance", newInstance)
-
-		//recommendedCost, err := s.costSvc.GetRDSInstanceCost(region, newInstance, metrics)
-		//if err != nil {
-		//	s.logger.Error("failed to get rds instance cost", zap.Error(err))
-		//	return nil, err
-		//}
-		//recommended.Cost = recommendedCost
-
 		if rightSizedInstanceRow != nil {
 			recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
 			if err != nil {
@@ -382,7 +375,6 @@ func (s *Service) AwsRdsRecommendation(
 			recommended.ComputeCost = recommendedComputeCost
 		}
 
-		fmt.Println(*newInstance.StorageType)
 		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(region, newInstance, metrics)
 		if err != nil {
 			s.logger.Error("failed to get rds instance cost", zap.Error(err))
