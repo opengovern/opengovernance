@@ -330,7 +330,7 @@ func (s *Service) AwsRdsRecommendation(
 			recommended = &entity.RightsizingAwsRds{
 				Region:        region,
 				InstanceType:  currentInstanceRow.InstanceType,
-				Engine:        currentInstanceRow.DatabaseEngine,
+				Engine:        awsRdsDbTypeToAPIDbType(rightSizedInstanceRow.DatabaseEngine, rightSizedInstanceRow.DatabaseEdition),
 				EngineVersion: rdsInstance.EngineVersion,
 				ClusterType:   rdsInstance.ClusterType,
 				VCPU:          int64(currentInstanceRow.VCpu),
@@ -410,7 +410,7 @@ func (s *Service) AwsRdsRecommendation(
 	if rightSizedStorageRow != nil && recommended != nil {
 		storageDescription, err = s.generateRdsInstanceStorageDescription(rdsInstance, region,
 			*rdsInstance.StorageType, rdsInstance.StorageSize, rdsInstance.StorageIops, rdsInstance.StorageThroughput,
-			*recommended.StorageType, recommended.StorageSize, recommended.StorageIops, rdsInstance.StorageThroughput, metrics,
+			*recommended.StorageType, recommended.StorageSize, recommended.StorageIops, recommended.StorageThroughput, metrics,
 			preferences, neededStorageSize, neededStorageIops, neededStorageThroughputMB, usageAverageType)
 	}
 
