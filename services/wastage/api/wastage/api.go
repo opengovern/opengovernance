@@ -159,6 +159,10 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 
+	if req.Loading {
+		return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{})
+	}
+
 	usageAverageType := recommendation.UsageAverageTypeMax
 	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
 		usageAverageType = recommendation.UsageAverageTypeAverage
@@ -275,6 +279,9 @@ func (s API) AwsRDS(c echo.Context) error {
 			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
 		}
 	}()
+	if req.Loading {
+		return c.JSON(http.StatusOK, entity.AwsRdsWastageResponse{})
+	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
 	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {

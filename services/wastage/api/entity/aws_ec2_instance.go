@@ -41,10 +41,12 @@ type EC2InstanceWastageRequest struct {
 	Identification map[string]string                        `json:"identification"`
 	Instance       EC2Instance                              `json:"instance"`
 	Volumes        []EC2Volume                              `json:"volumes"`
+	VolumeCount    int                                      `json:"volumeCount"`
 	Metrics        map[string][]types2.Datapoint            `json:"metrics"`
 	VolumeMetrics  map[string]map[string][]types2.Datapoint `json:"volumeMetrics"`
 	Region         string                                   `json:"region"`
 	Preferences    map[string]*string                       `json:"preferences"`
+	Loading        bool                                     `json:"loading"`
 }
 
 type RightsizingEC2Instance struct {

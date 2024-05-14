@@ -70,6 +70,7 @@ type AwsRdsWastageRequest struct {
 	Metrics        map[string][]types2.Datapoint `json:"metrics"`
 	Region         string                        `json:"region"`
 	Preferences    map[string]*string            `json:"preferences"`
+	Loading        bool                          `json:"loading"`
 }
 
 type AwsRdsWastageResponse struct {
