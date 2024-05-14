@@ -392,25 +392,25 @@ func (s *Service) AwsRdsRecommendation(
 		FreeStorageBytes:       usageFreeStorageBytes,
 		StorageThroughput:      usageStorageThroughputBytes,
 
-		Description:        "",
-		ComputeDescription: "",
-		StorageDescription: "",
+		Description: "",
 	}
 
+	var computeDescription, storageDescription string
 	if rightSizedInstanceRow != nil {
-		recommendation.ComputeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
+		computeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
 			rightSizedInstanceRow, metrics, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if rightSizedStorageRow != nil && recommended != nil {
-		recommendation.StorageDescription, err = s.generateRdsInstanceStorageDescription(rdsInstance, region,
+		storageDescription, err = s.generateRdsInstanceStorageDescription(rdsInstance, region,
 			*rdsInstance.StorageType, rdsInstance.StorageSize, rdsInstance.StorageIops, rdsInstance.StorageThroughput,
 			*recommended.StorageType, recommended.StorageSize, recommended.StorageIops, rdsInstance.StorageThroughput, metrics,
 			preferences, neededStorageSize, neededStorageIops, neededStorageThroughputMB, usageAverageType)
 	}
 
+	recommendation.Description = computeDescription + "\n" + storageDescription
 	return &recommendation, nil
 }
 
