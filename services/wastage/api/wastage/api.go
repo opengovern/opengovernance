@@ -49,6 +49,7 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionServi
 
 func (s API) Register(e *echo.Echo) {
 	g := e.Group("/api/v1/wastage")
+	g.POST("/configuration", s.Configuration)
 	g.POST("/ec2-instance", s.EC2Instance)
 	g.POST("/aws-rds", s.AwsRDS)
 	i := e.Group("/api/v1/wastage-ingestion")
@@ -56,6 +57,13 @@ func (s API) Register(e *echo.Echo) {
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
+}
+
+func (s API) Configuration(c echo.Context) error {
+	return c.JSON(http.StatusOK, entity.Configuration{
+		EC2LazyLoad: 20,
+		RDSLazyLoad: 20,
+	})
 }
 
 // EC2Instance godoc
