@@ -239,10 +239,10 @@ func (s *Service) AwsRdsRecommendation(
 		if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
 			if *value == "Yes" {
 				instancePref["NOT(instance_type like ?)"] = "db.t%"
-			}
-		} else {
-			if !strings.HasPrefix(rdsInstance.InstanceType, "db.t") {
-				instancePref["NOT(instance_type like ?)"] = "db.t%"
+			} else if *value == "if current resource is burstable" {
+				if !strings.HasPrefix(rdsInstance.InstanceType, "db.t") {
+					instancePref["NOT(instance_type like ?)"] = "db.t%"
+				}
 			}
 		}
 	}
