@@ -125,6 +125,10 @@ func (s *Service) EC2InstanceRecommendation(
 	if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
 		if *value == "Yes" {
 			pref["NOT(instance_type like ?)"] = "t%"
+		} else if *value == "if current resource is burstable" {
+			if !strings.HasPrefix(string(instance.InstanceType), "t") {
+				pref["NOT(instance_type like ?)"] = "t%"
+			}
 		}
 	}
 	if value, ok := preferences["UsageOperation"]; ok && value != nil {
