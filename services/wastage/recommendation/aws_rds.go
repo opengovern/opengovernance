@@ -373,18 +373,23 @@ func (s *Service) AwsRdsRecommendation(
 		//}
 		//recommended.Cost = recommendedCost
 
-		recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
-		if err != nil {
-			s.logger.Error("failed to get rds instance cost", zap.Error(err))
-			return nil, err
+		if rightSizedInstanceRow != nil {
+			recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
+			if err != nil {
+				s.logger.Error("failed to get rds instance cost", zap.Error(err))
+				return nil, err
+			}
+			recommended.ComputeCost = recommendedComputeCost
 		}
-		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(region, newInstance, metrics)
-		if err != nil {
-			s.logger.Error("failed to get rds instance cost", zap.Error(err))
-			return nil, err
+
+		if rightSizedStorageRow != nil {
+			recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(region, newInstance, metrics)
+			if err != nil {
+				s.logger.Error("failed to get rds instance cost", zap.Error(err))
+				return nil, err
+			}
+			recommended.StorageCost = recommendedStorageCost
 		}
-		recommended.ComputeCost = recommendedComputeCost
-		recommended.StorageCost = recommendedStorageCost
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{
