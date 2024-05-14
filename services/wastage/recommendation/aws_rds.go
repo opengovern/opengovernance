@@ -513,9 +513,16 @@ func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRd
 		Max: funcP(usageStorageThroughputBytes.Max, usageStorageThroughputBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
 
-	usage := fmt.Sprintf("- %s has %dGB Storage. Free storage over the course of last week is min=%.2fGB, avg=%.2f%%, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, *usageFreeStorageBytes.Min/(1024*1024*1024), *usageFreeStorageBytes.Avg/(1024*1024*1024), *usageFreeStorageBytes.Max/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
-	usage += fmt.Sprintf("- %s has %d IOPS. Usage over the course of last week is min=%.2f io/s, avg=%.2f io/s, max=%.2f io/s, so you only need %d io/s. %s has %d IOPS.\n", currStorageType, *currStorageIops, *usageStorageIops.Min, *usageStorageIops.Avg, *usageStorageIops.Max, neededStorageIops, recStorageType, recStorageIops)
-	usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage over the course of last week is min=%.2fMB, avg=%.2fMB, max=%.2fMB, so you only need %.2f MB. %s has %.2fMB Throughput.\n", currStorageType, *currStorageThroughput, *usageStorageThroughputMB.Min, *usageStorageThroughputMB.Avg, *usageStorageThroughputMB.Max, neededStorageThroughputMB, recStorageType, *recStorageThroughput)
+	var usage string
+	if currStorageSize != nil && recStorageSize != nil {
+		usage += fmt.Sprintf("- %s has %dGB Storage. Free storage over the course of last week is min=%.2fGB, avg=%.2f%%, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, *usageFreeStorageBytes.Min/(1024*1024*1024), *usageFreeStorageBytes.Avg/(1024*1024*1024), *usageFreeStorageBytes.Max/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+	}
+	if currStorageIops != nil && recStorageIops != nil {
+		usage += fmt.Sprintf("- %s has %d IOPS. Usage over the course of last week is min=%.2f io/s, avg=%.2f io/s, max=%.2f io/s, so you only need %d io/s. %s has %d IOPS.\n", currStorageType, *currStorageIops, *usageStorageIops.Min, *usageStorageIops.Avg, *usageStorageIops.Max, neededStorageIops, recStorageType, recStorageIops)
+	}
+	if currStorageThroughput != nil && recStorageThroughput != nil {
+		usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage over the course of last week is min=%.2fMB, avg=%.2fMB, max=%.2fMB, so you only need %.2f MB. %s has %.2fMB Throughput.\n", currStorageType, *currStorageThroughput, *usageStorageThroughputMB.Min, *usageStorageThroughputMB.Avg, *usageStorageThroughputMB.Max, neededStorageThroughputMB, recStorageType, *recStorageThroughput)
+	}
 
 	needs := ""
 	for k, v := range preferences {
