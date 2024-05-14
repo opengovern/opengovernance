@@ -168,7 +168,7 @@ func (s *Service) AwsRdsRecommendation(
 				s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
 			}
-			neededStorageSizeFloat = (1 + float64(vPercent)/100) * neededStorageSizeFloat
+			neededStorageSizeFloat = math.Ceil((1 + float64(vPercent)/100) * neededStorageSizeFloat)
 		}
 		neededStorageSize = int32(neededStorageSizeFloat)
 	}
@@ -181,7 +181,7 @@ func (s *Service) AwsRdsRecommendation(
 				s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
 			}
-			neededStorageIopsFloat = (1 + float64(vPercent)/100) * neededStorageIopsFloat
+			neededStorageIopsFloat = math.Ceil((1 + float64(vPercent)/100) * neededStorageIopsFloat)
 		}
 		neededStorageIops = int32(neededStorageIopsFloat)
 	}

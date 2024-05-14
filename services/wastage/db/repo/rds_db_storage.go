@@ -255,9 +255,10 @@ func (r *RDSDBStorageRepoImpl) getAuroraGeneralPurposeTotalPrice(dbStorage model
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeGeneralPurposeAurora) {
 		return 0, errors.New("invalid volume type")
 	}
-	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
-		*volumeSize = dbStorage.MinVolumeSizeGb
-	}
+	// Disable min volume size check for aurora since use is not managing it
+	//if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+	//	*volumeSize = dbStorage.MinVolumeSizeGb
+	//}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 
 	millionIoPerMonth := math.Ceil(float64(*iops) * 30 * 24 * 60 * 60 / 1e6) // 30 days, 24 hours, 60 minutes, 60 seconds
@@ -284,9 +285,10 @@ func (r *RDSDBStorageRepoImpl) getAuroraIOOptimizedTotalPrice(dbStorage model.RD
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeIOOptimizedAurora) {
 		return 0, errors.New("invalid volume type")
 	}
-	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
-		*volumeSize = dbStorage.MinVolumeSizeGb
-	}
+	// Disable min volume size check for aurora since use is not managing it
+	//if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+	//	*volumeSize = dbStorage.MinVolumeSizeGb
+	//}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 
 	return sizeCost, nil
