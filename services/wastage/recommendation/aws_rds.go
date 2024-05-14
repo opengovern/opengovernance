@@ -330,7 +330,7 @@ func (s *Service) AwsRdsRecommendation(
 			recommended = &entity.RightsizingAwsRds{
 				Region:        region,
 				InstanceType:  currentInstanceRow.InstanceType,
-				Engine:        awsRdsDbTypeToAPIDbType(rightSizedInstanceRow.DatabaseEngine, rightSizedInstanceRow.DatabaseEdition),
+				Engine:        awsRdsDbTypeToAPIDbType(currentInstanceRow.DatabaseEngine, currentInstanceRow.DatabaseEdition),
 				EngineVersion: rdsInstance.EngineVersion,
 				ClusterType:   rdsInstance.ClusterType,
 				VCPU:          int64(currentInstanceRow.VCpu),
