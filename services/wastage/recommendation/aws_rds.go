@@ -3,10 +3,12 @@ package recommendation
 import (
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/aws_rds"
 	"go.uber.org/zap"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -54,6 +56,7 @@ func (s *Service) AwsRdsRecommendation(
 	usageCpuPercent := extractUsage(metrics["CPUUtilization"], usageAverageType)
 	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"], usageAverageType)
 	usageFreeStorageBytes := extractUsage(metrics["FreeStorageSpace"], usageAverageType)
+	usageVolumeBytesUsed := extractUsage(metrics["VolumeBytesUsed"], usageAverageType)
 	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]), usageAverageType)
 	usageStorageIops := extractUsage(sumMergeDatapoints(metrics["ReadIOPS"], metrics["WriteIOPS"]), usageAverageType)
 	usageStorageThroughputBytes := extractUsage(sumMergeDatapoints(metrics["ReadThroughput"], metrics["WriteThroughput"]), usageAverageType)
@@ -113,6 +116,11 @@ func (s *Service) AwsRdsRecommendation(
 		ComputeCost: currentComputeCost,
 		StorageCost: currentStorageCost,
 	}
+	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+		current.StorageSize = utils.GetPointer(int32(math.Ceil(*usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024))))
+		current.StorageIops = nil
+		current.StorageThroughput = nil
+	}
 
 	neededVCPU := (*usageCpuPercent.Avg / 100) * float64(currentInstanceRow.VCpu)
 	if v, ok := preferences["CpuBreathingRoom"]; ok {
@@ -148,6 +156,9 @@ func (s *Service) AwsRdsRecommendation(
 	neededStorageSize := int32(0)
 	if rdsInstance.StorageSize != nil {
 		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / (1024 * 1024 * 1024))
+		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+			neededStorageSizeFloat = *usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024)
+		}
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
