@@ -240,6 +240,10 @@ func (s *Service) AwsRdsRecommendation(
 			if *value == "Yes" {
 				instancePref["NOT(instance_type like ?)"] = "db.t%"
 			}
+		} else {
+			if !strings.HasPrefix(rdsInstance.InstanceType, "db.t") {
+				instancePref["NOT(instance_type like ?)"] = "db.t%"
+			}
 		}
 	}
 
