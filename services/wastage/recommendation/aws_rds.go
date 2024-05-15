@@ -121,8 +121,8 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 		current.StorageSize = utils.GetPointer(int32(math.Ceil(*usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024))))
-		if usageVolumeBytesUsed.Max != nil {
-			current.StorageSize = utils.GetPointer(int32(*usageVolumeBytesUsed.Max))
+		if usageVolumeBytesUsed.Last.Maximum != nil {
+			current.StorageSize = utils.GetPointer(int32(*usageVolumeBytesUsed.Last.Maximum))
 		}
 		current.StorageIops = nil
 		current.StorageThroughput = nil
