@@ -122,11 +122,15 @@ func (s *Service) EC2InstanceRecommendation(
 			pref["memory_gb >= ?"] = neededMemory
 		}
 	}
+
+	excludeBurstable := false
 	if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
 		if *value == "Yes" {
+			excludeBurstable = true
 			pref["NOT(instance_type like ?)"] = "t%"
 		} else if *value == "if current resource is burstable" {
 			if !strings.HasPrefix(string(instance.InstanceType), "t") {
+				excludeBurstable = true
 				pref["NOT(instance_type like ?)"] = "t%"
 			}
 		}
@@ -215,13 +219,13 @@ func (s *Service) EC2InstanceRecommendation(
 	}
 
 	if rightSizedInstanceType != nil {
-		recommendation.Description, _ = s.generateEc2InstanceDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, preferences, neededCPU, neededMemory, neededNetworkThroughput)
+		recommendation.Description, _ = s.generateEc2InstanceDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, excludeBurstable, preferences, neededCPU, neededMemory, neededNetworkThroughput)
 	}
 
 	return &recommendation, nil
 }
 
-func (s *Service) generateEc2InstanceDescription(instance entity.EC2Instance, region string, currentInstanceType, rightSizedInstanceType *model.EC2InstanceType, metrics map[string][]types2.Datapoint, preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64) (string, error) {
+func (s *Service) generateEc2InstanceDescription(instance entity.EC2Instance, region string, currentInstanceType, rightSizedInstanceType *model.EC2InstanceType, metrics map[string][]types2.Datapoint, excludeBurstable bool, preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64) (string, error) {
 	minCPU, avgCPU, maxCPU := minOfDatapoints(metrics["CPUUtilization"]), averageOfDatapoints(metrics["CPUUtilization"]), maxOfDatapoints(metrics["CPUUtilization"])
 	minMemory, avgMemory, maxMemory := minOfDatapoints(metrics["mem_used_percent"]), averageOfDatapoints(metrics["mem_used_percent"]), maxOfDatapoints(metrics["mem_used_percent"])
 	networkDatapoints := sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
@@ -259,6 +263,9 @@ Here's usage data:
 User's needs:
 %s
 `, rightSizedInstanceType.InstanceType, currentInstanceType.InstanceType, usage, needs)
+	if excludeBurstable {
+		prompt += "\nBurstable instances are excluded."
+	}
 	resp, err := s.openaiSvc.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
