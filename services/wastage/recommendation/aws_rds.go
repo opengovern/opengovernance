@@ -85,12 +85,6 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	currentInstanceRow := currentInstanceTypeList[0]
 
-	//currentCost, err := s.costSvc.GetRDSInstanceCost(region, rdsInstance, metrics)
-	//if err != nil {
-	//	s.logger.Error("failed to get rds instance cost", zap.Error(err))
-	//	return nil, err
-	//}
-
 	currentComputeCost, err := s.costSvc.GetRDSComputeCost(region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds compute cost", zap.Error(err))
@@ -117,7 +111,7 @@ func (s *Service) AwsRdsRecommendation(
 		StorageIops:       rdsInstance.StorageIops,
 		StorageThroughput: rdsInstance.StorageThroughput,
 
-		Cost:        0,
+		Cost:        currentComputeCost + currentStorageCost,
 		ComputeCost: currentComputeCost,
 		StorageCost: currentStorageCost,
 	}
@@ -347,7 +341,7 @@ func (s *Service) AwsRdsRecommendation(
 				Processor:     currentInstanceRow.PhysicalProcessor,
 				VCPU:          int64(currentInstanceRow.VCpu),
 				MemoryGb:      int64(currentInstanceRow.MemoryGb),
-				Cost:          0,
+				Cost:          currentComputeCost + currentStorageCost,
 				ComputeCost:   currentComputeCost,
 				StorageCost:   currentStorageCost,
 			}
@@ -391,6 +385,8 @@ func (s *Service) AwsRdsRecommendation(
 			return nil, err
 		}
 		recommended.StorageCost = recommendedStorageCost
+
+		recommended.Cost = recommended.ComputeCost + recommended.StorageCost
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{
