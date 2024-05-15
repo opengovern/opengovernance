@@ -49,6 +49,10 @@ func awsRdsDbTypeToAPIDbType(engine, edition string) string {
 	return ""
 }
 
+func calculateHeadroom(needed float64, percent int64) float64 {
+	return needed / (1.0 - (float64(percent) / 100.0))
+}
+
 func (s *Service) AwsRdsRecommendation(
 	region string,
 	rdsInstance entity.AwsRds,
@@ -117,27 +121,30 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 		current.StorageSize = utils.GetPointer(int32(math.Ceil(*usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024))))
+		if usageVolumeBytesUsed.Max != nil {
+			current.StorageSize = utils.GetPointer(int32(*usageVolumeBytesUsed.Max))
+		}
 		current.StorageIops = nil
 		current.StorageThroughput = nil
 	}
 
-	neededVCPU := (*usageCpuPercent.Avg / 100) * float64(currentInstanceRow.VCpu)
+	neededVCPU := (*usageCpuPercent.Avg / 100.0) * currentInstanceRow.VCpu
 	if v, ok := preferences["CpuBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
 			s.logger.Error("invalid CpuBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid CpuBreathingRoom value: %s", *v)
 		}
-		neededVCPU = (1 + float64(vPercent)/100) * neededVCPU
+		neededVCPU = calculateHeadroom(neededVCPU, vPercent)
 	}
-	neededMemoryGb := float64(currentInstanceRow.MemoryGb) - (*usageFreeMemoryBytes.Avg / (1024 * 1024 * 1024))
+	neededMemoryGb := currentInstanceRow.MemoryGb - (*usageFreeMemoryBytes.Avg / (1024 * 1024 * 1024))
 	if v, ok := preferences["MemoryBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
 			s.logger.Error("invalid MemoryBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid MemoryBreathingRoom value: %s", *v)
 		}
-		neededMemoryGb = (1 + float64(vPercent)/100) * neededMemoryGb
+		neededMemoryGb = calculateHeadroom(neededMemoryGb, vPercent)
 	}
 	neededNetworkThroughput := 0.0
 	if usageNetworkThroughputBytes.Avg != nil {
@@ -149,14 +156,24 @@ func (s *Service) AwsRdsRecommendation(
 			s.logger.Error("invalid NetworkBreathingRoom value", zap.String("value", *v))
 			return nil, fmt.Errorf("invalid NetworkBreathingRoom value: %s", *v)
 		}
-		neededNetworkThroughput = (1 + float64(vPercent)/100) * neededNetworkThroughput
+		neededNetworkThroughput = calculateHeadroom(neededNetworkThroughput, vPercent)
 	}
 
 	neededStorageSize := int32(0)
 	if rdsInstance.StorageSize != nil {
-		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / (1024 * 1024 * 1024))
+		usageFreeStorageBytesMin := 0.0
+		if usageFreeStorageBytes.Min != nil {
+			usageFreeStorageBytesMin = *usageFreeStorageBytes.Min
+		} else if usageFreeStorageBytes.Avg != nil {
+			usageFreeStorageBytesMin = *usageFreeStorageBytes.Avg
+		}
+		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (usageFreeStorageBytesMin / (1024 * 1024 * 1024))
 		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-			neededStorageSizeFloat = *usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024)
+			if usageVolumeBytesUsed.Max != nil {
+				neededStorageSizeFloat = *usageVolumeBytesUsed.Max / (1024 * 1024 * 1024)
+			} else {
+				neededStorageSizeFloat = *usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024)
+			}
 		}
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
@@ -164,7 +181,7 @@ func (s *Service) AwsRdsRecommendation(
 				s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
 			}
-			neededStorageSizeFloat = math.Ceil((1 + float64(vPercent)/100) * neededStorageSizeFloat)
+			neededStorageSizeFloat = calculateHeadroom(neededStorageSizeFloat, vPercent)
 		}
 		neededStorageSize = int32(neededStorageSizeFloat)
 	}
@@ -177,7 +194,7 @@ func (s *Service) AwsRdsRecommendation(
 				s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
 			}
-			neededStorageIopsFloat = math.Ceil((1 + float64(vPercent)/100) * neededStorageIopsFloat)
+			neededStorageIopsFloat = calculateHeadroom(neededStorageIopsFloat, vPercent)
 		}
 		neededStorageIops = int32(neededStorageIopsFloat)
 	}
@@ -190,7 +207,7 @@ func (s *Service) AwsRdsRecommendation(
 				s.logger.Error("invalid StorageThroughputBreathingRoom value", zap.String("value", *v))
 				return nil, fmt.Errorf("invalid StorageThroughputBreathingRoom value: %s", *v)
 			}
-			neededStorageThroughputMB = (1 + float64(vPercent)/100) * neededStorageThroughputMB
+			neededStorageThroughputMB = calculateHeadroom(neededStorageThroughputMB, vPercent)
 		}
 	}
 

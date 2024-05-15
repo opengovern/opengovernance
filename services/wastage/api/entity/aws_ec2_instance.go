@@ -66,9 +66,10 @@ type RightsizingEC2Instance struct {
 }
 
 type Usage struct {
-	Avg *float64
-	Min *float64
-	Max *float64
+	Avg  *float64
+	Min  *float64
+	Max  *float64
+	Last *types2.Datapoint
 }
 
 type RightSizingRecommendation struct {

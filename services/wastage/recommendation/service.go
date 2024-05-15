@@ -219,9 +219,16 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 	case UsageAverageTypeMax:
 		minV, avgV, maxV = minOfDatapoints(dps), maxOfAverageOfDatapoints(dps), maxOfDatapoints(dps)
 	}
+
+	var lastDP *types.Datapoint
+	if len(dps) > 0 {
+		lastDP = &dps[len(dps)-1]
+	}
+
 	return entity.Usage{
-		Avg: avgV,
-		Min: minV,
-		Max: maxV,
+		Avg:  avgV,
+		Min:  minV,
+		Max:  maxV,
+		Last: lastDP,
 	}
 }
