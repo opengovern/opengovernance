@@ -119,9 +119,9 @@ func sumMergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Dat
 
 }
 
-func averageOfDatapoints(datapoints []types.Datapoint) float64 {
+func averageOfDatapoints(datapoints []types.Datapoint) *float64 {
 	if len(datapoints) == 0 {
-		return 0.0
+		return nil
 	}
 
 	hasNonNil := false
@@ -135,15 +135,15 @@ func averageOfDatapoints(datapoints []types.Datapoint) float64 {
 		avg += *dp.Average
 	}
 	if !hasNonNil {
-		return 0.0
+		return nil
 	}
 	avg = avg / float64(len(datapoints))
-	return avg
+	return &avg
 }
 
-func maxOfAverageOfDatapoints(datapoints []types.Datapoint) float64 {
+func maxOfAverageOfDatapoints(datapoints []types.Datapoint) *float64 {
 	if len(datapoints) == 0 {
-		return 0.0
+		return nil
 	}
 
 	hasNonNil := false
@@ -157,14 +157,14 @@ func maxOfAverageOfDatapoints(datapoints []types.Datapoint) float64 {
 		maxOfAvgs = max(maxOfAvgs, *dp.Average)
 	}
 	if !hasNonNil {
-		return 0.0
+		return nil
 	}
-	return maxOfAvgs
+	return &maxOfAvgs
 }
 
-func minOfDatapoints(datapoints []types.Datapoint) float64 {
+func minOfDatapoints(datapoints []types.Datapoint) *float64 {
 	if len(datapoints) == 0 {
-		return 0.0
+		return nil
 	}
 
 	hasNonNil := false
@@ -178,14 +178,14 @@ func minOfDatapoints(datapoints []types.Datapoint) float64 {
 		minV = min(minV, *dp.Minimum)
 	}
 	if !hasNonNil {
-		return 0.0
+		return nil
 	}
-	return minV
+	return &minV
 }
 
-func maxOfDatapoints(datapoints []types.Datapoint) float64 {
+func maxOfDatapoints(datapoints []types.Datapoint) *float64 {
 	if len(datapoints) == 0 {
-		return 0.0
+		return nil
 	}
 
 	hasNonNil := false
@@ -199,9 +199,9 @@ func maxOfDatapoints(datapoints []types.Datapoint) float64 {
 		maxV = max(maxV, *dp.Maximum)
 	}
 	if !hasNonNil {
-		return 0.0
+		return nil
 	}
-	return maxV
+	return &maxV
 }
 
 type UsageAverageType int
@@ -212,7 +212,7 @@ const (
 )
 
 func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage {
-	var minV, avgV, maxV float64
+	var minV, avgV, maxV *float64
 	switch avgType {
 	case UsageAverageTypeAverage:
 		minV, avgV, maxV = minOfDatapoints(dps), averageOfDatapoints(dps), maxOfAverageOfDatapoints(dps)
@@ -220,8 +220,8 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 		minV, avgV, maxV = minOfDatapoints(dps), maxOfAverageOfDatapoints(dps), maxOfDatapoints(dps)
 	}
 	return entity.Usage{
-		Avg: &avgV,
-		Min: &minV,
-		Max: &maxV,
+		Avg: avgV,
+		Min: minV,
+		Max: maxV,
 	}
 }
