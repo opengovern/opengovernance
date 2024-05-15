@@ -153,10 +153,19 @@ func (s *Service) AwsRdsRecommendation(
 	}
 
 	neededStorageSize := int32(0)
+	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+		s.logger.Info(fmt.Sprintf("1 ->  %d", neededStorageSize))
+	}
 	if rdsInstance.StorageSize != nil {
 		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / (1024 * 1024 * 1024))
 		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+			s.logger.Info(fmt.Sprintf("2 ->  %f", neededStorageSizeFloat))
+		}
+		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 			neededStorageSizeFloat = *usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024)
+		}
+		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+			s.logger.Info(fmt.Sprintf("3 ->  %f", neededStorageSizeFloat))
 		}
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
@@ -166,7 +175,13 @@ func (s *Service) AwsRdsRecommendation(
 			}
 			neededStorageSizeFloat = math.Ceil((1 + float64(vPercent)/100) * neededStorageSizeFloat)
 		}
+		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+			s.logger.Info(fmt.Sprintf("4 ->  %f", neededStorageSizeFloat))
+		}
 		neededStorageSize = int32(neededStorageSizeFloat)
+	}
+	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+		s.logger.Info(fmt.Sprintf("5 ->  %d", neededStorageSize))
 	}
 	neededStorageIops := int32(0)
 	if usageStorageIops.Avg != nil {
@@ -285,6 +300,9 @@ func (s *Service) AwsRdsRecommendation(
 	if err != nil {
 		s.logger.Error("failed to get rds storage type", zap.Error(err))
 		return nil, err
+	}
+	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+		s.logger.Info(fmt.Sprintf("resSize ->  %d", resSize))
 	}
 	neededStorageSize = resSize
 	if !isResultAurora {
