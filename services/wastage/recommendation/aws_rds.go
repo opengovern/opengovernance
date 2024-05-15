@@ -108,6 +108,8 @@ func (s *Service) AwsRdsRecommendation(
 		Engine:            rdsInstance.Engine,
 		EngineVersion:     rdsInstance.EngineVersion,
 		ClusterType:       rdsInstance.ClusterType,
+		Architecture:      currentInstanceRow.ProcessorArchitecture,
+		Processor:         currentInstanceRow.PhysicalProcessor,
 		VCPU:              int64(currentInstanceRow.VCpu),
 		MemoryGb:          int64(currentInstanceRow.MemoryGb),
 		StorageType:       rdsInstance.StorageType,
@@ -235,12 +237,16 @@ func (s *Service) AwsRdsRecommendation(
 			instancePref["database_edition = ?"] = kind.Edition
 		}
 	}
+
+	excluedBurstable := false
 	if _, ok := instancePref["instance_type = ?"]; !ok {
 		if value, ok := preferences["ExcludeBurstableInstances"]; ok && value != nil {
 			if *value == "Yes" {
+				excluedBurstable = true
 				instancePref["NOT(instance_type like ?)"] = "db.t%"
 			} else if *value == "if current resource is burstable" {
 				if !strings.HasPrefix(rdsInstance.InstanceType, "db.t") {
+					excluedBurstable = true
 					instancePref["NOT(instance_type like ?)"] = "db.t%"
 				}
 			}
@@ -312,6 +318,8 @@ func (s *Service) AwsRdsRecommendation(
 			Engine:        awsRdsDbTypeToAPIDbType(rightSizedInstanceRow.DatabaseEngine, rightSizedInstanceRow.DatabaseEdition),
 			EngineVersion: newInstance.EngineVersion,
 			ClusterType:   newInstance.ClusterType,
+			Architecture:  rightSizedInstanceRow.ProcessorArchitecture,
+			Processor:     rightSizedInstanceRow.PhysicalProcessor,
 			VCPU:          int64(rightSizedInstanceRow.VCpu),
 			MemoryGb:      int64(rightSizedInstanceRow.MemoryGb),
 			Cost:          0,
@@ -335,6 +343,8 @@ func (s *Service) AwsRdsRecommendation(
 				Engine:        awsRdsDbTypeToAPIDbType(currentInstanceRow.DatabaseEngine, currentInstanceRow.DatabaseEdition),
 				EngineVersion: rdsInstance.EngineVersion,
 				ClusterType:   rdsInstance.ClusterType,
+				Architecture:  currentInstanceRow.ProcessorArchitecture,
+				Processor:     currentInstanceRow.PhysicalProcessor,
 				VCPU:          int64(currentInstanceRow.VCpu),
 				MemoryGb:      int64(currentInstanceRow.MemoryGb),
 				Cost:          0,
@@ -400,7 +410,7 @@ func (s *Service) AwsRdsRecommendation(
 	var computeDescription, storageDescription string
 	if rightSizedInstanceRow != nil {
 		computeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
-			rightSizedInstanceRow, metrics, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
+			rightSizedInstanceRow, metrics, excluedBurstable, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
 		if err != nil {
 			return nil, err
 		}
@@ -441,7 +451,7 @@ func extractFromRdsInstance(instance entity.AwsRds, i model.RDSDBInstance, regio
 }
 
 func (s *Service) generateRdsInstanceComputeDescription(rdsInstance entity.AwsRds, region string, currentInstanceType,
-	rightSizedInstanceType *model.RDSDBInstance, metrics map[string][]types2.Datapoint,
+	rightSizedInstanceType *model.RDSDBInstance, metrics map[string][]types2.Datapoint, excludeBurstable bool,
 	preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64, usageAverageType UsageAverageType) (string, error) {
 	usageCpuPercent := extractUsage(metrics["CPUUtilization"], usageAverageType)
 	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"], usageAverageType)
@@ -479,6 +489,9 @@ Here's usage data:
 User's needs:
 %s
 `, rightSizedInstanceType.InstanceType, currentInstanceType.InstanceType, usage, needs)
+	if excludeBurstable {
+		prompt += "\nBurstable instances are excluded."
+	}
 	resp, err := s.openaiSvc.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
