@@ -34,9 +34,10 @@ type RightsizingAwsRds struct {
 	Engine        string            `json:"engine"`
 	EngineVersion string            `json:"engineVersion"`
 	ClusterType   AwsRdsClusterType `json:"clusterType"`
-
-	VCPU     int64 `json:"vCPU"`
-	MemoryGb int64 `json:"memoryGb"`
+	Processor     string            `json:"processor"`
+	Architecture  string            `json:"architecture"`
+	VCPU          int64             `json:"vCPU"`
+	MemoryGb      int64             `json:"memoryGb"`
 
 	StorageType       *string  `json:"storageType"`
 	StorageSize       *int32   `json:"storageSize"`
