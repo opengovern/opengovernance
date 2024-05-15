@@ -89,7 +89,10 @@ func (s *Service) EC2InstanceRecommendation(
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
 	neededCPU := float64(vCPU) * (*cpuUsage.Avg + float64(cpuBreathingRoom)) / 100.0
-	neededMemory := float64(currentInstanceType.MemoryGB) * (*memoryUsage.Max + float64(memoryBreathingRoom)) / 100.0
+	neededMemory := 0.0
+	if memoryUsage.Max != nil {
+		neededMemory = calculateHeadroom(currentInstanceType.MemoryGB*(*memoryUsage.Max), memoryBreathingRoom)
+	}
 	neededNetworkThroughput := *networkUsage.Avg
 	if preferences["NetworkBreathingRoom"] != nil {
 		room, _ := strconv.ParseInt(*preferences["NetworkBreathingRoom"], 10, 64)
