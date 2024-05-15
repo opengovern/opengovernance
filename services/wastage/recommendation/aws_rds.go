@@ -153,19 +153,10 @@ func (s *Service) AwsRdsRecommendation(
 	}
 
 	neededStorageSize := int32(0)
-	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-		s.logger.Info(fmt.Sprintf("1 ->  %d", neededStorageSize))
-	}
 	if rdsInstance.StorageSize != nil {
 		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (*usageFreeStorageBytes.Avg / (1024 * 1024 * 1024))
 		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-			s.logger.Info(fmt.Sprintf("2 ->  %f", neededStorageSizeFloat))
-		}
-		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 			neededStorageSizeFloat = *usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024)
-		}
-		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-			s.logger.Info(fmt.Sprintf("3 ->  %f", neededStorageSizeFloat))
 		}
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
@@ -175,13 +166,7 @@ func (s *Service) AwsRdsRecommendation(
 			}
 			neededStorageSizeFloat = math.Ceil((1 + float64(vPercent)/100) * neededStorageSizeFloat)
 		}
-		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-			s.logger.Info(fmt.Sprintf("4 ->  %f", neededStorageSizeFloat))
-		}
 		neededStorageSize = int32(neededStorageSizeFloat)
-	}
-	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-		s.logger.Info(fmt.Sprintf("5 ->  %d", neededStorageSize))
 	}
 	neededStorageIops := int32(0)
 	if usageStorageIops.Avg != nil {
@@ -301,9 +286,6 @@ func (s *Service) AwsRdsRecommendation(
 		s.logger.Error("failed to get rds storage type", zap.Error(err))
 		return nil, err
 	}
-	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-		s.logger.Info(fmt.Sprintf("resSize ->  %d", resSize))
-	}
 	neededStorageSize = resSize
 	if !isResultAurora {
 		neededStorageIops = resIops
@@ -417,6 +399,7 @@ func (s *Service) AwsRdsRecommendation(
 		NetworkThroughputBytes: usageNetworkThroughputBytes,
 		FreeStorageBytes:       usageFreeStorageBytes,
 		StorageThroughput:      usageStorageThroughputBytes,
+		VolumeBytesUsed:        usageVolumeBytesUsed,
 
 		Description: "",
 	}
@@ -541,10 +524,17 @@ func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRd
 		Min: funcP(usageStorageThroughputBytes.Min, usageStorageThroughputBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 		Max: funcP(usageStorageThroughputBytes.Max, usageStorageThroughputBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
+	usageVolumeBytesUsed := extractUsage(metrics["VolumeBytesUsed"], usageAverageType)
 
 	var usage string
-	if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
-		usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, float64(*currStorageSize)-*usageFreeStorageBytes.Max/(1024*1024*1024), float64(*currStorageSize)-*usageFreeStorageBytes.Avg/(1024*1024*1024), float64(*currStorageSize)-*usageFreeStorageBytes.Min/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+		if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
+			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, *usageVolumeBytesUsed.Min/(1024*1024*1024), *usageVolumeBytesUsed.Avg/(1024*1024*1024), *usageVolumeBytesUsed.Max/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+		}
+	} else {
+		if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
+			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, float64(*currStorageSize)-*usageFreeStorageBytes.Max/(1024*1024*1024), float64(*currStorageSize)-*usageFreeStorageBytes.Avg/(1024*1024*1024), float64(*currStorageSize)-*usageFreeStorageBytes.Min/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+		}
 	}
 	if currStorageIops != nil && recStorageIops != nil && *currStorageIops != 0 && *recStorageIops != 0 {
 		if *usageStorageIops.Min == 0 && *usageStorageIops.Avg == 0 && *usageStorageIops.Max == 0 {
