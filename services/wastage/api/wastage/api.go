@@ -450,7 +450,9 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 			}
 		}
 	}
-
+	if aggregatedInstance == nil {
+		return c.JSON(http.StatusBadRequest, "no instances found in the request")
+	}
 	rdsClusterRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, *aggregatedInstance, aggregatedMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
