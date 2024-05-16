@@ -57,6 +57,7 @@ func (s API) Register(e *echo.Echo) {
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
+	i.PUT("/usages/fill-rds-costs", s.FillRdsCosts)
 }
 
 func (s API) Configuration(c echo.Context) error {
@@ -556,4 +557,45 @@ func (s API) GetUsage(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, usage)
+}
+
+func (s API) FillRdsCosts(c echo.Context) error {
+	go func() {
+		s.logger.Info("Filling RDS costs started")
+
+		for {
+			usage, err := s.usageRepo.GetCostZero()
+			if err != nil {
+				s.logger.Error("error while getting null statistic usages list", zap.Error(err))
+				break
+			}
+			if usage == nil {
+				break
+			}
+			if usage.ApiEndpoint == "aws-rds" {
+				var responseBody entity.AwsRdsWastageResponse
+				err = json.Unmarshal(usage.Response, &responseBody)
+				if err == nil {
+					responseBody.RightSizing.Current.Cost = responseBody.RightSizing.Current.ComputeCost + responseBody.RightSizing.Current.StorageCost
+					responseBody.RightSizing.Recommended.Cost = responseBody.RightSizing.Recommended.ComputeCost + responseBody.RightSizing.Recommended.StorageCost
+				}
+
+				out, err := json.Marshal(responseBody)
+				if err != nil {
+					s.logger.Error("failed to marshal stats", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+				usage.Response = out
+
+				err = s.usageRepo.Update(usage.ID, *usage)
+				if err != nil {
+					s.logger.Error("failed to update usage moved flag", zap.Any("usage_id", usage.ID), zap.Error(err))
+					continue
+				}
+			}
+		}
+
+	}()
+
+	return c.NoContent(http.StatusOK)
 }
