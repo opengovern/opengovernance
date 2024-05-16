@@ -388,12 +388,12 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	if preferences["SizeBreathingRoom"] != nil {
 		sizeBreathingRoom, _ = strconv.ParseInt(*preferences["SizeBreathingRoom"], 10, 32)
 	}
-	neededIops := *iopsUsage.Avg * (1 + float64(iopsBreathingRoom)/100.0)
-	neededThroughput := *usageStorageThroughputMB.Avg * (1 + float64(throughputBreathingRoom)/100.0)
+	neededIops := pCalculateHeadroom(iopsUsage.Avg, iopsBreathingRoom)
+	neededThroughput := pCalculateHeadroom(usageStorageThroughputMB.Avg, throughputBreathingRoom)
 	neededSize := size
-	if _, ok := metrics["disk_used_percent"]; ok {
+	if _, ok := metrics["disk_used_percent"]; ok && sizeUsage.Avg != nil {
 		neededSize = max(1, neededSize*(*sizeUsage.Avg/100.0))
-		neededSize = neededSize * (1 + float64(sizeBreathingRoom)/100.0)
+		neededSize = calculateHeadroom(neededSize, sizeBreathingRoom)
 	}
 
 	var validTypes []types.VolumeType

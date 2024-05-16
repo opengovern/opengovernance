@@ -53,6 +53,13 @@ func calculateHeadroom(needed float64, percent int64) float64 {
 	return needed / (1.0 - (float64(percent) / 100.0))
 }
 
+func pCalculateHeadroom(needed *float64, percent int64) float64 {
+	if needed == nil {
+		return 0.0
+	}
+	return *needed / (1.0 - (float64(percent) / 100.0))
+}
+
 func (s *Service) AwsRdsRecommendation(
 	region string,
 	rdsInstance entity.AwsRds,
@@ -122,7 +129,7 @@ func (s *Service) AwsRdsRecommendation(
 	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 		current.StorageSize = utils.GetPointer(int32(math.Ceil(*usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024))))
 		if usageVolumeBytesUsed.Last.Maximum != nil {
-			current.StorageSize = utils.GetPointer(int32(*usageVolumeBytesUsed.Last.Maximum))
+			current.StorageSize = utils.GetPointer(int32(math.Ceil(*usageVolumeBytesUsed.Last.Maximum / (1024 * 1024 * 1024))))
 		}
 		current.StorageIops = nil
 		current.StorageThroughput = nil
