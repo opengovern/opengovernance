@@ -78,3 +78,24 @@ type AwsRdsWastageRequest struct {
 type AwsRdsWastageResponse struct {
 	RightSizing AwsRdsRightsizingRecommendation `json:"rightSizing"`
 }
+
+type AwsRdsCluster struct {
+	HashedClusterId string `json:"hashedClusterId"`
+	Engine          string `json:"engine"`
+}
+
+type AwsClusterWastageRequest struct {
+	RequestId      *string                                  `json:"requestId"`
+	CliVersion     *string                                  `json:"cliVersion"`
+	Identification map[string]string                        `json:"identification"`
+	Cluster        AwsRdsCluster                            `json:"cluster"`
+	Instances      []AwsRds                                 `json:"instances"`
+	Metrics        map[string]map[string][]types2.Datapoint `json:"metrics"`
+	Region         string                                   `json:"region"`
+	Preferences    map[string]*string                       `json:"preferences"`
+	Loading        bool                                     `json:"loading"`
+}
+
+type AwsClusterWastageResponse struct {
+	RightSizing map[string]AwsRdsRightsizingRecommendation `json:"rightSizing"`
+}

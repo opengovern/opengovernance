@@ -92,6 +92,37 @@ func sumMergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Dat
 
 }
 
+func MergeDatapoints(in []types.Datapoint, out []types.Datapoint, mergeF func(aa, bb float64) float64) []types.Datapoint {
+	dps := map[int64]*types.Datapoint{}
+	for _, dp := range in {
+		dp := dp
+		dps[dp.Timestamp.Unix()] = &dp
+	}
+	for _, dp := range out {
+		dp := dp
+		if dps[dp.Timestamp.Unix()] == nil {
+			dps[dp.Timestamp.Unix()] = &dp
+			break
+		}
+
+		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, mergeF)
+		dps[dp.Timestamp.Unix()].Maximum = funcP(dps[dp.Timestamp.Unix()].Maximum, dp.Maximum, mergeF)
+		dps[dp.Timestamp.Unix()].Minimum = funcP(dps[dp.Timestamp.Unix()].Minimum, dp.Minimum, mergeF)
+		dps[dp.Timestamp.Unix()].SampleCount = funcP(dps[dp.Timestamp.Unix()].SampleCount, dp.SampleCount, mergeF)
+		dps[dp.Timestamp.Unix()].Sum = funcP(dps[dp.Timestamp.Unix()].Sum, dp.Sum, mergeF)
+	}
+
+	var dpArr []types.Datapoint
+	for _, dp := range dps {
+		dpArr = append(dpArr, *dp)
+	}
+	sort.Slice(dpArr, func(i, j int) bool {
+		return dpArr[i].Timestamp.Unix() < dpArr[j].Timestamp.Unix()
+	})
+	return dpArr
+
+}
+
 func averageOfDatapoints(datapoints []types.Datapoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
