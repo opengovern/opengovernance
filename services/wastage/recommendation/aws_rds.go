@@ -312,6 +312,11 @@ func (s *Service) AwsRdsRecommendation(
 	var resSize, resIops int32
 	var resThroughputMB float64
 	rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)
+	s.logger.Info("s.awsRDSDBStorageRepo.GetCheapestBySpecs", zap.Any("rightSizedStorageRow", rightSizedStorageRow),
+		zap.Int32("resSize", resSize), zap.Int32("neededStorageSize", neededStorageSize))
+	if rightSizedStorageRow != nil {
+		s.logger.Info("s.awsRDSDBStorageRepo.GetCheapestBySpecs", zap.Any("rightSizedStorageRow", *rightSizedStorageRow))
+	}
 	if err != nil {
 		s.logger.Error("failed to get rds storage type", zap.Error(err))
 		return nil, err
