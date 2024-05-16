@@ -12,6 +12,7 @@ type UsageV2Repo interface {
 	Update(id uint, m model.UsageV2) error
 	GetRandomNullStatistics() (*model.UsageV2, error)
 	Get(id uint) (*model.UsageV2, error)
+	GetCostZero() (*model.UsageV2, error)
 }
 
 type UsageV2RepoImpl struct {
@@ -47,6 +48,21 @@ func (r *UsageV2RepoImpl) Get(id uint) (*model.UsageV2, error) {
 func (r *UsageV2RepoImpl) GetRandomNullStatistics() (*model.UsageV2, error) {
 	var m model.UsageV2
 	tx := r.db.Conn().Model(&model.UsageV2{}).Where("statistics IS NULL").First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
+}
+
+func (r *UsageV2RepoImpl) GetCostZero() (*model.UsageV2, error) {
+	var m model.UsageV2
+	tx := r.db.Conn().Model(&model.UsageV2{}).Where("api_endpoint = 'aws-rds'").
+		Where("(response -> 'rightSizing' -> 'current' ->> 'cost')::float = 0 and (response -> 'rightSizing' -> 'recommended' ->> 'cost')::float = 0").
+		Where("((response -> 'rightSizing' -> 'current' ->> 'computeCost')::float <> 0 or (response -> 'rightSizing' -> 'current' ->> 'storageCost')::float <> 0)").
+		First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
