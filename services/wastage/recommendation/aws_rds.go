@@ -175,7 +175,6 @@ func (s *Service) AwsRdsRecommendation(
 			usageFreeStorageBytesMin = *usageFreeStorageBytes.Avg
 		}
 		neededStorageSizeFloat := float64(*rdsInstance.StorageSize) - (usageFreeStorageBytesMin / (1024 * 1024 * 1024))
-		s.logger.Info("neededStorageSize -> 1", zap.Float64("neededStorageSizeFloat", neededStorageSizeFloat))
 		if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 			if usageVolumeBytesUsed.Max != nil {
 				neededStorageSizeFloat = *usageVolumeBytesUsed.Max / (1024 * 1024 * 1024)
@@ -183,7 +182,6 @@ func (s *Service) AwsRdsRecommendation(
 				neededStorageSizeFloat = *usageVolumeBytesUsed.Avg / (1024 * 1024 * 1024)
 			}
 		}
-		s.logger.Info("neededStorageSize -> 2", zap.Float64("neededStorageSizeFloat", neededStorageSizeFloat))
 		if v, ok := preferences["StorageSizeBreathingRoom"]; ok {
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
@@ -191,12 +189,8 @@ func (s *Service) AwsRdsRecommendation(
 				return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
 			}
 			neededStorageSizeFloat = calculateHeadroom(neededStorageSizeFloat, vPercent)
-			s.logger.Info("neededStorageSize -> 3", zap.Float64("neededStorageSizeFloat", neededStorageSizeFloat),
-				zap.String("breathingRoom", *v), zap.Int64("vPercent", vPercent),
-				zap.Float64("(1.0 - (float64(percent) / 100.0))", (1.0-(float64(vPercent)/100.0))))
 		}
-		neededStorageSize = int32(neededStorageSizeFloat)
-		s.logger.Info("neededStorageSize -> 4", zap.Int32("neededStorageSize", neededStorageSize))
+		neededStorageSize = int32(math.Ceil(neededStorageSizeFloat))
 	}
 	neededStorageIops := int32(0)
 	if usageStorageIops.Avg != nil {
@@ -312,11 +306,6 @@ func (s *Service) AwsRdsRecommendation(
 	var resSize, resIops int32
 	var resThroughputMB float64
 	rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)
-	s.logger.Info("s.awsRDSDBStorageRepo.GetCheapestBySpecs", zap.Any("rightSizedStorageRow", rightSizedStorageRow),
-		zap.Int32("resSize", resSize), zap.Int32("neededStorageSize", neededStorageSize))
-	if rightSizedStorageRow != nil {
-		s.logger.Info("s.awsRDSDBStorageRepo.GetCheapestBySpecs", zap.Any("rightSizedStorageRow", *rightSizedStorageRow))
-	}
 	if err != nil {
 		s.logger.Error("failed to get rds storage type", zap.Error(err))
 		return nil, err
