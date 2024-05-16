@@ -3,6 +3,7 @@ package wastage
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -20,8 +21,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/mod/semver"
+	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -296,7 +299,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		usageAverageType = recommendation.UsageAverageTypeAverage
 	}
 
-	ec2RightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
+	rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
 	if err != nil {
 		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
 		return err
@@ -311,9 +314,165 @@ func (s API) AwsRDS(c echo.Context) error {
 
 	// DO NOT change this, resp is used in updating usage
 	resp = entity.AwsRdsWastageResponse{
-		RightSizing: *ec2RightSizingRecom,
+		RightSizing: *rdsRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
+	return c.JSON(http.StatusOK, resp)
+}
+
+// AwsRDSCluster godoc
+//
+//	@Summary		List wastage in AWS RDS Cluster
+//	@Description	List wastage in AWS RDS Cluster
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			request	body		entity.AwsClusterWastageRequest	true	"Request"
+//	@Success		200		{object}	entity.AwsClusterWastageResponse
+//	@Router			/wastage/api/v1/wastage/aws-rds-cluster [post]
+func (s API) AwsRDSCluster(c echo.Context) error {
+	start := time.Now()
+	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var req entity.AwsClusterWastageRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var resp entity.AwsClusterWastageResponse
+	var err error
+
+	stats := model.Statistics{
+		AccountID:  req.Identification["account"],
+		OrgEmail:   req.Identification["org_m_email"],
+		ResourceID: req.Cluster.HashedClusterId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
+	reqJson, _ := json.Marshal(req)
+	usage := model.UsageV2{
+		ApiEndpoint:    "aws-rds-cluster",
+		Request:        reqJson,
+		RequestId:      req.RequestId,
+		CliVersion:     req.CliVersion,
+		Response:       nil,
+		FailureMessage: nil,
+		Statistics:     statsOut,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+
+			recom := entity.RightsizingAwsRds{}
+			for _, instance := range resp.RightSizing {
+				recom.Region = instance.Recommended.Region
+				recom.InstanceType = instance.Recommended.InstanceType
+				recom.Engine = instance.Recommended.Engine
+				recom.EngineVersion = instance.Recommended.EngineVersion
+				recom.ClusterType = instance.Recommended.ClusterType
+				recom.VCPU += instance.Recommended.VCPU
+				recom.MemoryGb += instance.Recommended.MemoryGb
+				recom.StorageType = instance.Recommended.StorageType
+				recom.StorageSize = instance.Recommended.StorageSize
+				recom.StorageIops = instance.Recommended.StorageIops
+				recom.StorageThroughput = instance.Recommended.StorageThroughput
+
+				recom.Cost += instance.Recommended.Cost
+				recom.ComputeCost += instance.Recommended.ComputeCost
+				recom.StorageCost += instance.Recommended.StorageCost
+
+				stats.CurrentCost += instance.Current.Cost
+				stats.RDSInstanceCurrentCost += instance.Current.Cost
+			}
+			stats.Savings = stats.CurrentCost - recom.Cost
+			stats.RDSInstanceSavings = stats.CurrentCost - recom.Cost
+			stats.RecommendedCost = recom.Cost
+			stats.RDSInstanceRecommendedCost = recom.Cost
+
+			statsOut, _ := json.Marshal(stats)
+			usage.Statistics = statsOut
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+	if req.Loading {
+		return c.JSON(http.StatusOK, entity.AwsRdsWastageResponse{})
+	}
+
+	usageAverageType := recommendation.UsageAverageTypeMax
+	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
+		usageAverageType = recommendation.UsageAverageTypeAverage
+	}
+
+	resp = entity.AwsClusterWastageResponse{
+		RightSizing: make(map[string]entity.AwsRdsRightsizingRecommendation),
+	}
+
+	var aggregatedInstance *entity.AwsRds
+	var aggregatedMetrics map[string][]types.Datapoint
+	for _, instance := range req.Instances {
+		instance := instance
+		rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, instance, req.Metrics[instance.HashedInstanceId], req.Preferences, usageAverageType)
+		if err != nil {
+			s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
+			return err
+		}
+		resp.RightSizing[instance.HashedInstanceId] = *rdsRightSizingRecom
+		if aggregatedInstance == nil {
+			aggregatedInstance = &instance
+		}
+		if aggregatedMetrics == nil {
+			aggregatedMetrics = req.Metrics[instance.HashedInstanceId]
+		} else {
+			for key, value := range req.Metrics[instance.HashedInstanceId] {
+				aggregatedMetrics[key] = recommendation.MergeDatapoints(aggregatedMetrics[key], value, func(aa, bb float64) float64 { return math.Max(aa, bb) })
+			}
+		}
+	}
+
+	rdsClusterRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, *aggregatedInstance, aggregatedMetrics, req.Preferences, usageAverageType)
+	if err != nil {
+		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
+		return err
+	}
+
+	if !strings.Contains(strings.ToLower(req.Cluster.Engine), "aurora") {
+		for k, instance := range resp.RightSizing {
+			instance := instance
+			instance.Recommended = rdsClusterRightSizingRecom.Recommended
+			instance.Description = rdsClusterRightSizingRecom.Description
+			resp.RightSizing[k] = instance
+		}
+	} else {
+		// TODO Handle aurora storage somehow
+	}
+
+	elapsed := time.Since(start).Seconds()
+	usage.Latency = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+	}
+
 	return c.JSON(http.StatusOK, resp)
 }
 
