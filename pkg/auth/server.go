@@ -89,8 +89,10 @@ func (s *Server) UpdateLastLoginLoop() {
 					s.logger.Error("failed to get user metadata", zap.String("userId", user.UserID), zap.Error(err))
 					continue
 				}
-
-				tim, _ := time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+				tim := time.Time{}
+				if usr.AppMetadata.LastLogin != nil {
+					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+				}
 				if time.Now().After(tim.Add(15 * time.Minute)) {
 					s.logger.Info("updating metadata", zap.String("userId", user.UserID))
 					usr.AppMetadata.LastLogin = user.Metadata.LastLogin
