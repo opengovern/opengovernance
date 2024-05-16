@@ -299,7 +299,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
 		Where("product_family = ?", "Database Storage").
 		Where("region_code = ?", region).
-		Where("max_volume_size_gb >= ?", volumeSize).
+		Where("max_volume_size_gb >= ? or max_volume_size = ''", volumeSize).
 		Where("max_iops >= ?", iops).
 		Where("max_throughput_mb >= ?", throughput)
 

@@ -284,10 +284,10 @@ func (p *RDSDBStorage) DoIngest() bool {
 		p.VolumeType == "Provisioned IOPS (SSD)" {
 		return false
 	}
-	if (p.ProductFamily == "Database Storage" && p.VolumeType == "General Purpose-GP3" && p.MinVolumeSize == "") ||
-		(p.ProductFamily == "Database Storage" && p.VolumeType == "Provisioned IOPS-IO2" && p.MinVolumeSize == "") {
-		return false
-	}
+	//if (p.ProductFamily == "Database Storage" && p.VolumeType == "General Purpose-GP3" && p.MinVolumeSize == "") ||
+	//	(p.ProductFamily == "Database Storage" && p.VolumeType == "Provisioned IOPS-IO2" && p.MinVolumeSize == "") {
+	//	return false
+	//}
 	if p.LimitlessPreview == "Yes" {
 		return false
 	}
