@@ -553,7 +553,7 @@ func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRd
 	var usage string
 	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 		if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
-			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, *usageVolumeBytesUsed.Min/(1024*1024*1024), *usageVolumeBytesUsed.Avg/(1024*1024*1024), *usageVolumeBytesUsed.Max/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, *currStorageSize, *usageVolumeBytesUsed.Avg/(1024*1024*1024), *usageVolumeBytesUsed.Max/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
 		}
 	} else {
 		if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
