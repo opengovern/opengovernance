@@ -2,12 +2,15 @@ package repo
 
 import (
 	"errors"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"math"
 	"strings"
+	"time"
 )
 
 type RDSDBStorageRepo interface {
@@ -16,32 +19,43 @@ type RDSDBStorageRepo interface {
 	Update(id uint, m model.RDSDBStorage) error
 	Delete(id uint) error
 	List() ([]model.RDSDBStorage, error)
-	Truncate(tableName string, tx *gorm.DB) error
+	Truncate(tx *gorm.DB) error
 	GetCheapestBySpecs(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) (*model.RDSDBStorage, int32, int32, float64, error)
+	MoveViewTransaction(tableName string) error
+	RemoveOldTables(tableName string) error
+	CreateNewTable() (string, error)
 }
 
 type RDSDBStorageRepoImpl struct {
 	logger *zap.Logger
 	db     *connector.Database
+
+	viewName string
 }
 
 func NewRDSDBStorageRepo(logger *zap.Logger, db *connector.Database) RDSDBStorageRepo {
+	stmt := &gorm.Statement{DB: db.Conn()}
+	stmt.Parse(&model.RDSDBStorage{})
+
 	return &RDSDBStorageRepoImpl{
 		logger: logger,
 		db:     db,
+
+		viewName: stmt.Schema.Table,
 	}
 }
 
 func (r *RDSDBStorageRepoImpl) Create(tableName string, tx *gorm.DB, m *model.RDSDBStorage) error {
 	if tx == nil {
-		tx = r.db.Conn().Table(tableName)
+		tx = r.db.Conn()
 	}
+	tx = tx.Table(tableName)
 	return tx.Create(&m).Error
 }
 
 func (r *RDSDBStorageRepoImpl) Get(id uint) (*model.RDSDBStorage, error) {
 	var m model.RDSDBStorage
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).Where("id=?", id).First(&m)
+	tx := r.db.Conn().Table(r.viewName).Where("id=?", id).First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -61,16 +75,16 @@ func (r *RDSDBStorageRepoImpl) Delete(id uint) error {
 
 func (r *RDSDBStorageRepoImpl) List() ([]model.RDSDBStorage, error) {
 	var ms []model.RDSDBStorage
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).Find(&ms)
+	tx := r.db.Conn().Table(r.viewName).Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return ms, nil
 }
 
-func (r *RDSDBStorageRepoImpl) Truncate(tableName string, tx *gorm.DB) error {
+func (r *RDSDBStorageRepoImpl) Truncate(tx *gorm.DB) error {
 	if tx == nil {
-		tx = r.db.Conn().Table(tableName)
+		tx = r.db.Conn()
 	}
 	tx = tx.Unscoped().Where("1 = 1").Delete(&model.RDSDBStorage{})
 	if tx.Error != nil {
@@ -91,7 +105,7 @@ func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(dbStorage model.RDSDBStorag
 	millionIoPerMonth := math.Ceil(float64(*iops) * 30 * 24 * 60 * 60 / 1e6) // 30 days, 24 hours, 60 minutes, 60 seconds
 	iopsCost := 0.0
 
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+	tx := r.db.Conn().Table(r.viewName).
 		Where("product_family = ?", "System Operation").
 		Where("region_code = ?", dbStorage.RegionCode).
 		Where("volume_type = ?", "Magnetic").
@@ -147,7 +161,7 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 		provisionedIops := int(*iops) - model.RDSDBStorageTier2Gp3BaseIops
 		provisionedIops = max(provisionedIops, 0)
 		if provisionedIops > 0 {
-			tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+			tx := r.db.Conn().Table(r.viewName).
 				Where("product_family = ?", "Provisioned IOPS").
 				Where("region_code = ?", dbStorage.RegionCode).
 				Where("deployment_option = ?", dbStorage.DeploymentOption).
@@ -170,7 +184,7 @@ func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, vo
 		provisionedThroughput := *throughput - model.RDSDBStorageTier2Gp3BaseThroughput
 		provisionedThroughput = max(provisionedThroughput, 0)
 		if provisionedThroughput > 0 {
-			tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+			tx := r.db.Conn().Table(r.viewName).
 				Where("product_family = ?", "Provisioned Throughput").
 				Where("region_code = ?", dbStorage.RegionCode).
 				Where("deployment_option = ?", dbStorage.DeploymentOption).
@@ -202,7 +216,7 @@ func (r *RDSDBStorageRepoImpl) getIo1TotalPrice(dbStorage model.RDSDBStorage, vo
 	}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 	iopsCost := 0.0
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+	tx := r.db.Conn().Table(r.viewName).
 		Where("product_family = ?", "Provisioned IOPS").
 		Where("region_code = ?", dbStorage.RegionCode).
 		Where("deployment_option = ?", dbStorage.DeploymentOption).
@@ -231,7 +245,7 @@ func (r *RDSDBStorageRepoImpl) getIo2TotalPrice(dbStorage model.RDSDBStorage, vo
 	}
 	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
 	iopsCost := 0.0
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+	tx := r.db.Conn().Table(r.viewName).
 		Where("product_family = ?", "Provisioned IOPS").
 		Where("region_code = ?", dbStorage.RegionCode).
 		Where("deployment_option = ?", dbStorage.DeploymentOption).
@@ -264,7 +278,7 @@ func (r *RDSDBStorageRepoImpl) getAuroraGeneralPurposeTotalPrice(dbStorage model
 	millionIoPerMonth := math.Ceil(float64(*iops) * 30 * 24 * 60 * 60 / 1e6) // 30 days, 24 hours, 60 minutes, 60 seconds
 	iopsCost := 0.0
 
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+	tx := r.db.Conn().Table(r.viewName).
 		Where("product_family = ?", "System Operation").
 		Where("region_code = ?", dbStorage.RegionCode).
 		Where("'group' = ?", "Aurora I/O Operation").
@@ -296,7 +310,7 @@ func (r *RDSDBStorageRepoImpl) getAuroraIOOptimizedTotalPrice(dbStorage model.RD
 
 func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) ([]model.RDSDBStorage, error) {
 	var res []model.RDSDBStorage
-	tx := r.db.Conn().Model(&model.RDSDBStorage{}).
+	tx := r.db.Conn().Table(r.viewName).
 		Where("product_family = ?", "Database Storage").
 		Where("region_code = ?", region).
 		Where("max_volume_size_gb >= ? or max_volume_size = ''", volumeSize).
@@ -410,4 +424,104 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 	}
 
 	return res, cheapestVSize, cheapestIops, cheapestThroughput, nil
+}
+
+func (r *RDSDBStorageRepoImpl) CreateNewTable() (string, error) {
+	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
+	var ec2InstanceTypeTable string
+	for {
+		id, err := sf.NextID()
+		if err != nil {
+			return "", err
+		}
+
+		ec2InstanceTypeTable = fmt.Sprintf("%s_%s_%d",
+			r.viewName,
+			time.Now().Format("2006_01_02"),
+			id,
+		)
+		var c int32
+		tx := r.db.Conn().Raw(fmt.Sprintf(`
+		SELECT count(*)
+		FROM information_schema.tables
+		WHERE table_schema = current_schema
+		AND table_name = '%s';
+	`, ec2InstanceTypeTable)).First(&c)
+		if tx.Error != nil {
+			return "", err
+		}
+		if c == 0 {
+			break
+		}
+	}
+
+	err := r.db.Conn().Table(ec2InstanceTypeTable).AutoMigrate(&model.RDSDBStorage{})
+	if err != nil {
+		return "", err
+	}
+	return ec2InstanceTypeTable, nil
+}
+
+func (r *RDSDBStorageRepoImpl) MoveViewTransaction(tableName string) error {
+	tx := r.db.Conn().Begin()
+	var err error
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	dropViewQuery := fmt.Sprintf("DROP VIEW IF EXISTS rdsdb_storages")
+	tx = tx.Exec(dropViewQuery)
+	err = tx.Error
+	if err != nil {
+		return err
+	}
+
+	createViewQuery := fmt.Sprintf(`
+  CREATE OR REPLACE VIEW rdsdb_storages AS
+  SELECT *
+  FROM %s;
+`, tableName)
+
+	tx = tx.Exec(createViewQuery)
+	err = tx.Error
+	if err != nil {
+		return err
+	}
+
+	tx = tx.Commit()
+	err = tx.Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *RDSDBStorageRepoImpl) getOldTables(currentTableName string) ([]string, error) {
+	query := fmt.Sprintf(`
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = current_schema
+		AND table_name LIKE 'rdsdb_storages_%%' AND table_name <> '%s';
+	`, currentTableName)
+
+	var tableNames []string
+	tx := r.db.Conn().Raw(query).Find(&tableNames)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return tableNames, nil
+}
+
+func (r *RDSDBStorageRepoImpl) RemoveOldTables(currentTableName string) error {
+	tableNames, err := r.getOldTables(currentTableName)
+	if err != nil {
+		return err
+	}
+	for _, tn := range tableNames {
+		err = r.db.Conn().Migrator().DropTable(tn)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
