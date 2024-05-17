@@ -417,7 +417,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		}
 	}()
 	if req.Loading {
-		return c.JSON(http.StatusOK, entity.AwsRdsWastageResponse{})
+		return c.JSON(http.StatusOK, entity.AwsClusterWastageResponse{})
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
