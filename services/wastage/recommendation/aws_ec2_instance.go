@@ -244,7 +244,7 @@ func (s *Service) generateEc2InstanceDescription(instance entity.EC2Instance, re
 	minCPU, avgCPU, maxCPU := minOfDatapoints(metrics["CPUUtilization"]), averageOfDatapoints(metrics["CPUUtilization"]), maxOfDatapoints(metrics["CPUUtilization"])
 	minMemory, avgMemory, maxMemory := minOfDatapoints(metrics["mem_used_percent"]), averageOfDatapoints(metrics["mem_used_percent"]), maxOfDatapoints(metrics["mem_used_percent"])
 	networkDatapoints := sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
-	minNetwork, avgNetwork, maxNetwork := minOfDatapoints(networkDatapoints), averageOfDatapoints(networkDatapoints), maxOfDatapoints(networkDatapoints)
+	_, avgNetwork, _ := minOfDatapoints(networkDatapoints), averageOfDatapoints(networkDatapoints), maxOfDatapoints(networkDatapoints)
 
 	usage := fmt.Sprintf("- %s has %.0f vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %.0f vCPUs.\n", currentInstanceType.InstanceType, currentInstanceType.VCpu, PFloat(minCPU), PFloat(avgCPU), PFloat(maxCPU), neededCPU, rightSizedInstanceType.InstanceType, rightSizedInstanceType.VCpu)
 	if len(metrics["mem_used_percent"]) > 0 {
@@ -252,7 +252,7 @@ func (s *Service) generateEc2InstanceDescription(instance entity.EC2Instance, re
 	} else {
 		usage += fmt.Sprintf("- %s has %.1fGB Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %.1fGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGB, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGB)
 	}
-	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is min=%.2f MB/s, avg=%.2f MB/s, max=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, bpsToMBps(minNetwork), bpsToMBps(avgNetwork), bpsToMBps(maxNetwork), neededNetworkThroughput/(1024.0*1024.0), rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
+	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is avg=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, bpsToMBps(avgNetwork), neededNetworkThroughput/(1024.0*1024.0), rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
 
 	needs := ""
 	for k, v := range preferences {
