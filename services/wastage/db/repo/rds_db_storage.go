@@ -11,12 +11,12 @@ import (
 )
 
 type RDSDBStorageRepo interface {
-	Create(tx *gorm.DB, m *model.RDSDBStorage) error
+	Create(tableName string, tx *gorm.DB, m *model.RDSDBStorage) error
 	Get(id uint) (*model.RDSDBStorage, error)
 	Update(id uint, m model.RDSDBStorage) error
 	Delete(id uint) error
 	List() ([]model.RDSDBStorage, error)
-	Truncate(tx *gorm.DB) error
+	Truncate(tableName string, tx *gorm.DB) error
 	GetCheapestBySpecs(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) (*model.RDSDBStorage, int32, int32, float64, error)
 }
 
@@ -32,9 +32,9 @@ func NewRDSDBStorageRepo(logger *zap.Logger, db *connector.Database) RDSDBStorag
 	}
 }
 
-func (r *RDSDBStorageRepoImpl) Create(tx *gorm.DB, m *model.RDSDBStorage) error {
+func (r *RDSDBStorageRepoImpl) Create(tableName string, tx *gorm.DB, m *model.RDSDBStorage) error {
 	if tx == nil {
-		tx = r.db.Conn()
+		tx = r.db.Conn().Table(tableName)
 	}
 	return tx.Create(&m).Error
 }
@@ -68,9 +68,9 @@ func (r *RDSDBStorageRepoImpl) List() ([]model.RDSDBStorage, error) {
 	return ms, nil
 }
 
-func (r *RDSDBStorageRepoImpl) Truncate(tx *gorm.DB) error {
+func (r *RDSDBStorageRepoImpl) Truncate(tableName string, tx *gorm.DB) error {
 	if tx == nil {
-		tx = r.db.Conn()
+		tx = r.db.Conn().Table(tableName)
 	}
 	tx = tx.Unscoped().Where("1 = 1").Delete(&model.RDSDBStorage{})
 	if tx.Error != nil {

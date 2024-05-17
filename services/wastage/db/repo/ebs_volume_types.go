@@ -2,6 +2,7 @@ package repo
 
 import (
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -10,13 +11,15 @@ import (
 )
 
 type EBSVolumeTypeRepo interface {
-	Create(tx *gorm.DB, m *model.EBSVolumeType) error
+	Create(tableName string, tx *gorm.DB, m *model.EBSVolumeType) error
 	Get(id uint) (*model.EBSVolumeType, error)
-	Update(id uint, m model.EBSVolumeType) error
-	Delete(id uint) error
+	Update(tableName string, id uint, m model.EBSVolumeType) error
+	Delete(tableName string, id uint) error
 	List() ([]model.EBSVolumeType, error)
-	Truncate(tx *gorm.DB) error
+	Truncate(tableName string, tx *gorm.DB) error
 	GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, error)
+	MoveViewTransaction(tableName string) error
+	RemoveOldTables(tableName string) error
 }
 
 type EBSVolumeTypeRepoImpl struct {
@@ -29,16 +32,16 @@ func NewEBSVolumeTypeRepo(db *connector.Database) EBSVolumeTypeRepo {
 	}
 }
 
-func (r *EBSVolumeTypeRepoImpl) Create(tx *gorm.DB, m *model.EBSVolumeType) error {
+func (r *EBSVolumeTypeRepoImpl) Create(tableName string, tx *gorm.DB, m *model.EBSVolumeType) error {
 	if tx == nil {
-		tx = r.db.Conn()
+		tx = r.db.Conn().Table(tableName)
 	}
 	return tx.Create(&m).Error
 }
 
 func (r *EBSVolumeTypeRepoImpl) Get(id uint) (*model.EBSVolumeType, error) {
 	var m model.EBSVolumeType
-	tx := r.db.Conn().Model(&model.EBSVolumeType{}).Where("id=?", id).First(&m)
+	tx := r.db.Conn().Table("ebs_volume_types").Where("id=?", id).First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -48,26 +51,26 @@ func (r *EBSVolumeTypeRepoImpl) Get(id uint) (*model.EBSVolumeType, error) {
 	return &m, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) Update(id uint, m model.EBSVolumeType) error {
-	return r.db.Conn().Model(&model.EBSVolumeType{}).Where("id=?", id).Updates(&m).Error
+func (r *EBSVolumeTypeRepoImpl) Update(tableName string, id uint, m model.EBSVolumeType) error {
+	return r.db.Conn().Table(tableName).Where("id=?", id).Updates(&m).Error
 }
 
-func (r *EBSVolumeTypeRepoImpl) Delete(id uint) error {
-	return r.db.Conn().Unscoped().Delete(&model.EBSVolumeType{}, id).Error
+func (r *EBSVolumeTypeRepoImpl) Delete(tableName string, id uint) error {
+	return r.db.Conn().Unscoped().Table(tableName).Delete(&model.EBSVolumeType{}, id).Error
 }
 
 func (r *EBSVolumeTypeRepoImpl) List() ([]model.EBSVolumeType, error) {
 	var ms []model.EBSVolumeType
-	tx := r.db.Conn().Model(&model.EBSVolumeType{}).Find(&ms)
+	tx := r.db.Conn().Table("ebs_volume_types").Find(&ms)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return ms, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) Truncate(tx *gorm.DB) error {
+func (r *EBSVolumeTypeRepoImpl) Truncate(tableName string, tx *gorm.DB) error {
 	if tx == nil {
-		tx = r.db.Conn()
+		tx = r.db.Conn().Table(tableName)
 	}
 	tx = tx.Unscoped().Where("1 = 1").Delete(&model.EBSVolumeType{})
 	if tx.Error != nil {
@@ -78,7 +81,7 @@ func (r *EBSVolumeTypeRepoImpl) Truncate(tx *gorm.DB) error {
 
 func (r *EBSVolumeTypeRepoImpl) getDimensionCostsByRegionVolumeTypeAndChargeType(regionCode string, volumeType types.VolumeType, chargeType model.EBSVolumeChargeType) ([]model.EBSVolumeType, error) {
 	var m []model.EBSVolumeType
-	tx := r.db.Conn().Model(&model.EBSVolumeType{}).
+	tx := r.db.Conn().Table("ebs_volume_types").
 		Where("region_code = ?", regionCode).
 		Where("volume_type = ?", volumeType).
 		Where("charge_type = ?", chargeType).
@@ -258,7 +261,7 @@ func (r *EBSVolumeTypeRepoImpl) getStandardTotalPrice(region string, volumeSize 
 
 func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) ([]model.EBSVolumeType, error) {
 	var res []model.EBSVolumeType
-	tx := r.db.Conn().Model(&model.EBSVolumeType{}).Where("region_code = ?", region).
+	tx := r.db.Conn().Table("ebs_volume_types").Where("region_code = ?", region).
 		Where("max_iops >= ?", iops).
 		Where("max_throughput >= ?", throughput).
 		Where("max_size >= ?", volumeSize)
@@ -335,4 +338,72 @@ func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSi
 	}
 
 	return types.VolumeType(resVolumeType), resVolumeSize, resBaselineIOPS, resBaselineThroughput, nil
+}
+
+func (r *EBSVolumeTypeRepoImpl) MoveViewTransaction(tableName string) error {
+	tx := r.db.Conn().Begin()
+	var err error
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	dropViewQuery := fmt.Sprintf("DROP VIEW IF EXISTS ebs_volume_types")
+	tx = tx.Exec(dropViewQuery)
+	err = tx.Error
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	createViewQuery := fmt.Sprintf(`
+  CREATE OR REPLACE VIEW ebs_volume_types AS
+  SELECT *
+  FROM %s;
+`, tableName)
+
+	tx = tx.Exec(createViewQuery)
+	err = tx.Error
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	tx = tx.Commit()
+	err = tx.Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *EBSVolumeTypeRepoImpl) getOldTables(currentTableName string) ([]string, error) {
+	query := fmt.Sprintf(`
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = current_schema
+		AND table_name LIKE 'ebs_volume_types_%%' AND table_name <> '%s';
+	`, currentTableName)
+
+	var tableNames []string
+	tx := r.db.Conn().Raw(query).Find(&tableNames)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return tableNames, nil
+}
+
+func (r *EBSVolumeTypeRepoImpl) RemoveOldTables(currentTableName string) error {
+	tableNames, err := r.getOldTables(currentTableName)
+	if err != nil {
+		return err
+	}
+	for _, tn := range tableNames {
+		err = r.db.Conn().Migrator().DropTable(tn)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

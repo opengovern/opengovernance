@@ -13,7 +13,7 @@ type RDSDBInstanceRepo interface {
 	Update(id uint, m model.RDSDBInstance) error
 	Delete(id uint) error
 	List() ([]model.RDSDBInstance, error)
-	Truncate(tx *gorm.DB) error
+	Truncate(tableName string, tx *gorm.DB) error
 	ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
 	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
 }
@@ -64,9 +64,9 @@ func (r *RDSDBInstanceRepoImpl) List() ([]model.RDSDBInstance, error) {
 	return ms, nil
 }
 
-func (r *RDSDBInstanceRepoImpl) Truncate(tx *gorm.DB) error {
+func (r *RDSDBInstanceRepoImpl) Truncate(tableName string, tx *gorm.DB) error {
 	if tx == nil {
-		tx = r.db.Conn()
+		tx = r.db.Conn().Table(tableName)
 	}
 	tx = tx.Unscoped().Where("1 = 1").Delete(&model.RDSDBInstance{})
 	if tx.Error != nil {
