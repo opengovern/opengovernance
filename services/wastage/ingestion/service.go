@@ -145,14 +145,28 @@ func (s *Service) IngestEc2Instances(ctx context.Context) error {
 	//defer func() {
 	//	transaction.Rollback()
 	//}()
-	var err error
-	err = s.ingestEc2InstancesBase(ctx, nil)
+	ec2InstanceTypeTable, err := s.ec2InstanceRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "ec2_instance_type"),
+			zap.Error(err))
+		return err
+	}
+
+	ebsVolumeTypeTable, err := s.ebsVolumeTypeRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "ebs_volume_type"),
+			zap.Error(err))
+		return err
+	}
+	err = s.ingestEc2InstancesBase(ctx, ec2InstanceTypeTable, ebsVolumeTypeTable, nil)
 	if err != nil {
 		s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
 		return err
 	}
 
-	err = s.ingestEc2InstancesExtra(ctx, nil)
+	err = s.ingestEc2InstancesExtra(ctx, ec2InstanceTypeTable, nil)
 	if err != nil {
 		s.logger.Error("failed to ingest ec2 instances extra", zap.Error(err))
 		return err
@@ -169,7 +183,7 @@ func (s *Service) IngestEc2Instances(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) ingestEc2InstancesBase(ctx context.Context, transaction *gorm.DB) error {
+func (s *Service) ingestEc2InstancesBase(ctx context.Context, ec2InstanceTypeTable, ebsVolumeTypeTable string, transaction *gorm.DB) error {
 	url := "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/index.csv"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -191,15 +205,6 @@ func (s *Service) ingestEc2InstancesBase(ctx context.Context, transaction *gorm.
 		}
 	}
 
-	err = s.ec2InstanceRepo.Truncate(transaction)
-	if err != nil {
-		return err
-	}
-
-	err = s.ebsVolumeTypeRepo.Truncate(transaction)
-	if err != nil {
-		return err
-	}
 	// Read through each row in the CSV file and send a price.WithProduct on the results channel.
 	for {
 		row, err := csvr.Read()
@@ -226,9 +231,8 @@ func (s *Service) ingestEc2InstancesBase(ctx context.Context, transaction *gorm.
 			}
 
 			fmt.Println("Instance", v)
-			err = s.ec2InstanceRepo.Create(transaction, &v)
+			err = s.ec2InstanceRepo.Create(ec2InstanceTypeTable, transaction, &v)
 			if err != nil {
-
 				return err
 			}
 		case "Storage", "System Operation", "Provisioned Throughput":
@@ -242,16 +246,37 @@ func (s *Service) ingestEc2InstancesBase(ctx context.Context, transaction *gorm.
 				continue
 			}
 			fmt.Println("Volume", v)
-			err = s.ebsVolumeTypeRepo.Create(transaction, &v)
+			err = s.ebsVolumeTypeRepo.Create(ebsVolumeTypeTable, transaction, &v)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
+	err = s.ec2InstanceRepo.MoveViewTransaction(ec2InstanceTypeTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.ebsVolumeTypeRepo.MoveViewTransaction(ebsVolumeTypeTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.ec2InstanceRepo.RemoveOldTables(ec2InstanceTypeTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.ebsVolumeTypeRepo.RemoveOldTables(ebsVolumeTypeTable)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *Service) ingestEc2InstancesExtra(ctx context.Context, transaction *gorm.DB) error {
+func (s *Service) ingestEc2InstancesExtra(ctx context.Context, ec2InstanceTypeTable string, transaction *gorm.DB) error {
 	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
 		s.logger.Error("failed to load SDK config", zap.Error(err))
@@ -286,7 +311,7 @@ func (s *Service) ingestEc2InstancesExtra(ctx context.Context, transaction *gorm
 					continue
 				}
 				s.logger.Info("updating extras", zap.String("region", *region.RegionName), zap.String("instanceType", string(instanceType.InstanceType)), zap.Any("extras", extras))
-				err = s.ec2InstanceRepo.UpdateExtrasByRegionAndType(transaction, *region.RegionName, string(instanceType.InstanceType), extras)
+				err = s.ec2InstanceRepo.UpdateExtrasByRegionAndType(ec2InstanceTypeTable, transaction, *region.RegionName, string(instanceType.InstanceType), extras)
 				if err != nil {
 					s.logger.Error("failed to update extras", zap.Error(err), zap.String("region", *region.RegionName), zap.String("instanceType", string(instanceType.InstanceType)))
 					return err
@@ -310,7 +335,7 @@ func (s *Service) ingestEc2InstancesExtra(ctx context.Context, transaction *gorm
 				continue
 			}
 			s.logger.Info("updating extras", zap.String("region", "all"), zap.String("instanceType", string(instanceType.InstanceType)), zap.Any("extras", extras))
-			err = s.ec2InstanceRepo.UpdateNullExtrasByType(transaction, string(instanceType.InstanceType), extras)
+			err = s.ec2InstanceRepo.UpdateNullExtrasByType(ec2InstanceTypeTable, transaction, string(instanceType.InstanceType), extras)
 			if err != nil {
 				s.logger.Error("failed to update extras", zap.Error(err), zap.String("region", "all"), zap.String("instanceType", string(instanceType.InstanceType)))
 				return err
@@ -322,6 +347,28 @@ func (s *Service) ingestEc2InstancesExtra(ctx context.Context, transaction *gorm
 }
 
 func (s *Service) IngestRDS() error {
+	rdsInstancesTable, err := s.rdsInstanceRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "rdsdb_instances"),
+			zap.Error(err))
+		return err
+	}
+	rdsStorageTable, err := s.storageRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "rdsdb_storages"),
+			zap.Error(err))
+		return err
+	}
+	rdsProductsTable, err := s.rdsRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "rds_products"),
+			zap.Error(err))
+		return err
+	}
+
 	url := "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/index.csv"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -350,18 +397,6 @@ func (s *Service) IngestRDS() error {
 
 	var transaction *gorm.DB
 
-	err = s.rdsRepo.Truncate(transaction)
-	if err != nil {
-		return err
-	}
-	err = s.rdsInstanceRepo.Truncate(transaction)
-	if err != nil {
-		return err
-	}
-	err = s.storageRepo.Truncate(transaction)
-	if err != nil {
-		return err
-	}
 	// Read through each row in the CSV file and send a price.WithProduct on the results channel.
 	for {
 		row, err := csvr.Read()
@@ -383,7 +418,7 @@ func (s *Service) IngestRDS() error {
 
 			fmt.Println("RDSDBStorage", v)
 
-			err = s.storageRepo.Create(transaction, &v)
+			err = s.storageRepo.Create(rdsStorageTable, transaction, &v)
 			if err != nil {
 				return err
 			}
@@ -401,7 +436,7 @@ func (s *Service) IngestRDS() error {
 
 			fmt.Println("RDSDBInstance", v)
 
-			err = s.rdsInstanceRepo.Create(transaction, &v)
+			err = s.rdsInstanceRepo.Create(rdsInstancesTable, transaction, &v)
 			if err != nil {
 				return err
 			}
@@ -419,12 +454,43 @@ func (s *Service) IngestRDS() error {
 
 			fmt.Println("RDS", v)
 
-			err = s.rdsRepo.Create(transaction, &v)
+			err = s.rdsRepo.Create(rdsProductsTable, transaction, &v)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
+	err = s.rdsInstanceRepo.MoveViewTransaction(rdsInstancesTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.rdsRepo.MoveViewTransaction(rdsProductsTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.storageRepo.MoveViewTransaction(rdsStorageTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.rdsInstanceRepo.RemoveOldTables(rdsInstancesTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.rdsRepo.RemoveOldTables(rdsProductsTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.storageRepo.RemoveOldTables(rdsStorageTable)
+	if err != nil {
+		return err
+	}
+
 	//err = transaction.Commit().Error
 	//if err != nil {
 	//	return err

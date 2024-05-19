@@ -54,12 +54,8 @@ func Command() *cobra.Command {
 				logger.Error("failed to create citext extension", zap.Error(err))
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.EC2InstanceType{}, &model.EBSVolumeType{}, &model.DataAge{}, &model.Usage{},
-				&model.RDSDBInstance{}, &model.RDSDBStorage{}, &model.RDSProduct{})
-			if err != nil {
-				logger.Error("failed to auto migrate", zap.Error(err))
-				return err
-			}
+			err = db.Conn().AutoMigrate(&model.DataAge{}, &model.Usage{})
+
 			err = usageDb.Conn().AutoMigrate(&model.Usage{}, &model.UsageV2{})
 			if err != nil {
 				logger.Error("failed to auto migrate", zap.Error(err))
