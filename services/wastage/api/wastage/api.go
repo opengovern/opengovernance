@@ -433,9 +433,10 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 	var aggregatedMetrics map[string][]types.Datapoint
 	for _, instance := range req.Instances {
 		instance := instance
-		rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, instance, req.Metrics[instance.HashedInstanceId], req.Preferences, usageAverageType)
-		if err != nil {
+		rdsRightSizingRecom, err2 := s.recomSvc.AwsRdsRecommendation(req.Region, instance, req.Metrics[instance.HashedInstanceId], req.Preferences, usageAverageType)
+		if err2 != nil {
 			s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
+			err = err2
 			return err
 		}
 		resp.RightSizing[instance.HashedInstanceId] = *rdsRightSizingRecom
