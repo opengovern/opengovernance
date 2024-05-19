@@ -88,12 +88,12 @@ func (s *Service) EC2InstanceRecommendation(
 	if preferences["MemoryBreathingRoom"] != nil {
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
-	neededCPU := float64(vCPU) * (*cpuUsage.Avg + float64(cpuBreathingRoom)) / 100.0
+	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + float64(cpuBreathingRoom)) / 100.0
 	neededMemory := 0.0
 	if memoryUsage.Max != nil {
 		neededMemory = calculateHeadroom(currentInstanceType.MemoryGB*(*memoryUsage.Max), memoryBreathingRoom)
 	}
-	neededNetworkThroughput := *networkUsage.Avg
+	neededNetworkThroughput := getValueOrZero(networkUsage.Avg)
 	if preferences["NetworkBreathingRoom"] != nil {
 		room, _ := strconv.ParseInt(*preferences["NetworkBreathingRoom"], 10, 64)
 		neededNetworkThroughput += neededNetworkThroughput * float64(room) / 100.0
@@ -414,7 +414,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 	if v, ok := preferences["Size"]; ok {
 		if v == nil && volume.Size != nil {
 			neededSize = float64(*volume.Size)
-		} else {
+		} else if v != nil {
 			neededSize, _ = strconv.ParseFloat(*v, 64)
 		}
 	}
@@ -508,10 +508,10 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
 	}
 
-	if int32(neededSize) != *volume.Size {
+	if int32(neededSize) != getValueOrZero(volume.Size) {
 		result.Recommended.VolumeSize = utils.GetPointer(int32(neededSize))
 		newVolume.Size = utils.GetPointer(int32(neededSize))
-		result.Description += fmt.Sprintf("- change volume size from %d to %d\n", *volume.Size, int32(neededSize))
+		result.Description += fmt.Sprintf("- change volume size from %d to %d\n", getValueOrZero(volume.Size), int32(neededSize))
 	}
 
 	if newType == types.VolumeTypeIo1 || newType == types.VolumeTypeIo2 {

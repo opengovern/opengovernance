@@ -20,6 +20,13 @@ func funcP(a, b *float64, f func(aa, bb float64) float64) *float64 {
 	}
 }
 
+func getValueOrZero[T float64 | float32 | int | int64 | int32](v *T) T {
+	if v == nil {
+		return T(0)
+	}
+	return *v
+}
+
 func mergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Datapoint {
 	avg := func(aa, bb float64) float64 {
 		return (aa + bb) / 2.0
@@ -243,7 +250,7 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 	var minV, avgV, maxV *float64
 	switch avgType {
 	case UsageAverageTypeAverage:
-		minV, avgV, maxV = minOfDatapoints(dps), averageOfDatapoints(dps), maxOfAverageOfDatapoints(dps)
+		minV, avgV, maxV = minOfAverageOfDatapoints(dps), averageOfDatapoints(dps), maxOfAverageOfDatapoints(dps)
 	case UsageAverageTypeMax:
 		minV, avgV, maxV = minOfAverageOfDatapoints(dps), maxOfAverageOfDatapoints(dps), maxOfDatapoints(dps)
 	}
