@@ -144,7 +144,13 @@ func (s *Service) AwsRdsRecommendation(
 		}
 		neededVCPU = calculateHeadroom(neededVCPU, vPercent)
 	}
-	neededMemoryGb := currentInstanceRow.MemoryGb - (*usageFreeMemoryBytes.Avg / (1024 * 1024 * 1024))
+	usageFreeMemoryBytesMin := 0.0
+	if usageFreeMemoryBytes.Min != nil {
+		usageFreeMemoryBytesMin = *usageFreeMemoryBytes.Min
+	} else if usageFreeMemoryBytes.Avg != nil {
+		usageFreeMemoryBytesMin = *usageFreeMemoryBytes.Avg
+	}
+	neededMemoryGb := currentInstanceRow.MemoryGb - (usageFreeMemoryBytesMin / (1024 * 1024 * 1024))
 	if v, ok := preferences["MemoryBreathingRoom"]; ok {
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {

@@ -166,6 +166,27 @@ func maxOfAverageOfDatapoints(datapoints []types.Datapoint) *float64 {
 	return &maxOfAvgs
 }
 
+func minOfAverageOfDatapoints(datapoints []types.Datapoint) *float64 {
+	if len(datapoints) == 0 {
+		return nil
+	}
+
+	hasNonNil := false
+	maxOfAvgs := float64(0)
+	for _, dp := range datapoints {
+		dp := dp
+		if dp.Average == nil {
+			continue
+		}
+		hasNonNil = true
+		maxOfAvgs = min(maxOfAvgs, *dp.Average)
+	}
+	if !hasNonNil {
+		return nil
+	}
+	return &maxOfAvgs
+}
+
 func minOfDatapoints(datapoints []types.Datapoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
@@ -221,7 +242,7 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 	case UsageAverageTypeAverage:
 		minV, avgV, maxV = minOfDatapoints(dps), averageOfDatapoints(dps), maxOfAverageOfDatapoints(dps)
 	case UsageAverageTypeMax:
-		minV, avgV, maxV = minOfDatapoints(dps), maxOfAverageOfDatapoints(dps), maxOfDatapoints(dps)
+		minV, avgV, maxV = minOfAverageOfDatapoints(dps), maxOfAverageOfDatapoints(dps), maxOfDatapoints(dps)
 	}
 
 	var lastDP *types.Datapoint
