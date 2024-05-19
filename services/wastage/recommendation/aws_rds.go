@@ -484,10 +484,53 @@ func (s *Service) generateRdsInstanceComputeDescription(rdsInstance entity.AwsRd
 	usageFreeMemoryBytes := extractUsage(metrics["FreeableMemory"], usageAverageType)
 	usageNetworkThroughputBytes := extractUsage(sumMergeDatapoints(metrics["NetworkReceiveThroughput"], metrics["NetworkTransmitThroughput"]), usageAverageType)
 
-	usage := fmt.Sprintf("- %s has %.1f vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f vCPUs. %s has %d vCPUs.\n", currentInstanceType.InstanceType, currentInstanceType.VCpu, getValueOrZero(usageCpuPercent.Min), getValueOrZero(usageCpuPercent.Avg), getValueOrZero(usageCpuPercent.Max), neededCPU, rightSizedInstanceType.InstanceType, int32(rightSizedInstanceType.VCpu))
-	usage += fmt.Sprintf("- %s has %.1fGB Memory. Free Memory over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %.1fGB Memory. %s has %.1fGB Memory.\n", currentInstanceType.InstanceType, currentInstanceType.MemoryGb, getValueOrZero(usageFreeMemoryBytes.Min)/(1024.0*1024.0*1024.0), getValueOrZero(usageFreeMemoryBytes.Avg)/(1024.0*1024.0*1024.0), getValueOrZero(usageFreeMemoryBytes.Max)/(1024.0*1024.0*1024.0), neededMemory, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGb)
+	usage := fmt.Sprintf("- %s has %.1f vCPUs. Usage over the course of last week is ", currentInstanceType.InstanceType, currentInstanceType.VCpu)
+	if usageCpuPercent.Min == nil && usageCpuPercent.Avg == nil && usageCpuPercent.Max == nil {
+		usage += "not available."
+	} else {
+		if usageCpuPercent.Min != nil {
+			usage += fmt.Sprintf("min=%.2f%%, ", *usageCpuPercent.Min)
+		}
+		if usageCpuPercent.Avg != nil {
+			usage += fmt.Sprintf("avg=%.2f%%, ", *usageCpuPercent.Avg)
+		}
+		if usageCpuPercent.Max != nil {
+			usage += fmt.Sprintf("max=%.2f%%, ", *usageCpuPercent.Max)
+		}
+		usage += fmt.Sprintf("so you only need %.1f vCPUs. %s has %d vCPUs.\n", neededCPU, rightSizedInstanceType.InstanceType, int32(rightSizedInstanceType.VCpu))
+	}
 
-	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is avg=%.2f MB/s, so you only need %.2f MB/s. %s has %s.\n", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance, getValueOrZero(usageNetworkThroughputBytes.Avg)/(1024*1024), neededNetworkThroughput/(1024.0*1024.0), rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
+	usage += fmt.Sprintf("- %s has %.1fGB Memory. Free Memory over the course of last week is ", currentInstanceType.InstanceType, currentInstanceType.MemoryGb)
+	if usageFreeMemoryBytes.Min == nil && usageFreeMemoryBytes.Avg == nil && usageFreeMemoryBytes.Max == nil {
+		usage += "not available."
+	} else {
+		if usageFreeMemoryBytes.Min != nil {
+			usage += fmt.Sprintf("min=%.2fGB, ", *usageFreeMemoryBytes.Min/(1024.0*1024.0*1024.0))
+		}
+		if usageFreeMemoryBytes.Avg != nil {
+			usage += fmt.Sprintf("avg=%.2fGB, ", *usageFreeMemoryBytes.Avg/(1024.0*1024.0*1024.0))
+		}
+		if usageFreeMemoryBytes.Max != nil {
+			usage += fmt.Sprintf("max=%.2fGB, ", *usageFreeMemoryBytes.Max/(1024.0*1024.0*1024.0))
+		}
+		usage += fmt.Sprintf("so you only need %.1fGB Memory. %s has %.1fGB Memory.\n", neededMemory, rightSizedInstanceType.InstanceType, rightSizedInstanceType.MemoryGb)
+	}
+
+	usage += fmt.Sprintf("- %s's network performance is %s. Throughput over the course of last week is ", currentInstanceType.InstanceType, currentInstanceType.NetworkPerformance)
+	if usageNetworkThroughputBytes.Min == nil && usageNetworkThroughputBytes.Avg == nil && usageNetworkThroughputBytes.Max == nil {
+		usage += "not available."
+	} else {
+		if usageNetworkThroughputBytes.Min != nil {
+			usage += fmt.Sprintf("min=%.2fMB, ", *usageNetworkThroughputBytes.Min/(1024*1024))
+		}
+		if usageNetworkThroughputBytes.Avg != nil {
+			usage += fmt.Sprintf("avg=%.2fMB, ", *usageNetworkThroughputBytes.Avg/(1024*1024))
+		}
+		if usageNetworkThroughputBytes.Max != nil {
+			usage += fmt.Sprintf("max=%.2fMB, ", *usageNetworkThroughputBytes.Max/(1024*1024))
+		}
+		usage += fmt.Sprintf("so you only need %.2fMB Throughput. %s has %s Throughput.\n", neededNetworkThroughput/(1024.0*1024.0), rightSizedInstanceType.InstanceType, rightSizedInstanceType.NetworkPerformance)
+	}
 
 	needs := ""
 	for k, v := range preferences {
@@ -559,23 +602,63 @@ func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRd
 	var usage string
 	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
 		if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
-			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, getValueOrZero(currStorageSize), getValueOrZero(usageVolumeBytesUsed.Avg)/(1024*1024*1024), getValueOrZero(usageVolumeBytesUsed.Max)/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is ", currStorageType, *currStorageSize)
+			if usageFreeStorageBytes.Max != nil {
+				usage += fmt.Sprintf("min=%.2fGB, ", float64(*currStorageSize)-*usageFreeStorageBytes.Max/(1024*1024*1024))
+			}
+			if usageFreeStorageBytes.Avg != nil {
+				usage += fmt.Sprintf("avg=%.2fGB, ", float64(*currStorageSize)-*usageFreeStorageBytes.Avg/(1024*1024*1024))
+			}
+			if usageFreeStorageBytes.Min != nil {
+				usage += fmt.Sprintf("max=%.2fGB, ", float64(*currStorageSize)-*usageFreeStorageBytes.Min/(1024*1024*1024))
+			}
+			usage += fmt.Sprintf("so you only need %dGB Storage. %s has %dGB Storage.\n", neededStorageSize, recStorageType, recStorageSize)
 		}
 	} else {
 		if currStorageSize != nil && recStorageSize != nil && *currStorageSize != 0 && *recStorageSize != 0 {
-			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is min=%.2fGB, avg=%.2fGB, max=%.2fGB, so you only need %dGB Storage. %s has %dGB Storage.\n", currStorageType, getValueOrZero(currStorageSize), float64(getValueOrZero(currStorageSize))-getValueOrZero(usageFreeStorageBytes.Max)/(1024*1024*1024), float64(getValueOrZero(currStorageSize))-getValueOrZero(usageFreeStorageBytes.Avg)/(1024*1024*1024), float64(getValueOrZero(currStorageSize))-getValueOrZero(usageFreeStorageBytes.Min)/(1024*1024*1024), neededStorageSize, recStorageType, recStorageSize)
+			usage += fmt.Sprintf("- %s has %dGB Storage. Usage over the course of last week is ", currStorageType, *currStorageSize)
+			if usageVolumeBytesUsed.Min != nil {
+				usage += fmt.Sprintf("min=%.2fGB, ", *usageVolumeBytesUsed.Min/(1024*1024*1024))
+			}
+			if usageVolumeBytesUsed.Avg != nil {
+				usage += fmt.Sprintf("avg=%.2fGB, ", *usageVolumeBytesUsed.Avg/(1024*1024*1024))
+			}
+			if usageVolumeBytesUsed.Max != nil {
+				usage += fmt.Sprintf("max=%.2fGB, ", *usageVolumeBytesUsed.Max/(1024*1024*1024))
+			}
+			usage += fmt.Sprintf("so you only need %dGB Storage. %s has %dGB Storage.\n", neededStorageSize, recStorageType, recStorageSize)
 		}
 	}
 	if currStorageIops != nil && recStorageIops != nil && *currStorageIops != 0 && *recStorageIops != 0 {
 		if getValueOrZero(usageStorageIops.Min) == 0 && getValueOrZero(usageStorageIops.Avg) == 0 && getValueOrZero(usageStorageIops.Max) == 0 {
-			usage += fmt.Sprintf("- %s has %d IOPS. Usage over the course of last week is min=%.2f io/s, avg=%.2f io/s, max=%.2f io/s, so you only need %d io/s. %s has %d IOPS.\n", currStorageType, getValueOrZero(currStorageIops), getValueOrZero(usageStorageIops.Min), getValueOrZero(usageStorageIops.Avg), getValueOrZero(usageStorageIops.Max), neededStorageIops, recStorageType, recStorageIops)
+			usage += fmt.Sprintf("- %s has %d IOPS. Usage over the course of last week is ", currStorageType, getValueOrZero(currStorageIops))
+			if usageStorageIops.Min != nil {
+				usage += fmt.Sprintf("min=%.2f, ", *usageStorageIops.Min)
+			}
+			if usageStorageIops.Avg != nil {
+				usage += fmt.Sprintf("avg=%.2f, ", *usageStorageIops.Avg)
+			}
+			if usageStorageIops.Max != nil {
+				usage += fmt.Sprintf("max=%.2f, ", *usageStorageIops.Max)
+			}
+			usage += fmt.Sprintf("so you only need %d io/s. %s has %d IOPS.\n", neededStorageIops, recStorageType, recStorageIops)
 		} else {
 			usage += fmt.Sprintf("- %s has %d IOPS. Usage data is not available. you need %d io/s. %s has %d IOPS.\n", currStorageType, getValueOrZero(currStorageIops), neededStorageIops, recStorageType, recStorageIops)
 		}
 	}
 	if currStorageThroughput != nil && recStorageThroughput != nil && *currStorageThroughput != 0 && *recStorageThroughput != 0 {
 		if getValueOrZero(usageStorageThroughputMB.Min) == 0 && getValueOrZero(usageStorageThroughputMB.Avg) == 0 && getValueOrZero(usageStorageThroughputMB.Max) == 0 {
-			usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage over the course of last week is min=%.2fMB, avg=%.2fMB, max=%.2fMB, so you only need %.2f MB. %s has %.2fMB Throughput.\n", currStorageType, *currStorageThroughput, getValueOrZero(usageStorageThroughputMB.Min), getValueOrZero(usageStorageThroughputMB.Avg), getValueOrZero(usageStorageThroughputMB.Max), neededStorageThroughputMB, recStorageType, getValueOrZero(recStorageThroughput))
+			usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage over the course of last week is ", currStorageType, *currStorageThroughput)
+			if usageStorageThroughputMB.Min != nil {
+				usage += fmt.Sprintf("min=%.2fMB, ", *usageStorageThroughputMB.Min)
+			}
+			if usageStorageThroughputMB.Avg != nil {
+				usage += fmt.Sprintf("avg=%.2fMB, ", *usageStorageThroughputMB.Avg)
+			}
+			if usageStorageThroughputMB.Max != nil {
+				usage += fmt.Sprintf("max=%.2fMB, ", *usageStorageThroughputMB.Max)
+			}
+			usage += fmt.Sprintf("so you only need %.2f MB. %s has %.2fMB Throughput.\n", neededStorageThroughputMB, recStorageType, recStorageThroughput)
 		} else {
 			usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage data is not available. you only need %.2f MB. %s has %.2fMB Throughput.\n", currStorageType, getValueOrZero(currStorageThroughput), neededStorageThroughputMB, recStorageType, getValueOrZero(recStorageThroughput))
 		}
