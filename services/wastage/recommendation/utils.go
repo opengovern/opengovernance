@@ -172,19 +172,22 @@ func minOfAverageOfDatapoints(datapoints []types.Datapoint) *float64 {
 	}
 
 	hasNonNil := false
-	maxOfAvgs := float64(0)
+	minOfAverages := float64(0)
 	for _, dp := range datapoints {
 		dp := dp
 		if dp.Average == nil {
 			continue
 		}
+		if !hasNonNil {
+			minOfAverages = *dp.Average
+		}
 		hasNonNil = true
-		maxOfAvgs = min(maxOfAvgs, *dp.Average)
+		minOfAverages = min(minOfAverages, *dp.Average)
 	}
 	if !hasNonNil {
 		return nil
 	}
-	return &maxOfAvgs
+	return &minOfAverages
 }
 
 func minOfDatapoints(datapoints []types.Datapoint) *float64 {
