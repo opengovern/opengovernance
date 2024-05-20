@@ -488,6 +488,8 @@ func (s API) TriggerIngest(c echo.Context) error {
 
 	service := c.Param("service")
 
+	s.logger.Info(fmt.Sprintf("Ingester is going to be triggered for %s", service))
+
 	switch service {
 	case "aws-ec2-instance":
 		err := s.ingestionSvc.DataAgeRepo.Delete("AWS::EC2::Instance")
@@ -503,7 +505,11 @@ func (s API) TriggerIngest(c echo.Context) error {
 			return err
 		}
 		s.logger.Info("deleted data age for AWS::RDS::Instance ingestion will be triggered soon")
+	default:
+		s.logger.Error(fmt.Sprintf("Service %s not supported", service))
 	}
+
+	s.logger.Info(fmt.Sprintf("Ingester triggered for %s", service))
 
 	return c.NoContent(http.StatusOK)
 }

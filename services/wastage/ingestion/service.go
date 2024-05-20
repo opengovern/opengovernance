@@ -46,6 +46,7 @@ func New(logger *zap.Logger, db *connector.Database, ec2InstanceRepo repo.EC2Ins
 }
 
 func (s *Service) Start(ctx context.Context) {
+	s.logger.Info("Ingestion service started")
 	defer func() {
 		if r := recover(); r != nil {
 			s.logger.Error("paniced", zap.Error(fmt.Errorf("%v", r)))
@@ -79,6 +80,7 @@ func (s *Service) Start(ctx context.Context) {
 		}
 
 		if ec2InstanceData == nil || ec2InstanceData.UpdatedAt.Before(time.Now().Add(-365*24*time.Hour)) {
+			s.logger.Info("ec2 instance ingest started")
 			err = s.IngestEc2Instances(ctx)
 			if err != nil {
 				s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
@@ -109,6 +111,7 @@ func (s *Service) Start(ctx context.Context) {
 		}
 
 		if rdsData == nil || rdsData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
+			s.logger.Info("rds ingest started")
 			err = s.IngestRDS()
 			if err != nil {
 				s.logger.Error("failed to ingest rds", zap.Error(err))
@@ -136,6 +139,8 @@ func (s *Service) Start(ctx context.Context) {
 					continue
 				}
 			}
+		} else {
+			s.logger.Info("rds ingest not started: ", zap.Any("usage", rdsData))
 		}
 	}
 }
