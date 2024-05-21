@@ -447,7 +447,12 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 			aggregatedMetrics = req.Metrics[instance.HashedInstanceId]
 		} else {
 			for key, value := range req.Metrics[instance.HashedInstanceId] {
-				aggregatedMetrics[key] = recommendation.MergeDatapoints(aggregatedMetrics[key], value, func(aa, bb float64) float64 { return math.Max(aa, bb) })
+				switch key {
+				case "FreeableMemory", "FreeStorageSpace":
+					aggregatedMetrics[key] = recommendation.MergeDatapoints(aggregatedMetrics[key], value, func(aa, bb float64) float64 { return math.Min(aa, bb) })
+				default:
+					aggregatedMetrics[key] = recommendation.MergeDatapoints(aggregatedMetrics[key], value, func(aa, bb float64) float64 { return math.Max(aa, bb) })
+				}
 			}
 		}
 	}
