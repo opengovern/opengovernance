@@ -17,7 +17,7 @@ type RDSDBInstanceRepo interface {
 	Delete(id uint) error
 	List() ([]model.RDSDBInstance, error)
 	Truncate(tx *gorm.DB) error
-	UpdateNilEBSThroughput(tx *gorm.DB) error
+	UpdateNilEBSThroughput(tx *gorm.DB, tableName string) error
 	ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
 	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
 	MoveViewTransaction(tableName string) error
