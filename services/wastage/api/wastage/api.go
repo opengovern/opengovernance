@@ -53,7 +53,7 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionServi
 func (s API) Register(e *echo.Echo) {
 	g := e.Group("/api/v1/wastage")
 	g.POST("/configuration", s.Configuration)
-	g.POST("/ec2-instance", s.EC2Instance)
+	g.POST("/ec2-instance", httpserver.AuthorizeHandler(s.EC2Instance, api.ViewerRole))
 	g.POST("/aws-rds", httpserver.AuthorizeHandler(s.AwsRDS, api.ViewerRole))
 	g.POST("/aws-rds-cluster", httpserver.AuthorizeHandler(s.AwsRDSCluster, api.ViewerRole))
 	i := e.Group("/api/v1/wastage-ingestion")
