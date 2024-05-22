@@ -11,12 +11,16 @@ type RDSDBInstance struct {
 
 	// Basic fields
 
-	VCpu              float64  `gorm:"index"`
-	MemoryGb          float64  `gorm:"index"`
-	NetworkThroughput *float64 `gorm:"index"` // In bytes/s
-	DatabaseEngine    string   `gorm:"index;type:citext"`
-	DatabaseEdition   string   `gorm:"index;type:citext"`
-	DeploymentOption  string   `gorm:"index"`
+	VCpu                        float64  `gorm:"index"`
+	MemoryGb                    float64  `gorm:"index"`
+	NetworkThroughput           *float64 `gorm:"index"` // In bytes/s
+	DedicatedEBSThroughputBytes *float64 `gorm:"index"` // In bytes/s
+	DedicatedEBSThroughput      string   `gorm:"index"`
+	DatabaseEngine              string   `gorm:"index;type:citext"`
+	DatabaseEdition             string   `gorm:"index;type:citext"`
+	DeploymentOption            string   `gorm:"index"`
+	ProductFamily               string   `gorm:"index"`
+	InstanceType                string   `gorm:"index;type:citext"`
 
 	PricePerUnit float64 `gorm:"index:price_idx,sort:asc"`
 
@@ -31,11 +35,9 @@ type RDSDBInstance struct {
 	Unit                        string
 	PricePerUnitStr             string
 	Currency                    string
-	ProductFamily               string
 	serviceCode                 string
 	Location                    string
 	LocationType                string
-	InstanceType                string
 	CurrentGeneration           string
 	InstanceFamily              string
 	PhysicalProcessor           string
@@ -48,7 +50,6 @@ type RDSDBInstance struct {
 	LicenseModel                string
 	UsageType                   string
 	Operation                   string
-	DedicatedEBSThroughput      string
 	DeploymentModel             string
 	EngineMediaType             string
 	EnhancedNetworkingSupported string
@@ -151,6 +152,18 @@ func (p *RDSDBInstance) PopulateFromMap(columns map[string]int, row []string) {
 			p.Operation = row[index]
 		case "Dedicated EBS Throughput":
 			p.DedicatedEBSThroughput = row[index]
+			for _, part := range strings.Split(row[index], " ") {
+				i, err := strconv.ParseFloat(part, 64)
+				// convert from Mbps to bytes/s
+				i = i * (1024 * 1024) / 8
+				if err == nil {
+					if p.DedicatedEBSThroughputBytes == nil {
+						p.DedicatedEBSThroughputBytes = &i
+					} else {
+						*p.DedicatedEBSThroughputBytes = max(*p.DedicatedEBSThroughputBytes, i)
+					}
+				}
+			}
 		case "Deployment Model":
 			p.DeploymentModel = row[index]
 		case "Engine Media Type":

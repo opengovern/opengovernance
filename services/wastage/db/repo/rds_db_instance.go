@@ -17,6 +17,7 @@ type RDSDBInstanceRepo interface {
 	Delete(id uint) error
 	List() ([]model.RDSDBInstance, error)
 	Truncate(tx *gorm.DB) error
+	UpdateNilEBSThroughput(tx *gorm.DB) error
 	ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
 	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
 	MoveViewTransaction(tableName string) error
@@ -121,6 +122,34 @@ func (r *RDSDBInstanceRepoImpl) GetCheapestByPref(pref map[string]any) (*model.R
 		return nil, tx.Error
 	}
 	return &m, nil
+}
+
+func (r *RDSDBInstanceRepoImpl) UpdateNilEBSThroughput(tx *gorm.DB) error {
+	if tx == nil {
+		tx = r.db.Conn()
+	}
+	tx.Raw(fmt.Sprintf(`
+		UPDATE %[1]s AS base
+		SET dedicated_ebs_throughput_bytes = (
+		    SELECT dedicated_ebs_throughput_bytes
+		    FROM %[1]s AS derived
+		    WHERE base.instance_type = derived.instance_type AND
+		    	derived.dedicated_ebs_throughput_bytes IS NOT NULL AND
+		        derived.product_family = 'Database Instance'
+		    LIMIT 1
+		), dedicated_ebs_throughput = (
+		    SELECT dedicated_ebs_throughput
+		    FROM %[1]s AS derived
+		    WHERE base.instance_type = derived.instance_type AND
+		    	derived.dedicated_ebs_throughput_bytes IS NOT NULL AND
+		        derived.product_family = 'Database Instance'
+		    LIMIT 1
+		)
+		WHERE dedicated_ebs_throughput_bytes IS NULL AND
+		    base.product_family = 'Database Instance'
+	`, r.viewName))
+
+	return nil
 }
 
 func (r *RDSDBInstanceRepoImpl) CreateNewTable() (string, error) {
