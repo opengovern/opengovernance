@@ -124,7 +124,7 @@ func (r *RDSDBInstanceRepoImpl) GetCheapestByPref(pref map[string]any) (*model.R
 	return &m, nil
 }
 
-func (r *RDSDBInstanceRepoImpl) UpdateNilEBSThroughput(tx *gorm.DB) error {
+func (r *RDSDBInstanceRepoImpl) UpdateNilEBSThroughput(tx *gorm.DB, tableName string) error {
 	if tx == nil {
 		tx = r.db.Conn()
 	}
@@ -147,7 +147,7 @@ func (r *RDSDBInstanceRepoImpl) UpdateNilEBSThroughput(tx *gorm.DB) error {
 		)
 		WHERE dedicated_ebs_throughput_bytes IS NULL AND
 		    base.product_family = 'Database Instance'
-	`, r.viewName))
+	`, tableName))
 
 	return nil
 }
