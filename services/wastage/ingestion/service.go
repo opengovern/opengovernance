@@ -63,7 +63,6 @@ func (s *Service) Start(ctx context.Context) {
 		dataAge, err := s.DataAgeRepo.List()
 		if err != nil {
 			s.logger.Error("failed to list data age", zap.Error(err))
-			time.Sleep(5 * time.Minute)
 			continue
 		}
 
@@ -84,7 +83,6 @@ func (s *Service) Start(ctx context.Context) {
 			err = s.IngestEc2Instances(ctx)
 			if err != nil {
 				s.logger.Error("failed to ingest ec2 instances", zap.Error(err))
-				time.Sleep(5 * time.Minute)
 				continue
 			}
 			if ec2InstanceData == nil {
@@ -94,7 +92,6 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to create data age", zap.Error(err))
-					time.Sleep(5 * time.Minute)
 					continue
 				}
 			} else {
@@ -104,10 +101,11 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to update data age", zap.Error(err))
-					time.Sleep(5 * time.Minute)
 					continue
 				}
 			}
+		} else {
+			s.logger.Info("ec2 instance ingest not started: ", zap.Any("usage", ec2InstanceData))
 		}
 
 		if rdsData == nil || rdsData.UpdatedAt.Before(time.Now().Add(-7*24*time.Hour)) {
@@ -115,7 +113,6 @@ func (s *Service) Start(ctx context.Context) {
 			err = s.IngestRDS()
 			if err != nil {
 				s.logger.Error("failed to ingest rds", zap.Error(err))
-				time.Sleep(5 * time.Minute)
 				continue
 			}
 			if rdsData == nil {
@@ -125,7 +122,6 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to create rds data age", zap.Error(err))
-					time.Sleep(5 * time.Minute)
 					continue
 				}
 			} else {
@@ -135,7 +131,6 @@ func (s *Service) Start(ctx context.Context) {
 				})
 				if err != nil {
 					s.logger.Error("failed to update rds data age", zap.Error(err))
-					time.Sleep(5 * time.Minute)
 					continue
 				}
 			}
