@@ -49,13 +49,13 @@ func (s *Service) Start(ctx context.Context) {
 	s.logger.Info("Ingestion service started")
 	defer func() {
 		if r := recover(); r != nil {
-			s.logger.Error("paniced", zap.Error(fmt.Errorf("%v", r)))
+			s.logger.Error("ingestion paniced", zap.Error(fmt.Errorf("%v", r)))
 			time.Sleep(15 * time.Minute)
 			go s.Start(ctx)
 		}
 	}()
 
-	ticker := time.NewTimer(2 * time.Minute)
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
