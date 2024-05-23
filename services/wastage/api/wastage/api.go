@@ -182,6 +182,28 @@ func (s API) EC2Instance(c echo.Context) error {
 		usageAverageType = recommendation.UsageAverageTypeAverage
 	}
 
+	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	if err != nil {
+		s.logger.Error("failed to check profile limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = fmt.Errorf("reached the profile limit for both user and organization")
+		s.logger.Error(err.Error())
+		return err
+	}
+
+	ok, err = checkEC2InstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = fmt.Errorf("reached the ec2 instance limit for both user and organization")
+		s.logger.Error(err.Error())
+		return err
+	}
+
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
@@ -190,6 +212,16 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
+		ok, err := checkEBSVolumeLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+		if err != nil {
+			s.logger.Error("failed to check aws ebs volume limit", zap.Error(err))
+			return err
+		}
+		if !ok {
+			err = fmt.Errorf("reached the ebs volume limit for both user and organization")
+			s.logger.Error(err.Error())
+			return err
+		}
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
@@ -301,6 +333,28 @@ func (s API) AwsRDS(c echo.Context) error {
 	usageAverageType := recommendation.UsageAverageTypeMax
 	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
 		usageAverageType = recommendation.UsageAverageTypeAverage
+	}
+
+	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	if err != nil {
+		s.logger.Error("failed to check profile limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = fmt.Errorf("reached the profile limit for both user and organization")
+		s.logger.Error(err.Error())
+		return err
+	}
+
+	ok, err = checkRDSInstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws rds instance limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = fmt.Errorf("reached the rds instance limit for both user and organization")
+		s.logger.Error(err.Error())
+		return err
 	}
 
 	rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
@@ -430,6 +484,28 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 
 	resp = entity.AwsClusterWastageResponse{
 		RightSizing: make(map[string]entity.AwsRdsRightsizingRecommendation),
+	}
+
+	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	if err != nil {
+		s.logger.Error("failed to check profile limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = fmt.Errorf("reached the profile limit for both user and organization")
+		s.logger.Error(err.Error())
+		return err
+	}
+
+	ok, err = checkRDSClusterLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws rds cluster limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = fmt.Errorf("reached the rds cluster limit for both user and organization")
+		s.logger.Error(err.Error())
+		return err
 	}
 
 	var aggregatedInstance *entity.AwsRds
