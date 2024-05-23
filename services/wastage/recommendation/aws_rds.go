@@ -96,6 +96,15 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	currentInstanceRow := currentInstanceTypeList[0]
 
+	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
+		rdsInstance.StorageSize = utils.GetPointer(int32(math.Ceil(getValueOrZero(usageVolumeBytesUsed.Avg) / (1024 * 1024 * 1024))))
+		if usageVolumeBytesUsed.Last.Maximum != nil {
+			rdsInstance.StorageSize = utils.GetPointer(int32(math.Ceil(getValueOrZero(usageVolumeBytesUsed.Last.Maximum) / (1024 * 1024 * 1024))))
+		}
+		rdsInstance.StorageIops = nil
+		rdsInstance.StorageThroughput = nil
+	}
+
 	currentComputeCost, err := s.costSvc.GetRDSComputeCost(region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds compute cost", zap.Error(err))
@@ -125,14 +134,6 @@ func (s *Service) AwsRdsRecommendation(
 		Cost:        currentComputeCost + currentStorageCost,
 		ComputeCost: currentComputeCost,
 		StorageCost: currentStorageCost,
-	}
-	if strings.Contains(strings.ToLower(rdsInstance.Engine), "aurora") {
-		current.StorageSize = utils.GetPointer(int32(math.Ceil(getValueOrZero(usageVolumeBytesUsed.Avg) / (1024 * 1024 * 1024))))
-		if usageVolumeBytesUsed.Last.Maximum != nil {
-			current.StorageSize = utils.GetPointer(int32(math.Ceil(getValueOrZero(usageVolumeBytesUsed.Last.Maximum) / (1024 * 1024 * 1024))))
-		}
-		current.StorageIops = nil
-		current.StorageThroughput = nil
 	}
 
 	neededVCPU := (getValueOrZero(usageCpuPercent.Avg) / 100.0) * currentInstanceRow.VCpu

@@ -99,9 +99,10 @@ func (s API) EC2Instance(c echo.Context) error {
 	var err error
 
 	stats := model.Statistics{
-		AccountID:  req.Identification["account"],
-		OrgEmail:   req.Identification["org_m_email"],
-		ResourceID: req.Instance.HashedInstanceId,
+		AccountID:   req.Identification["account"],
+		OrgEmail:    req.Identification["org_m_email"],
+		ResourceID:  req.Instance.HashedInstanceId,
+		Auth0UserId: httpserver.GetUserID(c),
 	}
 	statsOut, _ := json.Marshal(stats)
 
@@ -241,9 +242,10 @@ func (s API) AwsRDS(c echo.Context) error {
 	var err error
 
 	stats := model.Statistics{
-		AccountID:  req.Identification["account"],
-		OrgEmail:   req.Identification["org_m_email"],
-		ResourceID: req.Instance.HashedInstanceId,
+		AccountID:   req.Identification["account"],
+		OrgEmail:    req.Identification["org_m_email"],
+		ResourceID:  req.Instance.HashedInstanceId,
+		Auth0UserId: httpserver.GetUserID(c),
 	}
 	statsOut, _ := json.Marshal(stats)
 
@@ -350,9 +352,10 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 	var err error
 
 	stats := model.Statistics{
-		AccountID:  req.Identification["account"],
-		OrgEmail:   req.Identification["org_m_email"],
-		ResourceID: req.Cluster.HashedClusterId,
+		AccountID:   req.Identification["account"],
+		OrgEmail:    req.Identification["org_m_email"],
+		ResourceID:  req.Cluster.HashedClusterId,
+		Auth0UserId: httpserver.GetUserID(c),
 	}
 	statsOut, _ := json.Marshal(stats)
 
