@@ -9,9 +9,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/aws_rds"
+	"github.com/labstack/echo/v4"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -92,7 +94,7 @@ func (s *Service) AwsRdsRecommendation(
 	}
 	if len(currentInstanceTypeList) == 0 {
 		s.logger.Error("rds instance type not found", zap.String("instance_type", rdsInstance.InstanceType))
-		return nil, fmt.Errorf("rds instance type not found: %s", rdsInstance.InstanceType)
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("rds instance type %s with %s engine not found", rdsInstance.InstanceType, rdsInstance.Engine))
 	}
 	currentInstanceRow := currentInstanceTypeList[0]
 
@@ -141,7 +143,7 @@ func (s *Service) AwsRdsRecommendation(
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
 			s.logger.Error("invalid CpuBreathingRoom value", zap.String("value", *v))
-			return nil, fmt.Errorf("invalid CpuBreathingRoom value: %s", *v)
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
 		}
 		neededVCPU = calculateHeadroom(neededVCPU, vPercent)
 	}
@@ -156,7 +158,7 @@ func (s *Service) AwsRdsRecommendation(
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
 			s.logger.Error("invalid MemoryBreathingRoom value", zap.String("value", *v))
-			return nil, fmt.Errorf("invalid MemoryBreathingRoom value: %s", *v)
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryBreathingRoom value: %s", *v))
 		}
 		neededMemoryGb = calculateHeadroom(neededMemoryGb, vPercent)
 	}
@@ -168,7 +170,7 @@ func (s *Service) AwsRdsRecommendation(
 		vPercent, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
 			s.logger.Error("invalid NetworkBreathingRoom value", zap.String("value", *v))
-			return nil, fmt.Errorf("invalid NetworkBreathingRoom value: %s", *v)
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid NetworkBreathingRoom value: %s", *v))
 		}
 		neededNetworkThroughput = calculateHeadroom(neededNetworkThroughput, vPercent)
 	}
@@ -193,7 +195,7 @@ func (s *Service) AwsRdsRecommendation(
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid StorageSizeBreathingRoom value", zap.String("value", *v))
-				return nil, fmt.Errorf("invalid StorageBreathingRoom value: %s", *v)
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid StorageSizeBreathingRoom value: %s", *v))
 			}
 			neededStorageSizeFloat = calculateHeadroom(neededStorageSizeFloat, vPercent)
 		}
@@ -206,7 +208,7 @@ func (s *Service) AwsRdsRecommendation(
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid StorageIopsBreathingRoom value", zap.String("value", *v))
-				return nil, fmt.Errorf("invalid StorageIopsBreathingRoom value: %s", *v)
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid StorageIopsBreathingRoom value: %s", *v))
 			}
 			neededStorageIopsFloat = calculateHeadroom(neededStorageIopsFloat, vPercent)
 		}
@@ -219,7 +221,7 @@ func (s *Service) AwsRdsRecommendation(
 			vPercent, err := strconv.ParseInt(*v, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid StorageThroughputBreathingRoom value", zap.String("value", *v))
-				return nil, fmt.Errorf("invalid StorageThroughputBreathingRoom value: %s", *v)
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid StorageThroughputBreathingRoom value: %s", *v))
 			}
 			neededStorageThroughputMB = calculateHeadroom(neededStorageThroughputMB, vPercent)
 		}
@@ -440,6 +442,7 @@ func (s *Service) AwsRdsRecommendation(
 		computeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
 			rightSizedInstanceRow, metrics, excluedBurstable, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
 		if err != nil {
+			s.logger.Error("failed to generate rds instance compute description", zap.Error(err))
 			return nil, err
 		}
 	}
