@@ -10,7 +10,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/ec2instance"
+	"github.com/labstack/echo/v4"
 	"github.com/sashabaranov/go-openai"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -43,7 +45,7 @@ func (s *Service) EC2InstanceRecommendation(
 		return nil, err
 	}
 	if len(currentInstanceTypeList) == 0 {
-		return nil, fmt.Errorf("instance type not found: %s", string(instance.InstanceType))
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance type not found: %s", string(instance.InstanceType)))
 	}
 	currentInstanceType := currentInstanceTypeList[0]
 	currentCost, err := s.costSvc.GetEC2InstanceCost(region, instance, volumes, metrics)

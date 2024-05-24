@@ -49,13 +49,13 @@ func (s *Service) Start(ctx context.Context) {
 	s.logger.Info("Ingestion service started")
 	defer func() {
 		if r := recover(); r != nil {
-			s.logger.Error("paniced", zap.Error(fmt.Errorf("%v", r)))
+			s.logger.Error("ingestion paniced", zap.Error(fmt.Errorf("%v", r)))
 			time.Sleep(15 * time.Minute)
 			go s.Start(ctx)
 		}
 	}()
 
-	ticker := time.NewTimer(2 * time.Minute)
+	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -138,6 +138,8 @@ func (s *Service) Start(ctx context.Context) {
 			s.logger.Info("rds ingest not started: ", zap.Any("usage", rdsData))
 		}
 	}
+
+	s.logger.Error("Ingestion service stopped", zap.Time("time", time.Now()))
 }
 
 func (s *Service) IngestEc2Instances(ctx context.Context) error {
@@ -461,33 +463,44 @@ func (s *Service) IngestRDS() error {
 		}
 	}
 
+	err = s.rdsInstanceRepo.UpdateNilEBSThroughput(transaction, rdsInstancesTable)
+	if err != nil {
+		s.logger.Error("failed to update nil ebs throughput", zap.Error(err))
+	}
+
 	err = s.rdsInstanceRepo.MoveViewTransaction(rdsInstancesTable)
 	if err != nil {
+		s.logger.Error("failed to move view", zap.String("table", rdsInstancesTable), zap.Error(err))
 		return err
 	}
 
 	err = s.rdsRepo.MoveViewTransaction(rdsProductsTable)
 	if err != nil {
+		s.logger.Error("failed to move view", zap.String("table", rdsProductsTable), zap.Error(err))
 		return err
 	}
 
 	err = s.storageRepo.MoveViewTransaction(rdsStorageTable)
 	if err != nil {
+		s.logger.Error("failed to move view", zap.String("table", rdsStorageTable), zap.Error(err))
 		return err
 	}
 
 	err = s.rdsInstanceRepo.RemoveOldTables(rdsInstancesTable)
 	if err != nil {
+		s.logger.Error("failed to remove old tables", zap.String("table", rdsInstancesTable), zap.Error(err))
 		return err
 	}
 
 	err = s.rdsRepo.RemoveOldTables(rdsProductsTable)
 	if err != nil {
+		s.logger.Error("failed to remove old tables", zap.String("table", rdsProductsTable), zap.Error(err))
 		return err
 	}
 
 	err = s.storageRepo.RemoveOldTables(rdsStorageTable)
 	if err != nil {
+		s.logger.Error("failed to remove old tables", zap.String("table", rdsStorageTable), zap.Error(err))
 		return err
 	}
 
