@@ -1,12 +1,10 @@
 package model
 
 import (
-	"gorm.io/gorm"
+	"time"
 )
 
 type Organization struct {
-	gorm.Model
-
 	OrganizationId string `gorm:"primaryKey"`
-	Premium        bool
+	PremiumUntil   *time.Time
 }

@@ -218,17 +218,17 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
-		ok, err := checkEBSVolumeLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
-		if err != nil {
-			s.logger.Error("failed to check aws ebs volume limit", zap.Error(err))
-			return err
-		}
-		if !ok {
-			err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ebs volume")
-			if err != nil {
-				return err
-			}
-		}
+		//ok, err := checkEBSVolumeLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+		//if err != nil {
+		//	s.logger.Error("failed to check aws ebs volume limit", zap.Error(err))
+		//	return err
+		//}
+		//if !ok {
+		//	err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ebs volume")
+		//	if err != nil {
+		//		return err
+		//	}
+		//}
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
@@ -870,8 +870,10 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 		s.logger.Error("failed to get user", zap.Error(err))
 		return err
 	}
-	if user != nil && user.Premium {
-		return nil
+	if user != nil && user.PremiumUntil != nil {
+		if time.Now().Before(*user.PremiumUntil) {
+			return nil
+		}
 	}
 
 	orgName := strings.Split(orgEmail, "@")
@@ -880,11 +882,13 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 		s.logger.Error("failed to get organization", zap.Error(err))
 		return err
 	}
-	if org != nil && org.Premium {
-		return nil
+	if org != nil && org.PremiumUntil != nil {
+		if time.Now().Before(*org.PremiumUntil) {
+			return nil
+		}
 	}
 
 	err = fmt.Errorf("reached the %s limit for both user and organization", service)
 	s.logger.Error(err.Error())
-	return err
+	return echo.NewHTTPError(http.StatusPaymentRequired, err.Error())
 }

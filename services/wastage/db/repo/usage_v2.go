@@ -185,7 +185,6 @@ func (r *UsageV2RepoImpl) GetAccountsForUser(userId string) ([]string, error) {
 	var accounts []string
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Select("distinct(statistics ->> 'accountID') as accounts").
-		Where("api_endpoint = 'ec2-instance'").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
 		Scan(&accounts).Error
 	if err != nil {
@@ -198,7 +197,6 @@ func (r *UsageV2RepoImpl) GetAccountsForOrg(orgAddress string) ([]string, error)
 	var accounts []string
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Select("distinct(statistics ->> 'accountID') as accounts").
-		Where("api_endpoint = 'ec2-instance'").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
 		Scan(&accounts).Error
 	if err != nil {

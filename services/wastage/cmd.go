@@ -54,7 +54,7 @@ func Command() *cobra.Command {
 				logger.Error("failed to create citext extension", zap.Error(err))
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.DataAge{}, &model.Usage{})
+			err = db.Conn().AutoMigrate(&model.DataAge{}, &model.Usage{}, &model.User{}, &model.Organization{})
 
 			err = usageDb.Conn().AutoMigrate(&model.Usage{}, &model.UsageV2{})
 			if err != nil {
