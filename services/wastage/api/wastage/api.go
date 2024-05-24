@@ -192,7 +192,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the profile limit for both user and organization")
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
@@ -204,7 +204,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the ec2 instance limit for both user and organization")
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ec2 instance")
 		if err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func (s API) EC2Instance(c echo.Context) error {
 			return err
 		}
 		if !ok {
-			err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the ebs volume limit for both user and organization")
+			err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ebs volume")
 			if err != nil {
 				return err
 			}
@@ -348,7 +348,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the profile limit for both user and organization")
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
@@ -360,7 +360,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the rds instance limit for both user and organization")
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "rds instance")
 		if err != nil {
 			return err
 		}
@@ -501,7 +501,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the profile limit for both user and organization")
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
@@ -513,7 +513,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the rds cluster limit for both user and organization")
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "rds cluster")
 		if err != nil {
 			return err
 		}
@@ -864,7 +864,7 @@ func (s API) FillRdsCosts(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, errString string) error {
+func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service string) error {
 	user, err := s.userRepo.Get(httpserver.GetUserID(c))
 	if err != nil {
 		s.logger.Error("failed to get user", zap.Error(err))
@@ -884,7 +884,7 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, errString s
 		return nil
 	}
 
-	err = fmt.Errorf(errString)
+	err = fmt.Errorf("reached the %s limit for both user and organization", service)
 	s.logger.Error(err.Error())
 	return err
 }
