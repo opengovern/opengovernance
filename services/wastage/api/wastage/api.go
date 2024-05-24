@@ -34,16 +34,20 @@ type API struct {
 	costSvc      *cost.Service
 	usageRepo    repo.UsageV2Repo
 	usageV1Repo  repo.UsageRepo
+	userRepo     repo.UserRepo
+	orgRepo      repo.OrganizationRepo
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
 	return API{
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
 		usageRepo:    usageRepo,
 		usageV1Repo:  usageV1Repo,
+		userRepo:     userRepo,
+		orgRepo:      orgRepo,
 		ingestionSvc: ingestionService,
 		tracer:       otel.GetTracerProvider().Tracer("wastage.http.sources"),
 		logger:       logger.Named("wastage-api"),
@@ -188,9 +192,10 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = fmt.Errorf("reached the profile limit for both user and organization")
-		s.logger.Error(err.Error())
-		return err
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the profile limit for both user and organization")
+		if err != nil {
+			return err
+		}
 	}
 
 	ok, err = checkEC2InstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
@@ -199,9 +204,10 @@ func (s API) EC2Instance(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = fmt.Errorf("reached the ec2 instance limit for both user and organization")
-		s.logger.Error(err.Error())
-		return err
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the ec2 instance limit for both user and organization")
+		if err != nil {
+			return err
+		}
 	}
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
@@ -218,9 +224,10 @@ func (s API) EC2Instance(c echo.Context) error {
 			return err
 		}
 		if !ok {
-			err = fmt.Errorf("reached the ebs volume limit for both user and organization")
-			s.logger.Error(err.Error())
-			return err
+			err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the ebs volume limit for both user and organization")
+			if err != nil {
+				return err
+			}
 		}
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
@@ -341,9 +348,10 @@ func (s API) AwsRDS(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = fmt.Errorf("reached the profile limit for both user and organization")
-		s.logger.Error(err.Error())
-		return err
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the profile limit for both user and organization")
+		if err != nil {
+			return err
+		}
 	}
 
 	ok, err = checkRDSInstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
@@ -352,9 +360,10 @@ func (s API) AwsRDS(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = fmt.Errorf("reached the rds instance limit for both user and organization")
-		s.logger.Error(err.Error())
-		return err
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the rds instance limit for both user and organization")
+		if err != nil {
+			return err
+		}
 	}
 
 	rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
@@ -492,9 +501,10 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = fmt.Errorf("reached the profile limit for both user and organization")
-		s.logger.Error(err.Error())
-		return err
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the profile limit for both user and organization")
+		if err != nil {
+			return err
+		}
 	}
 
 	ok, err = checkRDSClusterLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
@@ -503,9 +513,10 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		return err
 	}
 	if !ok {
-		err = fmt.Errorf("reached the rds cluster limit for both user and organization")
-		s.logger.Error(err.Error())
-		return err
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "reached the rds cluster limit for both user and organization")
+		if err != nil {
+			return err
+		}
 	}
 
 	var aggregatedInstance *entity.AwsRds
@@ -851,4 +862,29 @@ func (s API) FillRdsCosts(c echo.Context) error {
 	}()
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, errString string) error {
+	user, err := s.userRepo.Get(httpserver.GetUserID(c))
+	if err != nil {
+		s.logger.Error("failed to get user", zap.Error(err))
+		return err
+	}
+	if user != nil && user.Premium {
+		return nil
+	}
+
+	orgName := strings.Split(orgEmail, "@")
+	org, err := s.orgRepo.Get(orgName[1])
+	if err != nil {
+		s.logger.Error("failed to get organization", zap.Error(err))
+		return err
+	}
+	if org != nil && org.Premium {
+		return nil
+	}
+
+	err = fmt.Errorf(errString)
+	s.logger.Error(err.Error())
+	return err
 }
