@@ -88,6 +88,7 @@ func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForUser(userId string)
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Where("api_endpoint = 'aws-rds'").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
+		Where("request ->> 'loading' <> 'true'").
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -100,6 +101,7 @@ func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForOrg(orgAddress stri
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Where("api_endpoint = 'aws-rds'").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
+		Where("request ->> 'loading' <> 'true'").
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -112,6 +114,7 @@ func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForUser(userId string) 
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Where("api_endpoint = 'aws-rds-cluster'").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
+		Where("request ->> 'loading' <> 'true'").
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -124,6 +127,7 @@ func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForOrg(orgAddress strin
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Where("api_endpoint = 'aws-rds-cluster'").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
+		Where("request ->> 'loading' <> 'true'").
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -136,6 +140,7 @@ func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForUser(userId string)
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Where("api_endpoint = 'ec2-instance'").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
+		Where("request ->> 'loading' <> 'true'").
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -148,6 +153,7 @@ func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForOrg(orgAddress stri
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Where("api_endpoint = 'ec2-instance'").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
+		Where("request ->> 'loading' <> 'true'").
 		Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -161,6 +167,7 @@ func (r *UsageV2RepoImpl) GetEBSVolumeOptimizationsCountForUser(userId string) (
 		Select("SUM(statistics ->> 'ebsVolumeCount') as total_volumes").
 		Where("api_endpoint = 'ec2-instance'").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
+		Where("request ->> 'loading' <> 'true'").
 		Scan(&count).Error
 	if err != nil {
 		return 0, err
@@ -174,6 +181,7 @@ func (r *UsageV2RepoImpl) GetEBSVolumeOptimizationsCountForOrg(orgAddress string
 		Select("SUM(statistics ->> 'ebsVolumeCount') as total_volumes").
 		Where("api_endpoint = 'ec2-instance'").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
+		Where("request ->> 'loading' <> 'true'").
 		Scan(&count).Error
 	if err != nil {
 		return 0, err
@@ -186,6 +194,7 @@ func (r *UsageV2RepoImpl) GetAccountsForUser(userId string) ([]string, error) {
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Select("distinct(statistics ->> 'accountID') as accounts").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
+		Where("request ->> 'loading' <> 'true'").
 		Scan(&accounts).Error
 	if err != nil {
 		return nil, err
@@ -198,6 +207,7 @@ func (r *UsageV2RepoImpl) GetAccountsForOrg(orgAddress string) ([]string, error)
 	err := r.db.Conn().Model(&model.UsageV2{}).
 		Select("distinct(statistics ->> 'accountID') as accounts").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
+		Where("request ->> 'loading' <> 'true'").
 		Scan(&accounts).Error
 	if err != nil {
 		return nil, err
