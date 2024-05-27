@@ -2,6 +2,7 @@ package wastage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -66,6 +67,10 @@ func (s API) Register(e *echo.Echo) {
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 	i.PUT("/usages/fill-rds-costs", s.FillRdsCosts)
+	i.POST("/user", httpserver.AuthorizeHandler(s.CreateUser, api.InternalRole))
+	i.PUT("/user/:userId", httpserver.AuthorizeHandler(s.UpdateUser, api.InternalRole))
+	i.POST("/organization", httpserver.AuthorizeHandler(s.CreateOrganization, api.InternalRole))
+	i.PUT("/organization/:organizationId", httpserver.AuthorizeHandler(s.UpdateOrganization, api.InternalRole))
 }
 
 func (s API) Configuration(c echo.Context) error {
@@ -891,4 +896,122 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 	err = fmt.Errorf("reached the %s limit for both user and organization", service)
 	s.logger.Error(err.Error())
 	return echo.NewHTTPError(http.StatusPaymentRequired, err.Error())
+}
+
+// CreateUser godoc
+//
+//	@Summary		Create a new premium user
+//	@Description	Create a new premium user
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			request	body		entity.User	true	"Request"
+//	@Success		200		{object}	entity.User
+//	@Router			/wastage/api/v1/wastage-ingestion/user [post]
+func (s API) CreateUser(c echo.Context) error {
+	var user entity.User
+	err := c.Bind(&user)
+	if err != nil {
+		return err
+	}
+
+	err = s.userRepo.Create(user.ToModel())
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, user)
+}
+
+// UpdateUser godoc
+//
+//	@Summary		Update a premium user
+//	@Description	Update a premium user
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			userId		path	string	true	"userId"
+//	@Param			premiumUntil		query	string	true	"status"
+//	@Success		200		{object}	entity.User
+//	@Router			/wastage/api/v1/wastage-ingestion/user [put]
+func (s API) UpdateUser(c echo.Context) error {
+	idString := c.Param("userId")
+	if idString == "" {
+		return errors.New("userId is required")
+	}
+
+	premiumUntil, err := strconv.ParseInt(c.QueryParam("premiumUntil"), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	premiumUntilTime := time.UnixMilli(premiumUntil)
+	user := model.User{
+		UserId:       idString,
+		PremiumUntil: &premiumUntilTime,
+	}
+	err = s.userRepo.Update(idString, &user)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, user)
+}
+
+// CreateOrganization godoc
+//
+//	@Summary		Create a new premium organization
+//	@Description	Create a new premium organization
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			request	body		entity.Organization	true	"Request"
+//	@Success		200		{object}	entity.Organization
+//	@Router			/wastage/api/v1/wastage-ingestion/organization [post]
+func (s API) CreateOrganization(c echo.Context) error {
+	var org entity.Organization
+	err := c.Bind(&org)
+	if err != nil {
+		return err
+	}
+
+	err = s.orgRepo.Create(org.ToModel())
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, org)
+}
+
+// UpdateOrganization godoc
+//
+//	@Summary		Update a premium organization
+//	@Description	Update a premium organization
+//	@Security		BearerToken
+//	@Tags			wastage
+//	@Produce		json
+//	@Param			organizationId		path	string	true	"organizationId"
+//	@Param			premiumUntil		query	string	true	"status"
+//	@Success		200		{object}	entity.Organization
+//	@Router			/wastage/api/v1/wastage-ingestion/organization/{organizationId} [put]
+func (s API) UpdateOrganization(c echo.Context) error {
+	idString := c.Param("organizationId")
+	if idString == "" {
+		return errors.New("organizationId is required")
+	}
+
+	premiumUntil, err := strconv.ParseInt(c.QueryParam("premiumUntil"), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	premiumUntilTime := time.UnixMilli(premiumUntil)
+	org := model.Organization{
+		OrganizationId: idString,
+		PremiumUntil:   &premiumUntilTime,
+	}
+	err = s.orgRepo.Update(idString, &org)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, org)
 }

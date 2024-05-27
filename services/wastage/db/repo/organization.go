@@ -9,7 +9,8 @@ import (
 
 type OrganizationRepo interface {
 	Create(m *model.Organization) error
-	Update(id uint, m model.Organization) error
+	Update(id string, m *model.Organization) error
+	Delete(id string) error
 	List() ([]model.Organization, error)
 	Get(id string) (*model.Organization, error)
 }
@@ -28,8 +29,12 @@ func (r *OrganizationRepoImpl) Create(m *model.Organization) error {
 	return r.db.Conn().Create(&m).Error
 }
 
-func (r *OrganizationRepoImpl) Update(id uint, m model.Organization) error {
+func (r *OrganizationRepoImpl) Update(id string, m *model.Organization) error {
 	return r.db.Conn().Model(&model.Organization{}).Where("organization_id=?", id).Updates(&m).Error
+}
+
+func (r *OrganizationRepoImpl) Delete(id string) error {
+	return r.db.Conn().Model(&model.Organization{}).Where("organization_id=?", id).Delete(&model.Organization{}).Error
 }
 
 func (r *OrganizationRepoImpl) List() ([]model.Organization, error) {

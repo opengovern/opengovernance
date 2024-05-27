@@ -9,7 +9,8 @@ import (
 
 type UserRepo interface {
 	Create(m *model.User) error
-	Update(id uint, m model.User) error
+	Update(id string, m *model.User) error
+	Delete(id string) error
 	List() ([]model.User, error)
 	Get(id string) (*model.User, error)
 }
@@ -28,8 +29,12 @@ func (r *UserRepoImpl) Create(m *model.User) error {
 	return r.db.Conn().Create(&m).Error
 }
 
-func (r *UserRepoImpl) Update(id uint, m model.User) error {
+func (r *UserRepoImpl) Update(id string, m *model.User) error {
 	return r.db.Conn().Model(&model.User{}).Where("user_id=?", id).Updates(&m).Error
+}
+
+func (r *UserRepoImpl) Delete(id string) error {
+	return r.db.Conn().Model(&model.User{}).Where("user_id=?", id).Delete(&model.User{}).Error
 }
 
 func (r *UserRepoImpl) List() ([]model.User, error) {
