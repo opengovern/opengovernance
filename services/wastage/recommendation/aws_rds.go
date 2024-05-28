@@ -553,7 +553,7 @@ func (s *Service) generateRdsInstanceComputeDescription(rdsInstance entity.AwsRd
 	}
 
 	prompt := fmt.Sprintf(`
-I'm giving recommendation on aws rds db instance right sizing. Based on user's usage and needs I have concluded that the best option for them is to use %s instead of %s. I need help summarizing the explanation into 3 lines while keeping these rules:
+I'm giving recommendation on aws rds db instance right sizing. Based on user's usage and needs I have concluded that the best option for them is to use %s instead of %s. I need help summarizing the explanation into 280 characters while keeping these rules:
 - mention the requirements from user side.
 - for those fields which are changing make sure you mention the change.
 
@@ -685,7 +685,7 @@ func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRd
 	}
 
 	prompt := fmt.Sprintf(`
-I'm giving recommendation on aws rds db instance storage right sizing. Based on user's usage and needs I have concluded that the best option for them is to use %s instead of %s. I need help summarizing the explanation into 3 lines while keeping these rules:
+I'm giving recommendation on aws rds db instance storage right sizing. Based on user's usage and needs I have concluded that the best option for them is to use %s instead of %s. I need help summarizing the explanation into 280 characters while keeping these rules:
 - mention the requirements from user side.
 - for those fields which are changing make sure you mention the change.
 

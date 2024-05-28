@@ -270,7 +270,7 @@ func (s *Service) generateEc2InstanceDescription(instance entity.EC2Instance, re
 	}
 
 	prompt := fmt.Sprintf(`
-I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 3 lines while keeping these rules:
+I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 280 characters while keeping these rules:
 - mention the requirements from user side.
 - for those fields which are changing make sure you mention the change.
 
