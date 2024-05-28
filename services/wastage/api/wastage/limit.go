@@ -8,12 +8,12 @@ import (
 func checkRDSInstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
-		if len(org) > 1 {
+		if org[1] != "" {
 			orgCount, err := db.GetRDSInstanceOptimizationsCountForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
-			if orgCount < int64(OrgEBSVolumeLimit) {
+			if orgCount < int64(OrgRDSInstanceLimit) {
 				return true, nil
 			}
 		}
@@ -31,12 +31,12 @@ func checkRDSInstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (b
 func checkRDSClusterLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
-		if len(org) > 1 {
+		if org[1] != "" {
 			orgCount, err := db.GetRDSClusterOptimizationsCountForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
-			if orgCount < int64(OrgEBSVolumeLimit) {
+			if orgCount < int64(OrgRDSClusterLimit) {
 				return true, nil
 			}
 		}
@@ -54,12 +54,12 @@ func checkRDSClusterLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bo
 func checkEC2InstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
-		if len(org) > 1 {
+		if org[1] != "" {
 			orgCount, err := db.GetEC2InstanceOptimizationsCountForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
-			if orgCount < int64(OrgEBSVolumeLimit) {
+			if orgCount < int64(OrgEC2InstanceLimit) {
 				return true, nil
 			}
 		}
@@ -101,7 +101,7 @@ func checkEC2InstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (b
 func checkAccountsLimit(db repo.UsageV2Repo, auth0UserId, orgEmail, account string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
-		if len(org) > 1 {
+		if org[1] != "" {
 			orgAccounts, err := db.GetAccountsForOrg(org[1])
 			if err != nil {
 				return false, err

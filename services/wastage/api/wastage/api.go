@@ -881,15 +881,20 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 		}
 	}
 
-	orgName := strings.Split(orgEmail, "@")
-	org, err := s.orgRepo.Get(orgName[1])
-	if err != nil {
-		s.logger.Error("failed to get organization", zap.Error(err))
-		return err
-	}
-	if org != nil && org.PremiumUntil != nil {
-		if time.Now().Before(*org.PremiumUntil) {
-			return nil
+	if orgEmail != "" && strings.Contains(orgEmail, "@") {
+		org := strings.Split(orgEmail, "@")
+		if org[1] != "" {
+			orgName := strings.Split(orgEmail, "@")
+			org, err := s.orgRepo.Get(orgName[1])
+			if err != nil {
+				s.logger.Error("failed to get organization", zap.Error(err))
+				return err
+			}
+			if org != nil && org.PremiumUntil != nil {
+				if time.Now().Before(*org.PremiumUntil) {
+					return nil
+				}
+			}
 		}
 	}
 
