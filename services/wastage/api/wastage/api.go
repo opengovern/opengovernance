@@ -898,16 +898,6 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 	return echo.NewHTTPError(http.StatusPaymentRequired, err.Error())
 }
 
-// CreateUser godoc
-//
-//	@Summary		Create a new premium user
-//	@Description	Create a new premium user
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Param			request	body		entity.User	true	"Request"
-//	@Success		200		{object}	entity.User
-//	@Router			/wastage/api/v1/wastage-ingestion/user [post]
 func (s API) CreateUser(c echo.Context) error {
 	var user entity.User
 	err := c.Bind(&user)
@@ -923,17 +913,6 @@ func (s API) CreateUser(c echo.Context) error {
 	return c.JSON(http.StatusCreated, user)
 }
 
-// UpdateUser godoc
-//
-//	@Summary		Update a premium user
-//	@Description	Update a premium user
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Param			userId		path	string	true	"userId"
-//	@Param			premiumUntil		query	string	true	"status"
-//	@Success		200		{object}	entity.User
-//	@Router			/wastage/api/v1/wastage-ingestion/user [put]
 func (s API) UpdateUser(c echo.Context) error {
 	idString := c.Param("userId")
 	if idString == "" {
@@ -957,16 +936,6 @@ func (s API) UpdateUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-// CreateOrganization godoc
-//
-//	@Summary		Create a new premium organization
-//	@Description	Create a new premium organization
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Param			request	body		entity.Organization	true	"Request"
-//	@Success		200		{object}	entity.Organization
-//	@Router			/wastage/api/v1/wastage-ingestion/organization [post]
 func (s API) CreateOrganization(c echo.Context) error {
 	var org entity.Organization
 	err := c.Bind(&org)
@@ -982,17 +951,6 @@ func (s API) CreateOrganization(c echo.Context) error {
 	return c.JSON(http.StatusCreated, org)
 }
 
-// UpdateOrganization godoc
-//
-//	@Summary		Update a premium organization
-//	@Description	Update a premium organization
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Param			organizationId		path	string	true	"organizationId"
-//	@Param			premiumUntil		query	string	true	"status"
-//	@Success		200		{object}	entity.Organization
-//	@Router			/wastage/api/v1/wastage-ingestion/organization/{organizationId} [put]
 func (s API) UpdateOrganization(c echo.Context) error {
 	idString := c.Param("organizationId")
 	if idString == "" {
