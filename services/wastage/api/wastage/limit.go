@@ -32,6 +32,7 @@ func (s API) checkRDSInstanceLimit(auth0UserId, orgEmail string) (bool, error) {
 }
 
 func (s API) checkRDSClusterLimit(auth0UserId, orgEmail string) (bool, error) {
+	s.logger.Info("Checking RDS Cluster limit", zap.String("auth0UserId", auth0UserId), zap.String("orgEmail", orgEmail))
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
@@ -42,6 +43,7 @@ func (s API) checkRDSClusterLimit(auth0UserId, orgEmail string) (bool, error) {
 			if orgCount < int64(OrgRDSClusterLimit) {
 				return true, nil
 			}
+			s.logger.Info("Org RDS Cluster limit reached", zap.String("orgEmail", org[1]))
 		}
 	}
 	userCount, err := s.usageRepo.GetRDSClusterOptimizationsCountForUser(auth0UserId)
@@ -51,10 +53,12 @@ func (s API) checkRDSClusterLimit(auth0UserId, orgEmail string) (bool, error) {
 	if userCount < int64(UserRDSClusterLimit) {
 		return true, nil
 	}
+	s.logger.Info("User RDS Cluster limit reached", zap.String("auth0UserId", auth0UserId))
 	return false, nil
 }
 
 func (s API) checkEC2InstanceLimit(auth0UserId, orgEmail string) (bool, error) {
+	s.logger.Info("Checking EC2 Instance limit", zap.String("auth0UserId", auth0UserId), zap.String("orgEmail", orgEmail))
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
@@ -65,6 +69,7 @@ func (s API) checkEC2InstanceLimit(auth0UserId, orgEmail string) (bool, error) {
 			if orgCount < int64(OrgEC2InstanceLimit) {
 				return true, nil
 			}
+			s.logger.Info("Org EC2 Instance limit reached", zap.String("orgEmail", org[1]))
 		}
 	}
 	userCount, err := s.usageRepo.GetEC2InstanceOptimizationsCountForUser(auth0UserId)
@@ -74,6 +79,7 @@ func (s API) checkEC2InstanceLimit(auth0UserId, orgEmail string) (bool, error) {
 	if userCount < int64(UserEC2InstanceLimit) {
 		return true, nil
 	}
+	s.logger.Info("User EC2 Instance limit reached", zap.String("auth0UserId", auth0UserId))
 	return false, nil
 }
 
@@ -102,6 +108,7 @@ func (s API) checkEC2InstanceLimit(auth0UserId, orgEmail string) (bool, error) {
 //}
 
 func (s API) checkAccountsLimit(auth0UserId, orgEmail, account string) (bool, error) {
+	s.logger.Info("Checking account limit", zap.String("auth0UserId", auth0UserId), zap.String("orgEmail", orgEmail), zap.String("account", account))
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
@@ -114,6 +121,7 @@ func (s API) checkAccountsLimit(auth0UserId, orgEmail, account string) (bool, er
 			} else if checkAccountInList(account, orgAccounts) {
 				return true, nil
 			}
+			s.logger.Info("Org Account limit reached", zap.String("orgEmail", org[1]))
 		}
 	}
 	userAccounts, err := s.usageRepo.GetAccountsForUser(auth0UserId)
@@ -125,6 +133,7 @@ func (s API) checkAccountsLimit(auth0UserId, orgEmail, account string) (bool, er
 	} else if checkAccountInList(account, userAccounts) {
 		return true, nil
 	}
+	s.logger.Info("User Account limit reached", zap.String("auth0UserId", auth0UserId))
 	return false, nil
 }
 
