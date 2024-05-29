@@ -191,7 +191,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		usageAverageType = recommendation.UsageAverageTypeAverage
 	}
 
-	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
@@ -203,7 +203,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		}
 	}
 
-	ok, err = checkEC2InstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	ok, err = s.checkEC2InstanceLimit(httpserver.GetUserID(c), req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
 		return err
@@ -347,7 +347,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		usageAverageType = recommendation.UsageAverageTypeAverage
 	}
 
-	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
@@ -359,7 +359,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		}
 	}
 
-	ok, err = checkRDSInstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	ok, err = s.checkRDSInstanceLimit(httpserver.GetUserID(c), req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds instance limit", zap.Error(err))
 		return err
@@ -500,7 +500,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		RightSizing: make(map[string]entity.AwsRdsRightsizingRecommendation),
 	}
 
-	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
@@ -512,7 +512,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		}
 	}
 
-	ok, err = checkRDSClusterLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	ok, err = s.checkRDSClusterLimit(httpserver.GetUserID(c), req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds cluster limit", zap.Error(err))
 		return err

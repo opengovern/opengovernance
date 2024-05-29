@@ -85,7 +85,7 @@ func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForUser(userId string)
 	var count int64
 	err := r.db.Conn().
 		Raw(`
-			SELECT COUNT(DISTINCT statistics ->> 'resourceID') 
+			SELECT COUNT(*) 
 			FROM usage_v2 
 			WHERE api_endpoint = 'aws-rds' 
 			AND statistics ->> 'auth0UserId' = ? 
@@ -102,7 +102,7 @@ func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForOrg(orgAddress stri
 	var count int64
 	err := r.db.Conn().
 		Raw(`
-			SELECT COUNT(DISTINCT statistics ->> 'resourceID') 
+			SELECT COUNT(*) 
 			FROM usage_v2 
 			WHERE api_endpoint = 'aws-rds' 
 			AND statistics ->> 'orgEmail' LIKE ? 
@@ -119,7 +119,7 @@ func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForUser(userId string) 
 	var count int64
 	err := r.db.Conn().
 		Raw(`
-			SELECT COUNT(DISTINCT statistics ->> 'resourceID') 
+			SELECT COUNT(*) 
 			FROM usage_v2 
 			WHERE api_endpoint = 'aws-rds-cluster' 
 			AND statistics ->> 'auth0UserId' = ? 
@@ -136,7 +136,7 @@ func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForOrg(orgAddress strin
 	var count int64
 	err := r.db.Conn().
 		Raw(`
-			SELECT COUNT(DISTINCT statistics ->> 'resourceID') 
+			SELECT COUNT(*) 
 			FROM usage_v2 
 			WHERE api_endpoint = 'aws-rds-cluster' 
 			AND statistics ->> 'orgEmail' LIKE ? 
@@ -153,7 +153,7 @@ func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForUser(userId string)
 	var count int64
 	err := r.db.Conn().
 		Raw(`
-			SELECT COUNT(DISTINCT statistics ->> 'resourceID') 
+			SELECT COUNT(*) 
 			FROM usage_v2 
 			WHERE api_endpoint = 'ec2-instance' 
 			AND statistics ->> 'auth0UserId' = ? 
@@ -170,7 +170,7 @@ func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForOrg(orgAddress stri
 	var count int64
 	err := r.db.Conn().
 		Raw(`
-			SELECT COUNT(DISTINCT statistics ->> 'resourceID') 
+			SELECT COUNT(*) 
 			FROM usage_v2 
 			WHERE api_endpoint = 'ec2-instance' 
 			AND statistics ->> 'orgEmail' LIKE ? 
