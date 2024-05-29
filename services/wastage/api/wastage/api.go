@@ -899,8 +899,8 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 	}
 
 	err = fmt.Errorf("reached the %s limit for both user and organization", service)
-	s.logger.Error(err.Error())
-	return echo.NewHTTPError(http.StatusPaymentRequired, err.Error())
+	s.logger.Error(err.Error(), zap.String("auth0UserId", httpserver.GetUserID(c)), zap.String("orgEmail", orgEmail))
+	return nil
 }
 
 func (s API) CreateUser(c echo.Context) error {
