@@ -1,38 +1,41 @@
 package wastage
 
 import (
-	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
+	"go.uber.org/zap"
 	"strings"
 )
 
-func checkRDSInstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bool, error) {
+func (s API) checkRDSInstanceLimit(auth0UserId, orgEmail string) (bool, error) {
+	s.logger.Info("Checking RDS Instance limit", zap.String("auth0UserId", auth0UserId), zap.String("orgEmail", orgEmail))
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
-			orgCount, err := db.GetRDSInstanceOptimizationsCountForOrg(org[1])
+			orgCount, err := s.usageRepo.GetRDSInstanceOptimizationsCountForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
 			if orgCount < int64(OrgRDSInstanceLimit) {
 				return true, nil
 			}
+			s.logger.Info("Org RDS Instance limit reached", zap.String("orgEmail", org[1]))
 		}
 	}
-	userCount, err := db.GetRDSInstanceOptimizationsCountForUser(auth0UserId)
+	userCount, err := s.usageRepo.GetRDSInstanceOptimizationsCountForUser(auth0UserId)
 	if err != nil {
 		return false, err
 	}
 	if userCount < int64(UserRDSInstanceLimit) {
 		return true, nil
 	}
+	s.logger.Info("User RDS Instance limit reached", zap.String("auth0UserId", auth0UserId))
 	return false, nil
 }
 
-func checkRDSClusterLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bool, error) {
+func (s API) checkRDSClusterLimit(auth0UserId, orgEmail string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
-			orgCount, err := db.GetRDSClusterOptimizationsCountForOrg(org[1])
+			orgCount, err := s.usageRepo.GetRDSClusterOptimizationsCountForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
@@ -41,7 +44,7 @@ func checkRDSClusterLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bo
 			}
 		}
 	}
-	userCount, err := db.GetRDSClusterOptimizationsCountForUser(auth0UserId)
+	userCount, err := s.usageRepo.GetRDSClusterOptimizationsCountForUser(auth0UserId)
 	if err != nil {
 		return false, err
 	}
@@ -51,11 +54,11 @@ func checkRDSClusterLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bo
 	return false, nil
 }
 
-func checkEC2InstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (bool, error) {
+func (s API) checkEC2InstanceLimit(auth0UserId, orgEmail string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
-			orgCount, err := db.GetEC2InstanceOptimizationsCountForOrg(org[1])
+			orgCount, err := s.usageRepo.GetEC2InstanceOptimizationsCountForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
@@ -64,7 +67,7 @@ func checkEC2InstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (b
 			}
 		}
 	}
-	userCount, err := db.GetEC2InstanceOptimizationsCountForUser(auth0UserId)
+	userCount, err := s.usageRepo.GetEC2InstanceOptimizationsCountForUser(auth0UserId)
 	if err != nil {
 		return false, err
 	}
@@ -98,11 +101,11 @@ func checkEC2InstanceLimit(db repo.UsageV2Repo, auth0UserId, orgEmail string) (b
 //	return false, nil
 //}
 
-func checkAccountsLimit(db repo.UsageV2Repo, auth0UserId, orgEmail, account string) (bool, error) {
+func (s API) checkAccountsLimit(auth0UserId, orgEmail, account string) (bool, error) {
 	if orgEmail != "" && strings.Contains(orgEmail, "@") {
 		org := strings.Split(orgEmail, "@")
 		if org[1] != "" {
-			orgAccounts, err := db.GetAccountsForOrg(org[1])
+			orgAccounts, err := s.usageRepo.GetAccountsForOrg(org[1])
 			if err != nil {
 				return false, err
 			}
@@ -113,7 +116,7 @@ func checkAccountsLimit(db repo.UsageV2Repo, auth0UserId, orgEmail, account stri
 			}
 		}
 	}
-	userAccounts, err := db.GetAccountsForUser(auth0UserId)
+	userAccounts, err := s.usageRepo.GetAccountsForUser(auth0UserId)
 	if err != nil {
 		return false, err
 	}
