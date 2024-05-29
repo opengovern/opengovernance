@@ -2,6 +2,7 @@ package wastage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -34,16 +35,20 @@ type API struct {
 	costSvc      *cost.Service
 	usageRepo    repo.UsageV2Repo
 	usageV1Repo  repo.UsageRepo
+	userRepo     repo.UserRepo
+	orgRepo      repo.OrganizationRepo
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, logger *zap.Logger) API {
+func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
 	return API{
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
 		usageRepo:    usageRepo,
 		usageV1Repo:  usageV1Repo,
+		userRepo:     userRepo,
+		orgRepo:      orgRepo,
 		ingestionSvc: ingestionService,
 		tracer:       otel.GetTracerProvider().Tracer("wastage.http.sources"),
 		logger:       logger.Named("wastage-api"),
@@ -62,6 +67,10 @@ func (s API) Register(e *echo.Echo) {
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 	i.PUT("/usages/fill-rds-costs", s.FillRdsCosts)
+	i.POST("/user", httpserver.AuthorizeHandler(s.CreateUser, api.InternalRole))
+	i.PUT("/user/:userId", httpserver.AuthorizeHandler(s.UpdateUser, api.InternalRole))
+	i.POST("/organization", httpserver.AuthorizeHandler(s.CreateOrganization, api.InternalRole))
+	i.PUT("/organization/:organizationId", httpserver.AuthorizeHandler(s.UpdateOrganization, api.InternalRole))
 }
 
 func (s API) Configuration(c echo.Context) error {
@@ -182,6 +191,30 @@ func (s API) EC2Instance(c echo.Context) error {
 		usageAverageType = recommendation.UsageAverageTypeAverage
 	}
 
+	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	if err != nil {
+		s.logger.Error("failed to check profile limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
+		if err != nil {
+			return err
+		}
+	}
+
+	ok, err = checkEC2InstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ec2 instance")
+		if err != nil {
+			return err
+		}
+	}
+
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
@@ -190,6 +223,17 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	ebsRightSizingRecoms := make(map[string]entity.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
+		//ok, err := checkEBSVolumeLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+		//if err != nil {
+		//	s.logger.Error("failed to check aws ebs volume limit", zap.Error(err))
+		//	return err
+		//}
+		//if !ok {
+		//	err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ebs volume")
+		//	if err != nil {
+		//		return err
+		//	}
+		//}
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
@@ -301,6 +345,30 @@ func (s API) AwsRDS(c echo.Context) error {
 	usageAverageType := recommendation.UsageAverageTypeMax
 	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
 		usageAverageType = recommendation.UsageAverageTypeAverage
+	}
+
+	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	if err != nil {
+		s.logger.Error("failed to check profile limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
+		if err != nil {
+			return err
+		}
+	}
+
+	ok, err = checkRDSInstanceLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws rds instance limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "rds instance")
+		if err != nil {
+			return err
+		}
 	}
 
 	rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
@@ -430,6 +498,30 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 
 	resp = entity.AwsClusterWastageResponse{
 		RightSizing: make(map[string]entity.AwsRdsRightsizingRecommendation),
+	}
+
+	ok, err := checkAccountsLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	if err != nil {
+		s.logger.Error("failed to check profile limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
+		if err != nil {
+			return err
+		}
+	}
+
+	ok, err = checkRDSClusterLimit(s.usageRepo, httpserver.GetUserID(c), req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws rds cluster limit", zap.Error(err))
+		return err
+	}
+	if !ok {
+		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "rds cluster")
+		if err != nil {
+			return err
+		}
 	}
 
 	var aggregatedInstance *entity.AwsRds
@@ -775,4 +867,114 @@ func (s API) FillRdsCosts(c echo.Context) error {
 	}()
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service string) error {
+	user, err := s.userRepo.Get(httpserver.GetUserID(c))
+	if err != nil {
+		s.logger.Error("failed to get user", zap.Error(err))
+		return err
+	}
+	if user != nil && user.PremiumUntil != nil {
+		if time.Now().Before(*user.PremiumUntil) {
+			return nil
+		}
+	}
+
+	if orgEmail != "" && strings.Contains(orgEmail, "@") {
+		org := strings.Split(orgEmail, "@")
+		if org[1] != "" {
+			orgName := strings.Split(orgEmail, "@")
+			org, err := s.orgRepo.Get(orgName[1])
+			if err != nil {
+				s.logger.Error("failed to get organization", zap.Error(err))
+				return err
+			}
+			if org != nil && org.PremiumUntil != nil {
+				if time.Now().Before(*org.PremiumUntil) {
+					return nil
+				}
+			}
+		}
+	}
+
+	err = fmt.Errorf("reached the %s limit for both user and organization", service)
+	s.logger.Error(err.Error(), zap.String("auth0UserId", httpserver.GetUserID(c)), zap.String("orgEmail", orgEmail))
+	return nil
+}
+
+func (s API) CreateUser(c echo.Context) error {
+	var user entity.User
+	err := c.Bind(&user)
+	if err != nil {
+		return err
+	}
+
+	err = s.userRepo.Create(user.ToModel())
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, user)
+}
+
+func (s API) UpdateUser(c echo.Context) error {
+	idString := c.Param("userId")
+	if idString == "" {
+		return errors.New("userId is required")
+	}
+
+	premiumUntil, err := strconv.ParseInt(c.QueryParam("premiumUntil"), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	premiumUntilTime := time.UnixMilli(premiumUntil)
+	user := model.User{
+		UserId:       idString,
+		PremiumUntil: &premiumUntilTime,
+	}
+	err = s.userRepo.Update(idString, &user)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, user)
+}
+
+func (s API) CreateOrganization(c echo.Context) error {
+	var org entity.Organization
+	err := c.Bind(&org)
+	if err != nil {
+		return err
+	}
+
+	err = s.orgRepo.Create(org.ToModel())
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, org)
+}
+
+func (s API) UpdateOrganization(c echo.Context) error {
+	idString := c.Param("organizationId")
+	if idString == "" {
+		return errors.New("organizationId is required")
+	}
+
+	premiumUntil, err := strconv.ParseInt(c.QueryParam("premiumUntil"), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	premiumUntilTime := time.UnixMilli(premiumUntil)
+	org := model.Organization{
+		OrganizationId: idString,
+		PremiumUntil:   &premiumUntilTime,
+	}
+	err = s.orgRepo.Update(idString, &org)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, org)
 }

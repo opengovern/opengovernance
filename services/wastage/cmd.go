@@ -54,7 +54,7 @@ func Command() *cobra.Command {
 				logger.Error("failed to create citext extension", zap.Error(err))
 				return err
 			}
-			err = db.Conn().AutoMigrate(&model.DataAge{}, &model.Usage{})
+			err = db.Conn().AutoMigrate(&model.DataAge{}, &model.Usage{}, &model.User{}, &model.Organization{})
 
 			err = usageDb.Conn().AutoMigrate(&model.Usage{}, &model.UsageV2{})
 			if err != nil {
@@ -69,6 +69,8 @@ func Command() *cobra.Command {
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageV2Repo := repo.NewUsageV2Repo(usageDb)
 			usageV1Repo := repo.NewUsageRepo(usageDb)
+			userRepo := repo.NewUserRepo(db)
+			orgRepo := repo.NewOrganizationRepo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
@@ -78,7 +80,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, logger),
+				api.New(costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo, logger),
 			)
 		},
 	}
