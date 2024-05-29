@@ -3,7 +3,7 @@ package wastage
 var (
 	UserEC2InstanceLimit = int32(500)
 	UserEBSVolumeLimit   = int32(500)
-	UserRDSInstanceLimit = int32(70) //temporary changed for testing, should be 100
+	UserRDSInstanceLimit = int32(100)
 	UserRDSClusterLimit  = int32(50)
 	UserAccountLimit     = int32(5)
 
