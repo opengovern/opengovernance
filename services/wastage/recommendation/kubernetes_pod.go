@@ -3,8 +3,12 @@ package recommendation
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"net/http"
 	"sort"
+	"strconv"
 )
 
 func (s *Service) KubernetesPodRecommendation(
@@ -15,6 +19,27 @@ func (s *Service) KubernetesPodRecommendation(
 	var containersRightsizing []entity.KubernetesContainerRightsizingRecommendation
 
 	for _, container := range pod.Spec.Containers {
+		current := entity.RightsizingKubernetesContainer{
+			Name: container.Name,
+
+			MemoryRequest: float64(container.Resources.Requests.Memory().Value()),
+			MemoryLimit:   float64(container.Resources.Limits.Memory().Value()),
+
+			CPURequest: float64(container.Resources.Requests.Cpu().MilliValue()),
+			CPULimit:   float64(container.Resources.Limits.Cpu().MilliValue()),
+		}
+
+		if _, ok := metrics[container.Name]; !ok {
+			containersRightsizing = append(containersRightsizing, entity.KubernetesContainerRightsizingRecommendation{
+				Name: container.Name,
+
+				Current: current,
+
+				Description: "",
+			})
+			continue
+		}
+
 		cpuMax := getMetricMax(metrics[container.Name].CPU)
 		cpuTrimmedMean, err := getTrimmedMean(metrics[container.Name].CPU, 0.1)
 		if err != nil {
@@ -26,16 +51,6 @@ func (s *Service) KubernetesPodRecommendation(
 			return nil, err
 		}
 
-		current := entity.RightsizingKubernetesContainer{
-			Name: container.Name,
-
-			MemoryRequest: float64(container.Resources.Requests.Memory().Value()),
-			MemoryLimit:   float64(container.Resources.Limits.Memory().Value()),
-
-			CPURequest: float64(container.Resources.Requests.Cpu().MilliValue()),
-			CPULimit:   float64(container.Resources.Limits.Cpu().MilliValue()),
-		}
-
 		recommended := entity.RightsizingKubernetesContainer{
 			Name: container.Name,
 
@@ -43,12 +58,29 @@ func (s *Service) KubernetesPodRecommendation(
 
 			CPURequest: cpuTrimmedMean,
 		}
-
 		if memoryMax != nil {
 			recommended.MemoryLimit = *memoryMax
 		}
 		if cpuMax != nil {
 			recommended.CPULimit = *cpuMax
+		}
+
+		if v, ok := preferences["CpuBreathingRoom"]; ok && v != nil {
+			vPercent, err := strconv.ParseInt(*v, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid CpuBreathingRoom value", zap.String("value", *v))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
+			}
+			recommended.CPULimit = calculateHeadroom(recommended.CPULimit, vPercent)
+		}
+
+		if v, ok := preferences["MemoryBreathingRoom"]; ok && v != nil {
+			vPercent, err := strconv.ParseInt(*v, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid MemoryBreathingRoom value", zap.String("value", *v))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryBreathingRoom value: %s", *v))
+			}
+			recommended.MemoryLimit = calculateHeadroom(recommended.MemoryLimit, vPercent)
 		}
 
 		containersRightsizing = append(containersRightsizing, entity.KubernetesContainerRightsizingRecommendation{
