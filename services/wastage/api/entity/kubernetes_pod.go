@@ -40,11 +40,14 @@ type KubernetesContainerMetrics struct {
 }
 
 type KubernetesPodWastageRequest struct {
-	Pod                 corev1.Pod                            `json:"pod"`
-	Namespace           string                                `json:"namespace"`
-	Preferences         map[string]*string                    `json:"preferences"`
-	Metrics             map[string]KubernetesContainerMetrics `json:"metrics"` // container name -> metrics
-	OptimizationLoading bool                                  `json:"optimizationLoading"`
+	RequestId      *string                               `json:"requestId"`
+	CliVersion     *string                               `json:"cliVersion"`
+	Identification map[string]string                     `json:"identification"`
+	Pod            corev1.Pod                            `json:"pod"`
+	Namespace      string                                `json:"namespace"`
+	Preferences    map[string]*string                    `json:"preferences"`
+	Metrics        map[string]KubernetesContainerMetrics `json:"metrics"` // container name -> metrics
+	Loading        bool                                  `json:"loading"`
 }
 
 type KubernetesPodWastageResponse struct {
