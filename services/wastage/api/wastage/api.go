@@ -468,11 +468,11 @@ func (s API) KubernetesPod(c echo.Context) error {
 		return c.JSON(http.StatusOK, entity.KubernetesPodWastageResponse{})
 	}
 
-	rdsRightSizingRecom, err := s.recomSvc.KubernetesPodRecommendation(req.Pod, req.Metrics, req.Preferences)
-	if err != nil {
-		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
-		return err
-	}
+	//rdsRightSizingRecom, err := s.recomSvc.KubernetesPodRecommendation(req.Pod, req.Metrics, req.Preferences)
+	//if err != nil {
+	//	s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
+	//	return err
+	//}
 
 	elapsed := time.Since(start).Seconds()
 	usage.Latency = &elapsed
@@ -482,9 +482,9 @@ func (s API) KubernetesPod(c echo.Context) error {
 	}
 
 	// DO NOT change this, resp is used in updating usage
-	resp = entity.KubernetesPodWastageResponse{
-		RightSizing: *rdsRightSizingRecom,
-	}
+	//resp = entity.KubernetesPodWastageResponse{
+	//	RightSizing: *rdsRightSizingRecom,
+	//}
 	// DO NOT change this, resp is used in updating usage
 	return c.JSON(http.StatusOK, resp)
 }
