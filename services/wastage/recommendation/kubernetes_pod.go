@@ -42,7 +42,7 @@ func (s *Service) KubernetesPodRecommendation(
 		}
 
 		cpuMax := getMetricMax(metrics[container.Name].Cpu)
-		cpuTrimmedMean, err := getTrimmedMean(metrics[container.Name].Memory, 0.1)
+		cpuTrimmedMean, err := getTrimmedMean(metrics[container.Name].Cpu, 0.1)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func getTrimmedMean(data map[string]float32, trimPercentage float32) (float32, e
 
 	sort.Float64s(values)
 
-	numToTrim := int(trimPercentage * float32(len(data)))
+	numToTrim := int(trimPercentage * float32(len(data)) / 2)
 	trimmedValues := values[numToTrim : len(values)-numToTrim]
 
 	var sum float64

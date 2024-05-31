@@ -2,17 +2,21 @@ package wastage
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
+	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
 	pb "github.com/kaytu-io/plugin-kubernetes/plugin/proto/src/golang"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"net"
 	"time"
 )
@@ -35,12 +39,22 @@ func NewServer(logger *zap.Logger, usageRepo repo.UsageV2Repo, recomSvc *recomme
 	}
 }
 
-func StartGrpcServer(server *Server, grpcServerAddress string) {
+func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI string) error {
 	lis, err := net.Listen("tcp", grpcServerAddress)
 	if err != nil {
 		server.logger.Error("failed to listen", zap.Error(err))
+		return err
 	}
-	s := grpc.NewServer()
+	authGRPCConn, err := grpc.Dial(authGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		server.logger.Error("failed to dial", zap.Error(err))
+		return err
+	}
+	authGrpcClient := envoyAuth.NewAuthorizationClient(authGRPCConn)
+
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
+	)
 	pb.RegisterOptimizationServer(s, server)
 	server.logger.Info("server listening at", zap.String("address", lis.Addr().String()))
 	utils.EnsureRunGoroutine(func() {
@@ -49,6 +63,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string) {
 			panic(err)
 		}
 	})
+	return nil
 }
 
 func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.KubernetesPodOptimizationRequest) (*pb.KubernetesPodOptimizationResponse, error) {
@@ -60,8 +75,6 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	var err error
 
 	stats := model.Statistics{
-		AccountID:   req.Identification["account"],
-		OrgEmail:    req.Identification["org_m_email"],
 		ResourceID:  req.Pod.Id,
 		Auth0UserId: "", // TODO
 	}

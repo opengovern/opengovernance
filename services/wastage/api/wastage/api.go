@@ -61,7 +61,6 @@ func (s API) Register(e *echo.Echo) {
 	g.POST("/ec2-instance", httpserver.AuthorizeHandler(s.EC2Instance, api.ViewerRole))
 	g.POST("/aws-rds", httpserver.AuthorizeHandler(s.AwsRDS, api.ViewerRole))
 	g.POST("/aws-rds-cluster", httpserver.AuthorizeHandler(s.AwsRDSCluster, api.ViewerRole))
-	g.POST("/kubernetes-pod", httpserver.AuthorizeHandler(s.KubernetesPod, api.ViewerRole))
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
@@ -389,102 +388,6 @@ func (s API) AwsRDS(c echo.Context) error {
 	resp = entity.AwsRdsWastageResponse{
 		RightSizing: *rdsRightSizingRecom,
 	}
-	// DO NOT change this, resp is used in updating usage
-	return c.JSON(http.StatusOK, resp)
-}
-
-// KubernetesPod godoc
-//
-//	@Summary		List wastage in Kubernetes Pod
-//	@Description	List wastage in Kubernetes Pod
-//	@Security		BearerToken
-//	@Tags			wastage
-//	@Produce		json
-//	@Param			request	body		entity.KubernetesPodWastageRequest	true	"Request"
-//	@Success		200		{object}	entity.KubernetesPodWastageResponse
-//	@Router			/wastage/api/v1/wastage/kubernetes-pod [post]
-func (s API) KubernetesPod(c echo.Context) error {
-	start := time.Now()
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
-	ctx, span := s.tracer.Start(ctx, "get")
-	defer span.End()
-
-	var req entity.KubernetesPodWastageRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	if err := c.Validate(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var resp entity.KubernetesPodWastageResponse
-	var err error
-
-	stats := model.Statistics{
-		AccountID:   req.Identification["account"],
-		OrgEmail:    req.Identification["org_m_email"],
-		ResourceID:  string(req.Pod.UID),
-		Auth0UserId: httpserver.GetUserID(c),
-	}
-	statsOut, _ := json.Marshal(stats)
-
-	reqJson, _ := json.Marshal(req)
-	usage := model.UsageV2{
-		ApiEndpoint:    "kubernetes-pod",
-		Request:        reqJson,
-		RequestId:      req.RequestId,
-		CliVersion:     req.CliVersion,
-		Response:       nil,
-		FailureMessage: nil,
-		Statistics:     statsOut,
-	}
-	err = s.usageRepo.Create(&usage)
-	if err != nil {
-		s.logger.Error("failed to create usage", zap.Error(err))
-		return err
-	}
-
-	defer func() {
-		if err != nil {
-			fmsg := err.Error()
-			usage.FailureMessage = &fmsg
-		} else {
-			usage.Response, _ = json.Marshal(resp)
-			id := uuid.New()
-			responseId := id.String()
-			usage.ResponseId = &responseId
-
-			// TODO: We don't have cost here. What can we store?
-
-			statsOut, _ := json.Marshal(stats)
-			usage.Statistics = statsOut
-		}
-		err = s.usageRepo.Update(usage.ID, usage)
-		if err != nil {
-			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
-		}
-	}()
-	if req.Loading {
-		return c.JSON(http.StatusOK, entity.KubernetesPodWastageResponse{})
-	}
-
-	//rdsRightSizingRecom, err := s.recomSvc.KubernetesPodRecommendation(req.Pod, req.Metrics, req.Preferences)
-	//if err != nil {
-	//	s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
-	//	return err
-	//}
-
-	elapsed := time.Since(start).Seconds()
-	usage.Latency = &elapsed
-	err = s.usageRepo.Update(usage.ID, usage)
-	if err != nil {
-		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
-	}
-
-	// DO NOT change this, resp is used in updating usage
-	//resp = entity.KubernetesPodWastageResponse{
-	//	RightSizing: *rdsRightSizingRecom,
-	//}
 	// DO NOT change this, resp is used in updating usage
 	return c.JSON(http.StatusOK, resp)
 }

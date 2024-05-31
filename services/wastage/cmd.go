@@ -15,6 +15,11 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	logger2 "gorm.io/gorm/logger"
+	"os"
+)
+
+var (
+	AuthGRPCURI = os.Getenv("AUTH_GRPC_URI")
 )
 
 func Command() *cobra.Command {
@@ -77,7 +82,10 @@ func Command() *cobra.Command {
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
 			go ingestionSvc.Start(ctx)
 			grpcServer := wastage.NewServer(logger, usageV2Repo, recomSvc)
-			wastage.StartGrpcServer(grpcServer, cnf.Grpc.Address)
+			err = wastage.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
+			if err != nil {
+				return err
+			}
 
 			return httpserver.RegisterAndStart(
 				ctx,
