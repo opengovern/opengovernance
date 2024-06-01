@@ -86,9 +86,9 @@ require (
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.6
 	k8s.io/api v0.30.1
-	k8s.io/apiextensions-apiserver v0.29.0
+	k8s.io/apiextensions-apiserver v0.30.1
 	k8s.io/apimachinery v0.30.1
-	sigs.k8s.io/controller-runtime v0.17.0
+	sigs.k8s.io/controller-runtime v0.18.3
 )
 
 require (
@@ -388,7 +388,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
-	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
+	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -581,7 +581,6 @@ require (
 	gorm.io/driver/mysql v1.4.4 // indirect
 	gorm.io/plugin/prometheus v0.1.0 // indirect
 	k8s.io/client-go v0.30.1 // indirect
-	k8s.io/component-base v0.29.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
