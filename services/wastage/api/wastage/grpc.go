@@ -45,7 +45,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 		server.logger.Error("failed to listen", zap.Error(err))
 		return err
 	}
-	authGRPCConn, err := grpc.Dial(authGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	authGRPCConn, err := grpc.NewClient(authGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
 		server.logger.Error("failed to dial", zap.Error(err))
 		return err

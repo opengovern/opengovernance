@@ -326,7 +326,7 @@ func InitializeScheduler(
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
 	s.sinkClient = esSinkClient.NewEsSinkServiceClient(s.logger, EsSinkBaseURL)
-	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	authGRPCConn, err := grpc.NewClient(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
 		return nil, err
 	}
