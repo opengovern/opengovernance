@@ -47,7 +47,6 @@ var (
 
 	KeyARN                          = os.Getenv("VAULT_KEY_ID")
 	KeyRegion                       = os.Getenv("KMS_ACCOUNT_REGION")
-	DescribeDeliverEndpoint         = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
 	DescribeExternalDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT_EXTERNAL")
 
 	DoDeleteOldResources  = os.Getenv("DO_DELETE_OLD_RESOURCES")
