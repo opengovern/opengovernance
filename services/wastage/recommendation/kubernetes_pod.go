@@ -63,11 +63,11 @@ func (s *Service) KubernetesPodRecommendation(
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
 			}
 			recommended.CpuLimit = float32(calculateHeadroom(float64(recommended.CpuLimit), vPercent))
-			if recommended.CpuLimit == 0 {
+			if recommended.CpuLimit < 0.1 {
 				recommended.CpuLimit = 0.1
 			}
 			recommended.CpuRequest = float32(calculateHeadroom(float64(recommended.CpuRequest), vPercent))
-			if recommended.CpuRequest == 0 {
+			if recommended.CpuRequest < 0.1 {
 				recommended.CpuRequest = 0.1
 			}
 		}
