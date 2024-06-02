@@ -63,6 +63,13 @@ func (s *Service) KubernetesPodRecommendation(
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
 			}
 			recommended.CpuLimit = float32(calculateHeadroom(float64(recommended.CpuLimit), vPercent))
+			if recommended.CpuLimit == 0 {
+				recommended.CpuLimit = 0.1
+			}
+			recommended.CpuRequest = float32(calculateHeadroom(float64(recommended.CpuRequest), vPercent))
+			if recommended.CpuRequest == 0 {
+				recommended.CpuRequest = 0.1
+			}
 		}
 
 		if v, ok := preferences["MemoryBreathingRoom"]; ok && v != nil {
@@ -72,6 +79,23 @@ func (s *Service) KubernetesPodRecommendation(
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryBreathingRoom value: %s", *v))
 			}
 			recommended.MemoryLimit = float32(calculateHeadroom(float64(recommended.MemoryLimit), vPercent))
+			if recommended.MemoryLimit == 0 {
+				recommended.MemoryLimit = 100 * (1024 * 1024)
+			}
+			recommended.MemoryRequest = float32(calculateHeadroom(float64(recommended.MemoryRequest), vPercent))
+			if recommended.MemoryRequest == 0 {
+				recommended.MemoryRequest = 100 * (1024 * 1024)
+			}
+		}
+
+		var usageMemoryTrimmedMean, usageMemoryMax, usageCpuTrimmedMean, usageCpuMax *wrappers.FloatValue
+		if len(metrics[container.Name].Cpu) > 0 {
+			usageCpuTrimmedMean = wrapperspb.Float(cpuTrimmedMean)
+			usageCpuMax = wrapperspb.Float(cpuMax)
+		}
+		if len(metrics[container.Name].Memory) > 0 {
+			usageMemoryTrimmedMean = wrapperspb.Float(memoryTrimmedMean)
+			usageMemoryMax = wrapperspb.Float(memoryMax)
 		}
 
 		containersRightsizing = append(containersRightsizing, &pb.KubernetesContainerRightsizingRecommendation{
@@ -80,10 +104,10 @@ func (s *Service) KubernetesPodRecommendation(
 			Current:     &current,
 			Recommended: &recommended,
 
-			MemoryTrimmedMean: wrapperspb.Float(memoryTrimmedMean),
-			MemoryMax:         wrapperspb.Float(memoryMax),
-			CpuTrimmedMean:    wrapperspb.Float(cpuTrimmedMean),
-			CpuMax:            wrapperspb.Float(cpuMax),
+			MemoryTrimmedMean: usageMemoryTrimmedMean,
+			MemoryMax:         usageMemoryMax,
+			CpuTrimmedMean:    usageCpuTrimmedMean,
+			CpuMax:            usageCpuMax,
 
 			Description: "",
 		})
