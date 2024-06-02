@@ -56,10 +56,10 @@ func (s *Service) KubernetesPodRecommendation(
 			CpuLimit:   cpuMax,
 		}
 
-		if v, ok := preferences["CpuBreathingRoom"]; ok && v != nil {
+		if v, ok := preferences["CPUBreathingRoom"]; ok && v != nil {
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
-				s.logger.Error("invalid CpuBreathingRoom value", zap.String("value", v.Value))
+				s.logger.Error("invalid CPUBreathingRoom value", zap.String("value", v.Value))
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
 			}
 			recommended.CpuLimit = float32(calculateHeadroom(float64(recommended.CpuLimit), vPercent))
