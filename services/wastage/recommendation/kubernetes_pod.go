@@ -42,28 +42,18 @@ func (s *Service) KubernetesPodRecommendation(
 		}
 
 		cpuMax := getMetricMax(metrics[container.Name].Cpu)
-		cpuTrimmedMean, err := getTrimmedMean(metrics[container.Name].Cpu, 0.1)
-		if err != nil {
-			return nil, err
-		}
+		cpuTrimmedMean := getTrimmedMean(metrics[container.Name].Cpu, 0.1)
 		memoryMax := getMetricMax(metrics[container.Name].Memory)
-		memoryTrimmedMean, err := getTrimmedMean(metrics[container.Name].Memory, 0.1)
-		if err != nil {
-			return nil, err
-		}
+		memoryTrimmedMean := getTrimmedMean(metrics[container.Name].Memory, 0.1)
 
 		recommended := pb.RightsizingKubernetesContainer{
 			Name: container.Name,
 
 			MemoryRequest: memoryTrimmedMean,
+			MemoryLimit:   memoryMax,
 
 			CpuRequest: cpuTrimmedMean,
-		}
-		if memoryMax != nil {
-			recommended.MemoryLimit = *memoryMax
-		}
-		if cpuMax != nil {
-			recommended.CpuLimit = *cpuMax
+			CpuLimit:   cpuMax,
 		}
 
 		if v, ok := preferences["CpuBreathingRoom"]; ok && v != nil {
@@ -84,14 +74,6 @@ func (s *Service) KubernetesPodRecommendation(
 			recommended.MemoryLimit = float32(calculateHeadroom(float64(recommended.MemoryLimit), vPercent))
 		}
 
-		var pbMemoryMax *wrapperspb.FloatValue
-		if memoryMax != nil {
-			pbMemoryMax = wrapperspb.Float(*memoryMax)
-		}
-		var pbCpuMax *wrapperspb.FloatValue
-		if cpuMax != nil {
-			pbCpuMax = wrapperspb.Float(*cpuMax)
-		}
 		containersRightsizing = append(containersRightsizing, &pb.KubernetesContainerRightsizingRecommendation{
 			Name: container.Name,
 
@@ -99,9 +81,9 @@ func (s *Service) KubernetesPodRecommendation(
 			Recommended: &recommended,
 
 			MemoryTrimmedMean: wrapperspb.Float(memoryTrimmedMean),
-			MemoryMax:         pbMemoryMax,
+			MemoryMax:         wrapperspb.Float(memoryMax),
 			CpuTrimmedMean:    wrapperspb.Float(cpuTrimmedMean),
-			CpuMax:            pbCpuMax,
+			CpuMax:            wrapperspb.Float(cpuMax),
 
 			Description: "",
 		})
@@ -114,19 +96,22 @@ func (s *Service) KubernetesPodRecommendation(
 	}, nil
 }
 
-func getMetricMax(data map[string]float32) *float32 {
-	var dMax *float32
+func getMetricMax(data map[string]float32) float32 {
+	if len(data) == 0 {
+		return 0
+	}
+	dMax := float32(0)
 	for _, v := range data {
-		if dMax == nil || v > *dMax {
-			dMax = &v
+		if v > dMax {
+			dMax = v
 		}
 	}
 	return dMax
 }
 
-func getTrimmedMean(data map[string]float32, trimPercentage float32) (float32, error) {
+func getTrimmedMean(data map[string]float32, trimPercentage float32) float32 {
 	if len(data) == 0 {
-		return 0, fmt.Errorf("empty map provided")
+		return 0
 	}
 
 	values := make([]float64, 0, len(data))
@@ -143,5 +128,5 @@ func getTrimmedMean(data map[string]float32, trimPercentage float32) (float32, e
 	for _, v := range trimmedValues {
 		sum += v
 	}
-	return float32(sum) / float32(len(trimmedValues)), nil
+	return float32(sum) / float32(len(trimmedValues))
 }
