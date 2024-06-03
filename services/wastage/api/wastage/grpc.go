@@ -74,7 +74,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
-		grpc.UnaryInterceptor(Logger(server.logger)),
+		grpc.ChainUnaryInterceptor(Logger(server.logger)),
 	)
 	pb.RegisterOptimizationServer(s, server)
 	server.logger.Info("server listening at", zap.String("address", lis.Addr().String()))
