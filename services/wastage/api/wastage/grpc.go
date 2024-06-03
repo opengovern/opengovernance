@@ -43,6 +43,22 @@ func NewServer(logger *zap.Logger, usageRepo repo.UsageV2Repo, recomSvc *recomme
 	}
 }
 
+func Logger(logger *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		reqId := uuid.New()
+
+		logger.Info("Request", zap.String("ReqID", reqId.String()), zap.Any("request", req))
+		resp, err := handler(ctx, req)
+		if err != nil {
+			logger.Error("Request failed", zap.String("ReqID", reqId.String()), zap.Error(err))
+		} else {
+			logger.Info("Response", zap.String("ReqID", reqId.String()), zap.Any("response", resp))
+		}
+
+		return resp, err
+	}
+}
+
 func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI string) error {
 	lis, err := net.Listen("tcp", grpcServerAddress)
 	if err != nil {
@@ -58,6 +74,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
+		grpc.UnaryInterceptor(Logger(server.logger)),
 	)
 	pb.RegisterOptimizationServer(s, server)
 	server.logger.Info("server listening at", zap.String("address", lis.Addr().String()))
