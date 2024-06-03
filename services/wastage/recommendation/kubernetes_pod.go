@@ -46,6 +46,11 @@ func (s *Service) KubernetesPodRecommendation(
 		memoryMax := getMetricMax(metrics[container.Name].Memory)
 		memoryTrimmedMean := getTrimmedMean(metrics[container.Name].Memory, 0.1)
 
+		if pod.Name == "contour-envoy-kl545" {
+			s.logger.Info("contour-envoy-kl545 usage1", zap.Any("cpuMax", cpuMax), zap.String("container", container.Name),
+				zap.Any("cpuTrimmedMean", cpuTrimmedMean), zap.Any("memoryMax", memoryMax), zap.Any("memoryTrimmedMean", memoryTrimmedMean))
+		}
+
 		recommended := pb.RightsizingKubernetesContainer{
 			Name: container.Name,
 
@@ -54,6 +59,11 @@ func (s *Service) KubernetesPodRecommendation(
 
 			CpuRequest: cpuTrimmedMean,
 			CpuLimit:   cpuMax,
+		}
+
+		if pod.Name == "contour-envoy-kl545" {
+			s.logger.Info("contour-envoy-kl545 recommended1", zap.String("container", container.Name),
+				zap.Any("CpuLimit", recommended.CpuLimit), zap.Any("CpuRequest", recommended.CpuRequest), zap.Any("MemoryLimit", recommended.MemoryLimit), zap.Any("MemoryRequest", recommended.MemoryRequest))
 		}
 
 		if v, ok := preferences["CPUBreathingRoom"]; ok && v != nil {
@@ -86,6 +96,11 @@ func (s *Service) KubernetesPodRecommendation(
 			if recommended.MemoryRequest == 0 {
 				recommended.MemoryRequest = 100 * (1024 * 1024)
 			}
+		}
+
+		if pod.Name == "contour-envoy-kl545" {
+			s.logger.Info("contour-envoy-kl545 recommended2", zap.String("container", container.Name),
+				zap.Any("CpuLimit", recommended.CpuLimit), zap.Any("CpuRequest", recommended.CpuRequest), zap.Any("MemoryLimit", recommended.MemoryLimit), zap.Any("MemoryRequest", recommended.MemoryRequest))
 		}
 
 		var usageMemoryTrimmedMean, usageMemoryMax, usageCpuTrimmedMean, usageCpuMax *wrappers.DoubleValue
