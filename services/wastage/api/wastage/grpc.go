@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
@@ -17,7 +19,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -74,9 +78,26 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	var resp pb.KubernetesPodOptimizationResponse
 	var err error
 
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to get incoming context")
+	}
+
+	userId := md.Get(httpserver.XKaytuUserIDHeader)
+	if len(userId) == 0 {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	email := req.Identification["cluster_name"]
+	if !strings.Contains(email, "@") {
+		email = email + "@local.temp"
+	}
+
 	stats := model.Statistics{
+		AccountID:   req.Identification["auth_info_name"],
+		OrgEmail:    email,
 		ResourceID:  req.Pod.Id,
-		Auth0UserId: "", // TODO
+		Auth0UserId: userId[0],
 	}
 	statsOut, _ := json.Marshal(stats)
 
