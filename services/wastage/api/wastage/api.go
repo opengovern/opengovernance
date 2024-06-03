@@ -77,7 +77,7 @@ func (s API) Configuration(c echo.Context) error {
 	return c.JSON(http.StatusOK, entity.Configuration{
 		EC2LazyLoad:        20,
 		RDSLazyLoad:        20,
-		KubernetesLazyLoad: 100,
+		KubernetesLazyLoad: 1,
 	})
 }
 
