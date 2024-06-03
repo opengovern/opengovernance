@@ -100,6 +100,10 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
+	for k, v := range md {
+		s.logger.Info("Map", zap.String("key", k), zap.Strings("value", v))
+	}
+
 	userId := md.Get(httpserver.XKaytuUserIDHeader)
 	if len(userId) == 0 {
 		return nil, fmt.Errorf("user not found")
