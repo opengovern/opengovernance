@@ -1534,6 +1534,7 @@ github.com/gosuri/uitable v0.0.4/go.mod h1:tKR86bXuXPZazfOTG1FIzvjIdXzd0mo4Vtn16
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
+github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 h1:+9834+KizmvFV7pXQGSXQTsaWhq2GjuNUt0aUU0YBYw=
 github.com/grpc-ecosystem/go-grpc-middleware v1.3.0/go.mod h1:z0ButlSOZa5vEBq9m2m2hlwIgKw+rp3sdCBRoJY+30Y=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
@@ -1769,8 +1770,6 @@ github.com/kaytu-io/kaytu-aws-describer v0.34.8 h1:/EvNShXF723Lizx4LbYfinMfgy/nb
 github.com/kaytu-io/kaytu-aws-describer v0.34.8/go.mod h1:iKztu7A+z02I1axTplQXBq9OfnfvwBcDX7myOl/9TWE=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8 h1:cXQGFjt1H35iwVX3yyq1lfjNbw9X+IM8+aTYbzHj81s=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8/go.mod h1:+4ZsZm5fL84vdG81oYDaoTGIhE+SFhzxX8K5VlZsbhY=
-github.com/kaytu-io/kaytu-util v0.0.0-20240415102306-fdc35c00b134 h1:jGyORiQHufYVT+hnl7qy8/HmbMXKlagY+K71kF6TzUA=
-github.com/kaytu-io/kaytu-util v0.0.0-20240415102306-fdc35c00b134/go.mod h1:yamP/TyZEqmBoCNvGAUWoE7YRUdbbokb5ATrJGA1UbQ=
 github.com/kaytu-io/kaytu-util v0.0.0-20240603145709-1fdb7b4cb458 h1:7aXouZ1r+ptSQ0PsJ+MpD7dEpod/g4/7i0aZwbtTgOs=
 github.com/kaytu-io/kaytu-util v0.0.0-20240603145709-1fdb7b4cb458/go.mod h1:5yPrCS4WAz24OXJ0vwOV2i2RWNjLsUFz79DprgjXBLA=
 github.com/kaytu-io/pennywise v1.7.16 h1:ppZ80MNFuch4GRpEYzYZgxms4QkLCZWJPAnkxa1THgo=
