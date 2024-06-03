@@ -104,9 +104,10 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		s.logger.Info("Map", zap.String("key", k), zap.Strings("value", v))
 	}
 
-	userId := md.Get(httpserver.XKaytuUserIDHeader)
-	if len(userId) == 0 {
-		return nil, fmt.Errorf("user not found")
+	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userId := ""
+	if len(userIds) > 0 {
+		userId = userIds[0]
 	}
 
 	email := req.Identification["cluster_name"]
@@ -118,7 +119,7 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		AccountID:   req.Identification["auth_info_name"],
 		OrgEmail:    email,
 		ResourceID:  req.Pod.Id,
-		Auth0UserId: userId[0],
+		Auth0UserId: userId,
 	}
 	statsOut, _ := json.Marshal(stats)
 
