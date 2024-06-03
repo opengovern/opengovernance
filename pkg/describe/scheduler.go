@@ -178,7 +178,7 @@ func InitializeScheduler(
 	s = &Scheduler{
 		id:                       id,
 		OperationMode:            OperationMode(OperationModeConfig),
-		describeEndpoint:         DescribeDeliverEndpoint,
+		describeEndpoint:         DescribeExternalDeliverEndpoint,
 		describeExternalEndpoint: DescribeExternalDeliverEndpoint,
 		keyARN:                   KeyARN,
 		keyRegion:                KeyRegion,
