@@ -102,9 +102,10 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 
 	userIds := md.Get(httpserver.XKaytuUserIDHeader)
 	userId := ""
-	if len(userIds) > 0 {
-		userId = userIds[0]
+	if len(userIds) == 0 {
+		return nil, fmt.Errorf("user not found")
 	}
+	userId = userIds[0]
 
 	email := req.Identification["cluster_name"]
 	if !strings.Contains(email, "@") {
