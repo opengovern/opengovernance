@@ -66,7 +66,7 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
 	tx := r.db.Conn().Table(r.viewName).
-		Where("network_max_bandwidth >= ?", bandwidth).
+		//Where("network_max_bandwidth >= ?", bandwidth).
 		Where("capacity_status = 'Used'").
 		Where("price_per_unit != 0")
 	for k, v := range pref {
