@@ -3,7 +3,7 @@ package recommendation
 import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	pb "github.com/kaytu-io/plugin-kubernetes/plugin/proto/src/golang"
+	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -133,6 +133,106 @@ func (s *Service) KubernetesPodRecommendation(
 
 		ContainerResizing: containersRightsizing,
 	}, nil
+}
+
+func (s *Service) KubernetesDeploymentRecommendation(
+	deployment pb.KubernetesDeployment,
+	metrics map[string]*pb.KubernetesPodMetrics,
+	preferences map[string]*wrappers.StringValue,
+) (*pb.KubernetesDeploymentRightsizingRecommendation, error) {
+	result := pb.KubernetesDeploymentRightsizingRecommendation{
+		Name:                 deployment.Name,
+		ContainerResizing:    nil,
+		PodContainerResizing: make(map[string]*pb.KubernetesPodRightsizingRecommendation),
+	}
+
+	overallMetrics := make(map[string]*pb.KubernetesContainerMetrics)
+	for podName, podMetrics := range metrics {
+		for containerName, containerMetrics := range podMetrics.Metrics {
+			containerMetrics := containerMetrics
+			overallMetrics[containerName] = mergeContainerMetrics(overallMetrics[containerName], containerMetrics, func(aa, bb float64) float64 {
+				return max(aa, bb)
+			})
+		}
+
+		podContainerResizing, err := s.KubernetesPodRecommendation(pb.KubernetesPod{
+			Id:         podName,
+			Name:       podName,
+			Containers: deployment.Containers,
+		}, podMetrics.Metrics, preferences)
+		if err != nil {
+			s.logger.Error("failed to get kubernetes pod recommendation", zap.Error(err))
+			return nil, err
+		}
+		result.PodContainerResizing[podName] = podContainerResizing
+	}
+
+	containerResizings, err := s.KubernetesPodRecommendation(pb.KubernetesPod{
+		Id:         deployment.Name,
+		Name:       deployment.Name,
+		Containers: deployment.Containers,
+	}, overallMetrics, preferences)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes pod recommendation", zap.Error(err))
+		return nil, err
+	}
+	result.ContainerResizing = containerResizings.ContainerResizing
+	for _, containerResizing := range result.ContainerResizing {
+		for podName, podContainerResizings := range result.PodContainerResizing {
+			podContainerResizings := podContainerResizings
+			for i, podContainerResizing := range podContainerResizings.ContainerResizing {
+				if podContainerResizing == nil || podContainerResizings.Name != containerResizing.Name {
+					continue
+				}
+				podContainerResizing := podContainerResizing
+				podContainerResizing.Current = containerResizing.Current
+				podContainerResizing.Recommended = containerResizing.Recommended
+				podContainerResizing.Description = containerResizing.Description
+				podContainerResizings.ContainerResizing[i] = podContainerResizing
+			}
+			result.PodContainerResizing[podName] = podContainerResizings
+		}
+	}
+
+	return &result, nil
+}
+
+func mergeContainerMetrics(a *pb.KubernetesContainerMetrics, b *pb.KubernetesContainerMetrics, mergeF func(aa, bb float64) float64) *pb.KubernetesContainerMetrics {
+	if a == nil {
+		return b
+	}
+	if b == nil {
+		return a
+	}
+
+	result := &pb.KubernetesContainerMetrics{
+		Cpu:    make(map[string]float64),
+		Memory: make(map[string]float64),
+	}
+
+	for k, v := range a.Cpu {
+		result.Cpu[k] = v
+	}
+	for k, v := range b.Cpu {
+		if _, ok := result.Cpu[k]; ok {
+			result.Cpu[k] = mergeF(result.Cpu[k], v)
+		} else {
+			result.Cpu[k] = v
+		}
+	}
+
+	for k, v := range a.Memory {
+		result.Memory[k] = v
+	}
+	for k, v := range b.Memory {
+		if _, ok := result.Memory[k]; ok {
+			result.Memory[k] = mergeF(result.Memory[k], v)
+		} else {
+			result.Memory[k] = v
+		}
+	}
+
+	return result
 }
 
 func getMetricMax(data map[string]float64) float64 {
