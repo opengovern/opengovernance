@@ -178,6 +178,7 @@ func (s *Service) KubernetesDeploymentRecommendation(
 	}
 	result.ContainerResizing = containerResizings.ContainerResizing
 	for _, containerResizing := range result.ContainerResizing {
+		containerResizing := containerResizing
 		for podName, podContainerResizings := range result.PodContainerResizing {
 			podContainerResizings := podContainerResizings
 			for i, podContainerResizing := range podContainerResizings.ContainerResizing {
