@@ -100,10 +100,6 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	for k, v := range md {
-		s.logger.Info("Map", zap.String("key", k), zap.Strings("value", v))
-	}
-
 	userIds := md.Get(httpserver.XKaytuUserIDHeader)
 	userId := ""
 	if len(userIds) > 0 {
@@ -205,10 +201,6 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("failed to get incoming context")
-	}
-
-	for k, v := range md {
-		s.logger.Info("Map", zap.String("key", k), zap.Strings("value", v))
 	}
 
 	userIds := md.Get(httpserver.XKaytuUserIDHeader)
