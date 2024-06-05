@@ -33,8 +33,8 @@ func (s *Service) EC2InstanceRecommendation(
 	var ebsThroughputDatapoints []types2.Datapoint
 	var ebsIopsDatapoints []types2.Datapoint
 	for _, v := range volumeMetrics {
-		ebsThroughputDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
-		ebsIopsDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
+		ebsThroughputDatapoints = sumMergeDatapoints(sumMergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
+		ebsIopsDatapoints = sumMergeDatapoints(sumMergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
 	}
 	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints, usageAverageType)
 	ebsIopsUsage := extractUsage(ebsIopsDatapoints, usageAverageType)
