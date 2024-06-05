@@ -47,12 +47,14 @@ func Logger(logger *zap.Logger) func(ctx context.Context, req any, info *grpc.Un
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		reqId := uuid.New()
 
-		logger.Info("Request", zap.String("ReqID", reqId.String()), zap.Any("request", req))
+		logger.Info("Request", zap.String("ReqID", reqId.String()))
+		startTime := time.Now()
 		resp, err := handler(ctx, req)
+		elapsed := time.Since(startTime).Seconds()
 		if err != nil {
-			logger.Error("Request failed", zap.String("ReqID", reqId.String()), zap.Error(err))
+			logger.Error("Request failed", zap.String("ReqID", reqId.String()), zap.Error(err), zap.Float64("latency", elapsed))
 		} else {
-			logger.Info("Response", zap.String("ReqID", reqId.String()), zap.Any("response", resp))
+			logger.Info("Request succeeded", zap.String("ReqID", reqId.String()), zap.Float64("latency", elapsed))
 		}
 
 		return resp, err
