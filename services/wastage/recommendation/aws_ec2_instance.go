@@ -33,8 +33,8 @@ func (s *Service) EC2InstanceRecommendation(
 	var ebsThroughputDatapoints []types2.Datapoint
 	var ebsIopsDatapoints []types2.Datapoint
 	for _, v := range volumeMetrics {
-		ebsThroughputDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
-		ebsIopsDatapoints = mergeDatapoints(sumMergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
+		ebsThroughputDatapoints = sumMergeDatapoints(sumMergeDatapoints(v["VolumeReadBytes"], v["VolumeWriteBytes"]), ebsThroughputDatapoints)
+		ebsIopsDatapoints = sumMergeDatapoints(sumMergeDatapoints(v["VolumeReadOps"], v["VolumeWriteOps"]), ebsIopsDatapoints)
 	}
 	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints, usageAverageType)
 	ebsIopsUsage := extractUsage(ebsIopsDatapoints, usageAverageType)
@@ -152,11 +152,11 @@ func (s *Service) EC2InstanceRecommendation(
 		pref["pre_installed_sw = ?"] = "NA"
 	}
 	if ebsIopsUsage.Avg != nil && *ebsIopsUsage.Avg > 0 {
-		pref["ebs_baseline_iops IS NULL OR ebs_baseline_iops >= ?"] = *ebsIopsUsage.Avg
+		pref["ebs_maximum_iops IS NULL OR ebs_maximum_iops >= ?"] = *ebsIopsUsage.Avg
 	}
 	// Metric is in bytes so we convert to Mbytes
 	if ebsThroughputUsage.Avg != nil && *ebsThroughputUsage.Avg > 0 {
-		pref["ebs_baseline_throughput IS NULL OR ebs_baseline_throughput >= ?"] = *ebsThroughputUsage.Avg / (1024 * 1024)
+		pref["ebs_maximum_throughput IS NULL OR ebs_maximum_throughput >= ?"] = *ebsThroughputUsage.Avg / (1024 * 1024)
 	}
 
 	var recommended *entity.RightsizingEC2Instance

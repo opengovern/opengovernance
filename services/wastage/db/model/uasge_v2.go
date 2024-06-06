@@ -3,14 +3,19 @@ package model
 import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"time"
 )
 
 type UsageV2 struct {
-	gorm.Model
+	//We don't use gorm.Model since we need the indices on CreatedAt and UpdatedAt
+	ID        uint           `gorm:"primarykey"`
+	CreatedAt time.Time      `gorm:"index"`
+	UpdatedAt time.Time      `gorm:"index"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	RequestId      *string
 	ResponseId     *string
-	ApiEndpoint    string
+	ApiEndpoint    string `gorm:"index"`
 	Request        datatypes.JSON
 	Response       datatypes.JSON
 	FailureMessage *string

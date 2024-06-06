@@ -44,7 +44,7 @@ func mergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Datapo
 		dp := dp
 		if dps[dp.Timestamp.Unix()] == nil {
 			dps[dp.Timestamp.Unix()] = &dp
-			break
+			continue
 		}
 
 		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, avg)
@@ -78,7 +78,7 @@ func sumMergeDatapoints(in []types.Datapoint, out []types.Datapoint) []types.Dat
 		dp := dp
 		if dps[dp.Timestamp.Unix()] == nil {
 			dps[dp.Timestamp.Unix()] = &dp
-			break
+			continue
 		}
 
 		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, sum)
@@ -109,7 +109,7 @@ func MergeDatapoints(in []types.Datapoint, out []types.Datapoint, mergeF func(aa
 		dp := dp
 		if dps[dp.Timestamp.Unix()] == nil {
 			dps[dp.Timestamp.Unix()] = &dp
-			break
+			continue
 		}
 
 		dps[dp.Timestamp.Unix()].Average = funcP(dps[dp.Timestamp.Unix()].Average, dp.Average, mergeF)

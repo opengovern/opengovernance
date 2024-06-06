@@ -3,7 +3,7 @@ package recommendation
 import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	pb "github.com/kaytu-io/plugin-kubernetes/plugin/proto/src/golang"
+	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -66,35 +66,49 @@ func (s *Service) KubernetesPodRecommendation(
 				zap.Any("CpuLimit", recommended.CpuLimit), zap.Any("CpuRequest", recommended.CpuRequest), zap.Any("MemoryLimit", recommended.MemoryLimit), zap.Any("MemoryRequest", recommended.MemoryRequest))
 		}
 
-		if v, ok := preferences["CPUBreathingRoom"]; ok && v != nil {
+		if v, ok := preferences["CPURequestBreathingRoom"]; ok && v != nil {
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid CPUBreathingRoom value", zap.String("value", v.Value))
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
-			}
-			recommended.CpuLimit = calculateHeadroom(recommended.CpuLimit, vPercent)
-			if recommended.CpuLimit < 0.1 {
-				recommended.CpuLimit = 0.1
 			}
 			recommended.CpuRequest = calculateHeadroom(recommended.CpuRequest, vPercent)
 			if recommended.CpuRequest < 0.1 {
 				recommended.CpuRequest = 0.1
 			}
 		}
+		if v, ok := preferences["CPULimitBreathingRoom"]; ok && v != nil {
+			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid CPULimitBreathingRoom value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuLimitBreathingRoom value: %s", *v))
+			}
+			recommended.CpuLimit = calculateHeadroom(recommended.CpuLimit, vPercent)
+			if recommended.CpuLimit < 0.1 {
+				recommended.CpuLimit = 0.1
+			}
+		}
 
-		if v, ok := preferences["MemoryBreathingRoom"]; ok && v != nil {
+		if v, ok := preferences["MemoryRequestBreathingRoom"]; ok && v != nil {
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid MemoryBreathingRoom value", zap.String("value", v.Value))
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryBreathingRoom value: %s", *v))
 			}
-			recommended.MemoryLimit = calculateHeadroom(recommended.MemoryLimit, vPercent)
-			if recommended.MemoryLimit == 0 {
-				recommended.MemoryLimit = 100 * (1024 * 1024)
-			}
 			recommended.MemoryRequest = calculateHeadroom(recommended.MemoryRequest, vPercent)
 			if recommended.MemoryRequest == 0 {
 				recommended.MemoryRequest = 100 * (1024 * 1024)
+			}
+		}
+		if v, ok := preferences["MemoryLimitBreathingRoom"]; ok && v != nil {
+			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
+			if err != nil {
+				s.logger.Error("invalid MemoryLimitBreathingRoom value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryLimitBreathingRoom value: %s", *v))
+			}
+			recommended.MemoryLimit = calculateHeadroom(recommended.MemoryLimit, vPercent)
+			if recommended.MemoryLimit == 0 {
+				recommended.MemoryLimit = 100 * (1024 * 1024)
 			}
 		}
 
@@ -133,6 +147,107 @@ func (s *Service) KubernetesPodRecommendation(
 
 		ContainerResizing: containersRightsizing,
 	}, nil
+}
+
+func (s *Service) KubernetesDeploymentRecommendation(
+	deployment pb.KubernetesDeployment,
+	metrics map[string]*pb.KubernetesPodMetrics,
+	preferences map[string]*wrappers.StringValue,
+) (*pb.KubernetesDeploymentRightsizingRecommendation, error) {
+	result := pb.KubernetesDeploymentRightsizingRecommendation{
+		Name:                 deployment.Name,
+		ContainerResizing:    nil,
+		PodContainerResizing: make(map[string]*pb.KubernetesPodRightsizingRecommendation),
+	}
+
+	overallMetrics := make(map[string]*pb.KubernetesContainerMetrics)
+	for podName, podMetrics := range metrics {
+		for containerName, containerMetrics := range podMetrics.Metrics {
+			containerMetrics := containerMetrics
+			overallMetrics[containerName] = mergeContainerMetrics(overallMetrics[containerName], containerMetrics, func(aa, bb float64) float64 {
+				return max(aa, bb)
+			})
+		}
+
+		podContainerResizing, err := s.KubernetesPodRecommendation(pb.KubernetesPod{
+			Id:         podName,
+			Name:       podName,
+			Containers: deployment.Containers,
+		}, podMetrics.Metrics, preferences)
+		if err != nil {
+			s.logger.Error("failed to get kubernetes pod recommendation", zap.Error(err))
+			return nil, err
+		}
+		result.PodContainerResizing[podName] = podContainerResizing
+	}
+
+	containerResizings, err := s.KubernetesPodRecommendation(pb.KubernetesPod{
+		Id:         deployment.Name,
+		Name:       deployment.Name,
+		Containers: deployment.Containers,
+	}, overallMetrics, preferences)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes pod recommendation", zap.Error(err))
+		return nil, err
+	}
+	result.ContainerResizing = containerResizings.ContainerResizing
+	for _, containerResizing := range result.ContainerResizing {
+		containerResizing := containerResizing
+		for podName, podContainerResizings := range result.PodContainerResizing {
+			podContainerResizings := podContainerResizings
+			for i, podContainerResizing := range podContainerResizings.ContainerResizing {
+				podContainerResizing := podContainerResizing
+				if podContainerResizing == nil || podContainerResizing.Name != containerResizing.Name {
+					continue
+				}
+				podContainerResizing.Current = containerResizing.Current
+				podContainerResizing.Recommended = containerResizing.Recommended
+				podContainerResizing.Description = containerResizing.Description
+				podContainerResizings.ContainerResizing[i] = podContainerResizing
+			}
+			result.PodContainerResizing[podName] = podContainerResizings
+		}
+	}
+
+	return &result, nil
+}
+
+func mergeContainerMetrics(a *pb.KubernetesContainerMetrics, b *pb.KubernetesContainerMetrics, mergeF func(aa, bb float64) float64) *pb.KubernetesContainerMetrics {
+	if a == nil {
+		return b
+	}
+	if b == nil {
+		return a
+	}
+
+	result := &pb.KubernetesContainerMetrics{
+		Cpu:    make(map[string]float64),
+		Memory: make(map[string]float64),
+	}
+
+	for k, v := range a.Cpu {
+		result.Cpu[k] = v
+	}
+	for k, v := range b.Cpu {
+		if _, ok := result.Cpu[k]; ok {
+			result.Cpu[k] = mergeF(result.Cpu[k], v)
+		} else {
+			result.Cpu[k] = v
+		}
+	}
+
+	for k, v := range a.Memory {
+		result.Memory[k] = v
+	}
+	for k, v := range b.Memory {
+		if _, ok := result.Memory[k]; ok {
+			result.Memory[k] = mergeF(result.Memory[k], v)
+		} else {
+			result.Memory[k] = v
+		}
+	}
+
+	return result
 }
 
 func getMetricMax(data map[string]float64) float64 {
