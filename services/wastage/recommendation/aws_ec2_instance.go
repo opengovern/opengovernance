@@ -223,6 +223,16 @@ func (s *Service) EC2InstanceRecommendation(
 		recommendation.Memory = memoryUsage
 	}
 
+	if preferences["ExcludeUpsizingFeature"] != nil {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
+			if recommendation.Recommended != nil && recommendation.Recommended.Cost > recommendation.Current.Cost {
+				recommendation.Recommended = &recommendation.Current
+				recommendation.Description = "No recommendation available as upsizing feature is disabled"
+				return &recommendation, nil
+			}
+		}
+	}
+
 	if rightSizedInstanceType != nil {
 		recommendation.Description, _ = s.generateEc2InstanceDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, excludeBurstable, preferences, neededCPU, neededMemory, neededNetworkThroughput)
 	}
@@ -591,6 +601,15 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		return nil, err
 	}
 	result.Recommended.Cost = newVolumeCost
+
+	if preferences["ExcludeUpsizingFeature"] != nil {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
+			if result.Recommended != nil && result.Recommended.Cost > result.Current.Cost {
+				result.Recommended = &result.Current
+				result.Description = "No recommendation available as upsizing feature is disabled"
+			}
+		}
+	}
 
 	return result, nil
 }
