@@ -437,6 +437,16 @@ func (s *Service) AwsRdsRecommendation(
 		Description: "",
 	}
 
+	if preferences["ExcludeUpsizingFeature"] != nil {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
+			if recommendation.Recommended != nil && recommendation.Recommended.Cost > recommendation.Current.Cost {
+				recommendation.Recommended = &recommendation.Current
+				recommendation.Description = "No recommendation available as upsizing feature is disabled"
+				return &recommendation, nil
+			}
+		}
+	}
+
 	var computeDescription, storageDescription string
 	if rightSizedInstanceRow != nil {
 		computeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
