@@ -355,7 +355,7 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 		return i.PhysicalProcessorArch
 	case "SupportedArchitectures":
 		return "" //TODO
-	case "ENASupported":
+	case "ENASupport":
 		return i.EnhancedNetworkingSupported
 	case "EncryptionInTransitSupported":
 		return "" //TODO

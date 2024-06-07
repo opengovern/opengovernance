@@ -13,7 +13,7 @@ var (
 		"ClockSpeed":                   "clock_speed",
 		"ProcessorArchitecture":        "physical_processor_arch",
 		"SupportedArchitectures":       "",
-		"ENASupported":                 "enhanced_networking_supported",
+		"ENASupport":                   "enhanced_networking_supported",
 		"EncryptionInTransitSupported": "",
 		"SupportedRootDeviceTypes":     "",
 		"Cores":                        "",
