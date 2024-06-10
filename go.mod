@@ -47,7 +47,7 @@ require (
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
 	github.com/kaytu-io/kaytu-util v0.0.0-20240604043338-1b0eea1a5455
 	github.com/kaytu-io/pennywise v1.7.16
-	github.com/kaytu-io/plugin-kubernetes-internal v0.3.2-0.20240609104357-327829745904
+	github.com/kaytu-io/plugin-kubernetes-internal v0.4.1-0.20240610122418-79ebc097dbb6
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
