@@ -188,8 +188,8 @@ func (s API) EC2Instance(c echo.Context) error {
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
-	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
-		usageAverageType = recommendation.UsageAverageTypeAverage
+	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.5.2") < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
 	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
@@ -344,8 +344,8 @@ func (s API) AwsRDS(c echo.Context) error {
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
-	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
-		usageAverageType = recommendation.UsageAverageTypeAverage
+	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.5.2") < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
 	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
@@ -493,8 +493,8 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
-	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.1.22") < 0 {
-		usageAverageType = recommendation.UsageAverageTypeAverage
+	if req.CliVersion == nil || semver.Compare("v"+*req.CliVersion, "v0.5.2") < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
 	resp = entity.AwsClusterWastageResponse{

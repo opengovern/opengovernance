@@ -398,3 +398,106 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 
 	return &resp, nil
 }
+
+func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.KubernetesDaemonsetOptimizationRequest) (*pb.KubernetesDaemonsetOptimizationResponse, error) {
+	start := time.Now()
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var resp pb.KubernetesDaemonsetOptimizationResponse
+	var err error
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to get incoming context")
+	}
+
+	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userId := ""
+	if len(userIds) > 0 {
+		userId = userIds[0]
+	}
+
+	email := req.Identification["cluster_name"]
+	if !strings.Contains(email, "@") {
+		email = email + "@local.temp"
+	}
+
+	stats := model.Statistics{
+		AccountID:   req.Identification["auth_info_name"],
+		OrgEmail:    email,
+		ResourceID:  req.GetDaemonset().GetId(),
+		Auth0UserId: userId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
+	reqJson, _ := json.Marshal(req)
+	var requestId *string
+	var cliVersion *string
+	if req.RequestId != nil {
+		requestId = &req.RequestId.Value
+	}
+	if req.CliVersion != nil {
+		cliVersion = &req.CliVersion.Value
+	}
+	usage := model.UsageV2{
+		ApiEndpoint:    "kubernetes-daemonset",
+		Request:        reqJson,
+		RequestId:      requestId,
+		CliVersion:     cliVersion,
+		Response:       nil,
+		FailureMessage: nil,
+		Statistics:     statsOut,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+
+			// TODO: We don't have cost here. What can we store?
+
+			statsOut, _ := json.Marshal(stats)
+			usage.Statistics = statsOut
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+	if req.Loading {
+		return nil, nil
+	}
+
+	daemonsetRightSizingRecom, err := s.recomSvc.KubernetesDaemonsetRecommendation(*req.Daemonset, req.Metrics, req.Preferences)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes daemonset recommendation", zap.Error(err))
+		return nil, err
+	}
+
+	elapsed := time.Since(start).Seconds()
+	usage.Latency = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		return nil, err
+	}
+
+	// DO NOT change this, resp is used in updating usage
+	resp = pb.KubernetesDaemonsetOptimizationResponse{
+		Rightsizing: daemonsetRightSizingRecom,
+	}
+	// DO NOT change this, resp is used in updating usage
+
+	return &resp, nil
+}
