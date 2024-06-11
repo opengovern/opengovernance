@@ -5,10 +5,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
@@ -28,18 +30,25 @@ import (
 type Server struct {
 	pb.OptimizationServer
 
-	tracer    trace.Tracer
-	logger    *zap.Logger
+	cfg config.WastageConfig
+
+	tracer trace.Tracer
+	logger *zap.Logger
+
+	blobClient *azblob.Client
+
 	usageRepo repo.UsageV2Repo
 	recomSvc  *recommendation.Service
 }
 
-func NewServer(logger *zap.Logger, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
+func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
 	return &Server{
-		tracer:    otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:    logger.Named("grpc"),
-		usageRepo: usageRepo,
-		recomSvc:  recomSvc,
+		cfg:        cfg,
+		tracer:     otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:     logger.Named("grpc"),
+		blobClient: blobClient,
+		usageRepo:  usageRepo,
+		recomSvc:   recomSvc,
 	}
 }
 
@@ -123,7 +132,11 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -132,9 +145,21 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod-%s", *requestId), fullReqJson, nil)
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-pod",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -226,7 +251,11 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -235,9 +264,21 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment-%s", *requestId), fullReqJson, nil)
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-deployment",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -329,7 +370,11 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -338,9 +383,21 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset-%s", *requestId), fullReqJson, nil)
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-statefulset",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -432,7 +489,11 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -441,9 +502,21 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset-%s", *requestId), fullReqJson, nil)
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-daemonset",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,

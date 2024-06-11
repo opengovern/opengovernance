@@ -1,6 +1,8 @@
 package wastage
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage"
@@ -78,10 +80,23 @@ func Command() *cobra.Command {
 			userRepo := repo.NewUserRepo(db)
 			orgRepo := repo.NewOrganizationRepo(db)
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
+
+			cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{TenantID: cnf.AzBlob.TenantID})
+			if err != nil {
+				logger.Error("failed to create azure credential", zap.Error(err))
+				return err
+			}
+
+			blobClient, err := azblob.NewClient(cnf.AzBlob.AccountUrl, cred, nil)
+			if err != nil {
+				logger.Error("failed to create blob client", zap.Error(err))
+				return err
+			}
+
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
 			go ingestionSvc.Start(ctx)
-			grpcServer := wastage.NewServer(logger, usageV2Repo, recomSvc)
+			grpcServer := wastage.NewServer(logger, cnf, blobClient, usageV2Repo, recomSvc)
 			err = wastage.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
 			if err != nil {
 				return err
@@ -91,7 +106,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo, logger),
+				api.New(cnf, blobClient, costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo, logger),
 			)
 		},
 	}
