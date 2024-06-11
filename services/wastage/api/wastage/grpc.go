@@ -152,7 +152,7 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
@@ -271,7 +271,7 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
@@ -390,7 +390,7 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
@@ -509,7 +509,7 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
