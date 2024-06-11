@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
@@ -133,7 +135,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance-%s", *req.RequestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance-%s", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		//return err
@@ -327,7 +329,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-%s", *req.RequestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-%s", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		//return err
@@ -476,7 +478,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster-%s", *req.RequestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster-%s", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		//return err

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
@@ -151,7 +152,7 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod-%s", *requestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
@@ -270,7 +271,7 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment-%s", *requestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
@@ -389,7 +390,7 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset-%s", *requestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
@@ -508,7 +509,7 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset-%s", *requestId), fullReqJson, nil)
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset-%s", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		return nil, err
