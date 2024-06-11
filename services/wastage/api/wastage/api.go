@@ -141,7 +141,7 @@ func (s API) EC2Instance(c echo.Context) error {
 	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		//return err
+		return err
 	}
 
 	usage := model.UsageV2{
@@ -335,7 +335,7 @@ func (s API) AwsRDS(c echo.Context) error {
 	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		//return err
+		return err
 	}
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds",
@@ -484,7 +484,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 	if err != nil {
 		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		//return err
+		return err
 	}
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds-cluster",
