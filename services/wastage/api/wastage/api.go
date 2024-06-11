@@ -126,9 +126,12 @@ func (s API) EC2Instance(c echo.Context) error {
 
 	fullReqJson, _ := json.Marshal(req)
 	metrics := req.Metrics
+	volMetrics := req.VolumeMetrics
 	req.Metrics = nil
+	req.VolumeMetrics = nil
 	trimmedReqJson, _ := json.Marshal(req)
 	req.Metrics = metrics
+	req.VolumeMetrics = volMetrics
 
 	if req.RequestId == nil {
 		id := uuid.New().String()
