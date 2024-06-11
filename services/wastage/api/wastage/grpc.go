@@ -75,7 +75,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 	authGrpcClient := envoyAuth.NewAuthorizationClient(authGRPCConn)
 
 	s := grpc.NewServer(
-		grpc.MaxRecvMsgSize(32*1024*1024),
+		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
 		grpc.ChainUnaryInterceptor(Logger(server.logger)),
 	)
