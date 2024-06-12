@@ -338,6 +338,69 @@ func (s *Service) KubernetesDaemonsetRecommendation(
 	return &result, nil
 }
 
+func (s *Service) KubernetesJobRecommendation(
+	job pb.KubernetesJob,
+	metrics map[string]*pb.KubernetesPodMetrics,
+	preferences map[string]*wrappers.StringValue,
+) (*pb.KubernetesJobRightsizingRecommendation, error) {
+	result := pb.KubernetesJobRightsizingRecommendation{
+		Name:                 job.Name,
+		ContainerResizing:    nil,
+		PodContainerResizing: make(map[string]*pb.KubernetesPodRightsizingRecommendation),
+	}
+
+	overallMetrics := make(map[string]*pb.KubernetesContainerMetrics)
+	for podName, podMetrics := range metrics {
+		for containerName, containerMetrics := range podMetrics.Metrics {
+			containerMetrics := containerMetrics
+			overallMetrics[containerName] = mergeContainerMetrics(overallMetrics[containerName], containerMetrics, func(aa, bb float64) float64 {
+				return max(aa, bb)
+			})
+		}
+
+		podContainerResizing, err := s.KubernetesPodRecommendation(pb.KubernetesPod{
+			Id:         podName,
+			Name:       podName,
+			Containers: job.Containers,
+		}, podMetrics.Metrics, preferences)
+		if err != nil {
+			s.logger.Error("failed to get kubernetes pod recommendation", zap.Error(err))
+			return nil, err
+		}
+		result.PodContainerResizing[podName] = podContainerResizing
+	}
+
+	containerResizings, err := s.KubernetesPodRecommendation(pb.KubernetesPod{
+		Id:         job.Name,
+		Name:       job.Name,
+		Containers: job.Containers,
+	}, overallMetrics, preferences)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes pod recommendation", zap.Error(err))
+		return nil, err
+	}
+	result.ContainerResizing = containerResizings.ContainerResizing
+	for _, containerResizing := range result.ContainerResizing {
+		containerResizing := containerResizing
+		for podName, podContainerResizings := range result.PodContainerResizing {
+			podContainerResizings := podContainerResizings
+			for i, podContainerResizing := range podContainerResizings.ContainerResizing {
+				podContainerResizing := podContainerResizing
+				if podContainerResizing == nil || podContainerResizing.Name != containerResizing.Name {
+					continue
+				}
+				podContainerResizing.Current = containerResizing.Current
+				podContainerResizing.Recommended = containerResizing.Recommended
+				podContainerResizing.Description = containerResizing.Description
+				podContainerResizings.ContainerResizing[i] = podContainerResizing
+			}
+			result.PodContainerResizing[podName] = podContainerResizings
+		}
+	}
+
+	return &result, nil
+}
+
 func mergeContainerMetrics(a *pb.KubernetesContainerMetrics, b *pb.KubernetesContainerMetrics, mergeF func(aa, bb float64) float64) *pb.KubernetesContainerMetrics {
 	if a == nil {
 		return b
