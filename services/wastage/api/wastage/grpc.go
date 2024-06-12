@@ -576,3 +576,122 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 
 	return &resp, nil
 }
+
+func (s *Server) KubernetesJobsOptimization(ctx context.Context, req *pb.KubernetesJobOptimizationRequest) (*pb.KubernetesJobOptimizationResponse, error) {
+	start := time.Now()
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var resp pb.KubernetesJobOptimizationResponse
+	var err error
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to get incoming context")
+	}
+
+	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userId := ""
+	if len(userIds) > 0 {
+		userId = userIds[0]
+	}
+
+	email := req.Identification["cluster_name"]
+	if !strings.Contains(email, "@") {
+		email = email + "@local.temp"
+	}
+
+	stats := model.Statistics{
+		AccountID:   req.Identification["auth_info_name"],
+		OrgEmail:    email,
+		ResourceID:  req.GetJob().GetId(),
+		Auth0UserId: userId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
+	var requestId *string
+	var cliVersion *string
+	if req.RequestId != nil {
+		requestId = &req.RequestId.Value
+	}
+	if req.CliVersion != nil {
+		cliVersion = &req.CliVersion.Value
+	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-job/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
+	usage := model.UsageV2{
+		ApiEndpoint:    "kubernetes-job",
+		Request:        trimmedReqJson,
+		RequestId:      requestId,
+		CliVersion:     cliVersion,
+		Response:       nil,
+		FailureMessage: nil,
+		Statistics:     statsOut,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+
+			// TODO: We don't have cost here. What can we store?
+
+			statsOut, _ := json.Marshal(stats)
+			usage.Statistics = statsOut
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+	if req.Loading {
+		return nil, nil
+	}
+
+	jobRightSizingRecom, err := s.recomSvc.KubernetesJobRecommendation(*req.Job, req.Metrics, req.Preferences)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes daemonset recommendation", zap.Error(err))
+		return nil, err
+	}
+
+	elapsed := time.Since(start).Seconds()
+	usage.Latency = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		return nil, err
+	}
+
+	// DO NOT change this, resp is used in updating usage
+	resp = pb.KubernetesJobOptimizationResponse{
+		Rightsizing: jobRightSizingRecom,
+	}
+	// DO NOT change this, resp is used in updating usage
+
+	return &resp, nil
+}

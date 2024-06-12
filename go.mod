@@ -7,6 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/aws/aws-sdk-go v1.49.10
 	github.com/aws/aws-sdk-go-v2 v1.24.1
@@ -47,7 +48,7 @@ require (
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
 	github.com/kaytu-io/kaytu-util v0.0.0-20240604043338-1b0eea1a5455
 	github.com/kaytu-io/pennywise v1.7.16
-	github.com/kaytu-io/plugin-kubernetes-internal v0.4.1-0.20240610122418-79ebc097dbb6
+	github.com/kaytu-io/plugin-kubernetes-internal v0.6.1-0.20240612105749-ee5b413c2dc6
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
@@ -190,7 +191,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder v1.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.0.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.15.0 // indirect
 	github.com/Azure/go-amqp v1.0.5 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
