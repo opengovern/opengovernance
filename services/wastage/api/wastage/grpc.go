@@ -577,7 +577,7 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	return &resp, nil
 }
 
-func (s *Server) KubernetesJobsOptimization(ctx context.Context, req *pb.KubernetesJobOptimizationRequest) (*pb.KubernetesJobOptimizationResponse, error) {
+func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.KubernetesJobOptimizationRequest) (*pb.KubernetesJobOptimizationResponse, error) {
 	start := time.Now()
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
