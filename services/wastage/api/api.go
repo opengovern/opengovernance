@@ -1,7 +1,9 @@
 package api
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/ingestion"
@@ -11,6 +13,8 @@ import (
 )
 
 type API struct {
+	cfg          config.WastageConfig
+	blobClient   *azblob.Client
 	costSvc      *cost.Service
 	recomSvc     *recommendation.Service
 	ingestionSvc *ingestion.Service
@@ -21,8 +25,10 @@ type API struct {
 	logger       *zap.Logger
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) *API {
+func New(cfg config.WastageConfig, blobClient *azblob.Client, costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) *API {
 	return &API{
+		cfg:          cfg,
+		blobClient:   blobClient,
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
 		ingestionSvc: ingestionSvc,
@@ -35,6 +41,6 @@ func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionSvc *
 }
 
 func (api *API) Register(e *echo.Echo) {
-	qThr := wastage.New(api.costSvc, api.recomSvc, api.ingestionSvc, api.usageV1Repo, api.usageRepo, api.userRepo, api.orgRepo, api.logger)
+	qThr := wastage.New(api.cfg, api.blobClient, api.costSvc, api.recomSvc, api.ingestionSvc, api.usageV1Repo, api.usageRepo, api.userRepo, api.orgRepo, api.logger)
 	qThr.Register(e)
 }

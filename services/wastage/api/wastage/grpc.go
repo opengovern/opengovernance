@@ -5,10 +5,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
@@ -28,18 +31,25 @@ import (
 type Server struct {
 	pb.OptimizationServer
 
-	tracer    trace.Tracer
-	logger    *zap.Logger
+	cfg config.WastageConfig
+
+	tracer trace.Tracer
+	logger *zap.Logger
+
+	blobClient *azblob.Client
+
 	usageRepo repo.UsageV2Repo
 	recomSvc  *recommendation.Service
 }
 
-func NewServer(logger *zap.Logger, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
+func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
 	return &Server{
-		tracer:    otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:    logger.Named("grpc"),
-		usageRepo: usageRepo,
-		recomSvc:  recomSvc,
+		cfg:        cfg,
+		tracer:     otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:     logger.Named("grpc"),
+		blobClient: blobClient,
+		usageRepo:  usageRepo,
+		recomSvc:   recomSvc,
 	}
 }
 
@@ -75,6 +85,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 	authGrpcClient := envoyAuth.NewAuthorizationClient(authGRPCConn)
 
 	s := grpc.NewServer(
+		grpc.MaxRecvMsgSize(256*1024*1024),
 		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
 		grpc.ChainUnaryInterceptor(Logger(server.logger)),
 	)
@@ -122,7 +133,11 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -131,9 +146,21 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-pod",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -225,7 +252,11 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -234,9 +265,21 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-deployment",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -328,7 +371,11 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -337,9 +384,21 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-statefulset",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -431,7 +490,11 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -440,9 +503,21 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	if req.CliVersion != nil {
 		cliVersion = &req.CliVersion.Value
 	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-daemonset",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -496,6 +571,125 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	// DO NOT change this, resp is used in updating usage
 	resp = pb.KubernetesDaemonsetOptimizationResponse{
 		Rightsizing: daemonsetRightSizingRecom,
+	}
+	// DO NOT change this, resp is used in updating usage
+
+	return &resp, nil
+}
+
+func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.KubernetesJobOptimizationRequest) (*pb.KubernetesJobOptimizationResponse, error) {
+	start := time.Now()
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var resp pb.KubernetesJobOptimizationResponse
+	var err error
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to get incoming context")
+	}
+
+	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userId := ""
+	if len(userIds) > 0 {
+		userId = userIds[0]
+	}
+
+	email := req.Identification["cluster_name"]
+	if !strings.Contains(email, "@") {
+		email = email + "@local.temp"
+	}
+
+	stats := model.Statistics{
+		AccountID:   req.Identification["auth_info_name"],
+		OrgEmail:    email,
+		ResourceID:  req.GetJob().GetId(),
+		Auth0UserId: userId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
+	var requestId *string
+	var cliVersion *string
+	if req.RequestId != nil {
+		requestId = &req.RequestId.Value
+	}
+	if req.CliVersion != nil {
+		cliVersion = &req.CliVersion.Value
+	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-job/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return nil, err
+	}
+
+	usage := model.UsageV2{
+		ApiEndpoint:    "kubernetes-job",
+		Request:        trimmedReqJson,
+		RequestId:      requestId,
+		CliVersion:     cliVersion,
+		Response:       nil,
+		FailureMessage: nil,
+		Statistics:     statsOut,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+
+			// TODO: We don't have cost here. What can we store?
+
+			statsOut, _ := json.Marshal(stats)
+			usage.Statistics = statsOut
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+	if req.Loading {
+		return nil, nil
+	}
+
+	jobRightSizingRecom, err := s.recomSvc.KubernetesJobRecommendation(*req.Job, req.Metrics, req.Preferences)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes daemonset recommendation", zap.Error(err))
+		return nil, err
+	}
+
+	elapsed := time.Since(start).Seconds()
+	usage.Latency = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		return nil, err
+	}
+
+	// DO NOT change this, resp is used in updating usage
+	resp = pb.KubernetesJobOptimizationResponse{
+		Rightsizing: jobRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
 

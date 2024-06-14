@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
@@ -30,8 +34,10 @@ import (
 )
 
 type API struct {
+	cfg          config.WastageConfig
 	tracer       trace.Tracer
 	logger       *zap.Logger
+	blobClient   *azblob.Client
 	costSvc      *cost.Service
 	usageRepo    repo.UsageV2Repo
 	usageV1Repo  repo.UsageRepo
@@ -41,8 +47,10 @@ type API struct {
 	ingestionSvc *ingestion.Service
 }
 
-func New(costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
+func New(cfg config.WastageConfig, blobClient *azblob.Client, costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
 	return API{
+		cfg:          cfg,
+		blobClient:   blobClient,
 		costSvc:      costSvc,
 		recomSvc:     recomSvc,
 		usageRepo:    usageRepo,
@@ -116,10 +124,29 @@ func (s API) EC2Instance(c echo.Context) error {
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	volMetrics := req.VolumeMetrics
+	req.Metrics = nil
+	req.VolumeMetrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
+	req.VolumeMetrics = volMetrics
+
+	if req.RequestId == nil {
+		id := uuid.New().String()
+		req.RequestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return err
+	}
+
 	usage := model.UsageV2{
 		ApiEndpoint:    "ec2-instance",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      req.RequestId,
 		CliVersion:     req.CliVersion,
 		Response:       nil,
@@ -294,10 +321,25 @@ func (s API) AwsRDS(c echo.Context) error {
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
+
+	if req.RequestId == nil {
+		id := uuid.New().String()
+		req.RequestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return err
+	}
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      req.RequestId,
 		CliVersion:     req.CliVersion,
 		Response:       nil,
@@ -428,10 +470,25 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 	}
 	statsOut, _ := json.Marshal(stats)
 
-	reqJson, _ := json.Marshal(req)
+	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	req.Metrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
+
+	if req.RequestId == nil {
+		id := uuid.New().String()
+		req.RequestId = &id
+	}
+
+	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+	if err != nil {
+		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		return err
+	}
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds-cluster",
-		Request:        reqJson,
+		Request:        trimmedReqJson,
 		RequestId:      req.RequestId,
 		CliVersion:     req.CliVersion,
 		Response:       nil,
