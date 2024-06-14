@@ -8,7 +8,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"go.uber.org/zap"
-	cloudbilling "google.golang.org/api/cloudbilling/v1beta"
+	"google.golang.org/api/cloudbilling/v1"
+	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"gorm.io/gorm"
 	"strings"
@@ -44,7 +45,7 @@ func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.Dat
 	computeSKURepo repo.GCPComputeSKURepo, db *connector.Database, gcpCredentials map[string]string, projectId string) (*GcpService, error) {
 	configJson, err := json.Marshal(gcpCredentials)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	gcpOpts := []option.ClientOption{
 		option.WithCredentialsJSON(configJson),
