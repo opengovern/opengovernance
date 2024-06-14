@@ -21,9 +21,11 @@ type GCPComputeMachineType struct {
 	ImageSpaceGb int64
 	Description  string
 	Zone         string
+
+	UnitPrice float64
 }
 
-func (p *GCPComputeMachineType) PopulateFromObject(machineType compute.MachineType) {
+func (p *GCPComputeMachineType) PopulateFromObject(machineType *compute.MachineType) {
 	p.Id = strconv.FormatUint(machineType.Id, 10)
 	p.Name = machineType.Name
 	p.MachineType = machineType.Name
