@@ -77,6 +77,8 @@ func Command() *cobra.Command {
 			rdsInstanceRepo := repo.NewRDSDBInstanceRepo(db)
 			rdsStorageRepo := repo.NewRDSDBStorageRepo(logger, db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
+			computeMachineTypeRepo := repo.NewGCPComputeMachineTypeRepo(db)
+			computeSKURepo := repo.NewGCPComputeSKURepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageV2Repo := repo.NewUsageV2Repo(usageDb)
 			usageV1Repo := repo.NewUsageRepo(usageDb)
@@ -105,7 +107,7 @@ func Command() *cobra.Command {
 				"private_key":  GCPPrivateKey,
 				"client_email": GCPClientEmail,
 			}
-			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, db, gcpCredentials)
+			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, computeMachineTypeRepo, computeSKURepo, db, gcpCredentials, GCPProjectID)
 			go ingestionSvc.Start(ctx)
 			go gcpIngestionSvc.Start(ctx)
 			grpcServer := wastage.NewServer(logger, cnf, blobClient, usageV2Repo, recomSvc)

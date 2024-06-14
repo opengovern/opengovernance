@@ -8,8 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"go.uber.org/zap"
-	"google.golang.org/api/cloudbilling/v1"
-	"google.golang.org/api/compute/v1"
+	cloudbilling "google.golang.org/api/cloudbilling/v1beta"
 	"google.golang.org/api/option"
 	"gorm.io/gorm"
 	"strings"
@@ -41,7 +40,8 @@ type GcpService struct {
 	computeSKURepo         repo.GCPComputeSKURepo
 }
 
-func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.DataAgeRepo, db *connector.Database, gcpCredentials map[string]string) (*GcpService, error) {
+func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.DataAgeRepo, computeMachineTypeRepo repo.GCPComputeMachineTypeRepo,
+	computeSKURepo repo.GCPComputeSKURepo, db *connector.Database, gcpCredentials map[string]string, projectId string) (*GcpService, error) {
 	configJson, err := json.Marshal(gcpCredentials)
 	if err != nil {
 		panic(err)
@@ -61,11 +61,14 @@ func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.Dat
 	}
 
 	return &GcpService{
-		logger:      logger,
-		DataAgeRepo: dataAgeRepo,
-		db:          db,
-		apiService:  apiService,
-		compute:     compute,
+		logger:                 logger,
+		DataAgeRepo:            dataAgeRepo,
+		db:                     db,
+		apiService:             apiService,
+		compute:                compute,
+		computeSKURepo:         computeSKURepo,
+		computeMachineTypeRepo: computeMachineTypeRepo,
+		project:                projectId,
 	}, nil
 }
 
