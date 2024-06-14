@@ -22,7 +22,9 @@ import (
 
 var (
 	AuthGRPCURI    = os.Getenv("AUTH_GRPC_URI")
-	GCPCredentials = os.Getenv("GCP_CREDENTIALS")
+	GCPProjectID   = os.Getenv("GCP_PROJECT_ID")
+	GCPPrivateKey  = os.Getenv("GCP_PRIVATE_KEY")
+	GCPClientEmail = os.Getenv("GCP_CLIENT_EMAIL")
 )
 
 func Command() *cobra.Command {
@@ -96,7 +98,14 @@ func Command() *cobra.Command {
 
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
-			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, db, GCPCredentials)
+
+			gcpCredentials := map[string]string{
+				"type":         "service_account",
+				"project_id":   GCPProjectID,
+				"private_key":  GCPPrivateKey,
+				"client_email": GCPClientEmail,
+			}
+			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, db, gcpCredentials)
 			go ingestionSvc.Start(ctx)
 			go gcpIngestionSvc.Start(ctx)
 			grpcServer := wastage.NewServer(logger, cnf, blobClient, usageV2Repo, recomSvc)

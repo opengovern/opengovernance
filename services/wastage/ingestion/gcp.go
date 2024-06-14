@@ -2,6 +2,7 @@ package ingestion
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -40,9 +41,13 @@ type GcpService struct {
 	computeSKURepo         repo.GCPComputeSKURepo
 }
 
-func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.DataAgeRepo, db *connector.Database, gcpCredentials string) (*GcpService, error) {
+func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.DataAgeRepo, db *connector.Database, gcpCredentials map[string]string) (*GcpService, error) {
+	configJson, err := json.Marshal(gcpCredentials)
+	if err != nil {
+		panic(err)
+	}
 	gcpOpts := []option.ClientOption{
-		option.WithCredentialsJSON([]byte(gcpCredentials)),
+		option.WithCredentialsJSON(configJson),
 	}
 	gcpOpts = append(gcpOpts, option.WithoutAuthentication())
 	apiService, err := cloudbilling.NewService(ctx, gcpOpts...)
