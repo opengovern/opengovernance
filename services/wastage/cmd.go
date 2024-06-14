@@ -19,7 +19,8 @@ import (
 )
 
 var (
-	AuthGRPCURI = os.Getenv("AUTH_GRPC_URI")
+	AuthGRPCURI    = os.Getenv("AUTH_GRPC_URI")
+	GCPCredentials = os.Getenv("GCP_CREDENTIALS")
 )
 
 func Command() *cobra.Command {
@@ -80,7 +81,9 @@ func Command() *cobra.Command {
 			costSvc := cost.New(cnf.Pennywise.BaseURL)
 			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
+			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, db, GCPCredentials)
 			go ingestionSvc.Start(ctx)
+			go gcpIngestionSvc.Start(ctx)
 			grpcServer := wastage.NewServer(logger, usageV2Repo, recomSvc)
 			err = wastage.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
 			if err != nil {

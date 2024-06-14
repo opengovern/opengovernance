@@ -12,6 +12,7 @@ import (
 	"google.golang.org/api/option"
 	"gorm.io/gorm"
 	"strings"
+	"time"
 )
 
 var (
@@ -63,10 +64,88 @@ func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.Dat
 	}, nil
 }
 
-func (g *GcpService) IngestComputeInstance(ctx context.Context, tableName string) error {
+func (s *GcpService) Start(ctx context.Context) {
+	s.logger.Info("GCP Ingestion service started")
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Error("gcp ingestion paniced", zap.Error(fmt.Errorf("%v", r)))
+			time.Sleep(15 * time.Minute)
+			go s.Start(ctx)
+		}
+	}()
+
+	ticker := time.NewTicker(2 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		s.logger.Info("checking data age")
+		dataAge, err := s.DataAgeRepo.List()
+		if err != nil {
+			s.logger.Error("failed to list data age", zap.Error(err))
+			continue
+		}
+
+		var computeData *model.DataAge
+		for _, data := range dataAge {
+			data := data
+			switch data.DataType {
+			case "GCPComputeEngine":
+				computeData = &data
+			}
+		}
+
+		if computeData == nil || computeData.UpdatedAt.Before(time.Now().Add(-365*24*time.Hour)) {
+			s.logger.Info("gcp compute engine ingest started")
+			err = s.IngestComputeInstance(ctx)
+			if err != nil {
+				s.logger.Error("failed to ingest gcp compute engine", zap.Error(err))
+				continue
+			}
+			if computeData == nil {
+				err = s.DataAgeRepo.Create(&model.DataAge{
+					DataType:  "GCPComputeEngine",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error("failed to create data age", zap.Error(err))
+					continue
+				}
+			} else {
+				err = s.DataAgeRepo.Update("GCPComputeEngine", model.DataAge{
+					DataType:  "GCPComputeEngine",
+					UpdatedAt: time.Now(),
+				})
+				if err != nil {
+					s.logger.Error("failed to update data age", zap.Error(err))
+					continue
+				}
+			}
+		} else {
+			s.logger.Info("gcp compute engine ingest not started: ", zap.Any("usage", computeData))
+		}
+	}
+}
+
+func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
+	computeMachineTypeTable, err := s.computeMachineTypeRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "compute_machine_type"),
+			zap.Error(err))
+		return err
+	}
+
+	computeSKUTable, err := s.computeSKURepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "compute_sku"),
+			zap.Error(err))
+		return err
+	}
+
 	var transaction *gorm.DB
 	machinteTypePrices := make(map[string]float64)
-	skus, err := g.fetchSKUs(ctx, services["ComputeEngine"])
+	skus, err := s.fetchSKUs(ctx, services["ComputeEngine"])
 	if err != nil {
 		return err
 	}
@@ -79,7 +158,7 @@ func (g *GcpService) IngestComputeInstance(ctx context.Context, tableName string
 			computeSKU := &model.GCPComputeSKU{}
 			computeSKU.PopulateFromObject(sku, region)
 
-			err = g.computeSKURepo.Create(tableName, transaction, computeSKU)
+			err = s.computeSKURepo.Create(computeSKUTable, transaction, computeSKU)
 			if err != nil {
 				return err
 			}
@@ -91,7 +170,7 @@ func (g *GcpService) IngestComputeInstance(ctx context.Context, tableName string
 		}
 	}
 
-	types, err := g.fetchMachineTypes(ctx)
+	types, err := s.fetchMachineTypes(ctx)
 	for _, mt := range types {
 		computeMachineType := &model.GCPComputeMachineType{}
 		computeMachineType.PopulateFromObject(mt)
@@ -112,19 +191,39 @@ func (g *GcpService) IngestComputeInstance(ctx context.Context, tableName string
 
 		computeMachineType.UnitPrice = rp + cp
 
-		err = g.computeMachineTypeRepo.Create(tableName, transaction, computeMachineType)
+		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, computeMachineType)
 		if err != nil {
 			return err
 		}
 	}
 
+	err = s.computeMachineTypeRepo.MoveViewTransaction(computeMachineTypeTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.computeMachineTypeRepo.RemoveOldTables(computeMachineTypeTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.computeSKURepo.MoveViewTransaction(computeSKUTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.computeSKURepo.RemoveOldTables(computeSKUTable)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (g *GcpService) fetchSKUs(ctx context.Context, service string) ([]*cloudbilling.Sku, error) {
+func (s *GcpService) fetchSKUs(ctx context.Context, service string) ([]*cloudbilling.Sku, error) {
 	var results []*cloudbilling.Sku
 
-	err := cloudbilling.NewServicesSkusService(g.apiService).List(fmt.Sprintf("services/%s", service)).Pages(ctx, func(l *cloudbilling.ListSkusResponse) error {
+	err := cloudbilling.NewServicesSkusService(s.apiService).List(fmt.Sprintf("services/%s", service)).Pages(ctx, func(l *cloudbilling.ListSkusResponse) error {
 		for _, sku := range l.Skus {
 			results = append(results, sku)
 		}
@@ -137,15 +236,15 @@ func (g *GcpService) fetchSKUs(ctx context.Context, service string) ([]*cloudbil
 	return results, nil
 }
 
-func (g *GcpService) fetchMachineTypes(ctx context.Context) ([]*compute.MachineType, error) {
+func (s *GcpService) fetchMachineTypes(ctx context.Context) ([]*compute.MachineType, error) {
 	var results []*compute.MachineType
 
-	zones, err := g.compute.Zones.List(g.project).Do()
+	zones, err := s.compute.Zones.List(s.project).Do()
 	if err != nil {
 		return nil, err
 	}
 	for _, zone := range zones.Items {
-		err = g.compute.MachineTypes.List(g.project, zone.Name).Pages(ctx, func(l *compute.MachineTypeList) error {
+		err = s.compute.MachineTypes.List(s.project, zone.Name).Pages(ctx, func(l *compute.MachineTypeList) error {
 			for _, mt := range l.Items {
 				results = append(results, mt)
 			}
