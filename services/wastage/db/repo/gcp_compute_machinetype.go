@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -13,7 +14,8 @@ type GCPComputeMachineTypeRepo interface {
 	Create(tableName string, tx *gorm.DB, m *model.GCPComputeMachineType) error
 	Delete(tableName string, id string) error
 	List() ([]model.GCPComputeMachineType, error)
-	Get(machineType string) (model.GCPComputeMachineType, error)
+	Get(machineType string) (*model.GCPComputeMachineType, error)
+	GetCheapestByCoreAndMemory(cpu, memory float64, pref map[string]interface{}) (*model.GCPComputeMachineType, error)
 	CreateNewTable() (string, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(currentTableName string) error
@@ -54,10 +56,29 @@ func (r *GCPComputeMachineTypeRepoImpl) List() ([]model.GCPComputeMachineType, e
 	return m, tx.Error
 }
 
-func (r *GCPComputeMachineTypeRepoImpl) Get(machineType string) (model.GCPComputeMachineType, error) {
+func (r *GCPComputeMachineTypeRepoImpl) Get(machineType string) (*model.GCPComputeMachineType, error) {
 	var m model.GCPComputeMachineType
 	tx := r.db.Conn().Table(r.viewName).Where("machine_type=?", machineType).First(&m)
-	return m, tx.Error
+	return &m, tx.Error
+}
+
+func (r *GCPComputeMachineTypeRepoImpl) GetCheapestByCoreAndMemory(cpu, memory float64, pref map[string]interface{}) (*model.GCPComputeMachineType, error) {
+	var m model.GCPComputeMachineType
+	tx := r.db.Conn().Table(r.viewName).
+		Where("guest_cpus >= ?", cpu).
+		Where("memory_mb >= ?", memory).
+		Where("unit_price != 0")
+	for k, v := range pref {
+		tx = tx.Where(k, v)
+	}
+	tx = tx.Order("unit_price ASC").First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
 }
 
 func (r *GCPComputeMachineTypeRepoImpl) CreateNewTable() (string, error) {

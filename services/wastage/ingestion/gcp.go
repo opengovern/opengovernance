@@ -182,6 +182,9 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 	}
 
 	types, err := s.fetchMachineTypes(ctx)
+	if err != nil {
+		return err
+	}
 	for _, mt := range types {
 		computeMachineType := &model.GCPComputeMachineType{}
 		computeMachineType.PopulateFromObject(mt)
@@ -204,7 +207,8 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, computeMachineType)
 		if err != nil {
-			return err
+			s.logger.Error("failed to create compute machine type", zap.Error(err))
+			continue
 		}
 	}
 
