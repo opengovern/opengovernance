@@ -741,7 +741,8 @@ func (s API) GCPCompute(c echo.Context) error {
 
 	// TODO: Limit
 
-	rdsRightSizingRecom, err := s.recomSvc.GCPComputeInstanceRecommendation(req.Instance, req.Metrics, req.Preferences)
+	usageAverageType := recommendation.UsageAverageTypeAverage
+	rdsRightSizingRecom, err := s.recomSvc.GCPComputeInstanceRecommendation(req.Instance, req.Metrics, req.Preferences, usageAverageType)
 	if err != nil {
 		s.logger.Error("failed to get gcp compute instance recommendation", zap.Error(err))
 		return err
