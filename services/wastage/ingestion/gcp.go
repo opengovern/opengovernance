@@ -8,6 +8,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"go.uber.org/zap"
+	"google.golang.org/api/cloudbilling/v1"
+	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"gorm.io/gorm"
 	"strings"
