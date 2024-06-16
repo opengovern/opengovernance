@@ -50,7 +50,6 @@ func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.Dat
 	gcpOpts := []option.ClientOption{
 		option.WithCredentialsJSON(configJson),
 	}
-	gcpOpts = append(gcpOpts, option.WithoutAuthentication())
 	apiService, err := cloudbilling.NewService(ctx, gcpOpts...)
 	if err != nil {
 		return nil, err
