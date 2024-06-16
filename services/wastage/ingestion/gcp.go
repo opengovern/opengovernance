@@ -183,8 +183,10 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 	types, err := s.fetchMachineTypes(ctx)
 	if err != nil {
+		s.logger.Error("failed to fetch machine types", zap.Error(err))
 		return err
 	}
+	s.logger.Info("fetched machine types", zap.Any("count", len(types)))
 	for _, mt := range types {
 		computeMachineType := &model.GCPComputeMachineType{}
 		computeMachineType.PopulateFromObject(mt)
@@ -192,11 +194,13 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		mf := strings.ToLower(strings.Split(mt.Name, "-")[0])
 		rp, ok := machinteTypePrices[fmt.Sprintf("%s.%s", mf, ram)]
 		if !ok {
+			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
 			continue
 		}
 
 		cp, ok := machinteTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]
 		if !ok {
+			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name))
 			continue
 		}
 
@@ -210,6 +214,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			s.logger.Error("failed to create compute machine type", zap.Error(err))
 			continue
 		}
+		s.logger.Info("created compute machine type", zap.String("name", mt.Name))
 	}
 
 	err = s.computeMachineTypeRepo.MoveViewTransaction(computeMachineTypeTable)
