@@ -736,13 +736,12 @@ func (s API) GCPCompute(c echo.Context) error {
 		}
 	}()
 	if req.Loading {
-		return c.JSON(http.StatusOK, entity.AwsRdsWastageResponse{})
+		return c.JSON(http.StatusOK, entity.GcpComputeInstanceWastageResponse{})
 	}
 
 	// TODO: Limit
 
-	usageAverageType := recommendation.UsageAverageTypeAverage
-	rdsRightSizingRecom, err := s.recomSvc.GCPComputeInstanceRecommendation(req.Instance, req.Metrics, req.Preferences, usageAverageType)
+	rdsRightSizingRecom, err := s.recomSvc.GCPComputeInstanceRecommendation(req.Instance, req.Metrics, req.Preferences)
 	if err != nil {
 		s.logger.Error("failed to get gcp compute instance recommendation", zap.Error(err))
 		return err
@@ -787,6 +786,13 @@ func (s API) TriggerIngest(c echo.Context) error {
 			return err
 		}
 		s.logger.Info("deleted data age for AWS::RDS::Instance ingestion will be triggered soon")
+	case "gcp-compute-instance":
+		err := s.ingestionSvc.DataAgeRepo.Delete("GCPComputeEngine")
+		if err != nil {
+			s.logger.Error("failed to delete data age", zap.Error(err), zap.String("service", service))
+			return err
+		}
+		s.logger.Info("deleted data age for GCPComputeEngine ingestion will be triggered soon")
 	default:
 		s.logger.Error(fmt.Sprintf("Service %s not supported", service))
 	}
