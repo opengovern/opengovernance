@@ -3,6 +3,7 @@ module github.com/kaytu-io/kaytu-engine
 go 1.22.0
 
 require (
+	cloud.google.com/go/monitoring v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
