@@ -1,16 +1,15 @@
 package recommendation
 
 import (
-	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"strconv"
 )
 
 func (s *Service) GCPComputeInstanceRecommendation(
 	instance entity.GcpComputeInstance,
-	metrics map[string][]types2.Datapoint,
+	metrics map[string]monitoringpb.TimeSeries,
 	preferences map[string]*string,
-	usageAverageType UsageAverageType,
 ) (*entity.GcpComputeInstanceRightsizingRecommendation, error) {
 	machine, err := s.gcpComputeMachineTypeRepo.Get(instance.MachineType)
 	if err != nil {
@@ -32,8 +31,8 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		},
 	}
 
-	cpuUsage := extractUsage(metrics["CPUUsage"], usageAverageType)
-	memoryUsage := extractUsage(metrics["MemoryUsage"], usageAverageType)
+	cpuUsage := extractGCPUsage(metrics["CPUUsage"])
+	memoryUsage := extractGCPUsage(metrics["MemoryUsage"])
 
 	result.CPU = cpuUsage
 	result.Memory = memoryUsage

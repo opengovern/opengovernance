@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"math"
@@ -266,4 +267,9 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 		Max:  maxV,
 		Last: lastDP,
 	}
+}
+
+func extractGCPUsage(ts monitoringpb.TimeSeries) entity.Usage {
+
+	return entity.Usage{}
 }

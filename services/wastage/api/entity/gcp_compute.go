@@ -1,6 +1,8 @@
 package entity
 
-import types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+import (
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+)
 
 type GcpComputeInstance struct {
 	HashedInstanceId string `json:"hashedInstanceId"`
@@ -29,14 +31,14 @@ type GcpComputeInstanceRightsizingRecommendation struct {
 }
 
 type GcpComputeInstanceWastageRequest struct {
-	RequestId      *string                       `json:"requestId"`
-	CliVersion     *string                       `json:"cliVersion"`
-	Identification map[string]string             `json:"identification"`
-	Instance       GcpComputeInstance            `json:"instance"`
-	Metrics        map[string][]types2.Datapoint `json:"metrics"`
-	Region         string                        `json:"region"`
-	Preferences    map[string]*string            `json:"preferences"`
-	Loading        bool                          `json:"loading"`
+	RequestId      *string                            `json:"requestId"`
+	CliVersion     *string                            `json:"cliVersion"`
+	Identification map[string]string                  `json:"identification"`
+	Instance       GcpComputeInstance                 `json:"instance"`
+	Metrics        map[string]monitoringpb.TimeSeries `json:"metrics"`
+	Region         string                             `json:"region"`
+	Preferences    map[string]*string                 `json:"preferences"`
+	Loading        bool                               `json:"loading"`
 }
 
 type GcpComputeInstanceWastageResponse struct {
