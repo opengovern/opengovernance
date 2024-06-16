@@ -48,7 +48,7 @@ require (
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
 	github.com/kaytu-io/kaytu-util v0.0.0-20240604043338-1b0eea1a5455
 	github.com/kaytu-io/pennywise v1.7.16
-	github.com/kaytu-io/plugin-kubernetes-internal v0.6.1-0.20240612105749-ee5b413c2dc6
+	github.com/kaytu-io/plugin-kubernetes-internal v0.8.1
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
@@ -79,6 +79,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/mod v0.17.0
 	golang.org/x/net v0.25.0
+	google.golang.org/api v0.169.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
@@ -86,9 +87,9 @@ require (
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.6
-	k8s.io/api v0.30.1
+	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.1
-	k8s.io/apimachinery v0.30.1
+	k8s.io/apimachinery v0.30.2
 	sigs.k8s.io/controller-runtime v0.18.3
 )
 
@@ -571,7 +572,6 @@ require (
 	golang.org/x/tools v0.21.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
@@ -581,7 +581,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.4.4 // indirect
 	gorm.io/plugin/prometheus v0.1.0 // indirect
-	k8s.io/client-go v0.30.1 // indirect
+	k8s.io/client-go v0.30.2 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect

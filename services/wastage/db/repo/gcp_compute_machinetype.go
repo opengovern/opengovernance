@@ -13,6 +13,7 @@ type GCPComputeMachineTypeRepo interface {
 	Create(tableName string, tx *gorm.DB, m *model.GCPComputeMachineType) error
 	Delete(tableName string, id string) error
 	List() ([]model.GCPComputeMachineType, error)
+	Get(machineType string) (model.GCPComputeMachineType, error)
 	CreateNewTable() (string, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(currentTableName string) error
@@ -50,6 +51,12 @@ func (r *GCPComputeMachineTypeRepoImpl) Delete(tableName string, sku string) err
 func (r *GCPComputeMachineTypeRepoImpl) List() ([]model.GCPComputeMachineType, error) {
 	var m []model.GCPComputeMachineType
 	tx := r.db.Conn().Table(r.viewName).Find(&m)
+	return m, tx.Error
+}
+
+func (r *GCPComputeMachineTypeRepoImpl) Get(machineType string) (model.GCPComputeMachineType, error) {
+	var m model.GCPComputeMachineType
+	tx := r.db.Conn().Table(r.viewName).Where("machine_type=?", machineType).First(&m)
 	return m, tx.Error
 }
 

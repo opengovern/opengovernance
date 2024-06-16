@@ -46,4 +46,8 @@ type Statistics struct {
 	RDSInstanceCurrentCost     float64 `json:"rdsInstanceCurrentCost"`
 	RDSInstanceRecommendedCost float64 `json:"rdsInstanceRecommendedCost"`
 	RDSInstanceSavings         float64 `json:"rdsInstanceSavings"`
+
+	GCPComputeInstanceCurrentCost     float64 `json:"gcpComputeInstanceCurrentCost"`
+	GCPComputeInstanceRecommendedCost float64 `json:"gcpComputeInstanceRecommendedCost"`
+	GCPComputeInstanceSavings         float64 `json:"gcpComputeInstanceSavings"`
 }

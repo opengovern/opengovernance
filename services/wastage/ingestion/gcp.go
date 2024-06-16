@@ -161,6 +161,9 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		if sku.PricingInfo == nil || len(sku.PricingInfo) == 0 || sku.PricingInfo[len(sku.PricingInfo)-1].PricingExpression == nil {
 			continue
 		}
+		if len(sku.PricingInfo[len(sku.PricingInfo)-1].PricingExpression.TieredRates) == 0 {
+			continue
+		}
 
 		for _, region := range sku.ServiceRegions {
 			computeSKU := &model.GCPComputeSKU{}
