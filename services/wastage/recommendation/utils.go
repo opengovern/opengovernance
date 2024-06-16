@@ -269,7 +269,81 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 	}
 }
 
-func extractGCPUsage(ts monitoringpb.TimeSeries) entity.Usage {
+func averageOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
+	if len(datapoints) == 0 {
+		return nil
+	}
 
-	return entity.Usage{}
+	hasNonNil := false
+	avg := float64(0)
+	for _, dp := range datapoints {
+		dp := dp
+		if dp.Value == nil {
+			continue
+		}
+		hasNonNil = true
+		avg += dp.Value.GetDoubleValue()
+	}
+	if !hasNonNil {
+		return nil
+	}
+	avg = avg / float64(len(datapoints))
+	return &avg
+}
+
+func maxOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
+	if len(datapoints) == 0 {
+		return nil
+	}
+
+	hasNonNil := false
+	maxOfAvgs := float64(0)
+	for _, dp := range datapoints {
+		dp := dp
+		if dp.Value == nil {
+			continue
+		}
+		hasNonNil = true
+		maxOfAvgs = max(maxOfAvgs, dp.Value.GetDoubleValue())
+	}
+	if !hasNonNil {
+		return nil
+	}
+	return &maxOfAvgs
+}
+
+func minOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
+	if len(datapoints) == 0 {
+		return nil
+	}
+
+	hasNonNil := false
+	minOfAverages := float64(0)
+	for _, dp := range datapoints {
+		dp := dp
+		if dp.Value == nil {
+			continue
+		}
+		if !hasNonNil {
+			minOfAverages = dp.Value.GetDoubleValue()
+		}
+		hasNonNil = true
+		minOfAverages = min(minOfAverages, dp.Value.GetDoubleValue())
+	}
+	if !hasNonNil {
+		return nil
+	}
+	return &minOfAverages
+}
+
+func extractGCPUsage(ts []*monitoringpb.Point) entity.Usage {
+	var minV, avgV, maxV *float64
+
+	minV, avgV, maxV = minOfGCPDatapoints(ts), averageOfGCPDatapoints(ts), maxOfGCPDatapoints(ts)
+
+	return entity.Usage{
+		Avg: avgV,
+		Min: minV,
+		Max: maxV,
+	}
 }

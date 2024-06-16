@@ -8,7 +8,7 @@ import (
 
 func (s *Service) GCPComputeInstanceRecommendation(
 	instance entity.GcpComputeInstance,
-	metrics map[string]monitoringpb.TimeSeries,
+	metrics map[string][]*monitoringpb.Point,
 	preferences map[string]*string,
 ) (*entity.GcpComputeInstanceRightsizingRecommendation, error) {
 	machine, err := s.gcpComputeMachineTypeRepo.Get(instance.MachineType)

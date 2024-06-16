@@ -31,14 +31,14 @@ type GcpComputeInstanceRightsizingRecommendation struct {
 }
 
 type GcpComputeInstanceWastageRequest struct {
-	RequestId      *string                            `json:"requestId"`
-	CliVersion     *string                            `json:"cliVersion"`
-	Identification map[string]string                  `json:"identification"`
-	Instance       GcpComputeInstance                 `json:"instance"`
-	Metrics        map[string]monitoringpb.TimeSeries `json:"metrics"`
-	Region         string                             `json:"region"`
-	Preferences    map[string]*string                 `json:"preferences"`
-	Loading        bool                               `json:"loading"`
+	RequestId      *string                          `json:"requestId"`
+	CliVersion     *string                          `json:"cliVersion"`
+	Identification map[string]string                `json:"identification"`
+	Instance       GcpComputeInstance               `json:"instance"`
+	Metrics        map[string][]*monitoringpb.Point `json:"metrics"`
+	Region         string                           `json:"region"`
+	Preferences    map[string]*string               `json:"preferences"`
+	Loading        bool                             `json:"loading"`
 }
 
 type GcpComputeInstanceWastageResponse struct {
