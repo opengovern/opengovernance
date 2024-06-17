@@ -2,6 +2,7 @@ package recommendation
 
 import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"strconv"
 )
@@ -31,8 +32,14 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		},
 	}
 
-	cpuUsage := extractGCPUsage(metrics["CPUUsage"])
-	memoryUsage := extractGCPUsage(metrics["MemoryUsage"])
+	if _, ok := metrics["cpuUtilization"]; !ok {
+		return nil, fmt.Errorf("cpuUtilization metric not found")
+	}
+	if _, ok := metrics["memoryUtilization"]; !ok {
+		return nil, fmt.Errorf("memoryUtilization metric not found")
+	}
+	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
+	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
 
 	result.CPU = cpuUsage
 	result.Memory = memoryUsage
