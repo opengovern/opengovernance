@@ -1,7 +1,6 @@
 package recommendation
 
 import (
-	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"math"
@@ -269,7 +268,7 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 	}
 }
 
-func averageOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
+func averageOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
 	}
@@ -277,12 +276,8 @@ func averageOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
 	hasNonNil := false
 	avg := float64(0)
 	for _, dp := range datapoints {
-		dp := dp
-		if dp.Value == nil {
-			continue
-		}
 		hasNonNil = true
-		avg += dp.Value.GetDoubleValue()
+		avg += dp.Value
 	}
 	if !hasNonNil {
 		return nil
@@ -291,7 +286,7 @@ func averageOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
 	return &avg
 }
 
-func maxOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
+func maxOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
 	}
@@ -299,12 +294,8 @@ func maxOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
 	hasNonNil := false
 	maxOfAvgs := float64(0)
 	for _, dp := range datapoints {
-		dp := dp
-		if dp.Value == nil {
-			continue
-		}
 		hasNonNil = true
-		maxOfAvgs = max(maxOfAvgs, dp.Value.GetDoubleValue())
+		maxOfAvgs = max(maxOfAvgs, dp.Value)
 	}
 	if !hasNonNil {
 		return nil
@@ -312,7 +303,7 @@ func maxOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
 	return &maxOfAvgs
 }
 
-func minOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
+func minOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
 	}
@@ -320,15 +311,11 @@ func minOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
 	hasNonNil := false
 	minOfAverages := float64(0)
 	for _, dp := range datapoints {
-		dp := dp
-		if dp.Value == nil {
-			continue
-		}
 		if !hasNonNil {
-			minOfAverages = dp.Value.GetDoubleValue()
+			minOfAverages = dp.Value
 		}
 		hasNonNil = true
-		minOfAverages = min(minOfAverages, dp.Value.GetDoubleValue())
+		minOfAverages = min(minOfAverages, dp.Value)
 	}
 	if !hasNonNil {
 		return nil
@@ -336,7 +323,7 @@ func minOfGCPDatapoints(datapoints []*monitoringpb.Point) *float64 {
 	return &minOfAverages
 }
 
-func extractGCPUsage(ts []*monitoringpb.Point) entity.Usage {
+func extractGCPUsage(ts []entity.Datapoint) entity.Usage {
 	var minV, avgV, maxV *float64
 
 	minV, avgV, maxV = minOfGCPDatapoints(ts), averageOfGCPDatapoints(ts), maxOfGCPDatapoints(ts)

@@ -1,7 +1,6 @@
 package recommendation
 
 import (
-	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"strconv"
@@ -9,7 +8,7 @@ import (
 
 func (s *Service) GCPComputeInstanceRecommendation(
 	instance entity.GcpComputeInstance,
-	metrics map[string][]*monitoringpb.Point,
+	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
 ) (*entity.GcpComputeInstanceRightsizingRecommendation, error) {
 	machine, err := s.gcpComputeMachineTypeRepo.Get(instance.MachineType)
