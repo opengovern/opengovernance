@@ -1,8 +1,6 @@
 package entity
 
-import (
-	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-)
+import "time"
 
 type GcpComputeInstance struct {
 	HashedInstanceId string `json:"hashedInstanceId"`
@@ -31,16 +29,22 @@ type GcpComputeInstanceRightsizingRecommendation struct {
 }
 
 type GcpComputeInstanceWastageRequest struct {
-	RequestId      *string                          `json:"requestId"`
-	CliVersion     *string                          `json:"cliVersion"`
-	Identification map[string]string                `json:"identification"`
-	Instance       GcpComputeInstance               `json:"instance"`
-	Metrics        map[string][]*monitoringpb.Point `json:"metrics"`
-	Region         string                           `json:"region"`
-	Preferences    map[string]*string               `json:"preferences"`
-	Loading        bool                             `json:"loading"`
+	RequestId      *string                `json:"requestId"`
+	CliVersion     *string                `json:"cliVersion"`
+	Identification map[string]string      `json:"identification"`
+	Instance       GcpComputeInstance     `json:"instance"`
+	Metrics        map[string][]Datapoint `json:"metrics"`
+	Region         string                 `json:"region"`
+	Preferences    map[string]*string     `json:"preferences"`
+	Loading        bool                   `json:"loading"`
 }
 
 type GcpComputeInstanceWastageResponse struct {
 	RightSizing GcpComputeInstanceRightsizingRecommendation `json:"rightSizing"`
+}
+
+type Datapoint struct {
+	StartTime time.Time
+	EndTime   time.Time
+	Value     float64
 }
