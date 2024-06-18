@@ -167,9 +167,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 		skuMachineTypePrices := make(map[string]float64)
 		mf, rg, t := model.GetSkuDetails(sku)
-		if (rg == cpu || rg == ram) && t == "Predefined" {
-			machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
-		}
+
 		for _, region := range sku.ServiceRegions {
 			computeSKU := &model.GCPComputeSKU{}
 			computeSKU.PopulateFromObject(sku, region)
@@ -180,8 +178,11 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			}
 
 			if (rg == cpu || rg == ram) && t == "Predefined" {
-				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
+				skuMachineTypePrices[region] = computeSKU.UnitPrice
 			}
+		}
+		if rg == cpu || rg == ram {
+			machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
 		}
 	}
 
@@ -201,7 +202,8 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		mf := strings.ToLower(strings.Split(mt.Name, "-")[0])
 		rp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)][region]
 		if !ok {
-			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name), zap.String("region", region))
+			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name),
+				zap.String("region", region), zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)]))
 			for r, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)] {
 				if strings.Contains(mt.Zone, r) {
 					rp = mtp
@@ -209,14 +211,21 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 				}
 			}
 			if !ok {
-				s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
-				continue
+				for _, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)] {
+					rp = mtp
+					ok = true
+				}
+				if !ok {
+					s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
+					continue
+				}
 			}
 		}
 
 		cp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)][region]
 		if !ok {
-			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name), zap.String("region", region))
+			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name),
+				zap.String("region", region), zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]))
 			for r, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)] {
 				if strings.Contains(mt.Zone, r) {
 					rp = mtp
@@ -224,8 +233,14 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 				}
 			}
 			if !ok {
-				s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
-				continue
+				for _, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)] {
+					rp = mtp
+					ok = true
+				}
+				if !ok {
+					s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name))
+					continue
+				}
 			}
 		}
 
