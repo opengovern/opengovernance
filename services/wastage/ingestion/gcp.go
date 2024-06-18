@@ -201,14 +201,32 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		mf := strings.ToLower(strings.Split(mt.Name, "-")[0])
 		rp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)][region]
 		if !ok {
-			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
-			continue
+			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name), zap.String("region", region))
+			for r, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)] {
+				if strings.Contains(mt.Zone, r) {
+					rp = mtp
+					ok = true
+				}
+			}
+			if !ok {
+				s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
+				continue
+			}
 		}
 
 		cp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)][region]
 		if !ok {
-			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name))
-			continue
+			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name), zap.String("region", region))
+			for r, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)] {
+				if strings.Contains(mt.Zone, r) {
+					rp = mtp
+					ok = true
+				}
+			}
+			if !ok {
+				s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
+				continue
+			}
 		}
 
 		rp = rp * float64(mt.MemoryMb/1024)
