@@ -15,12 +15,13 @@ type GCPComputeMachineType struct {
 	Name          string `gorm:"index"`
 	MachineType   string `gorm:"index"`
 	MachineFamily string `gorm:"index"`
+	Zone          string `gorm:"index"`
 
 	GuestCpus    int64
 	MemoryMb     int64
 	ImageSpaceGb int64
 	Description  string
-	Zone         string
+	Region       string
 
 	UnitPrice float64
 }
