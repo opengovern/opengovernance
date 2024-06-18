@@ -525,7 +525,6 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	//if !keySupport {
 	//	return echo.NewHTTPError(http.StatusNotAcceptable, "keys are not supported in this workspace")
 	//}
-
 	var req api.CreateAPIKeyRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -580,6 +579,13 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	//if currentKeyCount+1 > int64(maxKeys) {
 	//	return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys in workspace reached")
 	//}
+	currentKeyCount, err := r.db.CountApiKeysForUser(userID)
+	if err != nil {
+		return err
+	}
+	if currentKeyCount > 5 {
+		return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys for user reached")
+	}
 
 	apikey := db.ApiKey{
 		Name:          req.Name,

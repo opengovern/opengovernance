@@ -59,6 +59,18 @@ func (db Database) CountApiKeys(workspaceID string) (int64, error) {
 	return s, nil
 }
 
+func (db Database) CountApiKeysForUser(userID string) (int64, error) {
+	var s int64
+	tx := db.Orm.Model(&ApiKey{}).
+		Where("creator_user_id", userID).
+		Where("revoked", "false").
+		Count(&s)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return s, nil
+}
+
 func (db Database) GetApiKey(workspaceID string, id uint) (*ApiKey, error) {
 	var s ApiKey
 	tx := db.Orm.Model(&ApiKey{}).
