@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -596,13 +595,27 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	userId := httpserver.GetUserID(ctx)
-	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	name := ctx.Param("name")
+
+	keys, err := r.db.ListApiKeysForUser(userId)
 	if err != nil {
 		return err
 	}
 
-	err = r.db.RevokeUserAPIKey(userId, uint(id))
+	var keyId uint
+	exists := false
+	for _, key := range keys {
+		if key.Name == name {
+			keyId = key.ID
+			exists = true
+		}
+	}
+
+	if !exists {
+		return echo.NewHTTPError(http.StatusBadRequest, "key not found")
+	}
+
+	err = r.db.RevokeUserAPIKey(userId, keyId)
 	if err != nil {
 		return err
 	}
