@@ -152,7 +152,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 	}
 
 	var transaction *gorm.DB
-	machinteTypePrices := make(map[string]float64)
+	machineTypePrices := make(map[string]map[string]float64)
 	skus, err := s.fetchSKUs(ctx, services["ComputeEngine"])
 	if err != nil {
 		return err
@@ -165,6 +165,11 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			continue
 		}
 
+		skuMachineTypePrices := make(map[string]float64)
+		mf, rg, t := model.GetSkuDetails(sku)
+		if (rg == cpu || rg == ram) && t == "Predefined" {
+			machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
+		}
 		for _, region := range sku.ServiceRegions {
 			computeSKU := &model.GCPComputeSKU{}
 			computeSKU.PopulateFromObject(sku, region)
@@ -173,9 +178,9 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			mf, rg, t := model.GetSkuDetails(sku)
+
 			if (rg == cpu || rg == ram) && t == "Predefined" {
-				machinteTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = computeSKU.UnitPrice
+				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
 			}
 		}
 	}
@@ -190,14 +195,17 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		computeMachineType := &model.GCPComputeMachineType{}
 		computeMachineType.PopulateFromObject(mt)
 
+		region := strings.Join([]string{strings.Split(mt.Zone, "-")[0], strings.Split(mt.Zone, "-")[1]}, "-")
+		computeMachineType.Region = region
+
 		mf := strings.ToLower(strings.Split(mt.Name, "-")[0])
-		rp, ok := machinteTypePrices[fmt.Sprintf("%s.%s", mf, ram)]
+		rp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)][region]
 		if !ok {
 			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
 			continue
 		}
 
-		cp, ok := machinteTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]
+		cp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)][region]
 		if !ok {
 			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name))
 			continue
