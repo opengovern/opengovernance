@@ -173,9 +173,9 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			if sku.Category.ResourceGroup == cpu || sku.Category.ResourceGroup == ram {
-				mf := strings.ToLower(strings.Split(sku.Description, " ")[0])
-				machinteTypePrices[fmt.Sprintf("%s.%s", mf, sku.Category.ResourceGroup)] = float64(sku.PricingInfo[0].PricingExpression.TieredRates[0].UnitPrice.Units) +
+			mf, rg, t := model.GetSkuDetails(sku)
+			if (rg == cpu || rg == ram) && t == "Predefined" {
+				machinteTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = float64(sku.PricingInfo[0].PricingExpression.TieredRates[0].UnitPrice.Units) +
 					(float64(sku.PricingInfo[0].PricingExpression.TieredRates[0].UnitPrice.Nanos) / float64(1_000_000_000))
 			}
 		}
