@@ -63,17 +63,21 @@ func GetSkuDetails(sku *cloudbilling.Sku) (string, string, string) {
 			if reST.MatchString(sku.Description) {
 				return mf, sku.Category.ResourceGroup, ""
 			}
-			re := regexp.MustCompile(`^.* Instance (Core|Ram) running in .*$`)
-			if re.MatchString(sku.Description) {
-				return mf, sku.Category.ResourceGroup, "Predefined"
+			reCustomExt := regexp.MustCompile(`^.* Custom Extended Instance (Core|Ram) running in .*$`)
+			if reCustomExt.MatchString(sku.Description) {
+				return mf, sku.Category.ResourceGroup, "Custom Extended"
+			}
+			reCustomExt = regexp.MustCompile(`^.* Custom Extended (Core|Ram) running in .*$`)
+			if reCustomExt.MatchString(sku.Description) {
+				return mf, sku.Category.ResourceGroup, "Custom Extended"
 			}
 			reCustom := regexp.MustCompile(`^.* Custom Instance (Core|Ram) running in .*$`)
 			if reCustom.MatchString(sku.Description) {
 				return mf, sku.Category.ResourceGroup, "Custom"
 			}
-			reCustomExt := regexp.MustCompile(`^.* Custom Extended Instance (Core|Ram) running in .*$`)
-			if reCustomExt.MatchString(sku.Description) {
-				return mf, sku.Category.ResourceGroup, "Custom Extended"
+			re := regexp.MustCompile(`^.* Instance (Core|Ram) running in .*$`)
+			if re.MatchString(sku.Description) {
+				return mf, sku.Category.ResourceGroup, "Predefined"
 			}
 			return mf, sku.Category.ResourceGroup, ""
 		}
