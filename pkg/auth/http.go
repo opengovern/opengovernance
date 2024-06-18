@@ -61,7 +61,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.PUT("/user/preferences", httpserver.AuthorizeHandler(r.ChangeUserPreferences, api.ViewerRole))
 
-	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.AdminRole))
+	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.EditorRole))
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
 	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
 
@@ -513,18 +513,18 @@ func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
 //	@Router			/auth/api/v1/key/create [post]
 func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	hctx := httpclient.FromEchoContext(ctx)
-	metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
+	//workspaceID := httpserver.GetWorkspaceID(ctx)
+	//hctx := httpclient.FromEchoContext(ctx)
+	//metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
 
-	cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
-	if err != nil {
-		return err
-	}
-	keySupport := cnf.GetValue().(bool)
-	if !keySupport {
-		return echo.NewHTTPError(http.StatusNotAcceptable, "keys are not supported in this workspace")
-	}
+	//cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
+	//if err != nil {
+	//	return err
+	//}
+	//keySupport := cnf.GetValue().(bool)
+	//if !keySupport {
+	//	return echo.NewHTTPError(http.StatusNotAcceptable, "keys are not supported in this workspace")
+	//}
 
 	var req api.CreateAPIKeyRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -542,7 +542,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 	u := userClaim{
 		WorkspaceAccess: map[string]api.Role{
-			workspaceID: req.RoleName,
+			"kaytu": api.EditorRole,
 		},
 		GlobalAccess:   nil,
 		Email:          usr.Email,
@@ -566,26 +566,26 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	//span := jaegertracing.CreateChildSpan(ctx, "CountApiKeys")
 	//span.SetBaggageItem("auth", "CreateAPIKey")
 
-	currentKeyCount, err := r.db.CountApiKeys(workspaceID)
-	if err != nil {
-		return err
-	}
-	//span.Finish()
-
-	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
-	if err != nil {
-		return err
-	}
-	maxKeys := cnf.GetValue().(int)
-	if currentKeyCount+1 > int64(maxKeys) {
-		return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys in workspace reached")
-	}
+	//currentKeyCount, err := r.db.CountApiKeys(workspaceID)
+	//if err != nil {
+	//	return err
+	//}
+	////span.Finish()
+	//
+	//cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
+	//if err != nil {
+	//	return err
+	//}
+	//maxKeys := cnf.GetValue().(int)
+	//if currentKeyCount+1 > int64(maxKeys) {
+	//	return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys in workspace reached")
+	//}
 
 	apikey := db.ApiKey{
 		Name:          req.Name,
 		Role:          req.RoleName,
 		CreatorUserID: userID,
-		WorkspaceID:   workspaceID,
+		WorkspaceID:   "kaytu",
 		Active:        true,
 		Revoked:       false,
 		MaskedKey:     masked,
@@ -604,7 +604,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	//spanGAK := jaegertracing.CreateChildSpan(ctx, "GetApiKey")
 	//spanGAK.SetBaggageItem("auth", "CreateAPIKey")
 
-	key, err := r.db.GetApiKey(workspaceID, uint(apikey.ID))
+	key, err := r.db.GetApiKey("kaytu", uint(apikey.ID))
 	if err != nil {
 		return err
 	}
