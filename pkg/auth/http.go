@@ -62,7 +62,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.EditorRole))
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
-	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.EditorRole))
+	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.EditorRole))
 
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api.InternalRole))
 }
