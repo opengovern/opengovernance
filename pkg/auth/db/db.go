@@ -34,6 +34,18 @@ func (db Database) ListApiKeys(workspaceID string) ([]ApiKey, error) {
 	return s, nil
 }
 
+func (db Database) ListApiKeysForUser(userId string) ([]ApiKey, error) {
+	var s []ApiKey
+	tx := db.Orm.Model(&ApiKey{}).
+		Where("creator_user_id", userId).
+		Where("revoked", "false").
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 func (db Database) GetAPIKeysByRole(role api.Role, workspaceID string) ([]ApiKey, error) {
 	var s []ApiKey
 	tx := db.Orm.Model(&ApiKey{}).
@@ -97,6 +109,17 @@ func (db Database) AddApiKey(key *ApiKey) error {
 func (db Database) RevokeAPIKey(workspaceID string, id uint) error {
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("workspace_id", workspaceID).
+		Where("id", id).
+		Updates(ApiKey{Revoked: true})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) RevokeUserAPIKey(userID string, id uint) error {
+	tx := db.Orm.Model(&ApiKey{}).
+		Where("creator_user_id", userID).
 		Where("id", id).
 		Updates(ApiKey{Revoked: true})
 	if tx.Error != nil {

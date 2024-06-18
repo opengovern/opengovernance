@@ -63,7 +63,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.EditorRole))
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
-	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.AdminRole))
+	v1.DELETE("/key/:id/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.EditorRole))
 
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api.InternalRole))
 }
@@ -513,18 +513,6 @@ func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
 //	@Router			/auth/api/v1/key/create [post]
 func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
-	//workspaceID := httpserver.GetWorkspaceID(ctx)
-	//hctx := httpclient.FromEchoContext(ctx)
-	//metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
-
-	//cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
-	//if err != nil {
-	//	return err
-	//}
-	//keySupport := cnf.GetValue().(bool)
-	//if !keySupport {
-	//	return echo.NewHTTPError(http.StatusNotAcceptable, "keys are not supported in this workspace")
-	//}
 	var req api.CreateAPIKeyRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -561,24 +549,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 	keyHash := hex.EncodeToString(hash.Sum(nil))
-	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "CountApiKeys")
-	//span.SetBaggageItem("auth", "CreateAPIKey")
 
-	//currentKeyCount, err := r.db.CountApiKeys(workspaceID)
-	//if err != nil {
-	//	return err
-	//}
-	////span.Finish()
-	//
-	//cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
-	//if err != nil {
-	//	return err
-	//}
-	//maxKeys := cnf.GetValue().(int)
-	//if currentKeyCount+1 > int64(maxKeys) {
-	//	return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys in workspace reached")
-	//}
 	currentKeyCount, err := r.db.CountApiKeysForUser(userID)
 	if err != nil {
 		return err
@@ -597,31 +568,18 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		MaskedKey:     masked,
 		KeyHash:       keyHash,
 	}
-	// trace :
-	//spanAAK := jaegertracing.CreateChildSpan(ctx, "AddApiKey")
-	//spanAAK.SetBaggageItem("auth", "CreateAPIKey")
+
 	err = r.db.AddApiKey(&apikey)
 	if err != nil {
 		return err
 	}
-	//spanAAK.Finish()
-
-	// trace :
-	//spanGAK := jaegertracing.CreateChildSpan(ctx, "GetApiKey")
-	//spanGAK.SetBaggageItem("auth", "CreateAPIKey")
-
-	key, err := r.db.GetApiKey("kaytu", uint(apikey.ID))
-	if err != nil {
-		return err
-	}
-	//spanGAK.Finish()
 
 	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
 		ID:        apikey.ID,
-		Name:      key.Name,
-		Active:    key.Active,
-		CreatedAt: key.CreatedAt,
-		RoleName:  key.Role,
+		Name:      apikey.Name,
+		Active:    apikey.Active,
+		CreatedAt: apikey.CreatedAt,
+		RoleName:  apikey.Role,
 		Token:     token,
 	})
 }
@@ -637,21 +595,17 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Success		200	{object}	nil
 //	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
+	userId := httpserver.GetUserID(ctx)
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		return err
 	}
-	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "RevokeAPIKey")
-	//span.SetBaggageItem("auth", "DeleteAPIKey")
 
-	err = r.db.RevokeAPIKey(workspaceID, uint(id))
+	err = r.db.RevokeUserAPIKey(userId, uint(id))
 	if err != nil {
 		return err
 	}
-	//span.Finish()
 
 	return ctx.NoContent(http.StatusOK)
 }
@@ -666,27 +620,11 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 //	@Success		200	{object}	[]api.WorkspaceApiKey
 //	@Router			/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
 	userID := httpserver.GetUserID(ctx)
-	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListApiKeys")
-	//span.SetBaggageItem("auth", "ListAPIKeys")
-
-	if userID != api.GodUserID {
-		usr, err := r.auth0Service.GetUser(userID)
-		if err != nil {
-			return err
-		}
-		if _, ok := usr.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
-			return errors.New("access denied")
-		}
-	}
-
-	keys, err := r.db.ListApiKeys(workspaceID)
+	keys, err := r.db.ListApiKeysForUser(userID)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
 
 	var resp []api.WorkspaceApiKey
 	for _, key := range keys {
