@@ -175,8 +175,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			}
 			mf, rg, t := model.GetSkuDetails(sku)
 			if (rg == cpu || rg == ram) && t == "Predefined" {
-				machinteTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = float64(sku.PricingInfo[0].PricingExpression.TieredRates[0].UnitPrice.Units) +
-					(float64(sku.PricingInfo[0].PricingExpression.TieredRates[0].UnitPrice.Nanos) / float64(1_000_000_000))
+				machinteTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = computeSKU.UnitPrice
 			}
 		}
 	}
@@ -204,7 +203,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			continue
 		}
 
-		rp = rp * float64(mt.MemoryMb/1_000)
+		rp = rp * float64(mt.MemoryMb/1024)
 		cp = cp * float64(mt.GuestCpus)
 
 		computeMachineType.UnitPrice = rp + cp
