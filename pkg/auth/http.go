@@ -583,7 +583,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 	apikey := db.ApiKey{
 		Name:          req.Name,
-		Role:          req.RoleName,
+		Role:          api.EditorRole,
 		CreatorUserID: userID,
 		WorkspaceID:   "kaytu",
 		Active:        true,
