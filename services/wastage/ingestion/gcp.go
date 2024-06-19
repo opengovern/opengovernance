@@ -204,52 +204,33 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		mf := strings.ToLower(strings.Split(mt.Name, "-")[0])
 		rp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)][region]
 		if !ok {
-			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name),
+			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
 				zap.String("region", region), zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)]))
-			for r, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)] {
-				if strings.Contains(mt.Zone, r) {
-					rp = mtp
-					ok = true
-				}
-			}
-			if !ok {
-				for _, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)] {
-					rp = mtp
-					ok = true
-				}
-				if !ok {
-					s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name))
-					continue
-				}
-			}
+			continue
+		} else {
+			s.logger.Info("got ram price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
+				zap.Float64("price", rp), zap.String("region", region),
+				zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)]))
 		}
 
 		cp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)][region]
 		if !ok {
-			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name),
+			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
 				zap.String("region", region), zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]))
-			for r, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)] {
-				if strings.Contains(mt.Zone, r) {
-					rp = mtp
-					ok = true
-				}
-			}
-			if !ok {
-				for _, mtp := range machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)] {
-					rp = mtp
-					ok = true
-				}
-				if !ok {
-					s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name))
-					continue
-				}
-			}
+			continue
+		} else {
+			s.logger.Info("got cpu price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
+				zap.Float64("price", cp), zap.String("region", region),
+				zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]))
 		}
 
 		rp = rp * float64(mt.MemoryMb/1024)
 		cp = cp * float64(mt.GuestCpus)
 
 		computeMachineType.UnitPrice = rp + cp
+
+		s.logger.Info("calculate price", zap.String("machine_type", mt.Name), zap.Float64("price", computeMachineType.UnitPrice),
+			zap.Float64("ram_price", rp), zap.Float64("cpu_price", cp))
 
 		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, computeMachineType)
 		if err != nil {
