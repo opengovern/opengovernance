@@ -207,10 +207,6 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			s.logger.Error("failed to get ram price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
 				zap.String("region", region), zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)]))
 			continue
-		} else {
-			s.logger.Info("got ram price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
-				zap.Float64("price", rp), zap.String("region", region),
-				zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)]))
 		}
 
 		cp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)][region]
@@ -218,18 +214,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			s.logger.Error("failed to get cpu price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
 				zap.String("region", region), zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]))
 			continue
-		} else {
-			s.logger.Info("got cpu price", zap.String("machine_type", mt.Name), zap.String("family", fmt.Sprintf("%s.%s", mf, cpu)),
-				zap.Float64("price", cp), zap.String("region", region),
-				zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]))
 		}
-
-		s.logger.Info("calculate price", zap.String("machine_type", mt.Name), zap.String("region", region),
-			zap.Float64("ram_price", rp), zap.Float64("cpu_price", cp),
-			zap.Int64("ram mb", computeMachineType.MemoryMb), zap.Float64("ram gb", float64(computeMachineType.MemoryMb)/float64(1024)),
-			zap.Float64("total ram price", rp*float64(computeMachineType.MemoryMb)/float64(1024)),
-			zap.Int64("cpu", computeMachineType.GuestCpus), zap.Float64("total cpu price", cp*float64(computeMachineType.GuestCpus)),
-			zap.Float64("unit price", (rp*float64(computeMachineType.MemoryMb)/float64(1024))+(cp*float64(computeMachineType.GuestCpus))))
 
 		computeMachineType.UnitPrice = (rp * float64(computeMachineType.MemoryMb) / float64(1024)) + (cp * float64(computeMachineType.GuestCpus))
 
