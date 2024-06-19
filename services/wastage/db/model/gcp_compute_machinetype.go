@@ -3,7 +3,6 @@ package model
 import (
 	"google.golang.org/api/compute/v1"
 	"gorm.io/gorm"
-	"strconv"
 	"strings"
 )
 
@@ -11,7 +10,6 @@ type GCPComputeMachineType struct {
 	gorm.Model
 
 	// Basic fields
-	Id            string `gorm:"index"`
 	Name          string `gorm:"index"`
 	MachineType   string `gorm:"index"`
 	MachineFamily string `gorm:"index"`
@@ -27,7 +25,6 @@ type GCPComputeMachineType struct {
 }
 
 func (p *GCPComputeMachineType) PopulateFromObject(machineType *compute.MachineType) {
-	p.Id = strconv.FormatUint(machineType.Id, 10)
 	p.Name = machineType.Name
 	p.MachineType = machineType.Name
 	mf := strings.ToLower(strings.Split(machineType.Name, "-")[0])
