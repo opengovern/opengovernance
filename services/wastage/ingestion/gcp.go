@@ -229,10 +229,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			zap.Int64("ram mb", computeMachineType.MemoryMb), zap.Float64("ram gb", float64(computeMachineType.MemoryMb)/float64(1024)),
 			zap.Float64("total ram price", rp*float64(computeMachineType.MemoryMb)/float64(1024)),
 			zap.Int64("cpu", computeMachineType.GuestCpus), zap.Float64("total cpu price", cp*float64(computeMachineType.GuestCpus)),
-			zap.Float64("unit price", rp*float64(computeMachineType.MemoryMb)/float64(1024)+cp*float64(computeMachineType.GuestCpus)))
-
-		rp = rp * float64(computeMachineType.MemoryMb) / float64(1024)
-		cp = cp * float64(computeMachineType.GuestCpus)
+			zap.Float64("unit price", (rp*float64(computeMachineType.MemoryMb)/float64(1024))+(cp*float64(computeMachineType.GuestCpus))))
 
 		computeMachineType.UnitPrice = (rp * float64(computeMachineType.MemoryMb) / float64(1024)) + (cp * float64(computeMachineType.GuestCpus))
 
