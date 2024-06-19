@@ -224,13 +224,17 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 				zap.Any("prices", machineTypePrices[fmt.Sprintf("%s.%s", mf, cpu)]))
 		}
 
-		rp = rp * float64(mt.MemoryMb/1024)
-		cp = cp * float64(mt.GuestCpus)
+		s.logger.Info("calculate price", zap.String("machine_type", mt.Name), zap.String("region", region),
+			zap.Float64("ram_price", rp), zap.Float64("cpu_price", cp),
+			zap.Int64("ram mb", computeMachineType.MemoryMb), zap.Float64("ram gb", float64(computeMachineType.MemoryMb)/float64(1024)),
+			zap.Float64("total ram price", rp*float64(computeMachineType.MemoryMb)/float64(1024)),
+			zap.Int64("cpu", computeMachineType.GuestCpus), zap.Float64("total cpu price", cp*float64(computeMachineType.GuestCpus)),
+			zap.Float64("unit price", rp*float64(computeMachineType.MemoryMb)/float64(1024)+cp*float64(computeMachineType.GuestCpus)))
 
-		computeMachineType.UnitPrice = rp + cp
+		rp = rp * float64(computeMachineType.MemoryMb) / float64(1024)
+		cp = cp * float64(computeMachineType.GuestCpus)
 
-		s.logger.Info("calculate price", zap.String("machine_type", mt.Name), zap.Float64("price", computeMachineType.UnitPrice),
-			zap.Float64("ram_price", rp), zap.Float64("cpu_price", cp))
+		computeMachineType.UnitPrice = (rp * float64(computeMachineType.MemoryMb) / float64(1024)) + (cp * float64(computeMachineType.GuestCpus))
 
 		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, computeMachineType)
 		if err != nil {
