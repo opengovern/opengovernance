@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	kaytu_client "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-client"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
@@ -27,10 +26,10 @@ func (s *Service) GetGCPComputeInstanceCost(instance entity.GcpComputeInstance) 
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      instance.HashedInstanceId,
-		Type:         kaytu_client.ResourceTypeConversion("aws::ec2::instance"),
+		Type:         "google_compute_instance",
 		Name:         "",
 		RegionCode:   instance.Zone,
-		ProviderName: schema.AWSProvider,
+		ProviderName: "google",
 		Values:       valuesMap,
 	})
 
