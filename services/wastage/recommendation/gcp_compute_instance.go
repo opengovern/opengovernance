@@ -52,7 +52,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	if preferences["MemoryBreathingRoom"] != nil {
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
-	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + float64(cpuBreathingRoom))
+	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + (float64(cpuBreathingRoom) / 100.0))
 	neededMemory := 0.0
 	if memoryUsage.Avg != nil {
 		neededMemory = calculateHeadroom(*memoryUsage.Avg/(1024*1024), memoryBreathingRoom)
