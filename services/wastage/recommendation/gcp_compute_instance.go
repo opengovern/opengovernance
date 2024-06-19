@@ -55,7 +55,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + float64(cpuBreathingRoom))
 	neededMemory := 0.0
 	if memoryUsage.Avg != nil {
-		neededMemory = calculateHeadroom(*memoryUsage.Avg, memoryBreathingRoom)
+		neededMemory = calculateHeadroom(*memoryUsage.Avg/(1024*1024), memoryBreathingRoom)
 	}
 
 	pref := make(map[string]interface{}) //TODO
