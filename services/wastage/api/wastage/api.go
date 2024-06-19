@@ -676,10 +676,6 @@ func (s API) GCPCompute(c echo.Context) error {
 	statsOut, _ := json.Marshal(stats)
 
 	fullReqJson, _ := json.Marshal(req)
-	metrics := req.Metrics
-	req.Metrics = nil
-	trimmedReqJson, _ := json.Marshal(req)
-	req.Metrics = metrics
 
 	if req.RequestId == nil {
 		id := uuid.New().String()
@@ -693,7 +689,7 @@ func (s API) GCPCompute(c echo.Context) error {
 	}
 	usage := model.UsageV2{
 		ApiEndpoint:    "gcp-compute-instance",
-		Request:        trimmedReqJson,
+		Request:        fullReqJson,
 		RequestId:      req.RequestId,
 		CliVersion:     req.CliVersion,
 		Response:       nil,

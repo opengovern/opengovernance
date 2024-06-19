@@ -52,10 +52,10 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	if preferences["MemoryBreathingRoom"] != nil {
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
-	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + float64(cpuBreathingRoom)) / 100.0
+	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + (float64(cpuBreathingRoom) / 100.0))
 	neededMemory := 0.0
 	if memoryUsage.Avg != nil {
-		neededMemory = calculateHeadroom(*memoryUsage.Avg, memoryBreathingRoom)
+		neededMemory = calculateHeadroom(*memoryUsage.Avg/(1024*1024), memoryBreathingRoom)
 	}
 
 	pref := make(map[string]interface{}) //TODO
@@ -65,14 +65,14 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		return nil, err
 	}
 
-	instance.Zone = suggestedMachineType.Zone
-	instance.MachineType = suggestedMachineType.Name
-	suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(instance)
-	if err != nil {
-		return nil, err
-	}
-
 	if suggestedMachineType != nil {
+		instance.Zone = suggestedMachineType.Zone
+		instance.MachineType = suggestedMachineType.Name
+		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(instance)
+		if err != nil {
+			return nil, err
+		}
+
 		result.Recommended = &entity.RightsizingGcpComputeInstance{
 			Zone:          suggestedMachineType.Zone,
 			MachineType:   suggestedMachineType.Name,
