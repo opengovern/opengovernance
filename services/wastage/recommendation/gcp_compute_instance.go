@@ -65,8 +65,8 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		return nil, err
 	}
 
-	instance.Zone = machine.Zone
-	instance.MachineType = machine.Name
+	instance.Zone = suggestedMachineType.Zone
+	instance.MachineType = suggestedMachineType.Name
 	suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(instance)
 	if err != nil {
 		return nil, err
