@@ -165,8 +165,13 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			continue
 		}
 
-		skuMachineTypePrices := make(map[string]float64)
 		mf, rg, t := model.GetSkuDetails(sku)
+		if rg == cpu || rg == ram {
+			if _, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)]; !ok {
+				skuMachineTypePrices := make(map[string]float64)
+				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
+			}
+		}
 
 		for _, region := range sku.ServiceRegions {
 			computeSKU := &model.GCPComputeSKU{}
@@ -178,11 +183,8 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			}
 
 			if (rg == cpu || rg == ram) && t == "Predefined" {
-				skuMachineTypePrices[region] = computeSKU.UnitPrice
+				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
 			}
-		}
-		if rg == cpu || rg == ram {
-			machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
 		}
 	}
 
