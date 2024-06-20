@@ -98,7 +98,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, computeMachineTypeRepo, cnf.OpenAIToken, costSvc)
+			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, computeMachineTypeRepo, computeSKURepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
 
 			gcpCredentials := map[string]string{

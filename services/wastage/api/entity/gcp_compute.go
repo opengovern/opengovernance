@@ -10,6 +10,7 @@ type GcpComputeInstance struct {
 
 type RightsizingGcpComputeInstance struct {
 	Zone          string `json:"zone"`
+	Region        string `json:"region"`
 	MachineType   string `json:"machineType"`
 	MachineFamily string `json:"machineFamily"`
 	CPU           int64  `json:"cpu"`
