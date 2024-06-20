@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/aws_rds"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/gcp_compute"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -93,7 +93,12 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		if k == "MemoryGB" {
 			vl = int64(vl.(float64) * 1024)
 		}
-		pref[fmt.Sprintf("%s %s ?", aws_rds.PreferenceInstanceDBKey[k], cond)] = vl
+		if k == "MachineFamily" {
+			if vl == "custom" {
+				continue
+			}
+		}
+		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
 	}
 
 	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemory, pref)
@@ -142,27 +147,34 @@ func extractFromGCPComputeInstance(instance entity.GcpComputeInstance, machine *
 }
 
 func (s *Service) extractCustomInstanceDetails(instance entity.GcpComputeInstance) (*model.GCPComputeMachineType, error) {
-	details := strings.Split(instance.MachineType, "-")
-	if len(details) != 4 {
-		return nil, fmt.Errorf("invalid custom instance type")
-	}
-	if details[0] == "e2" {
-		return nil, fmt.Errorf("e2 instances are not supported")
-	}
+	re := regexp.MustCompile(`(\D.+)-(\d+)-(\d.+)`)
+	machineTypePrefix := re.ReplaceAllString(instance.MachineType, "$1")
+	strCPUAmount := re.ReplaceAllString(instance.MachineType, "$2")
+	strRAMAmount := re.ReplaceAllString(instance.MachineType, "$3")
+
 	region := strings.Join([]string{strings.Split(instance.Zone, "-")[0], strings.Split(instance.Zone, "-")[1]}, "-")
-	cpu, err := strconv.ParseInt(details[2], 10, 64)
+	cpu, err := strconv.ParseInt(strCPUAmount, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	memoryMb, err := strconv.ParseInt(details[3], 10, 64)
+	memoryMb, err := strconv.ParseInt(strRAMAmount, 10, 64)
 	if err != nil {
 		return nil, err
+	}
+
+	family := "custom"
+	if machineTypePrefix != "custom" {
+		family = strings.Split(machineTypePrefix, "-")[0]
+	}
+
+	if family == "e2" {
+		return nil, fmt.Errorf("e2 instances are not supported")
 	}
 
 	return &model.GCPComputeMachineType{
 		Name:          instance.MachineType,
 		MachineType:   instance.MachineType,
-		MachineFamily: details[0],
+		MachineFamily: family,
 		GuestCpus:     cpu,
 		MemoryMb:      memoryMb,
 		Zone:          instance.Zone,
