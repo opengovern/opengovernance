@@ -282,7 +282,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 	if preferences["Region"] != nil && *preferences["Region"] != "" {
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey["Region"], "=")] = *preferences["Region"]
 	} else if preferences["Region"] == nil {
-		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey["Region"], "=")] = region
+		pref["location = ?"] = region
 	}
 
 	var customOffers []customOffer
