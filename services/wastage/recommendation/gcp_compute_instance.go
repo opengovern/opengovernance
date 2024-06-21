@@ -5,6 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/gcp_compute"
+	"go.uber.org/zap"
 	"regexp"
 	"strconv"
 	"strings"
@@ -273,6 +274,8 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemory flo
 	offers = append(offers, n4Offer...)
 	offers = append(offers, n2dOffer...)
 	offers = append(offers, g2Offer...)
+
+	s.logger.Info("custom machines", zap.Any("offers", offers))
 
 	return offers, nil
 }
