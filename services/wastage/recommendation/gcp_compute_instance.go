@@ -72,8 +72,8 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
 	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + (float64(cpuBreathingRoom) / 100.0))
-	if neededCPU < 1 {
-		neededCPU = 1
+	if neededCPU < 2 {
+		neededCPU = 2
 	}
 
 	neededMemoryMb := 0.0
@@ -133,7 +133,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		}
 
 		if !excludeCustom {
-			customMachines, err := s.checkCustomMachines(region, neededCPU, neededMemoryMb, preferences)
+			customMachines, err := s.checkCustomMachines(region, int64(neededCPU), int64(neededMemoryMb), preferences)
 			if err != nil {
 				return nil, err
 			}
@@ -156,7 +156,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			Cost: suggestedCost,
 		}
 	} else if !excludeCustom {
-		customMachines, err := s.checkCustomMachines(region, neededCPU, neededMemoryMb, preferences)
+		customMachines, err := s.checkCustomMachines(region, int64(neededCPU), int64(neededMemoryMb), preferences)
 		if err != nil {
 			return nil, err
 		}
@@ -241,13 +241,13 @@ func (s *Service) extractCustomInstanceDetails(instance entity.GcpComputeInstanc
 	}, nil
 }
 
-func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb float64, preferences map[string]*string) ([]CustomOffer, error) {
+func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
 	if preferences["MemoryGB"] != nil && *preferences["MemoryGB"] != "" {
-		neededMemoryGb, _ := strconv.ParseFloat(*preferences["MemoryGB"], 64)
+		neededMemoryGb, _ := strconv.ParseInt(*preferences["MemoryGB"], 10, 64)
 		neededMemoryMb = neededMemoryGb * 1024
 	}
 	if preferences["vCPU"] != nil && *preferences["vCPU"] != "" {
-		neededCpu, _ = strconv.ParseFloat(*preferences["vCPU"], 64)
+		neededCpu, _ = strconv.ParseInt(*preferences["vCPU"], 10, 64)
 	}
 
 	offers := make([]CustomOffer, 0)
@@ -291,7 +291,32 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb f
 	return offers, nil
 }
 
-func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, neededMemoryMb float64, preferences map[string]*string) ([]CustomOffer, error) {
+func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
+	if neededCpu > 2 {
+		neededCpu = roundUpToMultipleOf(neededCpu, 4)
+	}
+	if family == "n2" || family == "n2d" {
+		neededMemoryMb = roundUpToMultipleOf(neededMemoryMb, 256)
+		if neededMemoryMb < neededCpu*512 {
+			neededMemoryMb = neededCpu * 512
+		}
+	} else if family == "n4" {
+		neededMemoryMb = roundUpToMultipleOf(neededMemoryMb, 256)
+		if neededMemoryMb < neededCpu*2048 {
+			neededMemoryMb = neededCpu * 2048
+		}
+	} else if family == "g2" {
+		neededMemoryMb = roundUpToMultipleOf(neededMemoryMb, 1024)
+		if neededMemoryMb < neededCpu*4096 {
+			neededMemoryMb = neededCpu * 4096
+		}
+	}
+
+	if neededMemoryMb > 8192*neededCpu {
+		neededCpu = roundUpToMultipleOf(neededMemoryMb, 8192) / 8192
+		neededCpu = roundUpToMultipleOf(neededCpu, 4)
+	}
+
 	pref := make(map[string]any)
 	for k, v := range preferences {
 		if k == "Region" {
@@ -319,7 +344,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		return nil, nil
 	}
 
-	machineType := fmt.Sprintf("%s-custom-%d-%d", family, int64(neededCpu), int64(neededMemoryMb))
+	machineType := fmt.Sprintf("%s-custom-%d-%d", family, neededCpu, neededMemoryMb)
 
 	if memorySku.Location == cpuSku.Location {
 		cost, err := s.costSvc.GetGCPComputeInstanceCost(entity.GcpComputeInstance{
@@ -336,8 +361,8 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 			MachineType: model.GCPComputeMachineType{
 				Name:        machineType,
 				MachineType: machineType,
-				GuestCpus:   int64(neededCpu),
-				MemoryMb:    int64(neededMemoryMb),
+				GuestCpus:   neededCpu,
+				MemoryMb:    neededMemoryMb,
 				Zone:        cpuSku.Location + "-a",
 				Region:      cpuSku.Location,
 			},
@@ -396,4 +421,11 @@ type CustomOffer struct {
 	Family      string
 	MachineType model.GCPComputeMachineType
 	Cost        float64
+}
+
+func roundUpToMultipleOf(number, multipleOf int64) int64 {
+	if number%multipleOf == 0 {
+		return number
+	}
+	return ((number / multipleOf) + 1) * multipleOf
 }
