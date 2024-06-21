@@ -72,9 +72,16 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
 	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + (float64(cpuBreathingRoom) / 100.0))
-	neededMemory := 0.0
+	if neededCPU < 1 {
+		neededCPU = 1
+	}
+
+	neededMemoryMb := 0.0
 	if memoryUsage.Avg != nil {
-		neededMemory = calculateHeadroom(*memoryUsage.Avg/(1024*1024), memoryBreathingRoom)
+		neededMemoryMb = calculateHeadroom(*memoryUsage.Avg/(1024*1024), memoryBreathingRoom)
+	}
+	if neededMemoryMb < 1024 {
+		neededMemoryMb = 1024
 	}
 
 	pref := make(map[string]any)
@@ -105,7 +112,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
 	}
 
-	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemory, pref)
+	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemoryMb, pref)
 	if err != nil {
 		return nil, err
 	}
@@ -126,14 +133,14 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		}
 
 		if !excludeCustom {
-			customMachines, err := s.checkCustomMachines(region, neededCPU, neededMemory, preferences)
+			customMachines, err := s.checkCustomMachines(region, neededCPU, neededMemoryMb, preferences)
 			if err != nil {
 				return nil, err
 			}
 			for _, customMachine := range customMachines {
-				if customMachine.cost < suggestedCost {
-					suggestedMachineType = &customMachine.machineType
-					suggestedCost = customMachine.cost
+				if customMachine.Cost < suggestedCost {
+					suggestedMachineType = &customMachine.MachineType
+					suggestedCost = customMachine.Cost
 				}
 			}
 		}
@@ -149,7 +156,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			Cost: suggestedCost,
 		}
 	} else if !excludeCustom {
-		customMachines, err := s.checkCustomMachines(region, neededCPU, neededMemory, preferences)
+		customMachines, err := s.checkCustomMachines(region, neededCPU, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
@@ -157,9 +164,9 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		suggestedCost := currentCost
 
 		for _, customMachine := range customMachines {
-			if customMachine.cost < suggestedCost {
-				suggestedMachineType = &customMachine.machineType
-				suggestedCost = customMachine.cost
+			if customMachine.Cost < suggestedCost {
+				suggestedMachineType = &customMachine.MachineType
+				suggestedCost = customMachine.Cost
 			}
 		}
 
@@ -234,17 +241,18 @@ func (s *Service) extractCustomInstanceDetails(instance entity.GcpComputeInstanc
 	}, nil
 }
 
-func (s *Service) checkCustomMachines(region string, neededCpu, neededMemory float64, preferences map[string]*string) ([]customOffer, error) {
+func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb float64, preferences map[string]*string) ([]CustomOffer, error) {
 	if preferences["MemoryGB"] != nil && *preferences["MemoryGB"] != "" {
-		neededMemory, _ = strconv.ParseFloat(*preferences["MemoryGB"], 64)
+		neededMemoryGb, _ := strconv.ParseFloat(*preferences["MemoryGB"], 64)
+		neededMemoryMb = neededMemoryGb * 1024
 	}
 	if preferences["vCPU"] != nil && *preferences["vCPU"] != "" {
 		neededCpu, _ = strconv.ParseFloat(*preferences["vCPU"], 64)
 	}
 
-	offers := make([]customOffer, 0)
+	offers := make([]CustomOffer, 0)
 	if preferences["MachineFamily"] != nil && *preferences["MachineFamily"] != "" {
-		offer, err := s.checkCustomMachineForFamily(region, *preferences["MachineFamily"], neededCpu, neededMemory, preferences)
+		offer, err := s.checkCustomMachineForFamily(region, *preferences["MachineFamily"], neededCpu, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
@@ -254,19 +262,19 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemory flo
 		return offer, nil
 	}
 
-	n2Offer, err := s.checkCustomMachineForFamily(region, "n2", neededCpu, neededMemory, preferences)
+	n2Offer, err := s.checkCustomMachineForFamily(region, "n2", neededCpu, neededMemoryMb, preferences)
 	if err != nil {
 		return nil, err
 	}
-	n4Offer, err := s.checkCustomMachineForFamily(region, "n4", neededCpu, neededMemory, preferences)
+	n4Offer, err := s.checkCustomMachineForFamily(region, "n4", neededCpu, neededMemoryMb, preferences)
 	if err != nil {
 		return nil, err
 	}
-	n2dOffer, err := s.checkCustomMachineForFamily(region, "n2d", neededCpu, neededMemory, preferences)
+	n2dOffer, err := s.checkCustomMachineForFamily(region, "n2d", neededCpu, neededMemoryMb, preferences)
 	if err != nil {
 		return nil, err
 	}
-	g2Offer, err := s.checkCustomMachineForFamily(region, "g2", neededCpu, neededMemory, preferences)
+	g2Offer, err := s.checkCustomMachineForFamily(region, "g2", neededCpu, neededMemoryMb, preferences)
 	if err != nil {
 		return nil, err
 	}
@@ -276,11 +284,14 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemory flo
 	offers = append(offers, g2Offer...)
 
 	s.logger.Info("custom machines", zap.Any("offers", offers))
+	for _, offer := range offers {
+		s.logger.Info("custom machine info", zap.String("family", offer.Family), zap.Any("machineType", offer.MachineType), zap.Float64("cost", offer.Cost))
+	}
 
 	return offers, nil
 }
 
-func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, neededMemory float64, preferences map[string]*string) ([]customOffer, error) {
+func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, neededMemoryMb float64, preferences map[string]*string) ([]CustomOffer, error) {
 	pref := make(map[string]any)
 	for k, v := range preferences {
 		if k == "Region" {
@@ -292,7 +303,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		}
 	}
 
-	var customOffers []customOffer
+	var customOffers []CustomOffer
 	cpuSku, err := s.gcpComputeSKURepo.GetCheapestCustomCore(family, pref)
 	if err != nil {
 		return nil, err
@@ -308,7 +319,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		return nil, nil
 	}
 
-	machineType := fmt.Sprintf("%s-custom-%d-%d", family, int64(neededCpu), int64(neededMemory))
+	machineType := fmt.Sprintf("%s-custom-%d-%d", family, int64(neededCpu), int64(neededMemoryMb))
 
 	if memorySku.Location == cpuSku.Location {
 		cost, err := s.costSvc.GetGCPComputeInstanceCost(entity.GcpComputeInstance{
@@ -320,17 +331,17 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 			return nil, err
 		}
 
-		return []customOffer{{
-			family: family,
-			machineType: model.GCPComputeMachineType{
+		return []CustomOffer{{
+			Family: family,
+			MachineType: model.GCPComputeMachineType{
 				Name:        machineType,
 				MachineType: machineType,
 				GuestCpus:   int64(neededCpu),
-				MemoryMb:    int64(neededMemory),
+				MemoryMb:    int64(neededMemoryMb),
 				Zone:        cpuSku.Location + "-a",
 				Region:      cpuSku.Location,
 			},
-			cost: cost,
+			Cost: cost,
 		}}, nil
 	}
 
@@ -343,17 +354,17 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		return nil, err
 	}
 
-	customOffers = append(customOffers, customOffer{
-		family: family,
-		machineType: model.GCPComputeMachineType{
+	customOffers = append(customOffers, CustomOffer{
+		Family: family,
+		MachineType: model.GCPComputeMachineType{
 			Name:        machineType,
 			MachineType: machineType,
 			GuestCpus:   int64(neededCpu),
-			MemoryMb:    int64(neededMemory),
+			MemoryMb:    int64(neededMemoryMb),
 			Zone:        cpuSku.Location + "-a",
 			Region:      cpuSku.Location,
 		},
-		cost: cpuRegionCost,
+		Cost: cpuRegionCost,
 	})
 
 	memoryRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(entity.GcpComputeInstance{
@@ -365,24 +376,24 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		return nil, err
 	}
 
-	customOffers = append(customOffers, customOffer{
-		family: family,
-		machineType: model.GCPComputeMachineType{
+	customOffers = append(customOffers, CustomOffer{
+		Family: family,
+		MachineType: model.GCPComputeMachineType{
 			Name:        machineType,
 			MachineType: machineType,
 			GuestCpus:   int64(neededCpu),
-			MemoryMb:    int64(neededMemory),
+			MemoryMb:    int64(neededMemoryMb),
 			Zone:        memorySku.Location + "-a",
 			Region:      memorySku.Location,
 		},
-		cost: memoryRegionCost,
+		Cost: memoryRegionCost,
 	})
 
 	return customOffers, nil
 }
 
-type customOffer struct {
-	family      string
-	machineType model.GCPComputeMachineType
-	cost        float64
+type CustomOffer struct {
+	Family      string
+	MachineType model.GCPComputeMachineType
+	Cost        float64
 }
