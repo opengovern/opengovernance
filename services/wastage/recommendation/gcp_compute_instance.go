@@ -282,10 +282,14 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemory flo
 
 func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, neededMemory float64, preferences map[string]*string) ([]customOffer, error) {
 	pref := make(map[string]any)
-	if preferences["Region"] != nil && *preferences["Region"] != "" {
-		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey["Region"], "=")] = *preferences["Region"]
-	} else if preferences["Region"] == nil {
-		pref["location = ?"] = region
+	for k, v := range preferences {
+		if k == "Region" {
+			if v != nil && *v != "" {
+				pref["location = ?"] = *v
+			} else {
+				pref["location = ?"] = region
+			}
+		}
 	}
 
 	var customOffers []customOffer
