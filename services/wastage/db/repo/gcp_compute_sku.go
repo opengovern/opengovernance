@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -13,6 +14,8 @@ type GCPComputeSKURepo interface {
 	Create(tableName string, tx *gorm.DB, m *model.GCPComputeSKU) error
 	Delete(tableName string, id string) error
 	List() ([]model.GCPComputeSKU, error)
+	GetCheapestCustomCore(machineFamily string, pref map[string]interface{}) (*model.GCPComputeSKU, error)
+	GetCheapestCustomRam(machineFamily string, pref map[string]interface{}) (*model.GCPComputeSKU, error)
 	CreateNewTable() (string, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(currentTableName string) error
@@ -51,6 +54,46 @@ func (r *GCPComputeSKURepoImpl) List() ([]model.GCPComputeSKU, error) {
 	var m []model.GCPComputeSKU
 	tx := r.db.Conn().Table(r.viewName).Find(&m)
 	return m, tx.Error
+}
+
+func (r *GCPComputeSKURepoImpl) GetCheapestCustomCore(machineFamily string, pref map[string]interface{}) (*model.GCPComputeSKU, error) {
+	var m model.GCPComputeSKU
+	tx := r.db.Conn().Table(r.viewName).
+		Where("resource_family = 'Compute'").
+		Where("unit_price != 0").
+		Where("machine_family = ?", machineFamily).
+		Where("resource_group = 'CPU'")
+	for k, v := range pref {
+		tx = tx.Where(k, v)
+	}
+	tx = tx.Order("unit_price ASC").First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
+}
+
+func (r *GCPComputeSKURepoImpl) GetCheapestCustomRam(machineFamily string, pref map[string]interface{}) (*model.GCPComputeSKU, error) {
+	var m model.GCPComputeSKU
+	tx := r.db.Conn().Table(r.viewName).
+		Where("resource_family = 'Compute'").
+		Where("unit_price != 0").
+		Where("machine_family = ?", machineFamily).
+		Where("resource_group = 'RAM'")
+	for k, v := range pref {
+		tx = tx.Where(k, v)
+	}
+	tx = tx.Order("unit_price ASC").First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
 }
 
 func (r *GCPComputeSKURepoImpl) CreateNewTable() (string, error) {
