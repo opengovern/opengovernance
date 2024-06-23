@@ -183,7 +183,26 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 			responseId := id.String()
 			usage.ResponseId = &responseId
 
-			// TODO: We don't have cost here. What can we store?
+			if req != nil && req.Pod != nil {
+				for _, container := range req.Pod.Containers {
+					if container == nil {
+						continue
+					}
+					stats.KubernetesCurrentCPURequest += container.CpuRequest
+					stats.KubernetesCurrentMemoryRequest += container.MemoryRequest
+				}
+			}
+			if resp.Rightsizing != nil {
+				for _, container := range resp.Rightsizing.ContainerResizing {
+					if container != nil && container.Current != nil && container.Recommended != nil {
+						stats.KubernetesRecommendedCPURequest += container.Recommended.CpuRequest
+						stats.KubernetesRecommendedMemoryRequest += container.Recommended.MemoryRequest
+
+						stats.KubernetesCPURequestSavings += container.Current.CpuRequest - container.Recommended.CpuRequest
+						stats.KubernetesMemoryRequestSavings += container.Current.MemoryRequest - container.Recommended.MemoryRequest
+					}
+				}
+			}
 
 			statsOut, _ := json.Marshal(stats)
 			usage.Statistics = statsOut
@@ -302,7 +321,26 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 			responseId := id.String()
 			usage.ResponseId = &responseId
 
-			// TODO: We don't have cost here. What can we store?
+			if req != nil && req.Deployment != nil {
+				for _, container := range req.Deployment.Containers {
+					if container == nil {
+						continue
+					}
+					stats.KubernetesCurrentCPURequest += container.CpuRequest
+					stats.KubernetesCurrentMemoryRequest += container.MemoryRequest
+				}
+			}
+			if resp.Rightsizing != nil {
+				for _, container := range resp.Rightsizing.ContainerResizing {
+					if container != nil && container.Current != nil && container.Recommended != nil {
+						stats.KubernetesRecommendedCPURequest += container.Recommended.CpuRequest
+						stats.KubernetesRecommendedMemoryRequest += container.Recommended.MemoryRequest
+
+						stats.KubernetesCPURequestSavings += container.Current.CpuRequest - container.Recommended.CpuRequest
+						stats.KubernetesMemoryRequestSavings += container.Current.MemoryRequest - container.Recommended.MemoryRequest
+					}
+				}
+			}
 
 			statsOut, _ := json.Marshal(stats)
 			usage.Statistics = statsOut
@@ -421,7 +459,26 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 			responseId := id.String()
 			usage.ResponseId = &responseId
 
-			// TODO: We don't have cost here. What can we store?
+			if req != nil && req.Statefulset != nil {
+				for _, container := range req.Statefulset.Containers {
+					if container == nil {
+						continue
+					}
+					stats.KubernetesCurrentCPURequest += container.CpuRequest
+					stats.KubernetesCurrentMemoryRequest += container.MemoryRequest
+				}
+			}
+			if resp.Rightsizing != nil {
+				for _, container := range resp.Rightsizing.ContainerResizing {
+					if container != nil && container.Current != nil && container.Recommended != nil {
+						stats.KubernetesRecommendedCPURequest += container.Recommended.CpuRequest
+						stats.KubernetesRecommendedMemoryRequest += container.Recommended.MemoryRequest
+
+						stats.KubernetesCPURequestSavings += container.Current.CpuRequest - container.Recommended.CpuRequest
+						stats.KubernetesMemoryRequestSavings += container.Current.MemoryRequest - container.Recommended.MemoryRequest
+					}
+				}
+			}
 
 			statsOut, _ := json.Marshal(stats)
 			usage.Statistics = statsOut
@@ -540,7 +597,26 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 			responseId := id.String()
 			usage.ResponseId = &responseId
 
-			// TODO: We don't have cost here. What can we store?
+			if req != nil && req.Daemonset != nil {
+				for _, container := range req.Daemonset.Containers {
+					if container == nil {
+						continue
+					}
+					stats.KubernetesCurrentCPURequest += container.CpuRequest
+					stats.KubernetesCurrentMemoryRequest += container.MemoryRequest
+				}
+			}
+			if resp.Rightsizing != nil {
+				for _, container := range resp.Rightsizing.ContainerResizing {
+					if container != nil && container.Current != nil && container.Recommended != nil {
+						stats.KubernetesRecommendedCPURequest += container.Recommended.CpuRequest
+						stats.KubernetesRecommendedMemoryRequest += container.Recommended.MemoryRequest
+
+						stats.KubernetesCPURequestSavings += container.Current.CpuRequest - container.Recommended.CpuRequest
+						stats.KubernetesMemoryRequestSavings += container.Current.MemoryRequest - container.Recommended.MemoryRequest
+					}
+				}
+			}
 
 			statsOut, _ := json.Marshal(stats)
 			usage.Statistics = statsOut
@@ -659,7 +735,26 @@ func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.Kubernet
 			responseId := id.String()
 			usage.ResponseId = &responseId
 
-			// TODO: We don't have cost here. What can we store?
+			if req != nil && req.Job != nil {
+				for _, container := range req.Job.Containers {
+					if container == nil {
+						continue
+					}
+					stats.KubernetesCurrentCPURequest += container.CpuRequest
+					stats.KubernetesCurrentMemoryRequest += container.MemoryRequest
+				}
+			}
+			if resp.Rightsizing != nil {
+				for _, container := range resp.Rightsizing.ContainerResizing {
+					if container != nil && container.Current != nil && container.Recommended != nil {
+						stats.KubernetesRecommendedCPURequest += container.Recommended.CpuRequest
+						stats.KubernetesRecommendedMemoryRequest += container.Recommended.MemoryRequest
+
+						stats.KubernetesCPURequestSavings += container.Current.CpuRequest - container.Recommended.CpuRequest
+						stats.KubernetesMemoryRequestSavings += container.Current.MemoryRequest - container.Recommended.MemoryRequest
+					}
+				}
+			}
 
 			statsOut, _ := json.Marshal(stats)
 			usage.Statistics = statsOut
