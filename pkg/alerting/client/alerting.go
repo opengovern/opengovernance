@@ -26,7 +26,7 @@ func (s *alertingClient) ListRules(ctx *httpclient.Context) ([]api.Rule, error) 
 	url := fmt.Sprintf("%s/api/v1/rule/list", s.baseURL)
 
 	var resp []api.Rule
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -39,7 +39,7 @@ func (s *alertingClient) CountTriggersByDate(ctx *httpclient.Context, startDate,
 	url := fmt.Sprintf("%s/api/v1/trigger/bydate?startDate=%d&endDate=%d", s.baseURL, startDate.UnixMilli(), endDate.UnixMilli())
 
 	var resp int64
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return 0, echo.NewHTTPError(statusCode, err.Error())
 		}

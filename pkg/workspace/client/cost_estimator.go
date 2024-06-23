@@ -31,7 +31,7 @@ func (s *costEstimatorClient) GetAzure(ctx *httpclient.Context, req api.BaseRequ
 	fmt.Println("PAAYYYLOOOAADDD")
 	fmt.Println(string(payload))
 	var response float64
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
 		return 0, err
 	}
 	return response, nil
@@ -45,7 +45,7 @@ func (s *costEstimatorClient) GetAWS(ctx *httpclient.Context, req api.BaseReques
 		return 0, err
 	}
 	var response float64
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
 		return 0, err
 	}
 	return response, nil

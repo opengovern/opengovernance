@@ -63,6 +63,7 @@ func pCalculateHeadroom(needed *float64, percent int64) float64 {
 }
 
 func (s *Service) AwsRdsRecommendation(
+	ctx context.Context,
 	region string,
 	rdsInstance entity.AwsRds,
 	metrics map[string][]types2.Datapoint,
@@ -107,12 +108,12 @@ func (s *Service) AwsRdsRecommendation(
 		rdsInstance.StorageThroughput = nil
 	}
 
-	currentComputeCost, err := s.costSvc.GetRDSComputeCost(region, rdsInstance, metrics)
+	currentComputeCost, err := s.costSvc.GetRDSComputeCost(ctx, region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds compute cost", zap.Error(err))
 		return nil, err
 	}
-	currentStorageCost, err := s.costSvc.GetRDSStorageCost(region, rdsInstance, metrics)
+	currentStorageCost, err := s.costSvc.GetRDSStorageCost(ctx, region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds storage cost", zap.Error(err))
 		return nil, err
@@ -404,7 +405,7 @@ func (s *Service) AwsRdsRecommendation(
 
 	if recommended != nil {
 		if rightSizedInstanceRow != nil {
-			recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
+			recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(ctx, region, newInstance, metrics)
 			if err != nil {
 				s.logger.Error("failed to get rds instance cost", zap.Error(err))
 				return nil, err
@@ -412,7 +413,7 @@ func (s *Service) AwsRdsRecommendation(
 			recommended.ComputeCost = recommendedComputeCost
 		}
 
-		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(region, newInstance, metrics)
+		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(ctx, region, newInstance, metrics)
 		if err != nil {
 			s.logger.Error("failed to get rds instance cost", zap.Error(err))
 			return nil, err

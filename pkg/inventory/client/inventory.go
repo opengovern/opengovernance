@@ -50,7 +50,7 @@ func (s *inventoryClient) RunQuery(ctx *httpclient.Context, req api.RunQueryRequ
 	}
 
 	var resp api.RunQueryResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), reqBytes, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), reqBytes, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -63,7 +63,7 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 	url := fmt.Sprintf("%s/api/v2/resources/count", s.baseURL)
 
 	var count int64
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return 0, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -87,7 +87,7 @@ func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricTy
 	}
 
 	var resp []api.AnalyticsMetric
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -154,7 +154,7 @@ func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors
 	}
 
 	var response map[uint][]insight.InsightResource
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -196,7 +196,7 @@ func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionId
 	}
 
 	var response []insight.InsightResource
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -250,7 +250,7 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 	}
 
 	var response map[int][]insight.InsightResource
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -301,7 +301,7 @@ func (s *inventoryClient) ListConnectionsData(
 		url += "?" + params.Encode()
 	}
 	var response map[string]api.ConnectionData
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -386,7 +386,7 @@ func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, con
 	}
 
 	var response api.ListResourceTypeMetadataResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -399,7 +399,7 @@ func (s *inventoryClient) GetResourceCollectionMetadata(ctx *httpclient.Context,
 	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection/%s", s.baseURL, id)
 
 	var response api.ResourceCollection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -423,7 +423,7 @@ func (s *inventoryClient) ListResourceCollectionsMetadata(ctx *httpclient.Contex
 	}
 
 	var response []api.ResourceCollection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -436,7 +436,7 @@ func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]ap
 	url := fmt.Sprintf("%s/api/v2/metadata/resource-collection", s.baseURL)
 
 	var response []api.ResourceCollection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -490,7 +490,7 @@ func (s *inventoryClient) ListAnalyticsMetricTrend(ctx *httpclient.Context, metr
 	}
 
 	var response []api.ResourceTypeTrendDatapoint
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -544,7 +544,7 @@ func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metri
 	}
 
 	var response []api.CostTrendDatapoint
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -614,7 +614,7 @@ func (s *inventoryClient) ListAnalyticsMetricsSummary(ctx *httpclient.Context, m
 	url += "pageSize=1000"
 
 	var response api.ListMetricsResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

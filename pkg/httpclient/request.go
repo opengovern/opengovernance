@@ -326,7 +326,9 @@ func FromEchoContext(c echo.Context) *Context {
 	name := c.Request().Header.Get(httpserver.XKaytuWorkspaceNameHeader)
 	role := c.Request().Header.Get(httpserver.XKaytuUserRoleHeader)
 	id := c.Request().Header.Get(httpserver.XKaytuUserIDHeader)
+	ctx := c.Request().Context()
 	return &Context{
+		Ctx:           ctx,
 		WorkspaceName: name,
 		WorkspaceID:   wsID,
 		UserRole:      api.Role(role),
@@ -341,8 +343,11 @@ func discardBody(res *http.Response) {
 	}
 }
 
-func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
-	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
+func DoRequest(ctx context.Context, method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(payload))
 	if err != nil {
 		return statusCode, fmt.Errorf("new request: %w", err)
 	}

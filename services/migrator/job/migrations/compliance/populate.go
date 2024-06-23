@@ -47,7 +47,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	logger.Info("extracted controls and benchmarks", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)))
 
 	loadedQueries := make(map[string]bool)
-	err = dbm.Orm.Transaction(func(tx *gorm.DB) error {
+	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, obj := range p.queries {
 			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
@@ -84,7 +84,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 
 	missingQueries := make(map[string]bool)
-	err = dbm.Orm.Transaction(func(tx *gorm.DB) error {
+	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		tx.Model(&db.BenchmarkChild{}).Where("1=1").Unscoped().Delete(&db.BenchmarkChild{})
 		tx.Model(&db.BenchmarkControls{}).Where("1=1").Unscoped().Delete(&db.BenchmarkControls{})
 		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})

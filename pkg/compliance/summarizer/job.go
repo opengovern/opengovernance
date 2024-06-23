@@ -70,7 +70,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ConnectionCache:         map[string]onboardApi.Connection{},
 	}
 
-	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole})
+	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole})
 	if err != nil {
 		w.logger.Error("failed to list resource collections", zap.Error(err))
 		return err
@@ -80,7 +80,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		jd.ResourceCollectionCache[rc.ID] = rc
 	}
 
-	connections, err := w.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, nil)
 	if err != nil {
 		w.logger.Error("failed to list connections", zap.Error(err))
 		return err
@@ -140,7 +140,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
 
-		if _, err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
+		if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
 			w.logger.Error("failed to send to ingest", zap.Error(err))
 			return err
 		}
@@ -174,13 +174,13 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		rf.EsIndex = idx
 		docs = append(docs, rf)
 	}
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
 		w.logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
 
 	// Delete old resource findings
-	err = w.deleteOldResourceFindings(j, resourceIds)
+	err = w.deleteOldResourceFindings(ctx, j, resourceIds)
 	if err != nil {
 		w.logger.Error("failed to delete old resource findings", zap.Error(err))
 		return err
@@ -194,7 +194,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	return nil
 }
 
-func (w *Worker) deleteOldResourceFindings(j types2.Job, currentResourceIds []string) error {
+func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, currentResourceIds []string) error {
 	// Delete old resource findings
 	filters := make([]kaytu.BoolFilter, 0, 2)
 	filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("kaytuResourceID", currentResourceIds)))
@@ -225,7 +225,7 @@ func (w *Worker) deleteOldResourceFindings(j types2.Job, currentResourceIds []st
 	keys, idx := task.KeysAndIndex()
 	task.EsID = es2.HashOf(keys...)
 	task.EsIndex = idx
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
 		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
 		return err
 	}

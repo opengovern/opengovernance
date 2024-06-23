@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"context"
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
@@ -60,6 +61,7 @@ func NewKubeClient() (client.Client, error) {
 }
 
 func InitializeHttpHandler(
+	ctx context.Context,
 	conf ServerConfig,
 	s3Region, s3AccessKey, s3AccessSecret string,
 	logger *zap.Logger) (h *HttpHandler, err error) {
@@ -87,7 +89,7 @@ func InitializeHttpHandler(
 	h.db = db.Database{Orm: orm}
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
 
-	err = h.db.Initialize()
+	err = h.db.Initialize(ctx)
 	if err != nil {
 		return nil, err
 	}

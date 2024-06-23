@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"errors"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -14,8 +15,8 @@ type Database struct {
 	Orm *gorm.DB
 }
 
-func (db Database) Initialize() error {
-	err := db.Orm.AutoMigrate(
+func (db Database) Initialize(ctx context.Context) error {
+	err := db.Orm.WithContext(ctx).AutoMigrate(
 		&Query{},
 		&QueryParameter{},
 		&Control{},
@@ -36,9 +37,9 @@ func (db Database) Initialize() error {
 
 // =========== Benchmarks ===========
 
-func (db Database) ListBenchmarks() ([]Benchmark, error) {
+func (db Database) ListBenchmarks(ctx context.Context) ([]Benchmark, error) {
 	var s []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations).
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -46,9 +47,9 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 	return s, nil
 }
 
-func (db Database) ListBenchmarksBare() ([]Benchmark, error) {
+func (db Database) ListBenchmarksBare(ctx context.Context) ([]Benchmark, error) {
 	var s []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload("Tags").
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -58,9 +59,9 @@ func (db Database) ListBenchmarksBare() ([]Benchmark, error) {
 
 // ListRootBenchmarks returns all benchmarks that are not children of any other benchmark
 // is it important to note that this function does not return the children of the root benchmarks neither the controls
-func (db Database) ListRootBenchmarks(tags map[string][]string) ([]Benchmark, error) {
+func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations).
 		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)")
 	if len(tags) > 0 {
 		tx = tx.Joins("JOIN benchmark_tags AS tags ON tags.benchmark_id = benchmarks.id")
@@ -80,10 +81,10 @@ func (db Database) ListRootBenchmarks(tags map[string][]string) ([]Benchmark, er
 	return benchmarks, nil
 }
 
-func (db Database) ListRootBenchmarksWithSubtreeControls(tags map[string][]string) ([]Benchmark, error) {
+func (db Database) ListRootBenchmarksWithSubtreeControls(ctx context.Context, tags map[string][]string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 
-	allBenchmarks, err := db.ListBenchmarks()
+	allBenchmarks, err := db.ListBenchmarks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,15 +93,18 @@ func (db Database) ListRootBenchmarksWithSubtreeControls(tags map[string][]strin
 		allBenchmarksMap[b.ID] = b
 	}
 
-	var populateControls func(benchmark *Benchmark) error
-	populateControls = func(benchmark *Benchmark) error {
+	var populateControls func(ctx context.Context, benchmark *Benchmark) error
+	populateControls = func(ctx context.Context, benchmark *Benchmark) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if benchmark == nil {
 			return nil
 		}
 		if len(benchmark.Children) > 0 {
 			for _, child := range benchmark.Children {
 				child := allBenchmarksMap[child.ID]
-				err := populateControls(&child)
+				err := populateControls(ctx, &child)
 				if err != nil {
 					return err
 				}
@@ -121,13 +125,13 @@ func (db Database) ListRootBenchmarksWithSubtreeControls(tags map[string][]strin
 		return nil
 	}
 
-	rootBenchmarks, err := db.ListRootBenchmarks(tags)
+	rootBenchmarks, err := db.ListRootBenchmarks(ctx, tags)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, b := range rootBenchmarks {
-		err := populateControls(&b)
+		err := populateControls(ctx, &b)
 		if err != nil {
 			return nil, err
 		}
@@ -137,9 +141,9 @@ func (db Database) ListRootBenchmarksWithSubtreeControls(tags map[string][]strin
 	return benchmarks, nil
 }
 
-func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
+func (db Database) GetBenchmark(ctx context.Context, benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations).
 		Where("id = ?", benchmarkId).
 		First(&s)
 
@@ -153,9 +157,9 @@ func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
-func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
+func (db Database) GetBenchmarkBare(ctx context.Context, benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload("Tags").
 		Where("id = ?", benchmarkId).
 		First(&s)
 
@@ -169,9 +173,9 @@ func (db Database) GetBenchmarkBare(benchmarkId string) (*Benchmark, error) {
 	return &s, nil
 }
 
-func (db Database) GetBenchmarksBare(benchmarkIds []string) ([]Benchmark, error) {
+func (db Database) GetBenchmarksBare(ctx context.Context, benchmarkIds []string) ([]Benchmark, error) {
 	var s []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).Preload("Tags").
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload("Tags").
 		Where("id in ?", benchmarkIds).
 		Find(&s)
 
@@ -185,15 +189,15 @@ func (db Database) GetBenchmarksBare(benchmarkIds []string) ([]Benchmark, error)
 	return s, nil
 }
 
-func (db Database) SetBenchmarkAutoAssign(benchmarkId string, autoAssign bool) error {
-	tx := db.Orm.Model(&Benchmark{}).Where("id = ?", benchmarkId).Update("auto_assign", autoAssign)
+func (db Database) SetBenchmarkAutoAssign(ctx context.Context, benchmarkId string, autoAssign bool) error {
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Where("id = ?", benchmarkId).Update("auto_assign", autoAssign)
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string) ([]Benchmark, error) {
+func (db Database) ListDistinctRootBenchmarksFromControlIds(ctx context.Context, controlIds []string) ([]Benchmark, error) {
 	s := make(map[string]Benchmark)
 
 	findControls := make(map[string]struct{})
@@ -201,7 +205,7 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 		findControls[controlId] = struct{}{}
 	}
 
-	rootBenchmarksWithControls, err := db.ListRootBenchmarksWithSubtreeControls(nil)
+	rootBenchmarksWithControls, err := db.ListRootBenchmarksWithSubtreeControls(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -223,9 +227,9 @@ func (db Database) ListDistinctRootBenchmarksFromControlIds(controlIds []string)
 	return res, nil
 }
 
-func (db Database) GetQuery(queryID string) (*Query, error) {
+func (db Database) GetQuery(ctx context.Context, queryID string) (*Query, error) {
 	var s Query
-	tx := db.Orm.Model(&Query{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).
 		Where("id = ?", queryID).
 		First(&s)
 
@@ -239,9 +243,9 @@ func (db Database) GetQuery(queryID string) (*Query, error) {
 	return &s, nil
 }
 
-func (db Database) GetBenchmarksTitle(ds []string) (map[string]string, error) {
+func (db Database) GetBenchmarksTitle(ctx context.Context, ds []string) (map[string]string, error) {
 	var bs []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).
 		Where("id in ?", ds).
 		Select("id, title").
 		Find(&bs)
@@ -257,9 +261,9 @@ func (db Database) GetBenchmarksTitle(ds []string) (map[string]string, error) {
 	return res, nil
 }
 
-func (db Database) GetControlsTitle(ds []string) (map[string]string, error) {
+func (db Database) GetControlsTitle(ctx context.Context, ds []string) (map[string]string, error) {
 	var bs []Control
-	tx := db.Orm.Model(&Control{}).
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).
 		Where("id in ?", ds).
 		Select("id, title").
 		Find(&bs)
@@ -277,9 +281,9 @@ func (db Database) GetControlsTitle(ds []string) (map[string]string, error) {
 
 // =========== Control ===========
 
-func (db Database) GetControl(id string) (*Control, error) {
+func (db Database) GetControl(ctx context.Context, id string) (*Control, error) {
 	var s Control
-	tx := db.Orm.Model(&Control{}).
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).
 		Preload(clause.Associations).
 		Where("id = ?", id).
 		First(&s)
@@ -293,7 +297,7 @@ func (db Database) GetControl(id string) (*Control, error) {
 
 	if s.QueryID != nil {
 		var query Query
-		tx := db.Orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *s.QueryID).First(&query)
+		tx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).Where("id = ?", *s.QueryID).First(&query)
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
@@ -303,9 +307,9 @@ func (db Database) GetControl(id string) (*Control, error) {
 	return &s, nil
 }
 
-func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, error) {
+func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID string) ([]Control, error) {
 	var s []Control
-	tx := db.Orm.Model(&Control{}).
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).
 		Preload("Tags").
 		Preload("Benchmarks").
 		Where(Control{Benchmarks: []Benchmark{{ID: benchmarkID}}}).Find(&s)
@@ -322,7 +326,7 @@ func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, err
 	var queriesMap map[string]Query
 	if len(queryIds) > 0 {
 		var queries []Query
-		qtx := db.Orm.Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
+		qtx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
 		if qtx.Error != nil {
 			return nil, qtx.Error
 		}
@@ -342,9 +346,9 @@ func (db Database) ListControlsByBenchmarkID(benchmarkID string) ([]Control, err
 	return s, nil
 }
 
-func (db Database) GetControls(controlIDs []string, tags map[string][]string) ([]Control, error) {
+func (db Database) GetControls(ctx context.Context, controlIDs []string, tags map[string][]string) ([]Control, error) {
 	var s []Control
-	tx := db.Orm.Model(&Control{}).
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).
 		Preload(clause.Associations)
 	if len(controlIDs) > 0 {
 		tx = tx.Where("id IN ?", controlIDs)
@@ -372,7 +376,7 @@ func (db Database) GetControls(controlIDs []string, tags map[string][]string) ([
 	var queriesMap map[string]Query
 	if len(queryIds) > 0 {
 		var queries []Query
-		qtx := db.Orm.Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
+		qtx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
 		if qtx.Error != nil {
 			return nil, qtx.Error
 		}
@@ -392,9 +396,9 @@ func (db Database) GetControls(controlIDs []string, tags map[string][]string) ([
 	return s, nil
 }
 
-func (db Database) GetQueries(queryIDs []string) ([]Query, error) {
+func (db Database) GetQueries(ctx context.Context, queryIDs []string) ([]Query, error) {
 	var s []Query
-	tx := db.Orm.Model(&Query{}).
+	tx := db.Orm.WithContext(ctx).Model(&Query{}).
 		Where("id IN ?", queryIDs).
 		Find(&s)
 	if tx.Error != nil {
@@ -403,9 +407,9 @@ func (db Database) GetQueries(queryIDs []string) ([]Query, error) {
 	return s, nil
 }
 
-func (db Database) GetQueriesIdAndConnector(queryIDs []string) ([]Query, error) {
+func (db Database) GetQueriesIdAndConnector(ctx context.Context, queryIDs []string) ([]Query, error) {
 	var s []Query
-	tx := db.Orm.Model(&Query{}).
+	tx := db.Orm.WithContext(ctx).Model(&Query{}).
 		Select("id, connector").
 		Where("id IN ?", queryIDs).
 		Find(&s)
@@ -417,8 +421,8 @@ func (db Database) GetQueriesIdAndConnector(queryIDs []string) ([]Query, error) 
 
 // =========== BenchmarkAssignment ===========
 
-func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error {
-	tx := db.Orm.Where(BenchmarkAssignment{
+func (db Database) AddBenchmarkAssignment(ctx context.Context, assignment *BenchmarkAssignment) error {
+	tx := db.Orm.WithContext(ctx).Where(BenchmarkAssignment{
 		BenchmarkId:  assignment.BenchmarkId,
 		ConnectionId: assignment.ConnectionId,
 	}).FirstOrCreate(assignment)
@@ -430,9 +434,9 @@ func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error
 	return nil
 }
 
-func (db Database) GetBenchmarkAssignmentsByConnectionId(connectionId string) ([]BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentsByConnectionId(ctx context.Context, connectionId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).
+	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).
 		Where(BenchmarkAssignment{ConnectionId: &connectionId}).
 		Where("resource_collection IS NULL").Scan(&s)
 
@@ -443,9 +447,9 @@ func (db Database) GetBenchmarkAssignmentsByConnectionId(connectionId string) ([
 	return s, nil
 }
 
-func (db Database) GetBenchmarkAssignmentsByResourceCollectionId(resourceCollectionId string) ([]BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentsByResourceCollectionId(ctx context.Context, resourceCollectionId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).
+	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).
 		Where(BenchmarkAssignment{ResourceCollection: &resourceCollectionId}).
 		Where("connection_id IS NULL").Scan(&s)
 
@@ -456,9 +460,9 @@ func (db Database) GetBenchmarkAssignmentsByResourceCollectionId(resourceCollect
 	return s, nil
 }
 
-func (db Database) GetBenchmarkAssignmentsByBenchmarkId(benchmarkId string) ([]BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentsByBenchmarkId(ctx context.Context, benchmarkId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Scan(&s)
+	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Scan(&s)
 
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -470,9 +474,9 @@ func (db Database) GetBenchmarkAssignmentsByBenchmarkId(benchmarkId string) ([]B
 	return s, nil
 }
 
-func (db Database) ListBenchmarkAssignments() ([]BenchmarkAssignment, error) {
+func (db Database) ListBenchmarkAssignments(ctx context.Context) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Scan(&s)
+	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -481,9 +485,9 @@ func (db Database) ListBenchmarkAssignments() ([]BenchmarkAssignment, error) {
 	return s, nil
 }
 
-func (db Database) GetBenchmarkAssignmentByIds(benchmarkId string, connectionId, resourceCollectionId *string) (*BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, connectionId, resourceCollectionId *string) (*BenchmarkAssignment, error) {
 	var s BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{
+	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{
 		BenchmarkId:        benchmarkId,
 		ConnectionId:       connectionId,
 		ResourceCollection: resourceCollectionId,
@@ -496,8 +500,8 @@ func (db Database) GetBenchmarkAssignmentByIds(benchmarkId string, connectionId,
 	return &s, nil
 }
 
-func (db Database) DeleteBenchmarkAssignmentByIds(benchmarkId string, connectionId, resourceCollectionId *string) error {
-	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{
+func (db Database) DeleteBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, connectionId, resourceCollectionId *string) error {
+	tx := db.Orm.WithContext(ctx).Unscoped().Where(BenchmarkAssignment{
 		BenchmarkId:        benchmarkId,
 		ConnectionId:       connectionId,
 		ResourceCollection: resourceCollectionId,
@@ -510,8 +514,8 @@ func (db Database) DeleteBenchmarkAssignmentByIds(benchmarkId string, connection
 	return nil
 }
 
-func (db Database) DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId string) error {
-	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Delete(&BenchmarkAssignment{})
+func (db Database) DeleteBenchmarkAssignmentByBenchmarkId(ctx context.Context, benchmarkId string) error {
+	tx := db.Orm.WithContext(ctx).Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error
@@ -520,9 +524,9 @@ func (db Database) DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId string) er
 	return nil
 }
 
-func (db Database) ListComplianceTagKeysWithPossibleValues() (map[string][]string, error) {
+func (db Database) ListComplianceTagKeysWithPossibleValues(ctx context.Context) (map[string][]string, error) {
 	var tags []BenchmarkTag
-	tx := db.Orm.Model(BenchmarkTag{}).Find(&tags)
+	tx := db.Orm.WithContext(ctx).Model(BenchmarkTag{}).Find(&tags)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -534,9 +538,9 @@ func (db Database) ListComplianceTagKeysWithPossibleValues() (map[string][]strin
 	return result, nil
 }
 
-func (db Database) ListInsightTagKeysWithPossibleValues() (map[string][]string, error) {
+func (db Database) ListInsightTagKeysWithPossibleValues(ctx context.Context) (map[string][]string, error) {
 	var tags []InsightTag
-	tx := db.Orm.Model(InsightTag{}).Find(&tags)
+	tx := db.Orm.WithContext(ctx).Model(InsightTag{}).Find(&tags)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -548,9 +552,9 @@ func (db Database) ListInsightTagKeysWithPossibleValues() (map[string][]string, 
 	return result, nil
 }
 
-func (db Database) GetInsightTagTagPossibleValues(key string) ([]string, error) {
+func (db Database) GetInsightTagTagPossibleValues(ctx context.Context, key string) ([]string, error) {
 	var tags []InsightTag
-	tx := db.Orm.Model(InsightTag{}).Where("key = ?", key).Find(&tags)
+	tx := db.Orm.WithContext(ctx).Model(InsightTag{}).Where("key = ?", key).Find(&tags)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -562,9 +566,9 @@ func (db Database) GetInsightTagTagPossibleValues(key string) ([]string, error) 
 	return result[key], nil
 }
 
-func (db Database) GetInsight(id uint) (*Insight, error) {
+func (db Database) GetInsight(ctx context.Context, id uint) (*Insight, error) {
 	var res Insight
-	tx := db.Orm.Model(&Insight{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&Insight{}).Preload(clause.Associations).
 		Where("id = ?", id).
 		First(&res)
 	if tx.Error != nil {
@@ -573,9 +577,9 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 	return &res, nil
 }
 
-func (db Database) ListInsightsWithFilters(insightIDs []uint, connectors []source.Type, enabled *bool, tags map[string][]string) ([]Insight, error) {
+func (db Database) ListInsightsWithFilters(ctx context.Context, insightIDs []uint, connectors []source.Type, enabled *bool, tags map[string][]string) ([]Insight, error) {
 	var s []Insight
-	m := db.Orm.Model(&Insight{}).Preload(clause.Associations)
+	m := db.Orm.WithContext(ctx).Model(&Insight{}).Preload(clause.Associations)
 	if len(insightIDs) > 0 {
 		m = m.Where("id IN ?", insightIDs)
 	}
@@ -602,9 +606,9 @@ func (db Database) ListInsightsWithFilters(insightIDs []uint, connectors []sourc
 	return s, nil
 }
 
-func (db Database) ListInsightGroups(connectors []source.Type, tags map[string][]string) ([]InsightGroup, error) {
+func (db Database) ListInsightGroups(ctx context.Context, connectors []source.Type, tags map[string][]string) ([]InsightGroup, error) {
 	var insightGroups []InsightGroup
-	m := db.Orm.Model(&InsightGroup{}).Preload(clause.Associations).Find(&insightGroups)
+	m := db.Orm.WithContext(ctx).Model(&InsightGroup{}).Preload(clause.Associations).Find(&insightGroups)
 	if m.Error != nil {
 		return nil, m.Error
 	}
@@ -617,7 +621,7 @@ func (db Database) ListInsightGroups(connectors []source.Type, tags map[string][
 	}
 
 	var insights []Insight
-	insights, err := db.ListInsightsWithFilters(insightIDs, nil, nil, nil)
+	insights, err := db.ListInsightsWithFilters(ctx, insightIDs, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -690,9 +694,9 @@ func (db Database) ListInsightGroups(connectors []source.Type, tags map[string][
 	return insightGroups, nil
 }
 
-func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
+func (db Database) GetInsightGroup(ctx context.Context, id uint) (*InsightGroup, error) {
 	var res InsightGroup
-	tx := db.Orm.Model(&InsightGroup{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&InsightGroup{}).Preload(clause.Associations).
 		Where("id = ?", id).
 		First(&res)
 	if tx.Error != nil {
@@ -702,7 +706,7 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 	for _, insight := range res.Insights {
 		insightIDs = append(insightIDs, insight.ID)
 	}
-	insights, err := db.ListInsightsWithFilters(insightIDs, nil, nil, nil)
+	insights, err := db.ListInsightsWithFilters(ctx, insightIDs, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -720,9 +724,9 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 	return &res, nil
 }
 
-func (db Database) ListControls(controlIDs []string, tags map[string][]string) ([]Control, error) {
+func (db Database) ListControls(ctx context.Context, controlIDs []string, tags map[string][]string) ([]Control, error) {
 	var s []Control
-	tx := db.Orm.Model(&Control{}).Preload(clause.Associations)
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).Preload(clause.Associations)
 	if len(controlIDs) > 0 {
 		tx = tx.Where("id IN ?", controlIDs)
 	}
@@ -743,9 +747,9 @@ func (db Database) ListControls(controlIDs []string, tags map[string][]string) (
 	return s, nil
 }
 
-func (db Database) ListQueries() ([]Query, error) {
+func (db Database) ListQueries(ctx context.Context) ([]Query, error) {
 	var s []Query
-	tx := db.Orm.Model(&Query{}).Preload(clause.Associations).
+	tx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -753,9 +757,9 @@ func (db Database) ListQueries() ([]Query, error) {
 	return s, nil
 }
 
-func (db Database) ListControlsBare() ([]Control, error) {
+func (db Database) ListControlsBare(ctx context.Context) ([]Control, error) {
 	var s []Control
-	tx := db.Orm.Model(&Control{}).Preload("Tags").
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).Preload("Tags").
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error

@@ -1,6 +1,7 @@
 package cost
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-func (s *Service) GetRDSInstanceCost(region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetRDSInstanceCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -70,7 +71,7 @@ func (s *Service) GetRDSInstanceCost(region string, rdsInstance entity.AwsRds, m
 	}
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest("GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -87,7 +88,7 @@ func (s *Service) GetRDSInstanceCost(region string, rdsInstance entity.AwsRds, m
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
 
-func (s *Service) GetRDSStorageCost(region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetRDSStorageCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -142,7 +143,7 @@ func (s *Service) GetRDSStorageCost(region string, rdsInstance entity.AwsRds, me
 	}
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest("GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -159,7 +160,7 @@ func (s *Service) GetRDSStorageCost(region string, rdsInstance entity.AwsRds, me
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
 
-func (s *Service) GetRDSComputeCost(region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetRDSComputeCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -216,7 +217,7 @@ func (s *Service) GetRDSComputeCost(region string, rdsInstance entity.AwsRds, me
 	}
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest("GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return 0, err
 	}
