@@ -454,6 +454,24 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
+	if v, ok := preferences["ExcludeVolumeType"]; ok {
+		if v != nil {
+			if len(validTypes) == 0 {
+				var t types.VolumeType
+				validTypes = t.Values()
+			}
+
+			var newValidTypes []types.VolumeType
+			for _, o := range validTypes {
+				if string(o) == *v {
+					continue
+				}
+				newValidTypes = append(newValidTypes, o)
+			}
+			validTypes = newValidTypes
+		}
+	}
+
 	volumeCost, err := s.costSvc.GetEBSVolumeCost(region, volume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ebs volume %s cost: %s", volume.HashedVolumeId, err.Error())
