@@ -44,7 +44,7 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
 		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
 	}
-	_, res := httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
+	_, res := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, headers, payload, nil)
 	return res
 }
 
@@ -56,7 +56,7 @@ func (c *authClient) DeleteRoleBinding(ctx *httpclient.Context, workspaceID, use
 		httpserver.XKaytuUserRoleHeader:    string(ctx.UserRole),
 		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
 	}
-	_, res := httpclient.DoRequest(http.MethodDelete, url, headers, nil, nil)
+	_, res := httpclient.DoRequest(ctx.Ctx, http.MethodDelete, url, headers, nil, nil)
 	return res
 }
 
@@ -69,7 +69,7 @@ func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspace
 		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
 	}
 	var response api.GetWorkspaceRoleBindingResponse
-	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
+	_, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
 
@@ -82,7 +82,7 @@ func (c *authClient) ListAPIKeys(ctx *httpclient.Context, workspaceID string) ([
 		httpserver.XKaytuWorkspaceIDHeader: workspaceID,
 	}
 	var response []api.WorkspaceApiKey
-	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
+	_, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
 
@@ -96,7 +96,7 @@ func (c *authClient) GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBi
 		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
 	}
 	var response api.GetRoleBindingsResponse
-	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
+	_, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
 
@@ -109,6 +109,6 @@ func (c *authClient) UpdateWorkspaceMap(ctx *httpclient.Context) error {
 		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
 		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
 	}
-	_, err := httpclient.DoRequest(http.MethodPost, url, headers, nil, nil)
+	_, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, headers, nil, nil)
 	return err
 }

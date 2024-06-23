@@ -35,7 +35,7 @@ func NewMetadataServiceClient(baseURL string) MetadataServiceClient {
 func (s *metadataClient) GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error) {
 	url := fmt.Sprintf("%s/api/v1/metadata/%s", s.baseURL, string(key))
 	var cnf models.ConfigMetadata
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
 		if statusCode == 404 {
 			return nil, ErrConfigNotFound
 		}
@@ -91,7 +91,7 @@ func (s *metadataClient) SetConfigMetadata(ctx *httpclient.Context, key models.M
 	}
 
 	var cnf models.ConfigMetadata
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), jsonReq, &cnf); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), jsonReq, &cnf); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -104,7 +104,7 @@ func (s *metadataClient) SetConfigMetadata(ctx *httpclient.Context, key models.M
 func (s *metadataClient) ListQueryParameters(ctx *httpclient.Context) (api.ListQueryParametersResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/query_parameter", s.baseURL)
 	var resp api.ListQueryParametersResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return resp, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -120,7 +120,7 @@ func (s *metadataClient) SetQueryParameter(ctx *httpclient.Context, request api.
 		return err
 	}
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), jsonReq, nil); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), jsonReq, nil); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return echo.NewHTTPError(statusCode, err.Error())
 		}

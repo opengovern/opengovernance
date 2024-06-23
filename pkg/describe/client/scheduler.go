@@ -43,7 +43,7 @@ func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*ap
 	url := fmt.Sprintf("%s/api/v1/describe/all/jobs/state", s.baseURL)
 
 	var status api.DescribeAllJobsStatus
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &status); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &status); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -56,7 +56,7 @@ func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, er
 	url := fmt.Sprintf("%s/api/v1/analytics/trigger", s.baseURL)
 
 	var jobID uint
-	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobID); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &jobID); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return 0, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -69,7 +69,7 @@ func (s *schedulerClient) TriggerInsightJob(ctx *httpclient.Context, insightID u
 	url := fmt.Sprintf("%s/api/v1/insight/trigger/%d", s.baseURL, insightID)
 
 	var jobIDs []uint
-	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &jobIDs); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &jobIDs); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -82,7 +82,7 @@ func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceTyp
 	url := fmt.Sprintf("%s/api/v1/describe/status/%s", s.baseURL, resourceType)
 
 	var res []api.DescribeStatus
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -95,7 +95,7 @@ func (s *schedulerClient) GetLatestComplianceJobForBenchmark(ctx *httpclient.Con
 	url := fmt.Sprintf("%s/api/v1/compliance/status/%s", s.baseURL, benchmarkId)
 
 	var res *api.ComplianceJob
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -108,7 +108,7 @@ func (s *schedulerClient) GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (
 	url := fmt.Sprintf("%s/api/v1/analytics/job/%d", s.baseURL, jobID)
 
 	var res *model.AnalyticsJob
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -121,7 +121,7 @@ func (s *schedulerClient) GetInsightJob(ctx *httpclient.Context, jobID uint) (*m
 	url := fmt.Sprintf("%s/api/v1/insight/job/%d", s.baseURL, jobID)
 
 	var res *model.InsightJob
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -134,7 +134,7 @@ func (s *schedulerClient) GetJobsByInsightID(ctx *httpclient.Context, insightID 
 	url := fmt.Sprintf("%s/api/v1/insight/%d/jobs", s.baseURL, insightID)
 
 	var res []model.InsightJob
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -147,7 +147,7 @@ func (s *schedulerClient) InsightJobInProgress(ctx *httpclient.Context, jobID ui
 	url := fmt.Sprintf("%s/api/v1/insight/in_progress/%d", s.baseURL, jobID)
 
 	var res []model.InsightJob
-	if statusCode, err := httpclient.DoRequest(http.MethodPut, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -160,7 +160,7 @@ func (s *schedulerClient) GetConnectionDescribeStatus(ctx *httpclient.Context, c
 	url := fmt.Sprintf("%s/api/v1/describe/connection/status?connection_id=%s", s.baseURL, connectionID)
 
 	var res []api.ConnectionDescribeStatus
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -173,7 +173,7 @@ func (s *schedulerClient) ListPendingConnections(ctx *httpclient.Context) ([]str
 	url := fmt.Sprintf("%s/api/v1/describe/pending/connections", s.baseURL)
 
 	var res []string
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -189,7 +189,7 @@ func (s *schedulerClient) CountJobsByDate(ctx *httpclient.Context, includeCost *
 	}
 
 	var resp int64
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return 0, echo.NewHTTPError(statusCode, err.Error())
 		}

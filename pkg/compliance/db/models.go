@@ -199,7 +199,7 @@ func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.C
 	_, span1 := tracer.Start(ctx, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetQuery")
 
-	query, err := db.GetQuery(*p.QueryID)
+	query, err := db.GetQuery(ctx, *p.QueryID)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())

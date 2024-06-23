@@ -22,7 +22,7 @@ func (c *SaaSClient) Resolve(marketplaceToken string) (*entities.AzureSaaSResolv
 	headers["x-ms-marketplace-token"] = marketplaceToken
 
 	var res entities.AzureSaaSResolveResponse
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -38,7 +38,7 @@ func (c *SaaSClient) Activate(subscrptionId string) error {
 	headers["content-type"] = "application/json"
 	headers["authorization"] = "Bearer " + c.token
 
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, nil); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, nil); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -55,7 +55,7 @@ func (c *SaaSClient) ListAllSubscriptions() (*entities.AzureSaaSGetAllSubscripti
 	headers["authorization"] = "Bearer " + c.token
 
 	var res entities.AzureSaaSGetAllSubscriptionsResponse
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -72,7 +72,7 @@ func (c *SaaSClient) GetSubscription(subscriptionId string) (*entities.AzureSaaS
 	headers["authorization"] = "Bearer " + c.token
 
 	var res entities.AzureSaaSSubscription
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -89,7 +89,7 @@ func (c *SaaSClient) ListOutstandingOperations(subscriptionId string) (*entities
 	headers["authorization"] = "Bearer " + c.token
 
 	var res entities.AzureSaaSListOutstandingOperations
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -106,7 +106,7 @@ func (c *SaaSClient) GetOperationStatus(subscriptionId, operationId string) (*en
 	headers["authorization"] = "Bearer " + c.token
 
 	var res entities.AzureSaaSGetOperationStatus
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -123,7 +123,7 @@ func (c *SaaSClient) Update(subscriptionId, operationId string) (*entities.Azure
 	headers["authorization"] = "Bearer " + c.token
 
 	var res entities.AzureSaaSUpdateResponse
-	if statusCode, err := httpclient.DoRequest(method, url, headers, nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -145,7 +145,7 @@ func (c *SaaSClient) UsageEvent(req entities.AzureSaaSUsageEventRequest) (*entit
 	}
 
 	var res entities.AzureSaaSUsageEventResponse
-	if statusCode, err := httpclient.DoRequest(method, url, headers, reqJson, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, method, url, headers, reqJson, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

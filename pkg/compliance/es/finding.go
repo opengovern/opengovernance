@@ -79,15 +79,7 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 	return values, nil
 }
 
-func FindingsQuery(logger *zap.Logger, client kaytu.Client, resourceIDs []string,
-	provider []source.Type, connectionID []string, notConnectionID []string,
-	resourceTypes []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity,
-	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
-	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
-	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
-	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any,
-	ctx context.Context) ([]FindingsQueryHit, int64, error) {
+func FindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus, sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
@@ -295,7 +287,7 @@ type FindingsCountHits struct {
 	Total kaytu.SearchTotal `json:"total"`
 }
 
-func FindingsCount(client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool, ctx context.Context) (int64, error) {
+func FindingsCount(ctx context.Context, client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
 	idx := types.FindingsIndex
 
 	filters := make([]map[string]any, 0)

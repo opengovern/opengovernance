@@ -831,7 +831,7 @@ func (s API) MigrateUsages(c echo.Context) error {
 					continue
 				}
 
-				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
+				if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
 				}
 
@@ -861,7 +861,7 @@ func (s API) MigrateUsages(c echo.Context) error {
 					continue
 				}
 
-				if _, err := httpclient.DoRequest(http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
+				if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
 				}
 

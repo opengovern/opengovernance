@@ -91,7 +91,7 @@ func (s *Service) GetEC2InstanceCost(region string, instance entity.EC2Instance,
 	}
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest("GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx.Ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return 0, err
 	}
@@ -137,7 +137,7 @@ func (s *Service) GetEBSVolumeCost(region string, volume entity.EC2Volume, volum
 	}
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest("GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx.Ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return 0, err
 	}

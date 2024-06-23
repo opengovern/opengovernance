@@ -131,7 +131,7 @@ func discardBody(res *http.Response) {
 	}
 }
 
-func (s *SupersetService) Login() (string, error) {
+func (s *SupersetService) Login(ctx context.Context) (string, error) {
 	fmt.Println("=A")
 	client := http.Client{
 		Timeout: 10 * time.Second,
@@ -167,7 +167,7 @@ func (s *SupersetService) Login() (string, error) {
 	}
 
 	fmt.Println("=C")
-	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}
@@ -203,7 +203,7 @@ func (s *SupersetService) Login() (string, error) {
 	return resp.AccessToken, nil
 }
 
-func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (string, error) {
+func (s *SupersetService) GuestToken(ctx context.Context, token string, request GuestTokenRequest) (string, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -213,7 +213,7 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}
@@ -243,13 +243,13 @@ func (s *SupersetService) GuestToken(token string, request GuestTokenRequest) (s
 	return resp.Token, nil
 }
 
-func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, error) {
+func (s *SupersetService) ListDashboards(ctx context.Context, token string) ([]ListDashboardsItem, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
 	url := fmt.Sprintf("%s/api/v1/dashboard/", s.BaseURL)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -279,13 +279,13 @@ func (s *SupersetService) ListDashboards(token string) ([]ListDashboardsItem, er
 	return resp.Result, nil
 }
 
-func (s *SupersetService) GetEmbeddedUUID(token string, id int) (string, error) {
+func (s *SupersetService) GetEmbeddedUUID(ctx context.Context, token string, id int) (string, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
 	url := fmt.Sprintf("%s/api/v1/dashboard/%d/embedded", s.BaseURL, id)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return "", err
 	}

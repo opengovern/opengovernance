@@ -58,7 +58,7 @@ func (s *onboardClient) PostConnectionAws(ctx *httpclient.Context, req api.Creat
 		return nil, err
 	}
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -77,7 +77,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Connection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -157,7 +157,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 		}
 
 		var response []api.Connection
-		if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 			if 400 <= statusCode && statusCode < 500 {
 				return nil, echo.NewHTTPError(statusCode, err.Error())
 			}
@@ -182,7 +182,7 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 	}
 
 	var response []api.Connection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -200,7 +200,7 @@ func (s *onboardClient) PostCredentials(ctx *httpclient.Context, req api.CreateC
 		return nil, err
 	}
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -218,7 +218,7 @@ func (s *onboardClient) CreateCredentialV2(ctx *httpclient.Context, req apiv2.Cr
 		return nil, err
 	}
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -231,7 +231,7 @@ func (s *onboardClient) AutoOnboard(ctx *httpclient.Context, credentialId string
 	url := fmt.Sprintf("%s/api/v1/credential/%s/autoonboard", s.baseURL, credentialId)
 	var response []api.Connection
 
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -249,7 +249,7 @@ func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Ty
 	}
 
 	var count int64
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return 0, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -267,7 +267,7 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, connection
 	//firstParamAttached = true
 	url += "updateMetadata=" + strconv.FormatBool(updateMetadata)
 
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &connection); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &connection); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -286,7 +286,7 @@ func (s *onboardClient) SetConnectionLifecycleState(ctx *httpclient.Context, con
 		return nil, err
 	}
 	var connection api.Connection
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &connection); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &connection); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -349,7 +349,7 @@ func (s *onboardClient) ListCredentials(ctx *httpclient.Context, connector []sou
 	}
 
 	var response api.ListCredentialResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return api.ListCredentialResponse{}, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -362,7 +362,7 @@ func (s *onboardClient) TriggerAutoOnboard(ctx *httpclient.Context, credentialId
 	url := fmt.Sprintf("%s/api/v1/credential/%s/autoonboard", s.baseURL, credentialId)
 
 	var response []api.Connection
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -376,7 +376,7 @@ func (s *onboardClient) GetConnectionGroup(ctx *httpclient.Context, connectionGr
 	url := fmt.Sprintf("%s/api/v1/connection-groups/%s", s.baseURL, connectionGroupName)
 
 	var connectionGroup api.ConnectionGroup
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -390,7 +390,7 @@ func (s *onboardClient) ListConnectionGroups(ctx *httpclient.Context) ([]api.Con
 	url := fmt.Sprintf("%s/api/v1/connection-groups", s.baseURL)
 
 	var connectionGroup []api.ConnectionGroup
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
