@@ -60,6 +60,7 @@ func (r *GCPComputeSKURepoImpl) GetCheapestCustomCore(machineFamily string, pref
 	var m model.GCPComputeSKU
 	tx := r.db.Conn().Table(r.viewName).
 		Where("resource_family = 'Compute'").
+		Where("type = 'Custom'").
 		Where("unit_price != 0").
 		Where("machine_family = ?", machineFamily).
 		Where("resource_group = 'CPU'")
@@ -80,6 +81,7 @@ func (r *GCPComputeSKURepoImpl) GetCheapestCustomRam(machineFamily string, pref 
 	var m model.GCPComputeSKU
 	tx := r.db.Conn().Table(r.viewName).
 		Where("resource_family = 'Compute'").
+		Where("type = 'Custom'").
 		Where("unit_price != 0").
 		Where("machine_family = ?", machineFamily).
 		Where("resource_group = 'RAM'")

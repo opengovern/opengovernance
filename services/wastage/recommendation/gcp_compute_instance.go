@@ -106,7 +106,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		}
 		if k == "MachineFamily" {
 			if vl == "custom" {
-				continue // TODO
+				continue
 			}
 		}
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
@@ -262,25 +262,32 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb i
 		return offer, nil
 	}
 
-	n2Offer, err := s.checkCustomMachineForFamily(region, "n2", neededCpu, neededMemoryMb, preferences)
-	if err != nil {
-		return nil, err
+	if neededCpu <= 128 && neededMemoryMb <= 665600 {
+		n2Offer, err := s.checkCustomMachineForFamily(region, "n2", neededCpu, neededMemoryMb, preferences)
+		if err != nil {
+			return nil, err
+		}
+		offers = append(offers, n2Offer...)
 	}
-	n4Offer, err := s.checkCustomMachineForFamily(region, "n4", neededCpu, neededMemoryMb, preferences)
-	if err != nil {
-		return nil, err
+	if neededCpu <= 80 && neededMemoryMb <= 665600 {
+		n4Offer, err := s.checkCustomMachineForFamily(region, "n4", neededCpu, neededMemoryMb, preferences)
+		if err != nil {
+			return nil, err
+		}
+		offers = append(offers, n4Offer...)
 	}
-	n2dOffer, err := s.checkCustomMachineForFamily(region, "n2d", neededCpu, neededMemoryMb, preferences)
-	if err != nil {
-		return nil, err
+	if neededCpu <= 224 && neededMemoryMb <= 786432 {
+		n2dOffer, err := s.checkCustomMachineForFamily(region, "n2d", neededCpu, neededMemoryMb, preferences)
+		if err != nil {
+			return nil, err
+		}
+		offers = append(offers, n2dOffer...)
 	}
+	// TODO: add e2 custom machines
 	g2Offer, err := s.checkCustomMachineForFamily(region, "g2", neededCpu, neededMemoryMb, preferences)
 	if err != nil {
 		return nil, err
 	}
-	offers = append(offers, n2Offer...)
-	offers = append(offers, n4Offer...)
-	offers = append(offers, n2dOffer...)
 	offers = append(offers, g2Offer...)
 
 	s.logger.Info("custom machines", zap.Any("offers", offers))
@@ -384,8 +391,8 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		MachineType: model.GCPComputeMachineType{
 			Name:        machineType,
 			MachineType: machineType,
-			GuestCpus:   int64(neededCpu),
-			MemoryMb:    int64(neededMemoryMb),
+			GuestCpus:   neededCpu,
+			MemoryMb:    neededMemoryMb,
 			Zone:        cpuSku.Location + "-a",
 			Region:      cpuSku.Location,
 		},
@@ -406,8 +413,8 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		MachineType: model.GCPComputeMachineType{
 			Name:        machineType,
 			MachineType: machineType,
-			GuestCpus:   int64(neededCpu),
-			MemoryMb:    int64(neededMemoryMb),
+			GuestCpus:   neededCpu,
+			MemoryMb:    neededMemoryMb,
 			Zone:        memorySku.Location + "-a",
 			Region:      memorySku.Location,
 		},
