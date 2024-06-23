@@ -63,7 +63,7 @@ func startHttpServer(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
-	handler, err := InitializeHttpHandler(conf,
+	handler, err := InitializeHttpHandler(ctx, conf,
 		S3Region, S3AccessKey, S3AccessSecret,
 		logger)
 	if err != nil {

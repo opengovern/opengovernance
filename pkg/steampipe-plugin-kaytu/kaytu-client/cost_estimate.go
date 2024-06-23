@@ -459,7 +459,7 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 	plugin.Logger(ctx).Warn("ListResourceCostEstimate: Pennywise")
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest(ctx.Ctx, "GET", *cfg.PennywiseBaseURL+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx, "GET", *cfg.PennywiseBaseURL+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return nil, err
 	}

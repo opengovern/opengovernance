@@ -18,6 +18,7 @@ import (
 )
 
 func (s *Service) EC2InstanceRecommendation(
+	ctx context.Context,
 	region string,
 	instance entity.EC2Instance,
 	volumes []entity.EC2Volume,
@@ -48,12 +49,12 @@ func (s *Service) EC2InstanceRecommendation(
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance type not found: %s", string(instance.InstanceType)))
 	}
 	currentInstanceType := currentInstanceTypeList[0]
-	currentCost, err := s.costSvc.GetEC2InstanceCost(region, instance, volumes, metrics)
+	currentCost, err := s.costSvc.GetEC2InstanceCost(ctx, region, instance, volumes, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ec2 instance cost: %s", err.Error())
 		return nil, err
 	}
-	currLicensePrice, err := s.costSvc.EstimateLicensePrice(instance)
+	currLicensePrice, err := s.costSvc.EstimateLicensePrice(ctx, instance)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ec2 instance license price: %s", err.Error())
 		return nil, err
@@ -179,12 +180,12 @@ func (s *Service) EC2InstanceRecommendation(
 		} else {
 			newInstance.Placement.Tenancy = types.TenancyDefault
 		}
-		recommendedCost, err := s.costSvc.GetEC2InstanceCost(rightSizedInstanceType.RegionCode, newInstance, volumes, metrics)
+		recommendedCost, err := s.costSvc.GetEC2InstanceCost(ctx, rightSizedInstanceType.RegionCode, newInstance, volumes, metrics)
 		if err != nil {
 			err = fmt.Errorf("failed to get recommended ec2 instance cost: %s", err.Error())
 			return nil, err
 		}
-		recomLicensePrice, err := s.costSvc.EstimateLicensePrice(newInstance)
+		recomLicensePrice, err := s.costSvc.EstimateLicensePrice(ctx, newInstance)
 		if err != nil {
 			err = fmt.Errorf("failed to get recommended ec2 instance license price: %s", err.Error())
 			return nil, err
@@ -373,7 +374,7 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 	return ""
 }
 
-func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string, usageAverageType UsageAverageType) (*entity.EBSVolumeRecommendation, error) {
+func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string, usageAverageType UsageAverageType) (*entity.EBSVolumeRecommendation, error) {
 	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]), usageAverageType)
 	throughputUsageBytes := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]), usageAverageType)
 	usageStorageThroughputMB := entity.Usage{
@@ -472,7 +473,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
-	volumeCost, err := s.costSvc.GetEBSVolumeCost(region, volume, metrics)
+	volumeCost, err := s.costSvc.GetEBSVolumeCost(ctx, region, volume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ebs volume %s cost: %s", volume.HashedVolumeId, err.Error())
 		return nil, err
@@ -613,7 +614,7 @@ func (s *Service) EBSVolumeRecommendation(region string, volume entity.EC2Volume
 		}
 	}
 
-	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(region, newVolume, metrics)
+	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(ctx, region, newVolume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get recommended ebs volume %s cost: %s", newVolume.HashedVolumeId, err.Error())
 		return nil, err

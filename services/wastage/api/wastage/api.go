@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/mod/semver"
+	"golang.org/x/net/context"
 	"math"
 	"net/http"
 	"strconv"
@@ -100,17 +101,18 @@ func (s API) Configuration(c echo.Context) error {
 //	@Param			request	body		entity.EC2InstanceWastageRequest	true	"Request"
 //	@Success		200		{object}	entity.EC2InstanceWastageResponse
 //	@Router			/wastage/api/v1/wastage/ec2-instance [post]
-func (s API) EC2Instance(c echo.Context) error {
+func (s API) EC2Instance(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 	start := time.Now()
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(echoCtx.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
 	var req entity.EC2InstanceWastageRequest
-	if err := c.Bind(&req); err != nil {
+	if err := echoCtx.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := c.Validate(&req); err != nil {
+	if err := echoCtx.Validate(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -121,7 +123,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		AccountID:   req.Identification["account"],
 		OrgEmail:    req.Identification["org_m_email"],
 		ResourceID:  req.Instance.HashedInstanceId,
-		Auth0UserId: httpserver.GetUserID(c),
+		Auth0UserId: httpserver.GetUserID(echoCtx),
 	}
 	statsOut, _ := json.Marshal(stats)
 
@@ -212,7 +214,7 @@ func (s API) EC2Instance(c echo.Context) error {
 	}
 
 	if req.Loading {
-		return c.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{})
+		return echoCtx.JSON(http.StatusOK, entity.EC2InstanceWastageResponse{})
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
@@ -220,31 +222,31 @@ func (s API) EC2Instance(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	ok, err := s.checkAccountsLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
+		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
 	}
 
-	ok, err = s.checkEC2InstanceLimit(httpserver.GetUserID(c), req.Identification["org_m_email"])
+	ok, err = s.checkEC2InstanceLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "ec2 instance")
+		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "ec2 instance")
 		if err != nil {
 			return err
 		}
 	}
 
-	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
+	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendation(ctx, req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
 		return err
@@ -264,7 +266,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		//	}
 		//}
 		var ebsRightSizingRecom *entity.EBSVolumeRecommendation
-		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
+		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendation(ctx, req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
 			err = fmt.Errorf("failed to get ebs volume %s recommendation: %s", vol.HashedVolumeId, err.Error())
 			return err
@@ -284,7 +286,7 @@ func (s API) EC2Instance(c echo.Context) error {
 		VolumeRightSizing: ebsRightSizingRecoms,
 	}
 	// DO NOT change this, resp is used in updating usage
-	return c.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
 // AwsRDS godoc
@@ -297,17 +299,18 @@ func (s API) EC2Instance(c echo.Context) error {
 //	@Param			request	body		entity.AwsRdsWastageRequest	true	"Request"
 //	@Success		200		{object}	entity.AwsRdsWastageResponse
 //	@Router			/wastage/api/v1/wastage/aws-rds [post]
-func (s API) AwsRDS(c echo.Context) error {
+func (s API) AwsRDS(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 	start := time.Now()
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(echoCtx.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
 	var req entity.AwsRdsWastageRequest
-	if err := c.Bind(&req); err != nil {
+	if err := echoCtx.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := c.Validate(&req); err != nil {
+	if err := echoCtx.Validate(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -318,7 +321,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		AccountID:   req.Identification["account"],
 		OrgEmail:    req.Identification["org_m_email"],
 		ResourceID:  req.Instance.HashedInstanceId,
-		Auth0UserId: httpserver.GetUserID(c),
+		Auth0UserId: httpserver.GetUserID(echoCtx),
 	}
 	statsOut, _ := json.Marshal(stats)
 
@@ -383,7 +386,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		}
 	}()
 	if req.Loading {
-		return c.JSON(http.StatusOK, entity.AwsRdsWastageResponse{})
+		return echoCtx.JSON(http.StatusOK, entity.AwsRdsWastageResponse{})
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
@@ -391,31 +394,31 @@ func (s API) AwsRDS(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	ok, err := s.checkAccountsLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
+		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
 	}
 
-	ok, err = s.checkRDSInstanceLimit(httpserver.GetUserID(c), req.Identification["org_m_email"])
+	ok, err = s.checkRDSInstanceLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds instance limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "rds instance")
+		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "rds instance")
 		if err != nil {
 			return err
 		}
 	}
 
-	rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
+	rdsRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(ctx, req.Region, req.Instance, req.Metrics, req.Preferences, usageAverageType)
 	if err != nil {
 		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
 		return err
@@ -433,7 +436,7 @@ func (s API) AwsRDS(c echo.Context) error {
 		RightSizing: *rdsRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
-	return c.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
 // AwsRDSCluster godoc
@@ -446,17 +449,18 @@ func (s API) AwsRDS(c echo.Context) error {
 //	@Param			request	body		entity.AwsClusterWastageRequest	true	"Request"
 //	@Success		200		{object}	entity.AwsClusterWastageResponse
 //	@Router			/wastage/api/v1/wastage/aws-rds-cluster [post]
-func (s API) AwsRDSCluster(c echo.Context) error {
+func (s API) AwsRDSCluster(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 	start := time.Now()
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(echoCtx.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
 	var req entity.AwsClusterWastageRequest
-	if err := c.Bind(&req); err != nil {
+	if err := echoCtx.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := c.Validate(&req); err != nil {
+	if err := echoCtx.Validate(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -467,7 +471,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		AccountID:   req.Identification["account"],
 		OrgEmail:    req.Identification["org_m_email"],
 		ResourceID:  req.Cluster.HashedClusterId,
-		Auth0UserId: httpserver.GetUserID(c),
+		Auth0UserId: httpserver.GetUserID(echoCtx),
 	}
 	statsOut, _ := json.Marshal(stats)
 
@@ -547,7 +551,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		}
 	}()
 	if req.Loading {
-		return c.JSON(http.StatusOK, entity.AwsClusterWastageResponse{})
+		return echoCtx.JSON(http.StatusOK, entity.AwsClusterWastageResponse{})
 	}
 
 	usageAverageType := recommendation.UsageAverageTypeMax
@@ -559,25 +563,25 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		RightSizing: make(map[string]entity.AwsRdsRightsizingRecommendation),
 	}
 
-	ok, err := s.checkAccountsLimit(httpserver.GetUserID(c), req.Identification["org_m_email"], req.Identification["account"])
+	ok, err := s.checkAccountsLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "profile")
+		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
 	}
 
-	ok, err = s.checkRDSClusterLimit(httpserver.GetUserID(c), req.Identification["org_m_email"])
+	ok, err = s.checkRDSClusterLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds cluster limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(c, req.Identification["org_m_email"], "rds cluster")
+		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "rds cluster")
 		if err != nil {
 			return err
 		}
@@ -587,7 +591,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 	var aggregatedMetrics map[string][]types.Datapoint
 	for _, instance := range req.Instances {
 		instance := instance
-		rdsRightSizingRecom, err2 := s.recomSvc.AwsRdsRecommendation(req.Region, instance, req.Metrics[instance.HashedInstanceId], req.Preferences, usageAverageType)
+		rdsRightSizingRecom, err2 := s.recomSvc.AwsRdsRecommendation(ctx, req.Region, instance, req.Metrics[instance.HashedInstanceId], req.Preferences, usageAverageType)
 		if err2 != nil {
 			s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
 			err = err2
@@ -611,9 +615,9 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		}
 	}
 	if aggregatedInstance == nil {
-		return c.JSON(http.StatusBadRequest, "no instances found in the request")
+		return echoCtx.JSON(http.StatusBadRequest, "no instances found in the request")
 	}
-	rdsClusterRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(req.Region, *aggregatedInstance, aggregatedMetrics, req.Preferences, usageAverageType)
+	rdsClusterRightSizingRecom, err := s.recomSvc.AwsRdsRecommendation(ctx, req.Region, *aggregatedInstance, aggregatedMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		s.logger.Error("failed to get aws rds recommendation", zap.Error(err))
 		return err
@@ -637,7 +641,7 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
 // GCPCompute godoc
@@ -650,17 +654,18 @@ func (s API) AwsRDSCluster(c echo.Context) error {
 //	@Param			request	body		entity.GcpComputeInstanceWastageRequest	true	"Request"
 //	@Success		200		{object}	entity.GcpComputeInstanceWastageResponse
 //	@Router			/wastage/api/v1/wastage/gcp-compute [post]
-func (s API) GCPCompute(c echo.Context) error {
+func (s API) GCPCompute(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 	start := time.Now()
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(echoCtx.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
 	var req entity.GcpComputeInstanceWastageRequest
-	if err := c.Bind(&req); err != nil {
+	if err := echoCtx.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := c.Validate(&req); err != nil {
+	if err := echoCtx.Validate(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -671,7 +676,7 @@ func (s API) GCPCompute(c echo.Context) error {
 		AccountID:   req.Identification["account"],
 		OrgEmail:    req.Identification["org_m_email"],
 		ResourceID:  req.Instance.HashedInstanceId,
-		Auth0UserId: httpserver.GetUserID(c),
+		Auth0UserId: httpserver.GetUserID(echoCtx),
 	}
 	statsOut, _ := json.Marshal(stats)
 
@@ -732,12 +737,12 @@ func (s API) GCPCompute(c echo.Context) error {
 		}
 	}()
 	if req.Loading {
-		return c.JSON(http.StatusOK, entity.GcpComputeInstanceWastageResponse{})
+		return echoCtx.JSON(http.StatusOK, entity.GcpComputeInstanceWastageResponse{})
 	}
 
 	// TODO: Limit
 
-	rdsRightSizingRecom, err := s.recomSvc.GCPComputeInstanceRecommendation(req.Instance, req.Metrics, req.Preferences)
+	rdsRightSizingRecom, err := s.recomSvc.GCPComputeInstanceRecommendation(ctx, req.Instance, req.Metrics, req.Preferences)
 	if err != nil {
 		s.logger.Error("failed to get gcp compute instance recommendation", zap.Error(err))
 		return err
@@ -755,15 +760,16 @@ func (s API) GCPCompute(c echo.Context) error {
 		RightSizing: *rdsRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
-	return c.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
-func (s API) TriggerIngest(c echo.Context) error {
-	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
+func (s API) TriggerIngest(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(echoCtx.Request().Header))
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
-	service := c.Param("service")
+	service := echoCtx.Param("service")
 
 	s.logger.Info(fmt.Sprintf("Ingester is going to be triggered for %s", service))
 
@@ -795,11 +801,12 @@ func (s API) TriggerIngest(c echo.Context) error {
 
 	s.logger.Info(fmt.Sprintf("Ingester triggered for %s", service))
 
-	return c.NoContent(http.StatusOK)
+	return echoCtx.NoContent(http.StatusOK)
 }
 
-func (s API) MigrateUsages(c echo.Context) error {
+func (s API) MigrateUsages(echoCtx echo.Context) error {
 	go func() {
+		ctx := context.Background()
 		s.logger.Info("Usage table migration started")
 
 		for true {
@@ -831,7 +838,7 @@ func (s API) MigrateUsages(c echo.Context) error {
 					continue
 				}
 
-				if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
+				if _, err := httpclient.DoRequest(ctx, http.MethodPost, url, httpclient.FromEchoContext(echoCtx).ToHeaders(), payload, nil); err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
 				}
 
@@ -861,7 +868,7 @@ func (s API) MigrateUsages(c echo.Context) error {
 					continue
 				}
 
-				if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, httpclient.FromEchoContext(c).ToHeaders(), payload, nil); err != nil {
+				if _, err := httpclient.DoRequest(ctx, http.MethodPost, url, httpclient.FromEchoContext(echoCtx).ToHeaders(), payload, nil); err != nil {
 					s.logger.Error("failed to rerun request", zap.Any("usage_id", usage.ID), zap.Error(err))
 				}
 
@@ -876,11 +883,12 @@ func (s API) MigrateUsages(c echo.Context) error {
 
 	}()
 
-	return c.NoContent(http.StatusOK)
+	return echoCtx.NoContent(http.StatusOK)
 }
 
 func (s API) MigrateUsagesV2(c echo.Context) error {
 	go func() {
+		//ctx := context.Background()
 		s.logger.Info("Usage table migration started")
 
 		for {
@@ -997,8 +1005,8 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (s API) GetUsage(c echo.Context) error {
-	idStr := c.QueryParam("id")
+func (s API) GetUsage(echoCtx echo.Context) error {
+	idStr := echoCtx.QueryParam("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return err
@@ -1009,11 +1017,12 @@ func (s API) GetUsage(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, usage)
+	return echoCtx.JSON(http.StatusOK, usage)
 }
 
-func (s API) FillRdsCosts(c echo.Context) error {
+func (s API) FillRdsCosts(echoCtx echo.Context) error {
 	go func() {
+		//ctx := context.Background()
 		s.logger.Info("Filling RDS costs started")
 
 		for {
@@ -1050,11 +1059,11 @@ func (s API) FillRdsCosts(c echo.Context) error {
 
 	}()
 
-	return c.NoContent(http.StatusOK)
+	return echoCtx.NoContent(http.StatusOK)
 }
 
-func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service string) error {
-	user, err := s.userRepo.Get(httpserver.GetUserID(c))
+func (s API) checkPremiumAndSendErr(echoCtx echo.Context, orgEmail string, service string) error {
+	user, err := s.userRepo.Get(httpserver.GetUserID(echoCtx))
 	if err != nil {
 		s.logger.Error("failed to get user", zap.Error(err))
 		return err
@@ -1083,13 +1092,13 @@ func (s API) checkPremiumAndSendErr(c echo.Context, orgEmail string, service str
 	}
 
 	err = fmt.Errorf("reached the %s limit for both user and organization", service)
-	s.logger.Error(err.Error(), zap.String("auth0UserId", httpserver.GetUserID(c)), zap.String("orgEmail", orgEmail))
+	s.logger.Error(err.Error(), zap.String("auth0UserId", httpserver.GetUserID(echoCtx)), zap.String("orgEmail", orgEmail))
 	return nil
 }
 
-func (s API) CreateUser(c echo.Context) error {
+func (s API) CreateUser(echoCtx echo.Context) error {
 	var user entity.User
-	err := c.Bind(&user)
+	err := echoCtx.Bind(&user)
 	if err != nil {
 		return err
 	}
@@ -1099,16 +1108,16 @@ func (s API) CreateUser(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusCreated, user)
+	return echoCtx.JSON(http.StatusCreated, user)
 }
 
-func (s API) UpdateUser(c echo.Context) error {
-	idString := c.Param("userId")
+func (s API) UpdateUser(echoCtx echo.Context) error {
+	idString := echoCtx.Param("userId")
 	if idString == "" {
 		return errors.New("userId is required")
 	}
 
-	premiumUntil, err := strconv.ParseInt(c.QueryParam("premiumUntil"), 10, 64)
+	premiumUntil, err := strconv.ParseInt(echoCtx.QueryParam("premiumUntil"), 10, 64)
 	if err != nil {
 		return err
 	}
@@ -1122,12 +1131,12 @@ func (s API) UpdateUser(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, user)
+	return echoCtx.JSON(http.StatusOK, user)
 }
 
-func (s API) CreateOrganization(c echo.Context) error {
+func (s API) CreateOrganization(echoCtx echo.Context) error {
 	var org entity.Organization
-	err := c.Bind(&org)
+	err := echoCtx.Bind(&org)
 	if err != nil {
 		return err
 	}
@@ -1137,16 +1146,16 @@ func (s API) CreateOrganization(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusCreated, org)
+	return echoCtx.JSON(http.StatusCreated, org)
 }
 
-func (s API) UpdateOrganization(c echo.Context) error {
-	idString := c.Param("organizationId")
+func (s API) UpdateOrganization(echoCtx echo.Context) error {
+	idString := echoCtx.Param("organizationId")
 	if idString == "" {
 		return errors.New("organizationId is required")
 	}
 
-	premiumUntil, err := strconv.ParseInt(c.QueryParam("premiumUntil"), 10, 64)
+	premiumUntil, err := strconv.ParseInt(echoCtx.QueryParam("premiumUntil"), 10, 64)
 	if err != nil {
 		return err
 	}
@@ -1160,5 +1169,5 @@ func (s API) UpdateOrganization(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, org)
+	return echoCtx.JSON(http.StatusOK, org)
 }

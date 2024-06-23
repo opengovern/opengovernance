@@ -1,6 +1,7 @@
 package cost
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func (s *Service) GetGCPComputeInstanceCost(instance entity.GcpComputeInstance) (float64, error) {
+func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance entity.GcpComputeInstance) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -39,7 +40,7 @@ func (s *Service) GetGCPComputeInstanceCost(instance entity.GcpComputeInstance) 
 	}
 
 	var response cost.State
-	statusCode, err := httpclient.DoRequest(ctx.Ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
 		return 0, err
 	}
