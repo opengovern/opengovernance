@@ -313,6 +313,34 @@ func (s *Service) AwsRdsRecommendation(
 		}
 	}
 
+	if v, ok := preferences["ExcludeRDSVolumeTypes"]; ok {
+		if v != nil && len(*v) > 0 {
+			if len(validTypes) == 0 {
+				for _, v := range model.RDSDBStorageEBSTypeToVolumeType {
+					validTypes = append(validTypes, v)
+				}
+			}
+
+			excludeList := strings.Split(*v, ",")
+
+			var newValidTypes []model.RDSDBStorageVolumeType
+			for _, o := range validTypes {
+				ignore := false
+				for _, e := range excludeList {
+					if string(o) == e {
+						ignore = true
+					}
+				}
+
+				if ignore {
+					continue
+				}
+				newValidTypes = append(newValidTypes, o)
+			}
+			validTypes = newValidTypes
+		}
+	}
+
 	var resSize, resIops int32
 	var resThroughputMB float64
 	rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)

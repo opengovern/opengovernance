@@ -455,16 +455,25 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		}
 	}
 
-	if v, ok := preferences["ExcludeVolumeType"]; ok {
-		if v != nil {
+	if v, ok := preferences["ExcludeVolumeTypes"]; ok {
+		if v != nil && len(*v) > 0 {
 			if len(validTypes) == 0 {
 				var t types.VolumeType
 				validTypes = t.Values()
 			}
 
+			excludeList := strings.Split(*v, ",")
+
 			var newValidTypes []types.VolumeType
 			for _, o := range validTypes {
-				if string(o) == *v {
+				ignore := false
+				for _, e := range excludeList {
+					if string(o) == e {
+						ignore = true
+					}
+				}
+
+				if ignore {
 					continue
 				}
 				newValidTypes = append(newValidTypes, o)
