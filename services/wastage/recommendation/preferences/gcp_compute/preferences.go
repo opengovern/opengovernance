@@ -15,6 +15,6 @@ var (
 
 	PreferenceDiskKey = map[string]string{
 		"Region":   "region",
-		"DiskType": "disk_type",
+		"DiskType": "storage_type",
 	}
 )
