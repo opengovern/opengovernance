@@ -63,6 +63,7 @@ func pCalculateHeadroom(needed *float64, percent int64) float64 {
 }
 
 func (s *Service) AwsRdsRecommendation(
+	ctx context.Context,
 	region string,
 	rdsInstance entity.AwsRds,
 	metrics map[string][]types2.Datapoint,
@@ -107,15 +108,23 @@ func (s *Service) AwsRdsRecommendation(
 		rdsInstance.StorageThroughput = nil
 	}
 
-	currentComputeCost, err := s.costSvc.GetRDSComputeCost(region, rdsInstance, metrics)
+	currentComputeCost, currentComputeCostComponents, err := s.costSvc.GetRDSComputeCost(ctx, region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds compute cost", zap.Error(err))
 		return nil, err
 	}
-	currentStorageCost, err := s.costSvc.GetRDSStorageCost(region, rdsInstance, metrics)
+	currentStorageCost, currentStorageCostComponents, err := s.costSvc.GetRDSStorageCost(ctx, region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds storage cost", zap.Error(err))
 		return nil, err
+	}
+
+	currentCostComponents := make(map[string]float64)
+	for k, v := range currentComputeCostComponents {
+		currentCostComponents[k] = v
+	}
+	for k, v := range currentStorageCostComponents {
+		currentCostComponents[k] = v
 	}
 
 	current := entity.RightsizingAwsRds{
@@ -133,9 +142,12 @@ func (s *Service) AwsRdsRecommendation(
 		StorageIops:       rdsInstance.StorageIops,
 		StorageThroughput: rdsInstance.StorageThroughput,
 
-		Cost:        currentComputeCost + currentStorageCost,
-		ComputeCost: currentComputeCost,
-		StorageCost: currentStorageCost,
+		Cost:                  currentComputeCost + currentStorageCost,
+		CostComponents:        currentCostComponents,
+		ComputeCost:           currentComputeCost,
+		ComputeCostComponents: currentComputeCostComponents,
+		StorageCost:           currentStorageCost,
+		StorageCostComponents: currentStorageCostComponents,
 	}
 
 	neededVCPU := (getValueOrZero(usageCpuPercent.Avg) / 100.0) * currentInstanceRow.VCpu
@@ -312,6 +324,34 @@ func (s *Service) AwsRdsRecommendation(
 		}
 	}
 
+	if v, ok := preferences["ExcludeRDSVolumeTypes"]; ok {
+		if v != nil && len(*v) > 0 {
+			if len(validTypes) == 0 {
+				for _, v := range model.RDSDBStorageEBSTypeToVolumeType {
+					validTypes = append(validTypes, v)
+				}
+			}
+
+			excludeList := strings.Split(*v, ",")
+
+			var newValidTypes []model.RDSDBStorageVolumeType
+			for _, o := range validTypes {
+				ignore := false
+				for _, e := range excludeList {
+					if string(o) == e {
+						ignore = true
+					}
+				}
+
+				if ignore {
+					continue
+				}
+				newValidTypes = append(newValidTypes, o)
+			}
+			validTypes = newValidTypes
+		}
+	}
+
 	var resSize, resIops int32
 	var resThroughputMB float64
 	rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)
@@ -404,22 +444,33 @@ func (s *Service) AwsRdsRecommendation(
 
 	if recommended != nil {
 		if rightSizedInstanceRow != nil {
-			recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(region, newInstance, metrics)
+			recommendedComputeCost, recommendedComputeCostComponents, err := s.costSvc.GetRDSComputeCost(ctx, region, newInstance, metrics)
 			if err != nil {
 				s.logger.Error("failed to get rds instance cost", zap.Error(err))
 				return nil, err
 			}
 			recommended.ComputeCost = recommendedComputeCost
+			recommended.ComputeCostComponents = recommendedComputeCostComponents
 		}
 
-		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(region, newInstance, metrics)
+		recommendedStorageCost, recommendedStorageCostComponents, err := s.costSvc.GetRDSStorageCost(ctx, region, newInstance, metrics)
 		if err != nil {
 			s.logger.Error("failed to get rds instance cost", zap.Error(err))
 			return nil, err
 		}
 		recommended.StorageCost = recommendedStorageCost
+		recommended.StorageCostComponents = recommendedStorageCostComponents
+
+		costComponents := make(map[string]float64)
+		for k, v := range recommended.ComputeCostComponents {
+			costComponents[k] = v
+		}
+		for k, v := range recommended.StorageCostComponents {
+			costComponents[k] = v
+		}
 
 		recommended.Cost = recommended.ComputeCost + recommended.StorageCost
+		recommended.CostComponents = costComponents
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{

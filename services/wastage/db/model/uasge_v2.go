@@ -47,6 +47,14 @@ type Statistics struct {
 	RDSInstanceRecommendedCost float64 `json:"rdsInstanceRecommendedCost"`
 	RDSInstanceSavings         float64 `json:"rdsInstanceSavings"`
 
+	KubernetesCurrentCPURequest     float64 `json:"kubernetesCurrentCPU"`
+	KubernetesRecommendedCPURequest float64 `json:"kubernetesRecommendedCPU"`
+	KubernetesCPURequestSavings     float64 `json:"kubernetesCPUSavings"`
+
+	KubernetesCurrentMemoryRequest     float64 `json:"kubernetesCurrentMemoryRequest"`
+	KubernetesRecommendedMemoryRequest float64 `json:"kubernetesRecommendedMemoryRequest"`
+	KubernetesMemoryRequestSavings     float64 `json:"KubernetesMemoryRequestSavings"`
+
 	GCPComputeInstanceCurrentCost     float64 `json:"gcpComputeInstanceCurrentCost"`
 	GCPComputeInstanceRecommendedCost float64 `json:"gcpComputeInstanceRecommendedCost"`
 	GCPComputeInstanceSavings         float64 `json:"gcpComputeInstanceSavings"`

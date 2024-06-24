@@ -145,13 +145,15 @@ func bindValidate(ctx echo.Context, i any) error {
 	return nil
 }
 
-func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
-	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
-	connectionIds, err := httpserver.ResolveConnectionIDs(ctx, connectionIds)
+func (h *HttpHandler) getConnectionIdFilterFromParams(echoCtx echo.Context) ([]string, error) {
+	ctx := echoCtx.Request().Context()
+
+	connectionIds := httpserver.QueryArrayParam(echoCtx, ConnectionIdParam)
+	connectionIds, err := httpserver.ResolveConnectionIDs(echoCtx, connectionIds)
 	if err != nil {
 		return nil, err
 	}
-	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
+	connectionGroup := httpserver.QueryArrayParam(echoCtx, ConnectionGroupParam)
 	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
 	}
@@ -168,7 +170,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	var connectionIDSChecked []string
 
 	for i := 0; i < len(connectionGroup); i++ {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.InternalRole}, connectionGroup[i])
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, connectionGroup[i])
 		if err != nil {
 			return nil, err
 		}
@@ -202,14 +204,16 @@ var tracer = otel.Tracer("new_compliance")
 //	@Param			request	body		api.GetFindingsRequest	true	"Request Body"
 //	@Success		200		{object}	api.GetFindingsResponse
 //	@Router			/compliance/api/v1/findings [post]
-func (h *HttpHandler) GetFindings(ctx echo.Context) error {
+func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var req api.GetFindingsRequest
-	if err := bindValidate(ctx, &req); err != nil {
+	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var err error
-	req.Filters.ConnectionID, err = httpserver.ResolveConnectionIDs(ctx, req.Filters.ConnectionID)
+	req.Filters.ConnectionID, err = httpserver.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -252,19 +256,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	}
 
-	res, totalCount, err := es.FindingsQuery(h.logger, h.client,
-		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
-		req.Filters.ResourceTypeID,
-		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		lastEventFrom, lastEventTo,
-		evaluatedAtFrom, evaluatedAtTo,
-		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, ctx.Request().Context())
+	res, totalCount, err := es.FindingsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -275,7 +273,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	controls, err := h.db.ListControls(nil, nil)
+	controls, err := h.db.ListControls(ctx, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -286,7 +284,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		controlsMap[control.ID] = &control
 	}
 
-	benchmarks, err := h.db.ListBenchmarksBare()
+	benchmarks, err := h.db.ListBenchmarksBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get benchmarks", zap.Error(err))
 		return err
@@ -297,7 +295,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		benchmarksMap[benchmark.ID] = &benchmark
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -319,8 +317,8 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		}
 
 		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
+			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
+			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
 		}
 
 		if control, ok := controlsMap[finding.ControlID]; ok {
@@ -342,7 +340,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx.Request().Context(), h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -370,7 +368,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetFindingEventsByFindingID godoc
@@ -384,10 +382,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Param			id	path		string	true	"Finding ID"
 //	@Success		200	{object}	api.GetFindingEventsByFindingIDResponse
 //	@Router			/compliance/api/v1/findings/events/{id} [get]
-func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
-	findingID := ctx.Param("id")
+func (h *HttpHandler) GetFindingEventsByFindingID(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx.Request().Context(), h.logger, h.client, []string{findingID})
+	findingID := echoCtx.Param("id")
+
+	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx, h.logger, h.client, []string{findingID})
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
@@ -400,7 +400,7 @@ func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetSingleResourceFinding godoc
@@ -414,14 +414,16 @@ func (h *HttpHandler) GetFindingEventsByFindingID(ctx echo.Context) error {
 //	@Param			request	body		api.GetSingleResourceFindingRequest	true	"Request Body"
 //	@Success		200		{object}	api.GetSingleResourceFindingResponse
 //	@Router			/compliance/api/v1/findings/resource [post]
-func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
+func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var req api.GetSingleResourceFindingRequest
-	if err := bindValidate(ctx, &req); err != nil {
+	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	kaytuResourceID := req.KaytuResourceId
 
-	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx.Request().Context(), h.client, []string{kaytuResourceID})
+	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx, h.client, []string{kaytuResourceID})
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -445,7 +447,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
 
-	resource, err := es.FetchResourceByResourceIdAndType(ctx.Request().Context(), h.client, lookupResource.ResourceID, lookupResource.ResourceType)
+	resource, err := es.FetchResourceByResourceIdAndType(ctx, h.client, lookupResource.ResourceID, lookupResource.ResourceType)
 	if err != nil {
 		h.logger.Error("failed to fetch resource", zap.Error(err))
 		return err
@@ -458,13 +460,13 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		Resource: *resource,
 	}
 
-	controlFindings, err := es.FetchFindingsPerControlForResourceId(ctx.Request().Context(), h.logger, h.client, lookupResource.ResourceID)
+	controlFindings, err := es.FetchFindingsPerControlForResourceId(ctx, h.logger, h.client, lookupResource.ResourceID)
 	if err != nil {
 		h.logger.Error("failed to fetch control findings", zap.Error(err))
 		return err
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -475,7 +477,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		allSourcesMap[src.ID.String()] = &src
 	}
 
-	controls, err := h.db.ListControls(nil, nil)
+	controls, err := h.db.ListControls(ctx, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -486,7 +488,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		controlsMap[control.ID] = &control
 	}
 
-	benchmarks, err := h.db.ListBenchmarksBare()
+	benchmarks, err := h.db.ListBenchmarksBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get benchmarks", zap.Error(err))
 		return err
@@ -497,7 +499,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		benchmarksMap[benchmark.ID] = &benchmark
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -524,8 +526,8 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		}
 
 		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
+			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
+			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
 		}
 
 		if control, ok := controlsMap[finding.ControlID]; ok {
@@ -539,7 +541,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		response.ControlFindings = append(response.ControlFindings, finding)
 	}
 
-	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx.Request().Context(), h.logger, h.client, findingsIDs)
+	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx, h.logger, h.client, findingsIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch finding events", zap.Error(err))
 		return err
@@ -550,7 +552,7 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetSingleFindingByFindingID
@@ -564,10 +566,12 @@ func (h *HttpHandler) GetSingleResourceFinding(ctx echo.Context) error {
 //	@Param			id	path		string	true	"Finding ID"
 //	@Success		200	{object}	api.Finding
 //	@Router			/compliance/api/v1/findings/single/{id} [get]
-func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
-	findingID := ctx.Param("id")
+func (h *HttpHandler) GetSingleFindingByFindingID(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	finding, err := es.FetchFindingByID(ctx.Request().Context(), h.logger, h.client, findingID)
+	findingID := echoCtx.Param("id")
+
+	finding, err := es.FetchFindingByID(ctx, h.logger, h.client, findingID)
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
@@ -578,7 +582,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 
 	apiFinding := api.GetAPIFindingFromESFinding(*finding)
 
-	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), finding.ConnectionID)
+	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(echoCtx), finding.ConnectionID)
 	if err != nil {
 		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", finding.ConnectionID))
 		return err
@@ -587,7 +591,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 	apiFinding.ProviderConnectionName = connection.ConnectionName
 
 	if len(finding.ResourceType) > 0 {
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 			nil, nil,
 			[]string{finding.ResourceType}, false, nil, 10000, 1)
 		if err != nil {
@@ -599,14 +603,14 @@ func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 		}
 	}
 
-	control, err := h.db.GetControl(finding.ControlID)
+	control, err := h.db.GetControl(ctx, finding.ControlID)
 	if err != nil {
 		h.logger.Error("failed to get control", zap.Error(err), zap.String("control_id", finding.ControlID))
 		return err
 	}
 	apiFinding.ControlTitle = control.Title
 
-	parentBenchmarks, err := h.db.GetBenchmarksBare(finding.ParentBenchmarks)
+	parentBenchmarks, err := h.db.GetBenchmarksBare(ctx, finding.ParentBenchmarks)
 	if err != nil {
 		h.logger.Error("failed to get parent benchmarks", zap.Error(err), zap.Strings("parent_benchmarks", finding.ParentBenchmarks))
 		return err
@@ -621,7 +625,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, apiFinding)
+	return echoCtx.JSON(http.StatusOK, apiFinding)
 }
 
 // CountFindings godoc
@@ -636,13 +640,15 @@ func (h *HttpHandler) GetSingleFindingByFindingID(ctx echo.Context) error {
 //	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to true"
 //	@Success		200					{object}	api.CountFindingsResponse
 //	@Router			/compliance/api/v1/findings/count [get]
-func (h *HttpHandler) CountFindings(ctx echo.Context) error {
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(ctx, "conformanceStatus"))
+func (h *HttpHandler) CountFindings(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
-	stateActives := httpserver.QueryArrayParam(ctx, "stateActive")
+	stateActives := httpserver.QueryArrayParam(echoCtx, "stateActive")
 	if len(stateActives) == 0 {
 		stateActives = []string{"true"}
 	}
@@ -660,7 +666,7 @@ func (h *HttpHandler) CountFindings(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	totalCount, err := es.FindingsCount(h.client, esConformanceStatuses, boolStateActives, ctx.Request().Context())
+	totalCount, err := es.FindingsCount(ctx, h.client, esConformanceStatuses, boolStateActives)
 	if err != nil {
 		return err
 	}
@@ -669,7 +675,7 @@ func (h *HttpHandler) CountFindings(ctx echo.Context) error {
 		Count: totalCount,
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetFindingFilterValues godoc
@@ -683,14 +689,16 @@ func (h *HttpHandler) CountFindings(ctx echo.Context) error {
 //	@Param			request	body		api.FindingFilters	true	"Request Body"
 //	@Success		200		{object}	api.FindingFiltersWithMetadata
 //	@Router			/compliance/api/v1/findings/filters [post]
-func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
+func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var req api.FindingFilters
-	if err := bindValidate(ctx, &req); err != nil {
+	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var err error
-	req.ConnectionID, err = httpserver.ResolveConnectionIDs(ctx, req.ConnectionID)
+	req.ConnectionID, err = httpserver.ResolveConnectionIDs(echoCtx, req.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -704,7 +712,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -716,7 +724,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(ctx))
+	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(echoCtx))
 	if err != nil {
 		h.logger.Error("failed to get resource collection metadata", zap.Error(err))
 		return err
@@ -727,7 +735,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		resourceCollectionMetadataMap[item.ID] = &item
 	}
 
-	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -738,7 +746,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		connectionMetadataMap[item.ID.String()] = &item
 	}
 
-	benchmarkMetadata, err := h.db.ListBenchmarksBare()
+	benchmarkMetadata, err := h.db.ListBenchmarksBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get benchmarks", zap.Error(err))
 		return err
@@ -749,7 +757,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		benchmarkMetadataMap[item.ID] = &item
 	}
 
-	controlMetadata, err := h.db.ListControlsBare()
+	controlMetadata, err := h.db.ListControlsBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -774,7 +782,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
 	}
 
-	possibleFilters, err := es.FindingsFiltersQuery(ctx.Request().Context(), h.logger, h.client,
+	possibleFilters, err := es.FindingsFiltersQuery(ctx, h.logger, h.client,
 		req.ResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceTypeID,
 		req.BenchmarkID, req.ControlID,
@@ -913,7 +921,7 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetFindingKPIs godoc
@@ -926,8 +934,10 @@ func (h *HttpHandler) GetFindingFilterValues(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200	{object}	api.FindingKPIResponse
 //	@Router			/compliance/api/v1/findings/kpi [get]
-func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
-	kpiRes, err := es.FindingKPIQuery(ctx.Request().Context(), h.logger, h.client)
+func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	kpiRes, err := es.FindingKPIQuery(ctx, h.logger, h.client)
 	if err != nil {
 		h.logger.Error("failed to get finding kpis", zap.Error(err))
 		return err
@@ -938,7 +948,7 @@ func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
 		FailedControlCount:    kpiRes.Aggregations.ControlCount.Value,
 		FailedConnectionCount: kpiRes.Aggregations.ConnectionCount.Value,
 	}
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetTopFieldByFindingCount godoc
@@ -962,10 +972,12 @@ func (h *HttpHandler) GetFindingKPIs(ctx echo.Context) error {
 //	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
-func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
-	field := ctx.Param("field")
+func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	field := echoCtx.Param("field")
 	esField := field
-	countStr := ctx.Param("count")
+	countStr := echoCtx.Param("count")
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
 		return err
@@ -977,16 +989,16 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		esCount = 10000
 	}
 
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	notConnectionIDs := httpserver.QueryArrayParam(ctx, "notConnectionId")
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	benchmarkIDs := httpserver.QueryArrayParam(ctx, "benchmarkId")
-	controlIDs := httpserver.QueryArrayParam(ctx, "controlId")
-	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(ctx, "conformanceStatus"))
+	notConnectionIDs := httpserver.QueryArrayParam(echoCtx, "notConnectionId")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	benchmarkIDs := httpserver.QueryArrayParam(echoCtx, "benchmarkId")
+	controlIDs := httpserver.QueryArrayParam(echoCtx, "controlId")
+	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(echoCtx, "severities"))
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{
 			api.ConformanceStatusFailed,
@@ -999,7 +1011,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	stateActives := []bool{true}
-	if stateActiveStr := httpserver.QueryArrayParam(ctx, "stateActive"); len(stateActiveStr) > 0 {
+	if stateActiveStr := httpserver.QueryArrayParam(echoCtx, "stateActive"); len(stateActiveStr) > 0 {
 		stateActives = make([]bool, 0, len(stateActiveStr))
 		for _, item := range stateActiveStr {
 			stateActive, err := strconv.ParseBool(item)
@@ -1011,14 +1023,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, esField, connectors,
+	topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs,
 		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount))
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, esField, connectors,
+	topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs,
 		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000)
 	if err != nil {
@@ -1035,7 +1047,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			}
 			resourceTypeList = append(resourceTypeList, item.Key)
 		}
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 			nil, nil, resourceTypeList, false, nil, 10000, 1)
 		if err != nil {
 			return err
@@ -1088,7 +1100,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			resourceTypeList = append(resourceTypeList, item.Key)
 		}
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 			nil, nil, resourceTypeList, false, nil, 10000, 1)
 		if err != nil {
 			return err
@@ -1132,7 +1144,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
-		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
 		if err != nil {
 			h.logger.Error("failed to get connections", zap.Error(err))
 			return err
@@ -1183,7 +1195,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		}
 
 		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
-			ctx.Request().Context(), h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
+			ctx, h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -1216,7 +1228,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			recordMap[item.Key] = record
 		}
 
-		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx.Request().Context(), h.logger, h.client, "connectionID",
+		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx, h.logger, h.client, "connectionID",
 			resConnectionIDs, notConnectionIDs, nil, controlIDs, benchmarkIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
@@ -1254,7 +1266,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			resControlIDs = append(resControlIDs, item.Key)
 		}
-		controls, err := h.db.GetControls(resControlIDs, nil)
+		controls, err := h.db.GetControls(ctx, resControlIDs, nil)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -1294,7 +1306,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			recordMap[control.ID] = record
 		}
 
-		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx.Request().Context(), h.logger, h.client, "controlID",
+		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx, h.logger, h.client, "controlID",
 			connectionIDs, notConnectionIDs, nil, resControlIDs, benchmarkIDs, severities, nil)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
@@ -1354,7 +1366,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		response.Records = response.Records[:min(len(response.Records), count)]
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetFindingsFieldCountByControls godoc
@@ -1375,9 +1387,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
-func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
-	field := ctx.Param("field")
+func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	benchmarkID := echoCtx.Param("benchmarkId")
+	field := echoCtx.Param("field")
 	var esField string
 	if field == "resource" {
 		esField = "resourceID"
@@ -1385,14 +1399,14 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 		esField = field
 	}
 
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(ctx, "severities"))
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(ctx, "conformanceStatus"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	severities := kaytuTypes.ParseFindingSeverities(httpserver.QueryArrayParam(echoCtx, "severities"))
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{
 			api.ConformanceStatusFailed,
@@ -1403,10 +1417,11 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 	//tracer :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
+	defer span1.End()
 
-	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx, benchmarkID)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -1418,7 +1433,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.FindingsFieldCountByControl(ctx.Request().Context(), h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
+	res, err := es.FindingsFieldCountByControl(ctx, h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
 		esConformanceStatuses)
 	if err != nil {
 		return err
@@ -1435,7 +1450,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 		}{ControlName: b.Key, FieldCounts: fieldCounts})
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetAccountsFindingsSummary godoc
@@ -1451,21 +1466,23 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(ctx echo.Context) error {
 //	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success		200				{object}	api.GetAccountsFindingsSummaryResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
-func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	benchmarkID := echoCtx.Param("benchmarkId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
 
 	var response api.GetAccountsFindingsSummaryResponse
-	res, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx.Request().Context(), h.logger, h.client, benchmarkID)
+	res, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkID)
 	if err != nil {
 		return err
 	}
 
 	if len(connectionIDs) == 0 {
-		assignmentsByBenchmarkId, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkID)
+		assignmentsByBenchmarkId, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(ctx, benchmarkID)
 		if err != nil {
 			return err
 		}
@@ -1477,7 +1494,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 		}
 	}
 
-	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), connectionIDs)
 	if err != nil {
 		return err
 	}
@@ -1526,12 +1543,12 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 	}
 
 	for idx, conn := range response.Accounts {
-		conn.AccountId = demo.EncodeResponseData(ctx, conn.AccountId)
-		conn.AccountName = demo.EncodeResponseData(ctx, conn.AccountName)
+		conn.AccountId = demo.EncodeResponseData(echoCtx, conn.AccountId)
+		conn.AccountName = demo.EncodeResponseData(echoCtx, conn.AccountName)
 		response.Accounts[idx] = conn
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetServicesFindingsSummary godoc
@@ -1547,20 +1564,22 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 //	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success		200				{object}	api.GetServicesFindingsSummaryResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
-func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	benchmarkID := echoCtx.Param("benchmarkId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
 
 	var response api.GetServicesFindingsSummaryResponse
-	resp, err := es.ResourceTypesFindingsSummary(ctx.Request().Context(), h.logger, h.client, connectionIDs, benchmarkID)
+	resp, err := es.ResourceTypesFindingsSummary(ctx, h.logger, h.client, connectionIDs, benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -1625,7 +1644,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 		response.Services = append(response.Services, service)
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetFindingEvents godoc
@@ -1639,14 +1658,16 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 //	@Param			request	body		api.GetFindingEventsRequest	true	"Request Body"
 //	@Success		200		{object}	api.GetFindingEventsResponse
 //	@Router			/compliance/api/v1/finding_events [post]
-func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
+func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var req api.GetFindingEventsRequest
-	if err := bindValidate(ctx, &req); err != nil {
+	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var err error
-	req.Filters.ConnectionID, err = httpserver.ResolveConnectionIDs(ctx, req.Filters.ConnectionID)
+	req.Filters.ConnectionID, err = httpserver.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -1683,7 +1704,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	}
 
-	res, totalCount, err := es.FindingEventsQuery(ctx.Request().Context(), h.logger, h.client,
+	res, totalCount, err := es.FindingEventsQuery(ctx, h.logger, h.client,
 		req.Filters.FindingID, req.Filters.KaytuResourceID,
 		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceType,
@@ -1695,7 +1716,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		return err
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -1706,7 +1727,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		allConnectionsMap[src.ID.String()] = &src
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -1734,7 +1755,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx.Request().Context(), h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -1763,7 +1784,7 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // CountFindingEvents godoc
@@ -1781,8 +1802,10 @@ func (h *HttpHandler) GetFindingEvents(ctx echo.Context) error {
 //	@Param			endTime				query		int64					false	"End time to filter by"
 //	@Success		200					{object}	api.CountFindingEventsResponse
 //	@Router			/compliance/api/v1/finding_events/count [get]
-func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(ctx, "conformanceStatus"))
+func (h *HttpHandler) CountFindingEvents(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	conformanceStatuses := api.ParseConformanceStatuses(httpserver.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
@@ -1792,10 +1815,10 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	benchmarkIDs := httpserver.QueryArrayParam(ctx, "benchmarkID")
+	benchmarkIDs := httpserver.QueryArrayParam(echoCtx, "benchmarkID")
 
 	var stateActive []bool
-	stateActiveStr := httpserver.QueryArrayParam(ctx, "stateActive")
+	stateActiveStr := httpserver.QueryArrayParam(echoCtx, "stateActive")
 	for _, s := range stateActiveStr {
 		sa, err := strconv.ParseBool(s)
 		if err != nil {
@@ -1805,7 +1828,7 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 	}
 
 	var endTime *time.Time
-	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+	if endTimeStr := echoCtx.QueryParam("endTime"); endTimeStr != "" {
 		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
@@ -1813,7 +1836,7 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 		endTime = utils.GetPointer(time.Unix(endTimeInt, 0))
 	}
 	var startTime *time.Time
-	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+	if startTimeStr := echoCtx.QueryParam("startTime"); startTimeStr != "" {
 		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
@@ -1821,7 +1844,7 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 		startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
 	}
 
-	totalCount, err := es.FindingEventsCount(ctx.Request().Context(), h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
+	totalCount, err := es.FindingEventsCount(ctx, h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1830,7 +1853,7 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 		Count: totalCount,
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetFindingEventFilterValues godoc
@@ -1844,14 +1867,16 @@ func (h *HttpHandler) CountFindingEvents(ctx echo.Context) error {
 //	@Param			request	body		api.FindingEventFilters	true	"Request Body"
 //	@Success		200		{object}	api.FindingEventFiltersWithMetadata
 //	@Router			/compliance/api/v1/finding_events/filters [post]
-func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
+func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var req api.FindingEventFilters
-	if err := bindValidate(ctx, &req); err != nil {
+	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var err error
-	req.ConnectionID, err = httpserver.ResolveConnectionIDs(ctx, req.ConnectionID)
+	req.ConnectionID, err = httpserver.ResolveConnectionIDs(echoCtx, req.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -1873,7 +1898,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -1885,7 +1910,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(ctx))
+	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(echoCtx))
 	if err != nil {
 		h.logger.Error("failed to get resource collection metadata", zap.Error(err))
 		return err
@@ -1896,7 +1921,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		resourceCollectionMetadataMap[item.ID] = &item
 	}
 
-	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -1907,7 +1932,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		connectionMetadataMap[item.ID.String()] = &item
 	}
 
-	benchmarkMetadata, err := h.db.ListBenchmarksBare()
+	benchmarkMetadata, err := h.db.ListBenchmarksBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get benchmarks", zap.Error(err))
 		return err
@@ -1918,7 +1943,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		benchmarkMetadataMap[item.ID] = &item
 	}
 
-	controlMetadata, err := h.db.ListControlsBare()
+	controlMetadata, err := h.db.ListControlsBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -1929,7 +1954,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		controlMetadataMap[item.ID] = &item
 	}
 
-	possibleFilters, err := es.FindingEventsFiltersQuery(ctx.Request().Context(), h.logger, h.client,
+	possibleFilters, err := es.FindingEventsFiltersQuery(ctx, h.logger, h.client,
 		req.FindingID, req.KaytuResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
@@ -2067,7 +2092,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetSingleFindingEvent
@@ -2081,10 +2106,12 @@ func (h *HttpHandler) GetFindingEventFilterValues(ctx echo.Context) error {
 //	@Param			findingID	path		string	true	"FindingID"
 //	@Success		200			{object}	api.FindingEvent
 //	@Router			/compliance/api/v1/finding_events/single/{id} [get]
-func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
-	findingEventID := ctx.Param("id")
+func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	findingEvent, err := es.FetchFindingEventByID(ctx.Request().Context(), h.logger, h.client, findingEventID)
+	findingEventID := echoCtx.Param("id")
+
+	findingEvent, err := es.FetchFindingEventByID(ctx, h.logger, h.client, findingEventID)
 	if err != nil {
 		h.logger.Error("failed to fetch findingEvent by id", zap.Error(err))
 		return err
@@ -2095,7 +2122,7 @@ func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
 
 	apiFindingEvent := api.GetAPIFindingEventFromESFindingEvent(*findingEvent)
 
-	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), findingEvent.ConnectionID)
+	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(echoCtx), findingEvent.ConnectionID)
 	if err != nil {
 		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", findingEvent.ConnectionID))
 		return err
@@ -2104,7 +2131,7 @@ func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
 	apiFindingEvent.ProviderConnectionName = connection.ConnectionName
 
 	if len(findingEvent.ResourceType) > 0 {
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 			nil, nil,
 			[]string{findingEvent.ResourceType}, false, nil, 10000, 1)
 		if err != nil {
@@ -2116,7 +2143,7 @@ func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, apiFindingEvent)
+	return echoCtx.JSON(http.StatusOK, apiFindingEvent)
 }
 
 // ListResourceFindings godoc
@@ -2130,14 +2157,16 @@ func (h *HttpHandler) GetSingleFindingEvent(ctx echo.Context) error {
 //	@Param			request	body		api.ListResourceFindingsRequest	true	"Request"
 //	@Success		200		{object}	api.ListResourceFindingsResponse
 //	@Router			/compliance/api/v1/resource_findings [post]
-func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
+func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var req api.ListResourceFindingsRequest
-	if err := bindValidate(ctx, &req); err != nil {
+	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var err error
-	req.Filters.ConnectionID, err = httpserver.ResolveConnectionIDs(ctx, req.Filters.ConnectionID)
+	req.Filters.ConnectionID, err = httpserver.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -2157,7 +2186,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	}
 
-	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -2168,7 +2197,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		connectionMap[connection.ID.String()] = &connection
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx), nil, nil, nil, false, nil, 10000, 1)
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx), nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
 		return err
@@ -2190,12 +2219,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	resourceFindings, totalCount, err := es.ResourceFindingsQuery(h.logger, h.client,
-		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
-		req.Filters.ResourceCollection, req.Filters.ResourceTypeID,
-		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
-		evaluatedAtFrom, evaluatedAtTo,
-		esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, ctx.Request().Context())
+	resourceFindings, totalCount, err := es.ResourceFindingsQuery(ctx, h.logger, h.client, req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID, req.Filters.ResourceCollection, req.Filters.ResourceTypeID, req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity, evaluatedAtFrom, evaluatedAtTo, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get resource findings", zap.Error(err))
 		return err
@@ -2219,7 +2243,7 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 		response.ResourceFindings = append(response.ResourceFindings, apiRf)
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetControlRemediation godoc
@@ -2232,10 +2256,12 @@ func (h *HttpHandler) ListResourceFindings(ctx echo.Context) error {
 //	@Param		controlID	path		string	true	"ControlID"
 //	@Success	200			{object}	api.BenchmarkRemediation
 //	@Router		/compliance/api/v1/ai/control/{controlID}/remediation [post]
-func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
-	controlID := ctx.Param("controlID")
+func (h *HttpHandler) GetControlRemediation(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	control, err := h.db.GetControl(controlID)
+	controlID := echoCtx.Param("controlID")
+
+	control, err := h.db.GetControl(ctx, controlID)
 	if err != nil {
 		return err
 	}
@@ -2255,12 +2281,12 @@ func (h *HttpHandler) GetControlRemediation(ctx echo.Context) error {
 		Content: control.Title,
 	})
 
-	resp, err := h.openAIClient.CreateChatCompletion(ctx.Request().Context(), req)
+	resp, err := h.openAIClient.CreateChatCompletion(ctx, req)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.BenchmarkRemediation{Remediation: resp.Choices[0].Message.Content})
+	return echoCtx.JSON(http.StatusOK, api.BenchmarkRemediation{Remediation: resp.Choices[0].Message.Content})
 }
 
 func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSeverityStatus, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatus {
@@ -2326,9 +2352,11 @@ func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSever
 //	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
 //	@Success		200					{object}	api.ListBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
-func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
@@ -2336,10 +2364,10 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	timeAt := time.Now()
-	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
+	if timeAtStr := echoCtx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
 		if err != nil {
 			return err
@@ -2347,7 +2375,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		timeAt = time.Unix(timeAtInt, 0)
 	}
 	topAccountCount := 3
-	if topAccountCountStr := ctx.QueryParam("topAccountCount"); topAccountCountStr != "" {
+	if topAccountCountStr := echoCtx.QueryParam("topAccountCount"); topAccountCountStr != "" {
 		count, err := strconv.ParseInt(topAccountCountStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid topAccountCount")
@@ -2358,10 +2386,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	var response api.ListBenchmarksSummaryResponse
 
 	// tracer :
-	outputS, span2 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span2 := tracer.Start(ctx, "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_ListRootBenchmarks")
+	defer span2.End()
 
-	benchmarks, err := h.db.ListRootBenchmarks(tagMap)
+	benchmarks, err := h.db.ListRootBenchmarks(ctx, tagMap)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
@@ -2369,7 +2398,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	}
 	span2.End()
 
-	controls, err := h.db.ListControlsBare()
+	controls, err := h.db.ListControlsBare(ctx)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -2385,22 +2414,23 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
 	}
 
-	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx.Request().Context(), h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt, false)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx, h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt, false)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
 	}
 	// tracer :
-	_, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span3 := tracer.Start(ctx, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_PopulateConnectors(loop)")
+	defer span3.End()
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
 	}
 
-	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, nil)
+	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
 		return err
@@ -2446,12 +2476,12 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
-			topFieldResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+			topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(), []bool{true}, topAccountCount)
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(), []bool{true}, topAccountCount)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -2466,7 +2496,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 				resConnectionIDs = append(resConnectionIDs, item.Key)
 			}
 			if len(resConnectionIDs) > 0 {
-				connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+				connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
 				if err != nil {
 					h.logger.Error("failed to get connections", zap.Error(err))
 					return err
@@ -2516,7 +2546,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		})
 	}
 	span3.End()
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // GetBenchmarkSummary godoc
@@ -2536,8 +2566,10 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
 //	@Success		200					{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
-func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
@@ -2545,7 +2577,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
 	topAccountCount := 3
-	if topAccountCountStr := ctx.QueryParam("topAccountCount"); topAccountCountStr != "" {
+	if topAccountCountStr := echoCtx.QueryParam("topAccountCount"); topAccountCountStr != "" {
 		count, err := strconv.ParseInt(topAccountCountStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid topAccountCount")
@@ -2553,22 +2585,23 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		topAccountCount = int(count)
 	}
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	timeAt := time.Now()
-	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
+	if timeAtStr := echoCtx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
 		if err != nil {
 			return err
 		}
 		timeAt = time.Unix(timeAtInt, 0)
 	}
-	benchmarkID := ctx.Param("benchmark_id")
+	benchmarkID := echoCtx.Param("benchmark_id")
 	// tracer :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
+	defer span1.End()
 
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -2588,7 +2621,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	controls, err := h.db.ListControlsByBenchmarkID(benchmarkID)
+	controls, err := h.db.ListControlsByBenchmarkID(ctx, benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -2599,20 +2632,20 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		controlsMap[strings.ToLower(control.ID)] = &control
 	}
 
-	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx.Request().Context(), h.logger, h.client,
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx, h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, resourceCollections,
 		timeAt, true)
 	if err != nil {
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
 	}
 
-	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx.Request().Context(), h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, nil)
+	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
 		return err
@@ -2672,7 +2705,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		}
 	}
 
-	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(ctx), benchmarkID)
+	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return err
@@ -2685,13 +2718,13 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx.Request().Context(), h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
@@ -2706,7 +2739,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
 		if len(resConnectionIDs) > 0 {
-			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), resConnectionIDs)
+			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
 			if err != nil {
 				h.logger.Error("failed to get connections", zap.Error(err))
 				return err
@@ -2755,10 +2788,14 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		LastJobStatus:            lastJobStatus,
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
-func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*db.Benchmark, controlSummaryMap map[string]api.ControlSummary, benchmarkId string) (*api.BenchmarkControlSummary, error) {
+func (h *HttpHandler) populateBenchmarkControlSummary(ctx context.Context, benchmarkMap map[string]*db.Benchmark, controlSummaryMap map[string]api.ControlSummary, benchmarkId string) (*api.BenchmarkControlSummary, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	benchmark, ok := benchmarkMap[benchmarkId]
 	if !ok {
 		return nil, errors.New("benchmark not found")
@@ -2777,7 +2814,7 @@ func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*d
 	}
 
 	for _, child := range benchmark.Children {
-		childResult, err := h.populateBenchmarkControlSummary(benchmarkMap, controlSummaryMap, child.ID)
+		childResult, err := h.populateBenchmarkControlSummary(ctx, benchmarkMap, controlSummaryMap, child.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -2809,17 +2846,19 @@ func (h *HttpHandler) populateBenchmarkControlSummary(benchmarkMap map[string]*d
 //	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Success	200				{object}	api.BenchmarkControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls [get]
-func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	benchmarkID := ctx.Param("benchmark_id")
+func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
+	benchmarkID := echoCtx.Param("benchmark_id")
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		h.logger.Error("failed to get connection IDs", zap.Error(err))
 		return err
 	}
 	timeAt := time.Now()
-	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
+	if timeAtStr := echoCtx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid timeAt")
@@ -2828,12 +2867,12 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 	}
 
 	controlsMap := make(map[string]api.Control)
-	err = h.populateControlsMap(benchmarkID, controlsMap, tagMap)
+	err = h.populateControlsMap(ctx, benchmarkID, controlsMap, tagMap)
 	if err != nil {
 		return err
 	}
 
-	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(ctx.Request().Context(), h.logger, h.client, benchmarkID, connectionIDs, timeAt)
+	controlResult, evaluatedAt, err := es.BenchmarkControlSummary(ctx, h.logger, h.client, benchmarkID, connectionIDs, timeAt)
 	if err != nil {
 		return err
 	}
@@ -2846,7 +2885,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 		queryIDs = append(queryIDs, control.Query.ID)
 	}
 
-	queries, err := h.db.GetQueriesIdAndConnector(queryIDs)
+	queries, err := h.db.GetQueriesIdAndConnector(ctx, queryIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch queries", zap.Error(err))
 		return err
@@ -2879,7 +2918,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 		}
 	}
 
-	allBenchmarks, err := h.db.ListBenchmarks()
+	allBenchmarks, err := h.db.ListBenchmarks(ctx)
 	if err != nil {
 		h.logger.Error("failed to get benchmarks", zap.Error(err))
 		return err
@@ -2890,13 +2929,13 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 		allBenchmarksMap[b.ID] = &b
 	}
 
-	benchmarkControlSummary, err := h.populateBenchmarkControlSummary(allBenchmarksMap, controlSummaryMap, benchmarkID)
+	benchmarkControlSummary, err := h.populateBenchmarkControlSummary(ctx, allBenchmarksMap, controlSummaryMap, benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to populate benchmark control summary", zap.Error(err))
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, benchmarkControlSummary)
+	return echoCtx.JSON(http.StatusOK, benchmarkControlSummary)
 }
 
 // GetBenchmarkControl godoc
@@ -2912,33 +2951,39 @@ func (h *HttpHandler) GetBenchmarkControlsTree(ctx echo.Context) error {
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success	200				{object}	api.ControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId} [get]
-func (h *HttpHandler) GetBenchmarkControl(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmark_id")
+func (h *HttpHandler) GetBenchmarkControl(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	benchmarkID := echoCtx.Param("benchmark_id")
 	if benchmarkID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmarkID cannot be empty")
 	}
-	controlID := ctx.Param("controlId")
+	controlID := echoCtx.Param("controlId")
 	if controlID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "controlID cannot be empty")
 	}
 
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		h.logger.Error("failed to get connection IDs", zap.Error(err))
 		return err
 	}
 
-	controlSummary, err := h.getControlSummary(ctx.Request().Context(), controlID, &benchmarkID, connectionIDs)
+	controlSummary, err := h.getControlSummary(ctx, controlID, &benchmarkID, connectionIDs)
 	if err != nil {
 		h.logger.Error("failed to get control summary", zap.Error(err))
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, controlSummary)
+	return echoCtx.JSON(http.StatusOK, controlSummary)
 }
 
-func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap map[string]api.Control, tags map[string][]string) error {
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
+func (h *HttpHandler) populateControlsMap(ctx context.Context, benchmarkID string, baseControlsMap map[string]api.Control, tags map[string][]string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
 		return err
 	}
@@ -2951,7 +2996,7 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 	}
 
 	for _, child := range benchmark.Children {
-		err := h.populateControlsMap(child.ID, baseControlsMap, tags)
+		err := h.populateControlsMap(ctx, child.ID, baseControlsMap, tags)
 		if err != nil {
 			return err
 		}
@@ -2964,7 +3009,7 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 		}
 	}
 	if len(missingControls) > 0 {
-		controls, err := h.db.GetControls(missingControls, tags)
+		controls, err := h.db.GetControls(ctx, missingControls, tags)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -2996,18 +3041,20 @@ func (h *HttpHandler) populateControlsMap(benchmarkID string, baseControlsMap ma
 //	@Param			endTime				query		int				false	"timestamp for end of the chart in epoch seconds"
 //	@Success		200					{object}	[]api.BenchmarkTrendDatapoint
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/trend [get]
-func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	endTime := time.Now()
-	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+	if endTimeStr := echoCtx.QueryParam("endTime"); endTimeStr != "" {
 		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return err
@@ -3015,19 +3062,20 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		endTime = time.Unix(endTimeInt, 0)
 	}
 	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+	if startTimeStr := echoCtx.QueryParam("startTime"); startTimeStr != "" {
 		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
 			return err
 		}
 		startTime = time.Unix(startTimeInt, 0)
 	}
-	benchmarkID := ctx.Param("benchmark_id")
+	benchmarkID := echoCtx.Param("benchmark_id")
 	// tracer :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark")
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark")
 	span1.SetName("new_GetBenchmark")
+	defer span1.End()
 
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -3048,13 +3096,13 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(ctx.Request().Context(), h.logger, h.client,
+	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(ctx, h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
 		return err
 	}
 
-	controls, err := h.db.ListControlsByBenchmarkID(benchmarkID)
+	controls, err := h.db.ListControlsByBenchmarkID(ctx, benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to get controls", zap.Error(err))
 		return err
@@ -3087,7 +3135,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return response[i].Timestamp.Before(response[j].Timestamp)
 	})
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // ListControlsSummary godoc
@@ -3103,16 +3151,18 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Success	200				{object}	[]api.ControlSummary
 //	@Router		/compliance/api/v1/controls/summary [get]
-func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		h.logger.Error("failed to get connection IDs", zap.Error(err))
 		return err
 	}
 
-	controlIds := httpserver.QueryArrayParam(ctx, "controlId")
-	controls, err := h.db.GetControls(controlIds, tagMap)
+	controlIds := httpserver.QueryArrayParam(echoCtx, "controlId")
+	controls, err := h.db.GetControls(ctx, controlIds, tagMap)
 	if err != nil {
 		h.logger.Error("failed to fetch controls", zap.Error(err))
 		return err
@@ -3122,7 +3172,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		controlIds = append(controlIds, control.ID)
 	}
 
-	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds(controlIds)
+	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds(ctx, controlIds)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
 		return err
@@ -3132,13 +3182,13 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		benchmarkIds = append(benchmarkIds, benchmark.ID)
 	}
 
-	controlResults, evaluatedAts, err := es.BenchmarksControlSummary(ctx.Request().Context(), h.logger, h.client, benchmarkIds, connectionIDs)
+	controlResults, evaluatedAts, err := es.BenchmarksControlSummary(ctx, h.logger, h.client, benchmarkIds, connectionIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch control results", zap.Error(err))
 		return err
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -3195,7 +3245,7 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 		return results[i].FailedResourcesCount > results[j].FailedResourcesCount
 	})
 
-	return ctx.JSON(http.StatusOK, results)
+	return echoCtx.JSON(http.StatusOK, results)
 }
 
 // GetControlSummary godoc
@@ -3210,23 +3260,25 @@ func (h *HttpHandler) ListControlsSummary(ctx echo.Context) error {
 //	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success	200				{object}	api.ControlSummary
 //	@Router		/compliance/api/v1/controls/{controlId}/summary [get]
-func (h *HttpHandler) GetControlSummary(ctx echo.Context) error {
-	controlID := ctx.Param("controlId")
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	controlID := echoCtx.Param("controlId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
 
-	controlSummary, err := h.getControlSummary(ctx.Request().Context(), controlID, nil, connectionIDs)
+	controlSummary, err := h.getControlSummary(ctx, controlID, nil, connectionIDs)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, controlSummary)
+	return echoCtx.JSON(http.StatusOK, controlSummary)
 }
 
 func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, benchmarkID *string, connectionIDs []string) (*api.ControlSummary, error) {
-	control, err := h.db.GetControl(controlID)
+	control, err := h.db.GetControl(ctx, controlID)
 	if err != nil {
 		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID), zap.Stringp("benchmarkID", benchmarkID))
 		return nil, err
@@ -3236,7 +3288,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 	}
 	apiControl := control.ToApi()
 	if benchmarkID != nil {
-		benchmark, err := h.db.GetBenchmarkBare(*benchmarkID)
+		benchmark, err := h.db.GetBenchmarkBare(ctx, *benchmarkID)
 		if err != nil {
 			h.logger.Error("failed to fetch benchmark", zap.Error(err), zap.Stringp("benchmarkID", benchmarkID))
 			return nil, err
@@ -3244,7 +3296,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 		apiControl.Connector = source.ParseTypes(benchmark.Connector)
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.InternalRole},
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -3265,7 +3317,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 		}
 	}
 
-	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
+	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds(ctx, []string{controlID})
 	if err != nil {
 		h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
 		return nil, err
@@ -3338,8 +3390,10 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 //	@Param		granularity		query		string		false	"granularity of the chart"	Enums(daily,monthly)	Default(daily)
 //	@Success	200				{object}	[]api.ControlTrendDatapoint
 //	@Router		/compliance/api/v1/controls/{controlId}/trend [get]
-func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) GetControlTrend(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
@@ -3347,7 +3401,7 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
 	endTime := time.Now()
-	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
+	if endTimeStr := echoCtx.QueryParam("timeAt"); endTimeStr != "" {
 		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return err
@@ -3355,7 +3409,7 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 		endTime = time.Unix(endTimeInt, 0)
 	}
 	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+	if startTimeStr := echoCtx.QueryParam("startTime"); startTimeStr != "" {
 		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
 			return err
@@ -3363,13 +3417,13 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 		startTime = time.Unix(startTimeInt, 0)
 	}
 
-	controlID := ctx.Param("controlId")
-	control, err := h.db.GetControl(controlID)
+	controlID := echoCtx.Param("controlId")
+	control, err := h.db.GetControl(ctx, controlID)
 	if err != nil {
 		h.logger.Error("failed to fetch control", zap.Error(err), zap.String("controlID", controlID))
 		return err
 	}
-	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds([]string{controlID})
+	benchmarks, err := h.db.ListDistinctRootBenchmarksFromControlIds(ctx, []string{controlID})
 	if err != nil {
 		h.logger.Error("failed to fetch benchmarks", zap.Error(err), zap.String("controlID", controlID))
 		return err
@@ -3380,11 +3434,11 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 	}
 
 	stepDuration := 24 * time.Hour
-	if granularity := ctx.QueryParam("granularity"); granularity == "monthly" {
+	if granularity := echoCtx.QueryParam("granularity"); granularity == "monthly" {
 		stepDuration = 30 * 24 * time.Hour
 	}
 
-	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx.Request().Context(), h.logger, h.client,
+	dataPoints, err := es.FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx, h.logger, h.client,
 		benchmarkIds, []string{controlID}, connectionIDs, startTime, endTime, stepDuration)
 	if err != nil {
 		h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", controlID))
@@ -3406,7 +3460,7 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 		return response[i].Timestamp < response[j].Timestamp
 	})
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // CreateBenchmarkAssignment godoc
@@ -3424,28 +3478,31 @@ func (h *HttpHandler) GetControlTrend(ctx echo.Context) error {
 //	@Param			resourceCollection	query		[]string	false	"Resource collection"
 //	@Success		200					{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [post]
-func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
 
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	if len(connectionIDs) > 0 && len(resourceCollections) > 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
 	}
 
-	autoAssignStr := ctx.QueryParam("auto_assign")
+	autoAssignStr := echoCtx.QueryParam("auto_assign")
 
-	benchmarkId := ctx.Param("benchmark_id")
+	benchmarkId := echoCtx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 	// trace :
-	outputS1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
+	defer span1.End()
 
-	benchmark, err := h.db.GetBenchmark(benchmarkId)
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
 
 	if err != nil {
 		span1.RecordError(err)
@@ -3465,6 +3522,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	// trace :
 	//outputS2, span2 := tracer.Start(outputS1, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	//span2.SetName("new_GetQuery(loop)")
+	//defer span2.End()
 
 	ca := benchmark.ToApi()
 	switch {
@@ -3473,16 +3531,16 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid auto_enable value")
 		}
-		err = h.db.SetBenchmarkAutoAssign(benchmarkId, autoAssign)
+		err = h.db.SetBenchmarkAutoAssign(ctx, benchmarkId, autoAssign)
 		if err != nil {
 			h.logger.Error("failed to set auto assign", zap.Error(err))
 			return err
 		}
-		return ctx.JSON(http.StatusOK, []api.BenchmarkAssignment{})
+		return echoCtx.JSON(http.StatusOK, []api.BenchmarkAssignment{})
 	case len(connectionIDs) > 0:
 		connections := make([]onboardApi.Connection, 0)
 		if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
-			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), ca.Connectors)
+			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), ca.Connectors)
 			if err != nil {
 				return err
 			}
@@ -3492,7 +3550,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 				}
 			}
 		} else {
-			connections, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+			connections, err = h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), connectionIDs)
 			if err != nil {
 				return err
 			}
@@ -3500,8 +3558,9 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 		result := make([]api.BenchmarkAssignment, 0, len(connections))
 		// trace :
-		output4, span4 := tracer.Start(outputS1, "new_AddBenchmarkAssignment(loop)", trace.WithSpanKind(trace.SpanKindServer))
+		ctx, span4 := tracer.Start(ctx, "new_AddBenchmarkAssignment(loop)", trace.WithSpanKind(trace.SpanKindServer))
 		span4.SetName("new_AddBenchmarkAssignment(loop)")
+		defer span4.End()
 
 		for _, src := range connections {
 			assignment := &db.BenchmarkAssignment{
@@ -3510,13 +3569,14 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 				AssignedAt:   time.Now(),
 			}
 			//trace :
-			_, span5 := tracer.Start(output4, "new_AddBenchmarkAssignment", trace.WithSpanKind(trace.SpanKindServer))
+			ctx, span5 := tracer.Start(ctx, "new_AddBenchmarkAssignment", trace.WithSpanKind(trace.SpanKindServer))
 			span5.SetName("new_AddBenchmarkAssignment")
 
-			if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
+			if err := h.db.AddBenchmarkAssignment(ctx, assignment); err != nil {
 				span5.RecordError(err)
 				span5.SetStatus(codes.Error, err.Error())
-				ctx.Logger().Errorf("add benchmark assignment: %v", err)
+				span5.End()
+				echoCtx.Logger().Errorf("add benchmark assignment: %v", err)
 				return err
 			}
 			span5.SetAttributes(
@@ -3533,7 +3593,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			}
 		}
 		span4.End()
-		return ctx.JSON(http.StatusOK, result)
+		return echoCtx.JSON(http.StatusOK, result)
 	case len(resourceCollections) > 0:
 		result := make([]api.BenchmarkAssignment, 0, len(resourceCollections))
 
@@ -3545,13 +3605,14 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 				AssignedAt:         time.Now(),
 			}
 			// trace :
-			_, span6 := tracer.Start(outputS1, "new_AddBenchmarkAssignment", trace.WithSpanKind(trace.SpanKindServer))
+			ctx, span6 := tracer.Start(ctx, "new_AddBenchmarkAssignment", trace.WithSpanKind(trace.SpanKindServer))
 			span6.SetName("new_AddBenchmarkAssignment")
 
-			if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
+			if err := h.db.AddBenchmarkAssignment(ctx, assignment); err != nil {
 				span6.RecordError(err)
 				span6.SetStatus(codes.Error, err.Error())
-				ctx.Logger().Errorf("add benchmark assignment: %v", err)
+				span6.End()
+				echoCtx.Logger().Errorf("add benchmark assignment: %v", err)
 				return err
 			}
 			span6.SetAttributes(
@@ -3565,7 +3626,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 				AssignedAt:           assignment.AssignedAt,
 			})
 		}
-		return ctx.JSON(http.StatusOK, result)
+		return echoCtx.JSON(http.StatusOK, result)
 	}
 	return echo.NewHTTPError(http.StatusBadRequest, "auto assign, connection or resource collection is required")
 }
@@ -3581,30 +3642,30 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 //	@Param			connection_id	path		string	true	"Connection ID"
 //	@Success		200				{object}	[]api.AssignedBenchmark
 //	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
-func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
-	connectionId := ctx.Param("connection_id")
+func (h *HttpHandler) ListAssignmentsByConnection(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectionId := echoCtx.Param("connection_id")
 	if connectionId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 
-	if err := httpserver.CheckAccessToConnectionID(ctx, connectionId); err != nil {
+	if err := httpserver.CheckAccessToConnectionID(echoCtx, connectionId); err != nil {
 		return err
 	}
 
-	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
-
-	_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
+	defer span1.End()
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsByConnectionId(connectionId)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByConnectionId(ctx, connectionId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
 		}
-		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
+		echoCtx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 		return err
 	}
 
@@ -3613,12 +3674,12 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	))
 	span1.End()
 
-	benchmarks, err := h.db.ListRootBenchmarks(nil)
+	benchmarks, err := h.db.ListRootBenchmarks(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionId)
+	src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(echoCtx), connectionId)
 	if err != nil {
 		return err
 	}
@@ -3646,7 +3707,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		result = append(result, res)
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	return echoCtx.JSON(http.StatusOK, result)
 }
 
 // ListAssignmentsByResourceCollection godoc
@@ -3660,19 +3721,19 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 //	@Param			resource_collection_id	path		string	true	"Resource collection ID"
 //	@Success		200						{object}	[]api.AssignedBenchmark
 //	@Router			/compliance/api/v1/assignments/resource_collection/{resource_collection_id} [get]
-func (h *HttpHandler) ListAssignmentsByResourceCollection(ctx echo.Context) error {
-	resourceCollectionId := ctx.Param("resource_collection_id")
+func (h *HttpHandler) ListAssignmentsByResourceCollection(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	resourceCollectionId := echoCtx.Param("resource_collection_id")
 	if resourceCollectionId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 
-	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
-
-	_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
+	defer span1.End()
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsByResourceCollectionId(resourceCollectionId)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByResourceCollectionId(ctx, resourceCollectionId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -3688,7 +3749,7 @@ func (h *HttpHandler) ListAssignmentsByResourceCollection(ctx echo.Context) erro
 	))
 	span1.End()
 
-	benchmarks, err := h.db.ListRootBenchmarks(nil)
+	benchmarks, err := h.db.ListRootBenchmarks(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -3708,7 +3769,7 @@ func (h *HttpHandler) ListAssignmentsByResourceCollection(ctx echo.Context) erro
 		result = append(result, res)
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	return echoCtx.JSON(http.StatusOK, result)
 }
 
 // ListAssignmentsByBenchmark godoc
@@ -3722,16 +3783,19 @@ func (h *HttpHandler) ListAssignmentsByResourceCollection(ctx echo.Context) erro
 //	@Param			benchmark_id	path		string	true	"Benchmark ID"
 //	@Success		200				{object}	api.BenchmarkAssignedEntities
 //	@Router			/compliance/api/v1/assignments/benchmark/{benchmark_id} [get]
-func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
-	benchmarkId := ctx.Param("benchmark_id")
+func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	benchmarkId := echoCtx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 	// trace :
-	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
+	defer span1.End()
 
-	benchmark, err := h.db.GetBenchmarkBare(benchmarkId)
+	benchmark, err := h.db.GetBenchmarkBare(ctx, benchmarkId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -3742,7 +3806,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	))
 	span1.End()
 
-	hctx := httpclient.FromEchoContext(ctx)
+	hctx := httpclient.FromEchoContext(echoCtx)
 
 	var assignedConnections []api.BenchmarkAssignedConnection
 
@@ -3772,10 +3836,11 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	}
 
 	// trace :
-	_, span3 := tracer.Start(outputS, "new_GetBenchmarkAssignmentsByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span3 := tracer.Start(ctx, "new_GetBenchmarkAssignmentsByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_GetBenchmarkAssignmentsByBenchmarkId")
+	defer span3.End()
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(ctx, benchmarkId)
 	if err != nil {
 		span3.RecordError(err)
 		span3.SetStatus(codes.Error, err.Error())
@@ -3807,19 +3872,19 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	resp := api.BenchmarkAssignedEntities{}
 
 	for _, item := range assignedConnections {
-		if httpserver.CheckAccessToConnectionID(ctx, item.ConnectionID) != nil {
+		if httpserver.CheckAccessToConnectionID(echoCtx, item.ConnectionID) != nil {
 			continue
 		}
 		resp.Connections = append(resp.Connections, item)
 	}
 
 	for idx, conn := range resp.Connections {
-		conn.ProviderConnectionID = demo.EncodeResponseData(ctx, conn.ProviderConnectionID)
-		conn.ProviderConnectionName = demo.EncodeResponseData(ctx, conn.ProviderConnectionName)
+		conn.ProviderConnectionID = demo.EncodeResponseData(echoCtx, conn.ProviderConnectionID)
+		conn.ProviderConnectionName = demo.EncodeResponseData(echoCtx, conn.ProviderConnectionName)
 		resp.Connections[idx] = conn
 	}
 
-	return ctx.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
 // DeleteBenchmarkAssignment godoc
@@ -3836,17 +3901,19 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Param			resourceCollection	query	[]string	false	"Resource Collection"
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [delete]
-func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	if len(connectionIDs) > 0 && len(resourceCollections) > 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
 	}
 
-	benchmarkId := ctx.Param("benchmark_id")
+	benchmarkId := echoCtx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
@@ -3855,12 +3922,14 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	case len(connectionIDs) > 0:
 		if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
 			//trace :
-			_, span1 := tracer.Start(ctx.Request().Context(), "new_DeleteBenchmarkAssignmentByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
+			ctx, span1 := tracer.Start(ctx, "new_DeleteBenchmarkAssignmentByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
 			span1.SetName("new_DeleteBenchmarkAssignmentByBenchmarkId")
+			defer span1.End()
 
-			if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId); err != nil {
+			if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(ctx, benchmarkId); err != nil {
 				span1.RecordError(err)
 				span1.SetStatus(codes.Error, err.Error())
+				span1.End()
 				h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
 				return err
 			}
@@ -3870,21 +3939,23 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			span1.End()
 		} else {
 			// tracer :
-			outputS5, span5 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentByIds(loop)", trace.WithSpanKind(trace.SpanKindServer))
+			ctx, span5 := tracer.Start(ctx, "new_GetBenchmarkAssignmentByIds(loop)", trace.WithSpanKind(trace.SpanKindServer))
 			span5.SetName("new_GetBenchmarkAssignmentByIds(loop)")
+			defer span5.End()
 
 			for _, connectionId := range connectionIDs {
 				// trace :
-				outputS3, span3 := tracer.Start(outputS5, "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+				ctx, span3 := tracer.Start(ctx, "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
 				span3.SetName("new_GetBenchmarkAssignmentByIds")
 
-				if _, err := h.db.GetBenchmarkAssignmentByIds(benchmarkId, utils.GetPointer(connectionId), nil); err != nil {
+				if _, err := h.db.GetBenchmarkAssignmentByIds(ctx, benchmarkId, utils.GetPointer(connectionId), nil); err != nil {
 					span3.RecordError(err)
 					span3.SetStatus(codes.Error, err.Error())
+					span3.End()
 					if errors.Is(err, gorm.ErrRecordNotFound) {
 						return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
 					}
-					ctx.Logger().Errorf("find benchmark assignment: %v", err)
+					echoCtx.Logger().Errorf("find benchmark assignment: %v", err)
 					return err
 				}
 				span3.AddEvent("information", trace.WithAttributes(
@@ -3893,13 +3964,14 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 				span3.End()
 
 				// trace :
-				_, span4 := tracer.Start(outputS3, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+				ctx, span4 := tracer.Start(ctx, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
 				span4.SetName("new_DeleteBenchmarkAssignmentByIds")
 
-				if err := h.db.DeleteBenchmarkAssignmentByIds(benchmarkId, utils.GetPointer(connectionId), nil); err != nil {
+				if err := h.db.DeleteBenchmarkAssignmentByIds(ctx, benchmarkId, utils.GetPointer(connectionId), nil); err != nil {
 					span4.RecordError(err)
 					span4.SetStatus(codes.Error, err.Error())
-					ctx.Logger().Errorf("delete benchmark assignment: %v", err)
+					span4.End()
+					echoCtx.Logger().Errorf("delete benchmark assignment: %v", err)
 					return err
 				}
 				span4.AddEvent("information", trace.WithAttributes(
@@ -3909,25 +3981,27 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			}
 			span5.End()
 		}
-		return ctx.NoContent(http.StatusOK)
+		return echoCtx.NoContent(http.StatusOK)
 	case len(resourceCollections) > 0:
 		// tracer :
-		outputS6, span6 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentByIds(loop)", trace.WithSpanKind(trace.SpanKindServer))
+		ctx, span6 := tracer.Start(ctx, "new_GetBenchmarkAssignmentByIds(loop)", trace.WithSpanKind(trace.SpanKindServer))
 		span6.SetName("new_GetBenchmarkAssignmentByIds(loop)")
+		defer span6.End()
 
 		for _, resourceCollection := range resourceCollections {
 			// trace :
 			resourceCollection := resourceCollection
-			outputS4, span4 := tracer.Start(outputS6, "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+			ctx, span4 := tracer.Start(ctx, "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
 			span4.SetName("new_GetBenchmarkAssignmentByIds")
 
-			if _, err := h.db.GetBenchmarkAssignmentByIds(benchmarkId, nil, &resourceCollection); err != nil {
+			if _, err := h.db.GetBenchmarkAssignmentByIds(ctx, benchmarkId, nil, &resourceCollection); err != nil {
 				span4.RecordError(err)
 				span4.SetStatus(codes.Error, err.Error())
+				span4.End()
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
 				}
-				ctx.Logger().Errorf("find benchmark assignment: %v", err)
+				echoCtx.Logger().Errorf("find benchmark assignment: %v", err)
 				return err
 			}
 			span4.AddEvent("information", trace.WithAttributes(
@@ -3936,13 +4010,14 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			span4.End()
 
 			// trace :
-			_, span5 := tracer.Start(outputS4, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+			ctx, span5 := tracer.Start(ctx, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
 			span5.SetName("new_DeleteBenchmarkAssignmentByIds")
 
-			if err := h.db.DeleteBenchmarkAssignmentByIds(benchmarkId, nil, &resourceCollection); err != nil {
+			if err := h.db.DeleteBenchmarkAssignmentByIds(ctx, benchmarkId, nil, &resourceCollection); err != nil {
 				span5.RecordError(err)
 				span5.SetStatus(codes.Error, err.Error())
-				ctx.Logger().Errorf("delete benchmark assignment: %v", err)
+				span5.End()
+				echoCtx.Logger().Errorf("delete benchmark assignment: %v", err)
 				return err
 			}
 			span5.AddEvent("information", trace.WithAttributes(
@@ -3951,19 +4026,22 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			span5.End()
 		}
 		span6.End()
-		return ctx.NoContent(http.StatusOK)
+		return echoCtx.NoContent(http.StatusOK)
 	}
 	return echo.NewHTTPError(http.StatusBadRequest, "connection or resource collection is required")
 }
 
-func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
+func (h *HttpHandler) ListBenchmarks(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	var response []api.Benchmark
 	// trace :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListRootBenchmarks")
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	defer span1.End()
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
 
-	benchmarks, err := h.db.ListRootBenchmarks(tagMap)
+	benchmarks, err := h.db.ListRootBenchmarks(ctx, tagMap)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -3972,20 +4050,23 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	span1.End()
 
 	// tracer :
-	_, span2 := tracer.Start(output1, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span2 := tracer.Start(ctx, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_PopulateConnectors(loop)")
+	defer span2.End()
 
 	for _, b := range benchmarks {
 		response = append(response, b.ToApi())
 	}
 	span2.End()
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
-func (h *HttpHandler) ListAllBenchmarks(ctx echo.Context) error {
+func (h *HttpHandler) ListAllBenchmarks(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	isBare := true
-	if bare := ctx.QueryParam("bare"); bare != "" {
+	if bare := echoCtx.QueryParam("bare"); bare != "" {
 		var err error
 		isBare, err = strconv.ParseBool(bare)
 		if err != nil {
@@ -3995,14 +4076,15 @@ func (h *HttpHandler) ListAllBenchmarks(ctx echo.Context) error {
 
 	var response []api.Benchmark
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListBenchmarks")
+	defer span1.End()
 	var benchmarks []db.Benchmark
 	var err error
 	if isBare {
-		benchmarks, err = h.db.ListBenchmarksBare()
+		benchmarks, err = h.db.ListBenchmarksBare(ctx)
 	} else {
-		benchmarks, err = h.db.ListBenchmarks()
+		benchmarks, err = h.db.ListBenchmarks(ctx)
 	}
 	if err != nil {
 		span1.RecordError(err)
@@ -4015,16 +4097,19 @@ func (h *HttpHandler) ListAllBenchmarks(ctx echo.Context) error {
 		response = append(response, b.ToApi())
 	}
 
-	return ctx.JSON(http.StatusOK, response)
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
-func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
-	benchmarkId := ctx.Param("benchmark_id")
-	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmark")
+func (h *HttpHandler) GetBenchmark(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	benchmark, err := h.db.GetBenchmark(benchmarkId)
+	benchmarkId := echoCtx.Param("benchmark_id")
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmark")
+	defer span1.End()
+
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4039,15 +4124,16 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	return ctx.JSON(http.StatusOK, benchmark.ToApi())
+	return echoCtx.JSON(http.StatusOK, benchmark.ToApi())
 }
 
 func (h *HttpHandler) getBenchmarkControls(ctx context.Context, benchmarkID string) ([]db.Control, error) {
 	//trace :
-	outputS, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
+	defer span1.End()
 
-	b, err := h.db.GetBenchmark(benchmarkID)
+	b, err := h.db.GetBenchmark(ctx, benchmarkID)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4067,30 +4153,34 @@ func (h *HttpHandler) getBenchmarkControls(ctx context.Context, benchmarkID stri
 		controlIDs = append(controlIDs, p.ID)
 	}
 	//trace :
-	_, span2 := tracer.Start(outputS, "new_GetControls", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span2 := tracer.Start(ctx, "new_GetControls", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetControls")
+	defer span2.End()
 
-	controls, err := h.db.GetControls(controlIDs, nil)
+	controls, err := h.db.GetControls(ctx, controlIDs, nil)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
+		span2.End()
 		return nil, err
 	}
 	span2.End()
 
 	//tracer :
-	output3, span3 := tracer.Start(outputS, "new_getBenchmarkControls(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span3 := tracer.Start(ctx, "new_getBenchmarkControls(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_getBenchmarkControls(loop)")
+	defer span3.End()
 
 	for _, child := range b.Children {
 		// tracer :
-		_, span4 := tracer.Start(output3, "new_getBenchmarkControls", trace.WithSpanKind(trace.SpanKindServer))
+		ctx, span4 := tracer.Start(ctx, "new_getBenchmarkControls", trace.WithSpanKind(trace.SpanKindServer))
 		span4.SetName("new_getBenchmarkControls")
 
 		childControls, err := h.getBenchmarkControls(ctx, child.ID)
 		if err != nil {
 			span4.RecordError(err)
 			span4.SetStatus(codes.Error, err.Error())
+			span4.End()
 			return nil, err
 		}
 		span4.SetAttributes(
@@ -4105,13 +4195,16 @@ func (h *HttpHandler) getBenchmarkControls(ctx context.Context, benchmarkID stri
 	return controls, nil
 }
 
-func (h *HttpHandler) GetControl(ctx echo.Context) error {
-	controlId := ctx.Param("control_id")
-	// trace :
-	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetControl", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetControl")
+func (h *HttpHandler) GetControl(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	control, err := h.db.GetControl(controlId)
+	controlId := echoCtx.Param("control_id")
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_GetControl", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetControl")
+	defer span1.End()
+
+	control, err := h.db.GetControl(ctx, controlId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4129,10 +4222,11 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 
 	pa := control.ToApi()
 	// trace :
-	outputS2, span2 := tracer.Start(outputS, "new_PopulateConnector", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span2 := tracer.Start(ctx, "new_PopulateConnector", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_PopulateConnector")
+	defer span2.End()
 
-	err = control.PopulateConnector(outputS2, h.db, &pa)
+	err = control.PopulateConnector(ctx, h.db, &pa)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
@@ -4140,14 +4234,16 @@ func (h *HttpHandler) GetControl(ctx echo.Context) error {
 		return err
 	}
 	span2.End()
-	return ctx.JSON(http.StatusOK, pa)
+	return echoCtx.JSON(http.StatusOK, pa)
 }
 
-func (h *HttpHandler) ListControls(ctx echo.Context) error {
-	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+func (h *HttpHandler) ListControls(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	controls, err := h.db.ListControls(controlIDs, tagMap)
+	controlIDs := httpserver.QueryArrayParam(echoCtx, "control_id")
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
+
+	controls, err := h.db.ListControls(ctx, controlIDs, tagMap)
 	if err != nil {
 		return err
 	}
@@ -4157,11 +4253,13 @@ func (h *HttpHandler) ListControls(ctx echo.Context) error {
 		pa := control.ToApi()
 		resp = append(resp, pa)
 	}
-	return ctx.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
-func (h *HttpHandler) ListQueries(ctx echo.Context) error {
-	queries, err := h.db.ListQueries()
+func (h *HttpHandler) ListQueries(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	queries, err := h.db.ListQueries(ctx)
 	if err != nil {
 		return err
 	}
@@ -4171,16 +4269,19 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		pa := query.ToApi()
 		resp = append(resp, pa)
 	}
-	return ctx.JSON(http.StatusOK, resp)
+	return echoCtx.JSON(http.StatusOK, resp)
 }
 
-func (h *HttpHandler) GetQuery(ctx echo.Context) error {
-	queryID := ctx.Param("query_id")
-	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetQuery")
+func (h *HttpHandler) GetQuery(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	q, err := h.db.GetQuery(queryID)
+	queryID := echoCtx.Param("query_id")
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetQuery")
+	defer span1.End()
+
+	q, err := h.db.GetQuery(ctx, queryID)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4195,7 +4296,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "query not found")
 	}
 
-	return ctx.JSON(http.StatusOK, q.ToApi())
+	return echoCtx.JSON(http.StatusOK, q.ToApi())
 }
 
 // SyncQueries godoc
@@ -4211,8 +4312,10 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200
 //	@Router			/compliance/api/v1/queries/sync [get]
-func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
-	enabled, err := h.metadataClient.GetConfigMetadata(httpclient.FromEchoContext(ctx), models.MetadataKeyCustomizationEnabled)
+func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	enabled, err := h.metadataClient.GetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.MetadataKeyCustomizationEnabled)
 	if err != nil {
 		h.logger.Error("get config metadata", zap.Error(err))
 		return err
@@ -4222,7 +4325,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "customization is not allowed")
 	}
 
-	configzGitURL := ctx.QueryParam("configzGitURL")
+	configzGitURL := echoCtx.QueryParam("configzGitURL")
 	if configzGitURL != "" {
 		// validate url
 		_, err := url.ParseRequestURI(configzGitURL)
@@ -4230,7 +4333,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid url")
 		}
 
-		err = h.metadataClient.SetConfigMetadata(httpclient.FromEchoContext(ctx), models.MetadataKeyAnalyticsGitURL, configzGitURL)
+		err = h.metadataClient.SetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.MetadataKeyAnalyticsGitURL, configzGitURL)
 		if err != nil {
 			h.logger.Error("set config metadata", zap.Error(err))
 			return err
@@ -4243,7 +4346,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	}
 
 	var migratorJob batchv1.Job
-	err = h.kubeClient.Get(ctx.Request().Context(), k8sclient.ObjectKey{
+	err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
 		Namespace: currentNamespace,
 		Name:      "migrator-job",
 	}, &migratorJob)
@@ -4251,13 +4354,13 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.kubeClient.Delete(ctx.Request().Context(), &migratorJob)
+	err = h.kubeClient.Delete(ctx, &migratorJob)
 	if err != nil {
 		return err
 	}
 
 	for {
-		err = h.kubeClient.Get(ctx.Request().Context(), k8sclient.ObjectKey{
+		err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
 			Namespace: currentNamespace,
 			Name:      "migrator-job",
 		}, &migratorJob)
@@ -4283,7 +4386,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	migratorJob.Status = batchv1.JobStatus{}
 
-	err = h.kubeClient.Create(ctx.Request().Context(), &migratorJob)
+	err = h.kubeClient.Create(ctx, &migratorJob)
 	if err != nil {
 		return err
 	}
@@ -4293,7 +4396,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 	//	h.logger.Error("publish sync jobs", zap.Error(err))
 	//	return err
 	//}
-	return ctx.JSON(http.StatusOK, struct{}{})
+	return echoCtx.JSON(http.StatusOK, struct{}{})
 }
 
 // ListComplianceTags godoc
@@ -4306,21 +4409,23 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200	{object}	map[string][]string
 //	@Router			/compliance/api/v1/metadata/tag/compliance [get]
-func (h *HttpHandler) ListComplianceTags(ctx echo.Context) error {
-	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListComplianceTagKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListComplianceTagKeysWithPossibleValues")
+func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	tags, err := h.db.ListComplianceTagKeysWithPossibleValues()
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_ListComplianceTagKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListComplianceTagKeysWithPossibleValues")
+	defer span1.End()
+
+	tags, err := h.db.ListComplianceTagKeysWithPossibleValues(ctx)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span1.End()
 
 	tags = model.TrimPrivateTags(tags)
-	return ctx.JSON(http.StatusOK, tags)
+	return echoCtx.JSON(http.StatusOK, tags)
 }
 
 // ListInsightTags godoc
@@ -4333,31 +4438,36 @@ func (h *HttpHandler) ListComplianceTags(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200	{object}	map[string][]string
 //	@Router			/compliance/api/v1/metadata/tag/insight [get]
-func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
-	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightTagKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListInsightTagKeysWithPossibleValues")
+func (h *HttpHandler) ListInsightTags(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
 
-	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_ListInsightTagKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListInsightTagKeysWithPossibleValues")
+	defer span1.End()
+
+	tags, err := h.db.ListInsightTagKeysWithPossibleValues(ctx)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span1.End()
 
 	tags = model.TrimPrivateTags(tags)
-	return ctx.JSON(http.StatusOK, tags)
+	return echoCtx.JSON(http.StatusOK, tags)
 }
 
-func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+func (h *HttpHandler) ListInsightsMetadata(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
 	enabled := true
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightsWithFilters", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListInsightsWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListInsightsWithFilters")
+	defer span1.End()
 
-	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, nil)
+	insightRows, err := h.db.ListInsightsWithFilters(ctx, nil, connectors, &enabled, nil)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4369,7 +4479,7 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 	for _, insightRow := range insightRows {
 		result = append(result, insightRow.ToApi())
 	}
-	return ctx.JSON(200, result)
+	return echoCtx.JSON(200, result)
 }
 
 // GetInsightMetadata godoc
@@ -4382,16 +4492,19 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 //	@Param			insightId	path		string	true	"Insight ID"
 //	@Success		200			{object}	api.Insight
 //	@Router			/compliance/api/v1/metadata/insight/{insightId} [get]
-func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
-	id, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+func (h *HttpHandler) GetInsightMetadata(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	id, err := strconv.ParseUint(echoCtx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetInsight")
+	defer span1.End()
 
-	insightObj, err := h.db.GetInsight(uint(id))
+	insightObj, err := h.db.GetInsight(ctx, uint(id))
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4407,7 +4520,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 
 	result := insightObj.ToApi()
 
-	return ctx.JSON(200, result)
+	return echoCtx.JSON(200, result)
 }
 
 // ListInsights godoc
@@ -4427,36 +4540,39 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Param			endTime				query		int				false	"unix seconds for the end time of the trend"
 //	@Success		200					{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
-func (h *HttpHandler) ListInsights(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) ListInsights(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	endTime := time.Now()
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if echoCtx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		endTime = time.Unix(t, 0)
 	}
 	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if echoCtx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		startTime = time.Unix(t, 0)
 	}
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightsWithFilters", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListInsightsWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListInsightsWithFilters")
+	defer span1.End()
 
 	enabled := true
-	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, tagMap)
+	insightRows, err := h.db.ListInsightsWithFilters(ctx, nil, connectors, &enabled, tagMap)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4469,12 +4585,12 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		insightIDsList = append(insightIDsList, insightRow.ID)
 	}
 
-	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, resourceCollections, insightIDsList, &endTime)
+	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(echoCtx), connectors, connectionIDs, resourceCollections, insightIDsList, &endTime)
 	if err != nil {
 		return err
 	}
 
-	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, resourceCollections, insightIDsList, &startTime)
+	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(echoCtx), connectors, connectionIDs, resourceCollections, insightIDsList, &startTime)
 	if err != nil {
 		h.logger.Warn("failed to get old insight results", zap.Error(err))
 		oldInsightIdToResults = make(map[uint][]insight.InsightResource)
@@ -4510,22 +4626,24 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		}
 		result = append(result, apiRes)
 	}
-	return ctx.JSON(200, result)
+	return echoCtx.JSON(200, result)
 }
 
-func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs, resourceCollections []string, startTime, endTime time.Time) (*api.Insight, error) {
-	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, resourceCollections, insightRow.ID, &endTime)
+func (h *HttpHandler) getInsightApiRes(echoCtx echo.Context, insightRow *db.Insight, connectionIDs, resourceCollections []string, startTime, endTime time.Time) (*api.Insight, error) {
+	ctx := echoCtx.Request().Context()
+
+	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(echoCtx), connectionIDs, resourceCollections, insightRow.ID, &endTime)
 	if err != nil {
 		return nil, err
 	}
 
-	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, resourceCollections, insightRow.ID, &startTime)
+	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(echoCtx), connectionIDs, resourceCollections, insightRow.ID, &startTime)
 	if err != nil {
 		h.logger.Warn("failed to get old insight results", zap.Error(err))
 		oldInsightResults = make([]insight.InsightResource, 0)
 	}
 
-	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), []source.Type{insightRow.Connector})
+	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), []source.Type{insightRow.Connector})
 	if err != nil {
 		return nil, err
 	}
@@ -4550,7 +4668,7 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 		}
 
 		bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
-		getObjectOutput, err := h.s3Client.GetObject(ctx.Request().Context(), &s3.GetObjectInput{
+		getObjectOutput, err := h.s3Client.GetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		})
@@ -4659,38 +4777,41 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 //	@Param			endTime				query		int			false	"unix seconds for the end time of the trend"
 //	@Success		200					{object}	api.Insight
 //	@Router			/compliance/api/v1/insight/{insightId} [get]
-func (h *HttpHandler) GetInsight(ctx echo.Context) error {
-	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+func (h *HttpHandler) GetInsight(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	insightId, err := strconv.ParseUint(echoCtx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 
 	endTime := time.Now()
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if echoCtx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		endTime = time.Unix(t, 0)
 	}
 	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if echoCtx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		startTime = time.Unix(t, 0)
 	}
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetInsight")
+	defer span1.End()
 
-	insightRow, err := h.db.GetInsight(uint(insightId))
+	insightRow, err := h.db.GetInsight(ctx, uint(insightId))
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4698,16 +4819,18 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 	span1.End()
 
-	apiRes, err := h.getInsightApiRes(ctx, insightRow, connectionIDs, resourceCollections, startTime, endTime)
+	apiRes, err := h.getInsightApiRes(echoCtx, insightRow, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(200, apiRes)
+	return echoCtx.JSON(200, apiRes)
 }
 
-func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs, resourceCollections []string, startTime, endTime *time.Time, datapointCount *int) ([]api.InsightTrendDatapoint, error) {
-	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, resourceCollections, insightRow.ID, startTime, endTime)
+func (h *HttpHandler) getInsightTrendApiRes(echoCtx echo.Context, insightRow *db.Insight, connectionIDs, resourceCollections []string, startTime, endTime *time.Time, datapointCount *int) ([]api.InsightTrendDatapoint, error) {
+	_ = echoCtx.Request().Context()
+
+	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(echoCtx), connectionIDs, resourceCollections, insightRow.ID, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
@@ -4754,19 +4877,21 @@ func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Ins
 //	@Param			datapointCount		query		int			false	"number of datapoints to return"
 //	@Success		200					{object}	[]api.InsightTrendDatapoint
 //	@Router			/compliance/api/v1/insight/{insightId}/trend [get]
-func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
-	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
+func (h *HttpHandler) GetInsightTrend(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	insightId, err := strconv.ParseUint(echoCtx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	var startTime *time.Time
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if echoCtx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
@@ -4774,8 +4899,8 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		startTime = &tt
 	}
 	var endTime *time.Time
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if echoCtx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
@@ -4783,8 +4908,8 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		endTime = &tt
 	}
 	var datapointCount *int
-	if ctx.QueryParam("datapointCount") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
+	if echoCtx.QueryParam("datapointCount") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("datapointCount"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
 		}
@@ -4792,10 +4917,11 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		datapointCount = &tt
 	}
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GetInsight", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetInsight")
+	defer span1.End()
 
-	insightRow, err := h.db.GetInsight(uint(insightId))
+	insightRow, err := h.db.GetInsight(ctx, uint(insightId))
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4806,12 +4932,12 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	))
 	span1.End()
 
-	result, err := h.getInsightTrendApiRes(ctx, insightRow, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
+	result, err := h.getInsightTrendApiRes(echoCtx, insightRow, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(200, result)
+	return echoCtx.JSON(200, result)
 }
 
 // ListInsightGroups godoc
@@ -4832,26 +4958,28 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //	@Param			endTime				query		int				false	"unix seconds for the end time of the trend"
 //	@Success		200					{object}	[]api.InsightGroup
 //	@Router			/compliance/api/v1/insight/group [get]
-func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+func (h *HttpHandler) ListInsightGroups(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(echoCtx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(echoCtx, "connector"))
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 
 	endTime := time.Now()
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if echoCtx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		endTime = time.Unix(t, 0)
 	}
 	startTime := endTime.AddDate(0, 0, -7)
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if echoCtx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
@@ -4859,10 +4987,11 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	}
 
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListInsightGroups")
+	defer span1.End()
 
-	insightGroupRows, err := h.db.ListInsightGroups(connectors, tagMap)
+	insightGroupRows, err := h.db.ListInsightGroups(ctx, connectors, tagMap)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -4871,7 +5000,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	span1.End()
 
 	if len(insightGroupRows) == 0 {
-		return ctx.JSON(200, []api.InsightGroup{})
+		return echoCtx.JSON(200, []api.InsightGroup{})
 	}
 
 	insightIDMap := make(map[uint]bool)
@@ -4885,12 +5014,12 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		insightIDsList = append(insightIDsList, insightID)
 	}
 
-	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, resourceCollections, insightIDsList, &endTime)
+	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(echoCtx), nil, connectionIDs, resourceCollections, insightIDsList, &endTime)
 	if err != nil {
 		return err
 	}
 
-	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, resourceCollections, insightIDsList, &startTime)
+	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(echoCtx), nil, connectionIDs, resourceCollections, insightIDsList, &startTime)
 	if err != nil {
 		h.logger.Warn("failed to get old insight results", zap.Error(err))
 		oldInsightIdToResults = make(map[uint][]insight.InsightResource)
@@ -4941,7 +5070,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		result = append(result, apiRes)
 	}
 
-	return ctx.JSON(200, result)
+	return echoCtx.JSON(200, result)
 }
 
 // GetInsightGroup godoc
@@ -4960,37 +5089,40 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 //	@Param			endTime				query		int			false	"unix seconds for the end time of the trend"
 //	@Success		200					{object}	api.InsightGroup
 //	@Router			/compliance/api/v1/insight/group/{insightGroupId} [get]
-func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
-	insightGroupId, err := strconv.ParseUint(ctx.Param("insightGroupId"), 10, 64)
+func (h *HttpHandler) GetInsightGroup(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	insightGroupId, err := strconv.ParseUint(echoCtx.Param("insightGroupId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	endTime := time.Now()
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if echoCtx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		endTime = time.Unix(t, 0)
 	}
 	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if echoCtx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 		startTime = time.Unix(t, 0)
 	}
 
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetInsightGroup")
+	defer span1.End()
 
-	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
+	insightGroupRow, err := h.db.GetInsightGroup(ctx, uint(insightGroupId))
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -5002,7 +5134,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	apiRes.Insights = make([]api.Insight, 0, len(insightGroupRow.Insights))
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
-		insightApiRes, err := h.getInsightApiRes(ctx, &localInsightRow, connectionIDs, resourceCollections, startTime, endTime)
+		insightApiRes, err := h.getInsightApiRes(echoCtx, &localInsightRow, connectionIDs, resourceCollections, startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get insight api res", zap.Error(err),
 				zap.Uint("insight id", insightRow.ID), zap.Uint("insight group id", uint(insightGroupId)))
@@ -5020,7 +5152,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 		apiRes.OldTotalResultValue = nil
 	}
 
-	return ctx.JSON(200, apiRes)
+	return echoCtx.JSON(200, apiRes)
 }
 
 // GetInsightGroupTrend godoc
@@ -5040,19 +5172,21 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 //	@Param			datapointCount		query		int			false	"number of datapoints to return"
 //	@Success		200					{object}	[]api.InsightTrendDatapoint
 //	@Router			/compliance/api/v1/insight/group/{insightGroupId}/trend [get]
-func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
-	insightGroupId, err := strconv.ParseUint(ctx.Param("insightGroupId"), 10, 64)
+func (h *HttpHandler) GetInsightGroupTrend(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	insightGroupId, err := strconv.ParseUint(echoCtx.Param("insightGroupId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(echoCtx, "resourceCollection")
 	var startTime *time.Time
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+	if echoCtx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
@@ -5060,8 +5194,8 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 		startTime = &tt
 	}
 	var endTime *time.Time
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+	if echoCtx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
@@ -5069,8 +5203,8 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 		endTime = &tt
 	}
 	var datapointCount *int
-	if ctx.QueryParam("datapointCount") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
+	if echoCtx.QueryParam("datapointCount") != "" {
+		t, err := strconv.ParseInt(echoCtx.QueryParam("datapointCount"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
 		}
@@ -5078,10 +5212,11 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 		datapointCount = &tt
 	}
 
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetInsightGroups")
+	defer span1.End()
 
-	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
+	insightGroupRow, err := h.db.GetInsightGroup(ctx, uint(insightGroupId))
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -5092,7 +5227,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	dateToResultMap := make(map[int]api.InsightTrendDatapoint)
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
-		insightTrendApiRes, err := h.getInsightTrendApiRes(ctx, &localInsightRow, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
+		insightTrendApiRes, err := h.getInsightTrendApiRes(echoCtx, &localInsightRow, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
 		if err != nil {
 			h.logger.Error("failed to get insight trend api res", zap.Error(err),
 				zap.Uint("insight id", insightRow.ID), zap.Uint("insight group id", uint(insightGroupId)))
@@ -5116,7 +5251,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 		return result[i].Timestamp < result[j].Timestamp
 	})
 
-	return ctx.JSON(200, result)
+	return echoCtx.JSON(200, result)
 }
 
 // GenerateSupersetDashboardToken godoc
@@ -5128,18 +5263,20 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200	{object}	api.GenerateSupersetDashboardTokenResponse
 //	@Router			/compliance/api/v1/superset/dashboards/token [post]
-func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
+func (h *HttpHandler) GenerateSupersetDashboardToken(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
 	fmt.Println("A")
 	ss := superset.New(h.conf.SuperSet.BaseURL, h.conf.SuperSet.Username, h.conf.SuperSet.Password)
-	tracerCtx, span1 := tracer.Start(ctx.Request().Context(), "new_GenerateSupersetDashboardToken", trace.WithSpanKind(trace.SpanKindServer))
+	ctx, span1 := tracer.Start(ctx, "new_GenerateSupersetDashboardToken", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GenerateSupersetDashboardToken")
 	defer span1.End()
 
 	fmt.Println("B")
-	span2 := trace.SpanFromContext(tracerCtx)
+	span2 := trace.SpanFromContext(ctx)
 	span2.SetName("superset_login")
 	fmt.Println("C")
-	token, err := ss.Login()
+	token, err := ss.Login(ctx)
 	fmt.Println("D")
 	span2.End()
 	if err != nil {
@@ -5149,19 +5286,19 @@ func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 	fmt.Println("E")
 
 	var respDashboards []api.SupersetDashboard
-	span2 = trace.SpanFromContext(tracerCtx)
+	span2 = trace.SpanFromContext(ctx)
 	span2.SetName("superset_list_dashboards")
-	dashboards, err := ss.ListDashboards(token)
+	dashboards, err := ss.ListDashboards(ctx, token)
 	span2.End()
 	if err != nil {
 		h.logger.Error("failed to list dashboards", zap.Error(err))
 		return err
 	}
 	for _, d := range dashboards {
-		span2 = trace.SpanFromContext(tracerCtx)
+		span2 = trace.SpanFromContext(ctx)
 		span2.SetName("superset_get_embedded_uuid")
 		span2.SetAttributes(attribute.Int("dashboard_id", d.Id))
-		uid, err := ss.GetEmbeddedUUID(token, d.Id)
+		uid, err := ss.GetEmbeddedUUID(ctx, token, d.Id)
 		span2.End()
 		if err != nil {
 			h.logger.Error("failed to get embedded uuid", zap.Error(err))
@@ -5181,9 +5318,9 @@ func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 			Id:   d.ID,
 		})
 	}
-	span2 = trace.SpanFromContext(tracerCtx)
+	span2 = trace.SpanFromContext(ctx)
 	span2.SetName("superset_guest_token")
-	guestToken, err := ss.GuestToken(token, superset.GuestTokenRequest{
+	guestToken, err := ss.GuestToken(ctx, token, superset.GuestTokenRequest{
 		User: superset.GuestUser{
 			Username:  h.conf.SuperSet.GuestUsername,
 			FirstName: h.conf.SuperSet.GuestFirstName,
@@ -5198,7 +5335,7 @@ func (h *HttpHandler) GenerateSupersetDashboardToken(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.GenerateSupersetDashboardTokenResponse{
+	return echoCtx.JSON(http.StatusOK, api.GenerateSupersetDashboardTokenResponse{
 		Token:      guestToken,
 		Dashboards: respDashboards,
 	})

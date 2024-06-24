@@ -24,7 +24,7 @@ func NewWorkspaceClient(baseURL string) WorkspaceServiceClient {
 func (s *workspaceClient) GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error) {
 	url := fmt.Sprintf("%s/api/v1/workspaces/byid/%s", s.baseURL, workspaceID)
 	var response api.Workspace
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.Workspace{}, err
 	}
 	return response, nil
@@ -34,7 +34,7 @@ func (s *workspaceClient) ListWorkspaces(ctx *httpclient.Context) ([]api.Workspa
 	url := fmt.Sprintf("%s/api/v1/workspaces", s.baseURL)
 
 	var response []api.WorkspaceResponse
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return response, nil

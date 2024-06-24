@@ -45,7 +45,7 @@ func (s *complianceClient) ListAssignmentsByBenchmark(ctx *httpclient.Context, b
 	url := fmt.Sprintf("%s/api/v1/assignments/benchmark/%s", s.baseURL, benchmarkID)
 
 	var response compliance.BenchmarkAssignedEntities
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -58,7 +58,7 @@ func (s *complianceClient) GetBenchmark(ctx *httpclient.Context, benchmarkID str
 	url := fmt.Sprintf("%s/api/v1/benchmarks/%s", s.baseURL, benchmarkID)
 
 	var response compliance.Benchmark
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -93,7 +93,7 @@ func (s *complianceClient) GetBenchmarkSummary(ctx *httpclient.Context, benchmar
 	}
 
 	var response compliance.BenchmarkEvaluationSummary
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -139,7 +139,7 @@ func (s *complianceClient) GetBenchmarkTrend(ctx *httpclient.Context, benchmarkI
 	}
 
 	var response []compliance.BenchmarkTrendDatapoint
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -174,7 +174,7 @@ func (s *complianceClient) GetBenchmarkControls(ctx *httpclient.Context, benchma
 	}
 
 	var response compliance.BenchmarkControlSummary
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -187,7 +187,7 @@ func (s *complianceClient) GetControl(ctx *httpclient.Context, controlID string)
 	url := fmt.Sprintf("%s/api/v1/benchmarks/controls/%s", s.baseURL, controlID)
 
 	var response compliance.Control
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -233,7 +233,7 @@ func (s *complianceClient) ListControl(ctx *httpclient.Context, controlIDs []str
 	}
 
 	var response []compliance.Control
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -246,7 +246,7 @@ func (s *complianceClient) ListQueries(ctx *httpclient.Context) ([]compliance.Qu
 	url := fmt.Sprintf("%s/api/v1/benchmarks/queries", s.baseURL)
 
 	var response []compliance.Query
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -259,7 +259,7 @@ func (s *complianceClient) GetQuery(ctx *httpclient.Context, queryID string) (*c
 	url := fmt.Sprintf("%s/api/v1/queries/%s", s.baseURL, queryID)
 
 	var response compliance.Query
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -284,7 +284,7 @@ func (s *complianceClient) ListInsightsMetadata(ctx *httpclient.Context, connect
 	}
 
 	var insights []compliance.Insight
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -302,7 +302,7 @@ func (s *complianceClient) GetFindings(ctx *httpclient.Context, req compliance.G
 	}
 
 	var response compliance.GetFindingsResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return compliance.GetFindingsResponse{}, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -331,7 +331,7 @@ func (s *complianceClient) CountFindings(ctx *httpclient.Context, conformanceSta
 	}
 
 	var response compliance.CountFindingsResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -377,7 +377,7 @@ func (s *complianceClient) GetInsight(ctx *httpclient.Context, insightId string,
 	}
 
 	var insight compliance.Insight
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return compliance.Insight{}, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -412,7 +412,7 @@ func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context, tags map[stri
 	}
 
 	var benchmarks []compliance.Benchmark
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -436,7 +436,7 @@ func (s *complianceClient) ListAllBenchmarks(ctx *httpclient.Context, isBare boo
 	}
 
 	var benchmarks []compliance.Benchmark
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -474,7 +474,7 @@ func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, b
 	}
 
 	var res compliance.GetAccountsFindingsSummaryResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return compliance.GetAccountsFindingsSummaryResponse{}, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -487,7 +487,7 @@ func (s *complianceClient) ListInsights(ctx *httpclient.Context) ([]compliance.I
 	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
 
 	var insights []compliance.Insight
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -500,7 +500,7 @@ func (s *complianceClient) CreateBenchmarkAssignment(ctx *httpclient.Context, be
 	url := fmt.Sprintf("%s/api/v1/assignments/%s/connection?connectionId=%s", s.baseURL, benchmarkID, connectionId)
 
 	var assignments []compliance.BenchmarkAssignment
-	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &assignments); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), nil, &assignments); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

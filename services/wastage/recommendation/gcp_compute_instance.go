@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -12,6 +13,7 @@ import (
 )
 
 func (s *Service) GCPComputeInstanceRecommendation(
+	ctx context.Context,
 	instance entity.GcpComputeInstance,
 	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
@@ -30,7 +32,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			return nil, err
 		}
 	}
-	currentCost, err := s.costSvc.GetGCPComputeInstanceCost(instance)
+	currentCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 	if err != nil {
 		return nil, err
 	}
@@ -127,13 +129,13 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	if suggestedMachineType != nil {
 		instance.Zone = suggestedMachineType.Zone
 		instance.MachineType = suggestedMachineType.Name
-		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(instance)
+		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 		if err != nil {
 			return nil, err
 		}
 
 		if !excludeCustom {
-			customMachines, err := s.checkCustomMachines(region, int64(neededCPU), int64(neededMemoryMb), preferences)
+			customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
 			if err != nil {
 				return nil, err
 			}
@@ -156,7 +158,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			Cost: suggestedCost,
 		}
 	} else if !excludeCustom {
-		customMachines, err := s.checkCustomMachines(region, int64(neededCPU), int64(neededMemoryMb), preferences)
+		customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +243,7 @@ func (s *Service) extractCustomInstanceDetails(instance entity.GcpComputeInstanc
 	}, nil
 }
 
-func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
+func (s *Service) checkCustomMachines(ctx context.Context, region string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
 	if preferences["MemoryGB"] != nil && *preferences["MemoryGB"] != "" {
 		neededMemoryGb, _ := strconv.ParseInt(*preferences["MemoryGB"], 10, 64)
 		neededMemoryMb = neededMemoryGb * 1024
@@ -252,7 +254,7 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb i
 
 	offers := make([]CustomOffer, 0)
 	if preferences["MachineFamily"] != nil && *preferences["MachineFamily"] != "" {
-		offer, err := s.checkCustomMachineForFamily(region, *preferences["MachineFamily"], neededCpu, neededMemoryMb, preferences)
+		offer, err := s.checkCustomMachineForFamily(ctx, region, *preferences["MachineFamily"], neededCpu, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
@@ -263,28 +265,28 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb i
 	}
 
 	if neededCpu <= 128 && neededMemoryMb <= 665600 {
-		n2Offer, err := s.checkCustomMachineForFamily(region, "n2", neededCpu, neededMemoryMb, preferences)
+		n2Offer, err := s.checkCustomMachineForFamily(ctx, region, "n2", neededCpu, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
 		offers = append(offers, n2Offer...)
 	}
 	if neededCpu <= 80 && neededMemoryMb <= 665600 {
-		n4Offer, err := s.checkCustomMachineForFamily(region, "n4", neededCpu, neededMemoryMb, preferences)
+		n4Offer, err := s.checkCustomMachineForFamily(ctx, region, "n4", neededCpu, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
 		offers = append(offers, n4Offer...)
 	}
 	if neededCpu <= 224 && neededMemoryMb <= 786432 {
-		n2dOffer, err := s.checkCustomMachineForFamily(region, "n2d", neededCpu, neededMemoryMb, preferences)
+		n2dOffer, err := s.checkCustomMachineForFamily(ctx, region, "n2d", neededCpu, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
 		offers = append(offers, n2dOffer...)
 	}
 	// TODO: add e2 custom machines
-	g2Offer, err := s.checkCustomMachineForFamily(region, "g2", neededCpu, neededMemoryMb, preferences)
+	g2Offer, err := s.checkCustomMachineForFamily(ctx, region, "g2", neededCpu, neededMemoryMb, preferences)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +300,7 @@ func (s *Service) checkCustomMachines(region string, neededCpu, neededMemoryMb i
 	return offers, nil
 }
 
-func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
+func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, family string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
 	if neededCpu > 2 {
 		neededCpu = roundUpToMultipleOf(neededCpu, 4)
 	}
@@ -354,7 +356,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 	machineType := fmt.Sprintf("%s-custom-%d-%d", family, neededCpu, neededMemoryMb)
 
 	if memorySku.Location == cpuSku.Location {
-		cost, err := s.costSvc.GetGCPComputeInstanceCost(entity.GcpComputeInstance{
+		cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, entity.GcpComputeInstance{
 			HashedInstanceId: "",
 			Zone:             cpuSku.Location + "-a",
 			MachineType:      machineType,
@@ -377,7 +379,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		}}, nil
 	}
 
-	cpuRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(entity.GcpComputeInstance{
+	cpuRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, entity.GcpComputeInstance{
 		HashedInstanceId: "",
 		Zone:             cpuSku.Location + "-a",
 		MachineType:      machineType,
@@ -399,7 +401,7 @@ func (s *Service) checkCustomMachineForFamily(region, family string, neededCpu, 
 		Cost: cpuRegionCost,
 	})
 
-	memoryRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(entity.GcpComputeInstance{
+	memoryRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, entity.GcpComputeInstance{
 		HashedInstanceId: "",
 		Zone:             memorySku.Location + "-a",
 		MachineType:      machineType,

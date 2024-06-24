@@ -46,7 +46,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	err = dbm.Orm.Transaction(func(tx *gorm.DB) error {
+	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&db.InsightGroupInsight{}).Where("1=1").Unscoped().Delete(&db.InsightGroupInsight{}).Error
 		if err != nil {
 			logger.Error("failure in delete", zap.Error(err))

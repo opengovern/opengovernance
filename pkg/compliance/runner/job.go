@@ -90,7 +90,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 
-	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: authApi.InternalRole})
+	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole})
 	if err != nil {
 		w.logger.Error("failed to get query parameters", zap.Error(err))
 		return 0, err
@@ -340,7 +340,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			totalFindingCountMap[mapKey.String()] = len(newFindings)
 		}
 
-		if _, err := w.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, docs); err != nil {
+		if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
 			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
 			return 0, err
 		}
@@ -386,7 +386,7 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 }
 
 func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
-	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
 	ctx2.Ctx = ctx
 	var engine inventoryApi.QueryEngine
 	engine = inventoryApi.QueryEngine_OdysseusRego

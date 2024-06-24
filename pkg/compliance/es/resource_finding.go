@@ -79,15 +79,7 @@ func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.Resourc
 	return values, nil
 }
 
-func ResourceFindingsQuery(logger *zap.Logger, client kaytu.Client,
-	connector []source.Type, connectionID []string, notConnectionID []string,
-	resourceCollection []string, resourceTypes []string,
-	benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity,
-	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
-	conformanceStatuses []types.ConformanceStatus,
-	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any,
-	ctx context.Context) ([]ResourceFindingsQueryHit, int64, error) {
+func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client, connector []source.Type, connectionID []string, notConnectionID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, conformanceStatuses []types.ConformanceStatus, sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any) ([]ResourceFindingsQueryHit, int64, error) {
 
 	nestedFilters := make([]map[string]any, 0)
 	if len(connector) > 0 {
