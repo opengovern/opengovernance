@@ -121,10 +121,10 @@ func (s *Service) AwsRdsRecommendation(
 
 	currentCostComponents := make(map[string]float64)
 	for k, v := range currentComputeCostComponents {
-		currentCostComponents[fmt.Sprintf("compute-%s", k)] = v
+		currentCostComponents[k] = v
 	}
 	for k, v := range currentStorageCostComponents {
-		currentCostComponents[fmt.Sprintf("storage-%s", k)] = v
+		currentCostComponents[k] = v
 	}
 
 	current := entity.RightsizingAwsRds{
@@ -143,6 +143,7 @@ func (s *Service) AwsRdsRecommendation(
 		StorageThroughput: rdsInstance.StorageThroughput,
 
 		Cost:                  currentComputeCost + currentStorageCost,
+		CostComponents:        currentCostComponents,
 		ComputeCost:           currentComputeCost,
 		ComputeCostComponents: currentComputeCostComponents,
 		StorageCost:           currentStorageCost,
@@ -462,10 +463,10 @@ func (s *Service) AwsRdsRecommendation(
 
 		costComponents := make(map[string]float64)
 		for k, v := range recommended.ComputeCostComponents {
-			costComponents[fmt.Sprintf("compute-%s", k)] = v
+			costComponents[k] = v
 		}
 		for k, v := range recommended.StorageCostComponents {
-			costComponents[fmt.Sprintf("storage-%s", k)] = v
+			costComponents[k] = v
 		}
 
 		recommended.Cost = recommended.ComputeCost + recommended.StorageCost
