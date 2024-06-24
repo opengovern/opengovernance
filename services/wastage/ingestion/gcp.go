@@ -295,7 +295,9 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		disk := &model.GCPComputeDiskType{}
 		disk.PopulateFromObject(mt)
 
-		region := strings.Join([]string{strings.Split(mt.Zone, "-")[0], strings.Split(mt.Zone, "-")[1]}, "-")
+		diskZoneURLParts := strings.Split(disk.Zone, "/")
+		diskZone := diskZoneURLParts[len(diskZoneURLParts)-1]
+		region := strings.Join([]string{strings.Split(diskZone, "-")[0], strings.Split(diskZone, "-")[1]}, "-")
 		disk.Region = region
 
 		p, ok := storageTypePrices[mt.Name][region]
