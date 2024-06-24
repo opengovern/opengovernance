@@ -108,15 +108,23 @@ func (s *Service) AwsRdsRecommendation(
 		rdsInstance.StorageThroughput = nil
 	}
 
-	currentComputeCost, err := s.costSvc.GetRDSComputeCost(ctx, region, rdsInstance, metrics)
+	currentComputeCost, currentComputeCostComponents, err := s.costSvc.GetRDSComputeCost(ctx, region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds compute cost", zap.Error(err))
 		return nil, err
 	}
-	currentStorageCost, err := s.costSvc.GetRDSStorageCost(ctx, region, rdsInstance, metrics)
+	currentStorageCost, currentStorageCostComponents, err := s.costSvc.GetRDSStorageCost(ctx, region, rdsInstance, metrics)
 	if err != nil {
 		s.logger.Error("failed to get rds storage cost", zap.Error(err))
 		return nil, err
+	}
+
+	currentCostComponents := make(map[string]float64)
+	for k, v := range currentComputeCostComponents {
+		currentCostComponents[fmt.Sprintf("compute-%s", k)] = v
+	}
+	for k, v := range currentStorageCostComponents {
+		currentCostComponents[fmt.Sprintf("storage-%s", k)] = v
 	}
 
 	current := entity.RightsizingAwsRds{
@@ -134,9 +142,11 @@ func (s *Service) AwsRdsRecommendation(
 		StorageIops:       rdsInstance.StorageIops,
 		StorageThroughput: rdsInstance.StorageThroughput,
 
-		Cost:        currentComputeCost + currentStorageCost,
-		ComputeCost: currentComputeCost,
-		StorageCost: currentStorageCost,
+		Cost:                  currentComputeCost + currentStorageCost,
+		ComputeCost:           currentComputeCost,
+		ComputeCostComponents: currentComputeCostComponents,
+		StorageCost:           currentStorageCost,
+		StorageCostComponents: currentStorageCostComponents,
 	}
 
 	neededVCPU := (getValueOrZero(usageCpuPercent.Avg) / 100.0) * currentInstanceRow.VCpu
@@ -433,22 +443,33 @@ func (s *Service) AwsRdsRecommendation(
 
 	if recommended != nil {
 		if rightSizedInstanceRow != nil {
-			recommendedComputeCost, err := s.costSvc.GetRDSComputeCost(ctx, region, newInstance, metrics)
+			recommendedComputeCost, recommendedComputeCostComponents, err := s.costSvc.GetRDSComputeCost(ctx, region, newInstance, metrics)
 			if err != nil {
 				s.logger.Error("failed to get rds instance cost", zap.Error(err))
 				return nil, err
 			}
 			recommended.ComputeCost = recommendedComputeCost
+			recommended.ComputeCostComponents = recommendedComputeCostComponents
 		}
 
-		recommendedStorageCost, err := s.costSvc.GetRDSStorageCost(ctx, region, newInstance, metrics)
+		recommendedStorageCost, recommendedStorageCostComponents, err := s.costSvc.GetRDSStorageCost(ctx, region, newInstance, metrics)
 		if err != nil {
 			s.logger.Error("failed to get rds instance cost", zap.Error(err))
 			return nil, err
 		}
 		recommended.StorageCost = recommendedStorageCost
+		recommended.StorageCostComponents = recommendedStorageCostComponents
+
+		costComponents := make(map[string]float64)
+		for k, v := range recommended.ComputeCostComponents {
+			costComponents[fmt.Sprintf("compute-%s", k)] = v
+		}
+		for k, v := range recommended.StorageCostComponents {
+			costComponents[fmt.Sprintf("storage-%s", k)] = v
+		}
 
 		recommended.Cost = recommended.ComputeCost + recommended.StorageCost
+		recommended.CostComponents = costComponents
 	}
 
 	recommendation := entity.AwsRdsRightsizingRecommendation{

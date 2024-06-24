@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func (s *Service) GetRDSInstanceCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetRDSInstanceCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, map[string]float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -67,28 +67,33 @@ func (s *Service) GetRDSInstanceCost(ctx context.Context, region string, rdsInst
 
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	var response cost.State
 	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if statusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+		return 0, nil, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+	}
+
+	componentCost := make(map[string]float64)
+	for _, component := range response.GetCostComponents() {
+		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
 	resourceCost, err := response.Cost()
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
-	return resourceCost.Decimal.InexactFloat64(), nil
+	return resourceCost.Decimal.InexactFloat64(), componentCost, nil
 }
 
-func (s *Service) GetRDSStorageCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetRDSStorageCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, map[string]float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -139,28 +144,33 @@ func (s *Service) GetRDSStorageCost(ctx context.Context, region string, rdsInsta
 
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	var response cost.State
 	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if statusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+		return 0, nil, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+	}
+
+	componentCost := make(map[string]float64)
+	for _, component := range response.GetCostComponents() {
+		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
 	resourceCost, err := response.Cost()
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
-	return resourceCost.Decimal.InexactFloat64(), nil
+	return resourceCost.Decimal.InexactFloat64(), componentCost, nil
 }
 
-func (s *Service) GetRDSComputeCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, error) {
+func (s *Service) GetRDSComputeCost(ctx context.Context, region string, rdsInstance entity.AwsRds, metrics map[string][]types2.Datapoint) (float64, map[string]float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -213,23 +223,28 @@ func (s *Service) GetRDSComputeCost(ctx context.Context, region string, rdsInsta
 
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	var response cost.State
 	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if statusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+		return 0, nil, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+	}
+
+	componentCost := make(map[string]float64)
+	for _, component := range response.GetCostComponents() {
+		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
 	resourceCost, err := response.Cost()
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
-	return resourceCost.Decimal.InexactFloat64(), nil
+	return resourceCost.Decimal.InexactFloat64(), componentCost, nil
 }

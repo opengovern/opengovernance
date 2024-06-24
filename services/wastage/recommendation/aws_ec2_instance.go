@@ -49,7 +49,7 @@ func (s *Service) EC2InstanceRecommendation(
 		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("instance type not found: %s", string(instance.InstanceType)))
 	}
 	currentInstanceType := currentInstanceTypeList[0]
-	currentCost, err := s.costSvc.GetEC2InstanceCost(ctx, region, instance, volumes, metrics)
+	currentCost, currentComponentCost, err := s.costSvc.GetEC2InstanceCost(ctx, region, instance, volumes, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ec2 instance cost: %s", err.Error())
 		return nil, err
@@ -69,6 +69,7 @@ func (s *Service) EC2InstanceRecommendation(
 		NetworkThroughput: currentInstanceType.NetworkPerformance,
 		ENASupported:      currentInstanceType.EnhancedNetworkingSupported,
 		Cost:              currentCost,
+		CostComponents:    currentComponentCost,
 		LicensePrice:      currLicensePrice,
 		License:           instance.UsageOperation,
 	}
@@ -180,7 +181,7 @@ func (s *Service) EC2InstanceRecommendation(
 		} else {
 			newInstance.Placement.Tenancy = types.TenancyDefault
 		}
-		recommendedCost, err := s.costSvc.GetEC2InstanceCost(ctx, rightSizedInstanceType.RegionCode, newInstance, volumes, metrics)
+		recommendedCost, recommendedComponentCost, err := s.costSvc.GetEC2InstanceCost(ctx, rightSizedInstanceType.RegionCode, newInstance, volumes, metrics)
 		if err != nil {
 			err = fmt.Errorf("failed to get recommended ec2 instance cost: %s", err.Error())
 			return nil, err
@@ -200,6 +201,7 @@ func (s *Service) EC2InstanceRecommendation(
 			NetworkThroughput: rightSizedInstanceType.NetworkPerformance,
 			ENASupported:      rightSizedInstanceType.EnhancedNetworkingSupported,
 			Cost:              recommendedCost,
+			CostComponents:    recommendedComponentCost,
 			LicensePrice:      recomLicensePrice,
 			License:           newInstance.UsageOperation,
 		}
@@ -482,7 +484,7 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		}
 	}
 
-	volumeCost, err := s.costSvc.GetEBSVolumeCost(ctx, region, volume, metrics)
+	volumeCost, currentVolCostComponents, err := s.costSvc.GetEBSVolumeCost(ctx, region, volume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ebs volume %s cost: %s", volume.HashedVolumeId, err.Error())
 		return nil, err
@@ -497,6 +499,7 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 			BaselineThroughput:    0, //TODO-Saleh
 			ProvisionedThroughput: volume.Throughput,
 			Cost:                  volumeCost,
+			CostComponents:        currentVolCostComponents,
 		},
 		Recommended: nil,
 		IOPS:        iopsUsage,
@@ -623,12 +626,13 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		}
 	}
 
-	newVolumeCost, err := s.costSvc.GetEBSVolumeCost(ctx, region, newVolume, metrics)
+	newVolumeCost, newVolCostComponents, err := s.costSvc.GetEBSVolumeCost(ctx, region, newVolume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get recommended ebs volume %s cost: %s", newVolume.HashedVolumeId, err.Error())
 		return nil, err
 	}
 	result.Recommended.Cost = newVolumeCost
+	result.Recommended.CostComponents = newVolCostComponents
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
 		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
