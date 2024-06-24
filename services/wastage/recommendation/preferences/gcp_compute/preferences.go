@@ -12,4 +12,9 @@ var (
 		"vCPU":     ">=",
 		"MemoryGB": ">=",
 	}
+
+	PreferenceDiskKey = map[string]string{
+		"Region":   "region",
+		"DiskType": "disk_type",
+	}
 )

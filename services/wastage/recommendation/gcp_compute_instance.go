@@ -227,14 +227,12 @@ func (s *Service) GCPComputeDiskRecommendation(
 		} else {
 			vl = *v
 		}
-		if _, ok := gcp_compute.PreferenceInstanceKey[k]; !ok {
+		if _, ok := gcp_compute.PreferenceDiskKey[k]; !ok {
 			continue
 		}
 
 		cond := "="
-		if sc, ok := gcp_compute.PreferenceInstanceSpecialCond[k]; ok {
-			cond = sc
-		}
+
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
 	}
 
@@ -287,7 +285,7 @@ func extractFromGCPComputeDisk(disk entity.GcpComputeDisk, k string) any {
 	switch k {
 	case "Region":
 		return disk.Region
-	case "Type":
+	case "DiskType":
 		return disk.DiskType
 	}
 	return ""
