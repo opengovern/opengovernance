@@ -127,6 +127,9 @@ func (s *Service) GetRDSStorageCost(ctx context.Context, region string, rdsInsta
 	if rdsInstance.StorageIops != nil {
 		valuesMap["iops"] = *rdsInstance.StorageIops
 	}
+	if rdsInstance.StorageThroughput != nil {
+		valuesMap["throughput"] = *rdsInstance.StorageThroughput
+	}
 	valuesMap["performance_insights_enabled"] = rdsInstance.PerformanceInsightsEnabled
 	valuesMap["performance_insights_retention_period"] = rdsInstance.PerformanceInsightsRetentionPeriod
 	valuesMap["io_optimized"] = false // TODO: Check aws api rds response // Maybe needs some changes in pennywise logic

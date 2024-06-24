@@ -286,3 +286,25 @@ func (s *GcpService) fetchMachineTypes(ctx context.Context) ([]*compute.MachineT
 
 	return results, nil
 }
+
+func (s *GcpService) fetchDiskTypes(ctx context.Context) ([]*compute.DiskType, error) {
+	var results []*compute.DiskType
+
+	zones, err := s.compute.Zones.List(s.project).Do()
+	if err != nil {
+		return nil, err
+	}
+	for _, zone := range zones.Items {
+		err = s.compute.DiskTypes.List(s.project, zone.Name).Pages(ctx, func(l *compute.DiskTypeList) error {
+			for _, dt := range l.Items {
+				results = append(results, dt)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return results, nil
+}
