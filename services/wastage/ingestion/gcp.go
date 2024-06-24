@@ -148,7 +148,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 	computeDiskTable, err := s.computeDiskTypeRepo.CreateNewTable()
 	if err != nil {
 		s.logger.Error("failed to auto migrate",
-			zap.String("table", "compute_machine_type"),
+			zap.String("table", "compute_disk_type"),
 			zap.Error(err))
 		return err
 	}
@@ -300,7 +300,8 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 		p, ok := storageTypePrices[mt.Name][region]
 		if !ok {
-			s.logger.Error("failed to get storage price", zap.String("storage_type", mt.Name))
+			s.logger.Error("failed to get storage price", zap.String("storage_type", mt.Name), zap.String("region", region),
+				zap.Any("prices", storageTypePrices))
 			continue
 		}
 
@@ -324,12 +325,12 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		return err
 	}
 
-	err = s.computeDiskTypeRepo.MoveViewTransaction(computeSKUTable)
+	err = s.computeDiskTypeRepo.MoveViewTransaction(computeDiskTable)
 	if err != nil {
 		return err
 	}
 
-	err = s.computeDiskTypeRepo.RemoveOldTables(computeSKUTable)
+	err = s.computeDiskTypeRepo.RemoveOldTables(computeDiskTable)
 	if err != nil {
 		return err
 	}
