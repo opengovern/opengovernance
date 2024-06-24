@@ -748,6 +748,17 @@ func (s API) GCPCompute(echoCtx echo.Context) error {
 		return err
 	}
 
+	diskRightSizingRecoms := make(map[string]entity.GcpComputeDiskRecommendation)
+	for _, disk := range req.Disks {
+		var diskRightSizingRecom *entity.GcpComputeDiskRecommendation
+		diskRightSizingRecom, err = s.recomSvc.GCPComputeDiskRecommendation(ctx, disk, req.DiskCapacityUsed[disk.HashedDiskId], req.Preferences)
+		if err != nil {
+			err = fmt.Errorf("failed to get GCP Compute Disk %s recommendation: %s", disk.HashedDiskId, err.Error())
+			return err
+		}
+		diskRightSizingRecoms[disk.HashedDiskId] = *diskRightSizingRecom
+	}
+
 	elapsed := time.Since(start).Seconds()
 	usage.Latency = &elapsed
 	err = s.usageRepo.Update(usage.ID, usage)
@@ -757,7 +768,8 @@ func (s API) GCPCompute(echoCtx echo.Context) error {
 
 	// DO NOT change this, resp is used in updating usage
 	resp = entity.GcpComputeInstanceWastageResponse{
-		RightSizing: *rdsRightSizingRecom,
+		RightSizing:       *rdsRightSizingRecom,
+		VolumeRightSizing: diskRightSizingRecoms,
 	}
 	// DO NOT change this, resp is used in updating usage
 	return echoCtx.JSON(http.StatusOK, resp)

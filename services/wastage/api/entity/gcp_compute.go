@@ -9,11 +9,12 @@ type GcpComputeInstance struct {
 }
 
 type GcpComputeDisk struct {
-	HashedDiskId string `json:"hashedDiskId"`
-	Zone         string `json:"zone"`
-	Region       string `json:"region"`
-	DiskType     string `json:"diskType"`
-	DiskSize     *int32 `json:"diskSize"`
+	HashedDiskId    string `json:"hashedDiskId"`
+	Zone            string `json:"zone"`
+	Region          string `json:"region"`
+	DiskType        string `json:"diskType"`
+	DiskSize        *int64 `json:"diskSize"`
+	ProvisionedIops *int64 `json:"provisionedIops"`
 }
 
 type RightsizingGcpComputeInstance struct {
@@ -38,23 +39,23 @@ type GcpComputeInstanceRightsizingRecommendation struct {
 }
 
 type GcpComputeInstanceWastageRequest struct {
-	RequestId      *string                           `json:"requestId"`
-	CliVersion     *string                           `json:"cliVersion"`
-	Identification map[string]string                 `json:"identification"`
-	Instance       GcpComputeInstance                `json:"instance"`
-	Disks          []GcpComputeDisk                  `json:"disks"`
-	Metrics        map[string][]Datapoint            `json:"metrics"`
-	DiskMetrics    map[string]map[string][]Datapoint `json:"diskMetrics"`
-	Region         string                            `json:"region"`
-	Preferences    map[string]*string                `json:"preferences"`
-	Loading        bool                              `json:"loading"`
+	RequestId        *string                `json:"requestId"`
+	CliVersion       *string                `json:"cliVersion"`
+	Identification   map[string]string      `json:"identification"`
+	Instance         GcpComputeInstance     `json:"instance"`
+	Disks            []GcpComputeDisk       `json:"disks"`
+	Metrics          map[string][]Datapoint `json:"metrics"`
+	DiskCapacityUsed map[string]float64     `json:"diskCapacityUsed"`
+	Region           string                 `json:"region"`
+	Preferences      map[string]*string     `json:"preferences"`
+	Loading          bool                   `json:"loading"`
 }
 
 type RightsizingGcpComputeDisk struct {
 	Zone     string  `json:"zone"`
 	Region   string  `json:"region"`
 	DiskType string  `json:"diskType"`
-	DiskSize *int32  `json:"diskSize"`
+	DiskSize *int64  `json:"diskSize"`
 	Cost     float64 `json:"cost"`
 }
 
@@ -62,7 +63,7 @@ type GcpComputeDiskRecommendation struct {
 	Current     RightsizingGcpComputeDisk
 	Recommended *RightsizingGcpComputeDisk
 
-	Size Usage `json:"size"`
+	UsedCapacity float64 `json:"usedCapacity"`
 
 	Description string `json:"description"`
 }

@@ -56,3 +56,54 @@ func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance entity
 
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
+
+func (s *Service) GetGCPComputeDiskCost(ctx context.Context, disk entity.GcpComputeDisk) (float64, error) {
+	req := schema.Submission{
+		ID:        "submission-1",
+		CreatedAt: time.Now(),
+		Resources: []schema.ResourceDef{},
+	}
+
+	valuesMap := map[string]any{}
+	valuesMap["disk_type"] = disk.DiskType
+	valuesMap["region"] = disk.Region
+	if disk.DiskSize != nil {
+		valuesMap["size"] = *disk.DiskSize
+	}
+	if disk.ProvisionedIops != nil {
+		valuesMap["iops"] = *disk.ProvisionedIops
+	}
+
+	valuesMap["pennywise_usage"] = map[string]any{}
+
+	req.Resources = append(req.Resources, schema.ResourceDef{
+		Address:      disk.HashedDiskId,
+		Type:         "google_compute_disk",
+		Name:         "",
+		RegionCode:   disk.Region,
+		ProviderName: "google",
+		Values:       valuesMap,
+	})
+
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return 0, err
+	}
+
+	var response cost.State
+	statusCode, err := httpclient.DoRequest(ctx, "GET", s.pennywiseBaseUrl+"/api/v1/cost/submission", nil, reqBody, &response)
+	if err != nil {
+		return 0, err
+	}
+
+	if statusCode != http.StatusOK {
+		return 0, fmt.Errorf("failed to get pennywise cost, status code = %d", statusCode)
+	}
+
+	resourceCost, err := response.Cost()
+	if err != nil {
+		return 0, err
+	}
+
+	return resourceCost.Decimal.InexactFloat64(), nil
+}

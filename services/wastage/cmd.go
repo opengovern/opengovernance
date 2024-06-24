@@ -78,7 +78,7 @@ func Command() *cobra.Command {
 			rdsStorageRepo := repo.NewRDSDBStorageRepo(logger, db)
 			ebsVolumeRepo := repo.NewEBSVolumeTypeRepo(db)
 			computeMachineTypeRepo := repo.NewGCPComputeMachineTypeRepo(db)
-			computeStorageTypeRepo := repo.NewGCPComputeDiskTypeRepo(db)
+			computeDiskTypeRepo := repo.NewGCPComputeDiskTypeRepo(db)
 			computeSKURepo := repo.NewGCPComputeSKURepo(db)
 			dataAgeRepo := repo.NewDataAgeRepo(db)
 			usageV2Repo := repo.NewUsageV2Repo(usageDb)
@@ -99,7 +99,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, computeMachineTypeRepo, computeSKURepo, cnf.OpenAIToken, costSvc)
+			recomSvc := recommendation.New(logger, ec2InstanceRepo, ebsVolumeRepo, rdsInstanceRepo, rdsStorageRepo, computeMachineTypeRepo, computeDiskTypeRepo, computeSKURepo, cnf.OpenAIToken, costSvc)
 			ingestionSvc := ingestion.New(logger, db, ec2InstanceRepo, rdsRepo, rdsInstanceRepo, rdsStorageRepo, ebsVolumeRepo, dataAgeRepo)
 
 			gcpCredentials := map[string]string{
@@ -108,7 +108,7 @@ func Command() *cobra.Command {
 				"private_key":  GCPPrivateKey,
 				"client_email": GCPClientEmail,
 			}
-			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, computeMachineTypeRepo, computeStorageTypeRepo, computeSKURepo, db, gcpCredentials, GCPProjectID)
+			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, computeMachineTypeRepo, computeDiskTypeRepo, computeSKURepo, db, gcpCredentials, GCPProjectID)
 			go ingestionSvc.Start(ctx)
 			go gcpIngestionSvc.Start(ctx)
 			grpcServer := wastage.NewServer(logger, cnf, blobClient, usageV2Repo, recomSvc)

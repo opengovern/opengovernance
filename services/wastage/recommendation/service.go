@@ -15,12 +15,13 @@ type Service struct {
 	awsRDSDBInstanceRepo      repo.RDSDBInstanceRepo
 	awsRDSDBStorageRepo       repo.RDSDBStorageRepo
 	gcpComputeMachineTypeRepo repo.GCPComputeMachineTypeRepo
+	gcpComputeDiskTypeRepo    repo.GCPComputeDiskTypeRepo
 	gcpComputeSKURepo         repo.GCPComputeSKURepo
 	openaiSvc                 *openai.Client
 	costSvc                   *cost.Service
 }
 
-func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, awsRDSDBInstanceRepo repo.RDSDBInstanceRepo, awsRDSDBStorageRepo repo.RDSDBStorageRepo, gcpComputeMachineTypeRepo repo.GCPComputeMachineTypeRepo, gcpComputeSKURepo repo.GCPComputeSKURepo, token string, costSvc *cost.Service) *Service {
+func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolumeRepo repo.EBSVolumeTypeRepo, awsRDSDBInstanceRepo repo.RDSDBInstanceRepo, awsRDSDBStorageRepo repo.RDSDBStorageRepo, gcpComputeMachineTypeRepo repo.GCPComputeMachineTypeRepo, gcpComputeDiskTypeRepo repo.GCPComputeDiskTypeRepo, gcpComputeSKURepo repo.GCPComputeSKURepo, token string, costSvc *cost.Service) *Service {
 	return &Service{
 		logger:                    logger,
 		ec2InstanceRepo:           ec2InstanceRepo,
@@ -28,6 +29,7 @@ func New(logger *zap.Logger, ec2InstanceRepo repo.EC2InstanceTypeRepo, ebsVolume
 		awsRDSDBInstanceRepo:      awsRDSDBInstanceRepo,
 		awsRDSDBStorageRepo:       awsRDSDBStorageRepo,
 		gcpComputeMachineTypeRepo: gcpComputeMachineTypeRepo,
+		gcpComputeDiskTypeRepo:    gcpComputeDiskTypeRepo,
 		gcpComputeSKURepo:         gcpComputeSKURepo,
 		openaiSvc:                 openai.NewClient(token),
 		costSvc:                   costSvc,

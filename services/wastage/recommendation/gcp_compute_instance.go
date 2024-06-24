@@ -187,6 +187,84 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	return &result, nil
 }
 
+func (s *Service) GCPComputeDiskRecommendation(
+	ctx context.Context,
+	disk entity.GcpComputeDisk,
+	usedCapacity float64,
+	preferences map[string]*string,
+) (*entity.GcpComputeDiskRecommendation, error) {
+	currentCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
+	if err != nil {
+		return nil, err
+	}
+
+	result := entity.GcpComputeDiskRecommendation{
+		Current: entity.RightsizingGcpComputeDisk{
+			DiskType: disk.DiskType,
+			DiskSize: disk.DiskSize,
+			Zone:     disk.Zone,
+			Region:   disk.Region,
+
+			Cost: currentCost,
+		},
+		UsedCapacity: usedCapacity,
+	}
+
+	sizeBreathingRoom := int64(0)
+	if preferences["SizeBreathingRoom"] != nil {
+		sizeBreathingRoom, _ = strconv.ParseInt(*preferences["SizeBreathingRoom"], 10, 64)
+	}
+
+	neededSize := 0.0
+	neededSize = calculateHeadroom(usedCapacity, sizeBreathingRoom)
+
+	pref := make(map[string]any)
+
+	for k, v := range preferences {
+		var vl any
+		if v == nil {
+			vl = extractFromGCPComputeDisk(disk, k)
+		} else {
+			vl = *v
+		}
+		if _, ok := gcp_compute.PreferenceDiskKey[k]; !ok {
+			continue
+		}
+
+		cond := "="
+
+		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
+	}
+
+	suggestedStorageType, err := s.gcpComputeDiskTypeRepo.GetCheapestByCoreAndMemory(neededSize, pref)
+	if err != nil {
+		return nil, err
+	}
+
+	if suggestedStorageType != nil {
+		disk.Zone = suggestedStorageType.Zone
+		disk.DiskType = suggestedStorageType.Name
+		disk.Region = suggestedStorageType.Region
+		newSize := int64(neededSize)
+		disk.DiskSize = &newSize
+		suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
+		if err != nil {
+			return nil, err
+		}
+
+		result.Recommended = &entity.RightsizingGcpComputeDisk{
+			Zone:     suggestedStorageType.Zone,
+			Region:   suggestedStorageType.Region,
+			DiskType: suggestedStorageType.StorageType,
+			DiskSize: &newSize,
+
+			Cost: suggestedCost,
+		}
+	}
+
+	return &result, nil
+}
+
 func extractFromGCPComputeInstance(region string, machine *model.GCPComputeMachineType, k string) any {
 	switch k {
 	case "Region":
@@ -199,6 +277,16 @@ func extractFromGCPComputeInstance(region string, machine *model.GCPComputeMachi
 		return machine.MachineFamily
 	case "MachineType":
 		return machine.MachineType
+	}
+	return ""
+}
+
+func extractFromGCPComputeDisk(disk entity.GcpComputeDisk, k string) any {
+	switch k {
+	case "Region":
+		return disk.Region
+	case "DiskType":
+		return disk.DiskType
 	}
 	return ""
 }
