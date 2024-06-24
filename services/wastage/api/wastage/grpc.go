@@ -125,8 +125,12 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.Pod.Id,
 		Auth0UserId: userId,
@@ -263,8 +267,12 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetDeployment().GetId(),
 		Auth0UserId: userId,
@@ -401,8 +409,12 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetStatefulset().GetId(),
 		Auth0UserId: userId,
@@ -539,8 +551,12 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetDaemonset().GetId(),
 		Auth0UserId: userId,
@@ -677,8 +693,12 @@ func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.Kubernet
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetJob().GetId(),
 		Auth0UserId: userId,
