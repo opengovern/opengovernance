@@ -103,6 +103,9 @@ func (s *Service) GetEC2InstanceCost(ctx context.Context, region string, instanc
 
 	componentCost := make(map[string]float64)
 	for _, component := range response.GetCostComponents() {
+		if component.Cost().Decimal.InexactFloat64() == 0 {
+			continue
+		}
 		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
@@ -154,6 +157,9 @@ func (s *Service) GetEBSVolumeCost(ctx context.Context, region string, volume en
 
 	componentCost := make(map[string]float64)
 	for _, component := range response.GetCostComponents() {
+		if component.Cost().Decimal.InexactFloat64() == 0 {
+			continue
+		}
 		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 

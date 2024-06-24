@@ -82,6 +82,9 @@ func (s *Service) GetRDSInstanceCost(ctx context.Context, region string, rdsInst
 
 	componentCost := make(map[string]float64)
 	for _, component := range response.GetCostComponents() {
+		if component.Cost().Decimal.InexactFloat64() == 0 {
+			continue
+		}
 		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
@@ -159,6 +162,9 @@ func (s *Service) GetRDSStorageCost(ctx context.Context, region string, rdsInsta
 
 	componentCost := make(map[string]float64)
 	for _, component := range response.GetCostComponents() {
+		if component.Cost().Decimal.InexactFloat64() == 0 {
+			continue
+		}
 		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
@@ -238,6 +244,9 @@ func (s *Service) GetRDSComputeCost(ctx context.Context, region string, rdsInsta
 
 	componentCost := make(map[string]float64)
 	for _, component := range response.GetCostComponents() {
+		if component.Cost().Decimal.InexactFloat64() == 0 {
+			continue
+		}
 		componentCost[component.Name] = component.Cost().Decimal.InexactFloat64()
 	}
 
