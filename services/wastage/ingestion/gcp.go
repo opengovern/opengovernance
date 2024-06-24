@@ -38,11 +38,12 @@ type GcpService struct {
 
 	db                     *connector.Database
 	computeMachineTypeRepo repo.GCPComputeMachineTypeRepo
+	computeDiskTypeRepo    repo.GCPComputeDiskTypeRepo
 	computeSKURepo         repo.GCPComputeSKURepo
 }
 
 func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.DataAgeRepo, computeMachineTypeRepo repo.GCPComputeMachineTypeRepo,
-	computeSKURepo repo.GCPComputeSKURepo, db *connector.Database, gcpCredentials map[string]string, projectId string) (*GcpService, error) {
+	computeStorageTypeRepo repo.GCPComputeDiskTypeRepo, computeSKURepo repo.GCPComputeSKURepo, db *connector.Database, gcpCredentials map[string]string, projectId string) (*GcpService, error) {
 	configJson, err := json.Marshal(gcpCredentials)
 	if err != nil {
 		return nil, err
@@ -67,6 +68,7 @@ func NewGcpService(ctx context.Context, logger *zap.Logger, dataAgeRepo repo.Dat
 		apiService:             apiService,
 		compute:                compute,
 		computeSKURepo:         computeSKURepo,
+		computeDiskTypeRepo:    computeStorageTypeRepo,
 		computeMachineTypeRepo: computeMachineTypeRepo,
 		project:                projectId,
 	}, nil
@@ -143,6 +145,14 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		return err
 	}
 
+	computeDiskTable, err := s.computeDiskTypeRepo.CreateNewTable()
+	if err != nil {
+		s.logger.Error("failed to auto migrate",
+			zap.String("table", "compute_machine_type"),
+			zap.Error(err))
+		return err
+	}
+
 	computeSKUTable, err := s.computeSKURepo.CreateNewTable()
 	if err != nil {
 		s.logger.Error("failed to auto migrate",
@@ -153,6 +163,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 	var transaction *gorm.DB
 	machineTypePrices := make(map[string]map[string]float64)
+	storageTypePrices := make(map[string]map[string]float64)
 	skus, err := s.fetchSKUs(ctx, services["ComputeEngine"])
 	if err != nil {
 		return err
@@ -172,7 +183,34 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
 			}
 		}
-
+		if rg == "SSD" && strings.Contains(sku.Description, "Hyperdisk Throughput Capacity") {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["hyperdisk-throughput"] = skuStorageTypePrices
+		}
+		if rg == "SSD" && strings.Contains(sku.Description, "Hyperdisk Extreme Capacity") {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["hyperdisk-extreme"] = skuStorageTypePrices
+		}
+		if rg == "SSD" && strings.Contains(sku.Description, "Hyperdisk Balanced Capacity") {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["hyperdisk-balanced"] = skuStorageTypePrices
+		}
+		if sku.Description == "Storage PD Capacity" {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["pd-standard"] = skuStorageTypePrices
+		}
+		if sku.Description == "Balanced PD Capacity" {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["pd-balanced"] = skuStorageTypePrices
+		}
+		if sku.Description == "SSD backed PD Capacity" {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["pd-ssd"] = skuStorageTypePrices
+		}
+		if sku.Description == "Extreme PD Capacity" {
+			skuStorageTypePrices := make(map[string]float64)
+			storageTypePrices["pd-extreme"] = skuStorageTypePrices
+		}
 		for _, region := range sku.ServiceRegions {
 			computeSKU := &model.GCPComputeSKU{}
 			computeSKU.PopulateFromObject(sku, region)
@@ -184,6 +222,27 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 			if (rg == cpu || rg == ram) && t == "Predefined" {
 				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Throughput Capacity") {
+				storageTypePrices["hyperdisk-throughput"][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Extreme Capacity") {
+				storageTypePrices["hyperdisk-extreme"][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Balanced Capacity") {
+				storageTypePrices["hyperdisk-balanced"][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.Description == "Storage PD Capacity" {
+				storageTypePrices["pd-standard"][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.Description == "Balanced PD Capacity" {
+				storageTypePrices["pd-balanced"][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.Description == "SSD backed PD Capacity" {
+				storageTypePrices["pd-ssd"][region] = computeSKU.UnitPrice
+			}
+			if computeSKU.Description == "Extreme PD Capacity" {
+				storageTypePrices["pd-extreme"][region] = computeSKU.UnitPrice
 			}
 		}
 	}
@@ -226,12 +285,51 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		s.logger.Info("created compute machine type", zap.String("name", mt.Name))
 	}
 
+	diskTypes, err := s.fetchDiskTypes(ctx)
+	if err != nil {
+		s.logger.Error("failed to fetch disk types", zap.Error(err))
+		return err
+	}
+	s.logger.Info("fetched disk types", zap.Any("count", len(types)))
+	for _, mt := range diskTypes {
+		disk := &model.GCPComputeDiskType{}
+		disk.PopulateFromObject(mt)
+
+		region := strings.Join([]string{strings.Split(mt.Zone, "-")[0], strings.Split(mt.Zone, "-")[1]}, "-")
+		disk.Region = region
+
+		p, ok := storageTypePrices[mt.Name][region]
+		if !ok {
+			s.logger.Error("failed to get storage price", zap.String("storage_type", mt.Name))
+			continue
+		}
+
+		disk.UnitPrice = p
+
+		err = s.computeDiskTypeRepo.Create(computeDiskTable, transaction, disk)
+		if err != nil {
+			s.logger.Error("failed to create compute storage type", zap.Error(err))
+			continue
+		}
+		s.logger.Info("created compute storage type", zap.String("name", mt.Name))
+	}
+
 	err = s.computeMachineTypeRepo.MoveViewTransaction(computeMachineTypeTable)
 	if err != nil {
 		return err
 	}
 
 	err = s.computeMachineTypeRepo.RemoveOldTables(computeMachineTypeTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.computeDiskTypeRepo.MoveViewTransaction(computeSKUTable)
+	if err != nil {
+		return err
+	}
+
+	err = s.computeDiskTypeRepo.RemoveOldTables(computeSKUTable)
 	if err != nil {
 		return err
 	}
