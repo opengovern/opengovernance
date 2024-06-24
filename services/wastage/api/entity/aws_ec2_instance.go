@@ -50,19 +50,20 @@ type EC2InstanceWastageRequest struct {
 }
 
 type RightsizingEC2Instance struct {
-	InstanceType      string  `json:"instanceType"`
-	Region            string  `json:"region"`
-	Cost              float64 `json:"cost"`
-	Processor         string  `json:"processor"`
-	Architecture      string  `json:"architecture"`
-	VCPU              int64   `json:"vCPU"`
-	Memory            float64 `json:"memory"`
-	EBSBandwidth      string  `json:"ebsBandwidth"`
-	EBSIops           string  `json:"ebsIops"`
-	NetworkThroughput string  `json:"networkThroughput"`
-	ENASupported      string  `json:"enaSupported"`
-	LicensePrice      float64 `json:"licensePrice"`
-	License           string  `json:"license"`
+	InstanceType      string             `json:"instanceType"`
+	Region            string             `json:"region"`
+	Cost              float64            `json:"cost"`
+	CostComponents    map[string]float64 `json:"costComponents"`
+	Processor         string             `json:"processor"`
+	Architecture      string             `json:"architecture"`
+	VCPU              int64              `json:"vCPU"`
+	Memory            float64            `json:"memory"`
+	EBSBandwidth      string             `json:"ebsBandwidth"`
+	EBSIops           string             `json:"ebsIops"`
+	NetworkThroughput string             `json:"networkThroughput"`
+	ENASupported      string             `json:"enaSupported"`
+	LicensePrice      float64            `json:"licensePrice"`
+	License           string             `json:"license"`
 }
 
 type Usage struct {
@@ -86,13 +87,14 @@ type RightSizingRecommendation struct {
 }
 
 type RightsizingEBSVolume struct {
-	Tier                  types.VolumeType `json:"tier"`
-	VolumeSize            *int32           `json:"volumeSize"`
-	BaselineIOPS          int32            `json:"baselineIOPS"`
-	ProvisionedIOPS       *int32           `json:"provisionedIOPS"`
-	BaselineThroughput    float64          `json:"baselineThroughput"`
-	ProvisionedThroughput *float64         `json:"provisionedThroughput"`
-	Cost                  float64          `json:"cost"`
+	Tier                  types.VolumeType   `json:"tier"`
+	VolumeSize            *int32             `json:"volumeSize"`
+	BaselineIOPS          int32              `json:"baselineIOPS"`
+	ProvisionedIOPS       *int32             `json:"provisionedIOPS"`
+	BaselineThroughput    float64            `json:"baselineThroughput"`
+	ProvisionedThroughput *float64           `json:"provisionedThroughput"`
+	Cost                  float64            `json:"cost"`
+	CostComponents        map[string]float64 `json:"costComponents"`
 }
 
 type EBSVolumeRecommendation struct {
