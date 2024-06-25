@@ -3,6 +3,7 @@ package repo
 import (
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/sony/sonyflake"
@@ -20,7 +21,7 @@ type RDSDBStorageRepo interface {
 	Delete(id uint) error
 	List() ([]model.RDSDBStorage, error)
 	Truncate(tx *gorm.DB) error
-	GetCheapestBySpecs(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) (*model.RDSDBStorage, int32, int32, float64, error)
+	GetCheapestBySpecs(region string, engine, edition string, clusterType entity.AwsRdsClusterType, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) (*model.RDSDBStorage, int32, int32, float64, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(tableName string) error
 	CreateNewTable() (string, error)
@@ -138,73 +139,135 @@ func (r *RDSDBStorageRepoImpl) getGp2TotalPrice(dbStorage model.RDSDBStorage, vo
 	return dbStorage.PricePerUnit * float64(*volumeSize), nil
 }
 
-func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32, iops *int32, throughput *float64) (float64, error) {
+func (r *RDSDBStorageRepoImpl) getGp3TotalPrice(clusterType entity.AwsRdsClusterType, dbStorage model.RDSDBStorage, volumeSize *int32, iops *int32, throughput *float64) (float64, error) {
 	if dbStorage.VolumeType != string(model.RDSDBStorageVolumeTypeGP3) {
 		return 0, errors.New("invalid volume type")
 	}
 
-	if *iops > model.RDSDBStorageTier1Gp3BaseIops ||
-		*throughput > model.RDSDBStorageTier1Gp3BaseThroughput {
-		*volumeSize = max(*volumeSize, model.RDSDBStorageTier1Gp3SizeThreshold)
-	} else {
-		*iops = model.RDSDBStorageTier1Gp3BaseIops
-		*throughput = model.RDSDBStorageTier1Gp3BaseThroughput
+	getIopsStorage := func(provisionedIops int) (*model.RDSDBStorage, error) {
+		tx := r.db.Conn().Table(r.viewName).
+			Where("product_family = ?", "Provisioned IOPS").
+			Where("region_code = ?", dbStorage.RegionCode).
+			Where("deployment_option = ?", dbStorage.DeploymentOption).
+			Where("group_description = ?", "RDS Provisioned GP3 IOPS").
+			Where("database_engine = ?", dbStorage.DatabaseEngine)
+		if len(dbStorage.DatabaseEdition) > 0 {
+			tx = tx.Where("database_edition = ?", dbStorage.DatabaseEdition)
+		}
+		tx = tx.Order("price_per_unit asc")
+		var iopsStorage model.RDSDBStorage
+		err := tx.First(&iopsStorage).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, tx.Error
+		}
+		return &iopsStorage, nil
 	}
-	if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
-		*volumeSize = dbStorage.MinVolumeSizeGb
-	}
-	sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
-	iopsCost := 0.0
-	throughputCost := 0.0
 
-	if *volumeSize > model.RDSDBStorageTier1Gp3SizeThreshold {
-		provisionedIops := int(*iops) - model.RDSDBStorageTier2Gp3BaseIops
+	getThroughputStorage := func(provisionedThroughput float64) (*model.RDSDBStorage, error) {
+		tx := r.db.Conn().Table(r.viewName).
+			Where("product_family = ?", "Provisioned Throughput").
+			Where("region_code = ?", dbStorage.RegionCode).
+			Where("deployment_option = ?", dbStorage.DeploymentOption).
+			Where("database_engine = ?", dbStorage.DatabaseEngine)
+		if len(dbStorage.DatabaseEdition) > 0 {
+			tx = tx.Where("database_edition = ?", dbStorage.DatabaseEdition)
+		}
+		tx = tx.Order("price_per_unit asc")
+		var throughputStorage model.RDSDBStorage
+		err := tx.First(&throughputStorage).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, tx.Error
+		}
+		return &throughputStorage, nil
+	}
+
+	dbEngine := strings.ToLower(dbStorage.DatabaseEngine)
+	switch {
+	case strings.Contains(dbEngine, "sql server"):
+		sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
+		iopsCost := 0.0
+		throughputCost := 0.0
+		provisionedIops := int(*iops) - model.RDSDBStorageTier1Gp3BaseIops
 		provisionedIops = max(provisionedIops, 0)
 		if provisionedIops > 0 {
-			tx := r.db.Conn().Table(r.viewName).
-				Where("product_family = ?", "Provisioned IOPS").
-				Where("region_code = ?", dbStorage.RegionCode).
-				Where("deployment_option = ?", dbStorage.DeploymentOption).
-				Where("group_description = ?", "RDS Provisioned GP3 IOPS").
-				Where("database_engine = ?", dbStorage.DatabaseEngine)
-			if len(dbStorage.DatabaseEdition) > 0 {
-				tx = tx.Where("database_edition = ?", dbStorage.DatabaseEdition)
-			}
-			tx = tx.Order("price_per_unit asc")
-			var iopsStorage model.RDSDBStorage
-			err := tx.First(&iopsStorage).Error
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return 0, tx.Error
+			iopsStorage, err := getIopsStorage(provisionedIops)
+			if err != nil {
+				return 0, err
 			}
 			iopsCost = iopsStorage.PricePerUnit * float64(provisionedIops)
 		} else {
-			*iops = model.RDSDBStorageTier2Gp3BaseIops
+			*iops = model.RDSDBStorageTier1Gp3BaseIops
 		}
 
-		provisionedThroughput := *throughput - model.RDSDBStorageTier2Gp3BaseThroughput
+		provisionedThroughput := *throughput - model.RDSDBStorageTier1Gp3BaseThroughput
 		provisionedThroughput = max(provisionedThroughput, 0)
 		if provisionedThroughput > 0 {
-			tx := r.db.Conn().Table(r.viewName).
-				Where("product_family = ?", "Provisioned Throughput").
-				Where("region_code = ?", dbStorage.RegionCode).
-				Where("deployment_option = ?", dbStorage.DeploymentOption).
-				Where("database_engine = ?", dbStorage.DatabaseEngine)
-			if len(dbStorage.DatabaseEdition) > 0 {
-				tx = tx.Where("database_edition = ?", dbStorage.DatabaseEdition)
-			}
-			tx = tx.Order("price_per_unit asc")
-			var throughputStorage model.RDSDBStorage
-			err := tx.First(&throughputStorage).Error
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return 0, tx.Error
+			throughputStorage, err := getThroughputStorage(provisionedThroughput)
+			if err != nil {
+				return 0, err
 			}
 			throughputCost = throughputStorage.PricePerUnit * provisionedThroughput
 		} else {
-			*throughput = model.RDSDBStorageTier2Gp3BaseThroughput
+			*throughput = model.RDSDBStorageTier1Gp3BaseThroughput
 		}
-	} // Else is not needed since tier 1 iops/throughput is not configurable and is not charged
+		return sizeCost + iopsCost + throughputCost, nil
+	default:
+		tierThreshold := int32(model.RDSDBStorageTier1Gp3SizeThreshold)
+		if strings.Contains(dbEngine, "oracle") {
+			tierThreshold = model.RDSDBStorageTier1Gp3SizeThresholdForOracleEngine
+		}
 
-	return sizeCost + iopsCost + throughputCost, nil
+		if *iops > model.RDSDBStorageTier1Gp3BaseIops || *throughput > model.RDSDBStorageTier1Gp3BaseThroughput {
+			*volumeSize = max(*volumeSize, tierThreshold)
+		} else {
+			*iops = model.RDSDBStorageTier1Gp3BaseIops
+			*throughput = model.RDSDBStorageTier1Gp3BaseThroughput
+		}
+		if dbStorage.MinVolumeSizeGb != 0 && *volumeSize < dbStorage.MinVolumeSizeGb {
+			*volumeSize = dbStorage.MinVolumeSizeGb
+		}
+		sizeCost := dbStorage.PricePerUnit * float64(*volumeSize)
+		iopsCost := 0.0
+		throughputCost := 0.0
+
+		if *volumeSize > tierThreshold {
+			provisionedIops := int(*iops) - model.RDSDBStorageTier2Gp3BaseIops
+			provisionedIops = max(provisionedIops, 0)
+			if provisionedIops > 0 {
+				iopsStorage, err := getIopsStorage(provisionedIops)
+				if err != nil {
+					return 0, err
+				}
+				iopsCost = iopsStorage.PricePerUnit * float64(provisionedIops)
+			} else {
+				*iops = model.RDSDBStorageTier2Gp3BaseIops
+			}
+
+			provisionedThroughput := *throughput - model.RDSDBStorageTier2Gp3BaseThroughput
+			provisionedThroughput = max(provisionedThroughput, 0)
+			switch {
+			case clusterType == entity.AwsRdsClusterTypeMultiAzTwoInstance && strings.Contains(dbEngine, "postgres"):
+				*throughput = model.RDSDBStorageTier2Gp3BaseThroughput
+			case clusterType == entity.AwsRdsClusterTypeMultiAzTwoInstance && strings.Contains(dbEngine, "mysql"):
+				*throughput = model.RDSDBStorageTier2Gp3BaseThroughput
+				if *iops > model.RDSDBStorageIopsThresholdForThroughputScalingForMySqlEngine {
+					*throughput += math.Floor(float64(*iops-model.RDSDBStorageIopsThresholdForThroughputScalingForMySqlEngine) / model.RDSDBStorageThroughputScalingOnIopsFactorForMySqlEngine)
+				}
+			default:
+				if provisionedThroughput > 0 {
+					throughputStorage, err := getThroughputStorage(provisionedThroughput)
+					if err != nil {
+						return 0, err
+					}
+					throughputCost = throughputStorage.PricePerUnit * provisionedThroughput
+				} else {
+					*throughput = model.RDSDBStorageTier2Gp3BaseThroughput
+				}
+			}
+		} // Else is not needed since tier 1 iops/throughput is not configurable and is not charged
+
+		return sizeCost + iopsCost + throughputCost, nil
+	}
 }
 
 func (r *RDSDBStorageRepoImpl) getIo1TotalPrice(dbStorage model.RDSDBStorage, volumeSize *int32, iops *int32) (float64, error) {
@@ -308,7 +371,7 @@ func (r *RDSDBStorageRepoImpl) getAuroraIOOptimizedTotalPrice(dbStorage model.RD
 	return sizeCost, nil
 }
 
-func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) ([]model.RDSDBStorage, error) {
+func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edition string, clusterType entity.AwsRdsClusterType, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) ([]model.RDSDBStorage, error) {
 	var res []model.RDSDBStorage
 	tx := r.db.Conn().Table(r.viewName).
 		Where("product_family = ?", "Database Storage").
@@ -347,7 +410,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 		if len(edition) > 0 {
 			tx = tx.Where("database_edition = ?", edition)
 		}
-		tx = tx.Where("deployment_option = ?", clusterType)
+		tx = tx.Where("deployment_option = ?", string(clusterType))
 	}
 
 	if len(validTypes) > 0 {
@@ -362,7 +425,7 @@ func (r *RDSDBStorageRepoImpl) getFeasibleVolumeTypes(region string, engine, edi
 	return res, nil
 }
 
-func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition, clusterType string, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) (
+func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition string, clusterType entity.AwsRdsClusterType, volumeSize int32, iops int32, throughput float64, validTypes []model.RDSDBStorageVolumeType) (
 	res *model.RDSDBStorage,
 	cheapestVSize int32,
 	cheapestIops int32,
@@ -398,7 +461,7 @@ func (r *RDSDBStorageRepoImpl) GetCheapestBySpecs(region string, engine, edition
 		case model.RDSDBStorageVolumeTypeGP2:
 			totalCost, err = r.getGp2TotalPrice(v, &vSize, &vIops)
 		case model.RDSDBStorageVolumeTypeGP3:
-			totalCost, err = r.getGp3TotalPrice(v, &vSize, &vIops, &vThroughput)
+			totalCost, err = r.getGp3TotalPrice(clusterType, v, &vSize, &vIops, &vThroughput)
 		case model.RDSDBStorageVolumeTypeIO1:
 			totalCost, err = r.getIo1TotalPrice(v, &vSize, &vIops)
 		case model.RDSDBStorageVolumeTypeIO2:
