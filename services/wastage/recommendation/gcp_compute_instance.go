@@ -244,7 +244,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 		cond := "="
 
-		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
+		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceDiskKey[k], cond)] = vl
 	}
 
 	suggestedStorageType, err := s.gcpComputeDiskTypeRepo.GetCheapestByCoreAndMemory(neededSize, pref)
