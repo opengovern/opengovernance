@@ -163,7 +163,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 
 	var transaction *gorm.DB
 	machineTypePrices := make(map[string]map[string]float64)
-	storageTypePrices := make(map[string]map[string]float64)
+	diskTypePrices := make(map[string]map[string]float64)
 	skus, err := s.fetchSKUs(ctx, services["ComputeEngine"])
 	if err != nil {
 		return err
@@ -185,31 +185,31 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		}
 		if rg == "SSD" && strings.Contains(sku.Description, "Hyperdisk Throughput Capacity") {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["hyperdisk-throughput"] = skuStorageTypePrices
+			diskTypePrices["hyperdisk-throughput"] = skuStorageTypePrices
 		}
 		if rg == "SSD" && strings.Contains(sku.Description, "Hyperdisk Extreme Capacity") {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["hyperdisk-extreme"] = skuStorageTypePrices
+			diskTypePrices["hyperdisk-extreme"] = skuStorageTypePrices
 		}
 		if rg == "SSD" && strings.Contains(sku.Description, "Hyperdisk Balanced Capacity") {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["hyperdisk-balanced"] = skuStorageTypePrices
+			diskTypePrices["hyperdisk-balanced"] = skuStorageTypePrices
 		}
 		if sku.Description == "Storage PD Capacity" {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["pd-standard"] = skuStorageTypePrices
+			diskTypePrices["pd-standard"] = skuStorageTypePrices
 		}
 		if sku.Description == "Balanced PD Capacity" {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["pd-balanced"] = skuStorageTypePrices
+			diskTypePrices["pd-balanced"] = skuStorageTypePrices
 		}
 		if sku.Description == "SSD backed PD Capacity" {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["pd-ssd"] = skuStorageTypePrices
+			diskTypePrices["pd-ssd"] = skuStorageTypePrices
 		}
 		if sku.Description == "Extreme PD Capacity" {
 			skuStorageTypePrices := make(map[string]float64)
-			storageTypePrices["pd-extreme"] = skuStorageTypePrices
+			diskTypePrices["pd-extreme"] = skuStorageTypePrices
 		}
 		for _, region := range sku.ServiceRegions {
 			computeSKU := &model.GCPComputeSKU{}
@@ -224,25 +224,25 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Throughput Capacity") {
-				storageTypePrices["hyperdisk-throughput"][region] = computeSKU.UnitPrice
+				diskTypePrices["hyperdisk-throughput"][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Extreme Capacity") {
-				storageTypePrices["hyperdisk-extreme"][region] = computeSKU.UnitPrice
+				diskTypePrices["hyperdisk-extreme"][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Balanced Capacity") {
-				storageTypePrices["hyperdisk-balanced"][region] = computeSKU.UnitPrice
+				diskTypePrices["hyperdisk-balanced"][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.Description == "Storage PD Capacity" {
-				storageTypePrices["pd-standard"][region] = computeSKU.UnitPrice
+				diskTypePrices["pd-standard"][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.Description == "Balanced PD Capacity" {
-				storageTypePrices["pd-balanced"][region] = computeSKU.UnitPrice
+				diskTypePrices["pd-balanced"][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.Description == "SSD backed PD Capacity" {
-				storageTypePrices["pd-ssd"][region] = computeSKU.UnitPrice
+				diskTypePrices["pd-ssd"][region] = computeSKU.UnitPrice
 			}
 			if computeSKU.Description == "Extreme PD Capacity" {
-				storageTypePrices["pd-extreme"][region] = computeSKU.UnitPrice
+				diskTypePrices["pd-extreme"][region] = computeSKU.UnitPrice
 			}
 		}
 	}
@@ -295,10 +295,10 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		disk := &model.GCPComputeDiskType{}
 		disk.PopulateFromObject(mt)
 
-		p, ok := storageTypePrices[mt.Name][disk.Region]
+		p, ok := diskTypePrices[mt.Name][disk.Region]
 		if !ok {
 			s.logger.Error("failed to get storage price", zap.String("storage_type", mt.Name), zap.String("region", disk.Region),
-				zap.Any("prices", storageTypePrices))
+				zap.Any("prices", diskTypePrices))
 			continue
 		}
 
