@@ -295,14 +295,9 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 		disk := &model.GCPComputeDiskType{}
 		disk.PopulateFromObject(mt)
 
-		diskZoneURLParts := strings.Split(disk.Zone, "/")
-		diskZone := diskZoneURLParts[len(diskZoneURLParts)-1]
-		region := strings.Join([]string{strings.Split(diskZone, "-")[0], strings.Split(diskZone, "-")[1]}, "-")
-		disk.Region = region
-
-		p, ok := storageTypePrices[mt.Name][region]
+		p, ok := storageTypePrices[mt.Name][disk.Region]
 		if !ok {
-			s.logger.Error("failed to get storage price", zap.String("storage_type", mt.Name), zap.String("region", region),
+			s.logger.Error("failed to get storage price", zap.String("storage_type", mt.Name), zap.String("region", disk.Region),
 				zap.Any("prices", storageTypePrices))
 			continue
 		}
