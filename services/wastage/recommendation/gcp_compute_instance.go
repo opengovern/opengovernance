@@ -190,13 +190,19 @@ func (s *Service) GCPComputeInstanceRecommendation(
 func (s *Service) GCPComputeDiskRecommendation(
 	ctx context.Context,
 	disk entity.GcpComputeDisk,
-	usedCapacity float64,
+	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
 ) (*entity.GcpComputeDiskRecommendation, error) {
 	currentCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
 	if err != nil {
 		return nil, err
 	}
+
+	if _, ok := metrics["diskSpaceUsed"]; !ok {
+		return nil, fmt.Errorf("diskSpaceUsed metric not found")
+	}
+
+	diskUsage := extractGCPUsage(metrics["diskSpaceUsed"])
 
 	result := entity.GcpComputeDiskRecommendation{
 		Current: entity.RightsizingGcpComputeDisk{
@@ -207,7 +213,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 			Cost: currentCost,
 		},
-		UsedCapacity: usedCapacity,
+		UsedCapacity: diskUsage,
 	}
 
 	sizeBreathingRoom := int64(0)
@@ -216,7 +222,12 @@ func (s *Service) GCPComputeDiskRecommendation(
 	}
 
 	neededSize := 0.0
-	neededSize = calculateHeadroom(usedCapacity, sizeBreathingRoom)
+	if diskUsage.Avg != nil {
+		neededSize = ((*diskUsage.Avg + float64(sizeBreathingRoom)) / 100) * float64(*disk.DiskSize)
+	}
+	if neededSize < 2 {
+		neededSize = 2
+	}
 
 	pref := make(map[string]any)
 

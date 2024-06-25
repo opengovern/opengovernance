@@ -39,16 +39,16 @@ type GcpComputeInstanceRightsizingRecommendation struct {
 }
 
 type GcpComputeInstanceWastageRequest struct {
-	RequestId        *string                `json:"requestId"`
-	CliVersion       *string                `json:"cliVersion"`
-	Identification   map[string]string      `json:"identification"`
-	Instance         GcpComputeInstance     `json:"instance"`
-	Disks            []GcpComputeDisk       `json:"disks"`
-	Metrics          map[string][]Datapoint `json:"metrics"`
-	DiskCapacityUsed map[string]float64     `json:"diskCapacityUsed"`
-	Region           string                 `json:"region"`
-	Preferences      map[string]*string     `json:"preferences"`
-	Loading          bool                   `json:"loading"`
+	RequestId        *string                           `json:"requestId"`
+	CliVersion       *string                           `json:"cliVersion"`
+	Identification   map[string]string                 `json:"identification"`
+	Instance         GcpComputeInstance                `json:"instance"`
+	Disks            []GcpComputeDisk                  `json:"disks"`
+	Metrics          map[string][]Datapoint            `json:"metrics"`
+	DiskCapacityUsed map[string]map[string][]Datapoint `json:"diskCapacityUsed"`
+	Region           string                            `json:"region"`
+	Preferences      map[string]*string                `json:"preferences"`
+	Loading          bool                              `json:"loading"`
 }
 
 type RightsizingGcpComputeDisk struct {
@@ -63,7 +63,7 @@ type GcpComputeDiskRecommendation struct {
 	Current     RightsizingGcpComputeDisk
 	Recommended *RightsizingGcpComputeDisk
 
-	UsedCapacity float64 `json:"usedCapacity"`
+	UsedCapacity Usage `json:"usedCapacity"`
 
 	Description string `json:"description"`
 }
