@@ -225,8 +225,8 @@ func (s *Service) GCPComputeDiskRecommendation(
 	if diskUsage.Avg != nil {
 		neededSize = ((*diskUsage.Avg + float64(sizeBreathingRoom)) / 100) * float64(*disk.DiskSize)
 	}
-	if neededSize < 2 {
-		neededSize = 2
+	if neededSize < 10 {
+		neededSize = 10
 	}
 
 	pref := make(map[string]any)

@@ -65,9 +65,8 @@ func (r *GCPComputeDiskTypeRepoImpl) Get(machineType string) (*model.GCPComputeD
 func (r *GCPComputeDiskTypeRepoImpl) GetCheapestByCoreAndMemory(size float64, pref map[string]interface{}) (*model.GCPComputeDiskType, error) {
 	var m model.GCPComputeDiskType
 	tx := r.db.Conn().Table(r.viewName).
-		Where("min_size_gb >= ?", size).
-		Where("max_size_gb <= ?", size).
-		Where("unit_price != 0")
+		Where("min_size_gb <= ?", size).
+		Where("max_size_gb >= ?", size)
 	for k, v := range pref {
 		tx = tx.Where(k, v)
 	}
