@@ -15,7 +15,7 @@ type GCPComputeDiskTypeRepo interface {
 	Delete(tableName string, id string) error
 	List() ([]model.GCPComputeDiskType, error)
 	Get(machineType string) (*model.GCPComputeDiskType, error)
-	GetCheapestByCoreAndMemory(size float64, pref map[string]interface{}) (*model.GCPComputeDiskType, error)
+	GetCheapest(pref map[string]interface{}) (*model.GCPComputeDiskType, error)
 	CreateNewTable() (string, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(currentTableName string) error
@@ -62,11 +62,9 @@ func (r *GCPComputeDiskTypeRepoImpl) Get(machineType string) (*model.GCPComputeD
 	return &m, tx.Error
 }
 
-func (r *GCPComputeDiskTypeRepoImpl) GetCheapestByCoreAndMemory(size float64, pref map[string]interface{}) (*model.GCPComputeDiskType, error) {
+func (r *GCPComputeDiskTypeRepoImpl) GetCheapest(pref map[string]interface{}) (*model.GCPComputeDiskType, error) {
 	var m model.GCPComputeDiskType
-	tx := r.db.Conn().Table(r.viewName).
-		Where("min_size_gb <= ?", size).
-		Where("max_size_gb >= ?", size)
+	tx := r.db.Conn().Table(r.viewName)
 	for k, v := range pref {
 		tx = tx.Where(k, v)
 	}

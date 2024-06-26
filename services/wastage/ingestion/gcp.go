@@ -223,15 +223,6 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			if (rg == cpu || rg == ram) && t == "Predefined" {
 				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
 			}
-			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Throughput Capacity") {
-				diskTypePrices["hyperdisk-throughput"][region] = computeSKU.UnitPrice
-			}
-			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Extreme Capacity") {
-				diskTypePrices["hyperdisk-extreme"][region] = computeSKU.UnitPrice
-			}
-			if computeSKU.ResourceGroup == "SSD" && strings.Contains(computeSKU.Description, "Hyperdisk Balanced Capacity") {
-				diskTypePrices["hyperdisk-balanced"][region] = computeSKU.UnitPrice
-			}
 			if computeSKU.Description == "Storage PD Capacity" {
 				diskTypePrices["pd-standard"][region] = computeSKU.UnitPrice
 			}

@@ -17,24 +17,24 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	instance entity.GcpComputeInstance,
 	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
-) (*entity.GcpComputeInstanceRightsizingRecommendation, error) {
+) (*entity.GcpComputeInstanceRightsizingRecommendation, *model.GCPComputeMachineType, error) {
 	var machine *model.GCPComputeMachineType
 	var err error
 
 	if instance.MachineType == "" {
-		return nil, fmt.Errorf("no machine type provided")
+		return nil, nil, fmt.Errorf("no machine type provided")
 	}
 	if strings.Contains(instance.MachineType, "custom") {
 		machine, err = s.extractCustomInstanceDetails(instance)
 	} else {
 		machine, err = s.gcpComputeMachineTypeRepo.Get(instance.MachineType)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	currentCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	region := strings.Join([]string{strings.Split(instance.Zone, "-")[0], strings.Split(instance.Zone, "-")[1]}, "-")
@@ -53,10 +53,10 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	}
 
 	if _, ok := metrics["cpuUtilization"]; !ok {
-		return nil, fmt.Errorf("cpuUtilization metric not found")
+		return nil, nil, fmt.Errorf("cpuUtilization metric not found")
 	}
 	if _, ok := metrics["memoryUtilization"]; !ok {
-		return nil, fmt.Errorf("memoryUtilization metric not found")
+		return nil, nil, fmt.Errorf("memoryUtilization metric not found")
 	}
 	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
 	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
@@ -116,7 +116,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 
 	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemoryMb, pref)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	excludeCustom := false
@@ -131,13 +131,13 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		instance.MachineType = suggestedMachineType.Name
 		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if !excludeCustom {
 			customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			for _, customMachine := range customMachines {
 				if customMachine.Cost < suggestedCost {
@@ -160,7 +160,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	} else if !excludeCustom {
 		customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		suggestedMachineType = machine
 		suggestedCost := currentCost
@@ -183,13 +183,17 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			Cost: suggestedCost,
 		}
 	}
+	if suggestedMachineType == nil {
+		suggestedMachineType = machine
+	}
 
-	return &result, nil
+	return &result, suggestedMachineType, nil
 }
 
 func (s *Service) GCPComputeDiskRecommendation(
 	ctx context.Context,
 	disk entity.GcpComputeDisk,
+	machine *model.GCPComputeMachineType,
 	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
 ) (*entity.GcpComputeDiskRecommendation, error) {
@@ -198,11 +202,10 @@ func (s *Service) GCPComputeDiskRecommendation(
 		return nil, err
 	}
 
-	if _, ok := metrics["diskSpaceUsed"]; !ok {
-		return nil, fmt.Errorf("diskSpaceUsed metric not found")
-	}
-
-	diskUsage := extractGCPUsage(metrics["diskSpaceUsed"])
+	readIopsUsage := extractGCPUsage(metrics["DiskReadIOPS"])
+	writeIopsUsage := extractGCPUsage(metrics["DiskWriteIOPS"])
+	readThroughputUsage := extractGCPUsage(metrics["DiskReadThroughput"])
+	writeThroughputUsage := extractGCPUsage(metrics["DiskWriteThroughput"])
 
 	result := entity.GcpComputeDiskRecommendation{
 		Current: entity.RightsizingGcpComputeDisk{
@@ -213,23 +216,34 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 			Cost: currentCost,
 		},
-		UsedCapacity: diskUsage,
+		Iops:       readIopsUsage,       // TODO
+		Throughput: readThroughputUsage, // TODO
 	}
 
-	sizeBreathingRoom := int64(0)
-	if preferences["SizeBreathingRoom"] != nil {
-		sizeBreathingRoom, _ = strconv.ParseInt(*preferences["SizeBreathingRoom"], 10, 64)
+	iopsBreathingRoom := int64(0)
+	if preferences["IOPSBreathingRoom"] != nil {
+		iopsBreathingRoom, _ = strconv.ParseInt(*preferences["IopsBreathingRoom"], 10, 64)
 	}
 
-	neededSize := 0.0
-	if diskUsage.Avg != nil {
-		neededSize = ((*diskUsage.Avg + float64(sizeBreathingRoom)) / 100) * float64(*disk.DiskSize)
+	throughputBreathingRoom := int64(0)
+	if preferences["ThroughputBreathingRoom"] != nil {
+		throughputBreathingRoom, _ = strconv.ParseInt(*preferences["ThroughputBreathingRoom"], 10, 64)
 	}
-	if neededSize < 10 {
-		neededSize = 10
-	}
+
+	neededReadIops := pCalculateHeadroom(readIopsUsage.Avg, iopsBreathingRoom)
+	neededReadThroughput := pCalculateHeadroom(readThroughputUsage.Avg, throughputBreathingRoom)
+	neededWriteIops := pCalculateHeadroom(writeIopsUsage.Avg, iopsBreathingRoom)
+	neededWriteThroughput := pCalculateHeadroom(writeThroughputUsage.Avg, throughputBreathingRoom)
 
 	pref := make(map[string]any)
+
+	diskType, err := findCheapestDiskType(machine.MachineFamily, machine.MachineType, machine.GuestCpus,
+		neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput, *disk.DiskSize)
+	if err != nil {
+		return nil, err
+	}
+
+	pref["storage_type = ?"] = diskType
 
 	for k, v := range preferences {
 		var vl any
@@ -247,7 +261,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceDiskKey[k], cond)] = vl
 	}
 
-	suggestedStorageType, err := s.gcpComputeDiskTypeRepo.GetCheapestByCoreAndMemory(neededSize, pref)
+	suggestedStorageType, err := s.gcpComputeDiskTypeRepo.GetCheapest(pref)
 	if err != nil {
 		return nil, err
 	}
@@ -256,8 +270,6 @@ func (s *Service) GCPComputeDiskRecommendation(
 		disk.Zone = suggestedStorageType.Zone
 		disk.DiskType = suggestedStorageType.Name
 		disk.Region = suggestedStorageType.Region
-		newSize := int64(neededSize)
-		disk.DiskSize = &newSize
 		suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
 		if err != nil {
 			return nil, err
@@ -267,7 +279,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 			Zone:     suggestedStorageType.Zone,
 			Region:   suggestedStorageType.Region,
 			DiskType: suggestedStorageType.StorageType,
-			DiskSize: &newSize,
+			DiskSize: disk.DiskSize,
 
 			Cost: suggestedCost,
 		}
