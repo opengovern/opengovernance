@@ -132,6 +132,9 @@ func (s *Service) findLimitations(machineFamily, machineType string, vCPUs int64
 		}
 	}
 	if l, ok := machineTypeDiskLimitationsPerCPURange[machineFamily]; ok {
+		if machineType == "e2-medium" {
+			return l[machineType]
+		}
 		for k, v := range l {
 			r := strings.Split(k, "-")
 			min, _ := strconv.ParseInt(r[0], 10, 64)

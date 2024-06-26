@@ -204,8 +204,18 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	readIopsUsage := extractGCPUsage(metrics["DiskReadIOPS"])
 	writeIopsUsage := extractGCPUsage(metrics["DiskWriteIOPS"])
-	readThroughputUsage := extractGCPUsage(metrics["DiskReadThroughput"])
-	writeThroughputUsage := extractGCPUsage(metrics["DiskWriteThroughput"])
+	readThroughputUsageBytes := extractGCPUsage(metrics["DiskReadThroughput"])
+	readThroughputUsageMb := entity.Usage{
+		Avg: funcP(readThroughputUsageBytes.Avg, readThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(readThroughputUsageBytes.Min, readThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(readThroughputUsageBytes.Max, readThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	}
+	writeThroughputUsageBytes := extractGCPUsage(metrics["DiskWriteThroughput"])
+	writeThroughputUsageMb := entity.Usage{
+		Avg: funcP(writeThroughputUsageBytes.Avg, writeThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(writeThroughputUsageBytes.Min, writeThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	}
 
 	result := entity.GcpComputeDiskRecommendation{
 		Current: entity.RightsizingGcpComputeDisk{
@@ -216,8 +226,10 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 			Cost: currentCost,
 		},
-		Iops:       readIopsUsage,       // TODO
-		Throughput: readThroughputUsage, // TODO
+		ReadIops:        readIopsUsage,
+		WriteIops:       writeIopsUsage,
+		ReadThroughput:  readThroughputUsageMb,
+		WriteThroughput: writeThroughputUsageMb,
 	}
 
 	iopsBreathingRoom := int64(0)
@@ -231,9 +243,9 @@ func (s *Service) GCPComputeDiskRecommendation(
 	}
 
 	neededReadIops := pCalculateHeadroom(readIopsUsage.Avg, iopsBreathingRoom)
-	neededReadThroughput := pCalculateHeadroom(readThroughputUsage.Avg, throughputBreathingRoom)
+	neededReadThroughput := pCalculateHeadroom(readThroughputUsageMb.Avg, throughputBreathingRoom)
 	neededWriteIops := pCalculateHeadroom(writeIopsUsage.Avg, iopsBreathingRoom)
-	neededWriteThroughput := pCalculateHeadroom(writeThroughputUsage.Avg, throughputBreathingRoom)
+	neededWriteThroughput := pCalculateHeadroom(writeThroughputUsageMb.Avg, throughputBreathingRoom)
 
 	pref := make(map[string]any)
 
