@@ -45,7 +45,7 @@ type GcpComputeInstanceWastageRequest struct {
 	Instance       GcpComputeInstance                `json:"instance"`
 	Disks          []GcpComputeDisk                  `json:"disks"`
 	Metrics        map[string][]Datapoint            `json:"metrics"`
-	DisksMetrics   map[string]map[string][]Datapoint `json:"diskCapacityUsed"`
+	DisksMetrics   map[string]map[string][]Datapoint `json:"diskMetrics"`
 	Region         string                            `json:"region"`
 	Preferences    map[string]*string                `json:"preferences"`
 	Loading        bool                              `json:"loading"`
