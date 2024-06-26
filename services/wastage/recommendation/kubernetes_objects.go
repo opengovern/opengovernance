@@ -69,8 +69,8 @@ func (s *Service) KubernetesPodRecommendation(
 		if v, ok := preferences["CPURequestBreathingRoom"]; ok && v != nil {
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
-				s.logger.Error("invalid CPUBreathingRoom value", zap.String("value", v.Value))
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuBreathingRoom value: %s", *v))
+				s.logger.Error("invalid CPURequestBreathingRoom value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CPURequestBreathingRoom value: %s", v.Value))
 			}
 			recommended.CpuRequest = calculateHeadroom(recommended.CpuRequest, vPercent)
 			if recommended.CpuRequest < 0.1 {
@@ -81,7 +81,7 @@ func (s *Service) KubernetesPodRecommendation(
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid CPULimitBreathingRoom value", zap.String("value", v.Value))
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuLimitBreathingRoom value: %s", *v))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid CpuLimitBreathingRoom value: %s", v.Value))
 			}
 			recommended.CpuLimit = calculateHeadroom(recommended.CpuLimit, vPercent)
 			if recommended.CpuLimit < 0.1 {
@@ -92,8 +92,8 @@ func (s *Service) KubernetesPodRecommendation(
 		if v, ok := preferences["MemoryRequestBreathingRoom"]; ok && v != nil {
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
-				s.logger.Error("invalid MemoryBreathingRoom value", zap.String("value", v.Value))
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryBreathingRoom value: %s", *v))
+				s.logger.Error("invalid MemoryRequestBreathingRoom value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryRequestBreathingRoom value: %s", v.Value))
 			}
 			recommended.MemoryRequest = calculateHeadroom(recommended.MemoryRequest, vPercent)
 			if recommended.MemoryRequest == 0 {
@@ -104,11 +104,31 @@ func (s *Service) KubernetesPodRecommendation(
 			vPercent, err := strconv.ParseInt(v.Value, 10, 64)
 			if err != nil {
 				s.logger.Error("invalid MemoryLimitBreathingRoom value", zap.String("value", v.Value))
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryLimitBreathingRoom value: %s", *v))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MemoryLimitBreathingRoom value: %s", v.Value))
 			}
 			recommended.MemoryLimit = calculateHeadroom(recommended.MemoryLimit, vPercent)
 			if recommended.MemoryLimit == 0 {
 				recommended.MemoryLimit = 100 * (1024 * 1024)
+			}
+		}
+		if v, ok := preferences["MinCpuRequest"]; ok && v != nil {
+			minCpuRequest, err := strconv.ParseFloat(v.Value, 64)
+			if err != nil {
+				s.logger.Error("invalid MinCpuRequest value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MinCpuRequest value: %s", v.Value))
+			}
+			if recommended.CpuRequest < minCpuRequest {
+				recommended.CpuRequest = minCpuRequest
+			}
+		}
+		if v, ok := preferences["MinMemoryRequest"]; ok && v != nil {
+			minMemoryRequest, err := strconv.ParseFloat(v.Value, 64)
+			if err != nil {
+				s.logger.Error("invalid MinMemoryRequest value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MinMemoryRequest value: %s", v.Value))
+			}
+			if recommended.MemoryRequest < minMemoryRequest {
+				recommended.MemoryRequest = minMemoryRequest
 			}
 		}
 
