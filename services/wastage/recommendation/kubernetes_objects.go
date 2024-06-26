@@ -128,7 +128,7 @@ func (s *Service) KubernetesPodRecommendation(
 				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid MinMemoryRequest value: %s", v.Value))
 			}
 			if recommended.MemoryRequest < minMemoryRequest {
-				recommended.MemoryRequest = minMemoryRequest
+				recommended.MemoryRequest = minMemoryRequest * (1024 * 1024)
 			}
 		}
 
