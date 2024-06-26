@@ -2,6 +2,7 @@ package recommendation
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 )
@@ -40,9 +41,9 @@ var (
 )
 
 // diskTypes sorted by cost per GB: pd-standard, pd-balanced, pd-extreme, pd-ssd
-func findCheapestDiskType(machineFamily, machineType string, vCPUs int64, neededReadIops, neededWriteIops,
+func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs int64, neededReadIops, neededWriteIops,
 	neededReadThroughput, neededWriteThroughput float64, sizeGb int64) (string, error) {
-	limitations := findLimitations(machineFamily, machineType, vCPUs)
+	limitations := s.findLimitations(machineFamily, machineType, vCPUs)
 	if len(limitations) == 0 {
 		return "", fmt.Errorf("could not find limitations")
 	}
@@ -86,10 +87,15 @@ func findCheapestDiskType(machineFamily, machineType string, vCPUs int64, needed
 		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
 		return "pd-ssd", nil
 	}
+
+	s.logger.Error("could not find suitable disk type", zap.String("machine_family", machineFamily), zap.String("machine_type", machineType),
+		zap.Int64("vCPUs", vCPUs), zap.Float64("needed_read_iops", neededReadIops), zap.Float64("needed_write_iops", neededWriteIops),
+		zap.Float64("needed_read_throughput", neededReadThroughput), zap.Float64("needed_write_throughput", neededWriteThroughput),
+		zap.Int64("size_gb", sizeGb), zap.Any("limitations", limitations))
 	return "", fmt.Errorf("could not find sutiable disk type")
 }
 
-func findLimitations(machineFamily, machineType string, vCPUs int64) map[string]DiskLimitationsPerVm {
+func (s *Service) findLimitations(machineFamily, machineType string, vCPUs int64) map[string]DiskLimitationsPerVm {
 	limitations := make(map[string]DiskLimitationsPerVm)
 	if machineFamily == "n2" {
 		limitations["pd-extreme"] = machineTypeDiskLimitations[machineFamily][machineType]["pd-extreme"]

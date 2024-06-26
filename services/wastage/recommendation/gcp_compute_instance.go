@@ -237,7 +237,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	pref := make(map[string]any)
 
-	diskType, err := findCheapestDiskType(machine.MachineFamily, machine.MachineType, machine.GuestCpus,
+	diskType, err := s.findCheapestDiskType(machine.MachineFamily, machine.MachineType, machine.GuestCpus,
 		neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput, *disk.DiskSize)
 	if err != nil {
 		return nil, err
