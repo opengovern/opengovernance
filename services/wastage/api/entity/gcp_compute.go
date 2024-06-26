@@ -63,8 +63,10 @@ type GcpComputeDiskRecommendation struct {
 	Current     RightsizingGcpComputeDisk
 	Recommended *RightsizingGcpComputeDisk
 
-	Iops       Usage `json:"iops"`
-	Throughput Usage `json:"throughput"`
+	ReadIops        Usage `json:"ReadIops"`
+	WriteIops       Usage `json:"writeIops"`
+	ReadThroughput  Usage `json:"readThroughput"`
+	WriteThroughput Usage `json:"writeThroughput"`
 
 	Description string `json:"description"`
 }
