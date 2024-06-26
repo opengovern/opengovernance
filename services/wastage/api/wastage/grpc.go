@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+	"github.com/alitto/pond"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
@@ -36,20 +37,22 @@ type Server struct {
 	tracer trace.Tracer
 	logger *zap.Logger
 
-	blobClient *azblob.Client
+	blobClient     *azblob.Client
+	blobWorkerPool *pond.WorkerPool
 
 	usageRepo repo.UsageV2Repo
 	recomSvc  *recommendation.Service
 }
 
-func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
+func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
 	return &Server{
-		cfg:        cfg,
-		tracer:     otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:     logger.Named("grpc"),
-		blobClient: blobClient,
-		usageRepo:  usageRepo,
-		recomSvc:   recomSvc,
+		cfg:            cfg,
+		tracer:         otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:         logger.Named("grpc"),
+		blobClient:     blobClient,
+		blobWorkerPool: blobWorkerPool,
+		usageRepo:      usageRepo,
+		recomSvc:       recomSvc,
 	}
 }
 
@@ -125,8 +128,12 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.Pod.Id,
 		Auth0UserId: userId,
@@ -152,11 +159,12 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return nil, err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-pod",
@@ -263,8 +271,12 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetDeployment().GetId(),
 		Auth0UserId: userId,
@@ -290,11 +302,12 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return nil, err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-deployment/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-deployment",
@@ -401,8 +414,12 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetStatefulset().GetId(),
 		Auth0UserId: userId,
@@ -428,11 +445,12 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return nil, err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-statefulset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-statefulset",
@@ -539,8 +557,12 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetDaemonset().GetId(),
 		Auth0UserId: userId,
@@ -566,11 +588,12 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return nil, err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-daemonset/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-daemonset",
@@ -677,8 +700,12 @@ func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.Kubernet
 		email = email + "@local.temp"
 	}
 
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
 	stats := model.Statistics{
-		AccountID:   req.Identification["auth_info_name"],
+		AccountID:   accountId,
 		OrgEmail:    email,
 		ResourceID:  req.GetJob().GetId(),
 		Auth0UserId: userId,
@@ -704,11 +731,12 @@ func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.Kubernet
 		requestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-job/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return nil, err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-job/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "kubernetes-job",

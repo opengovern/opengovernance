@@ -7,11 +7,14 @@ import (
 )
 
 const (
-	RDSDBStorageTier1Gp3BaseThroughput = 125.0
-	RDSDBStorageTier1Gp3BaseIops       = 3000
-	RDSDBStorageTier2Gp3BaseThroughput = 500.0
-	RDSDBStorageTier2Gp3BaseIops       = 12000
-	RDSDBStorageTier1Gp3SizeThreshold  = 400
+	RDSDBStorageTier1Gp3BaseThroughput                          = 125.0
+	RDSDBStorageTier1Gp3BaseIops                                = 3000
+	RDSDBStorageTier2Gp3BaseThroughput                          = 500.0
+	RDSDBStorageTier2Gp3BaseIops                                = 12000
+	RDSDBStorageTier1Gp3SizeThreshold                           = 400
+	RDSDBStorageTier1Gp3SizeThresholdForOracleEngine            = 200
+	RDSDBStorageIopsThresholdForThroughputScalingForMySqlEngine = 32000
+	RDSDBStorageThroughputScalingOnIopsFactorForMySqlEngine     = 5
 )
 
 type RDSDBStorage struct {

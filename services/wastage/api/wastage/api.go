@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+	"github.com/alitto/pond"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	types2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/google/uuid"
@@ -35,32 +36,34 @@ import (
 )
 
 type API struct {
-	cfg          config.WastageConfig
-	tracer       trace.Tracer
-	logger       *zap.Logger
-	blobClient   *azblob.Client
-	costSvc      *cost.Service
-	usageRepo    repo.UsageV2Repo
-	usageV1Repo  repo.UsageRepo
-	userRepo     repo.UserRepo
-	orgRepo      repo.OrganizationRepo
-	recomSvc     *recommendation.Service
-	ingestionSvc *ingestion.Service
+	cfg            config.WastageConfig
+	tracer         trace.Tracer
+	logger         *zap.Logger
+	blobClient     *azblob.Client
+	blobWorkerPool *pond.WorkerPool
+	costSvc        *cost.Service
+	usageRepo      repo.UsageV2Repo
+	usageV1Repo    repo.UsageRepo
+	userRepo       repo.UserRepo
+	orgRepo        repo.OrganizationRepo
+	recomSvc       *recommendation.Service
+	ingestionSvc   *ingestion.Service
 }
 
-func New(cfg config.WastageConfig, blobClient *azblob.Client, costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
+func New(cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
 	return API{
-		cfg:          cfg,
-		blobClient:   blobClient,
-		costSvc:      costSvc,
-		recomSvc:     recomSvc,
-		usageRepo:    usageRepo,
-		usageV1Repo:  usageV1Repo,
-		userRepo:     userRepo,
-		orgRepo:      orgRepo,
-		ingestionSvc: ingestionService,
-		tracer:       otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:       logger.Named("wastage-api"),
+		cfg:            cfg,
+		blobClient:     blobClient,
+		blobWorkerPool: blobWorkerPool,
+		costSvc:        costSvc,
+		recomSvc:       recomSvc,
+		usageRepo:      usageRepo,
+		usageV1Repo:    usageV1Repo,
+		userRepo:       userRepo,
+		orgRepo:        orgRepo,
+		ingestionSvc:   ingestionService,
+		tracer:         otel.GetTracerProvider().Tracer("wastage.http.sources"),
+		logger:         logger.Named("wastage-api"),
 	}
 }
 
@@ -141,11 +144,12 @@ func (s API) EC2Instance(echoCtx echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "ec2-instance",
@@ -336,11 +340,12 @@ func (s API) AwsRDS(echoCtx echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds",
 		Request:        trimmedReqJson,
@@ -486,11 +491,12 @@ func (s API) AwsRDSCluster(echoCtx echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 	usage := model.UsageV2{
 		ApiEndpoint:    "aws-rds-cluster",
 		Request:        trimmedReqJson,
@@ -687,11 +693,12 @@ func (s API) GCPCompute(echoCtx echo.Context) error {
 		req.RequestId = &id
 	}
 
-	_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
-	if err != nil {
-		s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
-		return err
-	}
+	s.blobWorkerPool.Submit(func() {
+		_, err = s.blobClient.UploadBuffer(ctx, s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		if err != nil {
+			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
+		}
+	})
 	usage := model.UsageV2{
 		ApiEndpoint:    "gcp-compute-instance",
 		Request:        fullReqJson,
