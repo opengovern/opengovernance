@@ -3,6 +3,7 @@ package wastage
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/alitto/pond"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage"
@@ -18,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	logger2 "gorm.io/gorm/logger"
 	"os"
+	"time"
 )
 
 var (
@@ -111,7 +113,14 @@ func Command() *cobra.Command {
 			gcpIngestionSvc, err := ingestion.NewGcpService(ctx, logger, dataAgeRepo, computeMachineTypeRepo, computeDiskTypeRepo, computeSKURepo, db, gcpCredentials, GCPProjectID)
 			go ingestionSvc.Start(ctx)
 			go gcpIngestionSvc.Start(ctx)
-			grpcServer := wastage.NewServer(logger, cnf, blobClient, usageV2Repo, recomSvc)
+
+			blobWorkerPool := pond.New(50, 1000000,
+				pond.Strategy(pond.Eager()),
+				pond.Context(ctx),
+				pond.IdleTimeout(10*time.Second),
+				pond.MinWorkers(1))
+
+			grpcServer := wastage.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc)
 			err = wastage.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
 			if err != nil {
 				return err
@@ -121,7 +130,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(cnf, blobClient, costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo, logger),
+				api.New(cnf, blobClient, blobWorkerPool, costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo, logger),
 			)
 		},
 	}
