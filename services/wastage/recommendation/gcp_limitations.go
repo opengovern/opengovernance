@@ -95,6 +95,50 @@ func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs 
 	return "", fmt.Errorf("could not find sutiable disk type")
 }
 
+func (s *Service) getMaximums(machineFamily, machineType, diskType string, vCPUs, sizeGb int64) (int64, int64, int64, int64, error) {
+	limitations := s.findLimitations(machineFamily, machineType, vCPUs)
+	if len(limitations) == 0 {
+		return 0, 0, 0, 0, fmt.Errorf("could not find limitations")
+	}
+
+	// pd-standard'
+	if diskType == "pd-standard" {
+		l := limitations["pd-standard"]
+		maxReadIops := min(l.MaxReadIOPS, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].ReadIOPS)
+		maxWriteIops := min(l.MaxWriteIOPS, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].WriteIOPS)
+		maxReadThroughput := min(l.MaxReadThroughput, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].Throughput)
+		maxWriteThroughput := min(l.MaxWriteThroughput, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].Throughput)
+		return int64(maxReadIops), int64(maxWriteIops), int64(maxReadThroughput), int64(maxWriteThroughput), nil
+	}
+
+	// pd-balanced
+	if diskType == "pd-balanced" {
+		l := limitations["pd-balanced"]
+		maxReadIops := min(l.MaxReadIOPS, 3000+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].ReadIOPS)
+		maxWriteIops := min(l.MaxWriteIOPS, 3000+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].WriteIOPS)
+		maxReadThroughput := min(l.MaxReadThroughput, 140+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].Throughput)
+		maxWriteThroughput := min(l.MaxWriteThroughput, 140+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].Throughput)
+		return int64(maxReadIops), int64(maxWriteIops), int64(maxReadThroughput), int64(maxWriteThroughput), nil
+	}
+
+	// pd-extreme
+	if diskType == "pd-extreme" {
+		l := limitations["pd-extreme"]
+		return int64(l.MaxReadIOPS), int64(l.MaxWriteIOPS), int64(l.MaxReadThroughput), int64(l.MaxWriteThroughput), nil
+	}
+
+	// pd-ssd
+	if diskType == "pd-ssd" {
+		l := limitations["pd-ssd"]
+		maxReadIops := min(l.MaxReadIOPS, 6000+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].ReadIOPS)
+		maxWriteIops := min(l.MaxWriteIOPS, 6000+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].WriteIOPS)
+		maxReadThroughput := min(l.MaxReadThroughput, 240+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].Throughput)
+		maxWriteThroughput := min(l.MaxWriteThroughput, 240+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].Throughput)
+		return int64(maxReadIops), int64(maxWriteIops), int64(maxReadThroughput), int64(maxWriteThroughput), nil
+	}
+	return 0, 0, 0, 0, fmt.Errorf("could not find disk type %s", diskType)
+}
+
 func (s *Service) findLimitations(machineFamily, machineType string, vCPUs int64) map[string]DiskLimitationsPerVm {
 	limitations := make(map[string]DiskLimitationsPerVm)
 	if machineFamily == "n2" {

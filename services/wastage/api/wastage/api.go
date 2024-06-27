@@ -749,7 +749,7 @@ func (s API) GCPCompute(echoCtx echo.Context) error {
 
 	// TODO: Limit
 
-	rightSizingRecom, recomMachine, err := s.recomSvc.GCPComputeInstanceRecommendation(ctx, req.Instance, req.Metrics, req.Preferences)
+	rightSizingRecom, currentMachine, recomMachine, err := s.recomSvc.GCPComputeInstanceRecommendation(ctx, req.Instance, req.Metrics, req.Preferences)
 	if err != nil {
 		s.logger.Error("failed to get gcp compute instance recommendation", zap.Error(err))
 		return err
@@ -758,7 +758,7 @@ func (s API) GCPCompute(echoCtx echo.Context) error {
 	diskRightSizingRecoms := make(map[string]entity.GcpComputeDiskRecommendation)
 	for _, disk := range req.Disks {
 		var diskRightSizingRecom *entity.GcpComputeDiskRecommendation
-		diskRightSizingRecom, err = s.recomSvc.GCPComputeDiskRecommendation(ctx, disk, recomMachine, req.DisksMetrics[disk.HashedDiskId], req.Preferences)
+		diskRightSizingRecom, err = s.recomSvc.GCPComputeDiskRecommendation(ctx, disk, currentMachine, recomMachine, req.DisksMetrics[disk.HashedDiskId], req.Preferences)
 		if err != nil {
 			err = fmt.Errorf("failed to get GCP Compute Disk %s recommendation: %s", disk.HashedDiskId, err.Error())
 			return err
