@@ -300,7 +300,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 		}
 
 		recommendedReadIopsLimit, recommendedWriteIopsLimit, recommendedReadThroughputLimit, recommendedWriteThroughputLimit, err := s.getMaximums(recommendedMachine.MachineFamily,
-			recommendedMachine.MachineType, diskType, recommendedMachine.GuestCpus, *disk.DiskSize)
+			recommendedMachine.MachineType, suggestedStorageType.StorageType, recommendedMachine.GuestCpus, *disk.DiskSize)
 		if err != nil {
 			return nil, err
 		}
