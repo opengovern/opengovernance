@@ -52,14 +52,14 @@ type GcpComputeInstanceWastageRequest struct {
 }
 
 type RightsizingGcpComputeDisk struct {
-	Zone                 string `json:"zone"`
-	Region               string `json:"region"`
-	DiskType             string `json:"diskType"`
-	DiskSize             int64  `json:"diskSize"`
-	ReadIopsLimit        int64  `json:"readIopsLimit"`
-	WriteIopsLimit       int64  `json:"writeIopsLimit"`
-	ReadThroughputLimit  int64  `json:"readThroughputLimit"`
-	WriteThroughputLimit int64  `json:"writeThroughputLimit"`
+	Zone                 string  `json:"zone"`
+	Region               string  `json:"region"`
+	DiskType             string  `json:"diskType"`
+	DiskSize             int64   `json:"diskSize"`
+	ReadIopsLimit        int64   `json:"readIopsLimit"`
+	WriteIopsLimit       int64   `json:"writeIopsLimit"`
+	ReadThroughputLimit  float64 `json:"readThroughputLimit"`
+	WriteThroughputLimit float64 `json:"writeThroughputLimit"`
 
 	Cost float64 `json:"cost"`
 }
