@@ -44,8 +44,13 @@ func (p *GCPComputeSKU) PopulateFromObject(sku *cloudbilling.Sku, region string)
 	p.Description = sku.Description
 	p.MachineFamily, p.ResourceGroup, p.Type = GetSkuDetails(sku)
 	pe := sku.PricingInfo[len(sku.PricingInfo)-1].PricingExpression
-	p.UnitPrice = float64(pe.TieredRates[0].UnitPrice.Units) +
-		(float64(pe.TieredRates[0].UnitPrice.Nanos) / float64(1_000_000_000))
+	for i := range pe.TieredRates {
+		p.UnitPrice = float64(pe.TieredRates[i].UnitPrice.Units) +
+			(float64(pe.TieredRates[i].UnitPrice.Nanos) / float64(1_000_000_000))
+		if p.UnitPrice != 0 {
+			break
+		}
+	}
 	p.CurrencyCode = pe.TieredRates[0].UnitPrice.CurrencyCode
 }
 
