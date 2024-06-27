@@ -142,7 +142,9 @@ func (s *Service) getMaximums(machineFamily, machineType, diskType string, vCPUs
 func (s *Service) findLimitations(machineFamily, machineType string, vCPUs int64) map[string]DiskLimitationsPerVm {
 	limitations := make(map[string]DiskLimitationsPerVm)
 	if machineFamily == "n2" {
-		limitations["pd-extreme"] = machineTypeDiskLimitations[machineFamily][machineType]["pd-extreme"]
+		if pdExtreme, ok := machineTypeDiskLimitations[machineFamily][machineType]["pd-extreme"]; ok {
+			limitations["pd-extreme"] = pdExtreme
+		}
 		for k, v := range machineTypeDiskLimitationsPerCPURange[machineFamily] {
 			r := strings.Split(k, "-")
 			min, _ := strconv.ParseInt(r[0], 10, 64)
