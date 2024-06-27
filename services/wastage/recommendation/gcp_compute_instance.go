@@ -17,24 +17,24 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	instance entity.GcpComputeInstance,
 	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
-) (*entity.GcpComputeInstanceRightsizingRecommendation, *model.GCPComputeMachineType, error) {
+) (*entity.GcpComputeInstanceRightsizingRecommendation, *model.GCPComputeMachineType, *model.GCPComputeMachineType, error) {
 	var machine *model.GCPComputeMachineType
 	var err error
 
 	if instance.MachineType == "" {
-		return nil, nil, fmt.Errorf("no machine type provided")
+		return nil, nil, nil, fmt.Errorf("no machine type provided")
 	}
 	if strings.Contains(instance.MachineType, "custom") {
 		machine, err = s.extractCustomInstanceDetails(instance)
 	} else {
 		machine, err = s.gcpComputeMachineTypeRepo.Get(instance.MachineType)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 	currentCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	region := strings.Join([]string{strings.Split(instance.Zone, "-")[0], strings.Split(instance.Zone, "-")[1]}, "-")
@@ -53,10 +53,10 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	}
 
 	if _, ok := metrics["cpuUtilization"]; !ok {
-		return nil, nil, fmt.Errorf("cpuUtilization metric not found")
+		return nil, nil, nil, fmt.Errorf("cpuUtilization metric not found")
 	}
 	if _, ok := metrics["memoryUtilization"]; !ok {
-		return nil, nil, fmt.Errorf("memoryUtilization metric not found")
+		return nil, nil, nil, fmt.Errorf("memoryUtilization metric not found")
 	}
 	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
 	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
@@ -116,7 +116,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 
 	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemoryMb, pref)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	excludeCustom := false
@@ -131,13 +131,13 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		instance.MachineType = suggestedMachineType.Name
 		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		if !excludeCustom {
 			customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			for _, customMachine := range customMachines {
 				if customMachine.Cost < suggestedCost {
@@ -160,7 +160,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	} else if !excludeCustom {
 		customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		suggestedMachineType = machine
 		suggestedCost := currentCost
@@ -187,13 +187,14 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		suggestedMachineType = machine
 	}
 
-	return &result, suggestedMachineType, nil
+	return &result, machine, suggestedMachineType, nil
 }
 
 func (s *Service) GCPComputeDiskRecommendation(
 	ctx context.Context,
 	disk entity.GcpComputeDisk,
-	machine *model.GCPComputeMachineType,
+	currentMachine *model.GCPComputeMachineType,
+	recommendedMachine *model.GCPComputeMachineType,
 	metrics map[string][]entity.Datapoint,
 	preferences map[string]*string,
 ) (*entity.GcpComputeDiskRecommendation, error) {
@@ -217,12 +218,23 @@ func (s *Service) GCPComputeDiskRecommendation(
 		Max: funcP(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
 
+	readIopsLimit, writeIopsLimit, readThroughputLimit, writeThroughputLimit, err := s.getMaximums(currentMachine.MachineFamily,
+		currentMachine.MachineType, disk.DiskType, currentMachine.GuestCpus, *disk.DiskSize)
+	if err != nil {
+		return nil, err
+	}
+
 	result := entity.GcpComputeDiskRecommendation{
 		Current: entity.RightsizingGcpComputeDisk{
-			DiskType: disk.DiskType,
-			DiskSize: disk.DiskSize,
-			Zone:     disk.Zone,
-			Region:   disk.Region,
+			DiskType:             disk.DiskType,
+			DiskSize:             *disk.DiskSize,
+			ReadIopsLimit:        readIopsLimit,
+			WriteIopsLimit:       writeIopsLimit,
+			ReadThroughputLimit:  readThroughputLimit,
+			WriteThroughputLimit: writeThroughputLimit,
+
+			Zone:   disk.Zone,
+			Region: disk.Region,
 
 			Cost: currentCost,
 		},
@@ -249,7 +261,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	pref := make(map[string]any)
 
-	diskType, err := s.findCheapestDiskType(machine.MachineFamily, machine.MachineType, machine.GuestCpus,
+	diskType, err := s.findCheapestDiskType(recommendedMachine.MachineFamily, recommendedMachine.MachineType, recommendedMachine.GuestCpus,
 		neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput, *disk.DiskSize)
 	if err != nil {
 		return nil, err
@@ -287,11 +299,21 @@ func (s *Service) GCPComputeDiskRecommendation(
 			return nil, err
 		}
 
+		recommendedReadIopsLimit, recommendedWriteIopsLimit, recommendedReadThroughputLimit, recommendedWriteThroughputLimit, err := s.getMaximums(recommendedMachine.MachineFamily,
+			recommendedMachine.MachineType, diskType, recommendedMachine.GuestCpus, *disk.DiskSize)
+		if err != nil {
+			return nil, err
+		}
+
 		result.Recommended = &entity.RightsizingGcpComputeDisk{
-			Zone:     suggestedStorageType.Zone,
-			Region:   suggestedStorageType.Region,
-			DiskType: suggestedStorageType.StorageType,
-			DiskSize: disk.DiskSize,
+			Zone:                 suggestedStorageType.Zone,
+			Region:               suggestedStorageType.Region,
+			DiskType:             suggestedStorageType.StorageType,
+			DiskSize:             *disk.DiskSize,
+			ReadIopsLimit:        recommendedReadIopsLimit,
+			WriteIopsLimit:       recommendedWriteIopsLimit,
+			ReadThroughputLimit:  recommendedReadThroughputLimit,
+			WriteThroughputLimit: recommendedWriteThroughputLimit,
 
 			Cost: suggestedCost,
 		}
