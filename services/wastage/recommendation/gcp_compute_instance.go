@@ -261,14 +261,21 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	pref := make(map[string]any)
 
+	diskSize := *disk.DiskSize
+	if ds, ok := preferences["DiskSizeGb"]; ok {
+		if ds != nil {
+			diskSize, _ = strconv.ParseInt(*ds, 10, 64)
+		}
+	}
+
 	suggestions, err := s.findCheapestDiskType(recommendedMachine.MachineFamily, recommendedMachine.MachineType, recommendedMachine.GuestCpus,
-		neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput, *disk.DiskSize)
+		neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput, diskSize)
 	if err != nil {
 		return nil, err
 	}
 
-	var suggestedType string
-	var suggestedSize int64
+	var suggestedType *string
+	var suggestedSize *int64
 
 	if suggestions != nil {
 		for _, sug := range suggestions {
@@ -287,15 +294,22 @@ func (s *Service) GCPComputeDiskRecommendation(
 		}
 		minPriceSuggestion := suggestions[0]
 		for _, sug := range suggestions {
+			if _, ok := preferences["DiskSizeGb"]; ok {
+				if diskSize != minPriceSuggestion.Size {
+					continue
+				}
+			}
 			if *sug.Cost < *minPriceSuggestion.Cost {
 				minPriceSuggestion = sug
 			}
 		}
-		suggestedType = minPriceSuggestion.Type
-		suggestedSize = minPriceSuggestion.Size
-	} else {
-		suggestedType = disk.DiskType
-		suggestedSize = *disk.DiskSize
+		suggestedType = &minPriceSuggestion.Type
+		suggestedSize = &minPriceSuggestion.Size
+	}
+
+	if suggestedType == nil && suggestedSize == nil {
+		suggestedType = &disk.DiskType
+		suggestedSize = disk.DiskSize
 	}
 
 	pref["storage_type = ?"] = suggestedType
@@ -323,9 +337,9 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	if suggestedStorageType != nil {
 		disk.Zone = suggestedStorageType.Zone
-		disk.DiskType = suggestedType
+		disk.DiskType = *suggestedType
 		disk.Region = suggestedStorageType.Region
-		disk.DiskSize = &suggestedSize
+		disk.DiskSize = suggestedSize
 		suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
 		if err != nil {
 			return nil, err
