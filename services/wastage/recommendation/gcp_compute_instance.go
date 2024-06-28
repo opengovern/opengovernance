@@ -292,6 +292,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 			}
 			suggestions[i].Cost = &suggestedCost
 		}
+		s.logger.Info("Disk suggestions", zap.Any("suggestions", suggestions)
 		minPriceSuggestion := suggestions[0]
 		for _, sug := range suggestions {
 			if _, ok := preferences["DiskSizeGb"]; ok {
