@@ -187,6 +187,16 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		suggestedMachineType = machine
 	}
 
+	if preferences["ExcludeUpsizingFeature"] != nil {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
+			if result.Recommended != nil && result.Recommended.Cost > result.Current.Cost {
+				result.Recommended = &result.Current
+				result.Description = "No recommendation available as upsizing feature is disabled"
+				return &result, machine, machine, nil
+			}
+		}
+	}
+
 	return &result, machine, suggestedMachineType, nil
 }
 
@@ -363,6 +373,16 @@ func (s *Service) GCPComputeDiskRecommendation(
 			WriteThroughputLimit: recommendedWriteThroughputLimit,
 
 			Cost: suggestedCost,
+		}
+	}
+
+	if preferences["ExcludeUpsizingFeature"] != nil {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
+			if result.Recommended != nil && result.Recommended.Cost > result.Current.Cost {
+				result.Recommended = &result.Current
+				result.Description = "No recommendation available as upsizing feature is disabled"
+				return &result, nil
+			}
 		}
 	}
 
