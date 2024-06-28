@@ -53,11 +53,11 @@ func Command() *cobra.Command {
 				cnf.Postgres.Password = ""
 				cnf.Postgres.DB = ""
 			}
-			db, err := connector.New(cnf.Postgres, logger2.Info)
+			db, err := connector.New(cnf.Postgres, logger, logger2.Info)
 			if err != nil {
 				return err
 			}
-			usageDb, err := connector.New(cnf.Postgres, logger2.Warn)
+			usageDb, err := connector.New(cnf.Postgres, logger, logger2.Warn)
 			if err != nil {
 				return err
 			}
