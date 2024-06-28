@@ -199,7 +199,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-	s.UpdateLastLogin(user)
+	go s.UpdateLastLogin(user)
 
 	return &envoyauth.CheckResponse{
 		Status: &status.Status{
