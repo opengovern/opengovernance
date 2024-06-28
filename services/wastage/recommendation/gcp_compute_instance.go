@@ -277,20 +277,20 @@ func (s *Service) GCPComputeDiskRecommendation(
 	var suggestedType *string
 	var suggestedSize *int64
 
-	if suggestions != nil {
-		for _, sug := range suggestions {
+	if suggestions != nil && len(suggestions) > 0 {
+		for i, _ := range suggestions {
 			newDisk := entity.GcpComputeDisk{
 				HashedDiskId: disk.HashedDiskId,
 				Zone:         disk.Zone,
 				Region:       disk.Region,
-				DiskType:     sug.Type,
-				DiskSize:     &sug.Size,
+				DiskType:     suggestions[i].Type,
+				DiskSize:     &suggestions[i].Size,
 			}
 			suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, newDisk)
 			if err != nil {
 				return nil, err
 			}
-			sug.Cost = &suggestedCost
+			suggestions[i].Cost = &suggestedCost
 		}
 		minPriceSuggestion := suggestions[0]
 		for _, sug := range suggestions {
