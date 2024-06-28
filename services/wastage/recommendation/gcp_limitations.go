@@ -20,6 +20,13 @@ type DiskLimitations struct {
 	Throughput float64 `json:"max_write_throughput"` // MiBps
 }
 
+type DiskTypeOffer struct {
+	Type string `json:"type"`
+	Size int64  `json:"size"`
+
+	Cost *float64 `json:"cost"`
+}
+
 var (
 	DiskLimitationsPerGb = map[string]DiskLimitations{
 		"pd-standard": {
@@ -42,57 +49,47 @@ var (
 
 // diskTypes sorted by cost per GB: pd-standard, pd-balanced, pd-extreme, pd-ssd
 func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs int64, neededReadIops, neededWriteIops,
-	neededReadThroughput, neededWriteThroughput float64, sizeGb int64) (string, error) {
+	neededReadThroughput, neededWriteThroughput float64, sizeGb int64) ([]DiskTypeOffer, error) {
+	var suggestions []DiskTypeOffer
+
 	limitations := s.findLimitations(machineFamily, machineType, vCPUs)
 	if len(limitations) == 0 {
-		return "", fmt.Errorf("could not find limitations")
+		return suggestions, fmt.Errorf("could not find limitations")
 	}
 
 	// pd-standard
-	l := limitations["pd-standard"]
-	maxReadIops := min(l.MaxReadIOPS, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].ReadIOPS)
-	maxWriteIops := min(l.MaxWriteIOPS, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].WriteIOPS)
-	maxReadThroughput := min(l.MaxReadThroughput, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].Throughput)
-	maxWriteThroughput := min(l.MaxWriteThroughput, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].Throughput)
-	if neededReadIops <= maxReadIops && neededWriteIops <= maxWriteIops &&
-		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
-		return "pd-standard", nil
+	standard := s.checkStandard(limitations["pd-standard"], sizeGb, neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput)
+	if standard != nil {
+		suggestions = append(suggestions, *standard)
 	}
 
 	// pd-balanced
-	l = limitations["pd-balanced"]
-	maxReadIops = min(l.MaxReadIOPS, 3000+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].ReadIOPS)
-	maxWriteIops = min(l.MaxWriteIOPS, 3000+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].WriteIOPS)
-	maxReadThroughput = min(l.MaxReadThroughput, 140+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].Throughput)
-	maxWriteThroughput = min(l.MaxWriteThroughput, 140+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].Throughput)
-	if neededReadIops <= maxReadIops && neededWriteIops <= maxWriteIops &&
-		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
-		return "pd-balanced", nil
+	balanced := s.checkBalanced(limitations["pd-balanced"], sizeGb, neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput)
+	if balanced != nil {
+		suggestions = append(suggestions, *balanced)
 	}
 
 	// pd-extreme
-	l = limitations["pd-extreme"]
-	if neededReadIops <= l.MaxReadIOPS && neededWriteIops <= l.MaxWriteIOPS &&
-		neededReadThroughput <= l.MaxReadThroughput && neededWriteThroughput <= l.MaxWriteThroughput {
-		return "pd-extreme", nil
+	extreme := limitations["pd-extreme"]
+	if neededReadIops <= extreme.MaxReadIOPS && neededWriteIops <= extreme.MaxWriteIOPS &&
+		neededReadThroughput <= extreme.MaxReadThroughput && neededWriteThroughput <= extreme.MaxWriteThroughput {
+		suggestions = append(suggestions, DiskTypeOffer{
+			Type: "pd-extreme",
+			Size: sizeGb,
+		})
 	}
 
 	// pd-ssd
-	l = limitations["pd-ssd"]
-	maxReadIops = min(l.MaxReadIOPS, 6000+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].ReadIOPS)
-	maxWriteIops = min(l.MaxWriteIOPS, 6000+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].WriteIOPS)
-	maxReadThroughput = min(l.MaxReadThroughput, 240+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].Throughput)
-	maxWriteThroughput = min(l.MaxWriteThroughput, 240+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].Throughput)
-	if neededReadIops <= maxReadIops && neededWriteIops <= maxWriteIops &&
-		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
-		return "pd-ssd", nil
+	ssd := s.checkSSD(limitations["pd-ssd"], sizeGb, neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput)
+	if ssd != nil {
+		suggestions = append(suggestions, *ssd)
 	}
 
 	s.logger.Error("could not find suitable disk type", zap.String("machine_family", machineFamily), zap.String("machine_type", machineType),
 		zap.Int64("vCPUs", vCPUs), zap.Float64("needed_read_iops", neededReadIops), zap.Float64("needed_write_iops", neededWriteIops),
 		zap.Float64("needed_read_throughput", neededReadThroughput), zap.Float64("needed_write_throughput", neededWriteThroughput),
 		zap.Int64("size_gb", sizeGb), zap.Any("limitations", limitations))
-	return "", fmt.Errorf("could not find sutiable disk type")
+	return suggestions, nil
 }
 
 // getMaximums maxReadIops, maxWriteIops, maxReadThroughput, maxWriteThroughput
@@ -197,6 +194,87 @@ func (s *Service) findLimitations(machineFamily, machineType string, vCPUs int64
 		}
 	}
 	return limitations
+}
+
+func (s *Service) checkStandard(l DiskLimitationsPerVm, sizeGb int64, neededReadIops, neededWriteIops,
+	neededReadThroughput, neededWriteThroughput float64) *DiskTypeOffer {
+	maxReadIops := min(l.MaxReadIOPS, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].ReadIOPS)
+	maxWriteIops := min(l.MaxWriteIOPS, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].WriteIOPS)
+	maxReadThroughput := min(l.MaxReadThroughput, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].Throughput)
+	maxWriteThroughput := min(l.MaxWriteThroughput, float64(sizeGb)*DiskLimitationsPerGb["pd-standard"].Throughput)
+	if neededReadIops <= maxReadIops && neededWriteIops <= maxWriteIops &&
+		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
+		return &DiskTypeOffer{
+			Type: "pd-standard",
+			Size: sizeGb,
+		}
+	}
+	if neededReadIops <= l.MaxReadIOPS && neededWriteIops <= l.MaxWriteIOPS &&
+		neededReadThroughput <= l.MaxReadThroughput && neededWriteThroughput <= l.MaxWriteThroughput {
+		suggestedSize := max(int64(neededReadIops/DiskLimitationsPerGb["pd-standard"].ReadIOPS+0.5),
+			int64(neededWriteIops/DiskLimitationsPerGb["pd-standard"].WriteIOPS+0.5),
+			int64(neededReadThroughput/DiskLimitationsPerGb["pd-standard"].Throughput+0.5),
+			int64(neededWriteThroughput/DiskLimitationsPerGb["pd-standard"].Throughput+0.5))
+		return &DiskTypeOffer{
+			Type: "pd-standard",
+			Size: suggestedSize,
+		}
+	}
+	return nil
+}
+
+func (s *Service) checkBalanced(l DiskLimitationsPerVm, sizeGb int64, neededReadIops, neededWriteIops,
+	neededReadThroughput, neededWriteThroughput float64) *DiskTypeOffer {
+	maxReadIops := min(l.MaxReadIOPS, 3000+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].ReadIOPS)
+	maxWriteIops := min(l.MaxWriteIOPS, 3000+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].WriteIOPS)
+	maxReadThroughput := min(l.MaxReadThroughput, 140+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].Throughput)
+	maxWriteThroughput := min(l.MaxWriteThroughput, 140+float64(sizeGb)*DiskLimitationsPerGb["pd-balanced"].Throughput)
+	if neededReadIops <= maxReadIops && neededWriteIops <= maxWriteIops &&
+		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
+		return &DiskTypeOffer{
+			Type: "pd-balanced",
+			Size: sizeGb,
+		}
+	}
+	if neededReadIops <= l.MaxReadIOPS && neededWriteIops <= l.MaxWriteIOPS &&
+		neededReadThroughput <= l.MaxReadThroughput && neededWriteThroughput <= l.MaxWriteThroughput {
+		suggestedSize := max(3000+int64(neededReadIops/DiskLimitationsPerGb["pd-balanced"].ReadIOPS+0.5),
+			3000+int64(neededWriteIops/DiskLimitationsPerGb["pd-balanced"].WriteIOPS+0.5),
+			140+int64(neededReadThroughput/DiskLimitationsPerGb["pd-balanced"].Throughput+0.5),
+			140+int64(neededWriteThroughput/DiskLimitationsPerGb["pd-balanced"].Throughput+0.5))
+		return &DiskTypeOffer{
+			Type: "pd-balanced",
+			Size: suggestedSize,
+		}
+	}
+	return nil
+}
+
+func (s *Service) checkSSD(l DiskLimitationsPerVm, sizeGb int64, neededReadIops, neededWriteIops,
+	neededReadThroughput, neededWriteThroughput float64) *DiskTypeOffer {
+	maxReadIops := min(l.MaxReadIOPS, 6000+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].ReadIOPS)
+	maxWriteIops := min(l.MaxWriteIOPS, 6000+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].WriteIOPS)
+	maxReadThroughput := min(l.MaxReadThroughput, 240+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].Throughput)
+	maxWriteThroughput := min(l.MaxWriteThroughput, 240+float64(sizeGb)*DiskLimitationsPerGb["pd-ssd"].Throughput)
+	if neededReadIops <= maxReadIops && neededWriteIops <= maxWriteIops &&
+		neededReadThroughput <= maxReadThroughput && neededWriteThroughput <= maxWriteThroughput {
+		return &DiskTypeOffer{
+			Type: "pd-ssd",
+			Size: sizeGb,
+		}
+	}
+	if neededReadIops <= l.MaxReadIOPS && neededWriteIops <= l.MaxWriteIOPS &&
+		neededReadThroughput <= l.MaxReadThroughput && neededWriteThroughput <= l.MaxWriteThroughput {
+		suggestedSize := max(6000+int64(neededReadIops/DiskLimitationsPerGb["pd-ssd"].ReadIOPS+0.5),
+			6000+int64(neededWriteIops/DiskLimitationsPerGb["pd-ssd"].WriteIOPS+0.5),
+			240+int64(neededReadThroughput/DiskLimitationsPerGb["pd-ssd"].Throughput+0.5),
+			240+int64(neededWriteThroughput/DiskLimitationsPerGb["pd-ssd"].Throughput+0.5))
+		return &DiskTypeOffer{
+			Type: "pd-ssd",
+			Size: suggestedSize,
+		}
+	}
+	return nil
 }
 
 // MachineTypeDiskLimitations is a map of machine types to disk types to disk limitations.
