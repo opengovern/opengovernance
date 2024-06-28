@@ -2,7 +2,6 @@ package recommendation
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"strconv"
 	"strings"
 )
@@ -85,10 +84,6 @@ func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs 
 		suggestions = append(suggestions, *ssd)
 	}
 
-	s.logger.Error("could not find suitable disk type", zap.String("machine_family", machineFamily), zap.String("machine_type", machineType),
-		zap.Int64("vCPUs", vCPUs), zap.Float64("needed_read_iops", neededReadIops), zap.Float64("needed_write_iops", neededWriteIops),
-		zap.Float64("needed_read_throughput", neededReadThroughput), zap.Float64("needed_write_throughput", neededWriteThroughput),
-		zap.Int64("size_gb", sizeGb), zap.Any("limitations", limitations))
 	return suggestions, nil
 }
 
