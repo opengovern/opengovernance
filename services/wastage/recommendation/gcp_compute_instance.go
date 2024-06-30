@@ -2,10 +2,13 @@ package recommendation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/ec2instance"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/gcp_compute"
+	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"regexp"
 	"strconv"
@@ -186,6 +189,13 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	if suggestedMachineType == nil {
 		suggestedMachineType = machine
 	}
+
+	description, err := s.generateGcpComputeInstanceDescription(region, instance, metrics, preferences, neededCPU,
+		neededMemoryMb, machine, suggestedMachineType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	result.Description = description
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
 		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
@@ -649,4 +659,146 @@ func roundUpToMultipleOf(number, multipleOf int64) int64 {
 		return number
 	}
 	return ((number / multipleOf) + 1) * multipleOf
+}
+
+func (s *Service) generateGcpComputeInstanceDescription(region string, instance entity.GcpComputeInstance,
+	metrics map[string][]entity.Datapoint, preferences map[string]*string,
+	neededCpu, neededMemoryMb float64, currentMachine *model.GCPComputeMachineType,
+	suggestedMachineType *model.GCPComputeMachineType) (string, error) {
+	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
+	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
+
+	var usage string
+	if len(metrics["cpuUtilization"]) > 0 {
+		usage = fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, PFloat(cpuUsage.Min), PFloat(cpuUsage.Avg), PFloat(cpuUsage.Max), neededCpu, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
+	} else {
+		usage = fmt.Sprintf("- %s has %d vCPUs. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
+
+	}
+	if len(metrics["memoryUtilization"]) > 0 {
+		usage += fmt.Sprintf("- %s has %dMb Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fMb Memory. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, PFloat(memoryUsage.Min), PFloat(memoryUsage.Avg), PFloat(memoryUsage.Max), neededMemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+	} else {
+		usage += fmt.Sprintf("- %s has %dMb Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+	}
+
+	needs := ""
+	for k, v := range preferences {
+		if ec2instance.PreferenceDBKey[k] == "" {
+			continue
+		}
+		if v == nil {
+			vl := extractFromGCPComputeInstance(region, currentMachine, k)
+			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
+		} else {
+			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
+		}
+	}
+
+	prompt := fmt.Sprintf(`
+I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 280 characters (it's not a tweet! dont use hashtag!) while keeping these rules:
+- mention the requirements from user side.
+- for those fields which are changing make sure you mention the change.
+
+Here's usage data:
+%s
+
+User's needs:
+%s
+`, suggestedMachineType.MachineType, currentMachine.MachineType, usage, needs)
+
+	resp, err := s.openaiSvc.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4TurboPreview,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Choices) == 0 {
+		return "", errors.New("empty choices")
+	}
+
+	s.logger.Info("GPT results", zap.String("prompt", prompt), zap.String("result", strings.TrimSpace(resp.Choices[0].Message.Content)))
+
+	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
+}
+
+func (s *Service) generateGcpComputeDiskDescription(region string, instance entity.GcpComputeInstance,
+	metrics map[string][]entity.Datapoint, preferences map[string]*string,
+	neededCpu, neededMemoryMb float64, currentMachine *model.GCPComputeMachineType,
+	suggestedMachineType *model.GCPComputeMachineType) (string, error) {
+	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
+	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
+
+	var usage string
+	if len(metrics["cpuUtilization"]) > 0 {
+		usage = fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, PFloat(cpuUsage.Min), PFloat(cpuUsage.Avg), PFloat(cpuUsage.Max), neededCpu, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
+	} else {
+		usage = fmt.Sprintf("- %s has %d vCPUs. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
+
+	}
+	if len(metrics["memoryUtilization"]) > 0 {
+		usage += fmt.Sprintf("- %s has %dMb Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fMb Memory. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, PFloat(memoryUsage.Min), PFloat(memoryUsage.Avg), PFloat(memoryUsage.Max), neededMemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+	} else {
+		usage += fmt.Sprintf("- %s has %dMb Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+	}
+
+	needs := ""
+	for k, v := range preferences {
+		if ec2instance.PreferenceDBKey[k] == "" {
+			continue
+		}
+		if v == nil {
+			vl := extractFromGCPComputeInstance(region, currentMachine, k)
+			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
+		} else {
+			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
+		}
+	}
+
+	prompt := fmt.Sprintf(`
+I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 280 characters (it's not a tweet! dont use hashtag!) while keeping these rules:
+- mention the requirements from user side.
+- for those fields which are changing make sure you mention the change.
+
+Here's usage data:
+%s
+
+User's needs:
+%s
+`, suggestedMachineType.MachineType, currentMachine.MachineType, usage, needs)
+
+	resp, err := s.openaiSvc.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4TurboPreview,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Choices) == 0 {
+		return "", errors.New("empty choices")
+	}
+
+	s.logger.Info("GPT results", zap.String("prompt", prompt), zap.String("result", strings.TrimSpace(resp.Choices[0].Message.Content)))
+
+	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
 }
