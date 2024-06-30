@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/ec2instance"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/gcp_compute"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -355,6 +354,11 @@ func (s *Service) GCPComputeDiskRecommendation(
 	if err != nil {
 		return nil, err
 	}
+	recommendedReadIopsLimit, recommendedWriteIopsLimit, recommendedReadThroughputLimit, recommendedWriteThroughputLimit, err := s.getMaximums(recommendedMachine.MachineFamily,
+		recommendedMachine.MachineType, suggestedStorageType.StorageType, recommendedMachine.GuestCpus, *disk.DiskSize)
+	if err != nil {
+		return nil, err
+	}
 
 	if suggestedStorageType != nil {
 		disk.Zone = suggestedStorageType.Zone
@@ -362,12 +366,6 @@ func (s *Service) GCPComputeDiskRecommendation(
 		disk.Region = suggestedStorageType.Region
 		disk.DiskSize = suggestedSize
 		suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
-		if err != nil {
-			return nil, err
-		}
-
-		recommendedReadIopsLimit, recommendedWriteIopsLimit, recommendedReadThroughputLimit, recommendedWriteThroughputLimit, err := s.getMaximums(recommendedMachine.MachineFamily,
-			recommendedMachine.MachineType, suggestedStorageType.StorageType, recommendedMachine.GuestCpus, *disk.DiskSize)
 		if err != nil {
 			return nil, err
 		}
@@ -385,6 +383,15 @@ func (s *Service) GCPComputeDiskRecommendation(
 			Cost: suggestedCost,
 		}
 	}
+
+	description, err := s.generateGcpComputeDiskDescription(disk, currentMachine, recommendedMachine, metrics,
+		preferences, readIopsLimit, writeIopsLimit, readThroughputLimit, writeThroughputLimit, neededReadIops,
+		neededWriteIops, neededReadThroughput, neededWriteThroughput, recommendedReadIopsLimit, recommendedWriteIopsLimit,
+		recommendedReadThroughputLimit, recommendedWriteThroughputLimit, *suggestedType, *suggestedSize)
+	if err != nil {
+		return nil, err
+	}
+	result.Description = description
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
 		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
@@ -683,7 +690,7 @@ func (s *Service) generateGcpComputeInstanceDescription(region string, instance 
 
 	needs := ""
 	for k, v := range preferences {
-		if ec2instance.PreferenceDBKey[k] == "" {
+		if gcp_compute.PreferenceInstanceKey[k] == "" {
 			continue
 		}
 		if v == nil {
@@ -695,7 +702,7 @@ func (s *Service) generateGcpComputeInstanceDescription(region string, instance 
 	}
 
 	prompt := fmt.Sprintf(`
-I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 280 characters (it's not a tweet! dont use hashtag!) while keeping these rules:
+I'm giving recommendation on GCP Compute Instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 280 characters (it's not a tweet! dont use hashtag!) while keeping these rules:
 - mention the requirements from user side.
 - for those fields which are changing make sure you mention the change.
 
@@ -732,33 +739,53 @@ User's needs:
 	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
 }
 
-func (s *Service) generateGcpComputeDiskDescription(region string, instance entity.GcpComputeInstance,
+func (s *Service) generateGcpComputeDiskDescription(disk entity.GcpComputeDisk,
+	currentMachine *model.GCPComputeMachineType,
+	recommendedMachine *model.GCPComputeMachineType,
 	metrics map[string][]entity.Datapoint, preferences map[string]*string,
-	neededCpu, neededMemoryMb float64, currentMachine *model.GCPComputeMachineType,
-	suggestedMachineType *model.GCPComputeMachineType) (string, error) {
-	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
-	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
+	readIopsLimit, writeIopsLimit int64, readThroughputLimit, writeThroughputLimit float64,
+	neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput float64,
+	recommendedReadIopsLimit, recommendedWriteIopsLimit int64, recommendedReadThroughputLimit, recommendedWriteThroughputLimit float64,
+	suggestedType string, suggestedSize int64,
+) (string, error) {
+	readIopsUsage := extractGCPUsage(metrics["DiskReadIOPS"])
+	writeIopsUsage := extractGCPUsage(metrics["DiskWriteIOPS"])
+	readThroughputUsageBytes := extractGCPUsage(metrics["DiskReadThroughput"])
+	readThroughputUsageMb := entity.Usage{
+		Avg: funcP(readThroughputUsageBytes.Avg, readThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(readThroughputUsageBytes.Min, readThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(readThroughputUsageBytes.Max, readThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	}
+	writeThroughputUsageBytes := extractGCPUsage(metrics["DiskWriteThroughput"])
+	writeThroughputUsageMb := entity.Usage{
+		Avg: funcP(writeThroughputUsageBytes.Avg, writeThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(writeThroughputUsageBytes.Min, writeThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	}
 
 	var usage string
-	if len(metrics["cpuUtilization"]) > 0 {
-		usage = fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, PFloat(cpuUsage.Min), PFloat(cpuUsage.Avg), PFloat(cpuUsage.Max), neededCpu, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
+	if len(metrics["DiskReadIOPS"]) > 0 || len(metrics["DiskWriteIOPS"]) > 0 {
+		usage = fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f Write IOPS estimation. Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeIopsLimit, PFloat(writeIopsUsage.Min), PFloat(writeIopsUsage.Avg), PFloat(writeIopsUsage.Max), neededWriteIops, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteIopsLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Read IOPS estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f Read IOPS estimation. Disk Type %s with Machine Type %s with size %d has %d Read IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readIopsLimit, PFloat(readIopsUsage.Min), PFloat(readIopsUsage.Avg), PFloat(readIopsUsage.Max), neededReadIops, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadIopsLimit)
 	} else {
-		usage = fmt.Sprintf("- %s has %d vCPUs. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
-
+		usage = fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %d IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeIopsLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteIopsLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %d IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readIopsLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadIopsLimit)
 	}
-	if len(metrics["memoryUtilization"]) > 0 {
-		usage += fmt.Sprintf("- %s has %dMb Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fMb Memory. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, PFloat(memoryUsage.Min), PFloat(memoryUsage.Avg), PFloat(memoryUsage.Max), neededMemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+	if len(metrics["DiskReadThroughput"]) > 0 || len(metrics["DiskWriteThroughput"]) > 0 {
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f Mb Write Throughput estimation. Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeThroughputLimit, PFloat(writeThroughputUsageMb.Min), PFloat(writeThroughputUsageMb.Avg), PFloat(writeThroughputUsageMb.Max), neededWriteThroughput, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteThroughputLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f Mb Read Throughput estimation. Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readThroughputLimit, PFloat(readThroughputUsageMb.Min), PFloat(readThroughputUsageMb.Avg), PFloat(readThroughputUsageMb.Max), neededReadThroughput, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadThroughputLimit)
 	} else {
-		usage += fmt.Sprintf("- %s has %dMb Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeThroughputLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteThroughputLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readThroughputLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadThroughputLimit)
 	}
 
 	needs := ""
 	for k, v := range preferences {
-		if ec2instance.PreferenceDBKey[k] == "" {
+		if gcp_compute.PreferenceDiskKey[k] == "" {
 			continue
 		}
 		if v == nil {
-			vl := extractFromGCPComputeInstance(region, currentMachine, k)
+			vl := extractFromGCPComputeDisk(disk, k)
 			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
 		} else {
 			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
@@ -766,7 +793,7 @@ func (s *Service) generateGcpComputeDiskDescription(region string, instance enti
 	}
 
 	prompt := fmt.Sprintf(`
-I'm giving recommendation on ec2 instance right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s instead of %s. I need help summarizing the explanation into 280 characters (it's not a tweet! dont use hashtag!) while keeping these rules:
+I'm giving recommendation on GCP Compute Disk right sizing. Based on user's usage and needs I have concluded that the best option for him is to use %s with size %d instead of %s with size %d. I need help summarizing the explanation into 280 characters (it's not a tweet! dont use hashtag!) while keeping these rules:
 - mention the requirements from user side.
 - for those fields which are changing make sure you mention the change.
 
@@ -775,7 +802,7 @@ Here's usage data:
 
 User's needs:
 %s
-`, suggestedMachineType.MachineType, currentMachine.MachineType, usage, needs)
+`, suggestedType, suggestedSize, disk.DiskType, disk.DiskSize, usage, needs)
 
 	resp, err := s.openaiSvc.CreateChatCompletion(
 		context.Background(),
