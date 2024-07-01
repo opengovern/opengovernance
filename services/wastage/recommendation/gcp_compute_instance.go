@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/gcp_compute"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,10 +16,10 @@ import (
 
 func (s *Service) GCPComputeInstanceRecommendation(
 	ctx context.Context,
-	instance gcp.GcpComputeInstance,
-	metrics map[string]*gcp.Metric,
-	preferences map[string]*wrapperspb.StringValue,
-) (*gcp.GcpComputeInstanceRightsizingRecommendation, *model.GCPComputeMachineType, *model.GCPComputeMachineType, error) {
+	instance entity.GcpComputeInstance,
+	metrics map[string][]entity.Datapoint,
+	preferences map[string]*string,
+) (*entity.GcpComputeInstanceRightsizingRecommendation, *model.GCPComputeMachineType, *model.GCPComputeMachineType, error) {
 	var machine *model.GCPComputeMachineType
 	var err error
 
@@ -42,48 +41,48 @@ func (s *Service) GCPComputeInstanceRecommendation(
 
 	region := strings.Join([]string{strings.Split(instance.Zone, "-")[0], strings.Split(instance.Zone, "-")[1]}, "-")
 
-	result := gcp.GcpComputeInstanceRightsizingRecommendation{
-		Current: &gcp.RightsizingGcpComputeInstance{
+	result := entity.GcpComputeInstanceRightsizingRecommendation{
+		Current: entity.RightsizingGcpComputeInstance{
 			Zone:          instance.Zone,
 			Region:        region,
 			MachineType:   instance.MachineType,
 			MachineFamily: machine.MachineFamily,
-			Cpu:           machine.GuestCpus,
+			CPU:           machine.GuestCpus,
 			MemoryMb:      machine.MemoryMb,
 
 			Cost: currentCost,
 		},
 	}
 
-	if v, ok := metrics["cpuUtilization"]; !ok || v == nil {
+	if _, ok := metrics["cpuUtilization"]; !ok {
 		return nil, nil, nil, fmt.Errorf("cpuUtilization metric not found")
 	}
-	if v, ok := metrics["memoryUtilization"]; !ok || v == nil {
+	if _, ok := metrics["memoryUtilization"]; !ok {
 		return nil, nil, nil, fmt.Errorf("memoryUtilization metric not found")
 	}
-	cpuUsage := extractGCPUsage(metrics["cpuUtilization"].Data)
-	memoryUsage := extractGCPUsage(metrics["memoryUtilization"].Data)
+	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
+	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
 
-	result.Cpu = &cpuUsage
-	result.Memory = &memoryUsage
+	result.CPU = cpuUsage
+	result.Memory = memoryUsage
 
 	vCPU := machine.GuestCpus
 	cpuBreathingRoom := int64(0)
 	if preferences["CPUBreathingRoom"] != nil {
-		cpuBreathingRoom, _ = strconv.ParseInt(preferences["CPUBreathingRoom"].GetValue(), 10, 64)
+		cpuBreathingRoom, _ = strconv.ParseInt(*preferences["CPUBreathingRoom"], 10, 64)
 	}
 	memoryBreathingRoom := int64(0)
 	if preferences["MemoryBreathingRoom"] != nil {
-		memoryBreathingRoom, _ = strconv.ParseInt(preferences["MemoryBreathingRoom"].GetValue(), 10, 64)
+		memoryBreathingRoom, _ = strconv.ParseInt(*preferences["MemoryBreathingRoom"], 10, 64)
 	}
-	neededCPU := float64(vCPU) * (PWrapperDouble(cpuUsage.Avg) + (float64(cpuBreathingRoom) / 100.0))
+	neededCPU := float64(vCPU) * (getValueOrZero(cpuUsage.Avg) + (float64(cpuBreathingRoom) / 100.0))
 	if neededCPU < 2 {
 		neededCPU = 2
 	}
 
 	neededMemoryMb := 0.0
 	if memoryUsage.Avg != nil {
-		neededMemoryMb = calculateHeadroom(PWrapperDouble(memoryUsage.Avg)/(1024*1024), memoryBreathingRoom)
+		neededMemoryMb = calculateHeadroom(*memoryUsage.Avg/(1024*1024), memoryBreathingRoom)
 	}
 	if neededMemoryMb < 1024 {
 		neededMemoryMb = 1024
@@ -96,7 +95,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		if v == nil {
 			vl = extractFromGCPComputeInstance(region, machine, k)
 		} else {
-			vl = v.GetValue()
+			vl = *v
 		}
 		if _, ok := gcp_compute.PreferenceInstanceKey[k]; !ok {
 			continue
@@ -124,7 +123,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 
 	excludeCustom := false
 	if preferences["ExcludeCustomInstances"] != nil {
-		if preferences["ExcludeCustomInstances"].GetValue() == "Yes" {
+		if *preferences["ExcludeCustomInstances"] == "Yes" {
 			excludeCustom = true
 		}
 	}
@@ -150,12 +149,12 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			}
 		}
 
-		result.Recommended = &gcp.RightsizingGcpComputeInstance{
+		result.Recommended = &entity.RightsizingGcpComputeInstance{
 			Zone:          suggestedMachineType.Zone,
 			Region:        suggestedMachineType.Region,
 			MachineType:   suggestedMachineType.Name,
 			MachineFamily: suggestedMachineType.MachineFamily,
-			Cpu:           suggestedMachineType.GuestCpus,
+			CPU:           suggestedMachineType.GuestCpus,
 			MemoryMb:      suggestedMachineType.MemoryMb,
 
 			Cost: suggestedCost,
@@ -175,12 +174,12 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			}
 		}
 
-		result.Recommended = &gcp.RightsizingGcpComputeInstance{
+		result.Recommended = &entity.RightsizingGcpComputeInstance{
 			Zone:          suggestedMachineType.Zone,
 			Region:        suggestedMachineType.Region,
 			MachineType:   suggestedMachineType.Name,
 			MachineFamily: suggestedMachineType.MachineFamily,
-			Cpu:           suggestedMachineType.GuestCpus,
+			CPU:           suggestedMachineType.GuestCpus,
 			MemoryMb:      suggestedMachineType.MemoryMb,
 
 			Cost: suggestedCost,
@@ -198,9 +197,9 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	result.Description = description
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
-		if preferences["ExcludeUpsizingFeature"].GetValue() == "Yes" {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
 			if result.Recommended != nil && result.Recommended.Cost > result.Current.Cost {
-				result.Recommended = result.Current
+				result.Recommended = &result.Current
 				result.Description = "No recommendation available as upsizing feature is disabled"
 				return &result, machine, machine, nil
 			}
@@ -212,42 +211,42 @@ func (s *Service) GCPComputeInstanceRecommendation(
 
 func (s *Service) GCPComputeDiskRecommendation(
 	ctx context.Context,
-	disk gcp.GcpComputeDisk,
+	disk entity.GcpComputeDisk,
 	currentMachine *model.GCPComputeMachineType,
 	recommendedMachine *model.GCPComputeMachineType,
-	metrics gcp.DiskMetrics,
-	preferences map[string]*wrapperspb.StringValue,
-) (*gcp.GcpComputeDiskRecommendation, error) {
+	metrics map[string][]entity.Datapoint,
+	preferences map[string]*string,
+) (*entity.GcpComputeDiskRecommendation, error) {
 	currentCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
 	if err != nil {
 		return nil, err
 	}
 
-	readIopsUsage := extractGCPUsage(metrics.Metrics["DiskReadIOPS"].Data)
-	writeIopsUsage := extractGCPUsage(metrics.Metrics["DiskWriteIOPS"].Data)
-	readThroughputUsageBytes := extractGCPUsage(metrics.Metrics["DiskReadThroughput"].Data)
-	readThroughputUsageMb := gcp.Usage{
-		Avg: funcPWrapper(readThroughputUsageBytes.Avg, readThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Min: funcPWrapper(readThroughputUsageBytes.Min, readThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Max: funcPWrapper(readThroughputUsageBytes.Max, readThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	readIopsUsage := extractGCPUsage(metrics["DiskReadIOPS"])
+	writeIopsUsage := extractGCPUsage(metrics["DiskWriteIOPS"])
+	readThroughputUsageBytes := extractGCPUsage(metrics["DiskReadThroughput"])
+	readThroughputUsageMb := entity.Usage{
+		Avg: funcP(readThroughputUsageBytes.Avg, readThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(readThroughputUsageBytes.Min, readThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(readThroughputUsageBytes.Max, readThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
-	writeThroughputUsageBytes := extractGCPUsage(metrics.Metrics["DiskWriteThroughput"].Data)
-	writeThroughputUsageMb := gcp.Usage{
-		Avg: funcPWrapper(writeThroughputUsageBytes.Avg, writeThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Min: funcPWrapper(writeThroughputUsageBytes.Min, writeThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Max: funcPWrapper(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	writeThroughputUsageBytes := extractGCPUsage(metrics["DiskWriteThroughput"])
+	writeThroughputUsageMb := entity.Usage{
+		Avg: funcP(writeThroughputUsageBytes.Avg, writeThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(writeThroughputUsageBytes.Min, writeThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
 
 	readIopsLimit, writeIopsLimit, readThroughputLimit, writeThroughputLimit, err := s.getMaximums(currentMachine.MachineFamily,
-		currentMachine.MachineType, disk.DiskType, currentMachine.GuestCpus, disk.DiskSize.Value)
+		currentMachine.MachineType, disk.DiskType, currentMachine.GuestCpus, *disk.DiskSize)
 	if err != nil {
 		return nil, err
 	}
 
-	result := gcp.GcpComputeDiskRecommendation{
-		Current: &gcp.RightsizingGcpComputeDisk{
+	result := entity.GcpComputeDiskRecommendation{
+		Current: entity.RightsizingGcpComputeDisk{
 			DiskType:             disk.DiskType,
-			DiskSize:             disk.DiskSize.Value,
+			DiskSize:             *disk.DiskSize,
 			ReadIopsLimit:        readIopsLimit,
 			WriteIopsLimit:       writeIopsLimit,
 			ReadThroughputLimit:  readThroughputLimit,
@@ -258,33 +257,33 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 			Cost: currentCost,
 		},
-		ReadIops:        &readIopsUsage,
-		WriteIops:       &writeIopsUsage,
-		ReadThroughput:  &readThroughputUsageMb,
-		WriteThroughput: &writeThroughputUsageMb,
+		ReadIops:        readIopsUsage,
+		WriteIops:       writeIopsUsage,
+		ReadThroughput:  readThroughputUsageMb,
+		WriteThroughput: writeThroughputUsageMb,
 	}
 
 	iopsBreathingRoom := int64(0)
 	if preferences["IOPSBreathingRoom"] != nil {
-		iopsBreathingRoom, _ = strconv.ParseInt(preferences["IopsBreathingRoom"].GetValue(), 10, 64)
+		iopsBreathingRoom, _ = strconv.ParseInt(*preferences["IopsBreathingRoom"], 10, 64)
 	}
 
 	throughputBreathingRoom := int64(0)
 	if preferences["ThroughputBreathingRoom"] != nil {
-		throughputBreathingRoom, _ = strconv.ParseInt(preferences["ThroughputBreathingRoom"].GetValue(), 10, 64)
+		throughputBreathingRoom, _ = strconv.ParseInt(*preferences["ThroughputBreathingRoom"], 10, 64)
 	}
 
-	neededReadIops := pWrapperCalculateHeadroom(readIopsUsage.Avg, iopsBreathingRoom)
-	neededReadThroughput := pWrapperCalculateHeadroom(readThroughputUsageMb.Avg, throughputBreathingRoom)
-	neededWriteIops := pWrapperCalculateHeadroom(writeIopsUsage.Avg, iopsBreathingRoom)
-	neededWriteThroughput := pWrapperCalculateHeadroom(writeThroughputUsageMb.Avg, throughputBreathingRoom)
+	neededReadIops := pCalculateHeadroom(readIopsUsage.Avg, iopsBreathingRoom)
+	neededReadThroughput := pCalculateHeadroom(readThroughputUsageMb.Avg, throughputBreathingRoom)
+	neededWriteIops := pCalculateHeadroom(writeIopsUsage.Avg, iopsBreathingRoom)
+	neededWriteThroughput := pCalculateHeadroom(writeThroughputUsageMb.Avg, throughputBreathingRoom)
 
 	pref := make(map[string]any)
 
-	diskSize := disk.DiskSize.Value
+	diskSize := *disk.DiskSize
 	if ds, ok := preferences["DiskSizeGb"]; ok {
 		if ds != nil {
-			diskSize, _ = strconv.ParseInt(ds.GetValue(), 10, 64)
+			diskSize, _ = strconv.ParseInt(*ds, 10, 64)
 		}
 	}
 
@@ -299,12 +298,12 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	if suggestions != nil && len(suggestions) > 0 {
 		for i, _ := range suggestions {
-			newDisk := gcp.GcpComputeDisk{
-				Id:       disk.Id,
-				Zone:     disk.Zone,
-				Region:   disk.Region,
-				DiskType: suggestions[i].Type,
-				DiskSize: wrapperspb.Int64(suggestions[i].Size),
+			newDisk := entity.GcpComputeDisk{
+				HashedDiskId: disk.HashedDiskId,
+				Zone:         disk.Zone,
+				Region:       disk.Region,
+				DiskType:     suggestions[i].Type,
+				DiskSize:     &suggestions[i].Size,
 			}
 			suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, newDisk)
 			if err != nil {
@@ -330,7 +329,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	if suggestedType == nil && suggestedSize == nil {
 		suggestedType = &disk.DiskType
-		suggestedSize = &disk.DiskSize.Value
+		suggestedSize = disk.DiskSize
 	}
 
 	pref["storage_type = ?"] = suggestedType
@@ -340,7 +339,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 		if v == nil {
 			vl = extractFromGCPComputeDisk(disk, k)
 		} else {
-			vl = v.GetValue()
+			vl = *v
 		}
 		if _, ok := gcp_compute.PreferenceDiskKey[k]; !ok {
 			continue
@@ -356,7 +355,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 		return nil, err
 	}
 	recommendedReadIopsLimit, recommendedWriteIopsLimit, recommendedReadThroughputLimit, recommendedWriteThroughputLimit, err := s.getMaximums(recommendedMachine.MachineFamily,
-		recommendedMachine.MachineType, suggestedStorageType.StorageType, recommendedMachine.GuestCpus, PWrapperInt64(disk.DiskSize))
+		recommendedMachine.MachineType, suggestedStorageType.StorageType, recommendedMachine.GuestCpus, *disk.DiskSize)
 	if err != nil {
 		return nil, err
 	}
@@ -365,17 +364,17 @@ func (s *Service) GCPComputeDiskRecommendation(
 		disk.Zone = suggestedStorageType.Zone
 		disk.DiskType = *suggestedType
 		disk.Region = suggestedStorageType.Region
-		disk.DiskSize = PInt64Wrapper(suggestedSize)
+		disk.DiskSize = suggestedSize
 		suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
 		if err != nil {
 			return nil, err
 		}
 
-		result.Recommended = &gcp.RightsizingGcpComputeDisk{
+		result.Recommended = &entity.RightsizingGcpComputeDisk{
 			Zone:                 suggestedStorageType.Zone,
 			Region:               suggestedStorageType.Region,
 			DiskType:             suggestedStorageType.StorageType,
-			DiskSize:             disk.DiskSize.Value,
+			DiskSize:             *disk.DiskSize,
 			ReadIopsLimit:        recommendedReadIopsLimit,
 			WriteIopsLimit:       recommendedWriteIopsLimit,
 			ReadThroughputLimit:  recommendedReadThroughputLimit,
@@ -395,9 +394,9 @@ func (s *Service) GCPComputeDiskRecommendation(
 	result.Description = description
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
-		if preferences["ExcludeUpsizingFeature"].GetValue() == "Yes" {
+		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
 			if result.Recommended != nil && result.Recommended.Cost > result.Current.Cost {
-				result.Recommended = result.Current
+				result.Recommended = &result.Current
 				result.Description = "No recommendation available as upsizing feature is disabled"
 				return &result, nil
 			}
@@ -423,7 +422,7 @@ func extractFromGCPComputeInstance(region string, machine *model.GCPComputeMachi
 	return ""
 }
 
-func extractFromGCPComputeDisk(disk gcp.GcpComputeDisk, k string) any {
+func extractFromGCPComputeDisk(disk entity.GcpComputeDisk, k string) any {
 	switch k {
 	case "Region":
 		return disk.Region
@@ -433,7 +432,7 @@ func extractFromGCPComputeDisk(disk gcp.GcpComputeDisk, k string) any {
 	return ""
 }
 
-func (s *Service) extractCustomInstanceDetails(instance gcp.GcpComputeInstance) (*model.GCPComputeMachineType, error) {
+func (s *Service) extractCustomInstanceDetails(instance entity.GcpComputeInstance) (*model.GCPComputeMachineType, error) {
 	re := regexp.MustCompile(`(\D.+)-(\d+)-(\d.+)`)
 	machineTypePrefix := re.ReplaceAllString(instance.MachineType, "$1")
 	strCPUAmount := re.ReplaceAllString(instance.MachineType, "$2")
@@ -473,18 +472,18 @@ func (s *Service) extractCustomInstanceDetails(instance gcp.GcpComputeInstance) 
 	}, nil
 }
 
-func (s *Service) checkCustomMachines(ctx context.Context, region string, neededCpu, neededMemoryMb int64, preferences map[string]*wrapperspb.StringValue) ([]CustomOffer, error) {
-	if preferences["MemoryGB"] != nil && preferences["MemoryGB"].GetValue() != "" {
-		neededMemoryGb, _ := strconv.ParseInt(preferences["MemoryGB"].GetValue(), 10, 64)
+func (s *Service) checkCustomMachines(ctx context.Context, region string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
+	if preferences["MemoryGB"] != nil && *preferences["MemoryGB"] != "" {
+		neededMemoryGb, _ := strconv.ParseInt(*preferences["MemoryGB"], 10, 64)
 		neededMemoryMb = neededMemoryGb * 1024
 	}
-	if preferences["vCPU"] != nil && preferences["vCPU"].GetValue() != "" {
-		neededCpu, _ = strconv.ParseInt(preferences["vCPU"].GetValue(), 10, 64)
+	if preferences["vCPU"] != nil && *preferences["vCPU"] != "" {
+		neededCpu, _ = strconv.ParseInt(*preferences["vCPU"], 10, 64)
 	}
 
 	offers := make([]CustomOffer, 0)
-	if preferences["MachineFamily"] != nil && preferences["MachineFamily"].GetValue() != "" {
-		offer, err := s.checkCustomMachineForFamily(ctx, region, preferences["MachineFamily"].GetValue(), neededCpu, neededMemoryMb, preferences)
+	if preferences["MachineFamily"] != nil && *preferences["MachineFamily"] != "" {
+		offer, err := s.checkCustomMachineForFamily(ctx, region, *preferences["MachineFamily"], neededCpu, neededMemoryMb, preferences)
 		if err != nil {
 			return nil, err
 		}
@@ -530,7 +529,7 @@ func (s *Service) checkCustomMachines(ctx context.Context, region string, needed
 	return offers, nil
 }
 
-func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, family string, neededCpu, neededMemoryMb int64, preferences map[string]*wrapperspb.StringValue) ([]CustomOffer, error) {
+func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, family string, neededCpu, neededMemoryMb int64, preferences map[string]*string) ([]CustomOffer, error) {
 	if neededCpu > 2 {
 		neededCpu = roundUpToMultipleOf(neededCpu, 4)
 	}
@@ -559,7 +558,7 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 	pref := make(map[string]any)
 	for k, v := range preferences {
 		if k == "Region" {
-			if v != nil && v.GetValue() != "" {
+			if v != nil && *v != "" {
 				pref["location = ?"] = *v
 			} else {
 				pref["location = ?"] = region
@@ -586,10 +585,10 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 	machineType := fmt.Sprintf("%s-custom-%d-%d", family, neededCpu, neededMemoryMb)
 
 	if memorySku.Location == cpuSku.Location {
-		cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
-			Id:          "",
-			Zone:        cpuSku.Location + "-a",
-			MachineType: machineType,
+		cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, entity.GcpComputeInstance{
+			HashedInstanceId: "",
+			Zone:             cpuSku.Location + "-a",
+			MachineType:      machineType,
 		})
 		if err != nil {
 			return nil, err
@@ -609,10 +608,10 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 		}}, nil
 	}
 
-	cpuRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
-		Id:          "",
-		Zone:        cpuSku.Location + "-a",
-		MachineType: machineType,
+	cpuRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, entity.GcpComputeInstance{
+		HashedInstanceId: "",
+		Zone:             cpuSku.Location + "-a",
+		MachineType:      machineType,
 	})
 	if err != nil {
 		return nil, err
@@ -631,10 +630,10 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 		Cost: cpuRegionCost,
 	})
 
-	memoryRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
-		Id:          "",
-		Zone:        memorySku.Location + "-a",
-		MachineType: machineType,
+	memoryRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, entity.GcpComputeInstance{
+		HashedInstanceId: "",
+		Zone:             memorySku.Location + "-a",
+		MachineType:      machineType,
 	})
 	if err != nil {
 		return nil, err
@@ -669,28 +668,22 @@ func roundUpToMultipleOf(number, multipleOf int64) int64 {
 	return ((number / multipleOf) + 1) * multipleOf
 }
 
-func (s *Service) generateGcpComputeInstanceDescription(region string, instance gcp.GcpComputeInstance,
-	metrics map[string]*gcp.Metric, preferences map[string]*wrapperspb.StringValue,
+func (s *Service) generateGcpComputeInstanceDescription(region string, instance entity.GcpComputeInstance,
+	metrics map[string][]entity.Datapoint, preferences map[string]*string,
 	neededCpu, neededMemoryMb float64, currentMachine *model.GCPComputeMachineType,
 	suggestedMachineType *model.GCPComputeMachineType) (string, error) {
-	if v, ok := metrics["cpuUtilization"]; !ok || v == nil {
-		return "", fmt.Errorf("cpuUtilization metric not found")
-	}
-	if v, ok := metrics["memoryUtilization"]; !ok || v == nil {
-		return "", fmt.Errorf("memoryUtilization metric not found")
-	}
-	cpuUsage := extractGCPUsage(metrics["cpuUtilization"].Data)
-	memoryUsage := extractGCPUsage(metrics["memoryUtilization"].Data)
+	cpuUsage := extractGCPUsage(metrics["cpuUtilization"])
+	memoryUsage := extractGCPUsage(metrics["memoryUtilization"])
 
 	var usage string
-	if len(metrics["cpuUtilization"].Data) > 0 {
-		usage = fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, PWrapperDouble(cpuUsage.Min), PWrapperDouble(cpuUsage.Avg), PWrapperDouble(cpuUsage.Max), neededCpu, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
+	if len(metrics["cpuUtilization"]) > 0 {
+		usage = fmt.Sprintf("- %s has %d vCPUs. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f vCPUs. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, PFloat(cpuUsage.Min), PFloat(cpuUsage.Avg), PFloat(cpuUsage.Max), neededCpu, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
 	} else {
 		usage = fmt.Sprintf("- %s has %d vCPUs. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %d vCPUs.\n", instance.MachineType, currentMachine.GuestCpus, suggestedMachineType.MachineType, suggestedMachineType.GuestCpus)
 
 	}
-	if len(metrics["memoryUtilization"].Data) > 0 {
-		usage += fmt.Sprintf("- %s has %dMb Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fMb Memory. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, PWrapperDouble(memoryUsage.Min), PWrapperDouble(memoryUsage.Avg), PWrapperDouble(memoryUsage.Max), neededMemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
+	if len(metrics["memoryUtilization"]) > 0 {
+		usage += fmt.Sprintf("- %s has %dMb Memory. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2fMb Memory. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, PFloat(memoryUsage.Min), PFloat(memoryUsage.Avg), PFloat(memoryUsage.Max), neededMemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
 	} else {
 		usage += fmt.Sprintf("- %s has %dMb Memory. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. %s has %dMb Memory.\n", instance.MachineType, currentMachine.MemoryMb, suggestedMachineType.MachineType, suggestedMachineType.MemoryMb)
 	}
@@ -746,56 +739,44 @@ User's needs:
 	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
 }
 
-func (s *Service) generateGcpComputeDiskDescription(disk gcp.GcpComputeDisk,
+func (s *Service) generateGcpComputeDiskDescription(disk entity.GcpComputeDisk,
 	currentMachine *model.GCPComputeMachineType,
 	recommendedMachine *model.GCPComputeMachineType,
-	metrics gcp.DiskMetrics, preferences map[string]*wrapperspb.StringValue,
+	metrics map[string][]entity.Datapoint, preferences map[string]*string,
 	readIopsLimit, writeIopsLimit int64, readThroughputLimit, writeThroughputLimit float64,
 	neededReadIops, neededWriteIops, neededReadThroughput, neededWriteThroughput float64,
 	recommendedReadIopsLimit, recommendedWriteIopsLimit int64, recommendedReadThroughputLimit, recommendedWriteThroughputLimit float64,
 	suggestedType string, suggestedSize int64,
 ) (string, error) {
-	if v, ok := metrics.Metrics["DiskReadIOPS"]; !ok || v == nil {
-		return "", fmt.Errorf("DiskReadIOPS metric not found")
+	readIopsUsage := extractGCPUsage(metrics["DiskReadIOPS"])
+	writeIopsUsage := extractGCPUsage(metrics["DiskWriteIOPS"])
+	readThroughputUsageBytes := extractGCPUsage(metrics["DiskReadThroughput"])
+	readThroughputUsageMb := entity.Usage{
+		Avg: funcP(readThroughputUsageBytes.Avg, readThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(readThroughputUsageBytes.Min, readThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(readThroughputUsageBytes.Max, readThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
-	if v, ok := metrics.Metrics["DiskWriteIOPS"]; !ok || v == nil {
-		return "", fmt.Errorf("DiskWriteIOPS metric not found")
-	}
-	if v, ok := metrics.Metrics["DiskReadThroughput"]; !ok || v == nil {
-		return "", fmt.Errorf("DiskReadThroughput metric not found")
-	}
-	if v, ok := metrics.Metrics["DiskWriteThroughput"]; !ok || v == nil {
-		return "", fmt.Errorf("DiskWriteThroughput metric not found")
-	}
-	readIopsUsage := extractGCPUsage(metrics.Metrics["DiskReadIOPS"].Data)
-	writeIopsUsage := extractGCPUsage(metrics.Metrics["DiskWriteIOPS"].Data)
-	readThroughputUsageBytes := extractGCPUsage(metrics.Metrics["DiskReadThroughput"].Data)
-	readThroughputUsageMb := gcp.Usage{
-		Avg: funcPWrapper(readThroughputUsageBytes.Avg, readThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Min: funcPWrapper(readThroughputUsageBytes.Min, readThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Max: funcPWrapper(readThroughputUsageBytes.Max, readThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-	}
-	writeThroughputUsageBytes := extractGCPUsage(metrics.Metrics["DiskWriteThroughput"].Data)
-	writeThroughputUsageMb := gcp.Usage{
-		Avg: funcPWrapper(writeThroughputUsageBytes.Avg, writeThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Min: funcPWrapper(writeThroughputUsageBytes.Min, writeThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
-		Max: funcPWrapper(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+	writeThroughputUsageBytes := extractGCPUsage(metrics["DiskWriteThroughput"])
+	writeThroughputUsageMb := entity.Usage{
+		Avg: funcP(writeThroughputUsageBytes.Avg, writeThroughputUsageBytes.Avg, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Min: funcP(writeThroughputUsageBytes.Min, writeThroughputUsageBytes.Min, func(a, _ float64) float64 { return a / (1024 * 1024) }),
+		Max: funcP(writeThroughputUsageBytes.Max, writeThroughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
 
 	var usage string
-	if len(metrics.Metrics["DiskReadIOPS"].Data) > 0 || len(metrics.Metrics["DiskWriteIOPS"].Data) > 0 {
-		usage = fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f Write IOPS estimation. Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), writeIopsLimit, PWrapperDouble(writeIopsUsage.Min), PWrapperDouble(writeIopsUsage.Avg), PWrapperDouble(writeIopsUsage.Max), neededWriteIops, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteIopsLimit)
-		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Read IOPS estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f Read IOPS estimation. Disk Type %s with Machine Type %s with size %d has %d Read IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), readIopsLimit, PWrapperDouble(readIopsUsage.Min), PWrapperDouble(readIopsUsage.Avg), PWrapperDouble(readIopsUsage.Max), neededReadIops, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadIopsLimit)
+	if len(metrics["DiskReadIOPS"]) > 0 || len(metrics["DiskWriteIOPS"]) > 0 {
+		usage = fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f Write IOPS estimation. Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeIopsLimit, PFloat(writeIopsUsage.Min), PFloat(writeIopsUsage.Avg), PFloat(writeIopsUsage.Max), neededWriteIops, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteIopsLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Read IOPS estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.1f Read IOPS estimation. Disk Type %s with Machine Type %s with size %d has %d Read IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readIopsLimit, PFloat(readIopsUsage.Min), PFloat(readIopsUsage.Avg), PFloat(readIopsUsage.Max), neededReadIops, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadIopsLimit)
 	} else {
-		usage = fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %d IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), writeIopsLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteIopsLimit)
-		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %d IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), readIopsLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadIopsLimit)
+		usage = fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %d IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeIopsLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteIopsLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %d Write IOPS estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %d IOPS estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readIopsLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadIopsLimit)
 	}
-	if len(metrics.Metrics["DiskReadThroughput"].Data) > 0 || len(metrics.Metrics["DiskWriteThroughput"].Data) > 0 {
-		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f Mb Write Throughput estimation. Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), writeThroughputLimit, PWrapperDouble(writeThroughputUsageMb.Min), PWrapperDouble(writeThroughputUsageMb.Avg), PWrapperDouble(writeThroughputUsageMb.Max), neededWriteThroughput, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteThroughputLimit)
-		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f Mb Read Throughput estimation. Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), readThroughputLimit, PWrapperDouble(readThroughputUsageMb.Min), PWrapperDouble(readThroughputUsageMb.Avg), PWrapperDouble(readThroughputUsageMb.Max), neededReadThroughput, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadThroughputLimit)
+	if len(metrics["DiskReadThroughput"]) > 0 || len(metrics["DiskWriteThroughput"]) > 0 {
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f Mb Write Throughput estimation. Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeThroughputLimit, PFloat(writeThroughputUsageMb.Min), PFloat(writeThroughputUsageMb.Avg), PFloat(writeThroughputUsageMb.Max), neededWriteThroughput, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteThroughputLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation. Usage over the course of last week is min=%.2f%%, avg=%.2f%%, max=%.2f%%, so you only need %.2f Mb Read Throughput estimation. Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readThroughputLimit, PFloat(readThroughputUsageMb.Min), PFloat(readThroughputUsageMb.Avg), PFloat(readThroughputUsageMb.Max), neededReadThroughput, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadThroughputLimit)
 	} else {
-		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), writeThroughputLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteThroughputLimit)
-		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, PWrapperInt64(disk.DiskSize), readThroughputLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadThroughputLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %.2f Mb Write Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, writeThroughputLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedWriteThroughputLimit)
+		usage += fmt.Sprintf("- Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation. Usage is not available. You need to install CloudWatch Agent on your instance to get this data. Disk Type %s with Machine Type %s with size %d has %.2f Mb Read Throughput estimation.\n", disk.DiskType, currentMachine.MachineType, disk.DiskSize, readThroughputLimit, suggestedType, recommendedMachine.MachineType, suggestedSize, recommendedReadThroughputLimit)
 	}
 
 	needs := ""
@@ -807,7 +788,7 @@ func (s *Service) generateGcpComputeDiskDescription(disk gcp.GcpComputeDisk,
 			vl := extractFromGCPComputeDisk(disk, k)
 			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
 		} else {
-			needs += fmt.Sprintf("- You asked %s to be %s\n", k, v.GetValue())
+			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
 		}
 	}
 
@@ -847,33 +828,4 @@ User's needs:
 	s.logger.Info("GPT results", zap.String("prompt", prompt), zap.String("result", strings.TrimSpace(resp.Choices[0].Message.Content)))
 
 	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
-}
-
-func PWrapperDouble(v *wrapperspb.DoubleValue) float64 {
-	if v == nil {
-		return 0
-	}
-	return v.GetValue()
-}
-
-func PWrapperInt64(v *wrapperspb.Int64Value) int64 {
-	if v == nil {
-		return 0
-	}
-	return v.GetValue()
-}
-
-func PInt64Wrapper(v *int64) *wrapperspb.Int64Value {
-	if v == nil {
-		return nil
-	}
-	return &wrapperspb.Int64Value{Value: *v}
-}
-
-func pWrapperCalculateHeadroom(needed *wrapperspb.DoubleValue, percent int64) float64 {
-	if needed == nil {
-		return 0.0
-	}
-	v := needed.Value
-	return v / (1.0 - (float64(percent) / 100.0))
 }

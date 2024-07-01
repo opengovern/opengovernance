@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
 	"net/http"
 	"time"
 )
 
-func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance gcp.GcpComputeInstance) (float64, error) {
+func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance entity.GcpComputeInstance) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -26,7 +26,7 @@ func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance gcp.Gc
 	valuesMap["pennywise_usage"] = map[string]any{}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
-		Address:      instance.Id,
+		Address:      instance.HashedInstanceId,
 		Type:         "google_compute_instance",
 		Name:         "",
 		RegionCode:   instance.Zone,
@@ -57,7 +57,7 @@ func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance gcp.Gc
 	return resourceCost.Decimal.InexactFloat64(), nil
 }
 
-func (s *Service) GetGCPComputeDiskCost(ctx context.Context, disk gcp.GcpComputeDisk) (float64, error) {
+func (s *Service) GetGCPComputeDiskCost(ctx context.Context, disk entity.GcpComputeDisk) (float64, error) {
 	req := schema.Submission{
 		ID:        "submission-1",
 		CreatedAt: time.Now(),
@@ -68,16 +68,16 @@ func (s *Service) GetGCPComputeDiskCost(ctx context.Context, disk gcp.GcpCompute
 	valuesMap["disk_type"] = disk.DiskType
 	valuesMap["region"] = disk.Region
 	if disk.DiskSize != nil {
-		valuesMap["size"] = disk.DiskSize.Value
+		valuesMap["size"] = *disk.DiskSize
 	}
 	if disk.ProvisionedIops != nil {
-		valuesMap["iops"] = disk.ProvisionedIops.Value
+		valuesMap["iops"] = *disk.ProvisionedIops
 	}
 
 	valuesMap["pennywise_usage"] = map[string]any{}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
-		Address:      disk.Id,
+		Address:      disk.HashedDiskId,
 		Type:         "google_compute_disk",
 		Name:         "",
 		RegionCode:   disk.Region,
