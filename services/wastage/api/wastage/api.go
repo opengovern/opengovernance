@@ -73,7 +73,6 @@ func (s API) Register(e *echo.Echo) {
 	g.POST("/ec2-instance", httpserver.AuthorizeHandler(s.EC2Instance, api.ViewerRole))
 	g.POST("/aws-rds", httpserver.AuthorizeHandler(s.AwsRDS, api.ViewerRole))
 	g.POST("/aws-rds-cluster", httpserver.AuthorizeHandler(s.AwsRDSCluster, api.ViewerRole))
-	g.POST("/gcp-compute", httpserver.AuthorizeHandler(s.GCPCompute, api.ViewerRole))
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
