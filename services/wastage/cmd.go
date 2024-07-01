@@ -126,12 +126,6 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			//gcpGrpcServer := wastage.NewGcpServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc)
-			//err = wastage.StartGcpGrpcServer(gcpGrpcServer, cnf.Grpc.Address, AuthGRPCURI)
-			//if err != nil {
-			//	return err
-			//}
-
 			return httpserver.RegisterAndStart(
 				ctx,
 				logger,
