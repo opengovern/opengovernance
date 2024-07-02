@@ -137,6 +137,28 @@ func (s *Service) KubernetesPodRecommendation(
 				recommended.MemoryRequest = minMemoryRequest * (1024 * 1024)
 			}
 		}
+		if v, ok := preferences["LeaveCPULimitEmpty"]; ok && v != nil {
+			leaveCPULimitEmpty, err := strconv.ParseBool(v.Value)
+			if err != nil {
+				s.logger.Error("invalid LeaveCPULimitEmpty value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid LeaveCPULimitEmpty value: %s", v.Value))
+			}
+
+			if leaveCPULimitEmpty {
+				recommended.CpuRequest = recommended.CpuLimit
+				recommended.CpuLimit = current.CpuLimit
+			}
+		}
+		if v, ok := preferences["EqualMemoryRequestLimit"]; ok && v != nil {
+			equalMemoryRequestLimit, err := strconv.ParseBool(v.Value)
+			if err != nil {
+				s.logger.Error("invalid EqualMemoryRequestLimit value", zap.String("value", v.Value))
+				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid EqualMemoryRequestLimit value: %s", v.Value))
+			}
+			if equalMemoryRequestLimit {
+				recommended.MemoryRequest = recommended.MemoryLimit
+			}
+		}
 
 		if pod.Name == "contour-envoy-kl545" {
 			s.logger.Info("contour-envoy-kl545 recommended2", zap.String("container", container.Name),
