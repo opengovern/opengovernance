@@ -1,15 +1,21 @@
 package recommendation
 
 import (
+	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 func (s *Service) KubernetesPodRecommendation(
@@ -419,6 +425,107 @@ func (s *Service) KubernetesJobRecommendation(
 	}
 
 	return &result, nil
+}
+
+func (s *Service) calculateEksNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
+	var instanceType, instanceRegion, instanceAvailabilityZone, instanceOs string
+
+	for _, v := range []string{"node.kubernetes.io/instance-type", "beta.kubernetes.io/instance-type"} {
+		var ok bool
+		instanceType, ok = node.Labels[v]
+		if ok {
+			break
+		}
+	}
+	if instanceType == "" {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the instance type for the node")
+	}
+
+	for _, v := range []string{"topology.kubernetes.io/region", "failure-domain.beta.kubernetes.io/region"} {
+		var ok bool
+		instanceRegion, ok = node.Labels[v]
+		if ok {
+			break
+		}
+	}
+	if instanceRegion == "" {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the region for the node")
+	}
+
+	for _, v := range []string{"topology.kubernetes.io/zone", "failure-domain.beta.kubernetes.io/zone"} {
+		var ok bool
+		instanceAvailabilityZone, ok = node.Labels[v]
+		if ok {
+			break
+		}
+	}
+	if instanceAvailabilityZone == "" {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the availability zone for the node")
+	}
+
+	for _, v := range []string{"kubernetes.io/os", "beta.kubernetes.io/os"} {
+		var ok bool
+		instanceOs, ok = node.Labels[v]
+		if ok {
+			break
+		}
+	}
+	if instanceOs == "" {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the operating system for the node")
+	}
+
+	capacityType, ok := node.Labels["eks.amazonaws.com/capacityType"]
+	if !ok {
+		capacityType = "ON_DEMAND" // or throw an error?
+	}
+
+	instance := entity.EC2Instance{
+		HashedInstanceId:  node.Id,
+		State:             types.InstanceStateNameRunning,
+		InstanceType:      types.InstanceType(instanceType),
+		Platform:          "",
+		UsageOperation:    "",
+		InstanceLifecycle: types.InstanceLifecycleTypeScheduled,
+		Placement: &entity.EC2Placement{
+			Tenancy:          "default",
+			AvailabilityZone: instanceAvailabilityZone,
+		},
+	}
+	if capacityType == "SPOT" {
+		instance.InstanceLifecycle = types.InstanceLifecycleTypeSpot
+	}
+	switch instanceOs {
+	case "linux":
+		instance.Platform = "Linux/UNIX"
+		instance.UsageOperation = "RunInstances"
+	case "windows":
+		instance.Platform = "Windows"
+		instance.UsageOperation = "RunInstances:0002"
+	default:
+		return 0, status.Errorf(codes.InvalidArgument, "Unsupported operating system for the node: %s", instanceOs)
+	}
+
+	cost, _, err := s.costSvc.GetEC2InstanceCost(ctx, instanceRegion, instance, nil, nil)
+	if err != nil {
+		s.logger.Error("failed to get ec2 instance cost", zap.Error(err))
+		return 0, err
+	}
+
+	return cost, nil
+}
+
+func (s *Service) KubernetesNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
+	for labelKey, _ := range node.Labels {
+		labelKey := strings.ToLower(labelKey)
+		switch {
+		case strings.HasPrefix(labelKey, "eks.amazonaws.com/"):
+			return s.calculateEksNodeCost(ctx, node)
+		case strings.HasPrefix(labelKey, "kubernetes.azure.com/"):
+			return 0, status.Errorf(codes.InvalidArgument, "AKS cluster node costs are not supported")
+			// TODO @Arta GCP case
+		}
+	}
+	return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the cloud provider for the node")
 }
 
 func mergeContainerMetrics(a *pb.KubernetesContainerMetrics, b *pb.KubernetesContainerMetrics, mergeF func(aa, bb float64) float64) *pb.KubernetesContainerMetrics {
