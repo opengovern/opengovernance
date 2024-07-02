@@ -2,6 +2,7 @@ package recommendation
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 )
@@ -53,7 +54,9 @@ func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs 
 
 	limitations := s.findLimitations(machineFamily, machineType, vCPUs)
 	if len(limitations) == 0 {
-		return suggestions, fmt.Errorf("could not find limitations")
+		s.logger.Error("could not find limitations", zap.String("machineFamily", machineType),
+			zap.String("machineType", machineType), zap.Int64("vCPUs", vCPUs))
+		return nil, fmt.Errorf("could not find limitations")
 	}
 
 	// pd-standard
@@ -91,6 +94,8 @@ func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs 
 func (s *Service) getMaximums(machineFamily, machineType, diskType string, vCPUs, sizeGb int64) (int64, int64, float64, float64, error) {
 	limitations := s.findLimitations(machineFamily, machineType, vCPUs)
 	if len(limitations) == 0 {
+		s.logger.Error("could not find limitations", zap.String("machineFamily", machineType),
+			zap.String("machineType", machineType), zap.Int64("vCPUs", vCPUs))
 		return 0, 0, 0, 0, fmt.Errorf("could not find limitations")
 	}
 

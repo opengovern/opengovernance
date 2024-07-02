@@ -78,13 +78,7 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 	statsOut, _ := json.Marshal(stats)
 
 	fullReqJson, _ := json.Marshal(req)
-	metrics := req.Metrics
-	req.Metrics = nil
-	disksMetrics := req.DisksMetrics
-	req.DisksMetrics = nil
-	trimmedReqJson, _ := json.Marshal(req)
-	req.Metrics = metrics
-	req.DisksMetrics = disksMetrics
+
 	var requestId *string
 	var cliVersion *string
 	if req.RequestId != nil {
@@ -108,7 +102,7 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "gcp-compute-instance",
-		Request:        trimmedReqJson,
+		Request:        fullReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
@@ -132,7 +126,7 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 			usage.ResponseId = &responseId
 
 			recom := gcp.RightsizingGcpComputeInstance{}
-			if resp.Rightsizing.Recommended != nil {
+			if resp.Rightsizing != nil && resp.Rightsizing.Recommended != nil {
 				recom = *resp.Rightsizing.Recommended
 			}
 			stats.CurrentCost = resp.Rightsizing.Current.Cost
