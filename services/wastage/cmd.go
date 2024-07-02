@@ -6,7 +6,7 @@ import (
 	"github.com/alitto/pond"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage"
+	grpc_server "github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage/grpc-server"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
@@ -120,8 +120,8 @@ func Command() *cobra.Command {
 				pond.IdleTimeout(10*time.Second),
 				pond.MinWorkers(1))
 
-			grpcServer := wastage.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc)
-			err = wastage.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
+			grpcServer := grpc_server.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc)
+			err = grpc_server.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
 			if err != nil {
 				return err
 			}

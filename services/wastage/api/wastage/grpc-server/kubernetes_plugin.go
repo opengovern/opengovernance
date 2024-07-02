@@ -1,14 +1,12 @@
-package wastage
+package grpc_server
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/alitto/pond"
-	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -16,21 +14,17 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
-	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
-	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
+	kubernetesPluginProto "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
-	"net"
 	"strings"
 	"time"
 )
 
-type Server struct {
-	pb.OptimizationServer
+type kubernetesPluginServer struct {
+	kubernetesPluginProto.OptimizationServer
 
 	cfg config.WastageConfig
 
@@ -44,71 +38,24 @@ type Server struct {
 	recomSvc  *recommendation.Service
 }
 
-func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
-	return &Server{
+func newKubernetesPluginServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *kubernetesPluginServer {
+	return &kubernetesPluginServer{
 		cfg:            cfg,
-		tracer:         otel.GetTracerProvider().Tracer("wastage.http.sources"),
-		logger:         logger.Named("grpc"),
 		blobClient:     blobClient,
 		blobWorkerPool: blobWorkerPool,
 		usageRepo:      usageRepo,
 		recomSvc:       recomSvc,
+		tracer:         otel.GetTracerProvider().Tracer("wastage.grpc.kubernetes"),
+		logger:         logger.Named("kubernetes-grpc-server"),
 	}
 }
 
-func Logger(logger *zap.Logger) func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		reqId := uuid.New()
-
-		logger.Info("Request", zap.String("ReqID", reqId.String()))
-		startTime := time.Now()
-		resp, err := handler(ctx, req)
-		elapsed := time.Since(startTime).Seconds()
-		if err != nil {
-			logger.Error("Request failed", zap.String("ReqID", reqId.String()), zap.Error(err), zap.Float64("latency", elapsed))
-		} else {
-			logger.Info("Request succeeded", zap.String("ReqID", reqId.String()), zap.Float64("latency", elapsed))
-		}
-
-		return resp, err
-	}
-}
-
-func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI string) error {
-	lis, err := net.Listen("tcp", grpcServerAddress)
-	if err != nil {
-		server.logger.Error("failed to listen", zap.Error(err))
-		return err
-	}
-	authGRPCConn, err := grpc.NewClient(authGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
-	if err != nil {
-		server.logger.Error("failed to dial", zap.Error(err))
-		return err
-	}
-	authGrpcClient := envoyAuth.NewAuthorizationClient(authGRPCConn)
-
-	s := grpc.NewServer(
-		grpc.MaxRecvMsgSize(256*1024*1024),
-		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
-		grpc.ChainUnaryInterceptor(Logger(server.logger)),
-	)
-	pb.RegisterOptimizationServer(s, server)
-	server.logger.Info("server listening at", zap.String("address", lis.Addr().String()))
-	utils.EnsureRunGoroutine(func() {
-		if err = s.Serve(lis); err != nil {
-			server.logger.Error("failed to serve", zap.Error(err))
-			panic(err)
-		}
-	})
-	return nil
-}
-
-func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.KubernetesPodOptimizationRequest) (*pb.KubernetesPodOptimizationResponse, error) {
+func (s *kubernetesPluginServer) KubernetesPodOptimization(ctx context.Context, req *kubernetesPluginProto.KubernetesPodOptimizationRequest) (*kubernetesPluginProto.KubernetesPodOptimizationResponse, error) {
 	start := time.Now()
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
-	var resp pb.KubernetesPodOptimizationResponse
+	var resp kubernetesPluginProto.KubernetesPodOptimizationResponse
 	var err error
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -239,7 +186,7 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	}
 
 	// DO NOT change this, resp is used in updating usage
-	resp = pb.KubernetesPodOptimizationResponse{
+	resp = kubernetesPluginProto.KubernetesPodOptimizationResponse{
 		Rightsizing: podRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
@@ -247,12 +194,12 @@ func (s *Server) KubernetesPodOptimization(ctx context.Context, req *pb.Kubernet
 	return &resp, nil
 }
 
-func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.KubernetesDeploymentOptimizationRequest) (*pb.KubernetesDeploymentOptimizationResponse, error) {
+func (s *kubernetesPluginServer) KubernetesDeploymentOptimization(ctx context.Context, req *kubernetesPluginProto.KubernetesDeploymentOptimizationRequest) (*kubernetesPluginProto.KubernetesDeploymentOptimizationResponse, error) {
 	start := time.Now()
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
-	var resp pb.KubernetesDeploymentOptimizationResponse
+	var resp kubernetesPluginProto.KubernetesDeploymentOptimizationResponse
 	var err error
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -382,7 +329,7 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	}
 
 	// DO NOT change this, resp is used in updating usage
-	resp = pb.KubernetesDeploymentOptimizationResponse{
+	resp = kubernetesPluginProto.KubernetesDeploymentOptimizationResponse{
 		Rightsizing: deploymentRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
@@ -390,12 +337,12 @@ func (s *Server) KubernetesDeploymentOptimization(ctx context.Context, req *pb.K
 	return &resp, nil
 }
 
-func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.KubernetesStatefulsetOptimizationRequest) (*pb.KubernetesStatefulsetOptimizationResponse, error) {
+func (s *kubernetesPluginServer) KubernetesStatefulsetOptimization(ctx context.Context, req *kubernetesPluginProto.KubernetesStatefulsetOptimizationRequest) (*kubernetesPluginProto.KubernetesStatefulsetOptimizationResponse, error) {
 	start := time.Now()
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
-	var resp pb.KubernetesStatefulsetOptimizationResponse
+	var resp kubernetesPluginProto.KubernetesStatefulsetOptimizationResponse
 	var err error
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -525,7 +472,7 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 	}
 
 	// DO NOT change this, resp is used in updating usage
-	resp = pb.KubernetesStatefulsetOptimizationResponse{
+	resp = kubernetesPluginProto.KubernetesStatefulsetOptimizationResponse{
 		Rightsizing: statefulsetRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
@@ -533,12 +480,12 @@ func (s *Server) KubernetesStatefulsetOptimization(ctx context.Context, req *pb.
 	return &resp, nil
 }
 
-func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.KubernetesDaemonsetOptimizationRequest) (*pb.KubernetesDaemonsetOptimizationResponse, error) {
+func (s *kubernetesPluginServer) KubernetesDaemonsetOptimization(ctx context.Context, req *kubernetesPluginProto.KubernetesDaemonsetOptimizationRequest) (*kubernetesPluginProto.KubernetesDaemonsetOptimizationResponse, error) {
 	start := time.Now()
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
-	var resp pb.KubernetesDaemonsetOptimizationResponse
+	var resp kubernetesPluginProto.KubernetesDaemonsetOptimizationResponse
 	var err error
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -668,7 +615,7 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	}
 
 	// DO NOT change this, resp is used in updating usage
-	resp = pb.KubernetesDaemonsetOptimizationResponse{
+	resp = kubernetesPluginProto.KubernetesDaemonsetOptimizationResponse{
 		Rightsizing: daemonsetRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
@@ -676,12 +623,12 @@ func (s *Server) KubernetesDaemonsetOptimization(ctx context.Context, req *pb.Ku
 	return &resp, nil
 }
 
-func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.KubernetesJobOptimizationRequest) (*pb.KubernetesJobOptimizationResponse, error) {
+func (s *kubernetesPluginServer) KubernetesJobOptimization(ctx context.Context, req *kubernetesPluginProto.KubernetesJobOptimizationRequest) (*kubernetesPluginProto.KubernetesJobOptimizationResponse, error) {
 	start := time.Now()
 	ctx, span := s.tracer.Start(ctx, "get")
 	defer span.End()
 
-	var resp pb.KubernetesJobOptimizationResponse
+	var resp kubernetesPluginProto.KubernetesJobOptimizationResponse
 	var err error
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -811,10 +758,110 @@ func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.Kubernet
 	}
 
 	// DO NOT change this, resp is used in updating usage
-	resp = pb.KubernetesJobOptimizationResponse{
+	resp = kubernetesPluginProto.KubernetesJobOptimizationResponse{
 		Rightsizing: jobRightSizingRecom,
 	}
 	// DO NOT change this, resp is used in updating usage
+
+	return &resp, nil
+}
+
+func (s *kubernetesPluginServer) KubernetesNodeGetCost(ctx context.Context, req *kubernetesPluginProto.KubernetesNodeGetCostRequest) (*kubernetesPluginProto.KubernetesNodeGetCostResponse, error) {
+	start := time.Now()
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var resp kubernetesPluginProto.KubernetesNodeGetCostResponse
+	var err error
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to get incoming context")
+	}
+
+	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userId := ""
+	if len(userIds) > 0 {
+		userId = userIds[0]
+	}
+
+	email := req.Identification["cluster_name"]
+	if !strings.Contains(email, "@") {
+		email = email + "@local.temp"
+	}
+
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
+	stats := model.Statistics{
+		AccountID:   accountId,
+		OrgEmail:    email,
+		ResourceID:  req.GetNode().GetId(),
+		Auth0UserId: userId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
+	reqJson, _ := json.Marshal(req)
+	var requestId *string
+	var cliVersion *string
+	if req.RequestId != nil {
+		requestId = &req.RequestId.Value
+	}
+	if req.CliVersion != nil {
+		cliVersion = &req.CliVersion.Value
+	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	usage := model.UsageV2{
+		ApiEndpoint:    "kubernetes-node",
+		Request:        reqJson,
+		RequestId:      requestId,
+		CliVersion:     cliVersion,
+		Response:       nil,
+		FailureMessage: nil,
+		Statistics:     statsOut,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+
+	// TODO add cost calc
+
+	elapsed := time.Since(start).Seconds()
+	usage.Latency = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		return nil, err
+	}
+
+	// DO NOT change this, resp is used in updating usage
+	resp = kubernetesPluginProto.KubernetesNodeGetCostResponse{
+		Cost: nil, // TODO
+	}
 
 	return &resp, nil
 }
