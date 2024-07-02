@@ -3,7 +3,7 @@ package recommendation
 import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math"
 	"sort"

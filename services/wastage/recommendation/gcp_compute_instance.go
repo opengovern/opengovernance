@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/gcp_compute"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"

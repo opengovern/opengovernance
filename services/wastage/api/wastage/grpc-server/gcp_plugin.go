@@ -14,7 +14,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
