@@ -3,6 +3,8 @@ package recommendation
 import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math"
 	"sort"
 )
@@ -17,6 +19,19 @@ func funcP(a, b *float64, f func(aa, bb float64) float64) *float64 {
 	} else {
 		tmp := f(*a, *b)
 		return &tmp
+	}
+}
+
+func funcPWrapper(a, b *wrapperspb.DoubleValue, f func(aa, bb float64) float64) *wrapperspb.DoubleValue {
+	if a == nil && b == nil {
+		return nil
+	} else if a == nil {
+		return b
+	} else if b == nil {
+		return a
+	} else {
+		tmp := f(a.GetValue(), b.GetValue())
+		return wrapperspb.Double(tmp)
 	}
 }
 
@@ -268,7 +283,7 @@ func extractUsage(dps []types.Datapoint, avgType UsageAverageType) entity.Usage 
 	}
 }
 
-func averageOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
+func averageOfGCPDatapoints(datapoints []*gcp.DataPoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
 	}
@@ -286,7 +301,7 @@ func averageOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
 	return &avg
 }
 
-func maxOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
+func maxOfGCPDatapoints(datapoints []*gcp.DataPoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
 	}
@@ -303,7 +318,7 @@ func maxOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
 	return &maxOfAvgs
 }
 
-func minOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
+func minOfGCPDatapoints(datapoints []*gcp.DataPoint) *float64 {
 	if len(datapoints) == 0 {
 		return nil
 	}
@@ -323,14 +338,24 @@ func minOfGCPDatapoints(datapoints []entity.Datapoint) *float64 {
 	return &minOfAverages
 }
 
-func extractGCPUsage(ts []entity.Datapoint) entity.Usage {
+func extractGCPUsage(ts []*gcp.DataPoint) gcp.Usage {
 	var minV, avgV, maxV *float64
-
+	var minW, avgW, maxW *wrapperspb.DoubleValue
 	minV, avgV, maxV = minOfGCPDatapoints(ts), averageOfGCPDatapoints(ts), maxOfGCPDatapoints(ts)
 
-	return entity.Usage{
-		Avg: avgV,
-		Min: minV,
-		Max: maxV,
+	if minV != nil {
+		minW = wrapperspb.Double(*minV)
+	}
+	if avgV != nil {
+		avgW = wrapperspb.Double(*avgV)
+	}
+	if maxV != nil {
+		maxW = wrapperspb.Double(*maxV)
+	}
+
+	return gcp.Usage{
+		Avg: avgW,
+		Min: minW,
+		Max: maxW,
 	}
 }

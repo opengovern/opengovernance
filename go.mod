@@ -49,6 +49,7 @@ require (
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
 	github.com/kaytu-io/kaytu-util v0.0.0-20240604043338-1b0eea1a5455
 	github.com/kaytu-io/pennywise v1.7.16
+	github.com/kaytu-io/plugin-gcp v0.0.0-20240701135736-96282fc6126a
 	github.com/kaytu-io/plugin-kubernetes-internal v0.15.3
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
@@ -81,9 +82,9 @@ require (
 	golang.org/x/mod v0.17.0
 	golang.org/x/net v0.26.0
 	google.golang.org/api v0.169.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240610135401-a8a62080eff3
 	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.5.4
@@ -564,7 +565,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
-	golang.org/x/oauth2 v0.20.0 // indirect
+	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/term v0.21.0 // indirect
