@@ -11,11 +11,11 @@ require (
 	github.com/alitto/pond v1.9.0
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/aws/aws-sdk-go v1.49.10
-	github.com/aws/aws-sdk-go-v2 v1.24.1
-	github.com/aws/aws-sdk-go-v2/config v1.26.6
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
+	github.com/aws/aws-sdk-go-v2 v1.30.1
+	github.com/aws/aws-sdk-go-v2/config v1.27.23
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.23
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.32.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.141.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.1
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.23.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5
@@ -23,13 +23,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.23.5
 	github.com/aws/aws-sdk-go-v2/service/osis v1.6.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.5
-	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7
-	github.com/aws/smithy-go v1.19.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
+	github.com/aws/smithy-go v1.20.3
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/envoyproxy/go-control-plane v0.12.0
-	github.com/fluxcd/helm-controller/api v0.37.4
-	github.com/fluxcd/pkg/apis/meta v1.3.0
+	github.com/fluxcd/helm-controller/api v1.0.1
+	github.com/fluxcd/pkg/apis/meta v1.5.0
 	github.com/go-errors/errors v1.4.2
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccy/go-yaml v1.11.2
@@ -49,7 +49,7 @@ require (
 	github.com/kaytu-io/kaytu-azure-describer v0.25.8
 	github.com/kaytu-io/kaytu-util v0.0.0-20240604043338-1b0eea1a5455
 	github.com/kaytu-io/pennywise v1.7.16
-	github.com/kaytu-io/plugin-kubernetes-internal v0.8.1
+	github.com/kaytu-io/plugin-kubernetes-internal v0.15.3
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
@@ -91,6 +91,7 @@ require (
 	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.1
 	k8s.io/apimachinery v0.30.2
+	moul.io/zapgorm2 v1.3.0
 	sigs.k8s.io/controller-runtime v0.18.3
 )
 
@@ -210,7 +211,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
-	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
@@ -224,10 +225,10 @@ require (
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.3 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.9 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.26.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/account v1.14.5 // indirect
@@ -273,7 +274,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.35.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/efs v1.26.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/eks v1.35.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/eks v1.45.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.34.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/elasticbeanstalk v1.20.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing v1.21.5 // indirect
@@ -293,10 +294,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.30.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector v1.19.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector2 v1.20.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.10 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.28.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.7.5 // indirect
@@ -346,9 +347,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.26.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.29.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.44.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.18.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.22.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.23.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/storagegateway v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/support v1.19.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.22.5 // indirect
@@ -394,7 +395,7 @@ require (
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fluxcd/pkg/apis/kustomize v1.3.0 // indirect
+	github.com/fluxcd/pkg/apis/kustomize v1.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -447,7 +448,7 @@ require (
 	github.com/hashicorp/terraform-registry-address v0.2.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/huandu/xstrings v1.3.3 // indirect
+	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -585,7 +586,6 @@ require (
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
-	moul.io/zapgorm2 v1.3.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

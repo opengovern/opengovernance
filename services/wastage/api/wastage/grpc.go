@@ -818,3 +818,103 @@ func (s *Server) KubernetesJobOptimization(ctx context.Context, req *pb.Kubernet
 
 	return &resp, nil
 }
+
+func (s *Server) KubernetesNodeGetCost(ctx context.Context, req *pb.KubernetesNodeGetCostRequest) (*pb.KubernetesNodeGetCostResponse, error) {
+	start := time.Now()
+	ctx, span := s.tracer.Start(ctx, "get")
+	defer span.End()
+
+	var resp pb.KubernetesNodeGetCostResponse
+	var err error
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to get incoming context")
+	}
+
+	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userId := ""
+	if len(userIds) > 0 {
+		userId = userIds[0]
+	}
+
+	email := req.Identification["cluster_name"]
+	if !strings.Contains(email, "@") {
+		email = email + "@local.temp"
+	}
+
+	accountId := req.Identification["auth_info_name"]
+	if accountId == "" {
+		accountId = req.Identification["cluster_server"]
+	}
+	stats := model.Statistics{
+		AccountID:   accountId,
+		OrgEmail:    email,
+		ResourceID:  req.GetNode().GetId(),
+		Auth0UserId: userId,
+	}
+	statsOut, _ := json.Marshal(stats)
+
+	reqJson, _ := json.Marshal(req)
+	var requestId *string
+	var cliVersion *string
+	if req.RequestId != nil {
+		requestId = &req.RequestId.Value
+	}
+	if req.CliVersion != nil {
+		cliVersion = &req.CliVersion.Value
+	}
+
+	if requestId == nil {
+		id := uuid.New().String()
+		requestId = &id
+	}
+
+	usage := model.UsageV2{
+		ApiEndpoint:    "kubernetes-node",
+		Request:        reqJson,
+		RequestId:      requestId,
+		CliVersion:     cliVersion,
+		Response:       nil,
+		FailureMessage: nil,
+		Statistics:     statsOut,
+	}
+	err = s.usageRepo.Create(&usage)
+	if err != nil {
+		s.logger.Error("failed to create usage", zap.Error(err))
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil {
+			fmsg := err.Error()
+			usage.FailureMessage = &fmsg
+		} else {
+			usage.Response, _ = json.Marshal(resp)
+			id := uuid.New()
+			responseId := id.String()
+			usage.ResponseId = &responseId
+		}
+		err = s.usageRepo.Update(usage.ID, usage)
+		if err != nil {
+			s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		}
+	}()
+
+	// TODO add cost calc
+
+	elapsed := time.Since(start).Seconds()
+	usage.Latency = &elapsed
+	err = s.usageRepo.Update(usage.ID, usage)
+	if err != nil {
+		s.logger.Error("failed to update usage", zap.Error(err), zap.Any("usage", usage))
+		return nil, err
+	}
+
+	// DO NOT change this, resp is used in updating usage
+	resp = pb.KubernetesNodeGetCostResponse{
+		Cost: nil, // TODO
+	}
+
+	return &resp, nil
+}
