@@ -51,7 +51,7 @@ func CreateHelmRelease(ctx context.Context, cfg config.Config, kubeClient k8scli
 			},
 			TargetNamespace: workspace.ID,
 			ReleaseName:     workspace.ID,
-			Chart: helmv2.HelmChartTemplate{
+			Chart: &helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
 					Chart: cfg.KaytuHelmChartLocation,
 					SourceRef: helmv2.CrossNamespaceObjectReference{

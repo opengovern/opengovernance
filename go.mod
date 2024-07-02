@@ -2,6 +2,7 @@ module github.com/kaytu-io/kaytu-engine
 
 go 1.22.0
 
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.7.0

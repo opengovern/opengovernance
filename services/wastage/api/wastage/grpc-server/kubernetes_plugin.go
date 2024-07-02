@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strings"
 	"time"
 )
@@ -848,7 +849,11 @@ func (s *kubernetesPluginServer) KubernetesNodeGetCost(ctx context.Context, req 
 		}
 	}()
 
-	// TODO add cost calc
+	nodeCost, err := s.recomSvc.KubernetesNodeCost(ctx, *req.Node)
+	if err != nil {
+		s.logger.Error("failed to get kubernetes node cost", zap.Error(err))
+		return nil, err
+	}
 
 	elapsed := time.Since(start).Seconds()
 	usage.Latency = &elapsed
@@ -860,7 +865,7 @@ func (s *kubernetesPluginServer) KubernetesNodeGetCost(ctx context.Context, req 
 
 	// DO NOT change this, resp is used in updating usage
 	resp = kubernetesPluginProto.KubernetesNodeGetCostResponse{
-		Cost: nil, // TODO
+		Cost: wrapperspb.Double(nodeCost),
 	}
 
 	return &resp, nil
