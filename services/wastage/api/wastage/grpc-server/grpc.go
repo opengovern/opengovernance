@@ -12,7 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
-	gcpPluginProto "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	gcpPluginProto "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	kubernetesPluginProto "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
