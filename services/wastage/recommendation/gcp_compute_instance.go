@@ -338,7 +338,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 
 	for k, v := range preferences {
 		var vl any
-		if v == nil {
+		if v == nil || v.GetValue() == "" {
 			vl = extractFromGCPComputeDisk(disk, k)
 		} else {
 			vl = v.GetValue()
@@ -362,15 +362,21 @@ func (s *Service) GCPComputeDiskRecommendation(
 		return nil, err
 	}
 
+	s.logger.Info("calc price debug --- before checking suggestedStorageType", zap.Any("suggestedStorageType", suggestedStorageType))
 	if suggestedStorageType != nil {
 		disk.Zone = suggestedStorageType.Zone
 		disk.DiskType = *suggestedType
 		disk.Region = suggestedStorageType.Region
 		disk.DiskSize = PInt64Wrapper(suggestedSize)
+
+		s.logger.Info("calc price debug --- before calculating cost", zap.Any("disk", disk), zap.Any("suggestedStorageType", suggestedStorageType))
+
 		suggestedCost, err := s.costSvc.GetGCPComputeDiskCost(ctx, disk)
 		if err != nil {
 			return nil, err
 		}
+
+		s.logger.Info("calc price debug --- after calculating cost", zap.Any("suggestedCost", suggestedCost))
 
 		result.Recommended = &gcp.RightsizingGcpComputeDisk{
 			Zone:                 suggestedStorageType.Zone,
@@ -381,9 +387,10 @@ func (s *Service) GCPComputeDiskRecommendation(
 			WriteIopsLimit:       recommendedWriteIopsLimit,
 			ReadThroughputLimit:  recommendedReadThroughputLimit,
 			WriteThroughputLimit: recommendedWriteThroughputLimit,
-
-			Cost: suggestedCost,
+			Cost:                 suggestedCost,
 		}
+
+		s.logger.Info("calc price debug --- after setting result", zap.Any("result recommended", result.Recommended))
 	}
 
 	description, err := s.generateGcpComputeDiskDescription(disk, currentMachine, recommendedMachine, metrics,
