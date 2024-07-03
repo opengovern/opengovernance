@@ -51,7 +51,7 @@ require (
 	github.com/kaytu-io/pennywise v1.7.16
 	github.com/kaytu-io/plugin-aws v0.6.15
 	github.com/kaytu-io/plugin-gcp v0.0.0-20240702123438-fae6d07b7c6e
-	github.com/kaytu-io/plugin-kubernetes-internal v0.16.4
+	github.com/kaytu-io/plugin-kubernetes-internal v0.16.5
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/labstack/gommon v0.4.2
