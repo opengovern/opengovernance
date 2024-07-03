@@ -93,7 +93,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 
 	for k, v := range preferences {
 		var vl any
-		if v == nil {
+		if v == nil || v.GetValue() == "" {
 			vl = extractFromGCPComputeInstance(region, machine, k)
 		} else {
 			vl = v.GetValue()
@@ -600,12 +600,13 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 		return []CustomOffer{{
 			Family: family,
 			MachineType: model.GCPComputeMachineType{
-				Name:        machineType,
-				MachineType: machineType,
-				GuestCpus:   neededCpu,
-				MemoryMb:    neededMemoryMb,
-				Zone:        cpuSku.Location + "-a",
-				Region:      cpuSku.Location,
+				Name:          machineType,
+				MachineType:   machineType,
+				MachineFamily: family,
+				GuestCpus:     neededCpu,
+				MemoryMb:      neededMemoryMb,
+				Zone:          cpuSku.Location + "-a",
+				Region:        cpuSku.Location,
 			},
 			Cost: cost,
 		}}, nil
