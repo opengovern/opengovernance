@@ -77,6 +77,7 @@ func (s API) Register(e *echo.Echo) {
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
 	i.GET("/usages/accountID/:endpoint/:accountID", httpserver.AuthorizeHandler(s.GetUsageIDByAccountID, api.InternalRole))
+	i.GET("/usages/accountID/:endpoint/:accountID/last", httpserver.AuthorizeHandler(s.GetLastUsageIDByAccountID, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 	i.PUT("/usages/fill-rds-costs", s.FillRdsCosts)
@@ -897,6 +898,18 @@ func (s API) GetUsageIDByAccountID(echoCtx echo.Context) error {
 	endpoint := echoCtx.Param("endpoint")
 
 	usage, err := s.usageRepo.GetByAccountID(endpoint, accountId)
+	if err != nil {
+		return err
+	}
+
+	return echoCtx.JSON(http.StatusOK, usage)
+}
+
+func (s API) GetLastUsageIDByAccountID(echoCtx echo.Context) error {
+	accountId := echoCtx.Param("accountID")
+	endpoint := echoCtx.Param("endpoint")
+
+	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId)
 	if err != nil {
 		return err
 	}
