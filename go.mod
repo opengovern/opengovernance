@@ -98,11 +98,9 @@ require (
 
 require (
 	cloud.google.com/go v0.112.1 // indirect
-	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/longrunning v0.5.5 // indirect
-	cloud.google.com/go/monitoring v1.18.0 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
@@ -363,7 +361,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.43.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wellarchitected v1.27.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.35.6 // indirect
-	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
@@ -496,7 +493,6 @@ require (
 	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/manicminer/hamilton v0.44.0 // indirect
 	github.com/manicminer/hamilton-autorest v0.3.0 // indirect
