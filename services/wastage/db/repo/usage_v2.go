@@ -14,7 +14,7 @@ type UsageV2Repo interface {
 	GetRandomNullStatistics() (*model.UsageV2, error)
 	Get(id uint) (*model.UsageV2, error)
 	GetByAccountID(endpoint, accountId string) ([]uint, error)
-	GetLastByAccountID(endpoint, accountId string) ([]uint, error)
+	GetLastByAccountID(endpoint, accountId, groupByType string) ([]uint, error)
 	GetCostZero() (*model.UsageV2, error)
 	GetRDSInstanceOptimizationsCountForUser(userId string) (int64, error)
 	GetRDSInstanceOptimizationsCountForOrg(orgAddress string) (int64, error)
@@ -86,7 +86,7 @@ WHERE
 	return ids, nil
 }
 
-func (r *UsageV2RepoImpl) GetLastByAccountID(endpoint, accountId string) ([]uint, error) {
+func (r *UsageV2RepoImpl) GetLastByAccountID(endpoint, accountId, groupByType string) ([]uint, error) {
 	tx := r.db.Conn().Raw(fmt.Sprintf(`
 SELECT 
   max(id)
@@ -95,8 +95,8 @@ FROM
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'accountID') = '%s'
-GROUP BY request -> 'node' ->> 'id'
-`, endpoint, accountId))
+GROUP BY request -> '%s' ->> 'id'
+`, endpoint, accountId, groupByType))
 	rows, err := tx.Rows()
 	if err != nil {
 		return nil, err
