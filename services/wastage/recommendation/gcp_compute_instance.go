@@ -193,9 +193,10 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	description, err := s.generateGcpComputeInstanceDescription(region, instance, metrics, preferences, neededCPU,
 		neededMemoryMb, machine, suggestedMachineType)
 	if err != nil {
-		return nil, nil, nil, err
+		s.logger.Error("Failed to generate description", zap.Error(err))
+	} else {
+		result.Description = description
 	}
-	result.Description = description
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
 		if preferences["ExcludeUpsizingFeature"].GetValue() == "Yes" {
@@ -390,9 +391,10 @@ func (s *Service) GCPComputeDiskRecommendation(
 		neededWriteIops, neededReadThroughput, neededWriteThroughput, recommendedReadIopsLimit, recommendedWriteIopsLimit,
 		recommendedReadThroughputLimit, recommendedWriteThroughputLimit, *suggestedType, *suggestedSize)
 	if err != nil {
-		return nil, err
+		s.logger.Error("Failed to generate description", zap.Error(err))
+	} else {
+		result.Description = description
 	}
-	result.Description = description
 
 	if preferences["ExcludeUpsizingFeature"] != nil {
 		if preferences["ExcludeUpsizingFeature"].GetValue() == "Yes" {

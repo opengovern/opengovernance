@@ -505,7 +505,6 @@ func (s *Service) AwsRdsRecommendation(
 			rightSizedInstanceRow, metrics, excluedBurstable, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
 		if err != nil {
 			s.logger.Error("failed to generate rds instance compute description", zap.Error(err))
-			return nil, err
 		}
 	}
 	if rightSizedStorageRow != nil && recommended != nil {
@@ -513,6 +512,9 @@ func (s *Service) AwsRdsRecommendation(
 			*rdsInstance.StorageType, rdsInstance.StorageSize, rdsInstance.StorageIops, rdsInstance.StorageThroughput,
 			*recommended.StorageType, recommended.StorageSize, recommended.StorageIops, recommended.StorageThroughput, metrics,
 			preferences, neededStorageSize, neededStorageIops, neededStorageThroughputMB, usageAverageType)
+		if err != nil {
+			s.logger.Error("failed to generate rds storage compute description", zap.Error(err))
+		}
 	}
 
 	recommendation.Description = computeDescription + "\n" + storageDescription
