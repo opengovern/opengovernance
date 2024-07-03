@@ -58,7 +58,6 @@ func (r *UsageV2RepoImpl) Get(id uint) (*model.UsageV2, error) {
 func (r *UsageV2RepoImpl) GetByAccountID(endpoint, accountId string) ([]uint, error) {
 	tx := r.db.Conn().Raw(fmt.Sprintf(`
 SELECT 
-  request -> 'node' ->> 'id',
   max(id)
 FROM 
   usage_v2 
