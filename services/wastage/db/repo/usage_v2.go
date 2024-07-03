@@ -14,6 +14,7 @@ type UsageV2Repo interface {
 	GetRandomNullStatistics() (*model.UsageV2, error)
 	Get(id uint) (*model.UsageV2, error)
 	GetByAccountID(endpoint, accountId string) ([]uint, error)
+	GetLastByAccountID(endpoint, accountId, groupByType string) ([]uint, error)
 	GetCostZero() (*model.UsageV2, error)
 	GetRDSInstanceOptimizationsCountForUser(userId string) (int64, error)
 	GetRDSInstanceOptimizationsCountForOrg(orgAddress string) (int64, error)
@@ -58,15 +59,44 @@ func (r *UsageV2RepoImpl) Get(id uint) (*model.UsageV2, error) {
 func (r *UsageV2RepoImpl) GetByAccountID(endpoint, accountId string) ([]uint, error) {
 	tx := r.db.Conn().Raw(fmt.Sprintf(`
 SELECT 
-  request -> 'node' ->> 'id',
+  id
+FROM 
+  usage_v2 
+WHERE 
+  api_endpoint like '%s%%' and 
+  (statistics ->> 'accountID') = '%s'
+`, endpoint, accountId))
+	rows, err := tx.Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []uint
+	for rows.Next() {
+		var id uint
+		err = rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
+}
+
+func (r *UsageV2RepoImpl) GetLastByAccountID(endpoint, accountId, groupByType string) ([]uint, error) {
+	tx := r.db.Conn().Raw(fmt.Sprintf(`
+SELECT 
   max(id)
 FROM 
   usage_v2 
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'accountID') = '%s'
-GROUP BY request -> 'node' ->> 'id'
-`, endpoint, accountId))
+GROUP BY request -> '%s' ->> 'id'
+`, endpoint, accountId, groupByType))
 	rows, err := tx.Rows()
 	if err != nil {
 		return nil, err
