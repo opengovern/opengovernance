@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
 	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
+	awsPluginProto "github.com/kaytu-io/plugin-aws/plugin/proto/src/golang"
 	gcpPluginProto "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	kubernetesPluginProto "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"go.uber.org/zap"
@@ -25,16 +26,19 @@ type Server struct {
 	logger                 *zap.Logger
 	kubernetesPluginServer *kubernetesPluginServer
 	gcpPluginServer        *gcpPluginServer
+	awsPluginServer        *awsPluginServer
 }
 
 func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
 	kuberServer := newKubernetesPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
 	gcpServer := newGcpPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
+	awsServer := newAwsPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
 
 	svr := Server{
 		logger:                 logger,
 		kubernetesPluginServer: kuberServer,
 		gcpPluginServer:        gcpServer,
+		awsPluginServer:        awsServer,
 	}
 	return &svr
 }
@@ -77,6 +81,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 	)
 	kubernetesPluginProto.RegisterOptimizationServer(s, server.kubernetesPluginServer)
 	gcpPluginProto.RegisterOptimizationServer(s, server.gcpPluginServer)
+	awsPluginProto.RegisterOptimizationServer(s, server.awsPluginServer)
 	server.logger.Info("server listening at", zap.String("address", lis.Addr().String()))
 	utils.EnsureRunGoroutine(func() {
 		if err = s.Serve(lis); err != nil {
