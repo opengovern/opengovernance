@@ -58,12 +58,14 @@ func (r *UsageV2RepoImpl) Get(id uint) (*model.UsageV2, error) {
 func (r *UsageV2RepoImpl) GetByAccountID(endpoint, accountId string) ([]uint, error) {
 	tx := r.db.Conn().Raw(fmt.Sprintf(`
 SELECT 
-  id
+  request -> 'node' ->> 'id',
+  max(id)
 FROM 
   usage_v2 
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'accountID') = '%s'
+GROUP BY request -> 'node' ->> 'id'
 `, endpoint, accountId))
 	rows, err := tx.Rows()
 	if err != nil {
