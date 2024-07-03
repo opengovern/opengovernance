@@ -76,6 +76,7 @@ func (s API) Register(e *echo.Echo) {
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
+	i.GET("/usages/accountID/:endpoint/:accountID", httpserver.AuthorizeHandler(s.GetUsageIDByAccountID, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 	i.PUT("/usages/fill-rds-costs", s.FillRdsCosts)
@@ -89,7 +90,7 @@ func (s API) Configuration(c echo.Context) error {
 	return c.JSON(http.StatusOK, entity.Configuration{
 		EC2LazyLoad:        20,
 		RDSLazyLoad:        20,
-		KubernetesLazyLoad: 1,
+		KubernetesLazyLoad: 10000,
 	})
 }
 
@@ -891,9 +892,21 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (s API) GetUsageIDByAccountID(echoCtx echo.Context) error {
+	accountId := echoCtx.Param("accountID")
+	endpoint := echoCtx.Param("endpoint")
+
+	usage, err := s.usageRepo.GetByAccountID(endpoint, accountId)
+	if err != nil {
+		return err
+	}
+
+	return echoCtx.JSON(http.StatusOK, usage)
+}
+
 func (s API) GetUsage(echoCtx echo.Context) error {
-	idStr := echoCtx.QueryParam("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	idStr := echoCtx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		return err
 	}
