@@ -9,9 +9,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/aws_rds"
+	aws "github.com/kaytu-io/plugin-aws/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math"
 	"net/http"
 	"strconv"
@@ -60,6 +62,84 @@ func pCalculateHeadroom(needed *float64, percent int64) float64 {
 		return 0.0
 	}
 	return *needed / (1.0 - (float64(percent) / 100.0))
+}
+
+func (s *Service) AwsRdsRecommendationGrpc(
+	ctx context.Context,
+	region string,
+	rdsInstance *aws.RDSInstance,
+	metrics map[string]*aws.Metric,
+	preferences map[string]*wrapperspb.StringValue,
+	usageAverageType UsageAverageType,
+) (*aws.RDSInstanceRightSizingRecommendation, error) {
+	newRdsInstance := entity.AwsRds{
+		HashedInstanceId:                   rdsInstance.HashedInstanceId,
+		AvailabilityZone:                   rdsInstance.AvailabilityZone,
+		InstanceType:                       rdsInstance.InstanceType,
+		Engine:                             rdsInstance.Engine,
+		EngineVersion:                      rdsInstance.EngineVersion,
+		LicenseModel:                       rdsInstance.LicenseModel,
+		BackupRetentionPeriod:              WrappedToInt32(rdsInstance.BackupRetentionPeriod),
+		ClusterType:                        entity.AwsRdsClusterType(rdsInstance.ClusterType),
+		PerformanceInsightsEnabled:         rdsInstance.PerformanceInsightsEnabled,
+		PerformanceInsightsRetentionPeriod: WrappedToInt32(rdsInstance.PerformanceInsightsRetentionPeriod),
+		StorageType:                        WrappedToString(rdsInstance.StorageType),
+		StorageSize:                        WrappedToInt32(rdsInstance.StorageSize),
+		StorageIops:                        WrappedToInt32(rdsInstance.StorageIops),
+		StorageThroughput:                  WrappedToFloat64(rdsInstance.StorageThroughput),
+	}
+
+	newMetrics := convertMetrics(metrics)
+	newPreferences := make(map[string]*string)
+	for k, v := range preferences {
+		tmp := v.GetValue()
+		newPreferences[k] = &tmp
+	}
+
+	result, err := s.AwsRdsRecommendation(ctx, region, newRdsInstance, newMetrics, newPreferences, usageAverageType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &aws.RDSInstanceRightSizingRecommendation{
+		Current:                convertRightsizingRDSInstance(&result.Current),
+		Recommended:            convertRightsizingRDSInstance(result.Recommended),
+		Vcpu:                   convertUsage(&result.VCPU),
+		FreeMemoryBytes:        convertUsage(&result.FreeMemoryBytes),
+		FreeStorageBytes:       convertUsage(&result.FreeStorageBytes),
+		NetworkThroughputBytes: convertUsage(&result.NetworkThroughputBytes),
+		StorageIops:            convertUsage(&result.StorageIops),
+		StorageThroughput:      convertUsage(&result.StorageThroughput),
+		VolumeBytesUsed:        convertUsage(&result.VolumeBytesUsed),
+		Description:            result.Description,
+	}, nil
+}
+
+func convertRightsizingRDSInstance(rightSizing *entity.RightsizingAwsRds) *aws.RightsizingAwsRds {
+	if rightSizing == nil {
+		return nil
+	}
+	return &aws.RightsizingAwsRds{
+		Region:                rightSizing.Region,
+		InstanceType:          rightSizing.InstanceType,
+		Engine:                rightSizing.Engine,
+		EngineVersion:         rightSizing.EngineVersion,
+		ClusterType:           string(rightSizing.ClusterType),
+		Processor:             rightSizing.Processor,
+		Architecture:          rightSizing.Architecture,
+		Vcpu:                  rightSizing.VCPU,
+		MemoryGb:              rightSizing.MemoryGb,
+		StorageType:           StringToWrapper(rightSizing.StorageType),
+		StorageSize:           Int32ToWrapper(rightSizing.StorageSize),
+		StorageIops:           Int32ToWrapper(rightSizing.StorageIops),
+		StorageThroughput:     Float64ToWrapper(rightSizing.StorageThroughput),
+		Cost:                  rightSizing.Cost,
+		CostComponents:        rightSizing.CostComponents,
+		ComputeCost:           rightSizing.ComputeCost,
+		ComputeCostComponents: rightSizing.ComputeCostComponents,
+		StorageCost:           rightSizing.StorageCost,
+		StorageCostComponents: rightSizing.StorageCostComponents,
+	}
 }
 
 func (s *Service) AwsRdsRecommendation(

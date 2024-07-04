@@ -3,6 +3,7 @@ package recommendation
 import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	aws "github.com/kaytu-io/plugin-aws/plugin/proto/src/golang"
 	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math"
@@ -140,6 +141,37 @@ func MergeDatapoints(in []types.Datapoint, out []types.Datapoint, mergeF func(aa
 	}
 	sort.Slice(dpArr, func(i, j int) bool {
 		return dpArr[i].Timestamp.Unix() < dpArr[j].Timestamp.Unix()
+	})
+	return dpArr
+
+}
+
+func MergeGrpcDatapoints(in []*aws.Datapoint, out []*aws.Datapoint, mergeF func(aa, bb float64) float64) []*aws.Datapoint {
+	dps := map[int64]*aws.Datapoint{}
+	for _, dp := range in {
+		dp := dp
+		dps[dp.Timestamp.AsTime().Unix()] = dp
+	}
+	for _, dp := range out {
+		dp := dp
+		if dps[dp.Timestamp.AsTime().Unix()] == nil {
+			dps[dp.Timestamp.AsTime().Unix()] = dp
+			continue
+		}
+
+		dps[dp.Timestamp.AsTime().Unix()].Average = Float64ToWrapper(funcP(WrappedToFloat64(dps[dp.Timestamp.AsTime().Unix()].Average), WrappedToFloat64(dp.Average), mergeF))
+		dps[dp.Timestamp.AsTime().Unix()].Maximum = Float64ToWrapper(funcP(WrappedToFloat64(dps[dp.Timestamp.AsTime().Unix()].Maximum), WrappedToFloat64(dp.Maximum), mergeF))
+		dps[dp.Timestamp.AsTime().Unix()].Minimum = Float64ToWrapper(funcP(WrappedToFloat64(dps[dp.Timestamp.AsTime().Unix()].Minimum), WrappedToFloat64(dp.Minimum), mergeF))
+		dps[dp.Timestamp.AsTime().Unix()].SampleCount = Float64ToWrapper(funcP(WrappedToFloat64(dps[dp.Timestamp.AsTime().Unix()].SampleCount), WrappedToFloat64(dp.SampleCount), mergeF))
+		dps[dp.Timestamp.AsTime().Unix()].Sum = Float64ToWrapper(funcP(WrappedToFloat64(dps[dp.Timestamp.AsTime().Unix()].Sum), WrappedToFloat64(dp.Sum), mergeF))
+	}
+
+	var dpArr []*aws.Datapoint
+	for _, dp := range dps {
+		dpArr = append(dpArr, dp)
+	}
+	sort.Slice(dpArr, func(i, j int) bool {
+		return dpArr[i].Timestamp.AsTime().Unix() < dpArr[j].Timestamp.AsTime().Unix()
 	})
 	return dpArr
 

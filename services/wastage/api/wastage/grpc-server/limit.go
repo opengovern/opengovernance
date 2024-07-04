@@ -31,6 +31,58 @@ func newLimitService(logger *zap.Logger, userRepo repo.UserRepo, orgRepo repo.Or
 	}
 }
 
+func (s *LimitService) checkRDSInstanceLimit(auth0UserId, orgEmail string) (bool, error) {
+	s.logger.Info("Checking RDS Instance limit", zap.String("auth0UserId", auth0UserId), zap.String("orgEmail", orgEmail))
+	if orgEmail != "" && strings.Contains(orgEmail, "@") {
+		org := strings.Split(orgEmail, "@")
+		if org[1] != "" {
+			orgCount, err := s.usageRepo.GetRDSInstanceOptimizationsCountForOrg(org[1])
+			if err != nil {
+				return false, err
+			}
+			if orgCount < int64(wastage.OrgRDSInstanceLimit) {
+				return true, nil
+			}
+			s.logger.Info("Org RDS Instance limit reached", zap.String("orgEmail", org[1]))
+		}
+	}
+	userCount, err := s.usageRepo.GetRDSInstanceOptimizationsCountForUser(auth0UserId)
+	if err != nil {
+		return false, err
+	}
+	if userCount < int64(wastage.UserRDSInstanceLimit) {
+		return true, nil
+	}
+	s.logger.Info("User RDS Instance limit reached", zap.String("auth0UserId", auth0UserId))
+	return false, nil
+}
+
+func (s *LimitService) checkRDSClusterLimit(auth0UserId, orgEmail string) (bool, error) {
+	s.logger.Info("Checking RDS Cluster limit", zap.String("auth0UserId", auth0UserId), zap.String("orgEmail", orgEmail))
+	if orgEmail != "" && strings.Contains(orgEmail, "@") {
+		org := strings.Split(orgEmail, "@")
+		if org[1] != "" {
+			orgCount, err := s.usageRepo.GetRDSClusterOptimizationsCountForOrg(org[1])
+			if err != nil {
+				return false, err
+			}
+			if orgCount < int64(wastage.OrgRDSClusterLimit) {
+				return true, nil
+			}
+			s.logger.Info("Org RDS Cluster limit reached", zap.String("orgEmail", org[1]))
+		}
+	}
+	userCount, err := s.usageRepo.GetRDSClusterOptimizationsCountForUser(auth0UserId)
+	if err != nil {
+		return false, err
+	}
+	if userCount < int64(wastage.UserRDSClusterLimit) {
+		return true, nil
+	}
+	s.logger.Info("User RDS Cluster limit reached", zap.String("auth0UserId", auth0UserId))
+	return false, nil
+}
+
 func (s *LimitService) checkPremiumAndSendErr(userId string, orgEmail string, service string) error {
 	user, err := s.userRepo.Get(userId)
 	if err != nil {

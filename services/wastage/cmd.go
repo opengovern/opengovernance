@@ -120,7 +120,7 @@ func Command() *cobra.Command {
 				pond.IdleTimeout(10*time.Second),
 				pond.MinWorkers(1))
 
-			grpcServer := grpc_server.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc)
+			grpcServer := grpc_server.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc, userRepo, orgRepo)
 			err = grpc_server.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
 			if err != nil {
 				return err

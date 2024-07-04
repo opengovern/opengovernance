@@ -30,7 +30,7 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	volumeMetrics map[string]*aws.VolumeMetrics,
 	preferences map[string]*wrapperspb.StringValue,
 	usageAverageType UsageAverageType,
-) (*aws.RightSizingRecommendation, error) {
+) (*aws.EC2InstanceRightSizingRecommendation, error) {
 	var monitoring *types.MonitoringState
 	if instance.Monitoring != nil {
 		monitoringTmp := types.MonitoringState(instance.Monitoring.GetValue())
@@ -64,10 +64,10 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 		newVolumes = append(newVolumes, entity.EC2Volume{
 			HashedVolumeId:   v.HashedVolumeId,
 			VolumeType:       types.VolumeType(v.VolumeType),
-			Iops:             wrappedToInt32(v.Iops),
-			Size:             wrappedToInt32(v.Size),
-			Throughput:       wrappedToFloat64(v.Throughput),
-			AvailabilityZone: wrappedToString(v.AvailabilityZone),
+			Iops:             WrappedToInt32(v.Iops),
+			Size:             WrappedToInt32(v.Size),
+			Throughput:       WrappedToFloat64(v.Throughput),
+			AvailabilityZone: WrappedToString(v.AvailabilityZone),
 		})
 	}
 	newMetrics := convertMetrics(metrics)
@@ -85,7 +85,7 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	if err != nil {
 		return nil, err
 	}
-	return &aws.RightSizingRecommendation{
+	return &aws.EC2InstanceRightSizingRecommendation{
 		Current:           convertRightsizingEC2Instance(&result.Current),
 		Recommended:       convertRightsizingEC2Instance(result.Recommended),
 		Vcpu:              convertUsage(&result.VCPU),
@@ -573,10 +573,10 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	newVolume := entity.EC2Volume{
 		HashedVolumeId:   volume.HashedVolumeId,
 		VolumeType:       types.VolumeType(volume.VolumeType),
-		Size:             wrappedToInt32(volume.Size),
-		Iops:             wrappedToInt32(volume.Iops),
-		Throughput:       wrappedToFloat64(volume.Throughput),
-		AvailabilityZone: wrappedToString(volume.AvailabilityZone),
+		Size:             WrappedToInt32(volume.Size),
+		Iops:             WrappedToInt32(volume.Iops),
+		Throughput:       WrappedToFloat64(volume.Throughput),
+		AvailabilityZone: WrappedToString(volume.AvailabilityZone),
 	}
 	newMetrics := convertMetrics(metrics.Metrics)
 	newPreferences := make(map[string]*string)
@@ -604,11 +604,11 @@ func convertRightsizingEBSVolume(rightSizing *entity.RightsizingEBSVolume) *aws.
 	}
 	return &aws.RightsizingEBSVolume{
 		Tier:                  string(rightSizing.Tier),
-		VolumeSize:            int32ToWrapper(rightSizing.VolumeSize),
+		VolumeSize:            Int32ToWrapper(rightSizing.VolumeSize),
 		BaselineIops:          rightSizing.BaselineIOPS,
-		ProvisionedIops:       int32ToWrapper(rightSizing.ProvisionedIOPS),
+		ProvisionedIops:       Int32ToWrapper(rightSizing.ProvisionedIOPS),
 		BaselineThroughput:    rightSizing.BaselineThroughput,
-		ProvisionedThroughput: float64ToWrapper(rightSizing.ProvisionedThroughput),
+		ProvisionedThroughput: Float64ToWrapper(rightSizing.ProvisionedThroughput),
 		Cost:                  rightSizing.Cost,
 		CostComponents:        rightSizing.CostComponents,
 	}
@@ -884,7 +884,7 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 	return result, nil
 }
 
-func wrappedToInt32(v *wrapperspb.Int32Value) *int32 {
+func WrappedToInt32(v *wrapperspb.Int32Value) *int32 {
 	if v == nil {
 		return nil
 	}
@@ -892,7 +892,7 @@ func wrappedToInt32(v *wrapperspb.Int32Value) *int32 {
 	return &tmp
 }
 
-func wrappedToFloat64(v *wrapperspb.DoubleValue) *float64 {
+func WrappedToFloat64(v *wrapperspb.DoubleValue) *float64 {
 	if v == nil {
 		return nil
 	}
@@ -900,7 +900,7 @@ func wrappedToFloat64(v *wrapperspb.DoubleValue) *float64 {
 	return &tmp
 }
 
-func wrappedToString(v *wrapperspb.StringValue) *string {
+func WrappedToString(v *wrapperspb.StringValue) *string {
 	if v == nil {
 		return nil
 	}
@@ -908,21 +908,21 @@ func wrappedToString(v *wrapperspb.StringValue) *string {
 	return &tmp
 }
 
-func int32ToWrapper(v *int32) *wrapperspb.Int32Value {
+func Int32ToWrapper(v *int32) *wrapperspb.Int32Value {
 	if v == nil {
 		return nil
 	}
 	return wrapperspb.Int32(*v)
 }
 
-func float64ToWrapper(v *float64) *wrapperspb.DoubleValue {
+func Float64ToWrapper(v *float64) *wrapperspb.DoubleValue {
 	if v == nil {
 		return nil
 	}
 	return wrapperspb.Double(*v)
 }
 
-func stringToWrapper(v *string) *wrapperspb.StringValue {
+func StringToWrapper(v *string) *wrapperspb.StringValue {
 	if v == nil {
 		return nil
 	}
