@@ -78,6 +78,13 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 	statsOut, _ := json.Marshal(stats)
 
 	fullReqJson, _ := json.Marshal(req)
+	metrics := req.Metrics
+	diskMetrics := req.DisksMetrics
+	req.Metrics = nil
+	req.DisksMetrics = nil
+	trimmedReqJson, _ := json.Marshal(req)
+	req.Metrics = metrics
+	req.DisksMetrics = diskMetrics
 
 	var requestId *string
 	var cliVersion *string
@@ -94,7 +101,7 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 	}
 
 	s.blobWorkerPool.Submit(func() {
-		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("kubernetes-pod/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("gcp-compute-instance/%s.json", *requestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 		if err != nil {
 			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		}
@@ -102,7 +109,7 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 
 	usage := model.UsageV2{
 		ApiEndpoint:    "gcp-compute-instance",
-		Request:        fullReqJson,
+		Request:        trimmedReqJson,
 		RequestId:      requestId,
 		CliVersion:     cliVersion,
 		Response:       nil,
