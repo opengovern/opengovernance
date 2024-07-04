@@ -29,10 +29,12 @@ type Server struct {
 	awsPluginServer        *awsPluginServer
 }
 
-func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service) *Server {
+func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool,
+	usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo) *Server {
+	limitService := newLimitService(logger, userRepo, orgRepo, usageRepo)
 	kuberServer := newKubernetesPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
 	gcpServer := newGcpPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
-	awsServer := newAwsPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
+	awsServer := newAwsPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc, limitService)
 
 	svr := Server{
 		logger:                 logger,
