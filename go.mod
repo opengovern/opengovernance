@@ -475,7 +475,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kaytu-io/kaytu v0.16.1-rc.0.0.20240627104444-dd9ffe8e17a6 // indirect
 	github.com/kaytu-io/kaytu-agent v0.0.0-20240615090533-caf550626941 // indirect
-	github.com/kaytu-io/plugin-aws v0.6.15 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
