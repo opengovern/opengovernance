@@ -31,6 +31,16 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	preferences map[string]*wrapperspb.StringValue,
 	usageAverageType UsageAverageType,
 ) (*aws.EC2InstanceRightSizingRecommendation, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Error(fmt.Sprintf("recovered from panic: %v", r))
+			err = fmt.Errorf("recovered from panic: %v", r)
+		}
+	}()
+	if instance == nil {
+		s.logger.Error("Instance is nil")
+	}
 	var monitoring *types.MonitoringState
 	if instance.Monitoring != nil {
 		monitoringTmp := types.MonitoringState(instance.Monitoring.GetValue())
@@ -77,8 +87,7 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	}
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
-		tmp := v.GetValue()
-		newPreferences[k] = &tmp
+		newPreferences[k] = WrappedToString(v)
 	}
 
 	result, err := s.EC2InstanceRecommendation(ctx, region, newInstance, newVolumes, newMetrics, newVolumeMetrics, newPreferences, usageAverageType)
@@ -102,38 +111,17 @@ func convertMetrics(metrics map[string]*aws.Metric) map[string][]types2.Datapoin
 	for k, v := range metrics {
 		var datapoints []types2.Datapoint
 		for _, d := range v.Metric {
-			var avg, maximum, minimum, sum, sampleCount *float64
 			var timestamp *time.Time
-			if d.Average != nil {
-				avgTmp := d.Average.GetValue()
-				avg = &avgTmp
-			}
-			if d.Maximum != nil {
-				maxTmp := d.Maximum.GetValue()
-				maximum = &maxTmp
-			}
-			if d.Minimum != nil {
-				minTmp := d.Minimum.GetValue()
-				minimum = &minTmp
-			}
-			if d.Sum != nil {
-				sumTmp := d.Sum.GetValue()
-				sum = &sumTmp
-			}
-			if d.SampleCount != nil {
-				sampleCountTmp := d.SampleCount.GetValue()
-				sampleCount = &sampleCountTmp
-			}
 			if d.Timestamp != nil {
 				timestampTmp := d.Timestamp.AsTime()
 				timestamp = &timestampTmp
 			}
 			datapoints = append(datapoints, types2.Datapoint{
-				Average:     avg,
-				Maximum:     maximum,
-				Minimum:     minimum,
-				SampleCount: sampleCount,
-				Sum:         sum,
+				Average:     WrappedToFloat64(d.Average),
+				Maximum:     WrappedToFloat64(d.Maximum),
+				Minimum:     WrappedToFloat64(d.Minimum),
+				SampleCount: WrappedToFloat64(d.SampleCount),
+				Sum:         WrappedToFloat64(d.Sum),
 				Timestamp:   timestamp,
 			})
 		}
@@ -168,32 +156,18 @@ func convertUsage(usage *entity.Usage) *aws.Usage {
 	if usage == nil {
 		return nil
 	}
-	var newUsage aws.Usage
-	if usage.Avg != nil {
-		newUsage.Avg = wrapperspb.Double(*usage.Avg)
-	}
-	if usage.Max != nil {
-		newUsage.Max = wrapperspb.Double(*usage.Max)
-	}
-	if usage.Min != nil {
-		newUsage.Min = wrapperspb.Double(*usage.Min)
+	newUsage := aws.Usage{
+		Avg: Float64ToWrapper(usage.Avg),
+		Max: Float64ToWrapper(usage.Max),
+		Min: Float64ToWrapper(usage.Min),
 	}
 	if usage.Last != nil {
-		var last aws.Datapoint
-		if usage.Last.Average != nil {
-			last.Average = wrapperspb.Double(*usage.Last.Average)
-		}
-		if usage.Last.Maximum != nil {
-			last.Maximum = wrapperspb.Double(*usage.Last.Maximum)
-		}
-		if usage.Last.Minimum != nil {
-			last.Minimum = wrapperspb.Double(*usage.Last.Minimum)
-		}
-		if usage.Last.SampleCount != nil {
-			last.SampleCount = wrapperspb.Double(*usage.Last.SampleCount)
-		}
-		if usage.Last.Sum != nil {
-			last.Sum = wrapperspb.Double(*usage.Last.Sum)
+		last := aws.Datapoint{
+			Maximum:     Float64ToWrapper(usage.Last.Maximum),
+			Minimum:     Float64ToWrapper(usage.Last.Minimum),
+			Average:     Float64ToWrapper(usage.Last.Average),
+			SampleCount: Float64ToWrapper(usage.Last.SampleCount),
+			Sum:         Float64ToWrapper(usage.Last.Sum),
 		}
 		if usage.Last.Timestamp != nil {
 			last.Timestamp = timestamppb.New(*usage.Last.Timestamp)
@@ -570,6 +544,13 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	preferences map[string]*wrapperspb.StringValue,
 	usageAverageType UsageAverageType,
 ) (*aws.EBSVolumeRecommendation, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Error(fmt.Sprintf("recovered from panic: %v", r))
+			err = fmt.Errorf("recovered from panic: %v", r)
+		}
+	}()
 	newVolume := entity.EC2Volume{
 		HashedVolumeId:   volume.HashedVolumeId,
 		VolumeType:       types.VolumeType(volume.VolumeType),
@@ -581,8 +562,7 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	newMetrics := convertMetrics(metrics.Metrics)
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
-		tmp := v.GetValue()
-		newPreferences[k] = &tmp
+		newPreferences[k] = WrappedToString(v)
 	}
 	result, err := s.EBSVolumeRecommendation(ctx, region, newVolume, newMetrics, newPreferences, usageAverageType)
 	if err != nil {

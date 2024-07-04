@@ -92,8 +92,7 @@ func (s *Service) AwsRdsRecommendationGrpc(
 	newMetrics := convertMetrics(metrics)
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
-		tmp := v.GetValue()
-		newPreferences[k] = &tmp
+		newPreferences[k] = WrappedToString(v)
 	}
 
 	result, err := s.AwsRdsRecommendation(ctx, region, newRdsInstance, newMetrics, newPreferences, usageAverageType)
