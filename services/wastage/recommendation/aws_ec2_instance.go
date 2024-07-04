@@ -10,12 +10,198 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation/preferences/ec2instance"
+	aws "github.com/kaytu-io/plugin-aws/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"github.com/sashabaranov/go-openai"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
+
+func (s *Service) EC2InstanceRecommendationGrpc(
+	ctx context.Context,
+	region string,
+	instance *aws.EC2Instance,
+	volumes []*aws.EC2Volume,
+	metrics map[string]*aws.Metric,
+	volumeMetrics map[string]*aws.VolumeMetrics,
+	preferences map[string]*wrapperspb.StringValue,
+	usageAverageType UsageAverageType,
+) (*aws.EC2InstanceRightSizingRecommendation, error) {
+	var monitoring *types.MonitoringState
+	if instance.Monitoring != nil {
+		monitoringTmp := types.MonitoringState(instance.Monitoring.GetValue())
+		monitoring = &monitoringTmp
+	}
+	var placement *entity.EC2Placement
+	if instance.Placement != nil {
+		placement = &entity.EC2Placement{
+			AvailabilityZone: instance.Placement.AvailabilityZone,
+			Tenancy:          types.Tenancy(instance.Placement.Tenancy),
+			HashedHostId:     instance.HashedInstanceId,
+		}
+	}
+	newInstance := entity.EC2Instance{
+		HashedInstanceId:  instance.HashedInstanceId,
+		State:             types.InstanceStateName(instance.State),
+		InstanceType:      types.InstanceType(instance.InstanceType),
+		Platform:          instance.Platform,
+		ThreadsPerCore:    instance.ThreadsPerCore,
+		CoreCount:         instance.CoreCount,
+		EbsOptimized:      instance.EbsOptimized,
+		InstanceLifecycle: types.InstanceLifecycleType(instance.InstanceLifecycle),
+		Monitoring:        monitoring,
+		Placement:         placement,
+		UsageOperation:    instance.UsageOperation,
+		Tenancy:           types.Tenancy(instance.Tenancy),
+	}
+
+	var newVolumes []entity.EC2Volume
+	for _, v := range volumes {
+		newVolumes = append(newVolumes, entity.EC2Volume{
+			HashedVolumeId:   v.HashedVolumeId,
+			VolumeType:       types.VolumeType(v.VolumeType),
+			Iops:             WrappedToInt32(v.Iops),
+			Size:             WrappedToInt32(v.Size),
+			Throughput:       WrappedToFloat64(v.Throughput),
+			AvailabilityZone: WrappedToString(v.AvailabilityZone),
+		})
+	}
+	newMetrics := convertMetrics(metrics)
+	newVolumeMetrics := make(map[string]map[string][]types2.Datapoint)
+	for k, v := range volumeMetrics {
+		newVolumeMetrics[k] = convertMetrics(v.Metrics)
+	}
+	newPreferences := make(map[string]*string)
+	for k, v := range preferences {
+		tmp := v.GetValue()
+		newPreferences[k] = &tmp
+	}
+
+	result, err := s.EC2InstanceRecommendation(ctx, region, newInstance, newVolumes, newMetrics, newVolumeMetrics, newPreferences, usageAverageType)
+	if err != nil {
+		return nil, err
+	}
+	return &aws.EC2InstanceRightSizingRecommendation{
+		Current:           convertRightsizingEC2Instance(&result.Current),
+		Recommended:       convertRightsizingEC2Instance(result.Recommended),
+		Vcpu:              convertUsage(&result.VCPU),
+		Memory:            convertUsage(&result.Memory),
+		EbsBandwidth:      convertUsage(&result.EBSBandwidth),
+		EbsIops:           convertUsage(&result.EBSIops),
+		NetworkThroughput: convertUsage(&result.NetworkThroughput),
+		Description:       result.Description,
+	}, nil
+}
+
+func convertMetrics(metrics map[string]*aws.Metric) map[string][]types2.Datapoint {
+	newMetrics := make(map[string][]types2.Datapoint)
+	for k, v := range metrics {
+		var datapoints []types2.Datapoint
+		for _, d := range v.Metric {
+			var avg, maximum, minimum, sum, sampleCount *float64
+			var timestamp *time.Time
+			if d.Average != nil {
+				avgTmp := d.Average.GetValue()
+				avg = &avgTmp
+			}
+			if d.Maximum != nil {
+				maxTmp := d.Maximum.GetValue()
+				maximum = &maxTmp
+			}
+			if d.Minimum != nil {
+				minTmp := d.Minimum.GetValue()
+				minimum = &minTmp
+			}
+			if d.Sum != nil {
+				sumTmp := d.Sum.GetValue()
+				sum = &sumTmp
+			}
+			if d.SampleCount != nil {
+				sampleCountTmp := d.SampleCount.GetValue()
+				sampleCount = &sampleCountTmp
+			}
+			if d.Timestamp != nil {
+				timestampTmp := d.Timestamp.AsTime()
+				timestamp = &timestampTmp
+			}
+			datapoints = append(datapoints, types2.Datapoint{
+				Average:     avg,
+				Maximum:     maximum,
+				Minimum:     minimum,
+				SampleCount: sampleCount,
+				Sum:         sum,
+				Timestamp:   timestamp,
+			})
+		}
+		newMetrics[k] = datapoints
+	}
+	return newMetrics
+}
+
+func convertRightsizingEC2Instance(rightSizing *entity.RightsizingEC2Instance) *aws.RightsizingEC2Instance {
+	if rightSizing == nil {
+		return nil
+	}
+	return &aws.RightsizingEC2Instance{
+		InstanceType:      rightSizing.InstanceType,
+		Region:            rightSizing.Region,
+		Cost:              rightSizing.Cost,
+		CostComponents:    rightSizing.CostComponents,
+		Processor:         rightSizing.Processor,
+		Architecture:      rightSizing.Architecture,
+		Vcpu:              rightSizing.VCPU,
+		Memory:            rightSizing.Memory,
+		EbsBandwidth:      rightSizing.EBSBandwidth,
+		EbsIops:           rightSizing.EBSIops,
+		NetworkThroughput: rightSizing.NetworkThroughput,
+		EnaSupported:      rightSizing.ENASupported,
+		LicensePrice:      rightSizing.LicensePrice,
+		License:           rightSizing.License,
+	}
+}
+
+func convertUsage(usage *entity.Usage) *aws.Usage {
+	if usage == nil {
+		return nil
+	}
+	var newUsage aws.Usage
+	if usage.Avg != nil {
+		newUsage.Avg = wrapperspb.Double(*usage.Avg)
+	}
+	if usage.Max != nil {
+		newUsage.Max = wrapperspb.Double(*usage.Max)
+	}
+	if usage.Min != nil {
+		newUsage.Min = wrapperspb.Double(*usage.Min)
+	}
+	if usage.Last != nil {
+		var last aws.Datapoint
+		if usage.Last.Average != nil {
+			last.Average = wrapperspb.Double(*usage.Last.Average)
+		}
+		if usage.Last.Maximum != nil {
+			last.Maximum = wrapperspb.Double(*usage.Last.Maximum)
+		}
+		if usage.Last.Minimum != nil {
+			last.Minimum = wrapperspb.Double(*usage.Last.Minimum)
+		}
+		if usage.Last.SampleCount != nil {
+			last.SampleCount = wrapperspb.Double(*usage.Last.SampleCount)
+		}
+		if usage.Last.Sum != nil {
+			last.Sum = wrapperspb.Double(*usage.Last.Sum)
+		}
+		if usage.Last.Timestamp != nil {
+			last.Timestamp = timestamppb.New(*usage.Last.Timestamp)
+		}
+		newUsage.Last = &last
+	}
+	return &newUsage
+}
 
 func (s *Service) EC2InstanceRecommendation(
 	ctx context.Context,
@@ -376,6 +562,58 @@ func extractFromInstance(instance entity.EC2Instance, i model.EC2InstanceType, r
 	return ""
 }
 
+func (s *Service) EBSVolumeRecommendationGrpc(
+	ctx context.Context,
+	region string,
+	volume *aws.EC2Volume,
+	metrics *aws.VolumeMetrics,
+	preferences map[string]*wrapperspb.StringValue,
+	usageAverageType UsageAverageType,
+) (*aws.EBSVolumeRecommendation, error) {
+	newVolume := entity.EC2Volume{
+		HashedVolumeId:   volume.HashedVolumeId,
+		VolumeType:       types.VolumeType(volume.VolumeType),
+		Size:             WrappedToInt32(volume.Size),
+		Iops:             WrappedToInt32(volume.Iops),
+		Throughput:       WrappedToFloat64(volume.Throughput),
+		AvailabilityZone: WrappedToString(volume.AvailabilityZone),
+	}
+	newMetrics := convertMetrics(metrics.Metrics)
+	newPreferences := make(map[string]*string)
+	for k, v := range preferences {
+		tmp := v.GetValue()
+		newPreferences[k] = &tmp
+	}
+	result, err := s.EBSVolumeRecommendation(ctx, region, newVolume, newMetrics, newPreferences, usageAverageType)
+	if err != nil {
+		return nil, err
+	}
+	newResult := &aws.EBSVolumeRecommendation{
+		Current:     convertRightsizingEBSVolume(&result.Current),
+		Recommended: convertRightsizingEBSVolume(result.Recommended),
+		Iops:        convertUsage(&result.IOPS),
+		Throughput:  convertUsage(&result.Throughput),
+		Description: result.Description,
+	}
+	return newResult, nil
+}
+
+func convertRightsizingEBSVolume(rightSizing *entity.RightsizingEBSVolume) *aws.RightsizingEBSVolume {
+	if rightSizing == nil {
+		return nil
+	}
+	return &aws.RightsizingEBSVolume{
+		Tier:                  string(rightSizing.Tier),
+		VolumeSize:            Int32ToWrapper(rightSizing.VolumeSize),
+		BaselineIops:          rightSizing.BaselineIOPS,
+		ProvisionedIops:       Int32ToWrapper(rightSizing.ProvisionedIOPS),
+		BaselineThroughput:    rightSizing.BaselineThroughput,
+		ProvisionedThroughput: Float64ToWrapper(rightSizing.ProvisionedThroughput),
+		Cost:                  rightSizing.Cost,
+		CostComponents:        rightSizing.CostComponents,
+	}
+}
+
 func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, volume entity.EC2Volume, metrics map[string][]types2.Datapoint, preferences map[string]*string, usageAverageType UsageAverageType) (*entity.EBSVolumeRecommendation, error) {
 	iopsUsage := extractUsage(sumMergeDatapoints(metrics["VolumeReadOps"], metrics["VolumeWriteOps"]), usageAverageType)
 	throughputUsageBytes := extractUsage(sumMergeDatapoints(metrics["VolumeReadBytes"], metrics["VolumeWriteBytes"]), usageAverageType)
@@ -644,4 +882,49 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 	}
 
 	return result, nil
+}
+
+func WrappedToInt32(v *wrapperspb.Int32Value) *int32 {
+	if v == nil {
+		return nil
+	}
+	tmp := v.GetValue()
+	return &tmp
+}
+
+func WrappedToFloat64(v *wrapperspb.DoubleValue) *float64 {
+	if v == nil {
+		return nil
+	}
+	tmp := v.GetValue()
+	return &tmp
+}
+
+func WrappedToString(v *wrapperspb.StringValue) *string {
+	if v == nil {
+		return nil
+	}
+	tmp := v.GetValue()
+	return &tmp
+}
+
+func Int32ToWrapper(v *int32) *wrapperspb.Int32Value {
+	if v == nil {
+		return nil
+	}
+	return wrapperspb.Int32(*v)
+}
+
+func Float64ToWrapper(v *float64) *wrapperspb.DoubleValue {
+	if v == nil {
+		return nil
+	}
+	return wrapperspb.Double(*v)
+}
+
+func StringToWrapper(v *string) *wrapperspb.StringValue {
+	if v == nil {
+		return nil
+	}
+	return wrapperspb.String(*v)
 }
