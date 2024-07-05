@@ -52,7 +52,7 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 		placement = &entity.EC2Placement{
 			AvailabilityZone: instance.Placement.AvailabilityZone,
 			Tenancy:          types.Tenancy(instance.Placement.Tenancy),
-			HashedHostId:     instance.HashedInstanceId,
+			HashedHostId:     instance.Placement.HashedHostId,
 		}
 	}
 	newInstance := entity.EC2Instance{
