@@ -217,7 +217,7 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 	//		return nil, err
 	//	}
 	//}
-	s.logger.Info("getting ec2 instance recommendation", zap.Any("req", req)
+	s.logger.Info("getting ec2 instance recommendation", zap.Any("req", req))
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendationGrpc(ctx, req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
