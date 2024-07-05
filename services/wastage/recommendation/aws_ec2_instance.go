@@ -81,10 +81,20 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 			AvailabilityZone: WrappedToString(v.AvailabilityZone),
 		})
 	}
+	for k, m := range metrics {
+		if m.Metric != nil {
+			s.logger.Info("Metric Info", zap.String("key", k), zap.Any("length", len(m.Metric)))
+		}
+	}
 	newMetrics := convertMetrics(metrics)
 	newVolumeMetrics := make(map[string]map[string][]types2.Datapoint)
 	for k, v := range volumeMetrics {
 		newVolumeMetrics[k] = convertMetrics(v.Metrics)
+	}
+	for k, m := range newMetrics {
+		if m != nil {
+			s.logger.Info("New Metric Info", zap.String("key", k), zap.Any("length", len(m)))
+		}
 	}
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
@@ -92,7 +102,7 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	}
 
 	s.logger.Info("EC2InstanceRecommendation parameters", zap.String("region", region), zap.Any("instance", newInstance),
-		zap.Any("volumes", newVolumes), zap.Any("metrics", newMetrics), zap.Any("volumeMetrics", newVolumeMetrics),
+		zap.Any("volumes", newVolumes), zap.Any("metrics len", len(metrics)), zap.Any("volumeMetrics len", len(newVolumeMetrics)),
 		zap.Any("preferences", newPreferences), zap.Any("usageAverageType", usageAverageType))
 
 	result, err := s.EC2InstanceRecommendation(ctx, region, newInstance, newVolumes, newMetrics, newVolumeMetrics, newPreferences, usageAverageType)
@@ -571,7 +581,7 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	}
 
 	s.logger.Info("EBSVolumeRecommendation parameters", zap.String("region", region), zap.Any("volume", newVolume),
-		zap.Any("metrics", newMetrics), zap.Any("preferences", newPreferences), zap.Any("usageAverageType", usageAverageType))
+		zap.Any("len metrics", len(newMetrics)), zap.Any("preferences", newPreferences), zap.Any("usageAverageType", usageAverageType))
 
 	result, err := s.EBSVolumeRecommendation(ctx, region, newVolume, newMetrics, newPreferences, usageAverageType)
 	if err != nil {

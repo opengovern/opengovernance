@@ -303,7 +303,7 @@ func (s *awsPluginServer) RDSInstanceOptimization(ctx context.Context, req *aws.
 	}
 
 	s.blobWorkerPool.Submit(func() {
-		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds/%s.json", req.RequestId.String()), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 		if err != nil {
 			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		}
