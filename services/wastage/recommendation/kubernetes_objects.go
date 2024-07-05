@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	"github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -449,53 +450,32 @@ func (s *Service) KubernetesJobRecommendation(
 	return &result, nil
 }
 
-func (s *Service) calculateEksNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
-	var instanceType, instanceRegion, instanceAvailabilityZone, instanceOs string
-
-	for _, v := range []string{"node.kubernetes.io/instance-type", "beta.kubernetes.io/instance-type"} {
-		var ok bool
-		instanceType, ok = node.Labels[v]
-		if ok {
-			break
+func getValueFromLabelList(labels map[string]string, keys []string) (string, bool) {
+	for _, key := range keys {
+		if v, ok := labels[key]; ok {
+			return v, true
 		}
 	}
-	if instanceType == "" {
+	return "", false
+}
+
+func (s *Service) calculateEksNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
+	instanceType, ok := getValueFromLabelList(node.Labels, []string{"node.kubernetes.io/instance-type", "beta.kubernetes.io/instance-type"})
+	if !ok {
 		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the instance type for the node")
 	}
-
-	for _, v := range []string{"topology.kubernetes.io/region", "failure-domain.beta.kubernetes.io/region"} {
-		var ok bool
-		instanceRegion, ok = node.Labels[v]
-		if ok {
-			break
-		}
-	}
-	if instanceRegion == "" {
+	instanceRegion, ok := getValueFromLabelList(node.Labels, []string{"topology.kubernetes.io/region", "failure-domain.beta.kubernetes.io/region"})
+	if !ok {
 		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the region for the node")
 	}
-
-	for _, v := range []string{"topology.kubernetes.io/zone", "failure-domain.beta.kubernetes.io/zone"} {
-		var ok bool
-		instanceAvailabilityZone, ok = node.Labels[v]
-		if ok {
-			break
-		}
-	}
-	if instanceAvailabilityZone == "" {
+	instanceAvailabilityZone, ok := getValueFromLabelList(node.Labels, []string{"topology.kubernetes.io/zone", "failure-domain.beta.kubernetes.io/zone"})
+	if !ok {
 		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the availability zone for the node")
 	}
-
-	for _, v := range []string{"kubernetes.io/os", "beta.kubernetes.io/os"} {
-		var ok bool
-		instanceOs, ok = node.Labels[v]
-		if ok {
-			break
-		}
-	}
-	if instanceOs == "" {
+	instanceOs, ok := getValueFromLabelList(node.Labels, []string{"kubernetes.io/os", "beta.kubernetes.io/os"})
+	if !ok {
 		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the operating system for the node")
 	}
-
 	capacityType, ok := node.Labels["eks.amazonaws.com/capacityType"]
 	if !ok {
 		capacityType = "ON_DEMAND" // or throw an error?
@@ -536,6 +516,39 @@ func (s *Service) calculateEksNodeCost(ctx context.Context, node pb.KubernetesNo
 	return cost, nil
 }
 
+func (s *Service) calculateGKENodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
+	instanceType, ok := getValueFromLabelList(node.Labels, []string{"node.kubernetes.io/instance-type", "beta.kubernetes.io/instance-type"})
+	if !ok {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the instance type for the node")
+	}
+	//instanceRegion, ok := getValueFromLabelList(node.Labels, []string{"topology.kubernetes.io/region", "failure-domain.beta.kubernetes.io/region"})
+	//if !ok {
+	//	return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the region for the node")
+	//}
+	instanceZone, ok := getValueFromLabelList(node.Labels, []string{"topology.kubernetes.io/zone", "failure-domain.beta.kubernetes.io/zone", "topology.gke.io/zone"})
+	if !ok {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the availability zone for the node")
+	}
+	//gkeProvisioning, ok := node.Labels["cloud.google.com/gke-provisioning"]
+	//if !ok {
+	//	gkeProvisioning = "standard"
+	//}
+
+	instance := gcp.GcpComputeInstance{
+		Id:          node.Id,
+		Zone:        instanceZone,
+		MachineType: instanceType,
+	}
+
+	cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
+	if err != nil {
+		s.logger.Error("failed to get gcp compute instance cost", zap.Error(err))
+		return 0, err
+	}
+
+	return cost, nil
+}
+
 func (s *Service) KubernetesNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
 	for labelKey, _ := range node.Labels {
 		labelKey := strings.ToLower(labelKey)
@@ -544,7 +557,8 @@ func (s *Service) KubernetesNodeCost(ctx context.Context, node pb.KubernetesNode
 			return s.calculateEksNodeCost(ctx, node)
 		case strings.HasPrefix(labelKey, "kubernetes.azure.com/"):
 			return 0, status.Errorf(codes.InvalidArgument, "AKS cluster node costs are not supported")
-			// TODO @Arta GCP case
+		case strings.HasPrefix(labelKey, "cloud.google.com/"):
+			return s.calculateGKENodeCost(ctx, node)
 		}
 	}
 	return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the cloud provider for the node")
