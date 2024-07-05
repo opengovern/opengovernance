@@ -194,38 +194,41 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 		return nil, fmt.Errorf("plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err = s.limitService.checkAccountsLimit(userId, req.Identification["org_m_email"], req.Identification["account"])
-	if err != nil {
-		s.logger.Error("failed to check profile limit", zap.Error(err))
-		return nil, err
-	}
-	if !ok {
-		err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "profile")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	ok, err = s.limitService.checkEC2InstanceLimit(userId, req.Identification["org_m_email"])
-	if err != nil {
-		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
-		return nil, err
-	}
-	if !ok {
-		err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "ec2 instance")
-		if err != nil {
-			return nil, err
-		}
-	}
+	//ok, err = s.limitService.checkAccountsLimit(userId, req.Identification["org_m_email"], req.Identification["account"])
+	//if err != nil {
+	//	s.logger.Error("failed to check profile limit", zap.Error(err))
+	//	return nil, err
+	//}
+	//if !ok {
+	//	err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "profile")
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+	//
+	//ok, err = s.limitService.checkEC2InstanceLimit(userId, req.Identification["org_m_email"])
+	//if err != nil {
+	//	s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
+	//	return nil, err
+	//}
+	//if !ok {
+	//	err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "ec2 instance")
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+	s.logger.Info("getting ec2 instance recommendation", zap.Any("req", req)
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendationGrpc(ctx, req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
 		return nil, err
 	}
+	s.logger.Info("ec2 instance recommendation", zap.Any("recom", ec2RightSizingRecom))
 
 	ebsRightSizingRecoms := make(map[string]*aws.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
+		s.logger.Info("getting ebs volume recommendation", zap.Any("volume", vol))
 		var ebsRightSizingRecom *aws.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendationGrpc(ctx, req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
@@ -233,6 +236,7 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 			return nil, err
 		}
 		ebsRightSizingRecoms[vol.HashedVolumeId] = ebsRightSizingRecom
+		s.logger.Info("ebs volume recommendation", zap.Any("recom", ebsRightSizingRecom))
 	}
 	elapsed := time.Since(start).Seconds()
 	usage.Latency = &elapsed
