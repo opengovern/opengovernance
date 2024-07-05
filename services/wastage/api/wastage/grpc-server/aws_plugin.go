@@ -144,7 +144,7 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 			usage.ResponseId = &responseId
 
 			recom := aws.RightsizingEC2Instance{}
-			if resp.RightSizing.Recommended != nil {
+			if resp.RightSizing != nil && resp.RightSizing.Recommended != nil {
 				recom = *resp.RightSizing.Recommended
 			}
 

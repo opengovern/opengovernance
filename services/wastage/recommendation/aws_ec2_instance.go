@@ -13,6 +13,7 @@ import (
 	aws "github.com/kaytu-io/plugin-aws/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"
 	"github.com/sashabaranov/go-openai"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"net/http"
@@ -89,6 +90,10 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	for k, v := range preferences {
 		newPreferences[k] = WrappedToString(v)
 	}
+
+	s.logger.Info("EC2InstanceRecommendation parameters", zap.String("region", region), zap.Any("instance", newInstance),
+		zap.Any("volumes", newVolumes), zap.Any("metrics", newMetrics), zap.Any("volumeMetrics", newVolumeMetrics),
+		zap.Any("preferences", newPreferences), zap.Any("usageAverageType", usageAverageType))
 
 	result, err := s.EC2InstanceRecommendation(ctx, region, newInstance, newVolumes, newMetrics, newVolumeMetrics, newPreferences, usageAverageType)
 	if err != nil {
@@ -564,6 +569,10 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	for k, v := range preferences {
 		newPreferences[k] = WrappedToString(v)
 	}
+
+	s.logger.Info("EBSVolumeRecommendation parameters", zap.String("region", region), zap.Any("volume", newVolume),
+		zap.Any("metrics", newMetrics), zap.Any("preferences", newPreferences), zap.Any("usageAverageType", usageAverageType))
+
 	result, err := s.EBSVolumeRecommendation(ctx, region, newVolume, newMetrics, newPreferences, usageAverageType)
 	if err != nil {
 		return nil, err
