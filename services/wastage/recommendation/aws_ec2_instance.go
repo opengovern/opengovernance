@@ -722,7 +722,8 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		}
 	}
 
-	volumeCost, currentVolCostComponents, err := s.costSvc.GetEBSVolumeCost(ctx, region, volume, metrics)
+	newCtx := context.Background()
+	volumeCost, currentVolCostComponents, err := s.costSvc.GetEBSVolumeCost(newCtx, region, volume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get current ebs volume %s cost: %s", volume.HashedVolumeId, err.Error())
 		return nil, err
@@ -864,7 +865,7 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		}
 	}
 
-	newVolumeCost, newVolCostComponents, err := s.costSvc.GetEBSVolumeCost(ctx, region, newVolume, metrics)
+	newVolumeCost, newVolCostComponents, err := s.costSvc.GetEBSVolumeCost(newCtx, region, newVolume, metrics)
 	if err != nil {
 		err = fmt.Errorf("failed to get recommended ebs volume %s cost: %s", newVolume.HashedVolumeId, err.Error())
 		return nil, err
