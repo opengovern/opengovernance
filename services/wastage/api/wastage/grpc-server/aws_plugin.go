@@ -217,18 +217,15 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 			return nil, err
 		}
 	}
-	s.logger.Info("getting ec2 instance recommendation", zap.Any("req", req))
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendationGrpc(ctx, req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {
 		err = fmt.Errorf("failed to get ec2 instance recommendation: %s", err.Error())
 		return nil, err
 	}
-	s.logger.Info("ec2 instance recommendation", zap.Any("recom", ec2RightSizingRecom))
 
 	ebsRightSizingRecoms := make(map[string]*aws.EBSVolumeRecommendation)
 	for _, vol := range req.Volumes {
-		s.logger.Info("getting ebs volume recommendation", zap.Any("volume", vol))
 		var ebsRightSizingRecom *aws.EBSVolumeRecommendation
 		ebsRightSizingRecom, err = s.recomSvc.EBSVolumeRecommendationGrpc(ctx, req.Region, vol, req.VolumeMetrics[vol.HashedVolumeId], req.Preferences, usageAverageType)
 		if err != nil {
@@ -236,7 +233,6 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 			return nil, err
 		}
 		ebsRightSizingRecoms[vol.HashedVolumeId] = ebsRightSizingRecom
-		s.logger.Info("ebs volume recommendation", zap.Any("recom", ebsRightSizingRecom))
 	}
 	elapsed := time.Since(start).Seconds()
 	usage.Latency = &elapsed
