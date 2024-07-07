@@ -80,6 +80,7 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 		grpc.MaxRecvMsgSize(256*1024*1024),
 		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
 		grpc.ChainUnaryInterceptor(Logger(server.logger)),
+		grpc.ConnectionTimeout(10*time.Minute),
 	)
 	kubernetesPluginProto.RegisterOptimizationServer(s, server.kubernetesPluginServer)
 	gcpPluginProto.RegisterOptimizationServer(s, server.gcpPluginServer)
