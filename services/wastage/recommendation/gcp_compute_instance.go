@@ -117,6 +117,20 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
 	}
 
+	if preferences["ProvisioningModel"] == nil || preferences["ProvisioningModel"].GetValue() == "" {
+		if instance.Preemptible {
+			pref["preemptible = ?"] = true
+		} else {
+			pref["preemptible = ?"] = false
+		}
+	} else {
+		if preferences["ProvisioningModel"].GetValue() == "Spot" {
+			pref["preemptible = ?"] = true
+		} else {
+			pref["preemptible = ?"] = false
+		}
+	}
+
 	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemoryMb, pref)
 	if err != nil {
 		return nil, nil, nil, err
