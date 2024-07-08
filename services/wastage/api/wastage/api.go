@@ -76,8 +76,8 @@ func (s API) Register(e *echo.Echo) {
 	i := e.Group("/api/v1/wastage-ingestion")
 	i.PUT("/ingest/:service", httpserver.AuthorizeHandler(s.TriggerIngest, api.InternalRole))
 	i.GET("/usages/:id", httpserver.AuthorizeHandler(s.GetUsage, api.InternalRole))
-	i.GET("/usages/accountID/:endpoint/:accountID", httpserver.AuthorizeHandler(s.GetUsageIDByAccountID, api.InternalRole))
-	i.GET("/usages/accountID/:endpoint/:accountID/:groupBy/last", httpserver.AuthorizeHandler(s.GetLastUsageIDByAccountID, api.InternalRole))
+	i.GET("/usages/accountID", httpserver.AuthorizeHandler(s.GetUsageIDByAccountID, api.InternalRole))
+	i.GET("/usages/accountID/last", httpserver.AuthorizeHandler(s.GetLastUsageIDByAccountID, api.InternalRole))
 	i.PUT("/usages/migrate", s.MigrateUsages)
 	i.PUT("/usages/migrate/v2", s.MigrateUsagesV2)
 	i.PUT("/usages/fill-rds-costs", s.FillRdsCosts)
@@ -894,10 +894,11 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 }
 
 func (s API) GetUsageIDByAccountID(echoCtx echo.Context) error {
-	accountId := echoCtx.Param("accountID")
-	endpoint := echoCtx.Param("endpoint")
+	accountId := echoCtx.QueryParam("accountID")
+	auth0UserId := echoCtx.QueryParam("auth0UserId")
+	endpoint := echoCtx.QueryParam("endpoint")
 
-	usage, err := s.usageRepo.GetByAccountID(endpoint, accountId)
+	usage, err := s.usageRepo.GetByAccountID(endpoint, accountId, auth0UserId)
 	if err != nil {
 		return err
 	}
@@ -906,11 +907,12 @@ func (s API) GetUsageIDByAccountID(echoCtx echo.Context) error {
 }
 
 func (s API) GetLastUsageIDByAccountID(echoCtx echo.Context) error {
-	accountId := echoCtx.Param("accountID")
-	endpoint := echoCtx.Param("endpoint")
-	groupByType := echoCtx.Param("groupBy")
+	accountId := echoCtx.QueryParam("accountID")
+	auth0UserId := echoCtx.QueryParam("auth0UserId")
+	endpoint := echoCtx.QueryParam("endpoint")
+	groupByType := echoCtx.QueryParam("groupBy")
 
-	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId, groupByType)
+	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType)
 	if err != nil {
 		return err
 	}
