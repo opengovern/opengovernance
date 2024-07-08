@@ -21,6 +21,7 @@ func (s *Service) GetAzureComputeVMCost(ctx context.Context, instance entity.Azu
 
 	valuesMap := map[string]any{}
 	valuesMap["size"] = instance.InstanceType
+	valuesMap["sku"] = instance.InstanceType
 	valuesMap["location"] = instance.Region
 	valuesMap["instances"] = 1
 
