@@ -14,6 +14,7 @@ type GCPComputeMachineType struct {
 	MachineType   string `gorm:"index"`
 	MachineFamily string `gorm:"index"`
 	Zone          string `gorm:"index"`
+	Preemptible   bool   `gorm:"index"`
 
 	GuestCpus    int64
 	MemoryMb     int64
@@ -24,7 +25,7 @@ type GCPComputeMachineType struct {
 	UnitPrice float64
 }
 
-func (p *GCPComputeMachineType) PopulateFromObject(machineType *compute.MachineType) {
+func (p *GCPComputeMachineType) PopulateFromObject(machineType *compute.MachineType, region string, preemptible bool) {
 	p.Name = machineType.Name
 	p.MachineType = machineType.Name
 	mf := strings.ToLower(strings.Split(machineType.Name, "-")[0])
@@ -34,4 +35,6 @@ func (p *GCPComputeMachineType) PopulateFromObject(machineType *compute.MachineT
 	p.ImageSpaceGb = machineType.ImageSpaceGb
 	p.Description = machineType.Description
 	p.Zone = machineType.Zone
+	p.Region = region
+	p.Preemptible = preemptible
 }
