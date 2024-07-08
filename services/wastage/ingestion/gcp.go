@@ -162,7 +162,7 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 	}
 
 	var transaction *gorm.DB
-	machineTypePrices := make(map[string]map[string]float64)
+	machineTypePrices := make(map[string]map[string]map[string]float64)
 	diskTypePrices := make(map[string]map[string]float64)
 	skus, err := s.fetchSKUs(ctx, services["ComputeEngine"])
 	if err != nil {
@@ -176,10 +176,11 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			continue
 		}
 
-		mf, rg, t := model.GetSkuDetails(sku)
+		mf, rg, t, pm := model.GetSkuDetails(sku)
+
 		if rg == cpu || rg == ram {
 			if _, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)]; !ok {
-				skuMachineTypePrices := make(map[string]float64)
+				skuMachineTypePrices := make(map[string]map[string]float64)
 				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)] = skuMachineTypePrices
 			}
 		}
@@ -220,8 +221,12 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 				return err
 			}
 
-			if (rg == cpu || rg == ram) && t == "Predefined" {
-				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = computeSKU.UnitPrice
+			if (rg == cpu || rg == ram) && mf != "" && t == "Predefined" {
+				if _, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region]; !ok {
+					skuMachineTypePrices := make(map[string]float64)
+					machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region] = skuMachineTypePrices
+				}
+				machineTypePrices[fmt.Sprintf("%s.%s", mf, rg)][region][pm] = computeSKU.UnitPrice
 			}
 			if computeSKU.Description == "Storage PD Capacity" {
 				diskTypePrices["pd-standard"][region] = computeSKU.UnitPrice
@@ -245,11 +250,12 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 	}
 	s.logger.Info("fetched machine types", zap.Any("count", len(types)))
 	for _, mt := range types {
-		computeMachineType := &model.GCPComputeMachineType{}
-		computeMachineType.PopulateFromObject(mt)
-
 		region := strings.Join([]string{strings.Split(mt.Zone, "-")[0], strings.Split(mt.Zone, "-")[1]}, "-")
-		computeMachineType.Region = region
+		onDemandCMType := &model.GCPComputeMachineType{}
+		onDemandCMType.PopulateFromObject(mt, region, false)
+
+		spotCMType := &model.GCPComputeMachineType{}
+		spotCMType.PopulateFromObject(mt, region, true)
 
 		mf := strings.ToLower(strings.Split(mt.Name, "-")[0])
 		rp, ok := machineTypePrices[fmt.Sprintf("%s.%s", mf, ram)][region]
@@ -266,9 +272,17 @@ func (s *GcpService) IngestComputeInstance(ctx context.Context) error {
 			continue
 		}
 
-		computeMachineType.UnitPrice = (rp * float64(computeMachineType.MemoryMb) / float64(1024)) + (cp * float64(computeMachineType.GuestCpus))
+		onDemandCMType.UnitPrice = (rp["standard"] * float64(onDemandCMType.MemoryMb) / float64(1024)) + (cp["standard"] * float64(onDemandCMType.GuestCpus))
 
-		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, computeMachineType)
+		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, onDemandCMType)
+		if err != nil {
+			s.logger.Error("failed to create compute machine type", zap.Error(err))
+			continue
+		}
+
+		spotCMType.UnitPrice = (rp["preemptible"] * float64(spotCMType.MemoryMb) / float64(1024)) + (cp["preemptible"] * float64(spotCMType.GuestCpus))
+
+		err = s.computeMachineTypeRepo.Create(computeMachineTypeTable, transaction, spotCMType)
 		if err != nil {
 			s.logger.Error("failed to create compute machine type", zap.Error(err))
 			continue
