@@ -931,6 +931,9 @@ func WrappedToString(v *wrapperspb.StringValue) *string {
 		return nil
 	}
 	tmp := v.GetValue()
+	if tmp == "" {
+		return nil
+	}
 	return &tmp
 }
 
