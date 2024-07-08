@@ -96,6 +96,14 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 			s.logger.Info("New Metric Info", zap.String("key", k), zap.Any("length", len(m)))
 		}
 	}
+	for v, mm := range newVolumeMetrics {
+		for k, m := range mm {
+			if m != nil {
+				s.logger.Info("New Volume Metric Info", zap.String("volume", v),
+					zap.String("key", k), zap.Any("length", len(m)))
+			}
+		}
+	}
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
 		newPreferences[k] = WrappedToString(v)
@@ -282,7 +290,7 @@ func (s *Service) EC2InstanceRecommendation(
 	pref := map[string]any{}
 	for k, v := range preferences {
 		var vl any
-		if v == nil {
+		if v == nil || *v == "" {
 			vl = extractFromInstance(instance, currentInstanceType, region, k)
 		} else {
 			vl = *v
@@ -579,6 +587,12 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
 		newPreferences[k] = WrappedToString(v)
+	}
+
+	for k, m := range newMetrics {
+		if m != nil {
+			s.logger.Info("New Metric Info", zap.String("key", k), zap.Any("length", len(m)))
+		}
 	}
 
 	s.logger.Info("EBSVolumeRecommendation parameters", zap.String("region", region), zap.Any("volume", newVolume),
