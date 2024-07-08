@@ -549,6 +549,36 @@ func (s *Service) calculateGKENodeCost(ctx context.Context, node pb.KubernetesNo
 	return cost, nil
 }
 
+func (s *Service) calculateAKSNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
+	instanceType, ok := getValueFromLabelList(node.Labels, []string{"node.kubernetes.io/instance-type", "beta.kubernetes.io/instance-type"})
+	if !ok {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the instance type for the node")
+	}
+	instanceRegion, ok := getValueFromLabelList(node.Labels, []string{"topology.kubernetes.io/region", "failure-domain.beta.kubernetes.io/region"})
+	if !ok {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the region for the node")
+	}
+	instanceZone, ok := getValueFromLabelList(node.Labels, []string{"topology.kubernetes.io/zone", "failure-domain.beta.kubernetes.io/zone"})
+	if !ok {
+		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the availability zone for the node")
+	}
+
+	instance := entity.AzureVM{
+		Id:           node.Id,
+		Zone:         instanceZone,
+		Region:       instanceRegion,
+		InstanceType: instanceType,
+	}
+
+	cost, err := s.costSvc.GetAzureComputeVMCost(ctx, instance)
+	if err != nil {
+		s.logger.Error("failed to get gcp compute instance cost", zap.Error(err))
+		return 0, err
+	}
+
+	return cost, nil
+}
+
 func (s *Service) KubernetesNodeCost(ctx context.Context, node pb.KubernetesNode) (float64, error) {
 	for labelKey, _ := range node.Labels {
 		labelKey := strings.ToLower(labelKey)
@@ -556,7 +586,7 @@ func (s *Service) KubernetesNodeCost(ctx context.Context, node pb.KubernetesNode
 		case strings.HasPrefix(labelKey, "eks.amazonaws.com/"):
 			return s.calculateEksNodeCost(ctx, node)
 		case strings.HasPrefix(labelKey, "kubernetes.azure.com/"):
-			return 0, status.Errorf(codes.InvalidArgument, "AKS cluster node costs are not supported")
+			return s.calculateAKSNodeCost(ctx, node)
 		case strings.HasPrefix(labelKey, "cloud.google.com/"):
 			return s.calculateGKENodeCost(ctx, node)
 		}

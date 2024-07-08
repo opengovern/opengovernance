@@ -805,7 +805,7 @@ func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRd
 			if usageStorageThroughputMB.Max != nil {
 				usage += fmt.Sprintf("max=%.2fMB, ", *usageStorageThroughputMB.Max)
 			}
-			usage += fmt.Sprintf("so you only need %.2f MB. %s has %.2fMB Throughput.\n", neededStorageThroughputMB, recStorageType, recStorageThroughput)
+			usage += fmt.Sprintf("so you only need %.2f MB. %s has %.2fMB Throughput.\n", neededStorageThroughputMB, recStorageType, *recStorageThroughput)
 		} else {
 			usage += fmt.Sprintf("- %s has %.1fMB Throughput. Usage data is not available. you only need %.2f MB. %s has %.2fMB Throughput.\n", currStorageType, getValueOrZero(currStorageThroughput), neededStorageThroughputMB, recStorageType, getValueOrZero(recStorageThroughput))
 		}

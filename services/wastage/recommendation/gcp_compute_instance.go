@@ -734,7 +734,7 @@ func (s *Service) generateGcpComputeInstanceDescription(region string, instance 
 			vl := extractFromGCPComputeInstance(region, currentMachine, k)
 			needs += fmt.Sprintf("- You asked %s to be same as the current instance value which is %v\n", k, vl)
 		} else {
-			needs += fmt.Sprintf("- You asked %s to be %s\n", k, *v)
+			needs += fmt.Sprintf("- You asked %s to be %s\n", k, v.GetValue())
 		}
 	}
 
@@ -851,7 +851,7 @@ Here's usage data:
 
 User's needs:
 %s
-`, suggestedType, suggestedSize, disk.DiskType, disk.DiskSize, usage, needs)
+`, suggestedType, suggestedSize, disk.DiskType, disk.DiskSize.GetValue(), usage, needs)
 
 	resp, err := s.openaiSvc.CreateChatCompletion(
 		context.Background(),
