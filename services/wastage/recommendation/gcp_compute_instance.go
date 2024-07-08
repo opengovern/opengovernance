@@ -50,6 +50,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			MachineFamily: machine.MachineFamily,
 			Cpu:           machine.GuestCpus,
 			MemoryMb:      machine.MemoryMb,
+			Preemptible:   instance.Preemptible,
 
 			Cost: currentCost,
 		},
@@ -117,19 +118,21 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		pref[fmt.Sprintf("%s %s ?", gcp_compute.PreferenceInstanceKey[k], cond)] = vl
 	}
 
+	var preemptible bool
 	if preferences["ProvisioningModel"] == nil || preferences["ProvisioningModel"].GetValue() == "" {
 		if instance.Preemptible {
-			pref["preemptible = ?"] = true
+			preemptible = true
 		} else {
-			pref["preemptible = ?"] = false
+			preemptible = false
 		}
 	} else {
 		if preferences["ProvisioningModel"].GetValue() == "Spot" {
-			pref["preemptible = ?"] = true
+			preemptible = true
 		} else {
-			pref["preemptible = ?"] = false
+			preemptible = false
 		}
 	}
+	pref["preemptible = ?"] = preemptible
 
 	suggestedMachineType, err := s.gcpComputeMachineTypeRepo.GetCheapestByCoreAndMemory(neededCPU, neededMemoryMb, pref)
 	if err != nil {
@@ -146,6 +149,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 	if suggestedMachineType != nil {
 		instance.Zone = suggestedMachineType.Zone
 		instance.MachineType = suggestedMachineType.Name
+		instance.Preemptible = preemptible
 		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 		if err != nil {
 			return nil, nil, nil, err
@@ -171,6 +175,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			MachineFamily: suggestedMachineType.MachineFamily,
 			Cpu:           suggestedMachineType.GuestCpus,
 			MemoryMb:      suggestedMachineType.MemoryMb,
+			Preemptible:   preemptible,
 
 			Cost: suggestedCost,
 		}
@@ -196,6 +201,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			MachineFamily: suggestedMachineType.MachineFamily,
 			Cpu:           suggestedMachineType.GuestCpus,
 			MemoryMb:      suggestedMachineType.MemoryMb,
+			Preemptible:   preemptible,
 
 			Cost: suggestedCost,
 		}
