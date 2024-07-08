@@ -113,7 +113,7 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 	}
 
 	s.blobWorkerPool.Submit(func() {
-		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("ec2-instance/%s.json", req.RequestId.String()), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 		if err != nil {
 			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		}
@@ -451,7 +451,7 @@ func (s *awsPluginServer) RDSClusterOptimization(ctx context.Context, req *aws.R
 	}
 
 	s.blobWorkerPool.Submit(func() {
-		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster/%s.json", *req.RequestId), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
+		_, err = s.blobClient.UploadBuffer(context.Background(), s.cfg.AzBlob.Container, fmt.Sprintf("aws-rds-cluster/%s.json", req.RequestId.GetValue()), fullReqJson, &azblob.UploadBufferOptions{AccessTier: utils.GetPointer(blob.AccessTierCold)})
 		if err != nil {
 			s.logger.Error("failed to upload usage to blob storage", zap.Error(err))
 		}

@@ -70,6 +70,8 @@ cloud.google.com/go/compute v1.6.0/go.mod h1:T29tfhtVbq1wvAPo0E3+7vhgmkOYeXjhFvz
 cloud.google.com/go/compute v1.6.1/go.mod h1:g85FgpzFvNULZ+S8AYq87axRKuf2Kh7deLqV/jJ3thU=
 cloud.google.com/go/compute v1.7.0/go.mod h1:435lt8av5oL9P3fv1OEzSbSUe+ybHXGMPQHHZWZxy9U=
 cloud.google.com/go/compute v1.10.0/go.mod h1:ER5CLbMxl90o2jtNbGSbtfOpQKR0t15FOtRsugnLrlU=
+cloud.google.com/go/compute v1.25.1 h1:ZRpHJedLtTpKgr3RV1Fx23NuaAEN1Zfx9hw1u4aJdjU=
+cloud.google.com/go/compute v1.25.1/go.mod h1:oopOIR53ly6viBYxaDhBfJwzUAxf1zE//uf3IB011ls=
 cloud.google.com/go/compute/metadata v0.2.0/go.mod h1:zFmK7XCadkQkj6TtorcaGlCW1hT1fIilQDwofLpJ20k=
 cloud.google.com/go/compute/metadata v0.3.0 h1:Tz+eQXMEqDIKRsmY3cHTL6FVaynIjX2QxYC4trgAKZc=
 cloud.google.com/go/compute/metadata v0.3.0/go.mod h1:zFmK7XCadkQkj6TtorcaGlCW1hT1fIilQDwofLpJ20k=
@@ -126,6 +128,8 @@ cloud.google.com/go/memcache v1.4.0/go.mod h1:rTOfiGZtJX1AaFUrOgsMHX5kAzaTQ8azHi
 cloud.google.com/go/memcache v1.5.0/go.mod h1:dk3fCK7dVo0cUU2c36jKb4VqKPS22BTkf81Xq617aWM=
 cloud.google.com/go/metastore v1.5.0/go.mod h1:2ZNrDcQwghfdtCwJ33nM0+GrBGlVuh8rakL3vdPY3XY=
 cloud.google.com/go/metastore v1.6.0/go.mod h1:6cyQTls8CWXzk45G55x57DVQ9gWg7RiH65+YgPsNh9s=
+cloud.google.com/go/monitoring v1.18.0 h1:NfkDLQDG2UR3WYZVQE8kwSbUIEyIqJUPl+aOQdFH1T4=
+cloud.google.com/go/monitoring v1.18.0/go.mod h1:c92vVBCeq/OB4Ioyo+NbN2U7tlg5ZH41PZcdvfc+Lcg=
 cloud.google.com/go/networkconnectivity v1.4.0/go.mod h1:nOl7YL8odKyAOtzNX73/M5/mGZgqqMeryi6UPZTk/rA=
 cloud.google.com/go/networkconnectivity v1.5.0/go.mod h1:3GzqJx7uhtlM3kln0+x5wyFvuVH1pIBJjhCpjzSt75o=
 cloud.google.com/go/networksecurity v0.5.0/go.mod h1:xS6fOCoqpVC5zx15Z/MqkfDwH4+m/61A3ODiDV1xmiQ=
@@ -1800,6 +1804,8 @@ github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E
 github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213/go.mod h1:vNUNkEQ1e29fT/6vq2aBdFsgNPmy8qMdSay1npru+Sw=
 github.com/kaytu-io/kaytu v0.14.3 h1:aaSPEajmJclm05UDUh5xKpmjcU3HK9ccwjS4mWw2/AU=
 github.com/kaytu-io/kaytu v0.14.3/go.mod h1:nQyzQiNDH4pPZBENaevC85kdvZSdhECHRIfo7ZVVF1c=
+github.com/kaytu-io/kaytu v0.14.6 h1:nub3/JEKoUKaUCqhDuiItXp5O1Gl0rcxGFXtvdkowE8=
+github.com/kaytu-io/kaytu v0.14.6/go.mod h1:nQyzQiNDH4pPZBENaevC85kdvZSdhECHRIfo7ZVVF1c=
 github.com/kaytu-io/kaytu-aws-describer v0.34.8 h1:/EvNShXF723Lizx4LbYfinMfgy/nbH88IdR6ZlY7dYQ=
 github.com/kaytu-io/kaytu-aws-describer v0.34.8/go.mod h1:iKztu7A+z02I1axTplQXBq9OfnfvwBcDX7myOl/9TWE=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8 h1:cXQGFjt1H35iwVX3yyq1lfjNbw9X+IM8+aTYbzHj81s=
@@ -1812,6 +1818,8 @@ github.com/kaytu-io/plugin-aws v0.6.18 h1:mFRKhuCNAczCMPptPVwtcRbQzIt5qFkVlsUU6K
 github.com/kaytu-io/plugin-aws v0.6.18/go.mod h1:bQZu4bneUh0ghz56iEW34cenGtzxl6wtbebEfiPE7dY=
 github.com/kaytu-io/plugin-gcp v0.0.0-20240702123438-fae6d07b7c6e h1:i6AifU11P6/7ah8W7EsUv2mdP6GIfiAYmYldjQxaLWY=
 github.com/kaytu-io/plugin-gcp v0.0.0-20240702123438-fae6d07b7c6e/go.mod h1:IU54oa34Eq8S8sYI9mY4Nb36w03ZSX54m5hdRFt6Z7Y=
+github.com/kaytu-io/plugin-gcp v0.0.0-20240708084657-b285c6193f9f h1:8gZoW3NRAlhCvwY8TLwRppuW3jgEnG/kGd67OxTDvkE=
+github.com/kaytu-io/plugin-gcp v0.0.0-20240708084657-b285c6193f9f/go.mod h1:ZjBPYx1UXByX6/a2dZS5acCOOF0yz37rQL4sbhDfyZU=
 github.com/kaytu-io/plugin-kubernetes-internal v0.16.5 h1:9/CgnCEHQAdToo0REKWlzmHNb2kjAQdSZZCUPOCyIO0=
 github.com/kaytu-io/plugin-kubernetes-internal v0.16.5/go.mod h1:m04o/vTOTW9G+xZUTGEl6m/JD6erULWi6RpA9ToCaLU=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
