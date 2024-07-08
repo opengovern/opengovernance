@@ -243,6 +243,12 @@ func (s *Service) EC2InstanceRecommendation(
 		err = fmt.Errorf("failed to get current ec2 instance license price: %s", err.Error())
 		return nil, err
 	}
+
+	s.logger.Info("Show preferences", zap.Any("preferences", preferences))
+	for k, v := range preferences {
+		s.logger.Info("Show preference", zap.String("key", k), zap.Any("value", v))
+	}
+
 	current := entity.RightsizingEC2Instance{
 		Region:            currentInstanceType.RegionCode,
 		InstanceType:      currentInstanceType.InstanceType,
@@ -637,6 +643,11 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		Max: funcP(throughputUsageBytes.Max, throughputUsageBytes.Max, func(a, _ float64) float64 { return a / (1024 * 1024) }),
 	}
 	sizeUsage := extractUsage(metrics["disk_used_percent"], usageAverageType)
+
+	s.logger.Info("Show preferences", zap.Any("preferences", preferences))
+	for k, v := range preferences {
+		s.logger.Info("Show preference", zap.String("key", k), zap.Any("value", v))
+	}
 
 	size := float64(0)
 	if size == 0 && volume.Size != nil {
