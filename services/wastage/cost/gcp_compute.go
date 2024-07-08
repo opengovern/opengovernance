@@ -23,6 +23,12 @@ func (s *Service) GetGCPComputeInstanceCost(ctx context.Context, instance gcp.Gc
 	valuesMap["machine_type"] = instance.MachineType
 	valuesMap["zone"] = instance.Zone
 
+	purcharseOption := "on_demand"
+	if instance.Preemptible {
+		purcharseOption = "preemptible"
+	}
+	valuesMap["purchase_option"] = purcharseOption
+
 	valuesMap["pennywise_usage"] = map[string]any{}
 
 	req.Resources = append(req.Resources, schema.ResourceDef{

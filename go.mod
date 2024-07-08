@@ -50,7 +50,7 @@ require (
 	github.com/kaytu-io/kaytu-util v0.0.0-20240604043338-1b0eea1a5455
 	github.com/kaytu-io/pennywise v1.7.16
 	github.com/kaytu-io/plugin-aws v0.6.18
-	github.com/kaytu-io/plugin-gcp v0.0.0-20240702123438-fae6d07b7c6e
+	github.com/kaytu-io/plugin-gcp v0.0.0-20240708084657-b285c6193f9f
 	github.com/kaytu-io/plugin-kubernetes-internal v0.16.5
 	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.11.4
@@ -99,9 +99,11 @@ require (
 
 require (
 	cloud.google.com/go v0.112.1 // indirect
+	cloud.google.com/go/compute v1.25.1 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/longrunning v0.5.5 // indirect
+	cloud.google.com/go/monitoring v1.18.0 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
@@ -483,7 +485,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/kaytu v0.14.3 // indirect
+	github.com/kaytu-io/kaytu v0.14.6 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
