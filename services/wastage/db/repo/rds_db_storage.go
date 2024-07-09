@@ -121,7 +121,7 @@ func (r *RDSDBStorageRepoImpl) getMagneticTotalPrice(ctx context.Context, dbStor
 	}
 	iopsCost = iopsStorage.PricePerUnit * millionIoPerMonth
 
-	costBreakdown := fmt.Sprintf("Size: $%.2f * %d\n + IOPS: $%.2f * %.2f (million IOPS per month)", dbStorage.PricePerUnit, *volumeSize, iopsStorage.PricePerUnit, millionIoPerMonth)
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d\n + IOPS: $%.5f * %.2f (million IOPS per month)", dbStorage.PricePerUnit, *volumeSize, iopsStorage.PricePerUnit, millionIoPerMonth)
 
 	return sizeCost + iopsCost, costBreakdown, nil
 }
@@ -368,7 +368,7 @@ func (r *RDSDBStorageRepoImpl) getAuroraGeneralPurposeTotalPrice(ctx context.Con
 	}
 	iopsCost = iopsStorage.PricePerUnit * millionIoPerMonth
 
-	costBreakdown := fmt.Sprintf("Size: $%.2f * %d\n + IOPS: $%.2f * %.2f (million IOPS per month)", dbStorage.PricePerUnit, *volumeSize, iopsStorage.PricePerUnit, millionIoPerMonth)
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d\n + IOPS: $%.5f * %.2f (million IOPS per month)", dbStorage.PricePerUnit, *volumeSize, iopsStorage.PricePerUnit, millionIoPerMonth)
 
 	return sizeCost + iopsCost, costBreakdown, nil
 
