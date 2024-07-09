@@ -8,6 +8,7 @@ import (
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage/limit"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/recommendation"
@@ -30,11 +31,10 @@ type Server struct {
 }
 
 func NewServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool,
-	usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo) *Server {
-	limitService := newLimitService(logger, userRepo, orgRepo, usageRepo)
+	usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service, limitSvc *limit.Service) *Server {
 	kuberServer := newKubernetesPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
 	gcpServer := newGcpPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc)
-	awsServer := newAwsPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc, limitService)
+	awsServer := newAwsPluginServer(logger, cfg, blobClient, blobWorkerPool, usageRepo, recomSvc, limitSvc)
 
 	svr := Server{
 		logger:                 logger,

@@ -1,6 +1,6 @@
-package wastage
+package limit
 
-var (
+const (
 	UserEC2InstanceLimit = int32(500)
 	UserEBSVolumeLimit   = int32(500)
 	UserRDSInstanceLimit = int32(100)

@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage/limit"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
@@ -43,11 +44,11 @@ type awsPluginServer struct {
 	usageRepo repo.UsageV2Repo
 	recomSvc  *recommendation.Service
 
-	limitService *LimitService
+	limitService *limit.Service
 }
 
 func newAwsPluginServer(logger *zap.Logger, cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool,
-	usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service, limitService *LimitService) *awsPluginServer {
+	usageRepo repo.UsageV2Repo, recomSvc *recommendation.Service, limitService *limit.Service) *awsPluginServer {
 
 	return &awsPluginServer{
 		cfg:            cfg,
@@ -194,25 +195,25 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 		return nil, fmt.Errorf("plugin version is no longer supported - please update to the latest version")
 	}
 
-	//ok, err = s.limitService.checkAccountsLimit(userId, req.Identification["org_m_email"], req.Identification["account"])
+	//ok, err = s.limitService.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	//if err != nil {
 	//	s.logger.Error("failed to check profile limit", zap.Error(err))
 	//	return nil, err
 	//}
 	//if !ok {
-	//	err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "profile")
+	//err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
 	//	if err != nil {
 	//		return nil, err
 	//	}
 	//}
 	//
-	//ok, err = s.limitService.checkEC2InstanceLimit(userId, req.Identification["org_m_email"])
+	//ok, err = s.limitService.CheckEC2InstanceLimit(ctx, userId, req.Identification["org_m_email"])
 	//if err != nil {
 	//	s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
 	//	return nil, err
 	//}
 	//if !ok {
-	//	err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "ec2 instance")
+	//	err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "ec2 instance")
 	//	if err != nil {
 	//		return nil, err
 	//	}
@@ -357,25 +358,25 @@ func (s *awsPluginServer) RDSInstanceOptimization(ctx context.Context, req *aws.
 		return nil, fmt.Errorf("plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err = s.limitService.checkAccountsLimit(userId, req.Identification["org_m_email"], req.Identification["account"])
+	ok, err = s.limitService.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return nil, err
 	}
 	if !ok {
-		err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "profile")
+		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	ok, err = s.limitService.checkRDSInstanceLimit(userId, req.Identification["org_m_email"])
+	ok, err = s.limitService.CheckRDSInstanceLimit(ctx, userId, req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds instance limit", zap.Error(err))
 		return nil, err
 	}
 	if !ok {
-		err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "rds instance")
+		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "rds instance")
 		if err != nil {
 			return nil, err
 		}
@@ -528,25 +529,25 @@ func (s *awsPluginServer) RDSClusterOptimization(ctx context.Context, req *aws.R
 		RightSizing: make(map[string]*aws.RDSInstanceRightSizingRecommendation),
 	}
 
-	ok, err = s.limitService.checkAccountsLimit(userId, req.Identification["org_m_email"], req.Identification["account"])
+	ok, err = s.limitService.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return nil, err
 	}
 	if !ok {
-		err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "profile")
+		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	ok, err = s.limitService.checkRDSClusterLimit(userId, req.Identification["org_m_email"])
+	ok, err = s.limitService.CheckRDSClusterLimit(ctx, userId, req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds cluster limit", zap.Error(err))
 		return nil, err
 	}
 	if !ok {
-		err = s.limitService.checkPremiumAndSendErr(userId, req.Identification["org_m_email"], "rds cluster")
+		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "rds cluster")
 		if err != nil {
 			return nil, err
 		}

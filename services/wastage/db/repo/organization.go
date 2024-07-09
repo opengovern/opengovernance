@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"errors"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -12,7 +13,7 @@ type OrganizationRepo interface {
 	Update(id string, m *model.Organization) error
 	Delete(id string) error
 	List() ([]model.Organization, error)
-	Get(id string) (*model.Organization, error)
+	Get(ctx context.Context, id string) (*model.Organization, error)
 }
 
 type OrganizationRepoImpl struct {
@@ -46,9 +47,9 @@ func (r *OrganizationRepoImpl) List() ([]model.Organization, error) {
 	return ms, nil
 }
 
-func (r *OrganizationRepoImpl) Get(id string) (*model.Organization, error) {
+func (r *OrganizationRepoImpl) Get(ctx context.Context, id string) (*model.Organization, error) {
 	var m model.Organization
-	tx := r.db.Conn().Model(&model.Organization{}).Where("organization_id=?", id).First(&m)
+	tx := r.db.Conn().WithContext(ctx).Model(&model.Organization{}).Where("organization_id=?", id).First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

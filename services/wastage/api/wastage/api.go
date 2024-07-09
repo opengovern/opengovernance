@@ -15,6 +15,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage/limit"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
@@ -48,9 +49,10 @@ type API struct {
 	orgRepo        repo.OrganizationRepo
 	recomSvc       *recommendation.Service
 	ingestionSvc   *ingestion.Service
+	limitsSvc      *limit.Service
 }
 
-func New(cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
+func New(cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *pond.WorkerPool, costSvc *cost.Service, recomSvc *recommendation.Service, ingestionService *ingestion.Service, limitsSvc *limit.Service, usageV1Repo repo.UsageRepo, usageRepo repo.UsageV2Repo, userRepo repo.UserRepo, orgRepo repo.OrganizationRepo, logger *zap.Logger) API {
 	return API{
 		cfg:            cfg,
 		blobClient:     blobClient,
@@ -62,6 +64,7 @@ func New(cfg config.WastageConfig, blobClient *azblob.Client, blobWorkerPool *po
 		userRepo:       userRepo,
 		orgRepo:        orgRepo,
 		ingestionSvc:   ingestionService,
+		limitsSvc:      limitsSvc,
 		tracer:         otel.GetTracerProvider().Tracer("wastage.http.sources"),
 		logger:         logger.Named("wastage-api"),
 	}
@@ -227,25 +230,26 @@ func (s API) EC2Instance(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err := s.checkAccountsLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"], req.Identification["account"])
+	userId := httpserver.GetUserID(echoCtx)
+	ok, err := s.limitsSvc.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "profile")
+		err = s.limitsSvc.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
 	}
 
-	ok, err = s.checkEC2InstanceLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"])
+	ok, err = s.limitsSvc.CheckEC2InstanceLimit(ctx, userId, req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "ec2 instance")
+		err = s.limitsSvc.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "ec2 instance")
 		if err != nil {
 			return err
 		}
@@ -400,25 +404,27 @@ func (s API) AwsRDS(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err := s.checkAccountsLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"], req.Identification["account"])
+	userId := httpserver.GetUserID(echoCtx)
+
+	ok, err := s.limitsSvc.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "profile")
+		err = s.limitsSvc.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
 	}
 
-	ok, err = s.checkRDSInstanceLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"])
+	ok, err = s.limitsSvc.CheckRDSInstanceLimit(ctx, userId, req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds instance limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "rds instance")
+		err = s.limitsSvc.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "rds instance")
 		if err != nil {
 			return err
 		}
@@ -570,25 +576,27 @@ func (s API) AwsRDSCluster(echoCtx echo.Context) error {
 		RightSizing: make(map[string]entity.AwsRdsRightsizingRecommendation),
 	}
 
-	ok, err := s.checkAccountsLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"], req.Identification["account"])
+	userId := httpserver.GetUserID(echoCtx)
+
+	ok, err := s.limitsSvc.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "profile")
+		err = s.limitsSvc.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return err
 		}
 	}
 
-	ok, err = s.checkRDSClusterLimit(httpserver.GetUserID(echoCtx), req.Identification["org_m_email"])
+	ok, err = s.limitsSvc.CheckRDSClusterLimit(ctx, userId, req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws rds cluster limit", zap.Error(err))
 		return err
 	}
 	if !ok {
-		err = s.checkPremiumAndSendErr(echoCtx, req.Identification["org_m_email"], "rds cluster")
+		err = s.limitsSvc.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "rds cluster")
 		if err != nil {
 			return err
 		}
@@ -697,7 +705,7 @@ func (s API) MigrateUsages(echoCtx echo.Context) error {
 		ctx := context.Background()
 		s.logger.Info("Usage table migration started")
 
-		for true {
+		for {
 			usage, err := s.usageV1Repo.GetRandomNotMoved()
 			if err != nil {
 				s.logger.Error("error while getting usage_v1 usages list", zap.Error(err))
@@ -975,40 +983,6 @@ func (s API) FillRdsCosts(echoCtx echo.Context) error {
 	}()
 
 	return echoCtx.NoContent(http.StatusOK)
-}
-
-func (s API) checkPremiumAndSendErr(echoCtx echo.Context, orgEmail string, service string) error {
-	user, err := s.userRepo.Get(httpserver.GetUserID(echoCtx))
-	if err != nil {
-		s.logger.Error("failed to get user", zap.Error(err))
-		return err
-	}
-	if user != nil && user.PremiumUntil != nil {
-		if time.Now().Before(*user.PremiumUntil) {
-			return nil
-		}
-	}
-
-	if orgEmail != "" && strings.Contains(orgEmail, "@") {
-		org := strings.Split(orgEmail, "@")
-		if org[1] != "" {
-			orgName := strings.Split(orgEmail, "@")
-			org, err := s.orgRepo.Get(orgName[1])
-			if err != nil {
-				s.logger.Error("failed to get organization", zap.Error(err))
-				return err
-			}
-			if org != nil && org.PremiumUntil != nil {
-				if time.Now().Before(*org.PremiumUntil) {
-					return nil
-				}
-			}
-		}
-	}
-
-	err = fmt.Errorf("reached the %s limit for both user and organization", service)
-	s.logger.Error(err.Error(), zap.String("auth0UserId", httpserver.GetUserID(echoCtx)), zap.String("orgEmail", orgEmail))
-	return nil
 }
 
 func (s API) CreateUser(echoCtx echo.Context) error {
