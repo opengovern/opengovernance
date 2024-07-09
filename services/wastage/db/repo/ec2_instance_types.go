@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
@@ -18,9 +19,9 @@ type EC2InstanceTypeRepo interface {
 	UpdateNullExtrasByType(tableName string, tx *gorm.DB, instanceType string, extras map[string]any) error
 	Delete(tableName string, id uint) error
 	List() ([]model.EC2InstanceType, error)
-	GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
+	GetCheapestByCoreAndNetwork(ctx context.Context, bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error)
 	Truncate(tx *gorm.DB) error
-	ListByInstanceType(instanceType, operation, region string) ([]model.EC2InstanceType, error)
+	ListByInstanceType(ctx context.Context, instanceType, operation, region string) ([]model.EC2InstanceType, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(tableName string) error
 	CreateNewTable() (string, error)
@@ -63,9 +64,9 @@ func (r *EC2InstanceTypeRepoImpl) Get(id uint) (*model.EC2InstanceType, error) {
 	return &m, nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) GetCheapestByCoreAndNetwork(ctx context.Context, bandwidth float64, pref map[string]interface{}) (*model.EC2InstanceType, error) {
 	var m model.EC2InstanceType
-	tx := r.db.Conn().Table(r.viewName).
+	tx := r.db.Conn().Table(r.viewName).WithContext(ctx).
 		Where("network_max_bandwidth >= ?", bandwidth).
 		Where("capacity_status = 'Used'").
 		Where("price_per_unit != 0")
@@ -129,9 +130,9 @@ func (r *EC2InstanceTypeRepoImpl) UpdateNullExtrasByType(tableName string, tx *g
 	return nil
 }
 
-func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(instanceType, operation, region string) ([]model.EC2InstanceType, error) {
+func (r *EC2InstanceTypeRepoImpl) ListByInstanceType(ctx context.Context, instanceType, operation, region string) ([]model.EC2InstanceType, error) {
 	var ms []model.EC2InstanceType
-	tx := r.db.Conn().Table(r.viewName).
+	tx := r.db.Conn().Table(r.viewName).WithContext(ctx).
 		Where("instance_type = ? AND capacity_status = 'Used'", instanceType).
 		Where("region_code = ?", region).
 		Where("operation = ?", operation).
