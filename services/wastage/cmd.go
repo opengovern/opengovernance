@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/api"
 	grpc_server "github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage/grpc-server"
+	"github.com/kaytu-io/kaytu-engine/services/wastage/api/wastage/limit"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/config"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
@@ -120,7 +121,9 @@ func Command() *cobra.Command {
 				pond.IdleTimeout(10*time.Second),
 				pond.MinWorkers(1))
 
-			grpcServer := grpc_server.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc, userRepo, orgRepo)
+			limitSvc := limit.NewLimitService(logger, userRepo, orgRepo, usageV2Repo)
+
+			grpcServer := grpc_server.NewServer(logger, cnf, blobClient, blobWorkerPool, usageV2Repo, recomSvc, limitSvc)
 			err = grpc_server.StartGrpcServer(grpcServer, cnf.Grpc.Address, AuthGRPCURI)
 			if err != nil {
 				return err
@@ -130,7 +133,7 @@ func Command() *cobra.Command {
 				ctx,
 				logger,
 				cnf.Http.Address,
-				api.New(cnf, blobClient, blobWorkerPool, costSvc, recomSvc, ingestionSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo, logger),
+				api.New(cnf, logger, blobClient, blobWorkerPool, costSvc, recomSvc, ingestionSvc, limitSvc, usageV1Repo, usageV2Repo, userRepo, orgRepo),
 			)
 		},
 	}

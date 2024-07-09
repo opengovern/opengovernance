@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
@@ -16,14 +17,14 @@ type UsageV2Repo interface {
 	GetByAccountID(endpoint, accountId, auth0UserId string) ([]uint, error)
 	GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType string) ([]uint, error)
 	GetCostZero() (*model.UsageV2, error)
-	GetRDSInstanceOptimizationsCountForUser(userId string) (int64, error)
-	GetRDSInstanceOptimizationsCountForOrg(orgAddress string) (int64, error)
-	GetRDSClusterOptimizationsCountForUser(userId string) (int64, error)
-	GetRDSClusterOptimizationsCountForOrg(orgAddress string) (int64, error)
-	GetEC2InstanceOptimizationsCountForUser(userId string) (int64, error)
-	GetEC2InstanceOptimizationsCountForOrg(orgAddress string) (int64, error)
-	GetAccountsForUser(userId string) ([]string, error)
-	GetAccountsForOrg(orgAddress string) ([]string, error)
+	GetRDSInstanceOptimizationsCountForUser(ctx context.Context, userId string) (int64, error)
+	GetRDSInstanceOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error)
+	GetRDSClusterOptimizationsCountForUser(ctx context.Context, userId string) (int64, error)
+	GetRDSClusterOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error)
+	GetEC2InstanceOptimizationsCountForUser(ctx context.Context, userId string) (int64, error)
+	GetEC2InstanceOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error)
+	GetAccountsForUser(ctx context.Context, userId string) ([]string, error)
+	GetAccountsForOrg(ctx context.Context, orgAddress string) ([]string, error)
 }
 
 type UsageV2RepoImpl struct {
@@ -146,9 +147,9 @@ func (r *UsageV2RepoImpl) GetCostZero() (*model.UsageV2, error) {
 	return &m, nil
 }
 
-func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForUser(userId string) (int64, error) {
+func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForUser(ctx context.Context, userId string) (int64, error) {
 	var count int64
-	err := r.db.Conn().
+	err := r.db.Conn().WithContext(ctx).
 		Raw(`
 			SELECT COUNT(*) 
 			FROM usage_v2 
@@ -163,9 +164,9 @@ func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForUser(userId string)
 	return count, nil
 }
 
-func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForOrg(orgAddress string) (int64, error) {
+func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error) {
 	var count int64
-	err := r.db.Conn().
+	err := r.db.Conn().WithContext(ctx).
 		Raw(`
 			SELECT COUNT(*) 
 			FROM usage_v2 
@@ -180,9 +181,9 @@ func (r *UsageV2RepoImpl) GetRDSInstanceOptimizationsCountForOrg(orgAddress stri
 	return count, nil
 }
 
-func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForUser(userId string) (int64, error) {
+func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForUser(ctx context.Context, userId string) (int64, error) {
 	var count int64
-	err := r.db.Conn().
+	err := r.db.Conn().WithContext(ctx).
 		Raw(`
 			SELECT COUNT(*) 
 			FROM usage_v2 
@@ -197,9 +198,9 @@ func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForUser(userId string) 
 	return count, nil
 }
 
-func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForOrg(orgAddress string) (int64, error) {
+func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error) {
 	var count int64
-	err := r.db.Conn().
+	err := r.db.Conn().WithContext(ctx).
 		Raw(`
 			SELECT COUNT(*) 
 			FROM usage_v2 
@@ -214,9 +215,9 @@ func (r *UsageV2RepoImpl) GetRDSClusterOptimizationsCountForOrg(orgAddress strin
 	return count, nil
 }
 
-func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForUser(userId string) (int64, error) {
+func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForUser(ctx context.Context, userId string) (int64, error) {
 	var count int64
-	err := r.db.Conn().
+	err := r.db.Conn().WithContext(ctx).
 		Raw(`
 			SELECT COUNT(*) 
 			FROM usage_v2 
@@ -231,9 +232,9 @@ func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForUser(userId string)
 	return count, nil
 }
 
-func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForOrg(orgAddress string) (int64, error) {
+func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error) {
 	var count int64
-	err := r.db.Conn().
+	err := r.db.Conn().WithContext(ctx).
 		Raw(`
 			SELECT COUNT(*) 
 			FROM usage_v2 
@@ -276,9 +277,9 @@ func (r *UsageV2RepoImpl) GetEC2InstanceOptimizationsCountForOrg(orgAddress stri
 //	return count, nil
 //}
 
-func (r *UsageV2RepoImpl) GetAccountsForUser(userId string) ([]string, error) {
+func (r *UsageV2RepoImpl) GetAccountsForUser(ctx context.Context, userId string) ([]string, error) {
 	var accounts []string
-	err := r.db.Conn().Model(&model.UsageV2{}).
+	err := r.db.Conn().Model(&model.UsageV2{}).WithContext(ctx).
 		Select("distinct(statistics ->> 'accountID') as accounts").
 		Where("statistics ->> 'auth0UserId' = ?", userId).
 		Where("request ->> 'loading' <> 'true'").
@@ -289,9 +290,9 @@ func (r *UsageV2RepoImpl) GetAccountsForUser(userId string) ([]string, error) {
 	return accounts, nil
 }
 
-func (r *UsageV2RepoImpl) GetAccountsForOrg(orgAddress string) ([]string, error) {
+func (r *UsageV2RepoImpl) GetAccountsForOrg(ctx context.Context, orgAddress string) ([]string, error) {
 	var accounts []string
-	err := r.db.Conn().Model(&model.UsageV2{}).
+	err := r.db.Conn().Model(&model.UsageV2{}).WithContext(ctx).
 		Select("distinct(statistics ->> 'accountID') as accounts").
 		Where("statistics ->> 'orgEmail' LIKE ?", fmt.Sprintf("%%@%s", orgAddress)).
 		Where("request ->> 'loading' <> 'true'").

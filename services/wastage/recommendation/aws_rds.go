@@ -168,7 +168,7 @@ func (s *Service) AwsRdsRecommendation(
 		awsRdsDbKind = awsRdsDbType{strings.ToLower(rdsInstance.Engine), ""}
 	}
 
-	currentInstanceTypeList, err := s.awsRDSDBInstanceRepo.ListByInstanceType(region, rdsInstance.InstanceType, awsRdsDbKind.Engine, awsRdsDbKind.Edition, string(rdsInstance.ClusterType))
+	currentInstanceTypeList, err := s.awsRDSDBInstanceRepo.ListByInstanceType(ctx, region, rdsInstance.InstanceType, awsRdsDbKind.Engine, awsRdsDbKind.Edition, string(rdsInstance.ClusterType))
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +371,7 @@ func (s *Service) AwsRdsRecommendation(
 		}
 	}
 
-	rightSizedInstanceRow, err := s.awsRDSDBInstanceRepo.GetCheapestByPref(instancePref)
+	rightSizedInstanceRow, err := s.awsRDSDBInstanceRepo.GetCheapestByPref(ctx, instancePref)
 	if err != nil {
 		s.logger.Error("failed to get rds instance type", zap.Error(err))
 		return nil, err
@@ -434,7 +434,8 @@ func (s *Service) AwsRdsRecommendation(
 
 	var resSize, resIops int32
 	var resThroughputMB float64
-	rightSizedStorageRow, resSize, resIops, resThroughputMB, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)
+	var costBreakdown string
+	rightSizedStorageRow, resSize, resIops, resThroughputMB, costBreakdown, err = s.awsRDSDBStorageRepo.GetCheapestBySpecs(ctx, region, resultEngine, resultEdition, resultClusterType, neededStorageSize, neededStorageIops, neededStorageThroughputMB, validTypes)
 	if err != nil {
 		s.logger.Error("failed to get rds storage type", zap.Error(err))
 		return nil, err
@@ -572,7 +573,7 @@ func (s *Service) AwsRdsRecommendation(
 		if *preferences["ExcludeUpsizingFeature"] == "Yes" {
 			if recommendation.Recommended != nil && recommendation.Recommended.Cost > recommendation.Current.Cost {
 				recommendation.Recommended = &recommendation.Current
-				recommendation.Description = "No recommendation available as upsizing feature is disabled"
+				recommendation.Description += "\nNo recommendation available as upsizing feature is disabled"
 				return &recommendation, nil
 			}
 		}
@@ -580,20 +581,21 @@ func (s *Service) AwsRdsRecommendation(
 
 	var computeDescription, storageDescription string
 	if rightSizedInstanceRow != nil {
-		computeDescription, err = s.generateRdsInstanceComputeDescription(rdsInstance, region, &currentInstanceRow,
+		computeDescription, err = s.generateRdsInstanceComputeDescription(ctx, rdsInstance, region, &currentInstanceRow,
 			rightSizedInstanceRow, metrics, excluedBurstable, preferences, neededVCPU, neededMemoryGb, neededNetworkThroughput, usageAverageType)
 		if err != nil {
 			s.logger.Error("failed to generate rds instance compute description", zap.Error(err))
 		}
 	}
 	if rightSizedStorageRow != nil && recommended != nil {
-		storageDescription, err = s.generateRdsInstanceStorageDescription(rdsInstance, region,
+		storageDescription, err = s.generateRdsInstanceStorageDescription(ctx, rdsInstance, region,
 			*rdsInstance.StorageType, rdsInstance.StorageSize, rdsInstance.StorageIops, rdsInstance.StorageThroughput,
 			*recommended.StorageType, recommended.StorageSize, recommended.StorageIops, recommended.StorageThroughput, metrics,
 			preferences, neededStorageSize, neededStorageIops, neededStorageThroughputMB, usageAverageType)
 		if err != nil {
 			s.logger.Error("failed to generate rds storage compute description", zap.Error(err))
 		}
+		storageDescription += "\nStorage cost break down: " + costBreakdown
 	}
 
 	recommendation.Description = computeDescription + "\n" + storageDescription
@@ -624,7 +626,7 @@ func extractFromRdsInstance(instance entity.AwsRds, i model.RDSDBInstance, regio
 	return ""
 }
 
-func (s *Service) generateRdsInstanceComputeDescription(rdsInstance entity.AwsRds, region string, currentInstanceType,
+func (s *Service) generateRdsInstanceComputeDescription(ctx context.Context, rdsInstance entity.AwsRds, region string, currentInstanceType,
 	rightSizedInstanceType *model.RDSDBInstance, metrics map[string][]types2.Datapoint, excludeBurstable bool,
 	preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64, usageAverageType UsageAverageType) (string, error) {
 	usageCpuPercent := extractUsage(metrics["CPUUtilization"], usageAverageType)
@@ -710,7 +712,7 @@ User's needs:
 		prompt += "\nBurstable instances are excluded."
 	}
 	resp, err := s.openaiSvc.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4TurboPreview,
 			Messages: []openai.ChatCompletionMessage{
@@ -732,7 +734,7 @@ User's needs:
 	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
 }
 
-func (s *Service) generateRdsInstanceStorageDescription(rdsInstance entity.AwsRds, region string,
+func (s *Service) generateRdsInstanceStorageDescription(ctx context.Context, rdsInstance entity.AwsRds, region string,
 	currStorageType string, currStorageSize *int32, currStorageIops *int32, currStorageThroughput *float64,
 	recStorageType string, recStorageSize *int32, recStorageIops *int32, recStorageThroughput *float64, metrics map[string][]types2.Datapoint,
 	preferences map[string]*string, neededStorageSize int32, neededStorageIops int32, neededStorageThroughputMB float64, usageAverageType UsageAverageType) (string, error) {
@@ -839,7 +841,7 @@ User's needs:
 %s
 `, recStorageType, currStorageType, usage, needs)
 	resp, err := s.openaiSvc.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4TurboPreview,
 			Messages: []openai.ChatCompletionMessage{

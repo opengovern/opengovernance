@@ -210,7 +210,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		suggestedMachineType = machine
 	}
 
-	description, err := s.generateGcpComputeInstanceDescription(region, instance, metrics, preferences, neededCPU,
+	description, err := s.generateGcpComputeInstanceDescription(ctx, region, instance, metrics, preferences, neededCPU,
 		neededMemoryMb, machine, suggestedMachineType)
 	if err != nil {
 		s.logger.Error("Failed to generate description", zap.Error(err))
@@ -413,7 +413,7 @@ func (s *Service) GCPComputeDiskRecommendation(
 		s.logger.Info("calc price debug --- after setting result", zap.Any("result recommended", result.Recommended))
 	}
 
-	description, err := s.generateGcpComputeDiskDescription(disk, currentMachine, recommendedMachine, metrics,
+	description, err := s.generateGcpComputeDiskDescription(ctx, disk, currentMachine, recommendedMachine, metrics,
 		preferences, readIopsLimit, writeIopsLimit, readThroughputLimit, writeThroughputLimit, neededReadIops,
 		neededWriteIops, neededReadThroughput, neededWriteThroughput, recommendedReadIopsLimit, recommendedWriteIopsLimit,
 		recommendedReadThroughputLimit, recommendedWriteThroughputLimit, *suggestedType, *suggestedSize)
@@ -699,7 +699,7 @@ func roundUpToMultipleOf(number, multipleOf int64) int64 {
 	return ((number / multipleOf) + 1) * multipleOf
 }
 
-func (s *Service) generateGcpComputeInstanceDescription(region string, instance gcp.GcpComputeInstance,
+func (s *Service) generateGcpComputeInstanceDescription(ctx context.Context, region string, instance gcp.GcpComputeInstance,
 	metrics map[string]*gcp.Metric, preferences map[string]*wrapperspb.StringValue,
 	neededCpu, neededMemoryMb float64, currentMachine *model.GCPComputeMachineType,
 	suggestedMachineType *model.GCPComputeMachineType) (string, error) {
@@ -751,7 +751,7 @@ User's needs:
 `, suggestedMachineType.MachineType, currentMachine.MachineType, usage, needs)
 
 	resp, err := s.openaiSvc.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4TurboPreview,
 			Messages: []openai.ChatCompletionMessage{
@@ -776,7 +776,7 @@ User's needs:
 	return strings.TrimSpace(resp.Choices[0].Message.Content), nil
 }
 
-func (s *Service) generateGcpComputeDiskDescription(disk gcp.GcpComputeDisk,
+func (s *Service) generateGcpComputeDiskDescription(ctx context.Context, disk gcp.GcpComputeDisk,
 	currentMachine *model.GCPComputeMachineType,
 	recommendedMachine *model.GCPComputeMachineType,
 	metrics gcp.DiskMetrics, preferences map[string]*wrapperspb.StringValue,
@@ -854,7 +854,7 @@ User's needs:
 `, suggestedType, suggestedSize, disk.DiskType, disk.DiskSize.GetValue(), usage, needs)
 
 	resp, err := s.openaiSvc.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4TurboPreview,
 			Messages: []openai.ChatCompletionMessage{

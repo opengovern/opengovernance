@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/services/wastage/db/connector"
@@ -18,8 +19,8 @@ type RDSDBInstanceRepo interface {
 	List() ([]model.RDSDBInstance, error)
 	Truncate(tx *gorm.DB) error
 	UpdateNilEBSThroughput(tx *gorm.DB, tableName string) error
-	ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
-	GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error)
+	ListByInstanceType(ctx context.Context, region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error)
+	GetCheapestByPref(ctx context.Context, pref map[string]any) (*model.RDSDBInstance, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(tableName string) error
 	CreateNewTable() (string, error)
@@ -90,9 +91,9 @@ func (r *RDSDBInstanceRepoImpl) Truncate(tx *gorm.DB) error {
 	return nil
 }
 
-func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error) {
+func (r *RDSDBInstanceRepoImpl) ListByInstanceType(ctx context.Context, region, instanceType, engine, engineEdition, clusterType string) ([]model.RDSDBInstance, error) {
 	var ms []model.RDSDBInstance
-	tx := r.db.Conn().Table(r.viewName).
+	tx := r.db.Conn().Table(r.viewName).WithContext(ctx).
 		Where("region_code = ?", region).
 		Where("instance_type = ?", instanceType).
 		Where("database_engine = ?", engine).
@@ -107,9 +108,9 @@ func (r *RDSDBInstanceRepoImpl) ListByInstanceType(region, instanceType, engine,
 	return ms, nil
 }
 
-func (r *RDSDBInstanceRepoImpl) GetCheapestByPref(pref map[string]any) (*model.RDSDBInstance, error) {
+func (r *RDSDBInstanceRepoImpl) GetCheapestByPref(ctx context.Context, pref map[string]any) (*model.RDSDBInstance, error) {
 	var m model.RDSDBInstance
-	tx := r.db.Conn().Table(r.viewName).
+	tx := r.db.Conn().Table(r.viewName).WithContext(ctx).
 		Where("price_per_unit != 0")
 	for k, v := range pref {
 		tx = tx.Where(k, v)
