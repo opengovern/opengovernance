@@ -922,7 +922,7 @@ func (s API) GetLastUsageIDByAccountID(echoCtx echo.Context) error {
 	endpoint := echoCtx.QueryParam("endpoint")
 	groupByType := echoCtx.QueryParam("groupBy")
 
-	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType, randomID)
+	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId, auth0UserId, randomID, groupByType)
 	if err != nil {
 		return err
 	}
