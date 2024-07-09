@@ -789,7 +789,7 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		ProvisionedThroughput: nil,
 		Cost:                  0,
 	}
-	result.Description = fmt.Sprintf("- cost breakdown: %s", costBreakdown)
+	result.Description = fmt.Sprintf("- cost breakdown: %s\n", costBreakdown)
 	newVolume := volume
 	result.Recommended.Tier = newType
 	newVolume.VolumeType = newType
