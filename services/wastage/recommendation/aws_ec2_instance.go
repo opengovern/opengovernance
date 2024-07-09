@@ -91,19 +91,6 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 	for k, v := range volumeMetrics {
 		newVolumeMetrics[k] = convertMetrics(v.Metrics)
 	}
-	for k, m := range newMetrics {
-		if m != nil {
-			s.logger.Info("New Metric Info", zap.String("key", k), zap.Any("length", len(m)))
-		}
-	}
-	for v, mm := range newVolumeMetrics {
-		for k, m := range mm {
-			if m != nil {
-				s.logger.Info("New Volume Metric Info", zap.String("volume", v),
-					zap.String("key", k), zap.Any("length", len(m)))
-			}
-		}
-	}
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
 		newPreferences[k] = WrappedToString(v)
@@ -223,7 +210,7 @@ func (s *Service) EC2InstanceRecommendation(
 	ebsThroughputUsage := extractUsage(ebsThroughputDatapoints, usageAverageType)
 	ebsIopsUsage := extractUsage(ebsIopsDatapoints, usageAverageType)
 
-	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(string(instance.InstanceType), instance.UsageOperation, region)
+	currentInstanceTypeList, err := s.ec2InstanceRepo.ListByInstanceType(ctx, string(instance.InstanceType), instance.UsageOperation, region)
 	if err != nil {
 		err = fmt.Errorf("failed to list instances by types: %s", err.Error())
 		return nil, err
@@ -352,7 +339,7 @@ func (s *Service) EC2InstanceRecommendation(
 	}
 
 	var recommended *entity.RightsizingEC2Instance
-	rightSizedInstanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(neededNetworkThroughput, pref)
+	rightSizedInstanceType, err := s.ec2InstanceRepo.GetCheapestByCoreAndNetwork(ctx, neededNetworkThroughput, pref)
 	if err != nil {
 		err = fmt.Errorf("failed to find cheapest ec2 instance: %s", err.Error())
 		return nil, err
@@ -427,7 +414,7 @@ func (s *Service) EC2InstanceRecommendation(
 	}
 
 	if rightSizedInstanceType != nil {
-		recommendation.Description, _ = s.generateEc2InstanceDescription(instance, region, &currentInstanceType, rightSizedInstanceType, metrics, excludeBurstable, preferences, neededCPU, neededMemory, neededNetworkThroughput)
+		recommendation.Description, _ = s.generateEc2InstanceDescription(ctx, instance, region, &currentInstanceType, rightSizedInstanceType, metrics, excludeBurstable, preferences, neededCPU, neededMemory, neededNetworkThroughput)
 	}
 
 	return &recommendation, nil
@@ -445,7 +432,7 @@ func PFloat(v *float64) float64 {
 	return *v
 }
 
-func (s *Service) generateEc2InstanceDescription(instance entity.EC2Instance, region string, currentInstanceType, rightSizedInstanceType *model.EC2InstanceType, metrics map[string][]types2.Datapoint, excludeBurstable bool, preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64) (string, error) {
+func (s *Service) generateEc2InstanceDescription(ctx context.Context, instance entity.EC2Instance, region string, currentInstanceType, rightSizedInstanceType *model.EC2InstanceType, metrics map[string][]types2.Datapoint, excludeBurstable bool, preferences map[string]*string, neededCPU, neededMemory, neededNetworkThroughput float64) (string, error) {
 	minCPU, avgCPU, maxCPU := minOfDatapoints(metrics["CPUUtilization"]), averageOfDatapoints(metrics["CPUUtilization"]), maxOfDatapoints(metrics["CPUUtilization"])
 	minMemory, avgMemory, maxMemory := minOfDatapoints(metrics["mem_used_percent"]), averageOfDatapoints(metrics["mem_used_percent"]), maxOfDatapoints(metrics["mem_used_percent"])
 	networkDatapoints := sumMergeDatapoints(metrics["NetworkIn"], metrics["NetworkOut"])
@@ -487,7 +474,7 @@ User's needs:
 		prompt += "\nBurstable instances are excluded."
 	}
 	resp, err := s.openaiSvc.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4TurboPreview,
 			Messages: []openai.ChatCompletionMessage{
@@ -593,12 +580,6 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 	newPreferences := make(map[string]*string)
 	for k, v := range preferences {
 		newPreferences[k] = WrappedToString(v)
-	}
-
-	for k, m := range newMetrics {
-		if m != nil {
-			s.logger.Info("New Metric Info", zap.String("key", k), zap.Any("length", len(m)))
-		}
 	}
 
 	s.logger.Info("EBSVolumeRecommendation parameters", zap.String("region", region), zap.Any("volume", newVolume),
@@ -790,7 +771,7 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		result.Current.BaselineIOPS = 0
 	}
 
-	newType, newSize, newBaselineIops, newBaselineThroughput, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
+	newType, newSize, newBaselineIops, newBaselineThroughput, costBreakdown, err := s.ebsVolumeRepo.GetCheapestTypeWithSpecs(ctx, region, int32(neededSize), int32(neededIops), neededThroughput, validTypes)
 	if err != nil {
 		if strings.Contains(err.Error(), "no feasible volume types found") {
 			return result, nil
@@ -808,11 +789,12 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 		ProvisionedThroughput: nil,
 		Cost:                  0,
 	}
+	result.Description = fmt.Sprintf("- cost breakdown: %s", costBreakdown)
 	newVolume := volume
 	result.Recommended.Tier = newType
 	newVolume.VolumeType = newType
 	if newType != volume.VolumeType {
-		result.Description = fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
+		result.Description += fmt.Sprintf("- change your volume from %s to %s\n", volume.VolumeType, newType)
 	}
 
 	if int32(neededSize) != getValueOrZero(volume.Size) {

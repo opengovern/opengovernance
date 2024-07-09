@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -19,7 +20,7 @@ type EBSVolumeTypeRepo interface {
 	Delete(tableName string, id uint) error
 	List() ([]model.EBSVolumeType, error)
 	Truncate(tx *gorm.DB) error
-	GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, error)
+	GetCheapestTypeWithSpecs(ctx context.Context, region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, string, error)
 	MoveViewTransaction(tableName string) error
 	RemoveOldTables(tableName string) error
 	CreateNewTable() (string, error)
@@ -90,7 +91,7 @@ func (r *EBSVolumeTypeRepoImpl) Truncate(tx *gorm.DB) error {
 	return nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getDimensionCostsByRegionVolumeTypeAndChargeType(regionCode string, volumeType types.VolumeType, chargeType model.EBSVolumeChargeType) ([]model.EBSVolumeType, error) {
+func (r *EBSVolumeTypeRepoImpl) getDimensionCostsByRegionVolumeTypeAndChargeType(ctx context.Context, regionCode string, volumeType types.VolumeType, chargeType model.EBSVolumeChargeType) ([]model.EBSVolumeType, error) {
 	var m []model.EBSVolumeType
 	tx := r.db.Conn().Table(r.viewName).
 		Where("region_code = ?", regionCode).
@@ -106,19 +107,19 @@ func (r *EBSVolumeTypeRepoImpl) getDimensionCostsByRegionVolumeTypeAndChargeType
 	return m, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getIo1TotalPrice(region string, volumeSize int32, iops int32) (float64, error) {
-	io1IopsPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeIo1, model.ChargeTypeIOPS)
+func (r *EBSVolumeTypeRepoImpl) getIo1TotalPrice(ctx context.Context, region string, volumeSize int32, iops int32) (float64, string, error) {
+	io1IopsPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeIo1, model.ChargeTypeIOPS)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	io1Iops := 0.0
 	for _, iops := range io1IopsPrices {
 		io1Iops = iops.PricePerUnit
 		break
 	}
-	io1SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeIo1, model.ChargeTypeSize)
+	io1SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeIo1, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	io1Size := 0.0
 	for _, sizes := range io1SizePrices {
@@ -126,14 +127,15 @@ func (r *EBSVolumeTypeRepoImpl) getIo1TotalPrice(region string, volumeSize int32
 		break
 	}
 	io1Price := io1Iops*float64(iops) + io1Size*float64(volumeSize)
+	costBreakdown := fmt.Sprintf("Provisioned IOPS: $%.2f * %d + Size: $%.2f * %d", io1Iops, iops, io1Size, volumeSize)
 
-	return io1Price, nil
+	return io1Price, costBreakdown, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getIo2TotalPrice(region string, volumeSize int32, iops int32) (float64, error) {
-	io2IopsPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeIo2, model.ChargeTypeIOPS)
+func (r *EBSVolumeTypeRepoImpl) getIo2TotalPrice(ctx context.Context, region string, volumeSize int32, iops int32) (float64, string, error) {
+	io2IopsPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeIo2, model.ChargeTypeIOPS)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	io2IopsTier1 := 0.0
 	io2IopsTier2 := 0.0
@@ -148,9 +150,9 @@ func (r *EBSVolumeTypeRepoImpl) getIo2TotalPrice(region string, volumeSize int32
 			io2IopsTier3 = iops.PricePerUnit
 		}
 	}
-	io2SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeIo2, model.ChargeTypeSize)
+	io2SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeIo2, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	io2Size := 0.0
 	for _, sizes := range io2SizePrices {
@@ -158,23 +160,27 @@ func (r *EBSVolumeTypeRepoImpl) getIo2TotalPrice(region string, volumeSize int32
 		break
 	}
 	io2Price := io2Size * float64(volumeSize)
-	if iops >= model.Io2ProvisionedIopsTier2UpperBound {
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d", io2Size, volumeSize)
+	if iops > model.Io2ProvisionedIopsTier2UpperBound {
 		io2Price += io2IopsTier3 * float64(iops-model.Io2ProvisionedIopsTier2UpperBound)
 		iops = model.Io2ProvisionedIopsTier2UpperBound
+		costBreakdown += fmt.Sprintf(" + IOPS Tier 3 (over %d): $%.2f * %d", model.Io2ProvisionedIopsTier2UpperBound, io2IopsTier3, iops-model.Io2ProvisionedIopsTier2UpperBound)
 	}
-	if iops >= model.Io2ProvisionedIopsTier1UpperBound {
+	if iops > model.Io2ProvisionedIopsTier1UpperBound {
 		io2Price += io2IopsTier2 * float64(iops-model.Io2ProvisionedIopsTier1UpperBound)
 		iops = model.Io2ProvisionedIopsTier1UpperBound
+		costBreakdown += fmt.Sprintf(" + IOPS Tier 2 (over %d under %d): $%.2f * %d", model.Io2ProvisionedIopsTier1UpperBound, model.Io2ProvisionedIopsTier2UpperBound, io2IopsTier2, iops-model.Io2ProvisionedIopsTier1UpperBound)
 	}
 	io2Price += io2IopsTier1 * float64(iops)
+	costBreakdown += fmt.Sprintf(" + IOPS Tier 1 (under %d): $%.2f * %d", model.Io2ProvisionedIopsTier1UpperBound, io2IopsTier1, iops)
 
-	return io2Price, nil
+	return io2Price, "", nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize *int32, iops int32) (float64, error) {
-	gp2Prices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeGp2, model.ChargeTypeSize)
+func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(ctx context.Context, region string, volumeSize *int32, iops int32) (float64, string, error) {
+	gp2Prices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeGp2, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	gp2Price := 0.0
 	for _, gp2 := range gp2Prices {
@@ -189,25 +195,27 @@ func (r *EBSVolumeTypeRepoImpl) getGp2TotalPrice(region string, volumeSize *int3
 		}
 	}
 
-	return gp2Price * float64(*volumeSize), nil
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d", gp2Price, *volumeSize)
+
+	return gp2Price * float64(*volumeSize), costBreakdown, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getGp3TotalPrice(region string, volumeSize int32, iops int32, throughput float64) (float64, error) {
+func (r *EBSVolumeTypeRepoImpl) getGp3TotalPrice(ctx context.Context, region string, volumeSize int32, iops int32, throughput float64) (float64, string, error) {
 	iops = max(iops-model.Gp3BaseIops, 0)
 	throughput = max(throughput-model.Gp3BaseThroughput, 0.0)
 
-	gp3SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeGp3, model.ChargeTypeSize)
+	gp3SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeGp3, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	gp3SizePrice := 0.0
 	for _, gp3 := range gp3SizePrices {
 		gp3SizePrice = gp3.PricePerUnit
 		break
 	}
-	gp3IopsPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeGp3, model.ChargeTypeIOPS)
+	gp3IopsPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeGp3, model.ChargeTypeIOPS)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	gp3IopsPrice := 0.0
 	for _, gp3 := range gp3IopsPrices {
@@ -215,9 +223,9 @@ func (r *EBSVolumeTypeRepoImpl) getGp3TotalPrice(region string, volumeSize int32
 		break
 	}
 
-	gp3ThroughputPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeGp3, model.ChargeTypeThroughput)
+	gp3ThroughputPrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeGp3, model.ChargeTypeThroughput)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	gp3ThroughputPrice := 0.0
 	for _, gp3 := range gp3ThroughputPrices {
@@ -225,13 +233,21 @@ func (r *EBSVolumeTypeRepoImpl) getGp3TotalPrice(region string, volumeSize int32
 		break
 	}
 
-	return gp3SizePrice*float64(volumeSize) + gp3IopsPrice*float64(iops) + gp3ThroughputPrice*throughput, nil
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d", gp3SizePrice, volumeSize)
+	if iops > 0 {
+		costBreakdown += fmt.Sprintf(" + Provisioned IOPS (over %d): $%.2f * %d", model.Gp3BaseIops, gp3IopsPrice, iops)
+	}
+	if throughput > 0 {
+		costBreakdown += fmt.Sprintf(" + Provisioned Throughput (over %d): $%.2f * %.2f", model.Gp3BaseThroughput, gp3ThroughputPrice, throughput)
+	}
+
+	return gp3SizePrice*float64(volumeSize) + gp3IopsPrice*float64(iops) + gp3ThroughputPrice*throughput, costBreakdown, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getSc1TotalPrice(region string, volumeSize int32) (float64, error) {
-	sc1SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeSc1, model.ChargeTypeSize)
+func (r *EBSVolumeTypeRepoImpl) getSc1TotalPrice(ctx context.Context, region string, volumeSize int32) (float64, string, error) {
+	sc1SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeSc1, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	sc1SizePrice := 0.0
 	for _, sc1 := range sc1SizePrices {
@@ -239,13 +255,15 @@ func (r *EBSVolumeTypeRepoImpl) getSc1TotalPrice(region string, volumeSize int32
 		break
 	}
 
-	return sc1SizePrice * float64(volumeSize), nil
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d", sc1SizePrice, volumeSize)
+
+	return sc1SizePrice * float64(volumeSize), costBreakdown, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getSt1TotalPrice(region string, volumeSize int32) (float64, error) {
-	st1SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeSt1, model.ChargeTypeSize)
+func (r *EBSVolumeTypeRepoImpl) getSt1TotalPrice(ctx context.Context, region string, volumeSize int32) (float64, string, error) {
+	st1SizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeSt1, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	st1SizePrice := 0.0
 	for _, st1 := range st1SizePrices {
@@ -253,13 +271,15 @@ func (r *EBSVolumeTypeRepoImpl) getSt1TotalPrice(region string, volumeSize int32
 		break
 	}
 
-	return st1SizePrice * float64(volumeSize), nil
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d", st1SizePrice, volumeSize)
+
+	return st1SizePrice * float64(volumeSize), costBreakdown, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getStandardTotalPrice(region string, volumeSize int32) (float64, error) {
-	standardSizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(region, types.VolumeTypeStandard, model.ChargeTypeSize)
+func (r *EBSVolumeTypeRepoImpl) getStandardTotalPrice(ctx context.Context, region string, volumeSize int32) (float64, string, error) {
+	standardSizePrices, err := r.getDimensionCostsByRegionVolumeTypeAndChargeType(ctx, region, types.VolumeTypeStandard, model.ChargeTypeSize)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	standardSizePrice := 0.0
 	for _, standard := range standardSizePrices {
@@ -267,12 +287,15 @@ func (r *EBSVolumeTypeRepoImpl) getStandardTotalPrice(region string, volumeSize 
 		break
 	}
 
-	return standardSizePrice * float64(volumeSize), nil
+	costBreakdown := fmt.Sprintf("Size: $%.2f * %d", standardSizePrice, volumeSize)
+
+	return standardSizePrice * float64(volumeSize), costBreakdown, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) ([]model.EBSVolumeType, error) {
+func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(ctx context.Context, region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) ([]model.EBSVolumeType, error) {
 	var res []model.EBSVolumeType
-	tx := r.db.Conn().Table(r.viewName).Where("region_code = ?", region).
+	tx := r.db.Conn().Table(r.viewName).WithContext(ctx).
+		Where("region_code = ?", region).
 		Where("max_iops >= ?", iops).
 		Where("max_throughput >= ?", throughput).
 		Where("max_size >= ?", volumeSize)
@@ -286,58 +309,60 @@ func (r *EBSVolumeTypeRepoImpl) getFeasibleVolumeTypes(region string, volumeSize
 	return res, nil
 }
 
-func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, error) {
-	volumeTypes, err := r.getFeasibleVolumeTypes(region, volumeSize, iops, throughput, validTypes)
+func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(ctx context.Context, region string, volumeSize int32, iops int32, throughput float64, validTypes []types.VolumeType) (types.VolumeType, int32, int32, float64, string, error) {
+	volumeTypes, err := r.getFeasibleVolumeTypes(ctx, region, volumeSize, iops, throughput, validTypes)
 	if err != nil {
-		return "", 0, 0, 0, err
+		return "", 0, 0, 0, "", err
 	}
 
 	if len(volumeTypes) == 0 {
-		return "", 0, 0, 0, errors.New("no feasible volume types found")
+		return "", 0, 0, 0, "", errors.New("no feasible volume types found")
 	}
 
 	minPrice := 0.0
 	resVolumeType := ""
+	rescostBreakdown := ""
 	resBaselineIOPS := int32(0)
 	resBaselineThroughput := 0.0
 	resVolumeSize := volumeSize
 	for _, vt := range volumeTypes {
 		var price float64
+		var costBreakdown string
 		var volIops int32
 		var volThroughput float64
 		var volSize int32 = volumeSize
 		switch vt.VolumeType {
 		case types.VolumeTypeIo1:
-			price, err = r.getIo1TotalPrice(region, volSize, iops)
+			price, costBreakdown, err = r.getIo1TotalPrice(ctx, region, volSize, iops)
 			volIops = 0
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeIo2:
-			price, err = r.getIo2TotalPrice(region, volSize, iops)
+			price, costBreakdown, err = r.getIo2TotalPrice(ctx, region, volSize, iops)
 			volIops = 0
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp2:
-			price, err = r.getGp2TotalPrice(region, &volSize, iops)
+			price, costBreakdown, err = r.getGp2TotalPrice(ctx, region, &volSize, iops)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeGp3:
-			price, err = r.getGp3TotalPrice(region, volSize, iops, throughput)
+			price, costBreakdown, err = r.getGp3TotalPrice(ctx, region, volSize, iops, throughput)
 			volIops = model.Gp3BaseIops
 			volThroughput = model.Gp3BaseThroughput
 		case types.VolumeTypeSc1:
-			price, err = r.getSc1TotalPrice(region, volSize)
+			price, costBreakdown, err = r.getSc1TotalPrice(ctx, region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeSt1:
-			price, err = r.getSt1TotalPrice(region, volSize)
+			price, costBreakdown, err = r.getSt1TotalPrice(ctx, region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		case types.VolumeTypeStandard:
-			price, err = r.getStandardTotalPrice(region, volSize)
+			price, costBreakdown, err = r.getStandardTotalPrice(ctx, region, volSize)
 			volIops = vt.MaxIops
 			volThroughput = float64(vt.MaxThroughput)
 		}
 		if err != nil {
-			return "", 0, 0, 0, err
+			return "", 0, 0, 0, "", err
 		}
 		if resVolumeType == "" || price < minPrice {
 			minPrice = price
@@ -345,10 +370,11 @@ func (r *EBSVolumeTypeRepoImpl) GetCheapestTypeWithSpecs(region string, volumeSi
 			resBaselineIOPS = volIops
 			resBaselineThroughput = volThroughput
 			resVolumeSize = volSize
+			rescostBreakdown = costBreakdown
 		}
 	}
 
-	return types.VolumeType(resVolumeType), resVolumeSize, resBaselineIOPS, resBaselineThroughput, nil
+	return types.VolumeType(resVolumeType), resVolumeSize, resBaselineIOPS, resBaselineThroughput, rescostBreakdown, nil
 }
 
 func (r *EBSVolumeTypeRepoImpl) CreateNewTable() (string, error) {
