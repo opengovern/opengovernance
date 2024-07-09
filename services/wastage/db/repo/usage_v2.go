@@ -66,7 +66,7 @@ FROM
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'auth0UserId') = '%s' and
-  (request -> 'identification' ->> 'randomID') = '%s' and
+  (request -> 'identification' ->> 'random_id') = '%s' and
   (statistics ->> 'accountID') = '%s'
 `, endpoint, auth0UserId, randomID, accountId))
 	rows, err := tx.Rows()
@@ -98,7 +98,7 @@ FROM
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'auth0UserId') = '%s' and
-  (request -> 'identification' ->> 'randomID') = '%s' and
+  (request -> 'identification' ->> 'random_id') = '%s' and
   (statistics ->> 'accountID') = '%s'
 GROUP BY request -> '%s' ->> 'id'
 `, endpoint, auth0UserId, accountId, randomID, groupByType))
