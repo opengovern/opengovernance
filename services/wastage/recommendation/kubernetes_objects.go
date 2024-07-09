@@ -529,15 +529,18 @@ func (s *Service) calculateGKENodeCost(ctx context.Context, node pb.KubernetesNo
 	if !ok {
 		return 0, status.Errorf(codes.InvalidArgument, "Cannot determine the availability zone for the node")
 	}
-	//gkeProvisioning, ok := node.Labels["cloud.google.com/gke-provisioning"]
-	//if !ok {
-	//	gkeProvisioning = "standard"
-	//}
+	gkeProvisioning, ok := node.Labels["cloud.google.com/gke-provisioning"]
+	if !ok {
+		gkeProvisioning = "standard"
+	}
 
 	instance := gcp.GcpComputeInstance{
 		Id:          node.Id,
 		Zone:        instanceZone,
 		MachineType: instanceType,
+	}
+	if gkeProvisioning == "spot" {
+		instance.Preemptible = true
 	}
 
 	cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
