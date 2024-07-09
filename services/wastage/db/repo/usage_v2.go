@@ -14,8 +14,8 @@ type UsageV2Repo interface {
 	Update(id uint, m model.UsageV2) error
 	GetRandomNullStatistics() (*model.UsageV2, error)
 	Get(id uint) (*model.UsageV2, error)
-	GetByAccountID(endpoint, accountId, auth0UserId string) ([]uint, error)
-	GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType string) ([]uint, error)
+	GetByAccountID(endpoint, accountId, auth0UserId, id string) ([]uint, error)
+	GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType, byType string) ([]uint, error)
 	GetCostZero() (*model.UsageV2, error)
 	GetRDSInstanceOptimizationsCountForUser(ctx context.Context, userId string) (int64, error)
 	GetRDSInstanceOptimizationsCountForOrg(ctx context.Context, orgAddress string) (int64, error)
@@ -57,7 +57,7 @@ func (r *UsageV2RepoImpl) Get(id uint) (*model.UsageV2, error) {
 	return &m, nil
 }
 
-func (r *UsageV2RepoImpl) GetByAccountID(endpoint, accountId, auth0UserId string) ([]uint, error) {
+func (r *UsageV2RepoImpl) GetByAccountID(endpoint, accountId, auth0UserId, randomID string) ([]uint, error) {
 	tx := r.db.Conn().Raw(fmt.Sprintf(`
 SELECT 
   id
@@ -66,8 +66,9 @@ FROM
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'auth0UserId') = '%s' and
+  (request -> 'identification' ->> 'randomID') = '%s' and
   (statistics ->> 'accountID') = '%s'
-`, endpoint, auth0UserId, accountId))
+`, endpoint, auth0UserId, randomID, accountId))
 	rows, err := tx.Rows()
 	if err != nil {
 		return nil, err
@@ -88,7 +89,7 @@ WHERE
 	return ids, nil
 }
 
-func (r *UsageV2RepoImpl) GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType string) ([]uint, error) {
+func (r *UsageV2RepoImpl) GetLastByAccountID(endpoint, accountId, auth0UserId, randomID, groupByType string) ([]uint, error) {
 	tx := r.db.Conn().Raw(fmt.Sprintf(`
 SELECT 
   max(id)
@@ -97,9 +98,10 @@ FROM
 WHERE 
   api_endpoint like '%s%%' and 
   (statistics ->> 'auth0UserId') = '%s' and
+  (request -> 'identification' ->> 'randomID') = '%s' and
   (statistics ->> 'accountID') = '%s'
 GROUP BY request -> '%s' ->> 'id'
-`, endpoint, auth0UserId, accountId, groupByType))
+`, endpoint, auth0UserId, accountId, randomID, groupByType))
 	rows, err := tx.Rows()
 	if err != nil {
 		return nil, err

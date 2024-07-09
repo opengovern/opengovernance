@@ -903,10 +903,11 @@ func (s API) MigrateUsagesV2(c echo.Context) error {
 
 func (s API) GetUsageIDByAccountID(echoCtx echo.Context) error {
 	accountId := echoCtx.QueryParam("accountID")
+	randomID := echoCtx.QueryParam("randomID")
 	auth0UserId := echoCtx.QueryParam("auth0UserId")
 	endpoint := echoCtx.QueryParam("endpoint")
 
-	usage, err := s.usageRepo.GetByAccountID(endpoint, accountId, auth0UserId)
+	usage, err := s.usageRepo.GetByAccountID(endpoint, accountId, auth0UserId, randomID)
 	if err != nil {
 		return err
 	}
@@ -916,11 +917,12 @@ func (s API) GetUsageIDByAccountID(echoCtx echo.Context) error {
 
 func (s API) GetLastUsageIDByAccountID(echoCtx echo.Context) error {
 	accountId := echoCtx.QueryParam("accountID")
+	randomID := echoCtx.QueryParam("randomID")
 	auth0UserId := echoCtx.QueryParam("auth0UserId")
 	endpoint := echoCtx.QueryParam("endpoint")
 	groupByType := echoCtx.QueryParam("groupBy")
 
-	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId, auth0UserId, groupByType)
+	usage, err := s.usageRepo.GetLastByAccountID(endpoint, accountId, auth0UserId, randomID, groupByType)
 	if err != nil {
 		return err
 	}
