@@ -112,7 +112,7 @@ func (s *Service) EC2InstanceRecommendationGrpc(
 		EbsBandwidth:      convertUsage(&result.EBSBandwidth),
 		EbsIops:           convertUsage(&result.EBSIops),
 		NetworkThroughput: convertUsage(&result.NetworkThroughput),
-		Description:       result.Description,
+		Description:       strings.TrimSpace(result.Description),
 	}, nil
 }
 
@@ -416,6 +416,8 @@ func (s *Service) EC2InstanceRecommendation(
 		recommendation.Description, _ = s.generateEc2InstanceDescription(ctx, instance, region, &currentInstanceType, rightSizedInstanceType, metrics, excludeBurstable, preferences, neededCPU, neededMemory, neededNetworkThroughput)
 	}
 
+	recommendation.Description = strings.TrimSpace(recommendation.Description)
+
 	return &recommendation, nil
 }
 func bpsToMBps(bps *float64) float64 {
@@ -593,7 +595,7 @@ func (s *Service) EBSVolumeRecommendationGrpc(
 		Recommended: convertRightsizingEBSVolume(result.Recommended),
 		Iops:        convertUsage(&result.IOPS),
 		Throughput:  convertUsage(&result.Throughput),
-		Description: result.Description,
+		Description: strings.TrimSpace(result.Description),
 	}
 	return newResult, nil
 }
@@ -886,6 +888,8 @@ func (s *Service) EBSVolumeRecommendation(ctx context.Context, region string, vo
 			}
 		}
 	}
+
+	result.Description = strings.TrimSpace(result.Description)
 
 	return result, nil
 }

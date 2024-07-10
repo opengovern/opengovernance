@@ -598,7 +598,7 @@ func (s *Service) AwsRdsRecommendation(
 		storageDescription += "\nStorage cost break down: " + costBreakdown
 	}
 
-	recommendation.Description = computeDescription + "\n" + storageDescription
+	recommendation.Description = strings.TrimSpace(computeDescription + "\n" + storageDescription)
 	return &recommendation, nil
 }
 
