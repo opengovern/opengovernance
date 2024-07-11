@@ -195,25 +195,27 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 		return nil, fmt.Errorf("plugin version is no longer supported - please update to the latest version")
 	}
 
-	ok, err = s.limitService.CheckAccountsLimit(ctx, userId, req.Identification["org_m_email"], req.Identification["account"])
+	newCtx := context.Background()
+
+	ok, err = s.limitService.CheckAccountsLimit(newCtx, userId, req.Identification["org_m_email"], req.Identification["account"])
 	if err != nil {
 		s.logger.Error("failed to check profile limit", zap.Error(err))
 		return nil, err
 	}
 	if !ok {
-		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "profile")
+		err = s.limitService.CheckPremiumAndSendErr(newCtx, userId, req.Identification["org_m_email"], "profile")
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	ok, err = s.limitService.CheckEC2InstanceLimit(ctx, userId, req.Identification["org_m_email"])
+	ok, err = s.limitService.CheckEC2InstanceLimit(newCtx, userId, req.Identification["org_m_email"])
 	if err != nil {
 		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
 		return nil, err
 	}
 	if !ok {
-		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "ec2 instance")
+		err = s.limitService.CheckPremiumAndSendErr(newCtx, userId, req.Identification["org_m_email"], "ec2 instance")
 		if err != nil {
 			return nil, err
 		}
