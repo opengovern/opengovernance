@@ -207,17 +207,17 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 		}
 	}
 
-	//ok, err = s.limitService.CheckEC2InstanceLimit(ctx, userId, req.Identification["org_m_email"])
-	//if err != nil {
-	//	s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
-	//	return nil, err
-	//}
-	//if !ok {
-	//	err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "ec2 instance")
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	ok, err = s.limitService.CheckEC2InstanceLimit(ctx, userId, req.Identification["org_m_email"])
+	if err != nil {
+		s.logger.Error("failed to check aws ec2 instance limit", zap.Error(err))
+		return nil, err
+	}
+	if !ok {
+		err = s.limitService.CheckPremiumAndSendErr(ctx, userId, req.Identification["org_m_email"], "ec2 instance")
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	ec2RightSizingRecom, err := s.recomSvc.EC2InstanceRecommendationGrpc(ctx, req.Region, req.Instance, req.Volumes, req.Metrics, req.VolumeMetrics, req.Preferences, usageAverageType)
 	if err != nil {

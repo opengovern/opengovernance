@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"net"
 	"time"
 )
@@ -81,6 +82,11 @@ func StartGrpcServer(server *Server, grpcServerAddress string, authGRPCURI strin
 		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authGrpcClient)),
 		grpc.ChainUnaryInterceptor(Logger(server.logger)),
 		grpc.ConnectionTimeout(10*time.Minute),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle: 10 * time.Minute,
+			Time:              10 * time.Minute,
+			Timeout:           10 * time.Minute,
+		}),
 	)
 	kubernetesPluginProto.RegisterOptimizationServer(s, server.kubernetesPluginServer)
 	gcpPluginProto.RegisterOptimizationServer(s, server.gcpPluginServer)
