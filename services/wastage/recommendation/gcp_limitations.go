@@ -3,6 +3,7 @@ package recommendation
 import (
 	"fmt"
 	"go.uber.org/zap"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -54,9 +55,34 @@ func (s *Service) findCheapestDiskType(machineFamily, machineType string, vCPUs 
 
 	limitations := s.findLimitations(machineFamily, machineType, vCPUs)
 	if len(limitations) == 0 {
-		s.logger.Error("could not find limitations", zap.String("machineFamily", machineType),
+		s.logger.Error("could not find limitations", zap.String("machineFamily", machineFamily),
 			zap.String("machineType", machineType), zap.Int64("vCPUs", vCPUs))
-		return nil, fmt.Errorf("could not find limitations")
+		limitations = map[string]DiskLimitationsPerVm{
+			"pd-standard": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+			"pd-balanced": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+			"pd-ssd": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+			"pd-extreme": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+		}
 	}
 
 	// pd-standard
