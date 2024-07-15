@@ -122,7 +122,32 @@ func (s *Service) getMaximums(machineFamily, machineType, diskType string, vCPUs
 	if len(limitations) == 0 {
 		s.logger.Error("could not find limitations", zap.String("machineFamily", machineType),
 			zap.String("machineType", machineType), zap.Int64("vCPUs", vCPUs))
-		return 0, 0, 0, 0, fmt.Errorf("could not find limitations")
+		limitations = map[string]DiskLimitationsPerVm{
+			"pd-standard": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+			"pd-balanced": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+			"pd-ssd": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+			"pd-extreme": {
+				MaxWriteIOPS:       math.MaxFloat64,
+				MaxReadIOPS:        math.MaxFloat64,
+				MaxReadThroughput:  math.MaxFloat64,
+				MaxWriteThroughput: math.MaxFloat64,
+			},
+		}
 	}
 
 	// pd-standard'
