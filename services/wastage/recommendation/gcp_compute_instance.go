@@ -35,7 +35,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			return nil, nil, nil, err
 		}
 	}
-	currentCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
+	currentCost, currLicenseCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -52,7 +52,8 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			MemoryMb:      machine.MemoryMb,
 			Preemptible:   instance.Preemptible,
 
-			Cost: currentCost,
+			Cost:          currentCost,
+			OsLicenseCost: currLicenseCost,
 		},
 	}
 
@@ -150,7 +151,7 @@ func (s *Service) GCPComputeInstanceRecommendation(
 		instance.Zone = suggestedMachineType.Zone
 		instance.MachineType = suggestedMachineType.Name
 		instance.Preemptible = preemptible
-		suggestedCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
+		suggestedCost, suggLicenseCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -177,7 +178,8 @@ func (s *Service) GCPComputeInstanceRecommendation(
 			MemoryMb:      suggestedMachineType.MemoryMb,
 			Preemptible:   preemptible,
 
-			Cost: suggestedCost,
+			Cost:          suggestedCost,
+			OsLicenseCost: suggLicenseCost,
 		}
 	} else if !excludeCustom {
 		customMachines, err := s.checkCustomMachines(ctx, region, int64(neededCPU), int64(neededMemoryMb), preferences)
@@ -615,7 +617,7 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 	machineType := fmt.Sprintf("%s-custom-%d-%d", family, neededCpu, neededMemoryMb)
 
 	if memorySku.Location == cpuSku.Location {
-		cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
+		cost, _, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
 			Id:          "",
 			Zone:        cpuSku.Location + "-a",
 			MachineType: machineType,
@@ -639,7 +641,7 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 		}}, nil
 	}
 
-	cpuRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
+	cpuRegionCost, _, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
 		Id:          "",
 		Zone:        cpuSku.Location + "-a",
 		MachineType: machineType,
@@ -661,7 +663,7 @@ func (s *Service) checkCustomMachineForFamily(ctx context.Context, region, famil
 		Cost: cpuRegionCost,
 	})
 
-	memoryRegionCost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
+	memoryRegionCost, _, err := s.costSvc.GetGCPComputeInstanceCost(ctx, gcp.GcpComputeInstance{
 		Id:          "",
 		Zone:        memorySku.Location + "-a",
 		MachineType: machineType,
