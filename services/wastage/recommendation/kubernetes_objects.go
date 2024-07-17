@@ -543,7 +543,7 @@ func (s *Service) calculateGKENodeCost(ctx context.Context, node pb.KubernetesNo
 		instance.Preemptible = true
 	}
 
-	cost, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
+	cost, _, err := s.costSvc.GetGCPComputeInstanceCost(ctx, instance)
 	if err != nil {
 		s.logger.Error("failed to get gcp compute instance cost", zap.Error(err))
 		return 0, err

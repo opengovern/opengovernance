@@ -1820,6 +1820,10 @@ github.com/kaytu-io/plugin-gcp v0.0.0-20240702123438-fae6d07b7c6e h1:i6AifU11P6/
 github.com/kaytu-io/plugin-gcp v0.0.0-20240702123438-fae6d07b7c6e/go.mod h1:IU54oa34Eq8S8sYI9mY4Nb36w03ZSX54m5hdRFt6Z7Y=
 github.com/kaytu-io/plugin-gcp v0.0.0-20240708084657-b285c6193f9f h1:8gZoW3NRAlhCvwY8TLwRppuW3jgEnG/kGd67OxTDvkE=
 github.com/kaytu-io/plugin-gcp v0.0.0-20240708084657-b285c6193f9f/go.mod h1:ZjBPYx1UXByX6/a2dZS5acCOOF0yz37rQL4sbhDfyZU=
+github.com/kaytu-io/plugin-gcp v0.0.0-20240717105846-dc653a979b1e h1:tx+nDGvY5vmJpylUh03v1rrss6tB44/IrjbZ/gXpBIo=
+github.com/kaytu-io/plugin-gcp v0.0.0-20240717105846-dc653a979b1e/go.mod h1:ZjBPYx1UXByX6/a2dZS5acCOOF0yz37rQL4sbhDfyZU=
+github.com/kaytu-io/plugin-gcp v0.0.0-20240717111217-187ef7b38a02 h1:oI4eh33a12XVRqvqTEbyUwTHHszv9alkI8BhIIBYQbE=
+github.com/kaytu-io/plugin-gcp v0.0.0-20240717111217-187ef7b38a02/go.mod h1:ZjBPYx1UXByX6/a2dZS5acCOOF0yz37rQL4sbhDfyZU=
 github.com/kaytu-io/plugin-kubernetes-internal v0.16.5 h1:9/CgnCEHQAdToo0REKWlzmHNb2kjAQdSZZCUPOCyIO0=
 github.com/kaytu-io/plugin-kubernetes-internal v0.16.5/go.mod h1:m04o/vTOTW9G+xZUTGEl6m/JD6erULWi6RpA9ToCaLU=
 github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762 h1:8gQN+1B+3zfvTOXFlsd5lavvLrmBL+G+Fufe/zhgLAQ=
