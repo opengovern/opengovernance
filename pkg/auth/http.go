@@ -16,8 +16,6 @@ import (
 	"time"
 
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	"github.com/kaytu-io/kaytu-util/pkg/email"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
@@ -38,8 +36,8 @@ var (
 )
 
 type httpRoutes struct {
-	logger          *zap.Logger
-	emailService    email.Service
+	logger *zap.Logger
+	//emailService    email.Service
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
 	metadataBaseUrl string
@@ -439,11 +437,11 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 			return err
 		}
 
-		emailContent := inviteEmailTemplate
-		err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
-		if err != nil {
-			return err
-		}
+		//emailContent := inviteEmailTemplate
+		//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
+		//if err != nil {
+		//	return err
+		//}
 	} else {
 		user, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.RoleName)
 		if err != nil {
@@ -457,10 +455,10 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 
 		emailContent := inviteEmailTemplate
 		emailContent = strings.ReplaceAll(emailContent, "{{ url }}", resp.Ticket)
-		err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
-		if err != nil {
-			return err
-		}
+		//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
+		//if err != nil {
+		//	return err
+		//}
 	}
 
 	return ctx.NoContent(http.StatusOK)

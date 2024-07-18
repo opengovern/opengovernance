@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"net"
 	"os"
@@ -101,7 +100,7 @@ func start(ctx context.Context) error {
 	}
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
-	m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
+	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	creds, err := newServerCredentials(
 		grpcTlsCertPath,
@@ -201,8 +200,8 @@ func start(ctx context.Context) error {
 
 	go func() {
 		routes := httpRoutes{
-			logger:          logger,
-			emailService:    m,
+			logger: logger,
+			//emailService:    m,
 			workspaceClient: workspaceClient,
 			metadataBaseUrl: metadataBaseUrl,
 			auth0Service:    auth0Service,
