@@ -257,6 +257,10 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 				continue
 			}
 
+			if len(connections) == 0 {
+				continue
+			}
+
 			removeResourcesAzure := azureAdOnlyOnOneConnection(connections, connection, resourceType)
 			removeResourcesAWS := awsOnlyOnOneConnection(connections, connection, resourceType)
 			_, err = s.describe(connection, resourceType, true, false, removeResourcesAzure || removeResourcesAWS)
@@ -304,6 +308,10 @@ func azureAdOnlyOnOneConnection(connections []apiOnboard.Connection, connection 
 			if c.TenantID() == connectionTenantID {
 				connectionIDs = append(connectionIDs, c.ID.String())
 			}
+		}
+
+		if len(connectionIDs) == 0 {
+			return false
 		}
 
 		sort.Strings(connectionIDs)
