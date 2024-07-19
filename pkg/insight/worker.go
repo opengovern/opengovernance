@@ -6,10 +6,6 @@ import (
 	"fmt"
 	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/jq"
@@ -35,8 +31,8 @@ type Worker struct {
 	sinkClient      esSinkClient.EsSinkServiceClient
 	pusher          *push.Pusher
 
-	s3Bucket string
-	uploader *s3manager.Uploader
+	//s3Bucket string
+	//uploader *s3manager.Uploader
 }
 
 type WorkerConfig struct {
@@ -54,7 +50,7 @@ func NewWorker(
 	id string,
 	workerConfig WorkerConfig,
 	logger *zap.Logger,
-	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
+	//s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 	ctx context.Context,
 ) (*Worker, error) {
 	if id == "" {
@@ -74,27 +70,27 @@ func NewWorker(
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(workerConfig.Scheduler.BaseURL)
 	w.sinkClient = esSinkClient.NewEsSinkServiceClient(logger, workerConfig.EsSink.BaseURL)
 
-	if s3Region == "" {
-		s3Region = "us-west-2"
-	}
+	//if s3Region == "" {
+	//	s3Region = "us-west-2"
+	//}
+	//
+	//var awsConfig *aws.Config
+	//if s3AccessKey == "" || s3AccessSecret == "" {
+	//	// load default credentials
+	//	awsConfig = &aws.Config{
+	//		Region: aws.String(s3Region),
+	//	}
+	//} else {
+	//	awsConfig = &aws.Config{
+	//		Endpoint:    aws.String(s3Endpoint),
+	//		Region:      aws.String(s3Region),
+	//		Credentials: credentials.NewStaticCredentials(s3AccessKey, s3AccessSecret, ""),
+	//	}
+	//}
 
-	var awsConfig *aws.Config
-	if s3AccessKey == "" || s3AccessSecret == "" {
-		// load default credentials
-		awsConfig = &aws.Config{
-			Region: aws.String(s3Region),
-		}
-	} else {
-		awsConfig = &aws.Config{
-			Endpoint:    aws.String(s3Endpoint),
-			Region:      aws.String(s3Region),
-			Credentials: credentials.NewStaticCredentials(s3AccessKey, s3AccessSecret, ""),
-		}
-	}
-
-	session := session.Must(session.NewSession(awsConfig))
-	w.uploader = s3manager.NewUploader(session)
-	w.s3Bucket = s3Bucket
+	//session := session.Must(session.NewSession(awsConfig))
+	//w.uploader = s3manager.NewUploader(session)
+	//w.s3Bucket = s3Bucket
 
 	jq, err := jq.New(workerConfig.NATS.URL, w.logger)
 	if err != nil {
@@ -131,7 +127,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			w.inventoryClient,
 			w.schedulerClient,
 			w.sinkClient,
-			w.uploader, w.s3Bucket,
+			//w.uploader, w.s3Bucket,
 			CurrentWorkspaceID, w.logger,
 		)
 

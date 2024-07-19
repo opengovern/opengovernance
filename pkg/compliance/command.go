@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
-	"os"
-
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 
 	"github.com/spf13/cobra"
@@ -13,9 +11,9 @@ import (
 )
 
 var (
-	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
-	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
-	S3Region       = os.Getenv("S3_REGION")
+// S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
+// S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
+// S3Region       = os.Getenv("S3_REGION")
 )
 
 type OpenAI struct {
@@ -64,7 +62,7 @@ func startHttpServer(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(ctx, conf,
-		S3Region, S3AccessKey, S3AccessSecret,
+		//S3Region, S3AccessKey, S3AccessSecret,
 		logger)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
