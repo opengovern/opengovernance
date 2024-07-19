@@ -12,11 +12,11 @@ import (
 var (
 	SteampipeHost = os.Getenv("STEAMPIPE_HOST")
 
-	S3Endpoint     = os.Getenv("S3_ENDPOINT")
-	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
-	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
-	S3Region       = os.Getenv("S3_REGION")
-	S3Bucket       = os.Getenv("S3_BUCKET")
+	//S3Endpoint     = os.Getenv("S3_ENDPOINT")
+	//S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
+	//S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
+	//S3Region       = os.Getenv("S3_REGION")
+	//S3Bucket       = os.Getenv("S3_BUCKET")
 
 	CurrentWorkspaceID = os.Getenv("CURRENT_NAMESPACE")
 )
@@ -49,9 +49,6 @@ func WorkerCommand() *cobra.Command {
 				id,
 				cnf,
 				logger,
-				S3Endpoint, S3AccessKey,
-				S3AccessSecret, S3Region,
-				S3Bucket,
 				cmd.Context(),
 			)
 			if err != nil {

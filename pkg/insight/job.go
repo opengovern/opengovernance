@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-errors/errors"
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
@@ -75,8 +73,8 @@ func (j Job) Do(
 	inventoryClient inventoryClient.InventoryServiceClient,
 	schedulerClient describeClient.SchedulerServiceClient,
 	sinkClient esSinkClient.EsSinkServiceClient,
-	uploader *s3manager.Uploader,
-	bucket string, currentWorkspaceID string,
+	//uploader *s3manager.Uploader, bucket string,
+	currentWorkspaceID string,
 	logger *zap.Logger,
 ) (r JobResult) {
 	startTime := time.Now().Unix()
@@ -261,14 +259,14 @@ func (j Job) Do(
 
 	if err == nil {
 		logger.Info("Got the results, uploading to s3")
-		objectName := fmt.Sprintf("%d-%d.out", j.InsightID, j.JobID)
-		content, err := json.Marshal(res)
+		//objectName := fmt.Sprintf("%d-%d.out", j.InsightID, j.JobID)
+		//content, err := json.Marshal(res)
 		if err == nil {
-			result, err := uploader.Upload(&s3manager.UploadInput{
-				Bucket: aws.String(bucket),
-				Key:    aws.String(objectName),
-				Body:   strings.NewReader(string(content)),
-			})
+			//result, err := uploader.Upload(&s3manager.UploadInput{
+			//	Bucket: aws.String(bucket),
+			//	Key:    aws.String(objectName),
+			//	Body:   strings.NewReader(string(content)),
+			//})
 			if err == nil {
 				var locations []string = nil
 				if locationsMap != nil {
@@ -306,8 +304,8 @@ func (j Job) Do(
 						Locations:           locations,
 						IncludedConnections: connections,
 						PerConnectionCount:  perConnectionCountMap,
-						S3Location:          result.Location,
-						ResourceCollection:  j.ResourceCollectionId,
+						//S3Location:          result.Location,
+						ResourceCollection: j.ResourceCollectionId,
 					}
 					keys, idx := item.KeysAndIndex()
 					item.EsID = es2.HashOf(keys...)
