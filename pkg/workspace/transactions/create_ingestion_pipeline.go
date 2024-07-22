@@ -47,7 +47,9 @@ func NewCreateIngestionPipeline(
 }
 
 func (t *CreateIngestionPipeline) Requirements() []api.TransactionID {
-	return []api.TransactionID{api.Transaction_CreateOpenSearch}
+	return []api.TransactionID{
+		//api.Transaction_CreateOpenSearch,
+	}
 }
 
 func (t *CreateIngestionPipeline) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {

@@ -11,13 +11,13 @@ type Reserved struct {
 func (s Reserved) Requirements(workspace db.Workspace) []api.TransactionID {
 	return []api.TransactionID{
 		api.Transaction_CreateWorkspaceKeyId,
-		api.Transaction_CreateInsightBucket,
+		//api.Transaction_CreateInsightBucket,
 		api.Transaction_CreateMasterCredential,
 		api.Transaction_CreateServiceAccountRoles,
-		api.Transaction_CreateOpenSearch,
-		api.Transaction_CreateIngestionPipeline,
+		//api.Transaction_CreateOpenSearch,
+		//api.Transaction_CreateIngestionPipeline,
 		api.Transaction_CreateHelmRelease,
-		api.Transaction_StopIngestionPipeline,
+		//api.Transaction_StopIngestionPipeline,
 	}
 }
 
