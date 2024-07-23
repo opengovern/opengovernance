@@ -47,6 +47,12 @@ func Command() *cobra.Command {
 					logger.Error("failed to create vault source config", zap.Error(err))
 					return err
 				}
+			case vault.HashiCorpVault:
+				vaultSc, err = vault.NewHashiCorpVaultClient(ctx, logger, cnf.Vault.HashiCorp, cnf.Vault.KeyId)
+				if err != nil {
+					logger.Error("failed to create vault source config", zap.Error(err))
+					return err
+				}
 			}
 
 			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)

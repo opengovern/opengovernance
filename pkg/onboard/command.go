@@ -51,6 +51,12 @@ func start(ctx context.Context) error {
 			logger.Error("failed to create vault source config", zap.Error(err))
 			return err
 		}
+	case vault.HashiCorpVault:
+		vaultSc, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+		if err != nil {
+			logger.Error("failed to create vault source config", zap.Error(err))
+			return err
+		}
 	}
 
 	handler, err := InitializeHttpHandler(

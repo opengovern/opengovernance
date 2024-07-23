@@ -12,18 +12,19 @@ import (
 )
 
 type CreateWorkspaceKeyId struct {
-	logger             *zap.Logger
-	azureSecretHandler *vault.AzureVaultSecretHandler
-	cfg                config.Config
-	workspaceDb        *db.Database
+	logger      *zap.Logger
+	cfg         config.Config
+	workspaceDb *db.Database
+
+	vaultSecretHandler vault.VaultSecretHandler
 }
 
-func NewCreateWorkspaceKeyId(logger *zap.Logger, azureSecretHandler *vault.AzureVaultSecretHandler, cfg config.Config, workspaceDb *db.Database) *CreateWorkspaceKeyId {
+func NewCreateWorkspaceKeyId(logger *zap.Logger, vaultSecretHandler vault.VaultSecretHandler, cfg config.Config, workspaceDb *db.Database) *CreateWorkspaceKeyId {
 	return &CreateWorkspaceKeyId{
 		logger:             logger,
-		azureSecretHandler: azureSecretHandler,
 		cfg:                cfg,
 		workspaceDb:        workspaceDb,
+		vaultSecretHandler: vaultSecretHandler,
 	}
 }
 
@@ -38,7 +39,7 @@ func (t *CreateWorkspaceKeyId) ApplyIdempotent(ctx context.Context, workspace db
 	switch t.cfg.Vault.Provider {
 	case vault.AwsKMS:
 		workspace.VaultKeyId = t.cfg.Vault.KeyId
-	case vault.AzureKeyVault:
+	case vault.AzureKeyVault, vault.HashiCorpVault:
 		// create new aes key
 		b := make([]byte, 32)
 		_, err := rand.Read(b)
@@ -47,7 +48,7 @@ func (t *CreateWorkspaceKeyId) ApplyIdempotent(ctx context.Context, workspace db
 			return err
 		}
 		name := fmt.Sprintf("client-creds-key-%s", workspace.ID)
-		_, err = t.azureSecretHandler.SetSecret(ctx, name, b)
+		_, err = t.vaultSecretHandler.SetSecret(ctx, name, b)
 		if err != nil {
 			t.logger.Error("failed to set secret", zap.Error(err))
 			return err
@@ -68,7 +69,7 @@ func (t *CreateWorkspaceKeyId) RollbackIdempotent(ctx context.Context, workspace
 	case vault.AwsKMS:
 		workspace.VaultKeyId = ""
 	case vault.AzureKeyVault:
-		err := t.azureSecretHandler.DeleteSecret(ctx, workspace.VaultKeyId)
+		err := t.vaultSecretHandler.DeleteSecret(ctx, workspace.VaultKeyId)
 		if err != nil {
 			t.logger.Error("failed to delete secret", zap.Error(err))
 			return err
