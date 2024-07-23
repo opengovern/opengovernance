@@ -2,7 +2,6 @@ package vault
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -103,12 +102,7 @@ func (s *SealHandler) unsealChecker(ctx context.Context, unsealed chan<- struct{
 		if k == "root-token" {
 			continue
 		}
-		decodedV, err := base64.StdEncoding.DecodeString(string(v))
-		if err != nil {
-			s.logger.Fatal("failed to decode unseal key", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
-			return
-		}
-		keys = append(keys, string(decodedV))
+		keys = append(keys, string(v))
 	}
 
 	ticker := time.NewTicker(1 * time.Minute)
