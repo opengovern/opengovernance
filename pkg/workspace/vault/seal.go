@@ -119,15 +119,10 @@ func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unseale
 		unsealed <- struct{}{}
 		close(unsealed)
 		unsealed = nil
-
-		if initKuber {
-			rootToken := keysSecret.Data["root-token"]
-			err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
-			if err != nil {
-				s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
-			} else {
-				initKuber = false
-			}
+		rootToken := keysSecret.Data["root-token"]
+		err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
+		if err != nil {
+			s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
 		}
 	}
 
@@ -145,14 +140,10 @@ func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unseale
 				unsealed <- struct{}{}
 				close(unsealed)
 				unsealed = nil
-				if initKuber {
-					rootToken := keysSecret.Data["root-token"]
-					err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
-					if err != nil {
-						s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
-					} else {
-						initKuber = false
-					}
+				rootToken := keysSecret.Data["root-token"]
+				err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
+				if err != nil {
+					s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
 				}
 			}
 		}
