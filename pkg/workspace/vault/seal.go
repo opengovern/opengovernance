@@ -71,6 +71,7 @@ func (s *SealHandler) initVault(ctx context.Context) {
 		for i, key := range initRes.Keys {
 			keysSecret.StringData[fmt.Sprintf("key-%d", i)] = key
 		}
+		keysSecret.StringData["root-token"] = initRes.RootToken
 
 		_, err = s.kubeClientset.CoreV1().Secrets(s.cfg.KaytuOctopusNamespace).Create(ctx, &keysSecret, metav1.CreateOptions{})
 		if err != nil && !k8serrors.IsAlreadyExists(err) {
