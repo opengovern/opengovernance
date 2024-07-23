@@ -125,8 +125,9 @@ func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unseale
 			err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
 			if err != nil {
 				s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
+			} else {
+				initKuber = false
 			}
-			initKuber = false
 		}
 	}
 
@@ -149,8 +150,9 @@ func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unseale
 					err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
 					if err != nil {
 						s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
+					} else {
+						initKuber = false
 					}
-					initKuber = false
 				}
 			}
 		}
