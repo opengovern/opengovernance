@@ -60,27 +60,23 @@ var (
 )
 
 type Server struct {
-	logger                  *zap.Logger
-	e                       *echo.Echo
-	cfg                     config.Config
-	db                      *db.Database
-	authClient              authclient.AuthServiceClient
-	kubeClient              k8sclient.Client // the kubernetes client
-	StateManager            *statemanager.Service
-	awsMasterCnf            aws.Config
-	vault                   vault.VaultSourceConfig
-	azureVaultSecretHandler *vault.AzureVaultSecretHandler
+	logger             *zap.Logger
+	e                  *echo.Echo
+	cfg                config.Config
+	db                 *db.Database
+	authClient         authclient.AuthServiceClient
+	kubeClient         k8sclient.Client // the kubernetes client
+	StateManager       *statemanager.Service
+	awsMasterCnf       aws.Config
+	vault              vault.VaultSourceConfig
+	vaultSecretHandler vault.VaultSecretHandler
 }
 
-func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
+func NewServer(ctx context.Context, logger *zap.Logger, cfg config.Config) (*Server, error) {
 	s := &Server{
 		cfg: cfg,
 	}
 
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return nil, fmt.Errorf("new zap logger: %s", err)
-	}
 	s.e, _ = httpserver.Register(logger, s)
 
 	dbs, err := db.NewDatabase(cfg, logger)
@@ -122,16 +118,27 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 			logger.Error("new azure vaultClient source config", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
 		}
-		s.azureVaultSecretHandler, err = vault.NewAzureVaultSecretHandler(logger, cfg.Vault.Azure)
+		s.vaultSecretHandler, err = vault.NewAzureVaultSecretHandler(logger, cfg.Vault.Azure)
 		if err != nil {
 			logger.Error("new azure vaultClient secret handler", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient secret handler: %w", err)
+		}
+	case vault.HashiCorpVault:
+		s.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+		if err != nil {
+			logger.Error("new hashicorp vaultClient source config", zap.Error(err))
+			return nil, fmt.Errorf("new hashicorp vaultClient source config: %w", err)
+		}
+		s.vaultSecretHandler, err = vault.NewHashiCorpVaultSecretHandler(ctx, logger, cfg.Vault.HashiCorp)
+		if err != nil {
+			logger.Error("new hashicorp vaultClient secret handler", zap.Error(err))
+			return nil, fmt.Errorf("new hashicorp vaultClient secret handler: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("unsupported vault provider: %s", cfg.Vault.Provider)
 	}
 
-	s.StateManager, err = statemanager.New(ctx, cfg, s.vault, s.azureVaultSecretHandler)
+	s.StateManager, err = statemanager.New(ctx, cfg, s.vault, s.vaultSecretHandler)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load initiate state manager: %v", err)
 	}
