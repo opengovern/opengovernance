@@ -105,7 +105,7 @@ func (s *SealHandler) unsealChecker(ctx context.Context, unsealed chan<- struct{
 		}
 		decodedV, err := base64.StdEncoding.DecodeString(string(v))
 		if err != nil {
-			s.logger.Error("failed to decode unseal key", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
+			s.logger.Fatal("failed to decode unseal key", zap.Error(err), zap.String("key", k), zap.String("value", string(v)))
 			return
 		}
 		keys = append(keys, string(decodedV))
