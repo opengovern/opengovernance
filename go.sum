@@ -1790,8 +1790,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.34.8 h1:/EvNShXF723Lizx4LbYfinMfgy/nb
 github.com/kaytu-io/kaytu-aws-describer v0.34.8/go.mod h1:iKztu7A+z02I1axTplQXBq9OfnfvwBcDX7myOl/9TWE=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8 h1:cXQGFjt1H35iwVX3yyq1lfjNbw9X+IM8+aTYbzHj81s=
 github.com/kaytu-io/kaytu-azure-describer v0.25.8/go.mod h1:+4ZsZm5fL84vdG81oYDaoTGIhE+SFhzxX8K5VlZsbhY=
-github.com/kaytu-io/kaytu-util v0.0.0-20240723134755-73cb3463001e h1:4rlKq8vDJDNMZzRLpLUI7B8RNQH0Ma1SkbaQ9+bn+R8=
-github.com/kaytu-io/kaytu-util v0.0.0-20240723134755-73cb3463001e/go.mod h1:q3euUX8jwS8JWa/P7zwFcVkOEzortvH/2i9o/tw+aXc=
+github.com/kaytu-io/kaytu-util v0.0.0-20240723142437-dc8d22752d49 h1:U7RUbwUHQ3N5hjVz15/fw/0k9XZxeHCSHvxG5HM8hv0=
+github.com/kaytu-io/kaytu-util v0.0.0-20240723142437-dc8d22752d49/go.mod h1:q3euUX8jwS8JWa/P7zwFcVkOEzortvH/2i9o/tw+aXc=
 github.com/kaytu-io/pennywise v1.7.16 h1:ppZ80MNFuch4GRpEYzYZgxms4QkLCZWJPAnkxa1THgo=
 github.com/kaytu-io/pennywise v1.7.16/go.mod h1:Egr3Z/zzT/K93sOG+QVSgrgQbkcnK+odwjnl1OQUjpQ=
 github.com/kaytu-io/plugin-aws v0.6.18 h1:mFRKhuCNAczCMPptPVwtcRbQzIt5qFkVlsUU6KIc1EA=

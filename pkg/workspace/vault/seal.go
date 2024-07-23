@@ -157,5 +157,4 @@ func (s *SealHandler) Start(ctx context.Context) {
 	// block until vault is unsealed
 	<-unsealChan
 	s.logger.Info("vault unsealed")
-
 }
