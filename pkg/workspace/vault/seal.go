@@ -51,13 +51,14 @@ const (
 	secretName = "vault-unseal-keys"
 )
 
-func (s *SealHandler) initVault(ctx context.Context) {
+func (s *SealHandler) initVault(ctx context.Context) bool {
 	initRes, err := s.vaultSealHandler.TryInit(ctx)
 	if err != nil {
 		s.logger.Fatal("failed to init vault", zap.Error(err))
 	}
 	if initRes == nil {
 		s.logger.Info("vault already initialized")
+		return false
 	} else {
 		keysSecret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -81,14 +82,15 @@ func (s *SealHandler) initVault(ctx context.Context) {
 				s.logger.Fatal("failed to update vault unseal keys secret", zap.Error(err), zap.Strings("keys", initRes.Keys))
 			}
 		}
+		return true
 	}
 }
 
-func (s *SealHandler) unsealChecker(ctx context.Context, unsealed chan<- struct{}) {
+func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unsealed chan<- struct{}) {
 	defer func() {
 		if r := recover(); r != nil {
 			s.logger.Error("unsealChecker panic", zap.Any("recover", r))
-			go s.unsealChecker(ctx, unsealed)
+			go s.unsealChecker(ctx, initKuber, unsealed)
 		}
 	}()
 
@@ -97,6 +99,7 @@ func (s *SealHandler) unsealChecker(ctx context.Context, unsealed chan<- struct{
 		s.logger.Error("failed to get vault unseal keys secret", zap.Error(err))
 		return
 	}
+
 	keys := make([]string, 0, len(keysSecret.Data))
 	for k, v := range keysSecret.Data {
 		if k == "root-token" {
@@ -116,6 +119,15 @@ func (s *SealHandler) unsealChecker(ctx context.Context, unsealed chan<- struct{
 		unsealed <- struct{}{}
 		close(unsealed)
 		unsealed = nil
+
+		if initKuber {
+			rootToken := keysSecret.Data["root-token"]
+			err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
+			if err != nil {
+				s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
+			}
+			initKuber = false
+		}
 	}
 
 	for {
@@ -132,16 +144,25 @@ func (s *SealHandler) unsealChecker(ctx context.Context, unsealed chan<- struct{
 				unsealed <- struct{}{}
 				close(unsealed)
 				unsealed = nil
+				if initKuber {
+					rootToken := keysSecret.Data["root-token"]
+					err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
+					if err != nil {
+						s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
+					}
+					initKuber = false
+				}
 			}
 		}
 	}
 }
 
 func (s *SealHandler) Start(ctx context.Context) {
-	s.initVault(ctx)
+	isNewInit := s.initVault(ctx)
 	unsealChan := make(chan struct{})
-	go s.unsealChecker(ctx, unsealChan)
+	go s.unsealChecker(ctx, isNewInit, unsealChan)
 	// block until vault is unsealed
 	<-unsealChan
 	s.logger.Info("vault unsealed")
+
 }
