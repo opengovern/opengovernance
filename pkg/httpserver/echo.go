@@ -3,9 +3,15 @@ package httpserver
 import (
 	"context"
 	"fmt"
+	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
+	"github.com/auth0/go-jwt-middleware/v2/jwks"
+	jwtvalidator "github.com/auth0/go-jwt-middleware/v2/validator"
+	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
 	"github.com/labstack/echo/v4"
@@ -21,9 +27,11 @@ import (
 )
 
 var (
-	agentHost   = os.Getenv("JAEGER_AGENT_HOST")
-	serviceName = os.Getenv("JAEGER_SERVICE_NAME")
-	sampleRate  = os.Getenv("JAEGER_SAMPLE_RATE")
+	agentHost    = os.Getenv("JAEGER_AGENT_HOST")
+	serviceName  = os.Getenv("JAEGER_SERVICE_NAME")
+	sampleRate   = os.Getenv("JAEGER_SAMPLE_RATE")
+	authDomain   = os.Getenv("AUTH_DOMAIN")
+	authAudience = os.Getenv("AUTH_AUDIENCE")
 )
 
 type Routes interface {
@@ -57,6 +65,7 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerPr
 		},
 		Level: 5,
 	}))
+	e.Use(validatorMiddleware)
 
 	metrics.AddEchoMiddleware(e)
 
@@ -129,4 +138,61 @@ func initTracer() (*sdktrace.TracerProvider, error) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	return tp, nil
+}
+
+func validatorMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		issuerURL, err := url.Parse("https://" + authDomain + "/")
+		if err != nil {
+			return err
+		}
+
+		provider := jwks.NewCachingProvider(issuerURL, 5*time.Minute)
+
+		jwtValidator, err := jwtvalidator.New(
+			provider.KeyFunc,
+			jwtvalidator.RS256,
+			issuerURL.String(),
+			[]string{authAudience},
+			jwtvalidator.WithCustomClaims(
+				func() jwtvalidator.CustomClaims {
+					return nil
+				},
+			),
+			jwtvalidator.WithAllowedClockSkew(time.Minute),
+		)
+		if err != nil {
+			return err
+		}
+
+		errorHandler := func(w http.ResponseWriter, r *http.Request, err error) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"message":"Failed to validate JWT."}`))
+		}
+
+		jwtMiddleware := jwtmiddleware.New(
+			jwtValidator.ValidateToken,
+			jwtmiddleware.WithErrorHandler(errorHandler),
+		)
+
+		// Adapter function to convert Echo handler to http.HandlerFunc
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c.SetRequest(r)
+			c.SetResponse(echo.NewResponse(w, c.Echo()))
+			if err := next(c); err != nil {
+				c.Error(err)
+			}
+		})
+
+		// Wrap the Echo context response writer and request with standard http.ResponseWriter and http.Request
+		writer := c.Response().Writer
+		request := c.Request()
+
+		// Check JWT and handle the request
+		jwtMiddleware.CheckJWT(h).ServeHTTP(writer, request)
+
+		// If the token is valid, the request will be handled by next(c)
+		return nil
+	}
 }

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -14,6 +15,7 @@ func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
 		&ApiKey{},
 		&WorkspaceMap{},
+		&User{},
 	)
 	if err != nil {
 		return err
@@ -202,4 +204,91 @@ func (db Database) DeleteWorkspaceMapByID(id string) error {
 		return tx.Error
 	}
 	return nil
+}
+
+func (db Database) CreateUser(user *User) error {
+	tx := db.Orm.Create(user)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) DeleteUser(userId string) error {
+	tx := db.Orm.Model(&User{}).
+		Where("user_id", userId).
+		Delete(&User{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) GetUser(userId string) (*User, error) {
+	var s User
+	tx := db.Orm.Model(&User{}).
+		Where("user_id", userId).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &s, nil
+}
+
+func (db Database) UpdateUserAppMetadata(userId string, metadata pgtype.JSONB) error {
+	tx := db.Orm.Model(&User{}).
+		Where("user_id", userId).
+		Update("app_metadata", metadata)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) GetUsersByEmail(email string) ([]User, error) {
+	var s []User
+	tx := db.Orm.Model(&User{}).
+		Where("email", email).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
+	var users []User
+	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? :workspaceKey`
+	err := db.Orm.Raw(query, map[string]interface{}{"workspaceKey": ws}).Scan(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([]User, error) {
+	var users []User
+	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? :workspaceKey`
+
+	params := map[string]interface{}{
+		"workspaceKey": ws,
+	}
+
+	if email != nil {
+		query += " AND email = :email"
+		params["email"] = *email
+	}
+
+	if emailVerified != nil {
+		query += " AND email_verified = :emailVerified"
+		params["emailVerified"] = *emailVerified
+	}
+
+	err := db.Orm.Raw(query, params).Scan(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
