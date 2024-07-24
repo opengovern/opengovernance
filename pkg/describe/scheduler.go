@@ -259,11 +259,11 @@ func InitializeScheduler(
 	}
 
 	if conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		if err := jq.Stream(ctx, awsDescriberLocal.StreamName, "azure describe job runner queue", []string{awsDescriberLocal.JobQueueTopic}, 1000000); err != nil {
+		if err := jq.Stream(ctx, awsDescriberLocal.StreamName, "azure describe job runner queue", []string{awsDescriberLocal.JobQueueTopic}, 200000); err != nil {
 			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
 			return nil, err
 		}
-		if err := jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic}, 1000000); err != nil {
+		if err := jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic}, 200000); err != nil {
 			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
 			return nil, err
 		}
