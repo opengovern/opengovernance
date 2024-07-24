@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	url2 "net/url"
 	"strconv"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 type Service struct {

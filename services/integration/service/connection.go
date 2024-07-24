@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"github.com/goccy/go-yaml"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
@@ -18,6 +16,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -269,7 +269,7 @@ func (s *AssetsAssistantActionsService) GetDirectionOnMultipleMetricsValues(call
 		metricIds = nil
 	}
 
-	trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: authApi.InternalRole},
+	trendDatapoints, err := s.inventoryClient.ListAnalyticsMetricTrend(&httpclient.Context{UserRole: api.InternalRole},
 		metricIds, connections,
 		startDate,
 		endDate)
@@ -464,7 +464,7 @@ func (s *AssetsAssistantActionsService) GetGeneralMetricsTrendsValues(call opena
 
 	switch primaryGoal {
 	case "cloud_account":
-		connectionsData, err := s.inventoryClient.ListConnectionsData(&httpclient.Context{UserRole: authApi.InternalRole}, connections, nil,
+		connectionsData, err := s.inventoryClient.ListConnectionsData(&httpclient.Context{UserRole: api.InternalRole}, connections, nil,
 			startDate, endDate, metricIds, false, true)
 		if err != nil {
 			s.logger.Error("failed to list connections data", zap.Error(err))
@@ -502,7 +502,7 @@ func (s *AssetsAssistantActionsService) GetGeneralMetricsTrendsValues(call opena
 			connectionIds = append(connectionIds, connectionData.ConnectionID)
 		}
 
-		connectionsMetadata, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.InternalRole}, connectionIds)
+		connectionsMetadata, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.InternalRole}, connectionIds)
 		if err != nil {
 			s.logger.Error("failed to get sources", zap.Error(err))
 			return "", fmt.Errorf("there has been a backend error: %v", err)
@@ -539,7 +539,7 @@ func (s *AssetsAssistantActionsService) GetGeneralMetricsTrendsValues(call opena
 
 		return string(outputYaml), nil
 	case "metric":
-		metricResponse, err := s.inventoryClient.ListAnalyticsMetricsSummary(&httpclient.Context{UserRole: authApi.InternalRole},
+		metricResponse, err := s.inventoryClient.ListAnalyticsMetricsSummary(&httpclient.Context{UserRole: api.InternalRole},
 			utils.GetPointer(analyticsDB.MetricTypeAssets), metricIds, connections, startDate, endDate)
 		if err != nil {
 			s.logger.Error("failed to list analytics metrics summary", zap.Error(err))

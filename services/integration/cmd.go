@@ -2,12 +2,12 @@ package integration
 
 import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api"
 	"github.com/kaytu-io/kaytu-engine/services/integration/config"
 	"github.com/kaytu-io/kaytu-engine/services/integration/db"
 	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/spf13/cobra"

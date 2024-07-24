@@ -7,8 +7,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -49,20 +50,20 @@ type httpRoutes struct {
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api.AdminRole))
-	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api.AdminRole))
-	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api.EditorRole))
-	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
-	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
-	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
-	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
-	v1.PUT("/user/preferences", httpserver.AuthorizeHandler(r.ChangeUserPreferences, api.ViewerRole))
+	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api2.AdminRole))
+	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api2.AdminRole))
+	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api2.EditorRole))
+	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api2.AdminRole))
+	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))
+	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))
+	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api2.AdminRole))
+	v1.PUT("/user/preferences", httpserver.AuthorizeHandler(r.ChangeUserPreferences, api2.ViewerRole))
 
-	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api.EditorRole))
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api.EditorRole))
-	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api.EditorRole))
+	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole))
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))
+	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
 
-	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api.InternalRole))
+	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api2.InternalRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -260,7 +261,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 		})
 	}
 
-	if !userHasAccess && userID != api.GodUserID {
+	if !userHasAccess && userID != api2.GodUserID {
 		//TODO-Saleh
 		r.logger.Error("access denied!!!", zap.String("userID", userID), zap.String("workspaceID", workspaceID))
 	}
@@ -429,7 +430,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	if len(us) > 0 {
 		auth0User := us[0]
 		if auth0User.AppMetadata.WorkspaceAccess == nil {
-			auth0User.AppMetadata.WorkspaceAccess = map[string]api.Role{}
+			auth0User.AppMetadata.WorkspaceAccess = map[string]api2.Role{}
 		}
 		auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
 		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
@@ -525,8 +526,8 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	}
 
 	u := userClaim{
-		WorkspaceAccess: map[string]api.Role{
-			"kaytu": api.EditorRole,
+		WorkspaceAccess: map[string]api2.Role{
+			"kaytu": api2.EditorRole,
 		},
 		GlobalAccess:   nil,
 		Email:          usr.Email,
@@ -557,7 +558,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 	apikey := db.ApiKey{
 		Name:          req.Name,
-		Role:          api.EditorRole,
+		Role:          api2.EditorRole,
 		CreatorUserID: userID,
 		WorkspaceID:   "kaytu",
 		Active:        true,

@@ -2,9 +2,9 @@ package benchmarks
 
 import (
 	"github.com/goccy/go-yaml"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"go.uber.org/zap"
 )
 
@@ -16,7 +16,7 @@ type assistantBenchmark struct {
 }
 
 func ExtractBenchmarks(logger *zap.Logger, complianceClient complianceClient.ComplianceServiceClient, tags map[string][]string) (map[string]string, error) {
-	benchmarks, err := complianceClient.ListBenchmarks(&httpclient.Context{UserRole: authApi.InternalRole}, tags)
+	benchmarks, err := complianceClient.ListBenchmarks(&httpclient.Context{UserRole: api.InternalRole}, tags)
 	if err != nil {
 		logger.Error("failed to list benchmarks", zap.Error(err))
 		return nil, err

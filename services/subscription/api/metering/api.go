@@ -1,12 +1,12 @@
 package metering
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api/entities"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/db"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/service"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"

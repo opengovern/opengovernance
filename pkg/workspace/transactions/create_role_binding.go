@@ -4,9 +4,10 @@ import (
 	"fmt"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"golang.org/x/net/context"
 )
 
@@ -29,14 +30,14 @@ func (t *CreateRoleBinding) Requirements() []api.TransactionID {
 func (t *CreateRoleBinding) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	authCtx := &httpclient.Context{
 		UserID:        *workspace.OwnerId,
-		UserRole:      authapi.AdminRole,
+		UserRole:      api2.AdminRole,
 		WorkspaceName: workspace.Name,
 		WorkspaceID:   workspace.ID,
 	}
 
 	if err := t.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
 		UserID:   *workspace.OwnerId,
-		RoleName: authapi.AdminRole,
+		RoleName: api2.AdminRole,
 	}); err != nil {
 		return fmt.Errorf("PutRoleBinding: %w", err)
 	}
@@ -46,8 +47,8 @@ func (t *CreateRoleBinding) ApplyIdempotent(ctx context.Context, workspace db.Wo
 
 func (t *CreateRoleBinding) RollbackIdempotent(ctx context.Context, workspace db.Workspace) error {
 	authCtx := &httpclient.Context{
-		UserID:        authapi.GodUserID,
-		UserRole:      authapi.InternalRole,
+		UserID:        api2.GodUserID,
+		UserRole:      api2.InternalRole,
 		WorkspaceName: workspace.Name,
 		WorkspaceID:   workspace.ID,
 	}

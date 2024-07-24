@@ -2,8 +2,8 @@ package reporter
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

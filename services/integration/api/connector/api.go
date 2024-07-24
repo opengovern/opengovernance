@@ -2,10 +2,10 @@ package connector
 
 import (
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
@@ -120,7 +120,7 @@ func (h API) CatalogMetrics(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "catalog-metrics", trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(c, "connector"))
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(c, "connector"))
 
 	connections, err := h.connectionSvc.ListWithFilter(ctx, connectors, nil, nil, nil)
 	if err != nil {
@@ -152,6 +152,6 @@ func (h API) CatalogMetrics(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
-	g.GET("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
-	g.GET("/metrics", httpserver.AuthorizeHandler(s.CatalogMetrics, api.ViewerRole))
+	g.GET("", httpserver2.AuthorizeHandler(s.List, api.ViewerRole))
+	g.GET("/metrics", httpserver2.AuthorizeHandler(s.CatalogMetrics, api.ViewerRole))
 }

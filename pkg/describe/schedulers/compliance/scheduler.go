@@ -2,11 +2,11 @@ package compliance
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"go.uber.org/zap"
 	"time"
 
-	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	onboardAPI "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 )
 
@@ -16,7 +16,7 @@ func (s *JobScheduler) runScheduler() error {
 		s.logger.Info("compliance interval is negative or zero, skipping compliance job scheduling")
 		return nil
 	}
-	clientCtx := &httpclient.Context{UserRole: authAPI.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: api.InternalRole}
 
 	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx, nil)
 	if err != nil {

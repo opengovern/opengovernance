@@ -9,12 +9,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api/entities"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	api3 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -29,7 +30,6 @@ import (
 
 	"go.uber.org/zap"
 
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
@@ -54,41 +54,41 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 	v2 := r.Group("/api/v2")
 
-	v1.GET("/sources", httpserver2.AuthorizeHandler(h.ListSources, api3.ViewerRole))
-	v1.POST("/sources", httpserver2.AuthorizeHandler(h.GetSources, api3.ViewerRole))
-	v1.GET("/sources/count", httpserver2.AuthorizeHandler(h.CountSources, api3.ViewerRole))
-	v1.GET("/catalog/metrics", httpserver2.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
+	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
+	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.ViewerRole))
+	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
+	v1.GET("/catalog/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
 
 	connector := v1.Group("/connector")
-	connector.GET("", httpserver2.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
+	connector.GET("", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
 
 	sourceApiGroup := v1.Group("/source")
-	sourceApiGroup.POST("/aws", httpserver2.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
-	sourceApiGroup.POST("/azure", httpserver2.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
-	sourceApiGroup.GET("/:sourceId", httpserver2.AuthorizeHandler(h.GetSource, api3.KaytuAdminRole))
-	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver2.AuthorizeHandler(h.GetConnectionHealth, api3.EditorRole))
-	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver2.AuthorizeHandler(h.GetSourceFullCred, api3.KaytuAdminRole))
-	sourceApiGroup.DELETE("/:sourceId", httpserver2.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
+	sourceApiGroup.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
+	sourceApiGroup.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
+	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.KaytuAdminRole))
+	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetConnectionHealth, api3.EditorRole))
+	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.KaytuAdminRole))
+	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
 	credential := v1.Group("/credential")
-	credential.POST("", httpserver2.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
-	credential.PUT("/:credentialId", httpserver2.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
-	credential.GET("", httpserver2.AuthorizeHandler(h.ListCredentials, api3.ViewerRole))
-	credential.DELETE("/:credentialId", httpserver2.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
-	credential.GET("/:credentialId", httpserver2.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
-	credential.POST("/:credentialId/autoonboard", httpserver2.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
+	credential.POST("", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
+	credential.PUT("/:credentialId", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
+	credential.GET("", httpserver.AuthorizeHandler(h.ListCredentials, api3.ViewerRole))
+	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
+	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
+	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
 
 	credentialV2 := v2.Group("/credential")
-	credentialV2.POST("", httpserver2.AuthorizeHandler(h.CreateCredential, api3.EditorRole))
+	credentialV2.POST("", httpserver.AuthorizeHandler(h.CreateCredential, api3.EditorRole))
 
 	connections := v1.Group("/connections")
-	connections.GET("/summary", httpserver2.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
-	connections.POST("/:connectionId/state", httpserver2.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
-	connections.POST("/aws", httpserver2.AuthorizeHandler(h.PostConnectionAws, api3.EditorRole))
+	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
+	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
+	connections.POST("/aws", httpserver.AuthorizeHandler(h.PostConnectionAws, api3.EditorRole))
 
 	connectionGroups := v1.Group("/connection-groups")
-	connectionGroups.GET("", httpserver2.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
-	connectionGroups.GET("/:connectionGroupName", httpserver2.AuthorizeHandler(h.GetConnectionGroup, api3.ViewerRole))
+	connectionGroups.GET("", httpserver.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
+	connectionGroups.GET("/:connectionGroupName", httpserver.AuthorizeHandler(h.GetConnectionGroup, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1804,7 +1804,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
 
-	err = httpserver2.CheckAccessToConnectionID(ctx, sourceUUID.String())
+	err = httpserver.CheckAccessToConnectionID(ctx, sourceUUID.String())
 	if err != nil {
 		h.logger.Error("failed to check access to connection", zap.Error(err))
 		return err
@@ -1895,7 +1895,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	apiRes := entities.NewConnection(src)
-	if httpserver2.GetUserRole(ctx) == api3.InternalRole {
+	if httpserver.GetUserRole(ctx) == api3.InternalRole {
 		apiRes.Credential = entities.NewCredential(src.Credential)
 		apiRes.Credential.Config = src.Credential.Secret
 		if apiRes.Credential.Version == 2 {
@@ -2068,7 +2068,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var err error
-	sType := httpserver2.QueryArrayParam(ctx, "connector")
+	sType := httpserver.QueryArrayParam(ctx, "connector")
 	var sources []model.Connection
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
@@ -2100,7 +2100,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		apiRes := entities.NewConnection(s)
-		if httpserver2.GetUserRole(ctx) == api3.InternalRole {
+		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = entities.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 			if apiRes.Credential.Version == 2 {
@@ -2139,7 +2139,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var res []api.Connection
 	for _, src := range srcs {
 		apiRes := entities.NewConnection(src)
-		if httpserver2.GetUserRole(ctx) == api3.InternalRole {
+		if httpserver.GetUserRole(ctx) == api3.InternalRole {
 			apiRes.Credential = entities.NewCredential(src.Credential)
 			apiRes.Credential.Config = src.Credential.Secret
 			if apiRes.Credential.Version == 2 {
@@ -2212,7 +2212,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListSources", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListSources")
 
-	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 
 	srcs, err := h.db.ListSourcesWithFilters(connectors, nil, nil, nil)
 	if err != nil {
@@ -2268,14 +2268,14 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Success		200					{object}	api.ListConnectionSummaryResponse
 //	@Router			/onboard/api/v1/connections/summary [get]
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
-	connectionIDs, err := httpserver2.ResolveConnectionIDs(ctx, connectionIDs)
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := httpserver.ResolveConnectionIDs(ctx, connectionIDs)
 	if err != nil {
 		return err
 	}
-	connectionGroups := httpserver2.QueryArrayParam(ctx, "connectionGroups")
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	connectionGroups := httpserver.QueryArrayParam(ctx, "connectionGroups")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {

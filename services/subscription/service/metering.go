@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"

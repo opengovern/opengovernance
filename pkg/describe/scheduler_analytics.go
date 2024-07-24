@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	analyticsApi "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"github.com/nats-io/nats.go/jetstream"
@@ -23,7 +23,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler(ctx context.Context) {
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
-	ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx2 := &httpclient.Context{UserRole: api.InternalRole}
 	ctx2.Ctx = ctx
 	for ; ; <-t.C {
 		connections, err := s.onboardClient.ListSources(ctx2, nil)
@@ -124,7 +124,7 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob, ctx context.Con
 	var resourceCollectionIds []string
 
 	if job.Type == model.AnalyticsJobTypeResourceCollection {
-		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole})
+		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api.InternalRole})
 		if err != nil {
 			s.logger.Error("Failed to list resource collections", zap.Error(err))
 			return err

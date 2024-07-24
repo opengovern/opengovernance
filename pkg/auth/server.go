@@ -14,9 +14,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	api3 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -246,14 +247,14 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	WorkspaceAccess map[string]api.Role `json:"https://app.kaytu.io/workspaceAccess"`
-	GlobalAccess    *api.Role           `json:"https://app.kaytu.io/globalAccess"`
-	Email           string              `json:"https://app.kaytu.io/email"`
-	MemberSince     *string             `json:"https://app.kaytu.io/memberSince"`
-	UserLastLogin   *string             `json:"https://app.kaytu.io/userLastLogin"`
-	ColorBlindMode  *bool               `json:"https://app.kaytu.io/colorBlindMode"`
-	Theme           *api.Theme          `json:"https://app.kaytu.io/theme"`
-	ConnectionIDs   map[string][]string `json:"https://app.kaytu.io/connectionIDs"`
+	WorkspaceAccess map[string]api3.Role `json:"https://app.kaytu.io/workspaceAccess"`
+	GlobalAccess    *api3.Role           `json:"https://app.kaytu.io/globalAccess"`
+	Email           string               `json:"https://app.kaytu.io/email"`
+	MemberSince     *string              `json:"https://app.kaytu.io/memberSince"`
+	UserLastLogin   *string              `json:"https://app.kaytu.io/userLastLogin"`
+	ColorBlindMode  *bool                `json:"https://app.kaytu.io/colorBlindMode"`
+	Theme           *api.Theme           `json:"https://app.kaytu.io/theme"`
+	ConnectionIDs   map[string][]string  `json:"https://app.kaytu.io/connectionIDs"`
 
 	ExternalUserID string `json:"sub"`
 }
@@ -314,7 +315,7 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 	var rb api.RoleBinding
 	var limits api2.WorkspaceLimitsUsage
 
-	if user.ExternalUserID == api.GodUserID {
+	if user.ExternalUserID == api3.GodUserID {
 		return api.RoleBinding{}, errors.New("claiming to be god is banned")
 	}
 
@@ -322,7 +323,7 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 		UserID:        user.ExternalUserID,
 		WorkspaceID:   "",
 		WorkspaceName: "",
-		RoleName:      api.EditorRole,
+		RoleName:      api3.EditorRole,
 	}
 
 	if workspaceName != "kaytu" {
