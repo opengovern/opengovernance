@@ -59,7 +59,7 @@ func Command() *cobra.Command {
 
 			go sinkService.Start(ctx)
 
-			grpcServer, err := grpcApi.NewGRPCSinkServer(logger, sinkService, cnf.Grpc.AuthUri, cnf.Grpc.Address)
+			grpcServer, err := grpcApi.NewGRPCSinkServer(logger, sinkService, cnf.Grpc.Address)
 			if err != nil {
 				logger.Error("failed to create grpc server", zap.Error(err))
 				return err

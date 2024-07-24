@@ -6,21 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
-	authAPI "github.com/kaytu-io/kaytu-util/pkg/api"
-	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
+	azureDescriberLocal "github.com/kaytu-io/kaytu-azure-describer/local"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupAPI "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
@@ -40,7 +37,11 @@ import (
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
-	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
+	authAPI "github.com/kaytu-io/kaytu-util/pkg/api"
+	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/jq"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
@@ -137,10 +138,11 @@ type Scheduler struct {
 
 	jq *jq.JobQueue
 
-	describeEndpoint         string
-	describeExternalEndpoint string
-	keyARN                   string
-	keyRegion                string
+	describeJobLocalEndpoint     string
+	describeDeliverLocalEndpoint string
+	describeExternalEndpoint     string
+	keyARN                       string
+	keyRegion                    string
 
 	WorkspaceName string
 
@@ -176,12 +178,13 @@ func InitializeScheduler(
 	}
 
 	s = &Scheduler{
-		id:                       id,
-		OperationMode:            OperationMode(OperationModeConfig),
-		describeEndpoint:         DescribeExternalDeliverEndpoint,
-		describeExternalEndpoint: DescribeExternalDeliverEndpoint,
-		keyARN:                   KeyARN,
-		keyRegion:                KeyRegion,
+		id:                           id,
+		OperationMode:                OperationMode(OperationModeConfig),
+		describeJobLocalEndpoint:     DescribeLocalJobEndpoint,
+		describeDeliverLocalEndpoint: DescribeLocalDeliverEndpoint,
+		describeExternalEndpoint:     DescribeExternalEndpoint,
+		keyARN:                       KeyARN,
+		keyRegion:                    KeyRegion,
 	}
 	defer func() {
 		if err != nil && s != nil {
@@ -253,6 +256,17 @@ func InitializeScheduler(
 
 	if err := s.jq.Stream(ctx, DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
 		return nil, err
+	}
+
+	if conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
+		if err := jq.Stream(ctx, awsDescriberLocal.StreamName, "azure describe job runner queue", []string{awsDescriberLocal.JobQueueTopic}, 1000000); err != nil {
+			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
+			return nil, err
+		}
+		if err := jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic}, 1000000); err != nil {
+			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
+			return nil, err
+		}
 	}
 
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
@@ -334,9 +348,7 @@ func InitializeScheduler(
 
 	describeServer := NewDescribeServer(s.db, s.jq, s.authGrpcClient, s.logger, conf)
 	s.grpcServer = grpc.NewServer(
-		grpc.MaxRecvMsgSize(128*1024*1024),
-		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(s.authGrpcClient)),
-		grpc.StreamInterceptor(kaytuGrpc.CheckGRPCAuthStreamInterceptorWrapper(s.authGrpcClient)),
+		grpc.MaxRecvMsgSize(128 * 1024 * 1024),
 	)
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)

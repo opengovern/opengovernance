@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
+	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
+	azureDescriberLocal "github.com/kaytu-io/kaytu-azure-describer/local"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -561,7 +563,9 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	input := describe.DescribeWorkerInput{
 		WorkspaceId:               CurrentWorkspaceID,
 		WorkspaceName:             workspaceName,
-		DescribeEndpoint:          s.describeEndpoint,
+		JobEndpoint:               s.describeExternalEndpoint,
+		DeliverEndpoint:           s.describeExternalEndpoint,
+		EndpointAuth:              true,
 		IngestionPipelineEndpoint: s.conf.ElasticSearch.IngestionEndpoint,
 		UseOpenSearch:             s.conf.ElasticSearch.IsOpenSearch,
 
@@ -652,7 +656,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
 		}
 	case config.ServerlessProviderTypeAzureFunctions.String():
-		input.DescribeEndpoint = s.describeExternalEndpoint
 		eventHubPayload, err := json.Marshal(input)
 		if err != nil {
 			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
@@ -695,6 +698,46 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			)
 			isFailed = true
 			return fmt.Errorf("failed to close service bus sender due to %v", err)
+		}
+	case config.ServerlessProviderTypeLocal.String():
+		input.EndpointAuth = false
+		input.JobEndpoint = s.describeJobLocalEndpoint
+		input.DeliverEndpoint = s.describeDeliverLocalEndpoint
+		natsPayload, err := json.Marshal(input)
+		if err != nil {
+			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+			isFailed = true
+			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
+		}
+		switch input.DescribeJob.SourceType {
+		case source.CloudAWS:
+			err = s.jq.Produce(ctx, awsDescriberLocal.JobQueueTopic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+			if err != nil {
+				s.logger.Error("failed to produce message to jetstream",
+					zap.Uint("jobID", dc.ID),
+					zap.String("connectionID", dc.ConnectionID),
+					zap.String("resourceType", dc.ResourceType),
+					zap.Error(err),
+				)
+				isFailed = true
+				return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+			}
+		case source.CloudAzure:
+			err = s.jq.Produce(ctx, azureDescriberLocal.JobQueueTopic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+			if err != nil {
+				s.logger.Error("failed to produce message to jetstream",
+					zap.Uint("jobID", dc.ID),
+					zap.String("connectionID", dc.ConnectionID),
+					zap.String("resourceType", dc.ResourceType),
+					zap.Error(err),
+				)
+				isFailed = true
+				return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+			}
+		default:
+			s.logger.Error("unknown source type", zap.String("sourceType", input.DescribeJob.SourceType.String()), zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+			isFailed = true
+			return fmt.Errorf("unknown source type: %s", input.DescribeJob.SourceType.String())
 		}
 	default:
 		s.logger.Error("unknown serverless provider", zap.String("provider", s.conf.ServerlessProvider))

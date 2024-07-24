@@ -51,7 +51,7 @@ type Server struct {
 func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
 	workspaceMap, err := s.db.GetWorkspaceMapByName(workspaceName)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", fmt.Errorf("workspace does not exists %s", workspaceName)
 		} else {
 			s.logger.Error("failed to get workspace map by name", zap.Error(err))

@@ -44,9 +44,9 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/kaytu-io/kaytu-aws-describer v0.34.8
-	github.com/kaytu-io/kaytu-azure-describer v0.25.8
-	github.com/kaytu-io/kaytu-util v0.0.0-20240724094059-5636acc559aa
+	github.com/kaytu-io/kaytu-aws-describer v0.55.3
+	github.com/kaytu-io/kaytu-azure-describer v0.35.3
+	github.com/kaytu-io/kaytu-util v0.0.0-20240724155126-e1f25510dde4
 	github.com/kaytu-io/pennywise v1.7.16
 	github.com/kaytu-io/plugin-aws v0.6.18
 	github.com/kaytu-io/plugin-gcp v0.0.0-20240717111217-187ef7b38a02
