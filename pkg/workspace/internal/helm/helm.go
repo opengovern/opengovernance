@@ -190,11 +190,10 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 		needsUpdate = true
 	}
 
-	// TODO update this after vault initiation is done
-	//if settings.Vault.Provider != cfg.Vault.Provider {
-	//	settings.Vault.Provider = cfg.Vault.Provider
-	//	needsUpdate = true
-	//}
+	if settings.Vault.Provider != cfg.Vault.Provider {
+		settings.Vault.Provider = cfg.Vault.Provider
+		needsUpdate = true
+	}
 	if settings.Vault.AWS.RoleArn != cfg.Vault.Aws.RoleArn {
 		settings.Vault.AWS.RoleArn = cfg.Vault.Aws.RoleArn
 		needsUpdate = true
