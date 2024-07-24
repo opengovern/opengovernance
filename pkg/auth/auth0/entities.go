@@ -1,6 +1,7 @@
 package auth0
 
 import (
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -21,13 +22,13 @@ type TokenResponse struct {
 }
 
 type Metadata struct {
-	WorkspaceAccess map[string]api.Role `json:"workspaceAccess"`
-	GlobalAccess    *api.Role           `json:"globalAccess,omitempty"`
-	ColorBlindMode  *bool               `json:"colorBlindMode,omitempty"`
-	Theme           *api.Theme          `json:"theme,omitempty"`
-	MemberSince     *string             `json:"memberSince,omitempty"`
-	LastLogin       *string             `json:"userLastLogin,omitempty"`
-	ConnectionIDs   map[string][]string `json:"connectionIDs"`
+	WorkspaceAccess map[string]api2.Role `json:"workspaceAccess"`
+	GlobalAccess    *api2.Role           `json:"globalAccess,omitempty"`
+	ColorBlindMode  *bool                `json:"colorBlindMode,omitempty"`
+	Theme           *api.Theme           `json:"theme,omitempty"`
+	MemberSince     *string              `json:"memberSince,omitempty"`
+	LastLogin       *string              `json:"userLastLogin,omitempty"`
+	ConnectionIDs   map[string][]string  `json:"connectionIDs"`
 }
 
 type User struct {

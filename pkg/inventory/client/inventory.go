@@ -3,13 +3,13 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"

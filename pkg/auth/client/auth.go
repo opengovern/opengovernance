@@ -3,8 +3,8 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"

@@ -1,15 +1,15 @@
 package transactions
 
 import (
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"golang.org/x/net/context"
 	"strings"

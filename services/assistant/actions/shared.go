@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"strings"
@@ -23,7 +23,7 @@ func getConnectionKaytuIDFromNameOrProviderID(logger *zap.Logger, onboardClient 
 		return "", err
 	}
 
-	allConnections, err := onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	allConnections, err := onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, nil)
 	if err != nil {
 		logger.Error("failed to list sources", zap.Error(err), zap.Any("args", gptArgs))
 		return "", fmt.Errorf("there has been a backend error")

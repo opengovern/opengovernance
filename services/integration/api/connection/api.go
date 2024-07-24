@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"sort"
 	"strconv"
@@ -12,9 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
@@ -106,7 +106,7 @@ func (h API) List(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "list")
 	defer span.End()
 
-	types := httpserver.QueryArrayParam(c, "connector")
+	types := httpserver2.QueryArrayParam(c, "connector")
 
 	sources, err := h.connSvc.List(ctx, source.ParseTypes(types))
 	if err != nil {
@@ -118,7 +118,7 @@ func (h API) List(c echo.Context) error {
 	var resp entity.ListConnectionsResponse
 	for _, s := range sources {
 		apiRes := entity.NewConnection(s)
-		if httpserver.GetUserRole(c) == api.InternalRole {
+		if httpserver2.GetUserRole(c) == api.InternalRole {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 		}
@@ -154,7 +154,7 @@ func (h API) Get(c echo.Context) error {
 	var res []entity.Connection
 	for _, conn := range conns {
 		apiRes := entity.NewConnection(conn)
-		if httpserver.GetUserRole(c) == api.InternalRole {
+		if httpserver2.GetUserRole(c) == api.InternalRole {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
 		}
@@ -236,13 +236,13 @@ func (h API) Summaries(c echo.Context) error {
 	ctx, span := h.tracer.Start(ctx, "summaries")
 	defer span.End()
 
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(c, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(c, "connectionId")
-	connectionIDs, err := httpserver.ResolveConnectionIDs(c, connectionIDs)
+	connectors := source.ParseTypes(httpserver2.QueryArrayParam(c, "connector"))
+	connectionIDs := httpserver2.QueryArrayParam(c, "connectionId")
+	connectionIDs, err := httpserver2.ResolveConnectionIDs(c, connectionIDs)
 	if err != nil {
 		return err
 	}
-	resourceCollections := httpserver.QueryArrayParam(c, "resourceCollection")
+	resourceCollections := httpserver2.QueryArrayParam(c, "resourceCollection")
 
 	endTimeStr := c.QueryParam("endTime")
 	endTime := time.Now()
@@ -752,7 +752,7 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
 	}
 
-	err = httpserver.CheckAccessToConnectionID(c, id.String())
+	err = httpserver2.CheckAccessToConnectionID(c, id.String())
 	if err != nil {
 		return err
 	}
@@ -834,7 +834,7 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
 	}
-	err = httpserver.CheckAccessToConnectionID(c, id.String())
+	err = httpserver2.CheckAccessToConnectionID(c, id.String())
 	if err != nil {
 		return err
 	}
@@ -959,11 +959,11 @@ func (h API) AWSCreate(c echo.Context) error {
 }
 
 func (s API) Register(g *echo.Group) {
-	g.GET("", httpserver.AuthorizeHandler(s.List, api.ViewerRole))
-	g.POST("", httpserver.AuthorizeHandler(s.Get, api.KaytuAdminRole))
-	g.GET("/count", httpserver.AuthorizeHandler(s.Count, api.ViewerRole))
-	g.GET("/summaries", httpserver.AuthorizeHandler(s.Summaries, api.ViewerRole))
-	g.POST("/aws", httpserver.AuthorizeHandler(s.AWSCreate, api.EditorRole))
-	g.GET("/:connectionId/azure/healthcheck", httpserver.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
-	g.GET("/:connectionId/aws/healthcheck", httpserver.AuthorizeHandler(s.AWSHealthCheck, api.EditorRole))
+	g.GET("", httpserver2.AuthorizeHandler(s.List, api.ViewerRole))
+	g.POST("", httpserver2.AuthorizeHandler(s.Get, api.KaytuAdminRole))
+	g.GET("/count", httpserver2.AuthorizeHandler(s.Count, api.ViewerRole))
+	g.GET("/summaries", httpserver2.AuthorizeHandler(s.Summaries, api.ViewerRole))
+	g.POST("/aws", httpserver2.AuthorizeHandler(s.AWSCreate, api.EditorRole))
+	g.GET("/:connectionId/azure/healthcheck", httpserver2.AuthorizeHandler(s.AzureHealthCheck, api.EditorRole))
+	g.GET("/:connectionId/aws/healthcheck", httpserver2.AuthorizeHandler(s.AWSHealthCheck, api.EditorRole))
 }

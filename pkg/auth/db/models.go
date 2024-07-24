@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"gorm.io/gorm"
 )
 

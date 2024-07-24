@@ -2,7 +2,6 @@ package assistant
 
 import (
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/actions"
@@ -11,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/services/assistant/db"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

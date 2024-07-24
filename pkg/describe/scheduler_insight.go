@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/jq"
 	"strings"
 	"time"
 
-	authAPI "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceAPI "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight"
 	insightAPI "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
 	"go.uber.org/zap"
@@ -31,14 +31,14 @@ func (s *Scheduler) RunInsightJobScheduler(ctx context.Context) {
 }
 
 func (s *Scheduler) scheduleInsightJob(ctx context.Context, forceCreate bool) {
-	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: authAPI.ViewerRole}, nil)
+	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: api.ViewerRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of insights", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
+	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of sources", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()

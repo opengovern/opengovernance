@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"time"
 
 	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"

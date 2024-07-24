@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -321,24 +322,24 @@ func (ts *testSuite) TestGetUser() {
 
 func (ts *testSuite) TestGetRoleUsers() {
 	getUserTestCases := []struct {
-		Role     api.Role
+		Role     api2.Role
 		Response string
 		Error    int
 	}{
 		{
-			Role:     api.AdminRole,
+			Role:     api2.AdminRole,
 			Response: "user1@test.com",
 		},
 		{
-			Role:     api.EditorRole,
+			Role:     api2.EditorRole,
 			Response: "user1@test.com",
 		},
 		{
-			Role:     api.ViewerRole,
+			Role:     api2.ViewerRole,
 			Response: "user1@test.com",
 		},
 		{
-			Role:     api.KaytuAdminRole,
+			Role:     api2.KaytuAdminRole,
 			Response: "",
 		},
 	}
@@ -365,7 +366,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
-			if tc.Role == api.KaytuAdminRole {
+			if tc.Role == api2.KaytuAdminRole {
 				ts.Equal(len(response), 0)
 			} else {
 				ts.Equal(tc.Role, response[0].RoleName)
@@ -386,25 +387,25 @@ func (ts *testSuite) TestCreateAPIKey() { // not finished yet. has problem with 
 		Error       int
 	}{
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key1", RoleName: api.AdminRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key1", RoleName: api2.AdminRole},
 			UserID:      "test4",
 			WorkspaceID: "ws4",
 			Role:        "ADMIN",
 		},
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key2", RoleName: api.EditorRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key2", RoleName: api2.EditorRole},
 			UserID:      "test2",
 			WorkspaceID: "ws1",
 			Role:        "ADMIN",
 		},
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key3", RoleName: api.ViewerRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key3", RoleName: api2.ViewerRole},
 			UserID:      "test1",
 			WorkspaceID: "ws1",
 			Role:        "EDITOR",
 		},
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key4", RoleName: api.ViewerRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key4", RoleName: api2.ViewerRole},
 			UserID:      "test3",
 			WorkspaceID: "ws2",
 			Role:        "VIEWER",

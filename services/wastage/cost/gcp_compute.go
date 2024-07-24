@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"

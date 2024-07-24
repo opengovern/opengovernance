@@ -2,8 +2,8 @@ package workspace
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )

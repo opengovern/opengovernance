@@ -45,9 +45,11 @@ var (
 	EsSinkBaseURL              = os.Getenv("ESSINK_BASEURL")
 	AuthGRPCURI                = os.Getenv("AUTH_GRPC_URI")
 
-	KeyARN                          = os.Getenv("VAULT_KEY_ID")
-	KeyRegion                       = os.Getenv("KMS_ACCOUNT_REGION")
-	DescribeExternalDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT_EXTERNAL")
+	KeyARN                       = os.Getenv("VAULT_KEY_ID")
+	KeyRegion                    = os.Getenv("KMS_ACCOUNT_REGION")
+	DescribeLocalJobEndpoint     = os.Getenv("DESCRIBE_JOB_ENDPOINT_LOCAL")
+	DescribeLocalDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT_LOCAL")
+	DescribeExternalEndpoint     = os.Getenv("DESCRIBE_DELIVER_ENDPOINT_EXTERNAL")
 
 	DoDeleteOldResources  = os.Getenv("DO_DELETE_OLD_RESOURCES")
 	OperationModeConfig   = os.Getenv("OPERATION_MODE_CONFIG")

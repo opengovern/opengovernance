@@ -2,8 +2,8 @@ package gpt
 
 import (
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	"math/rand"
 	"net/http"
@@ -13,8 +13,8 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	
-	v1.POST("/gpt/run", httpserver.AuthorizeHandler(h.RunGPTQuery, authApi.ViewerRole))
+
+	v1.POST("/gpt/run", httpserver.AuthorizeHandler(h.RunGPTQuery, api.ViewerRole))
 }
 
 // RunGPTQuery godoc

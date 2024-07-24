@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
 	"time"
 
@@ -17,9 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
