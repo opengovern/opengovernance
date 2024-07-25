@@ -1405,14 +1405,14 @@ jobs:
       - name: Azure Docker Login
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          login-server: ${{ vars.AZURE_PRIVATE_DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_PRIVATE_USERNAME }}
+          password: ${{ secrets.ACR_PRIVATE_PASSWORD }}
       - name: Build and Push to ACR
         uses: docker/build-push-action@v2
         with:
           push: true
           tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/wastage-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ${{ vars.AZURE_PRIVATE_DOCKER_REGISTRY }}/wastage-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/WastageServiceDockerfile
           context: .
