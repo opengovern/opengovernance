@@ -9,7 +9,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
