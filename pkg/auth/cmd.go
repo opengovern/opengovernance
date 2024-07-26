@@ -32,6 +32,8 @@ var (
 	mailSender     = os.Getenv("EMAIL_SENDER")
 	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
+	dexAuthDomain                = os.Getenv("DEX_AUTH_DOMAIN")
+	dexAuthPublicClientID        = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
 	auth0Domain                  = os.Getenv("AUTH0_DOMAIN")
 	auth0ClientID                = os.Getenv("AUTH0_CLIENT_ID")
 	auth0ClientIDNative          = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
@@ -97,6 +99,11 @@ func start(ctx context.Context) error {
 	verifierPennywiseNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDPennywiseNative)
 	if err != nil {
 		return fmt.Errorf("open id connect verifier pennywise: %w", err)
+	}
+
+	dexVerifier, err := newAuth0OidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
+	if err != nil {
+		return fmt.Errorf("open id connect dex verifier: %w", err)
 	}
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
@@ -175,6 +182,7 @@ func start(ctx context.Context) error {
 		verifier:                verifier,
 		verifierNative:          verifierNative,
 		verifierPennywiseNative: verifierPennywiseNative,
+		dexVerifier:             dexVerifier,
 		logger:                  logger,
 		workspaceClient:         workspaceClient,
 		db:                      adb,

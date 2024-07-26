@@ -39,6 +39,7 @@ type Server struct {
 	verifier                *oidc.IDTokenVerifier
 	verifierNative          *oidc.IDTokenVerifier
 	verifierPennywiseNative *oidc.IDTokenVerifier
+	dexVerifier             *oidc.IDTokenVerifier
 	logger                  *zap.Logger
 	workspaceClient         client.WorkspaceServiceClient
 	db                      db.Database
@@ -294,6 +295,15 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	tp, err := s.verifierPennywiseNative.Verify(ctx, token)
 	if err == nil {
 		if err := tp.Claims(&u); err != nil {
+			return nil, err
+		}
+
+		return &u, nil
+	}
+
+	dv, err := s.dexVerifier.Verify(ctx, token)
+	if err == nil {
+		if err := dv.Claims(&u); err != nil {
 			return nil, err
 		}
 
