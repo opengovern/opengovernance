@@ -300,13 +300,18 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		return &u, nil
 	}
 
+	s.logger.Info("dex verifier verifying")
 	dv, err := s.dexVerifier.Verify(ctx, token)
 	if err == nil {
 		if err := dv.Claims(&u); err != nil {
+			s.logger.Error("dex verifier claim error", zap.Error(err))
+
 			return nil, err
 		}
 
 		return &u, nil
+	} else {
+		s.logger.Error("dex verifier verify error", zap.Error(err))
 	}
 
 	_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
