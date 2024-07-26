@@ -2,14 +2,14 @@ package service
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	client4 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client5 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/api/entities"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/db/model"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"go.uber.org/zap"
 	"strings"
 	"time"

@@ -2,17 +2,13 @@ package grpcApi
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
-	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/es-sink/service"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
-	kaytuGrpc "github.com/kaytu-io/kaytu-util/pkg/grpc"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"net"
 )
 
@@ -24,14 +20,7 @@ type GRPCSinkServer struct {
 	addr          string
 }
 
-func NewGRPCSinkServer(logger *zap.Logger, esSinkService *service.EsSinkService, authGrpcUri string, addr string) (*GRPCSinkServer, error) {
-	authGRPCConn, err := grpc.Dial(authGrpcUri, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
-	if err != nil {
-		logger.Error("failed to connect to auth grpc server", zap.Error(err))
-		return nil, err
-	}
-	authClient := envoyAuth.NewAuthorizationClient(authGRPCConn)
-
+func NewGRPCSinkServer(logger *zap.Logger, esSinkService *service.EsSinkService, addr string) (*GRPCSinkServer, error) {
 	server := GRPCSinkServer{
 		logger:        logger,
 		esSinkService: esSinkService,
@@ -39,9 +28,7 @@ func NewGRPCSinkServer(logger *zap.Logger, esSinkService *service.EsSinkService,
 	}
 
 	server.grpcServer = grpc.NewServer(
-		grpc.MaxRecvMsgSize(128*1024*1024),
-		grpc.UnaryInterceptor(kaytuGrpc.CheckGRPCAuthUnaryInterceptorWrapper(authClient)),
-		grpc.StreamInterceptor(kaytuGrpc.CheckGRPCAuthStreamInterceptorWrapper(authClient)),
+		grpc.MaxRecvMsgSize(128 * 1024 * 1024),
 	)
 	golang.RegisterEsSinkServiceServer(server.grpcServer, &server)
 

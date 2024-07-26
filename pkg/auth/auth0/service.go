@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	url2 "net/url"
+	"strconv"
 )
 
 type Service struct {
@@ -21,11 +21,9 @@ type Service struct {
 	InviteTTL    int
 
 	token string
-
-	database db.Database
 }
 
-func New(domain, appClientID, clientID, clientSecret, connection string, inviteTTL int, database db.Database) *Service {
+func New(domain, appClientID, clientID, clientSecret, connection string, inviteTTL int) *Service {
 	return &Service{
 		domain:       domain,
 		appClientID:  appClientID,
@@ -34,7 +32,6 @@ func New(domain, appClientID, clientID, clientSecret, connection string, inviteT
 		Connection:   connection,
 		InviteTTL:    inviteTTL,
 		token:        "",
-		database:     database,
 	}
 }
 
@@ -81,89 +78,79 @@ func (a *Service) fillToken() error {
 }
 
 func (a *Service) GetUser(userID string) (*User, error) {
-	user, err := a.database.GetUser(userID)
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[GetUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := user.ToApi()
+	var resp User
+	err = json.Unmarshal(r, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return &resp, nil
 }
 
 func (a *Service) SearchByEmail(email string) ([]User, error) {
-	users, err := a.database.GetUsersByEmail(email)
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+
+	encoded := url2.Values{}
+	encoded.Set("email", email)
+
+	url := fmt.Sprintf("%s/api/v2/users-by-email?%s", a.domain, encoded.Encode())
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchByEmail] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	var resp []User
-	for _, user := range users {
-		u, err := user.ToApi()
-		if err != nil {
-			return nil, err
-		}
-		resp = append(resp, *u)
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
 	}
 
 	return resp, nil
 }
 
-func (a *Service) AddUser(user *User) error {
-	appMetadataJSON, err := json.Marshal(user.AppMetadata)
-	if err != nil {
-		return err
-	}
-
-	appMetadataJsonb := pgtype.JSONB{}
-	err = appMetadataJsonb.Set(appMetadataJSON)
-	if err != nil {
-		return err
-	}
-
-	userMetadataJSON, err := json.Marshal(user.UserMetadata)
-	if err != nil {
-		return err
-	}
-
-	userMetadataJsonb := pgtype.JSONB{}
-	err = userMetadataJsonb.Set(userMetadataJSON)
-	if err != nil {
-		return err
-	}
-
-	err = a.database.CreateUser(&db.User{
-		Email:         user.Email,
-		EmailVerified: user.EmailVerified,
-		UserId:        user.UserId,
-		LastLogin:     user.LastLogin,
-		Name:          user.Name,
-		AppMetadata:   appMetadataJsonb,
-		Blocked:       user.Blocked,
-		FamilyName:    user.FamilyName,
-		GivenName:     user.GivenName,
-		LastIp:        user.LastIp,
-		Locale:        user.Locale,
-		LoginsCount:   user.LoginsCount,
-		Multifactor:   user.Multifactor,
-		Nickname:      user.Nickname,
-		PhoneNumber:   user.PhoneNumber,
-		PhoneVerified: user.PhoneVerified,
-		UserMetadata:  userMetadataJsonb,
-		Picture:       user.Picture,
-		Username:      user.Username,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error) { // This should be deprecated
+func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error) {
 	var defaultPass = "kaytu23@"
 	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	randPass := make([]rune, 10)
@@ -229,14 +216,27 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error)
 }
 
 func (a *Service) DeleteUser(userId string) error {
-	err := a.DeleteUser(userId)
+	if err := a.fillToken(); err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("[DeleteUser] could not delete user: %d", res.StatusCode)
 	}
 	return nil
 }
 
-func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) { // I think this should be deprecated
+func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) {
 	request := CreatePasswordChangeTicketRequest{
 		UserId:   userId,
 		ClientId: a.appClientID,
@@ -284,60 +284,129 @@ func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChan
 }
 
 func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) error {
-	appMetadataJSON, err := json.Marshal(appMetadata)
+	if err := a.fillToken(); err != nil {
+		return err
+	}
+
+	js, err := json.Marshal(appMetadata)
 	if err != nil {
 		return err
 	}
 
-	jp := pgtype.JSONB{}
-	err = jp.Set(appMetadataJSON)
+	js = []byte(fmt.Sprintf(`{"app_metadata": %s}`, string(js)))
+
+	url := fmt.Sprintf("%s/api/v2/users/%s", a.domain, userId)
+	req, err := http.NewRequest("PATCH", url, bytes.NewReader(js))
 	if err != nil {
 		return err
 	}
-
-	err = a.database.UpdateUserAppMetadata(userId, jp)
-
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	req.Header.Add("Content-type", "application/json")
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
-
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return fmt.Errorf("[PatchUserAppMetadata] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
 	return nil
 }
 
 func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
-	users, err := a.database.GetUsersByWorkspace(wsID)
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+	url, err := url2.Parse(fmt.Sprintf("%s/api/v2/users", a.domain))
+	if err != nil {
+		return nil, err
+	}
+
+	queryString := url.Query()
+	queryString.Set("search_engine", "v3")
+	queryString.Set("q", "_exists_:app_metadata.workspaceAccess."+wsID)
+	url.RawQuery = queryString.Encode()
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchUsersByWorkspace] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	var resp []User
-	for _, user := range users {
-		u, err := user.ToApi()
-		if err != nil {
-			return nil, err
-		}
-		resp = append(resp, *u)
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
 	}
+
 	return resp, nil
 }
 
 func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, role *api.Role) ([]User, error) {
-	users, err := a.database.SearchUsers(wsID, email, emailVerified)
+	if err := a.fillToken(); err != nil {
+		return nil, err
+	}
+	url, err := url2.Parse(fmt.Sprintf("%s/api/v2/users", a.domain))
 	if err != nil {
 		return nil, err
 	}
 
-	var apiUsers []User
-	for _, user := range users {
-		u, err := user.ToApi()
-		if err != nil {
-			return nil, err
-		}
-		apiUsers = append(apiUsers, *u)
+	queryString := url.Query()
+	queryString.Set("search_engine", "v3")
+	query := "_exists_:app_metadata.workspaceAccess." + wsID
+	if emailVerified != nil {
+		query = query + " AND email_verified:" + strconv.FormatBool(*emailVerified)
 	}
+	if email != nil {
+		query = query + " AND email:" + *email
+	}
+	queryString.Set("q", query)
+	url.RawQuery = queryString.Encode()
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+a.token)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		r, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("[SearchUsers] invalid status code: %d, body=%s", res.StatusCode, string(r))
+	}
+
+	r, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []User
+	err = json.Unmarshal(r, &users)
+	if err != nil {
+		return nil, err
+	}
+
 	var resp []User
 	if role != nil {
-		for _, user := range apiUsers {
+		for _, user := range users {
 			if func() bool {
 				for _, r := range user.AppMetadata.WorkspaceAccess {
 					if r == *role {
@@ -350,7 +419,7 @@ func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, r
 			}
 		}
 	} else {
-		resp = apiUsers
+		resp = users
 	}
 	return resp, nil
 }

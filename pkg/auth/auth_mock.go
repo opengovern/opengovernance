@@ -3,11 +3,11 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 )

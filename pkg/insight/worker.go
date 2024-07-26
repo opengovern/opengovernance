@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
+	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
+	"github.com/kaytu-io/kaytu-util/pkg/jq"
 
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/nats-io/nats.go/jetstream"

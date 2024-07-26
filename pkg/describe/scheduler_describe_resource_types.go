@@ -3,14 +3,14 @@ package describe
 import (
 	"errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )

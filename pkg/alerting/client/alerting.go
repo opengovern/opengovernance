@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"time"

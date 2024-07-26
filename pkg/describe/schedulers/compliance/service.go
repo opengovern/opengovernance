@@ -2,12 +2,12 @@ package compliance
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu-util/pkg/jq"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/jq"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"

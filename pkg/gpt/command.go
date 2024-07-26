@@ -3,7 +3,7 @@ package gpt
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"os"
 
 	"github.com/spf13/cobra"

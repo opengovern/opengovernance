@@ -6,15 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/goccy/go-yaml"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/config"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"net/url"
@@ -212,7 +212,7 @@ func (s *ComplianceAssistantActionsService) GetDirectionOnBenchmarkResultValues(
 		}
 	}
 
-	benchmarkTrendDatapoints, err := s.complianceClient.GetBenchmarkTrend(&httpclient.Context{UserRole: authApi.InternalRole}, benchmarkId, connections, startDate, endDate)
+	benchmarkTrendDatapoints, err := s.complianceClient.GetBenchmarkTrend(&httpclient.Context{UserRole: api.InternalRole}, benchmarkId, connections, startDate, endDate)
 	if err != nil {
 		s.logger.Error("failed to get benchmark trend datapoints", zap.Error(err))
 		return "", err

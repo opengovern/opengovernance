@@ -2,12 +2,12 @@ package thread
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/model"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/openai"
 	"github.com/kaytu-io/kaytu-engine/services/assistant/repository"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/labstack/echo/v4"
 	openai2 "github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"

@@ -8,8 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"net"
 	"os"
@@ -128,7 +128,7 @@ func start(ctx context.Context) error {
 
 	b, err = base64.StdEncoding.DecodeString(kaytuPrivateKey)
 	if err != nil {
-		return fmt.Errorf("public key decode: %w", err)
+		return fmt.Errorf("private key decode: %w", err)
 	}
 	block, _ = pem.Decode(b)
 	if block == nil {
@@ -141,7 +141,7 @@ func start(ctx context.Context) error {
 
 	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse auth0InviteTTL=%s due to %v", auth0InviteTTL, err)
 	}
 
 	// setup postgres connection

@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"strings"
 
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	es3 "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -70,7 +70,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ConnectionCache:         map[string]onboardApi.Connection{},
 	}
 
-	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole})
+	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole})
 	if err != nil {
 		w.logger.Error("failed to list resource collections", zap.Error(err))
 		return err
@@ -80,7 +80,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		jd.ResourceCollectionCache[rc.ID] = rc
 	}
 
-	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, nil)
+	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, nil)
 	if err != nil {
 		w.logger.Error("failed to list connections", zap.Error(err))
 		return err
@@ -140,7 +140,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
 
-		if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
+		if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, docs); err != nil {
 			w.logger.Error("failed to send to ingest", zap.Error(err))
 			return err
 		}
@@ -174,7 +174,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		rf.EsIndex = idx
 		docs = append(docs, rf)
 	}
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, docs); err != nil {
 		w.logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
@@ -225,7 +225,7 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 	keys, idx := task.KeysAndIndex()
 	task.EsID = es2.HashOf(keys...)
 	task.EsIndex = idx
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, []es2.Doc{task}); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, []es2.Doc{task}); err != nil {
 		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
 		return err
 	}

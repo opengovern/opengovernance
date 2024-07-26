@@ -9,6 +9,9 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/rego_runner"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"math"
 	"net/http"
@@ -23,10 +26,7 @@ import (
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
@@ -66,65 +66,65 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	queryV1 := v1.Group("/query")
-	queryV1.GET("", httpserver2.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
-	queryV1.POST("/run", httpserver2.AuthorizeHandler(h.RunQuery, authApi.ViewerRole))
-	queryV1.GET("/run/history", httpserver2.AuthorizeHandler(h.GetRecentRanQueries, authApi.ViewerRole))
+	queryV1.GET("", httpserver.AuthorizeHandler(h.ListQueries, api.ViewerRole))
+	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, api.ViewerRole))
+	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, api.ViewerRole))
 
 	v2 := e.Group("/api/v2")
 
 	resourcesV2 := v2.Group("/resources")
-	resourcesV2.GET("/count", httpserver2.AuthorizeHandler(h.CountResources, authApi.ViewerRole))
+	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api.ViewerRole))
 
 	analyticsV2 := v2.Group("/analytics")
-	analyticsV2.GET("/count", httpserver2.AuthorizeHandler(h.CountAnalytics, authApi.ViewerRole))
-	analyticsV2.GET("/metrics/list", httpserver2.AuthorizeHandler(h.ListMetrics, authApi.ViewerRole))
-	analyticsV2.GET("/metrics/:metric_id", httpserver2.AuthorizeHandler(h.GetMetric, authApi.ViewerRole))
+	analyticsV2.GET("/count", httpserver.AuthorizeHandler(h.CountAnalytics, api.ViewerRole))
+	analyticsV2.GET("/metrics/list", httpserver.AuthorizeHandler(h.ListMetrics, api.ViewerRole))
+	analyticsV2.GET("/metrics/:metric_id", httpserver.AuthorizeHandler(h.GetMetric, api.ViewerRole))
 
-	analyticsV2.GET("/metric", httpserver2.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
-	analyticsV2.GET("/tag", httpserver2.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
-	analyticsV2.GET("/trend", httpserver2.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
-	analyticsV2.GET("/composition/:key", httpserver2.AuthorizeHandler(h.ListAnalyticsComposition, authApi.ViewerRole))
-	analyticsV2.GET("/categories", httpserver2.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
-	analyticsV2.GET("/table", httpserver2.AuthorizeHandler(h.GetAssetsTable, authApi.ViewerRole))
+	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, api.ViewerRole))
+	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, api.ViewerRole))
+	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, api.ViewerRole))
+	analyticsV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListAnalyticsComposition, api.ViewerRole))
+	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, api.ViewerRole))
+	analyticsV2.GET("/table", httpserver.AuthorizeHandler(h.GetAssetsTable, api.ViewerRole))
 
 	analyticsSpend := analyticsV2.Group("/spend")
-	analyticsSpend.GET("/count", httpserver2.AuthorizeHandler(h.CountAnalyticsSpend, authApi.ViewerRole))
-	analyticsSpend.GET("/metric", httpserver2.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
-	analyticsSpend.GET("/composition", httpserver2.AuthorizeHandler(h.ListAnalyticsSpendComposition, authApi.ViewerRole))
-	analyticsSpend.GET("/trend", httpserver2.AuthorizeHandler(h.GetAnalyticsSpendTrend, authApi.ViewerRole))
-	analyticsSpend.GET("/table", httpserver2.AuthorizeHandler(h.GetSpendTable, authApi.ViewerRole))
+	analyticsSpend.GET("/count", httpserver.AuthorizeHandler(h.CountAnalyticsSpend, api.ViewerRole))
+	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, api.ViewerRole))
+	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListAnalyticsSpendComposition, api.ViewerRole))
+	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendTrend, api.ViewerRole))
+	analyticsSpend.GET("/table", httpserver.AuthorizeHandler(h.GetSpendTable, api.ViewerRole))
 
 	connectionsV2 := v2.Group("/connections")
-	connectionsV2.GET("/data", httpserver2.AuthorizeHandler(h.ListConnectionsData, authApi.ViewerRole))
+	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, api.ViewerRole))
 
 	insightsV2 := v2.Group("/insights")
-	insightsV2.GET("", httpserver2.AuthorizeHandler(h.ListInsightResults, authApi.ViewerRole))
-	insightsV2.GET("/:insightId/trend", httpserver2.AuthorizeHandler(h.GetInsightTrendResults, authApi.ViewerRole))
-	insightsV2.GET("/:insightId", httpserver2.AuthorizeHandler(h.GetInsightResult, authApi.ViewerRole))
+	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, api.ViewerRole))
+	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, api.ViewerRole))
+	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, api.ViewerRole))
 
 	resourceCollection := v2.Group("/resource-collection")
-	resourceCollection.GET("", httpserver2.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
-	resourceCollection.GET("/:resourceCollectionId", httpserver2.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
-	resourceCollection.GET("/:resourceCollectionId/landscape", httpserver2.AuthorizeHandler(h.GetResourceCollectionLandscape, authApi.ViewerRole))
+	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, api.ViewerRole))
+	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, api.ViewerRole))
+	resourceCollection.GET("/:resourceCollectionId/landscape", httpserver.AuthorizeHandler(h.GetResourceCollectionLandscape, api.ViewerRole))
 
 	metadata := v2.Group("/metadata")
-	metadata.GET("/resourcetype", httpserver2.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
+	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, api.ViewerRole))
 
 	resourceCollectionMetadata := metadata.Group("/resource-collection")
-	resourceCollectionMetadata.GET("", httpserver2.AuthorizeHandler(h.ListResourceCollectionsMetadata, authApi.ViewerRole))
-	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver2.AuthorizeHandler(h.GetResourceCollectionMetadata, authApi.ViewerRole))
+	resourceCollectionMetadata.GET("", httpserver.AuthorizeHandler(h.ListResourceCollectionsMetadata, api.ViewerRole))
+	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollectionMetadata, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
-	connectionIds := httpserver2.QueryArrayParam(ctx, ConnectionIdParam)
-	connectionIds, err := httpserver2.ResolveConnectionIDs(ctx, connectionIds)
+	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
+	connectionIds, err := httpserver.ResolveConnectionIDs(ctx, connectionIds)
 	if err != nil {
 		return nil, err
 	}
 
-	connectionGroup := httpserver2.QueryArrayParam(ctx, ConnectionGroupParam)
+	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
 	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
 	}
@@ -139,7 +139,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 
 	connectionMap := map[string]bool{}
 	for _, connectionGroupID := range connectionGroup {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.InternalRole}, connectionGroupID)
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: api.InternalRole}, connectionGroupID)
 		if err != nil {
 			return nil, err
 		}
@@ -270,12 +270,12 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 //	@Router			/inventory/api/v2/analytics/metric [get]
 func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	var err error
-	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -283,8 +283,8 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
-	metricIDs := httpserver2.QueryArrayParam(ctx, "metricIDs")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
 	if err != nil {
@@ -453,7 +453,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Success		200					{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
@@ -484,7 +484,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	if len(resourceCollections) > 0 && metricType == analyticsDB.MetricTypeSpend {
 		return ctx.JSON(http.StatusBadRequest, "ResourceCollections are not supported for spend metrics")
 	}
@@ -586,13 +586,13 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/analytics/trend [get]
 func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	ids := httpserver2.QueryArrayParam(ctx, "ids")
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	ids := httpserver.QueryArrayParam(ctx, "ids")
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -601,7 +601,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connections")
 	}
 
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -779,7 +779,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		}
 
 	}
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -788,7 +788,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
 
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
@@ -1077,7 +1077,7 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 			resourceCount[dateKey] = costItem
 		}
 		if dimension == inventoryApi.DimensionTypeConnection &&
-			httpserver2.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
+			httpserver.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
 			continue
 		}
 		table = append(table, inventoryApi.AssetTableRow{
@@ -1112,7 +1112,7 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/analytics/spend/metric [get]
 func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	var err error
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -1139,7 +1139,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	metricIds := httpserver2.QueryArrayParam(ctx, "metricIDs")
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIDs")
 	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
 		metricIds, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
@@ -1399,7 +1399,7 @@ func (h *HttpHandler) CountAnalytics(ctx echo.Context) error {
 func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
@@ -1498,7 +1498,7 @@ func (h *HttpHandler) GetMetric(ctx echo.Context) error {
 func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -1640,8 +1640,8 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/analytics/spend/trend [get]
 func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	var err error
-	metricIds := httpserver2.QueryArrayParam(ctx, "metricIds")
-	connectorTypes := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
@@ -1755,7 +1755,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
-	metricIds := httpserver2.QueryArrayParam(ctx, "metricIds")
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
 	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend,
 		metricIds, nil, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 	if err != nil {
@@ -1766,7 +1766,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		metricIds = append(metricIds, m.ID)
 	}
 
-	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -1863,14 +1863,14 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 				}
 			}
 		} else if dimension == inventoryApi.DimensionTypeConnection {
-			if httpserver2.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
+			if httpserver.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
 				continue
 			}
 
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
 				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
-				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
+				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, m.DimensionID)
 				if err != nil {
 					if !strings.Contains(err.Error(), "source not found") {
 						return err
@@ -1900,9 +1900,9 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	performanceStartTime := time.Now()
 	var err error
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
-	metricIDFilters := httpserver2.QueryArrayParam(ctx, "metricId")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	metricIDFilters := httpserver.QueryArrayParam(ctx, "metricId")
 	connectors, err := h.getConnectorTypesFromConnectionIDs(ctx, nil, connectionIDs)
 	if err != nil {
 		return err
@@ -2096,7 +2096,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_RunSmartQuery")
 
-	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: authApi.InternalRole})
+	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.InternalRole})
 	if err != nil {
 		return err
 	}
@@ -2216,7 +2216,7 @@ func (h *HttpHandler) RunSQLSmartQuery(ctx context.Context, title, query string,
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	// tracer :
-	connections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	connections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2428,7 +2428,7 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 
 func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	var err error
-	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	timeStr := ctx.QueryParam("time")
 	timeAt := time.Now().Unix()
 	if timeStr != "" {
@@ -2437,11 +2437,11 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 	}
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
-	insightIdListStr := httpserver2.QueryArrayParam(ctx, "insightId")
+	insightIdListStr := httpserver.QueryArrayParam(ctx, "insightId")
 	if len(insightIdListStr) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "insight id is required")
 	}
@@ -2492,12 +2492,12 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 	}
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) == 0 {
 		connectionIDs = nil
 	}
 
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	var insightResults map[uint][]insight.InsightResource
 	if timeStr != "" {
@@ -2552,8 +2552,8 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 		startTime = endTime.Add(-time.Hour * 24 * 30)
 	}
 
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connectionId")
-	resourceCollections := httpserver2.QueryArrayParam(ctx, "resourceCollection")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
 	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(ctx.Request().Context(), h.client, startTime, endTime, dataPointCount, nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
@@ -2568,10 +2568,10 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(ctx, "tag"))
-	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
-	serviceNames := httpserver2.QueryArrayParam(ctx, "service")
-	resourceTypeNames := httpserver2.QueryArrayParam(ctx, "resourceType")
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	serviceNames := httpserver.QueryArrayParam(ctx, "service")
+	resourceTypeNames := httpserver.QueryArrayParam(ctx, "resourceType")
 	summarized := strings.ToLower(ctx.QueryParam("summarized")) == "true"
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
@@ -2646,9 +2646,9 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Success		200		{object}	[]inventoryApi.ResourceCollection
 //	@Router			/inventory/api/v2/resource-collection [get]
 func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
-	ids := httpserver2.QueryArrayParam(ctx, "id")
+	ids := httpserver.QueryArrayParam(ctx, "id")
 
-	statuesString := httpserver2.QueryArrayParam(ctx, "status")
+	statuesString := httpserver.QueryArrayParam(ctx, "status")
 	var statuses []ResourceCollectionStatus
 	for _, statusString := range statuesString {
 		statuses = append(statuses, ResourceCollectionStatus(statusString))
@@ -2955,9 +2955,9 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 //	@Success		200		{object}	[]inventoryApi.ResourceCollection
 //	@Router			/inventory/api/v2/metadata/resource-collection [get]
 func (h *HttpHandler) ListResourceCollectionsMetadata(ctx echo.Context) error {
-	ids := httpserver2.QueryArrayParam(ctx, "id")
+	ids := httpserver.QueryArrayParam(ctx, "id")
 
-	statuesString := httpserver2.QueryArrayParam(ctx, "status")
+	statuesString := httpserver.QueryArrayParam(ctx, "status")
 	var statuses []ResourceCollectionStatus
 	for _, statusString := range statuesString {
 		statuses = append(statuses, ResourceCollectionStatus(statusString))
@@ -3000,7 +3000,7 @@ func (h *HttpHandler) GetResourceCollectionMetadata(ctx echo.Context) error {
 
 func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string, error) {
 	var connections []string
-	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, []source.Type{source.CloudAWS, source.CloudAzure})
+	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, []source.Type{source.CloudAWS, source.CloudAzure})
 	if err != nil {
 		return nil, err
 	}
@@ -3030,7 +3030,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 						}
 					}
 				} else if dimKey == "ConnectionGroup" {
-					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: authApi.InternalRole})
+					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: api.InternalRole})
 					if err != nil {
 						return nil, err
 					}
