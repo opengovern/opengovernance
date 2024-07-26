@@ -2,12 +2,12 @@ package kaytu_client
 
 import (
 	"context"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/services"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"runtime"
 	"time"
@@ -40,7 +40,7 @@ func GetBenchmarkSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		}
 	}
 
-	res, err := complianceClient.GetBenchmarkSummary(&httpclient.Context{UserRole: authApi.InternalRole}, benchmarkId, connectionIds, timeAt)
+	res, err := complianceClient.GetBenchmarkSummary(&httpclient.Context{UserRole: api.InternalRole}, benchmarkId, connectionIds, timeAt)
 	if err != nil {
 		plugin.Logger(ctx).Error("GetBenchmarkSummary compliance client call failed", "error", err)
 		return nil, err
@@ -85,7 +85,7 @@ func ListBenchmarkControls(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 		}
 	}
 
-	apiRes, err := complianceClient.GetBenchmarkControls(&httpclient.Context{UserRole: authApi.InternalRole}, benchmarkId, connectionIds, timeAt)
+	apiRes, err := complianceClient.GetBenchmarkControls(&httpclient.Context{UserRole: api.InternalRole}, benchmarkId, connectionIds, timeAt)
 	if err != nil {
 		plugin.Logger(ctx).Error("GetBenchmarkSummary compliance client call failed", "error", err)
 		return nil, err

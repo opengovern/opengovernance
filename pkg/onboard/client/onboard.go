@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
+	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/labstack/echo/v4"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"

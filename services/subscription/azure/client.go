@@ -3,8 +3,8 @@ package azure
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/services/subscription/azure/entities"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )

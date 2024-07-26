@@ -8,6 +8,9 @@ import (
 	"github.com/jackc/pgtype"
 	runner2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -20,14 +23,11 @@ import (
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -58,28 +58,28 @@ func NewHTTPServer(
 func (h HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.PUT("/describe/trigger/:connection_id", httpserver2.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
-	v1.PUT("/describe/trigger", httpserver2.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
-	v1.PUT("/insight/trigger/:insight_id", httpserver2.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
-	v1.PUT("/insight/in_progress/:job_id", httpserver2.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
-	v1.GET("/insight/job/:job_id", httpserver2.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
-	v1.GET("/insight/:insight_id/jobs", httpserver2.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
-	v1.PUT("/compliance/trigger", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJobs, apiAuth.AdminRole))
-	v1.PUT("/compliance/trigger/:benchmark_id", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
-	v1.PUT("/compliance/trigger/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.TriggerConnectionsComplianceJobSummary, apiAuth.AdminRole))
-	v1.GET("/compliance/re-evaluate/:benchmark_id", httpserver2.AuthorizeHandler(h.CheckReEvaluateComplianceJob, apiAuth.AdminRole))
-	v1.PUT("/compliance/re-evaluate/:benchmark_id", httpserver2.AuthorizeHandler(h.ReEvaluateComplianceJob, apiAuth.AdminRole))
-	v1.GET("/compliance/status/:benchmark_id", httpserver2.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
-	v1.PUT("/analytics/trigger", httpserver2.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
-	v1.GET("/analytics/job/:job_id", httpserver2.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
-	v1.GET("/describe/status/:resource_type", httpserver2.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
-	v1.GET("/describe/connection/status", httpserver2.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
-	v1.GET("/describe/pending/connections", httpserver2.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
-	v1.GET("/describe/all/jobs/state", httpserver2.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
+	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
+	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
+	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
+	v1.PUT("/insight/in_progress/:job_id", httpserver.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
+	v1.GET("/insight/job/:job_id", httpserver.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
+	v1.GET("/insight/:insight_id/jobs", httpserver.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
+	v1.PUT("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJobs, apiAuth.AdminRole))
+	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
+	v1.PUT("/compliance/trigger/:benchmark_id/summary", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJobSummary, apiAuth.AdminRole))
+	v1.GET("/compliance/re-evaluate/:benchmark_id", httpserver.AuthorizeHandler(h.CheckReEvaluateComplianceJob, apiAuth.AdminRole))
+	v1.PUT("/compliance/re-evaluate/:benchmark_id", httpserver.AuthorizeHandler(h.ReEvaluateComplianceJob, apiAuth.AdminRole))
+	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
+	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
+	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
+	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
+	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
 
-	v1.GET("/discovery/resourcetypes/list", httpserver2.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
-	v1.POST("/jobs", httpserver2.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
-	v1.GET("/jobs/bydate", httpserver2.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
+	v1.GET("/discovery/resourcetypes/list", httpserver.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
+	v1.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
+	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 }
 
 // ListJobs godoc
@@ -446,8 +446,8 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 }
 
 func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
-	resourceTypes := httpserver2.QueryArrayParam(ctx, "resource_type")
-	connectors := source.ParseTypes(httpserver2.QueryArrayParam(ctx, "connector"))
+	resourceTypes := httpserver.QueryArrayParam(ctx, "resource_type")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	forceFull := ctx.QueryParam("force_full") == "true"
 
 	//err := h.Scheduler.CheckWorkspaceResourceLimit()
@@ -586,7 +586,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
 
 	lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -618,9 +618,9 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
-	benchmarkIDs := httpserver2.QueryArrayParam(ctx, "benchmark_id")
+	benchmarkIDs := httpserver.QueryArrayParam(ctx, "benchmark_id")
 
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
 
 	for _, benchmarkID := range benchmarkIDs {
 		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
@@ -765,11 +765,11 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [put]
 func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
 	if len(connectionIDs) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
 	}
-	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
+	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
 
 	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
 	if err != nil {
@@ -824,11 +824,11 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [get]
 func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	connectionIDs := httpserver2.QueryArrayParam(ctx, "connection_id")
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
 	if len(connectionIDs) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
 	}
-	controlIDs := httpserver2.QueryArrayParam(ctx, "control_id")
+	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
 
 	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
 	if err != nil {

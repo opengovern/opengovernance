@@ -44,7 +44,13 @@ func NewCreateHelmRelease(
 }
 
 func (t *CreateHelmRelease) Requirements() []api.TransactionID {
-	return []api.TransactionID{api.Transaction_CreateInsightBucket, api.Transaction_CreateOpenSearch, api.Transaction_CreateIngestionPipeline, api.Transaction_CreateServiceAccountRoles, api.Transaction_CreateWorkspaceKeyId}
+	return []api.TransactionID{
+		//api.Transaction_CreateInsightBucket,
+		//api.Transaction_CreateOpenSearch,
+		//api.Transaction_CreateIngestionPipeline,
+		api.Transaction_CreateServiceAccountRoles,
+		api.Transaction_CreateWorkspaceKeyId,
+	}
 }
 
 func (t *CreateHelmRelease) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {

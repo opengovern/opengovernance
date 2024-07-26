@@ -19,13 +19,14 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	api4 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"net/http"
@@ -60,28 +61,24 @@ var (
 )
 
 type Server struct {
-	logger                  *zap.Logger
-	e                       *echo.Echo
-	cfg                     config.Config
-	db                      *db.Database
-	authClient              authclient.AuthServiceClient
-	kubeClient              k8sclient.Client // the kubernetes client
-	StateManager            *statemanager.Service
-	awsMasterCnf            aws.Config
-	vault                   vault.VaultSourceConfig
-	azureVaultSecretHandler *vault.AzureVaultSecretHandler
+	logger             *zap.Logger
+	e                  *echo.Echo
+	cfg                config.Config
+	db                 *db.Database
+	authClient         authclient.AuthServiceClient
+	kubeClient         k8sclient.Client // the kubernetes client
+	StateManager       *statemanager.Service
+	awsMasterCnf       aws.Config
+	vault              vault.VaultSourceConfig
+	vaultSecretHandler vault.VaultSecretHandler
 }
 
-func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
+func NewServer(ctx context.Context, logger *zap.Logger, cfg config.Config) (*Server, error) {
 	s := &Server{
 		cfg: cfg,
 	}
 
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return nil, fmt.Errorf("new zap logger: %s", err)
-	}
-	s.e, _ = httpserver.Register(logger, s)
+	s.e, _ = httpserver2.Register(logger, s)
 
 	dbs, err := db.NewDatabase(cfg, logger)
 	if err != nil {
@@ -122,16 +119,27 @@ func NewServer(ctx context.Context, cfg config.Config) (*Server, error) {
 			logger.Error("new azure vaultClient source config", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
 		}
-		s.azureVaultSecretHandler, err = vault.NewAzureVaultSecretHandler(logger, cfg.Vault.Azure)
+		s.vaultSecretHandler, err = vault.NewAzureVaultSecretHandler(logger, cfg.Vault.Azure)
 		if err != nil {
 			logger.Error("new azure vaultClient secret handler", zap.Error(err))
 			return nil, fmt.Errorf("new azure vaultClient secret handler: %w", err)
+		}
+	case vault.HashiCorpVault:
+		s.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+		if err != nil {
+			logger.Error("new hashicorp vaultClient source config", zap.Error(err))
+			return nil, fmt.Errorf("new hashicorp vaultClient source config: %w", err)
+		}
+		s.vaultSecretHandler, err = vault.NewHashiCorpVaultSecretHandler(ctx, logger, cfg.Vault.HashiCorp)
+		if err != nil {
+			logger.Error("new hashicorp vaultClient secret handler", zap.Error(err))
+			return nil, fmt.Errorf("new hashicorp vaultClient secret handler: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("unsupported vault provider: %s", cfg.Vault.Provider)
 	}
 
-	s.StateManager, err = statemanager.New(ctx, cfg, s.vault, s.azureVaultSecretHandler)
+	s.StateManager, err = statemanager.New(ctx, cfg, s.vault, s.vaultSecretHandler)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load initiate state manager: %v", err)
 	}
@@ -143,32 +151,32 @@ func (s *Server) Register(e *echo.Echo) {
 	v1Group := e.Group("/api/v1")
 
 	workspaceGroup := v1Group.Group("/workspace")
-	workspaceGroup.POST("", httpserver.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
-	workspaceGroup.DELETE("/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
-	workspaceGroup.GET("/current", httpserver.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
-	workspaceGroup.POST("/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/organization", httpserver.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
+	workspaceGroup.POST("", httpserver2.AuthorizeHandler(s.CreateWorkspace, api2.EditorRole))
+	workspaceGroup.DELETE("/:workspace_id", httpserver2.AuthorizeHandler(s.DeleteWorkspace, api2.EditorRole))
+	workspaceGroup.GET("/current", httpserver2.AuthorizeHandler(s.GetCurrentWorkspace, api2.ViewerRole))
+	workspaceGroup.POST("/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, api2.EditorRole))
+	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, api2.KaytuAdminRole))
 
 	bootstrapGroup := v1Group.Group("/bootstrap")
-	bootstrapGroup.GET("/:workspace_name", httpserver.AuthorizeHandler(s.GetBootstrapStatus, authapi.EditorRole))
-	bootstrapGroup.POST("/:workspace_name/credential", httpserver.AuthorizeHandler(s.AddCredential, authapi.EditorRole))
-	bootstrapGroup.POST("/:workspace_name/finish", httpserver.AuthorizeHandler(s.FinishBootstrap, authapi.EditorRole))
+	bootstrapGroup.GET("/:workspace_name", httpserver2.AuthorizeHandler(s.GetBootstrapStatus, api2.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/credential", httpserver2.AuthorizeHandler(s.AddCredential, api2.EditorRole))
+	bootstrapGroup.POST("/:workspace_name/finish", httpserver2.AuthorizeHandler(s.FinishBootstrap, api2.EditorRole))
 
 	workspacesGroup := v1Group.Group("/workspaces")
-	workspacesGroup.GET("/limits/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
-	workspacesGroup.GET("/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.InternalRole))
-	workspacesGroup.GET("", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
-	workspacesGroup.GET("/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
-	workspacesGroup.GET("/byname/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceByName, authapi.ViewerRole))
+	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, api2.ViewerRole))
+	workspacesGroup.GET("/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceByID, api2.InternalRole))
+	workspacesGroup.GET("", httpserver2.AuthorizeHandler(s.ListWorkspaces, api2.ViewerRole))
+	workspacesGroup.GET("/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, api2.ViewerRole))
+	workspacesGroup.GET("/byname/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceByName, api2.ViewerRole))
 
 	organizationGroup := v1Group.Group("/organization")
-	organizationGroup.GET("", httpserver.AuthorizeHandler(s.ListOrganization, authapi.KaytuAdminRole))
-	organizationGroup.POST("", httpserver.AuthorizeHandler(s.CreateOrganization, authapi.KaytuAdminRole))
-	organizationGroup.DELETE("/:organizationId", httpserver.AuthorizeHandler(s.DeleteOrganization, authapi.KaytuAdminRole))
+	organizationGroup.GET("", httpserver2.AuthorizeHandler(s.ListOrganization, api2.KaytuAdminRole))
+	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, api2.KaytuAdminRole))
+	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, api2.KaytuAdminRole))
 
 	costEstimatorGroup := v1Group.Group("/costestimator")
-	costEstimatorGroup.GET("/aws", httpserver.AuthorizeHandler(s.GetAwsCost, authapi.ViewerRole))
-	costEstimatorGroup.GET("/azure", httpserver.AuthorizeHandler(s.GetAzureCost, authapi.ViewerRole))
+	costEstimatorGroup.GET("/aws", httpserver2.AuthorizeHandler(s.GetAwsCost, api2.ViewerRole))
+	costEstimatorGroup.GET("/azure", httpserver2.AuthorizeHandler(s.GetAzureCost, api2.ViewerRole))
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -191,7 +199,7 @@ func (s *Server) Start(ctx context.Context) error {
 //	@Success		200		{object}	api.CreateWorkspaceResponse
 //	@Router			/workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 
 	var request api.CreateWorkspaceRequest
 	if err := c.Bind(&request); err != nil {
@@ -256,7 +264,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	err = s.authClient.UpdateWorkspaceMap(&httpclient.Context{UserRole: authapi.InternalRole})
+	err = s.authClient.UpdateWorkspaceMap(&httpclient.Context{UserRole: api2.InternalRole})
 	if err != nil {
 		return err
 	}
@@ -293,7 +301,7 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 		},
 	}
 
-	hctx := &httpclient.Context{UserRole: authapi.InternalRole}
+	hctx := &httpclient.Context{UserRole: api2.InternalRole}
 	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", ws.ID)
 	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
 
@@ -497,7 +505,7 @@ func (s *Server) FinishBootstrap(c echo.Context) error {
 		return err
 	}
 
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	if *ws.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
@@ -549,7 +557,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		return err
 	}
 
-	userID := httpserver.GetUserID(ctx)
+	userID := httpserver2.GetUserID(ctx)
 	if *ws.OwnerId != userID {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
@@ -724,7 +732,7 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v1/workspace/{workspace_id} [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 
 	id := c.Param("workspace_id")
 	if id == "" {
@@ -838,9 +846,9 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 	var resp authapi.GetRoleBindingsResponse
 	var err error
 
-	userId := httpserver.GetUserID(c)
+	userId := httpserver2.GetUserID(c)
 
-	if userId != authapi.GodUserID {
+	if userId != api2.GodUserID {
 		resp, err = s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 		if err != nil {
 			return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -859,7 +867,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		hasRoleInWorkspace := false
-		if userId != authapi.GodUserID {
+		if userId != api2.GodUserID {
 			for _, rb := range resp.RoleBindings {
 				if rb.WorkspaceID == workspace.ID {
 					hasRoleInWorkspace = true
@@ -911,7 +919,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 //	@Success		200	{object}	api.WorkspaceResponse
 //	@Router			/workspace/api/v1/workspace/current [get]
 func (s *Server) GetCurrentWorkspace(c echo.Context) error {
-	wsName := httpserver.GetWorkspaceName(c)
+	wsName := httpserver2.GetWorkspaceName(c)
 
 	workspace, err := s.db.GetWorkspaceByName(wsName)
 	if err != nil {
@@ -937,7 +945,7 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 }
 
 func (s *Server) ChangeOwnership(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	var request api.ChangeWorkspaceOwnershipRequest
@@ -1033,7 +1041,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 
 	if ignoreUsage != "true" {
 		ectx := httpclient.FromEchoContext(c)
-		ectx.UserRole = authapi.AdminRole
+		ectx.UserRole = api2.AdminRole
 		resp, err := s.authClient.GetWorkspaceRoleBindings(ectx, dbWorkspace.ID)
 		if err != nil {
 			return fmt.Errorf("GetWorkspaceRoleBindings: %v", err)

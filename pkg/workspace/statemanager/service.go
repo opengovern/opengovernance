@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	"github.com/aws/aws-sdk-go-v2/service/osis"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
@@ -34,21 +33,24 @@ const (
 )
 
 type Service struct {
-	cfg                     workspaceConfig.Config
-	logger                  *zap.Logger
-	db                      *db.Database
-	vault                   vault.VaultSourceConfig
-	azureVaultSecretHandler *vault.AzureVaultSecretHandler
-	authClient              authclient.AuthServiceClient
-	kubeClient              k8sclient.Client // the kubernetes client
-	opensearch              *opensearch.Client
-	osis                    *osis.Client
-	iam                     *iam.Client
-	iamMaster               *iam.Client
-	s3Client                *s3.Client
+	cfg        workspaceConfig.Config
+	logger     *zap.Logger
+	db         *db.Database
+	vault      vault.VaultSourceConfig
+	authClient authclient.AuthServiceClient
+	kubeClient k8sclient.Client // the kubernetes client
+	opensearch *opensearch.Client
+	osis       *osis.Client
+	iam        *iam.Client
+	iamMaster  *iam.Client
+
+	vaultSecretHandler vault.VaultSecretHandler
 }
 
-func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.VaultSourceConfig, vaultSecretHandler *vault.AzureVaultSecretHandler) (*Service, error) {
+func New(ctx context.Context, cfg workspaceConfig.Config,
+	vaultClient vault.VaultSourceConfig,
+	vaultSecretHandler vault.VaultSecretHandler,
+) (*Service, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
@@ -93,26 +95,26 @@ func New(ctx context.Context, cfg workspaceConfig.Config, vaultClient vault.Vaul
 
 	iamClient := iam.NewFromConfig(awsCfg)
 
-	awsConfig, err := aws2.GetConfig(ctx, cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load aws config: %v", err)
-	}
-	awsConfig.Region = "us-east-1"
-	s3Client := s3.NewFromConfig(awsConfig)
+	//awsConfig, err := aws2.GetConfig(ctx, cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
+	//if err != nil {
+	//	return nil, fmt.Errorf("failed to load aws config: %v", err)
+	//}
+	//awsConfig.Region = "us-east-1"
+	//s3Client := s3.NewFromConfig(awsConfig)
 
 	return &Service{
-		logger:                  logger,
-		cfg:                     cfg,
-		db:                      dbs,
-		authClient:              authClient,
-		kubeClient:              kubeClient,
-		vault:                   vaultClient,
-		azureVaultSecretHandler: vaultSecretHandler,
-		iam:                     iamClient,
-		iamMaster:               iamClientMaster,
-		s3Client:                s3Client,
-		opensearch:              openSearchClient,
-		osis:                    osisClient,
+		logger:     logger,
+		cfg:        cfg,
+		db:         dbs,
+		authClient: authClient,
+		kubeClient: kubeClient,
+		vault:      vaultClient,
+		iam:        iamClient,
+		iamMaster:  iamClientMaster,
+		opensearch: openSearchClient,
+		osis:       osisClient,
+		//s3Client:                s3Client,
+		vaultSecretHandler: vaultSecretHandler,
 	}, nil
 }
 

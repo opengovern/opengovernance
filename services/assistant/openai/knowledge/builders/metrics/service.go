@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/goccy/go-yaml"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +18,7 @@ type assistantMetric struct {
 }
 
 func ExtractMetrics(logger *zap.Logger, i inventoryClient.InventoryServiceClient, metricType analyticsDB.MetricType) (map[string]string, error) {
-	metrics, err := i.ListAnalyticsMetrics(&httpclient.Context{UserRole: authApi.InternalRole}, &metricType)
+	metrics, err := i.ListAnalyticsMetrics(&httpclient.Context{UserRole: api.InternalRole}, &metricType)
 	if err != nil {
 		logger.Error("failed to list analytics metrics", zap.Error(err))
 		return nil, err

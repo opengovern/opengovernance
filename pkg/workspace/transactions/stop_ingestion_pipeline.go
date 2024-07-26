@@ -27,7 +27,9 @@ func NewStopIngestionPipeline(
 }
 
 func (t *StopIngestionPipeline) Requirements() []api.TransactionID {
-	return []api.TransactionID{api.Transaction_CreateIngestionPipeline}
+	return []api.TransactionID{
+		//api.Transaction_CreateIngestionPipeline,
+	}
 }
 
 func (t *StopIngestionPipeline) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {

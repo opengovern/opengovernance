@@ -4,18 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	esSinkClient "github.com/kaytu-io/kaytu-engine/services/es-sink/client"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"time"
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/jq"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/jq"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -110,7 +110,7 @@ func NewWorker(
 		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
-	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
+	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}
 	benchmarks, err := w.complianceClient.ListAllBenchmarks(ctx2, true)
 	if err != nil {
 		logger.Error("failed to get benchmarks", zap.Error(err))

@@ -11,14 +11,14 @@ import (
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/attribute"
@@ -462,9 +462,11 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 		span.SetStatus(codes.Error, err.Error())
 		return false, echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
 	}
+
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name ", *cred.Name),
+		attribute.String("credential id ", cred.ID.String()),
 	))
+
 	span.End()
 
 	if err != nil {

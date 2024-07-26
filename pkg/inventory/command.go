@@ -3,9 +3,9 @@ package inventory
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"os"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	config3 "github.com/kaytu-io/kaytu-engine/pkg/inventory/config"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"

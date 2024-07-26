@@ -3,8 +3,8 @@ package onboard
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/config"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"os"
@@ -47,6 +47,12 @@ func start(ctx context.Context) error {
 		}
 	case vault.AzureKeyVault:
 		vaultSc, err = vault.NewAzureVaultClient(ctx, logger, cfg.Vault.Azure, cfg.Vault.KeyId)
+		if err != nil {
+			logger.Error("failed to create vault source config", zap.Error(err))
+			return err
+		}
+	case vault.HashiCorpVault:
+		vaultSc, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
 		if err != nil {
 			logger.Error("failed to create vault source config", zap.Error(err))
 			return err

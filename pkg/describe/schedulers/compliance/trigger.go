@@ -2,13 +2,13 @@ package compliance
 
 import (
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"time"
 
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/httpclient"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +22,7 @@ func (s *JobScheduler) buildRunners(
 	benchmarkID string,
 	currentRunnerExistMap map[string]bool,
 ) ([]*model.ComplianceRunner, []*model.ComplianceRunner, error) {
-	ctx := &httpclient.Context{UserRole: api2.InternalRole}
+	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	var runners []*model.ComplianceRunner
 	var globalRunners []*model.ComplianceRunner
 
@@ -237,7 +237,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
 		if len(job.ConnectionIDs) > 0 {
-			connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api2.InternalRole}, job.ConnectionIDs)
+			connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.InternalRole}, job.ConnectionIDs)
 			if err != nil {
 				s.logger.Error("error while getting sources", zap.Error(err))
 				continue
@@ -254,7 +254,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 				assignments.Connections = append(assignments.Connections, assignment)
 			}
 		} else {
-			assignments, err = s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, job.BenchmarkID)
+			assignments, err = s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api.InternalRole}, job.BenchmarkID)
 			if err != nil {
 				s.logger.Error("error while listing assignments", zap.Error(err))
 				continue
