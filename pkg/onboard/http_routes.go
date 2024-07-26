@@ -520,7 +520,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 			return err
 		}
 		span2.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *cred.Name),
+			attribute.String("credential id", cred.ID.String()),
 		))
 		span2.End()
 
@@ -726,7 +726,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", credential.ID.String()),
 	))
 	span1.End()
 
@@ -1252,7 +1252,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", credential.ID.String()),
 	))
 	span.End()
 
@@ -1350,7 +1350,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		return ctx.JSON(http.StatusNotFound, "credential not found")
 	}
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *cred.Name),
+		attribute.String("credential id", cred.ID.String()),
 	))
 	span.End()
 
@@ -1429,7 +1429,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 			return err
 		}
 		span2.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *cred.Name),
+			attribute.String("credential id", cred.ID.String()),
 		))
 		span2.End()
 
@@ -1467,7 +1467,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		return ctx.JSON(http.StatusNotFound, "credential not found")
 	}
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *cred.Name),
+		attribute.String("credential id", cred.ID.String()),
 	))
 	span.End()
 
@@ -1559,7 +1559,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 			return err
 		}
 		span3.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *cred.Name),
+			attribute.String("credential id", cred.ID.String()),
 		))
 		span3.End()
 
@@ -1604,9 +1604,11 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	case source.CloudAWS:
 		return h.putAWSCredentials(ctx, req)
 	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *req.Name),
-	))
+	if req.Name != nil {
+		span.AddEvent("information", trace.WithAttributes(
+			attribute.String("credential name", *req.Name),
+		))
+	}
 	span.End()
 	return ctx.JSON(http.StatusBadRequest, "invalid source type")
 }
@@ -1641,7 +1643,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", credential.ID.String()),
 	))
 	span1.End()
 
@@ -1672,7 +1674,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		span4.AddEvent("information", trace.WithAttributes(
-			attribute.String("credential name", *credential.Name),
+			attribute.String("credential id", credential.ID.String()),
 		))
 		span4.End()
 
@@ -1971,7 +1973,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 				return err
 			}
 			span3.AddEvent("information", trace.WithAttributes(
-				attribute.String("credential name", *src.Credential.Name),
+				attribute.String("credential id", src.Credential.ID.String()),
 			))
 			span3.End()
 		}
