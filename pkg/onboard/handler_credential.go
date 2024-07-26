@@ -462,9 +462,11 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 		span.SetStatus(codes.Error, err.Error())
 		return false, echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
 	}
+
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name ", *cred.Name),
+		attribute.String("credential id ", cred.ID.String()),
 	))
+
 	span.End()
 
 	if err != nil {
