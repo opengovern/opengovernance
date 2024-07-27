@@ -50,6 +50,15 @@ type Server struct {
 	updateLogin         chan User
 }
 
+type DexClaims struct {
+	Email           string                 `json:"email"`
+	EmailVerified   bool                   `json:"email_verified"`
+	Groups          []string               `json:"groups"`
+	Name            string                 `json:"name"`
+	FederatedClaims map[string]interface{} `json:"federated_claims"`
+	jwt.StandardClaims
+}
+
 func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
 	workspaceMap, err := s.db.GetWorkspaceMapByName(workspaceName)
 	if err != nil {
@@ -311,8 +320,9 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 
 			return nil, err
 		}
-		var claimsMap map[string]interface{}
-		if err = json.Unmarshal(claims, claimsMap); err != nil {
+		s.logger.Info("raw dex verifier claims", zap.Any("claims", string(claims)))
+		var claimsMap DexClaims
+		if err = json.Unmarshal(claims, &claimsMap); err != nil {
 			s.logger.Error("dex verifier claim error", zap.Error(err))
 
 			return nil, err
@@ -320,8 +330,8 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
 
 		return &userClaim{
-			Email:          claimsMap["email"].(string),
-			ExternalUserID: claimsMap["openid"].(string),
+			Email:          claimsMap.Email,
+			ExternalUserID: claimsMap.Id,
 		}, nil
 	} else {
 		s.logger.Error("dex verifier verify error", zap.Error(err))
