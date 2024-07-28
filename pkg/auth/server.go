@@ -390,7 +390,17 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 }
 
 func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*oidc.IDTokenVerifier, error) {
-	provider, err := oidc.NewProvider(ctx, auth0Domain)
+	transport := &http.Transport{
+		MaxIdleConns:        10,
+		IdleConnTimeout:     30 * time.Second,
+		MaxIdleConnsPerHost: 10,
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, httpClient), auth0Domain)
 	if err != nil {
 		return nil, err
 	}
