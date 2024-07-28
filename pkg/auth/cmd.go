@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"github.com/coreos/go-oidc/v3/oidc"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
@@ -102,16 +101,10 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("open id connect verifier pennywise: %w", err)
 	}
 
-	dexProvider, err := oidc.NewProvider(ctx, dexAuthDomain)
+	dexVerifier, err := newAuth0OidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
 	if err != nil {
 		return fmt.Errorf("open id connect dex verifier: %w", err)
 	}
-
-	dexVerifier := dexProvider.Verifier(&oidc.Config{
-		ClientID:          dexAuthPublicClientID,
-		SkipClientIDCheck: true,
-		SkipIssuerCheck:   true,
-	})
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
