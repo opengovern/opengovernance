@@ -335,7 +335,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 
 		return &userClaim{
 			Email:          claimsMap.Email,
-			ExternalUserID: claimsMap.Id,
+			ExternalUserID: fmt.Sprintf("dex|%s", claimsMap.Email),
 		}, nil
 	} else {
 		s.logger.Error("dex verifier verify error", zap.Error(err))
