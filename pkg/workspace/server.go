@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
+	api6 "github.com/hashicorp/vault/api"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -125,15 +127,35 @@ func NewServer(ctx context.Context, logger *zap.Logger, cfg config.Config) (*Ser
 			return nil, fmt.Errorf("new azure vaultClient secret handler: %w", err)
 		}
 	case vault.HashiCorpVault:
-		s.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
-		if err != nil {
-			logger.Error("new hashicorp vaultClient source config", zap.Error(err))
-			return nil, fmt.Errorf("new hashicorp vaultClient source config: %w", err)
-		}
 		s.vaultSecretHandler, err = vault.NewHashiCorpVaultSecretHandler(ctx, logger, cfg.Vault.HashiCorp)
 		if err != nil {
 			logger.Error("new hashicorp vaultClient secret handler", zap.Error(err))
 			return nil, fmt.Errorf("new hashicorp vaultClient secret handler: %w", err)
+		}
+
+		s.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+		if err != nil {
+			if strings.Contains(err.Error(), api6.ErrSecretNotFound.Error()) {
+				b := make([]byte, 32)
+				_, err := rand.Read(b)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = s.vaultSecretHandler.SetSecret(ctx, cfg.Vault.KeyId, b)
+				if err != nil {
+					return nil, err
+				}
+
+				s.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+				if err != nil {
+					logger.Error("new hashicorp vaultClient source config after setSecret", zap.Error(err))
+					return nil, fmt.Errorf("new hashicorp vaultClient source config after setSecret: %w", err)
+				}
+			} else {
+				logger.Error("new hashicorp vaultClient source config", zap.Error(err))
+				return nil, fmt.Errorf("new hashicorp vaultClient source config: %w", err)
+			}
 		}
 	default:
 		return nil, fmt.Errorf("unsupported vault provider: %s", cfg.Vault.Provider)
