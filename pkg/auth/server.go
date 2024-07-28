@@ -39,11 +39,11 @@ type Server struct {
 	verifier                *oidc.IDTokenVerifier
 	verifierNative          *oidc.IDTokenVerifier
 	verifierPennywiseNative *oidc.IDTokenVerifier
-	//dexVerifier             *oidc.IDTokenVerifier
-	logger          *zap.Logger
-	workspaceClient client.WorkspaceServiceClient
-	db              db.Database
-	auth0Service    *auth0.Service
+	dexVerifier             *oidc.IDTokenVerifier
+	logger                  *zap.Logger
+	workspaceClient         client.WorkspaceServiceClient
+	db                      db.Database
+	auth0Service            *auth0.Service
 
 	updateLoginUserList []User
 	updateLogin         chan User
