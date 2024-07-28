@@ -329,6 +329,10 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		}
 		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
 
+		if claimsMap.Email == "" {
+			claimsMap.Email = "admin@admin.com"
+		}
+
 		return &userClaim{
 			Email:          claimsMap.Email,
 			ExternalUserID: claimsMap.Id,
