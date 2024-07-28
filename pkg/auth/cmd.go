@@ -101,10 +101,10 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("open id connect verifier pennywise: %w", err)
 	}
 
-	dexVerifier, err := newAuth0OidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
-	if err != nil {
-		return fmt.Errorf("open id connect dex verifier: %w", err)
-	}
+	//dexVerifier, err := newAuth0OidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
+	//if err != nil {
+	//	return fmt.Errorf("open id connect dex verifier: %w", err)
+	//}
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
@@ -182,13 +182,13 @@ func start(ctx context.Context) error {
 		verifier:                verifier,
 		verifierNative:          verifierNative,
 		verifierPennywiseNative: verifierPennywiseNative,
-		dexVerifier:             dexVerifier,
-		logger:                  logger,
-		workspaceClient:         workspaceClient,
-		db:                      adb,
-		auth0Service:            auth0Service,
-		updateLoginUserList:     nil,
-		updateLogin:             make(chan User, 100000),
+		//dexVerifier:             dexVerifier,
+		logger:              logger,
+		workspaceClient:     workspaceClient,
+		db:                  adb,
+		auth0Service:        auth0Service,
+		updateLoginUserList: nil,
+		updateLogin:         make(chan User, 100000),
 	}
 	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()
