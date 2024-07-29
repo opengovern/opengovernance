@@ -1,6 +1,8 @@
 package auth0
 
 import (
+	"encoding/json"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"time"
 
@@ -53,6 +55,46 @@ type User struct {
 	PhoneVerified bool      `json:"phone_verified"`
 	Multifactor   []string  `json:"multifactor"`
 	Blocked       bool      `json:"blocked"`
+}
+
+func DbUserToApi(u *db.User) (*User, error) {
+	if u == nil {
+		return nil, nil
+	}
+	userMetadata := Metadata{}
+	appMetadata := Metadata{}
+
+	err := json.Unmarshal(u.UserMetadata.Bytes, &userMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(u.AppMetadata.Bytes, &appMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &User{
+		Email:         u.Email,
+		EmailVerified: u.EmailVerified,
+		FamilyName:    u.FamilyName,
+		GivenName:     u.GivenName,
+		Locale:        u.Locale,
+		Name:          u.Name,
+		Nickname:      u.Nickname,
+		Picture:       u.Picture,
+		UserId:        u.UserId,
+		UserMetadata:  userMetadata,
+		LastLogin:     u.LastLogin,
+		LastIp:        u.LastIp,
+		LoginsCount:   u.LoginsCount,
+		AppMetadata:   appMetadata,
+		Username:      u.Username,
+		PhoneNumber:   u.PhoneNumber,
+		PhoneVerified: u.PhoneVerified,
+		Multifactor:   u.Multifactor,
+		Blocked:       u.Blocked,
+	}, nil
 }
 
 type CreateUserRequest struct {
