@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"
 )
@@ -38,7 +39,7 @@ type User struct {
 	Username      string
 	PhoneNumber   string
 	PhoneVerified bool
-	Multifactor   []string
+	Multifactor   pq.StringArray `gorm:"type:text[]"`
 	Blocked       bool
 }
 
