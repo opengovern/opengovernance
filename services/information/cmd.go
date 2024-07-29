@@ -33,7 +33,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			logger = logger.Named("wastage")
+			logger = logger.Named("information")
 
 			cmd.SilenceUsage = true
 
