@@ -1,9 +1,7 @@
 package db
 
 import (
-	"encoding/json"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"gorm.io/gorm"
 	"time"
@@ -42,43 +40,6 @@ type User struct {
 	PhoneVerified bool
 	Multifactor   []string
 	Blocked       bool
-}
-
-func (u *User) ToApi() (*auth0.User, error) {
-	userMetadata := auth0.Metadata{}
-	appMetadata := auth0.Metadata{}
-
-	err := json.Unmarshal(u.UserMetadata.Bytes, &userMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(u.AppMetadata.Bytes, &appMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	return &auth0.User{
-		Email:         u.Email,
-		EmailVerified: u.EmailVerified,
-		FamilyName:    u.FamilyName,
-		GivenName:     u.GivenName,
-		Locale:        u.Locale,
-		Name:          u.Name,
-		Nickname:      u.Nickname,
-		Picture:       u.Picture,
-		UserId:        u.UserId,
-		UserMetadata:  userMetadata,
-		LastLogin:     u.LastLogin,
-		LastIp:        u.LastIp,
-		LoginsCount:   u.LoginsCount,
-		AppMetadata:   appMetadata,
-		Username:      u.Username,
-		PhoneNumber:   u.PhoneNumber,
-		PhoneVerified: u.PhoneVerified,
-		Multifactor:   u.Multifactor,
-		Blocked:       u.Blocked,
-	}, nil
 }
 
 type WorkspaceMap struct {

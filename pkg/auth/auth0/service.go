@@ -86,7 +86,7 @@ func (a *Service) GetUser(userID string) (*User, error) {
 		return nil, err
 	}
 
-	resp, err := user.ToApi()
+	resp, err := DbUserToApi(user)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 
 	var resp []User
 	for _, user := range users {
-		u, err := user.ToApi()
+		u, err := DbUserToApi(&user)
 		if err != nil {
 			return nil, err
 		}
@@ -312,7 +312,7 @@ func (a *Service) SearchUsersByWorkspace(wsID string) ([]User, error) {
 
 	var resp []User
 	for _, user := range users {
-		u, err := user.ToApi()
+		u, err := DbUserToApi(&user)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +329,7 @@ func (a *Service) SearchUsers(wsID string, email *string, emailVerified *bool, r
 
 	var apiUsers []User
 	for _, user := range users {
-		u, err := user.ToApi()
+		u, err := DbUserToApi(&user)
 		if err != nil {
 			return nil, err
 		}
