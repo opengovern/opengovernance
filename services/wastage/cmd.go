@@ -45,15 +45,8 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			if cnf.Http.Address == "" {
-				cnf.Http.Address = "localhost:8000"
-				cnf.Pennywise.BaseURL = "http://localhost:8080"
-				cnf.Postgres.Host = "localhost"
-				cnf.Postgres.Port = "5432"
-				cnf.Postgres.Username = "postgres"
-				cnf.Postgres.Password = ""
-				cnf.Postgres.DB = ""
-			}
+			logger.Info("Postgres:", zap.String("host", cnf.Postgres.Host), zap.Int("password_length", len(cnf.Postgres.Password)))
+
 			db, err := connector.New(cnf.Postgres, logger, logger2.Info)
 			if err != nil {
 				return err
