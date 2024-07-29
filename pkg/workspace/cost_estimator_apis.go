@@ -58,7 +58,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	if err := ctx.Bind(i); err != nil {
 		return err
 	}
-
 	if err := ctx.Validate(i); err != nil {
 		return err
 	}
