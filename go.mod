@@ -40,6 +40,7 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/hcl/v2 v2.20.1
+	github.com/hashicorp/vault/api v1.14.0
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.0
@@ -452,7 +453,6 @@ require (
 	github.com/hashicorp/hcl v1.0.1-vault // indirect
 	github.com/hashicorp/terraform-registry-address v0.2.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.0 // indirect
-	github.com/hashicorp/vault/api v1.14.0 // indirect
 	github.com/hashicorp/vault/api/auth/kubernetes v0.7.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
