@@ -79,7 +79,6 @@ jobs:
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
       wastage-service: ${{ steps.build_services.outputs.wastage-service }}
       information-service: ${{ steps.build_services.outputs.information-service }}
-    #        gpt-service: ${{ steps.build_services.outputs.gpt-service }}
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
