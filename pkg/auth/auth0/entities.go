@@ -64,14 +64,18 @@ func DbUserToApi(u *db.User) (*User, error) {
 	userMetadata := Metadata{}
 	appMetadata := Metadata{}
 
-	err := json.Unmarshal(u.UserMetadata.Bytes, &userMetadata)
-	if err != nil {
-		return nil, err
+	if len(u.UserMetadata.Bytes) > 0 {
+		err := json.Unmarshal(u.UserMetadata.Bytes, &userMetadata)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = json.Unmarshal(u.AppMetadata.Bytes, &appMetadata)
-	if err != nil {
-		return nil, err
+	if len(u.AppMetadata.Bytes) > 0 {
+		err := json.Unmarshal(u.AppMetadata.Bytes, &appMetadata)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &User{

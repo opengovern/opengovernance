@@ -30,6 +30,7 @@ import (
 
 type User struct {
 	UserID   string
+	Email    string
 	Metadata auth0.Metadata
 }
 
@@ -96,7 +97,7 @@ func (s *Server) UpdateLastLoginLoop() {
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
 			if user.UserID != "" {
-				usr, err := s.auth0Service.GetUser(user.UserID)
+				usr, err := s.auth0Service.GetOrCreateUser(user.UserID, user.Email)
 				if err != nil {
 					s.logger.Error("failed to get user metadata", zap.String("userId", user.UserID), zap.Error(err))
 					continue
@@ -143,6 +144,7 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 	if doUpdate {
 		s.updateLogin <- User{
 			UserID: claim.ExternalUserID,
+			Email:  claim.Email,
 			Metadata: auth0.Metadata{
 				WorkspaceAccess: claim.WorkspaceAccess,
 				GlobalAccess:    claim.GlobalAccess,
@@ -198,6 +200,14 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 
 	if headerWorkspace, ok := headers["workspace-name"]; ok {
 		workspaceName = headerWorkspace
+	}
+
+	_, err = s.auth0Service.GetOrCreateUser(user.ExternalUserID, user.Email)
+	if err != nil {
+		s.logger.Warn("failed to getOrCreate user",
+			zap.String("userId", user.ExternalUserID),
+			zap.String("email", user.Email),
+			zap.Error(err))
 	}
 
 	rb, err := s.GetWorkspaceByName(workspaceName, user)

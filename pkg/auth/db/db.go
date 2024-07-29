@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"gorm.io/gorm"
@@ -232,6 +233,9 @@ func (db Database) GetUser(userId string) (*User, error) {
 		Where("user_id", userId).
 		Find(&s)
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, tx.Error
 	}
 	return &s, nil

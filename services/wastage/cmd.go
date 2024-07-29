@@ -45,8 +45,6 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			logger.Info("Postgres:", zap.String("host", cnf.Postgres.Host), zap.Int("password_length", len(cnf.Postgres.Password)))
-
 			db, err := connector.New(cnf.Postgres, logger, logger2.Info)
 			if err != nil {
 				return err

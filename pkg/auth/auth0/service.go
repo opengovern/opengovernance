@@ -3,6 +3,7 @@ package auth0
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
@@ -78,6 +79,35 @@ func (a *Service) fillToken() error {
 
 	a.token = resp.AccessToken
 	return nil
+}
+
+func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
+	if userID == "" {
+		return nil, errors.New("GetOrCreateUser: empty user id")
+	}
+
+	user, err := a.database.GetUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil || user.UserId == "" {
+		user = &db.User{
+			Email:  email,
+			UserId: userID,
+		}
+		err = a.database.CreateUser(user)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resp, err := DbUserToApi(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (a *Service) GetUser(userID string) (*User, error) {
