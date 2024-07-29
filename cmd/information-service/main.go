@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/services/wastage"
+	"github.com/kaytu-io/kaytu-engine/services/information"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,7 +28,7 @@ func main() {
 		}
 	}()
 
-	if err := wastage.Command().ExecuteContext(ctx); err != nil {
+	if err := information.Command().ExecuteContext(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
