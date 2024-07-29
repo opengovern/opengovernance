@@ -310,35 +310,35 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		return &u, nil
 	}
 
-	//s.logger.Info("dex verifier verifying")
-	//dv, err := s.dexVerifier.Verify(ctx, token)
-	//if err == nil {
-	//	var claims json.RawMessage
-	//	if err := dv.Claims(&claims); err != nil {
-	//		s.logger.Error("dex verifier claim error", zap.Error(err))
-	//
-	//		return nil, err
-	//	}
-	//	s.logger.Info("raw dex verifier claims", zap.Any("claims", string(claims)))
-	//	var claimsMap DexClaims
-	//	if err = json.Unmarshal(claims, &claimsMap); err != nil {
-	//		s.logger.Error("dex verifier claim error", zap.Error(err))
-	//
-	//		return nil, err
-	//	}
-	//	s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
-	//
-	//	if claimsMap.Email == "" {
-	//		claimsMap.Email = "admin@example.com"
-	//	}
-	//
-	//	return &userClaim{
-	//		Email:          claimsMap.Email,
-	//		ExternalUserID: fmt.Sprintf("dex|%s", claimsMap.Email),
-	//	}, nil
-	//} else {
-	//	s.logger.Error("dex verifier verify error", zap.Error(err))
-	//}
+	s.logger.Info("dex verifier verifying")
+	dv, err := s.dexVerifier.Verify(ctx, token)
+	if err == nil {
+		var claims json.RawMessage
+		if err := dv.Claims(&claims); err != nil {
+			s.logger.Error("dex verifier claim error", zap.Error(err))
+
+			return nil, err
+		}
+		s.logger.Info("raw dex verifier claims", zap.Any("claims", string(claims)))
+		var claimsMap DexClaims
+		if err = json.Unmarshal(claims, &claimsMap); err != nil {
+			s.logger.Error("dex verifier claim error", zap.Error(err))
+
+			return nil, err
+		}
+		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
+
+		if claimsMap.Email == "" {
+			claimsMap.Email = "admin@example.com"
+		}
+
+		return &userClaim{
+			Email:          claimsMap.Email,
+			ExternalUserID: fmt.Sprintf("dex|%s", claimsMap.Email),
+		}, nil
+	} else {
+		s.logger.Error("dex verifier verify error", zap.Error(err))
+	}
 
 	_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
 		return s.kaytuPublicKey, nil
