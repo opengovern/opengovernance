@@ -174,7 +174,7 @@ func start(ctx context.Context) error {
 	}
 
 	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
-		auth0Connection, int(inviteTTL))
+		auth0Connection, int(inviteTTL), adb)
 
 	authServer := &Server{
 		host:                    kaytuHost,
