@@ -22,7 +22,6 @@ type Config struct {
 	AppDomain                  string `yaml:"app_domain" koanf:"app_domain"`
 	GrpcDomain                 string `yaml:"grpc_domain" koanf:"grpc_domain"`
 	GrpcExternalDomain         string `yaml:"grpc_external_domain" koanf:"grpc_external_domain"`
-	KaytuHelmChartLocation     string `yaml:"kaytu_helm_chart_location" koanf:"kaytu_helm_chart_location"`
 	KaytuOctopusNamespace      string `yaml:"kaytu_octopus_namespace" koanf:"kaytu_octopus_namespace"`
 	FluxSystemNamespace        string `yaml:"flux_system_namespace" koanf:"flux_system_namespace"`
 	AutoSuspendDurationMinutes int64  `yaml:"auto_suspend_duration_minutes" koanf:"auto_suspend_duration_minutes"`
@@ -37,5 +36,6 @@ type Config struct {
 	SubnetID                   string `yaml:"subnet_id" koanf:"subnet_id"`
 	DoReserve                  bool   `yaml:"do_reserve" koanf:"do_reserve"`
 
-	OpenSearchRegion string `yaml:"open_search_region" koanf:"open_search_region"`
+	OpenSearchRegion      string `yaml:"open_search_region" koanf:"open_search_region"`
+	KaytuWorkspaceVersion string `yaml:"kaytu_workspace_version" koanf:"kaytu_workspace_version"`
 }

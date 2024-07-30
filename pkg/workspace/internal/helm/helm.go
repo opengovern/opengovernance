@@ -47,22 +47,19 @@ func CreateHelmRelease(ctx context.Context, cfg config.Config, kubeClient k8scli
 		},
 		Spec: helmv2.HelmReleaseSpec{
 			Interval: metav1.Duration{
-				Duration: 5 + time.Minute,
+				Duration: 5 * time.Minute,
 			},
 			TargetNamespace: workspace.ID,
 			ReleaseName:     workspace.ID,
 			Chart: &helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: cfg.KaytuHelmChartLocation,
+					Chart: "kaytu-workspace",
 					SourceRef: helmv2.CrossNamespaceObjectReference{
-						Kind:      "GitRepository",
-						Name:      "flux-system",
+						Kind:      "HelmRepository",
+						Name:      "kaytu-io",
 						Namespace: cfg.FluxSystemNamespace,
 					},
-					Interval: &metav1.Duration{
-						Duration: time.Minute,
-					},
-					ReconcileStrategy: "Revision",
+					Version: cfg.KaytuWorkspaceVersion,
 				},
 			},
 			Values: &apiextensionsv1.JSON{
