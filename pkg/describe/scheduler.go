@@ -202,12 +202,14 @@ func InitializeScheduler(
 	s.conf = conf
 	s.lambdaClient = lambda.NewFromConfig(lambdaCfg)
 
-	serviceBusClient, err := azservicebus.NewClientFromConnectionString(conf.ServiceBusConnectionString, nil)
-	if err != nil {
-		s.logger.Error("Failed to create service bus client", zap.Error(err))
-		return nil, err
+	if len(conf.ServiceBusConnectionString) > 0 {
+		serviceBusClient, err := azservicebus.NewClientFromConnectionString(conf.ServiceBusConnectionString, nil)
+		if err != nil {
+			s.logger.Error("Failed to create service bus client", zap.Error(err))
+			return nil, err
+		}
+		s.serviceBusClient = serviceBusClient
 	}
-	s.serviceBusClient = serviceBusClient
 
 	cfg := postgres.Config{
 		Host:    postgresHost,

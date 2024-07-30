@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"errors"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
@@ -29,22 +30,34 @@ func New(config koanf.KaytuService) (*Meta, error) {
 
 	awsAssetDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, metadata.ErrConfigNotFound) {
+			return nil, err
+		}
+		awsAssetDiscovery = &models.StringConfigMetadata{}
 	}
 
 	awsSpendDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, metadata.ErrConfigNotFound) {
+			return nil, err
+		}
+		awsSpendDiscovery = &models.StringConfigMetadata{}
 	}
 
 	azureAssetDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, metadata.ErrConfigNotFound) {
+			return nil, err
+		}
+		azureAssetDiscovery = &models.StringConfigMetadata{}
 	}
 
 	azureSpendDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeySpendDiscoveryAzureRoleIDs)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, metadata.ErrConfigNotFound) {
+			return nil, err
+		}
+		azureSpendDiscovery = &models.StringConfigMetadata{}
 	}
 
 	// make sure we can cast metadata value into string by checking its type.
