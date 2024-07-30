@@ -243,24 +243,26 @@ func GetUpToDateWorkspaceHelmValues(ctx context.Context, cfg config.Config, kube
 			return false, nil, err
 		}
 
-		result, err := vault.Decrypt(ctx, masterCred.Credential)
-		if err != nil {
-			return false, nil, fmt.Errorf("failed to encrypt ciphertext: %v", err)
-		}
-		jsonResult, err := json.Marshal(result)
-		if err != nil {
-			return false, nil, err
-		}
-		var accessKey types2.AccessKey
-		err = json.Unmarshal(jsonResult, &accessKey)
-		if err != nil {
-			return false, nil, err
-		}
+		if masterCred != nil {
+			result, err := vault.Decrypt(ctx, masterCred.Credential)
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to encrypt ciphertext: %v", err)
+			}
+			jsonResult, err := json.Marshal(result)
+			if err != nil {
+				return false, nil, err
+			}
+			var accessKey types2.AccessKey
+			err = json.Unmarshal(jsonResult, &accessKey)
+			if err != nil {
+				return false, nil, err
+			}
 
-		if settings.Kaytu.Workspace.MasterAccessKey != *accessKey.AccessKeyId {
-			settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
-			settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
-			needsUpdate = true
+			if settings.Kaytu.Workspace.MasterAccessKey != *accessKey.AccessKeyId {
+				settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
+				settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
+				needsUpdate = true
+			}
 		}
 	}
 
