@@ -185,22 +185,24 @@ func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.
 			return err
 		}
 
-		result, err := t.vault.Decrypt(ctx, masterCred.Credential)
-		if err != nil {
-			return fmt.Errorf("failed to encrypt ciphertext: %v", err)
-		}
-		jsonResult, err := json.Marshal(result)
-		if err != nil {
-			return err
-		}
-		var accessKey types2.AccessKey
-		err = json.Unmarshal(jsonResult, &accessKey)
-		if err != nil {
-			return err
-		}
+		if masterCred != nil {
+			result, err := t.vault.Decrypt(ctx, masterCred.Credential)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt ciphertext: %v", err)
+			}
+			jsonResult, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
+			var accessKey types2.AccessKey
+			err = json.Unmarshal(jsonResult, &accessKey)
+			if err != nil {
+				return err
+			}
 
-		settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
-		settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
+			settings.Kaytu.Workspace.MasterAccessKey = *accessKey.AccessKeyId
+			settings.Kaytu.Workspace.MasterSecretKey = *accessKey.SecretAccessKey
+		}
 	}
 
 	valuesJson, err := json.Marshal(settings)
