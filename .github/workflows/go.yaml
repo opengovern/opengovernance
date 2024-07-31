@@ -1367,12 +1367,14 @@ jobs:
           file: docker/SteampipePluginKaytuDockerfile
           context: .
       - name: Azure Docker Login
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: azure/docker-login@v1
         with:
           login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - name: Build and Push to ACR
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v2
         with:
           push: true
