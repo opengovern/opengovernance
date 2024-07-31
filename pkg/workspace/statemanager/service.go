@@ -156,7 +156,7 @@ func (s *Service) CreateWorkspace(ctx context.Context) error {
 		return err
 	}
 
-	for _, tr := range []api.TransactionID{api.Transaction_CreateMasterCredential, api.Transaction_CreateWorkspaceKeyId,
+	for _, tr := range []api.TransactionID{api.Transaction_CreateMasterCredential,
 		api.Transaction_EnsureCredentialExists, api.Transaction_CreateServiceAccountRoles} {
 		err := s.db.CreateWorkspaceTransaction(&db.WorkspaceTransaction{
 			WorkspaceID:   workspace.ID,
