@@ -3,7 +3,6 @@ package job
 import (
 	"encoding/json"
 	"github.com/go-git/go-git/v5"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
@@ -35,13 +34,13 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	refs := make([]string, 0, 2)
 
-	gitAuth := githttp.BasicAuth{
-		Username: "abc123",
-		Password: gitConfig.githubToken,
-	}
+	//gitAuth := githttp.BasicAuth{
+	//	Username: "abc123",
+	//	Password: gitConfig.githubToken,
+	//}
 	os.RemoveAll(config.ConfigzGitPath)
 	res, err := git.PlainClone(config.ConfigzGitPath, false, &git.CloneOptions{
-		Auth:     &gitAuth,
+		//Auth:     &gitAuth,
 		URL:      gitConfig.AnalyticsGitURL,
 		Progress: os.Stdout,
 	})
@@ -58,7 +57,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	os.RemoveAll(config.ControlEnrichmentGitPath)
 	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &git.CloneOptions{
-		Auth:     &gitAuth,
+		//Auth:     &gitAuth,
 		URL:      gitConfig.ControlEnrichmentGitURL,
 		Progress: os.Stdout,
 	})
