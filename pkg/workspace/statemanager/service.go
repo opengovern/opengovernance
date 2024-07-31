@@ -157,7 +157,10 @@ func (s *Service) CreateWorkspace(ctx context.Context) error {
 	}
 
 	for _, tr := range []api.TransactionID{api.Transaction_CreateMasterCredential,
-		api.Transaction_EnsureCredentialExists, api.Transaction_CreateServiceAccountRoles} {
+		api.Transaction_EnsureCredentialExists, api.Transaction_CreateServiceAccountRoles,
+		api.Transaction_EnsureCredentialOnboarded, api.Transaction_EnsureDiscoveryFinished,
+		api.Transaction_EnsureJobsRunning, api.Transaction_EnsureJobsFinished,
+		api.Transaction_CreateRoleBinding} {
 		err := s.db.CreateWorkspaceTransaction(&db.WorkspaceTransaction{
 			WorkspaceID:   workspace.ID,
 			TransactionID: tr,
