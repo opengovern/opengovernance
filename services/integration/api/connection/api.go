@@ -919,7 +919,7 @@ func (h API) AWSCreate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	cfg, err := h.credSvc.AWSSDKConfig(ctx, aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName), req.Config.ExternalId)
+	cfg, err := h.credSvc.AWSSDKConfig(ctx, aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName), req.Config.AccessKey, req.Config.SecretKey, req.Config.ExternalId)
 	if err != nil {
 		return err
 	}

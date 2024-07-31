@@ -37,8 +37,18 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
 			}
+
+			aKey := h.masterAccessKey
+			sKey := h.masterSecretKey
+			if awsCnf.AccessKey != nil {
+				aKey = *awsCnf.AccessKey
+			}
+			if awsCnf.SecretKey != nil {
+				sKey = *awsCnf.SecretKey
+			}
+
 			assumeRoleArn := kaytuAws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
-			sdkCnf, err := kaytuAws.GetConfig(ctx, h.masterAccessKey, h.masterSecretKey, "", assumeRoleArn, awsCnf.ExternalId)
+			sdkCnf, err := kaytuAws.GetConfig(ctx, aKey, sKey, "", assumeRoleArn, awsCnf.ExternalId)
 			if err != nil {
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
@@ -60,23 +70,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			}
 
 			assetDiscoveryAttached = true
-			awsAssetDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
-			if err != nil {
-				return connection, err
-			}
-
-			for _, policyARN := range strings.Split(awsAssetDiscovery.GetValue().(string), ",") {
-				policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
-				if !utils.Includes(policyARNs, policyARN) {
-					h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
-					assetDiscoveryAttached = false
-				}
-			}
-
 			spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
-
-			//TODO
-
 		} else {
 			var awsCnf describe.AWSAccountConfig
 			awsCnf, err = describe.AWSAccountConfigFromMap(cnf)
@@ -95,12 +89,8 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
 			}
-			if awsCnf.AccountID != connection.SourceId {
-				assetDiscoveryAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
-			} else {
-				assetDiscoveryAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, "", kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
-			}
-			spendAttached = assetDiscoveryAttached // backward compatibility
+			assetDiscoveryAttached = true
+			spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
 			if err == nil && assetDiscoveryAttached && updateMetadata {
 				if sdkCnf.Region == "" {
 					sdkCnf.Region = "us-east-1"

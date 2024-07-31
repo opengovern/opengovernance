@@ -517,6 +517,8 @@ func (h API) CreateAWS(c echo.Context) error {
 	awsConfig, err := h.credentialSvc.AWSSDKConfig(
 		ctx,
 		aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName),
+		req.Config.AccessKey,
+		req.Config.SecretKey,
 		req.Config.ExternalId,
 	)
 	if err != nil {

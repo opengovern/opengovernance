@@ -12,13 +12,10 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
-	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -34,11 +30,20 @@ func generateRoleARN(accountID, roleName string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
 }
 
-func (h HttpHandler) GetAWSSDKConfig(ctx context.Context, roleARN string, externalID *string) (aws.Config, error) {
+func (h HttpHandler) GetAWSSDKConfig(ctx context.Context, roleARN string, accessKey, secretKey, externalID *string) (aws.Config, error) {
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if accessKey != nil {
+		aKey = *accessKey
+	}
+	if secretKey != nil {
+		sKey = *secretKey
+	}
+
 	awsConfig, err := kaytuAws.GetConfig(
 		ctx,
-		h.masterAccessKey,
-		h.masterSecretKey,
+		aKey,
+		sKey,
 		"",
 		roleARN,
 		externalID,
@@ -90,7 +95,7 @@ func (h HttpHandler) ExtractCredentialMetadata(accountID string, org *awsOrgType
 }
 
 func (h HttpHandler) createAWSCredential(ctx context.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error) {
-	awsConfig, err := h.GetAWSSDKConfig(ctx, generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
+	awsConfig, err := h.GetAWSSDKConfig(ctx, generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.AccessKey, req.AWSConfig.SecretKey, req.AWSConfig.ExternalId)
 	if err != nil {
 		return nil, err
 	}
@@ -144,10 +149,19 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 		return nil, err
 	}
 
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if awsCnf.AccessKey != nil {
+		aKey = *awsCnf.AccessKey
+	}
+	if awsCnf.SecretKey != nil {
+		sKey = *awsCnf.SecretKey
+	}
+
 	awsConfig, err := kaytuAws.GetConfig(
 		ctx,
-		h.masterAccessKey,
-		h.masterSecretKey,
+		aKey,
+		sKey,
 		"",
 		generateRoleARN(awsCnf.AccountID, awsCnf.AssumeRoleName),
 		awsCnf.ExternalId,
@@ -317,7 +331,7 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 			h.logger.Error("failed to parse aws config", zap.Error(err))
 			return false, err
 		}
-		sdkCnf, err := h.GetAWSSDKConfig(ctx, generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName), awsConfig.ExternalId)
+		sdkCnf, err := h.GetAWSSDKConfig(ctx, generateRoleARN(awsConfig.AccountID, awsConfig.AssumeRoleName), awsConfig.AccessKey, awsConfig.SecretKey, awsConfig.ExternalId)
 		if err != nil {
 			h.logger.Error("failed to get aws sdk config", zap.Error(err))
 			return false, err
@@ -358,20 +372,6 @@ func (h HttpHandler) checkCredentialHealthV2(ctx context.Context, cred model.Cre
 		}
 
 		spendAttached := true
-		ctx2 := &httpclient.Context{UserRole: api2.InternalRole}
-		ctx2.Ctx = ctx
-		awsSpendDiscovery, err := h.metadataClient.GetConfigMetadata(ctx2, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
-		if err != nil {
-			h.logger.Error("failed to get spend discovery aws policy arns", zap.Error(err))
-			return false, err
-		}
-		for _, policyARN := range strings.Split(awsSpendDiscovery.GetValue().(string), ",") {
-			policyARN = strings.ReplaceAll(policyARN, "${accountID}", awsConfig.AccountID)
-			if !utils.Includes(policyARNs, policyARN) {
-				h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
-				spendAttached = false
-			}
-		}
 		cred.SpendDiscovery = &spendAttached
 	default:
 		return false, errors.New("not implemented")

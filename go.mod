@@ -11,7 +11,7 @@ require (
 	github.com/alitto/pond v1.9.0
 	github.com/andygrunwald/go-jira v1.16.0
 	github.com/aws/aws-sdk-go v1.49.10
-	github.com/aws/aws-sdk-go-v2 v1.30.1
+	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.23
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.38.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.1
@@ -45,7 +45,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/kaytu-io/kaytu-aws-describer v0.55.6
+	github.com/kaytu-io/kaytu-aws-describer v0.56.0
 	github.com/kaytu-io/kaytu-azure-describer v0.35.6
 	github.com/kaytu-io/kaytu-util v0.0.0-20240729100022-e4d357e0ebf0
 	github.com/kaytu-io/pennywise v1.7.16
@@ -227,8 +227,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.23 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.13 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.13 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.15 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.15 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.26.5 // indirect
@@ -306,6 +306,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.27.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.35.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.32.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/macie2 v1.34.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/mediastore v1.18.5 // indirect

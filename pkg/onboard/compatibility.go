@@ -18,15 +18,23 @@ func (h HttpHandler) CredentialV2ToV1(ctx context.Context, newCred model.Credent
 		return "", err
 	}
 
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if awsCnf.AccessKey != nil {
+		aKey = *awsCnf.AccessKey
+	}
+	if awsCnf.SecretKey != nil {
+		sKey = *awsCnf.SecretKey
+	}
+
 	newConf := api.AWSCredentialConfig{
-		AccountId:            awsCnf.AccountID,
-		Regions:              nil,
-		AccessKey:            h.masterAccessKey,
-		SecretKey:            h.masterSecretKey,
-		AssumeRoleName:       awsCnf.AssumeRoleName,
-		AssumeAdminRoleName:  awsCnf.AssumeRoleName,
-		AssumeRolePolicyName: "",
-		ExternalId:           awsCnf.ExternalId,
+		AccountId:           awsCnf.AccountID,
+		Regions:             nil,
+		AccessKey:           aKey,
+		SecretKey:           sKey,
+		AssumeRoleName:      awsCnf.AssumeRoleName,
+		AssumeAdminRoleName: awsCnf.AssumeRoleName,
+		ExternalId:          awsCnf.ExternalId,
 	}
 
 	newSecret, err := h.vaultSc.Encrypt(ctx, newConf.AsMap())
