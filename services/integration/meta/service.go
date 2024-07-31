@@ -12,9 +12,6 @@ import (
 )
 
 type Meta struct {
-	AssetDiscoveryAWSPolicyARNs []string
-	SpendDiscoveryAWSPolicyARNs []string
-
 	AssetDiscoveryAzureRoleIDs []string
 	SpendDiscoveryAzureRoleIDs []string
 
@@ -26,22 +23,6 @@ func New(config koanf.KaytuService) (*Meta, error) {
 
 	ctx := &httpclient.Context{
 		UserRole: api.InternalRole,
-	}
-
-	awsAssetDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
-	if err != nil {
-		if !errors.Is(err, metadata.ErrConfigNotFound) {
-			return nil, err
-		}
-		awsAssetDiscovery = &models.StringConfigMetadata{}
-	}
-
-	awsSpendDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
-	if err != nil {
-		if !errors.Is(err, metadata.ErrConfigNotFound) {
-			return nil, err
-		}
-		awsSpendDiscovery = &models.StringConfigMetadata{}
 	}
 
 	azureAssetDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
@@ -61,13 +42,6 @@ func New(config koanf.KaytuService) (*Meta, error) {
 	}
 
 	// make sure we can cast metadata value into string by checking its type.
-	if err := models.HasType(awsAssetDiscovery, models.ConfigMetadataTypeString); err != nil {
-		return nil, err
-	}
-
-	if err := models.HasType(awsSpendDiscovery, models.ConfigMetadataTypeString); err != nil {
-		return nil, err
-	}
 
 	if err := models.HasType(azureAssetDiscovery, models.ConfigMetadataTypeString); err != nil {
 		return nil, err
@@ -78,10 +52,8 @@ func New(config koanf.KaytuService) (*Meta, error) {
 	}
 
 	return &Meta{
-		AssetDiscoveryAWSPolicyARNs: strings.Split(awsAssetDiscovery.GetValue().(string), ","),
-		SpendDiscoveryAWSPolicyARNs: strings.Split(awsSpendDiscovery.GetValue().(string), ","),
-		AssetDiscoveryAzureRoleIDs:  strings.Split(azureAssetDiscovery.GetValue().(string), ","),
-		SpendDiscoveryAzureRoleIDs:  strings.Split(azureSpendDiscovery.GetValue().(string), ","),
-		Client:                      client,
+		AssetDiscoveryAzureRoleIDs: strings.Split(azureAssetDiscovery.GetValue().(string), ","),
+		SpendDiscoveryAzureRoleIDs: strings.Split(azureSpendDiscovery.GetValue().(string), ","),
+		Client:                     client,
 	}, nil
 }

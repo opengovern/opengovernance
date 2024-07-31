@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
 	"time"
 
@@ -20,7 +18,6 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
@@ -69,11 +66,20 @@ func (h Credential) NewAWS(
 	return crd, nil
 }
 
-func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, externalID *string) (awsOfficial.Config, error) {
+func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, accessKey, secretKey, externalID *string) (awsOfficial.Config, error) {
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if accessKey != nil {
+		aKey = *accessKey
+	}
+	if secretKey != nil {
+		sKey = *secretKey
+	}
+
 	awsConfig, err := aws.GetConfig(
 		ctx,
-		h.masterAccessKey,
-		h.masterSecretKey,
+		aKey,
+		sKey,
 		"",
 		roleARN,
 		externalID,
@@ -170,6 +176,8 @@ func (h Credential) AWSHealthCheck(
 	sdkCnf, err := h.AWSSDKConfig(
 		ctx,
 		aws.GetRoleArnFromName(awsCnf.AccountID, awsCnf.AssumeRoleName),
+		awsCnf.AccessKey,
+		awsCnf.SecretKey,
 		awsCnf.ExternalId,
 	)
 
@@ -189,38 +197,7 @@ func (h Credential) AWSHealthCheck(
 	}
 	cred.Metadata = jsonMetadata
 
-	iamClient := iam.NewFromConfig(sdkCnf)
-	paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
-		RoleName: &awsCnf.AssumeRoleName,
-	})
-
-	var policyARNs []string
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return false, err
-		}
-		for _, policy := range page.AttachedPolicies {
-			policyARNs = append(policyARNs, *policy.PolicyArn)
-		}
-	}
-
 	spendAttached := true
-	awsSpendDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeySpendDiscoveryAWSPolicyARNs)
-	if err != nil {
-		if err != nil {
-			return false, err
-		}
-	}
-
-	for _, policyARN := range strings.Split(awsSpendDiscovery.GetValue().(string), ",") {
-		policyARN = strings.ReplaceAll(policyARN, "${accountID}", awsCnf.AccountID)
-		if !fp.Includes(policyARN, policyARNs) {
-			h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
-			spendAttached = false
-		}
-	}
-
 	cred.SpendDiscovery = &spendAttached
 
 	return true, nil
@@ -263,10 +240,19 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		return nil, err
 	}
 
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if awsCnf.AccessKey != nil {
+		aKey = *awsCnf.AccessKey
+	}
+	if awsCnf.SecretKey != nil {
+		sKey = *awsCnf.SecretKey
+	}
+
 	awsConfig, err := aws.GetConfig(
 		ctx,
-		h.masterAccessKey,
-		h.masterSecretKey,
+		aKey,
+		sKey,
 		"",
 		aws.GetRoleArnFromName(awsCnf.AccountID, awsCnf.AssumeRoleName),
 		awsCnf.ExternalId,
@@ -494,9 +480,17 @@ func (h Connection) NewAWS(
 	description string,
 	req entity.AWSCredentialConfig,
 ) (model.Connection, error) {
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if req.AccessKey != nil {
+		aKey = *req.AccessKey
+	}
+	if req.SecretKey != nil {
+		sKey = *req.SecretKey
+	}
 	cfg := describe.AWSAccountConfig{
-		AccessKey: h.masterAccessKey,
-		SecretKey: h.masterSecretKey,
+		AccessKey: aKey,
+		SecretKey: sKey,
 	}
 
 	maxConnections, err := h.MaxConnections(ctx)
@@ -626,6 +620,8 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 	awsConfig, err := h.AWSSDKConfig(
 		ctx,
 		aws.GetRoleArnFromName(config.AccountID, config.AssumeRoleName),
+		req.Config.AccessKey,
+		req.Config.SecretKey,
 		req.Config.ExternalId,
 	)
 	if err != nil {
@@ -706,7 +702,16 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 
 	assumeRoleArn := aws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
 
-	sdkCnf, err := aws.GetConfig(ctx, h.masterAccessKey, h.masterSecretKey, "", assumeRoleArn, awsCnf.ExternalId)
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if awsCnf.AccessKey != nil {
+		aKey = *awsCnf.AccessKey
+	}
+	if awsCnf.SecretKey != nil {
+		sKey = *awsCnf.SecretKey
+	}
+
+	sdkCnf, err := aws.GetConfig(ctx, aKey, sKey, "", assumeRoleArn, awsCnf.ExternalId)
 	if err != nil {
 		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
 		return connection, err
@@ -728,23 +733,7 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 	}
 
 	assetDiscoveryAttached := true
-
-	awsAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAWSPolicyARNs)
-	if err != nil {
-		return connection, err
-	}
-
-	for _, policyARN := range strings.Split(awsAssetDiscovery.GetValue().(string), ",") {
-		policyARN = strings.ReplaceAll(policyARN, "${accountID}", connection.SourceId)
-		if !fp.Includes(policyARN, policyARNs) {
-			h.logger.Error("policy is not there", zap.String("policyARN", policyARN), zap.Strings("attachedPolicies", policyARNs))
-
-			assetDiscoveryAttached = false
-		}
-	}
-
 	spendAttached := connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
-
 	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
 		if err == nil {

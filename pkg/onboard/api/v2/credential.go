@@ -29,10 +29,12 @@ func (req CreateCredentialV2Request) GetAWSConfig() (*AWSCredentialV2Config, err
 }
 
 type AWSCredentialV2Config struct {
-	AccountID           string   `json:"accountID"`
-	AssumeRoleName      string   `json:"assumeRoleName"`
-	HealthCheckPolicies []string `json:"healthCheckPolicies"`
-	ExternalId          *string  `json:"externalId"`
+	AccountID      string  `json:"accountID"`
+	AssumeRoleName string  `json:"assumeRoleName"`
+	ExternalId     *string `json:"externalId,omitempty"`
+
+	AccessKey *string `json:"accessKey,omitempty"`
+	SecretKey *string `json:"secretKey,omitempty"`
 }
 
 func (s AWSCredentialV2Config) AsMap() map[string]any {

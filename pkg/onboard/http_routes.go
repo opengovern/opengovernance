@@ -214,13 +214,10 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	isAttached, err := kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, "", "")
+	err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
-	}
-	if !isAttached {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Failed to find read access policy")
 	}
 
 	// Create source section
@@ -285,7 +282,7 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		return err
 	}
 
-	sdkCnf, err := h.GetAWSSDKConfig(ctx.Request().Context(), generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.ExternalId)
+	sdkCnf, err := h.GetAWSSDKConfig(ctx.Request().Context(), generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.AccessKey, req.AWSConfig.SecretKey, req.AWSConfig.ExternalId)
 	if err != nil {
 		return err
 	}
@@ -297,7 +294,20 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 	if req.Name != "" {
 		acc.AccountName = &req.Name
 	}
-	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: h.masterAccessKey, SecretKey: h.masterSecretKey}, *acc, "")
+
+	aKey := h.masterAccessKey
+	sKey := h.masterSecretKey
+	if req.AWSConfig.AccessKey != nil {
+		aKey = *req.AWSConfig.AccessKey
+	}
+	if req.AWSConfig.SecretKey != nil {
+		sKey = *req.AWSConfig.SecretKey
+	}
+
+	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{
+		AccessKey: aKey,
+		SecretKey: sKey,
+	}, *acc, "")
 
 	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.AWSConfig.AsMap())
 	if err != nil {
@@ -803,12 +813,15 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
+			aKey := h.masterAccessKey
+			if awsCnf.AccessKey != nil {
+				aKey = *awsCnf.AccessKey
+			}
 			apiCredential.Config = api.AWSCredentialConfig{
-				AccountId:            awsCnf.AccountID,
-				AccessKey:            h.masterAccessKey,
-				AssumeRoleName:       awsCnf.AssumeRoleName,
-				AssumeRolePolicyName: awsCnf.AssumeRoleName,
-				ExternalId:           awsCnf.ExternalId,
+				AccountId:      awsCnf.AccountID,
+				AccessKey:      aKey,
+				AssumeRoleName: awsCnf.AssumeRoleName,
+				ExternalId:     awsCnf.ExternalId,
 			}
 		} else {
 			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
@@ -816,12 +829,11 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 				return err
 			}
 			apiCredential.Config = api.AWSCredentialConfig{
-				AccountId:            awsCnf.AccountID,
-				Regions:              awsCnf.Regions,
-				AccessKey:            awsCnf.AccessKey,
-				AssumeRoleName:       awsCnf.AssumeRoleName,
-				AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
-				ExternalId:           awsCnf.ExternalID,
+				AccountId:      awsCnf.AccountID,
+				Regions:        awsCnf.Regions,
+				AccessKey:      awsCnf.AccessKey,
+				AssumeRoleName: awsCnf.AssumeRoleName,
+				ExternalId:     awsCnf.ExternalID,
 			}
 		}
 	}
@@ -1513,9 +1525,6 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		if newConfig.AssumeAdminRoleName != "" {
 			config.AssumeAdminRoleName = newConfig.AssumeAdminRoleName
 		}
-		if newConfig.AssumeRolePolicyName != "" {
-			config.AssumeRolePolicyName = newConfig.AssumeRolePolicyName
-		}
 		if newConfig.ExternalId != nil {
 			config.ExternalID = newConfig.ExternalId
 		}
@@ -1741,13 +1750,12 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 			return err
 		}
 		return ctx.JSON(http.StatusOK, api.AWSCredentialConfig{
-			AccountId:            awsCnf.AccountID,
-			Regions:              awsCnf.Regions,
-			AccessKey:            awsCnf.AccessKey,
-			SecretKey:            awsCnf.SecretKey,
-			AssumeRoleName:       awsCnf.AssumeRoleName,
-			AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
-			ExternalId:           awsCnf.ExternalID,
+			AccountId:      awsCnf.AccountID,
+			Regions:        awsCnf.Regions,
+			AccessKey:      awsCnf.AccessKey,
+			SecretKey:      awsCnf.SecretKey,
+			AssumeRoleName: awsCnf.AssumeRoleName,
+			ExternalId:     awsCnf.ExternalID,
 		})
 	case source.CloudAzure:
 		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
@@ -1776,6 +1784,7 @@ func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection mode
 	// tracer :
 	_, span := tracer.Start(ctx, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_UpdateSource")
+	defer span.End()
 
 	_, err := h.db.UpdateSource(&connection)
 	if err != nil {
@@ -1819,11 +1828,13 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 	// trace :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetSource")
+	defer span.End()
 
 	connection, err := h.db.GetSource(sourceUUID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
+		span.End()
 		h.logger.Error("failed to get source", zap.Error(err), zap.String("sourceId", sourceUUID.String()))
 		return err
 	}

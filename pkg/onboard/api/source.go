@@ -21,14 +21,13 @@ const (
 )
 
 type AWSCredentialConfig struct {
-	AccountId            string   `json:"accountId"`
-	Regions              []string `json:"regions,omitempty"`
-	AccessKey            string   `json:"accessKey" validate:"required"`
-	SecretKey            string   `json:"secretKey" validate:"required"`
-	AssumeRoleName       string   `json:"assumeRoleName,omitempty"`
-	AssumeAdminRoleName  string   `json:"assumeAdminRoleName,omitempty"`
-	AssumeRolePolicyName string   `json:"assumeRolePolicyName,omitempty"`
-	ExternalId           *string  `json:"externalId,omitempty"`
+	AccountId           string   `json:"accountId"`
+	Regions             []string `json:"regions,omitempty"`
+	AccessKey           string   `json:"accessKey" validate:"required"`
+	SecretKey           string   `json:"secretKey" validate:"required"`
+	AssumeRoleName      string   `json:"assumeRoleName,omitempty"`
+	AssumeAdminRoleName string   `json:"assumeAdminRoleName,omitempty"`
+	ExternalId          *string  `json:"externalId,omitempty"`
 }
 
 func (s AWSCredentialConfig) AsMap() map[string]any {

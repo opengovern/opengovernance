@@ -65,10 +65,11 @@ func ExtractCredentialMetadata(accountID string, org *types.Organization, accoun
 }
 
 type AWSCredentialConfig struct {
-	AccountID           string   `json:"accountID"`
-	AssumeRoleName      string   `json:"assumeRoleName"`
-	HealthCheckPolicies []string `json:"healthCheckPolicies"`
-	ExternalId          *string  `json:"externalId"`
+	AccountID      string  `json:"accountID"`
+	AssumeRoleName string  `json:"assumeRoleName"`
+	ExternalId     *string `json:"externalId,omitempty"`
+	AccessKey      *string `json:"accessKey,omitempty"`
+	SecretKey      *string `json:"secretKey,omitempty"`
 }
 
 func (s AWSCredentialConfig) AsMap() map[string]any {
