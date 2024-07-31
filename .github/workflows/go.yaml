@@ -1333,16 +1333,13 @@ jobs:
             echo "do_build=true" >> $GITHUB_OUTPUT
           fi
       - name: Checkout code
-        if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/checkout@v3
       - name: Download artifact
-        if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/download-artifact@v3
         with:
           name: build
           path: .
       - name: Unpack artifact
-        if: steps.check_if_push.outputs.do_build == 'true'
         run: |
           tar -xvf build.tar.gz
       - name: Configure AWS credentials
@@ -1357,7 +1354,6 @@ jobs:
         with:
           registry: ${{ vars.AWS_DOCKER_REGISTRY }}
       - name: Build and push Docker images
-        if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v4
         with:
           push: true
@@ -1367,14 +1363,12 @@ jobs:
           file: docker/SteampipePluginKaytuDockerfile
           context: .
       - name: Azure Docker Login
-        if: steps.check_if_push.outputs.do_build == 'true'
         uses: azure/docker-login@v1
         with:
           login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - name: Build and Push to ACR
-        if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v2
         with:
           push: true
