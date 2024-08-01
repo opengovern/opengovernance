@@ -14,6 +14,7 @@ import (
 )
 
 func (w *Job) CheckIfUpdateIsNeeded(name string, mig types.Migration) (bool, error) {
+	return true, nil
 	m, err := w.db.GetMigration(name)
 	if err != nil {
 		return false, err
