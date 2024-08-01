@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"gorm.io/gorm"
@@ -264,8 +265,8 @@ func (db Database) GetUsersByEmail(email string) ([]User, error) {
 
 func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 	var users []User
-	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' \? ?`
-	err := db.Orm.Raw(query, ws).Scan(&users).Error
+	query := fmt.Sprintf("SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? '%s'", ws)
+	err := db.Orm.Raw(query).Scan(&users).Error
 	if err != nil {
 		return nil, err
 	}
@@ -274,21 +275,17 @@ func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 
 func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([]User, error) {
 	var users []User
-	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' \? ?`
-
-	params := []interface{}{ws}
+	query := fmt.Sprintf("SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? '%s'", ws)
 
 	if email != nil {
-		query += ` AND email = ?`
-		params = append(params, *email)
+		query += fmt.Sprintf(" AND email = %s", *email)
 	}
 
 	if emailVerified != nil {
-		query += ` AND email_verified = ?`
-		params = append(params, *emailVerified)
+		query += fmt.Sprintf(" AND email_verified = %v", *emailVerified)
 	}
 
-	err := db.Orm.Raw(query, params...).Scan(&users).Error
+	err := db.Orm.Raw(query).Scan(&users).Error
 	if err != nil {
 		return nil, err
 	}
