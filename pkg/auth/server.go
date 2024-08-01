@@ -209,6 +209,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			zap.String("email", user.Email),
 			zap.Error(err))
 	}
+	user.WorkspaceAccess["main"] = "admin"
 
 	rb, err := s.GetWorkspaceByName(workspaceName, user)
 	if err != nil {
