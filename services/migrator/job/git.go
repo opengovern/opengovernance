@@ -56,6 +56,8 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	}
 	refs = append(refs, ref.Hash().String())
 
+	logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
+
 	os.RemoveAll(config.ControlEnrichmentGitPath)
 	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &git.CloneOptions{
 		Auth:     &gitAuth,
