@@ -101,7 +101,7 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("open id connect verifier pennywise: %w", err)
 	}
 
-	dexVerifier, err := newAuth0OidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
+	dexVerifier, err := newDexOidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
 	if err != nil {
 		return fmt.Errorf("open id connect dex verifier: %w", err)
 	}

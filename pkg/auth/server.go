@@ -421,3 +421,26 @@ func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*o
 		SkipClientIDCheck: true,
 	}), nil
 }
+
+func newDexOidcVerifier(ctx context.Context, domain, clientId string) (*oidc.IDTokenVerifier, error) {
+	transport := &http.Transport{
+		MaxIdleConns:        10,
+		IdleConnTimeout:     30 * time.Second,
+		MaxIdleConnsPerHost: 10,
+	}
+
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, httpClient), domain)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider.Verifier(&oidc.Config{
+		ClientID:          clientId,
+		SkipClientIDCheck: true,
+		SkipIssuerCheck:   true,
+	}), nil
+}
