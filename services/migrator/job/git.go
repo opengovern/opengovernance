@@ -30,7 +30,6 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	} else if err != nil {
 		logger.Error("failed to get analytics git url from metadata", zap.Error(err))
 	}
-	gitConfig.AnalyticsGitURL = "https://github.com/kaytu-io/configz-deprecated"
 
 	logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
 
