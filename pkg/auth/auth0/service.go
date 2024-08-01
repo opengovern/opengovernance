@@ -106,6 +106,7 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	resp.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
 
 	return resp, nil
 }
@@ -120,6 +121,8 @@ func (a *Service) GetUser(userID string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	resp.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
 
 	return resp, nil
 }
@@ -136,6 +139,9 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		u.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
+
 		resp = append(resp, *u)
 	}
 
