@@ -2,44 +2,47 @@ package transactions
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	types2 "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/fluxcd/helm-controller/api/v2beta1"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	apimeta "github.com/fluxcd/pkg/apis/meta"
+	api6 "github.com/hashicorp/vault/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/internal/helm"
 	types3 "github.com/kaytu-io/kaytu-engine/pkg/workspace/types"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 type CreateHelmRelease struct {
-	kubeClient k8sclient.Client // the kubernetes client
-	vault      vault.VaultSourceConfig
-	cfg        config.Config
-	db         *db.Database
+	kubeClient         k8sclient.Client // the kubernetes client
+	vault              vault.VaultSourceConfig
+	cfg                config.Config
+	db                 *db.Database
+	logger             *zap.Logger
+	vaultSecretHandler vault.VaultSecretHandler
 }
 
-func NewCreateHelmRelease(
-	kubeClient k8sclient.Client,
-	vault vault.VaultSourceConfig,
-	cfg config.Config,
-	db *db.Database,
-) *CreateHelmRelease {
+func NewCreateHelmRelease(kubeClient k8sclient.Client, vault vault.VaultSourceConfig, handler vault.VaultSecretHandler, cfg config.Config, db *db.Database, logger *zap.Logger) *CreateHelmRelease {
 	return &CreateHelmRelease{
-		kubeClient: kubeClient,
-		vault:      vault,
-		cfg:        cfg,
-		db:         db,
+		kubeClient:         kubeClient,
+		vaultSecretHandler: handler,
+		vault:              vault,
+		cfg:                cfg,
+		db:                 db,
+		logger:             logger,
 	}
 }
 
@@ -212,6 +215,24 @@ func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.
 
 	if err := helm.CreateHelmRelease(ctx, t.cfg, t.kubeClient, workspace, valuesJson); err != nil {
 		return fmt.Errorf("create helm release: %w", err)
+	}
+
+	if t.cfg.Vault.Provider == vault.HashiCorpVault {
+		_, err := vault.NewHashiCorpVaultClient(ctx, t.logger, t.cfg.Vault.HashiCorp, settings.Vault.KeyID)
+		if err != nil {
+			if strings.Contains(err.Error(), api6.ErrSecretNotFound.Error()) || strings.Contains(err.Error(), "secret value is nil") {
+				b := make([]byte, 32)
+				_, err := rand.Read(b)
+				if err != nil {
+					return err
+				}
+
+				_, err = t.vaultSecretHandler.SetSecret(ctx, settings.Vault.KeyID, b)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return nil

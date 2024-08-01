@@ -11,12 +11,16 @@ import (
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	workspaceConfig "github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/transactions"
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
+	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -118,6 +122,65 @@ func New(ctx context.Context, cfg workspaceConfig.Config,
 	}, nil
 }
 
+func (s *Service) CreateWorkspace(ctx context.Context) error {
+	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
+	id, err := sf.NextID()
+	if err != nil {
+		return err
+	}
+
+	awsUID, err := sf.NextID()
+	if err != nil {
+		return err
+	}
+
+	ownerAll := "kaytu|owner|all"
+	awsUniqueID := fmt.Sprintf("aws-uid-%d", awsUID)
+	workspace := &db.Workspace{
+		ID:                       fmt.Sprintf("ws-%d", id),
+		Name:                     "main",
+		AWSUniqueId:              &awsUniqueID,
+		OwnerId:                  &ownerAll,
+		Status:                   api.StateID_Provisioning,
+		Size:                     api.SizeXS,
+		Tier:                     api.Tier_Free,
+		OrganizationID:           nil,
+		IsCreated:                false,
+		IsBootstrapInputFinished: false,
+		AnalyticsJobID:           0,
+		InsightJobsID:            "",
+		ComplianceTriggered:      false,
+	}
+
+	if err := s.db.CreateWorkspace(workspace); err != nil {
+		return err
+	}
+
+	for _, tr := range []api.TransactionID{api.Transaction_CreateMasterCredential,
+		api.Transaction_EnsureCredentialExists, api.Transaction_CreateServiceAccountRoles,
+		api.Transaction_EnsureCredentialOnboarded, api.Transaction_EnsureDiscoveryFinished,
+		api.Transaction_EnsureJobsRunning, api.Transaction_EnsureJobsFinished,
+		api.Transaction_CreateRoleBinding} {
+		err := s.db.CreateWorkspaceTransaction(&db.WorkspaceTransaction{
+			WorkspaceID:   workspace.ID,
+			TransactionID: tr,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			Done:          true,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	err = s.authClient.UpdateWorkspaceMap(&httpclient.Context{UserRole: api2.InternalRole})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) StartReconciler(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -151,6 +214,12 @@ func (s *Service) StartReconciler(ctx context.Context) {
 
 			if err := s.syncHelmValues(ctx, workspaces); err != nil {
 				s.logger.Error(fmt.Sprintf("syncing helm values: %v", err))
+			}
+
+			if len(workspaces) == 0 {
+				if err := s.CreateWorkspace(ctx); err != nil {
+					s.logger.Error(fmt.Sprintf("creating workspace if empty: %v", err))
+				}
 			}
 		}
 		if s.cfg.EnvType == config.EnvTypeProd && s.cfg.DoReserve {

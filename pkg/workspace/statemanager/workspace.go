@@ -21,7 +21,7 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid ap
 	case api.Transaction_EnsureCredentialExists:
 		transaction = transactions.NewEnsureCredentialExists(s.db)
 	case api.Transaction_CreateHelmRelease:
-		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.vault, s.cfg, s.db)
+		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.vault, s.vaultSecretHandler, s.cfg, s.db, s.logger)
 	//case api.Transaction_CreateInsightBucket:
 	//	transaction = transactions.NewCreateInsightBucket(s.s3Client)
 	case api.Transaction_CreateMasterCredential:

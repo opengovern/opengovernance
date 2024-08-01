@@ -231,8 +231,8 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
 	}
-	if request.Name == "kaytu" || request.Name == "workspaces" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be kaytu or workspaces")
+	if request.Name == "kaytu" || request.Name == "main" || request.Name == "workspaces" {
+		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be kaytu, main or workspaces")
 	}
 	if !regexp.MustCompile(`^[a-zA-Z0-9\-]*$`).MatchString(request.Name) {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid. only characters, numbers and - is allowed")
@@ -900,6 +900,10 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			}
 		} else {
 			// god has role in everything
+			hasRoleInWorkspace = true
+		}
+
+		if workspace.OwnerId != nil && *workspace.OwnerId == "kaytu|owner|all" {
 			hasRoleInWorkspace = true
 		}
 

@@ -92,9 +92,23 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	}
 
 	if user == nil || user.UserId == "" {
+		appMetadataJsonb := pgtype.JSONB{}
+		err = appMetadataJsonb.Set([]byte(""))
+		if err != nil {
+			return nil, err
+		}
+
+		userMetadataJsonb := pgtype.JSONB{}
+		err = userMetadataJsonb.Set([]byte(""))
+		if err != nil {
+			return nil, err
+		}
+
 		user = &db.User{
-			Email:  email,
-			UserId: userID,
+			Email:        email,
+			UserId:       userID,
+			AppMetadata:  appMetadataJsonb,
+			UserMetadata: userMetadataJsonb,
 		}
 		err = a.database.CreateUser(user)
 		if err != nil {
@@ -106,6 +120,10 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	if resp.AppMetadata.WorkspaceAccess == nil {
+		resp.AppMetadata.WorkspaceAccess = map[string]api.Role{}
+	}
+	resp.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
 
 	return resp, nil
 }
@@ -120,6 +138,11 @@ func (a *Service) GetUser(userID string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if resp.AppMetadata.WorkspaceAccess == nil {
+		resp.AppMetadata.WorkspaceAccess = map[string]api.Role{}
+	}
+	resp.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
 
 	return resp, nil
 }
@@ -136,6 +159,12 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if u.AppMetadata.WorkspaceAccess == nil {
+			u.AppMetadata.WorkspaceAccess = map[string]api.Role{}
+		}
+		u.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
+
 		resp = append(resp, *u)
 	}
 
