@@ -92,9 +92,23 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	}
 
 	if user == nil || user.UserId == "" {
+		appMetadataJsonb := pgtype.JSONB{}
+		err = appMetadataJsonb.Set([]byte(""))
+		if err != nil {
+			return nil, err
+		}
+
+		userMetadataJsonb := pgtype.JSONB{}
+		err = userMetadataJsonb.Set([]byte(""))
+		if err != nil {
+			return nil, err
+		}
+
 		user = &db.User{
-			Email:  email,
-			UserId: userID,
+			Email:        email,
+			UserId:       userID,
+			AppMetadata:  appMetadataJsonb,
+			UserMetadata: userMetadataJsonb,
 		}
 		err = a.database.CreateUser(user)
 		if err != nil {
