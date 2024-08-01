@@ -58,7 +58,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	os.RemoveAll(config.ControlEnrichmentGitPath)
 	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &git.CloneOptions{
-		//Auth:     &gitAuth,
+		Auth:     &gitAuth,
 		URL:      gitConfig.ControlEnrichmentGitURL,
 		Progress: os.Stdout,
 	})
