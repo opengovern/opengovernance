@@ -264,8 +264,8 @@ func (db Database) GetUsersByEmail(email string) ([]User, error) {
 
 func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 	var users []User
-	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? :workspaceKey`
-	err := db.Orm.Raw(query, map[string]interface{}{"workspaceKey": ws}).Scan(&users).Error
+	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' ?? ?`
+	err := db.Orm.Raw(query, ws).Scan(&users).Error
 	if err != nil {
 		return nil, err
 	}
@@ -274,23 +274,21 @@ func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 
 func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([]User, error) {
 	var users []User
-	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? :workspaceKey`
+	query := `SELECT * FROM users WHERE app_metadata->'workspaceAccess' ?? ?`
 
-	params := map[string]interface{}{
-		"workspaceKey": ws,
-	}
+	params := []interface{}{ws}
 
 	if email != nil {
-		query += " AND email = :email"
-		params["email"] = *email
+		query += " AND email = ?"
+		params = append(params, *email)
 	}
 
 	if emailVerified != nil {
-		query += " AND email_verified = :emailVerified"
-		params["emailVerified"] = *emailVerified
+		query += " AND email_verified = ?"
+		params = append(params, *emailVerified)
 	}
 
-	err := db.Orm.Raw(query, params).Scan(&users).Error
+	err := db.Orm.Raw(query, params...).Scan(&users).Error
 	if err != nil {
 		return nil, err
 	}
