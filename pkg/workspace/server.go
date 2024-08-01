@@ -475,7 +475,7 @@ func (s *Server) GetBootstrapStatus(c echo.Context) error {
 		return err
 	}
 
-	if err := s.CheckRoleInWorkspace(c, &ws.ID, ws.OwnerId); err != nil {
+	if err := s.CheckRoleInWorkspace(c, &ws.ID, ws.OwnerId, workspaceName); err != nil {
 		return err
 	}
 
@@ -795,7 +795,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	if err := s.CheckRoleInWorkspace(c, &workspace.ID, workspace.OwnerId); err != nil {
+	if err := s.CheckRoleInWorkspace(c, &workspace.ID, workspace.OwnerId, workspace.Name); err != nil {
 		return err
 	}
 
@@ -832,7 +832,7 @@ func (s *Server) GetWorkspaceByName(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	if err := s.CheckRoleInWorkspace(c, &workspace.ID, workspace.OwnerId); err != nil {
+	if err := s.CheckRoleInWorkspace(c, &workspace.ID, workspace.OwnerId, name); err != nil {
 		return err
 	}
 
@@ -1061,7 +1061,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 		return err
 	}
 
-	if err := s.CheckRoleInWorkspace(c, &dbWorkspace.ID, dbWorkspace.OwnerId); err != nil {
+	if err := s.CheckRoleInWorkspace(c, &dbWorkspace.ID, dbWorkspace.OwnerId, workspaceName); err != nil {
 		return err
 	}
 

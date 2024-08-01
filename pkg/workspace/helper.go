@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (s *Server) CheckRoleInWorkspace(ctx echo.Context, workspaceID, ownerID *string) error {
+func (s *Server) CheckRoleInWorkspace(ctx echo.Context, workspaceID, ownerID *string, workspaceName string) error {
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -20,6 +20,9 @@ func (s *Server) CheckRoleInWorkspace(ctx echo.Context, workspaceID, ownerID *st
 	}
 
 	hasRoleInWorkspace := false
+	if workspaceName == "main" {
+		hasRoleInWorkspace = true
+	}
 	for _, roleBinding := range resp.RoleBindings {
 		if roleBinding.WorkspaceID == *workspaceID {
 			hasRoleInWorkspace = true
