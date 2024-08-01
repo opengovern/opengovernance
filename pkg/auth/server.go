@@ -213,8 +213,6 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		user.WorkspaceAccess = map[string]api3.Role{}
 	}
 
-	user.WorkspaceAccess["main"] = "admin"
-
 	rb, err := s.GetWorkspaceByName(workspaceName, user)
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
@@ -393,7 +391,9 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 		rb.WorkspaceID = workspaceID
 		rb.ScopedConnectionIDs = user.ConnectionIDs[workspaceID]
 
-		if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
+		if workspaceName == "main" {
+			rb.RoleName = api3.AdminRole
+		} else if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
 			rb.RoleName = rl
 		} else if user.GlobalAccess != nil {
 			rb.RoleName = *user.GlobalAccess
