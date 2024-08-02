@@ -826,6 +826,10 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 		NextJobParameters: &jp,
 		Status:            model2.JobSequencerWaitingForDependencies,
 	})
+	if err != nil {
+		h.Scheduler.logger.Error("failed to create job sequencer", zap.Error(err))
+		return err
+	}
 
 	return ctx.NoContent(http.StatusOK)
 }
