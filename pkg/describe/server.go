@@ -686,18 +686,14 @@ type ReEvaluateDescribeJob struct {
 
 func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, controlIDs []string) (*model2.JobSequencerJobTypeBenchmarkRunnerParameters, []ReEvaluateDescribeJob, error) {
 	var controls []complianceapi.Control
+	var err error
 	if len(controlIDs) == 0 {
-		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+		controlIDs, err = h.getBenchmarkChildrenControls(benchmarkID)
 		if err != nil {
-			h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
 			return nil, nil, err
 		}
-		controlIDs = make([]string, 0, len(benchmark.Controls))
-		for _, control := range benchmark.Controls {
-			controlIDs = append(controlIDs, control)
-		}
 	}
-	controls, err := h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs, nil)
+	controls, err = h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs, nil)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
 		return nil, nil, err
@@ -749,6 +745,30 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 		ControlIDs:    controlIDs,
 		ConnectionIDs: connectionIDs,
 	}, describeJobs, nil
+}
+
+func (h HttpServer) getBenchmarkChildrenControls(benchmarkID string) ([]string, error) {
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
+		return nil, err
+	}
+	if benchmark == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var controlIDs []string
+	for _, control := range benchmark.Controls {
+		controlIDs = append(controlIDs, control)
+	}
+	for _, childBenchmarkID := range benchmark.Children {
+		childControlIDs, err := h.getBenchmarkChildrenControls(childBenchmarkID)
+		if err != nil {
+			return nil, err
+		}
+		controlIDs = append(controlIDs, childControlIDs...)
+	}
+	return controlIDs, nil
 }
 
 // ReEvaluateComplianceJob godoc
