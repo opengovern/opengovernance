@@ -4,7 +4,13 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azure:0.0.1 as azure
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azuread:0.0.1 as azuread
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-kaytu:0.0.1 as kaytu
 
-FROM ghcr.io/turbot/steampipe:0.21.1
+FROM ubuntu:20.04 AS base
+RUN apt-get update && apt-get install -y \
+    curl \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
@@ -12,7 +18,10 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
-RUN chown -R steampipe /home/steampipe/.steampipe/plugins/*
+RUN useradd -m -s /bin/bash steampipe
+RUN mkdir -p /home/steampipe/.steampipe/config
+RUN chown -R steampipe:steampipe /home/steampipe
+RUN chmod -R 755 /home/steampipe
 RUN apt update
 RUN apt install -y procps htop
 USER steampipe

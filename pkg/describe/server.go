@@ -796,6 +796,8 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 		return err
 	}
 
+	h.Scheduler.logger.Info("re-evaluating compliance job", zap.Any("job_parameters", jobParameters))
+
 	jobParametersJSON, err := json.Marshal(jobParameters)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to marshal job parameters", zap.Error(err))
