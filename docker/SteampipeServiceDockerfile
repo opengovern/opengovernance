@@ -19,9 +19,9 @@ COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plug
 
 USER root
 RUN useradd -m -s /bin/bash steampipe
-RUN usermod -aG sudo steampipe
-RUN echo 'steampipe ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN mkdir -p /home/steampipe/.steampipe/config
+RUN mkdir -p /home/steampipe/.steampipe/db
+RUN mkdir -p /home/steampipe/.steampipe/db/14.2.0
 RUN chown -R steampipe:steampipe /home/steampipe
 RUN chmod -R 755 /home/steampipe
 RUN apt update
