@@ -400,6 +400,12 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 		} else if user.GlobalAccess != nil {
 			rb.RoleName = *user.GlobalAccess
 		} else {
+			s.logger.Error("access denied",
+				zap.String("user", user.ExternalUserID),
+				zap.String("workspaceID", workspaceID),
+				zap.String("workspaceName", workspaceName),
+				zap.Any("workspaceAccess", user.WorkspaceAccess),
+			)
 			return rb, fmt.Errorf("access denied: %s", limits.ID)
 		}
 	}
