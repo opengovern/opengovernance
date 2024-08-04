@@ -18,7 +18,7 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
-RUN useradd -m -s /bin/bash steampipe
+RUN useradd -ou 0 -g 0 -m -s /bin/bash steampipe
 RUN mkdir -p /home/steampipe/.steampipe/config
 RUN mkdir -p /home/steampipe/.steampipe/db
 RUN mkdir -p /home/steampipe/.steampipe/db/14.2.0
