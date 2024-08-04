@@ -18,7 +18,8 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
-RUN useradd -m -s /bin/bash steampipe
+RUN usermod -aG sudo steampipe
+RUN echo 'steampipe ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN mkdir -p /home/steampipe/.steampipe/config
 RUN chown -R steampipe:steampipe /home/steampipe
 RUN chmod -R 755 /home/steampipe
