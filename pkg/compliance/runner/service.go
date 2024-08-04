@@ -70,6 +70,8 @@ func NewWorker(
 		return nil, err
 	}
 
+	time.Sleep(30 * time.Second)
+
 	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
 		return nil, err

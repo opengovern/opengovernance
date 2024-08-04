@@ -20,7 +20,6 @@ COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plug
 USER root
 RUN useradd -m -s /bin/bash steampipe
 RUN mkdir -p /home/steampipe/.steampipe/config
-RUN mkdir -p /home/steampipe/.steampipe/db/14.2.0/postgres
 RUN chown -R steampipe:steampipe /home/steampipe
 RUN chmod -R 755 /home/steampipe
 RUN apt update
