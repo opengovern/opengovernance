@@ -18,7 +18,14 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
-RUN useradd -ou 0 -g 0 -m -s /bin/bash steampipe
+RUN useradd -m -s /bin/bash steampipe
+RUN echo 'steampipe:steampipe' | chpasswd
+RUN echo 'username ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN mkdir -p /home/steampipe/.steampipe/config
+RUN mkdir -p /home/steampipe/.steampipe/db
+RUN mkdir -p /home/steampipe/.steampipe/db/14.2.0
+RUN chown -R steampipe:steampipe /home/steampipe
+RUN chmod -R 755 /home/steampipe
 RUN apt update
 RUN apt install -y procps htop
 USER steampipe
