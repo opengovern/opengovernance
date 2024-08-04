@@ -354,13 +354,15 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Error("dex verifier verify error", zap.Error(err))
 	}
 
-	_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-		return s.kaytuPublicKey, nil
-	})
-	if errk == nil {
-		return &u, nil
-	} else {
-		fmt.Println("failed to auth with kaytu cred due to", errk)
+	if s.kaytuPublicKey != nil {
+		_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
+			return s.kaytuPublicKey, nil
+		})
+		if errk == nil {
+			return &u, nil
+		} else {
+			fmt.Println("failed to auth with kaytu cred due to", errk)
+		}
 	}
 	return nil, err
 }

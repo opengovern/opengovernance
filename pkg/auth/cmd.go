@@ -47,9 +47,10 @@ var (
 
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
-	kaytuHost       = os.Getenv("KAYTU_HOST")
-	kaytuPublicKey  = os.Getenv("KAYTU_PUBLIC_KEY")
-	kaytuPrivateKey = os.Getenv("KAYTU_PRIVATE_KEY")
+	kaytuHost          = os.Getenv("KAYTU_HOST")
+	kaytuKeyEnabledStr = os.Getenv("KAYTU_KEY_ENABLED")
+	kaytuPublicKeyStr  = os.Getenv("KAYTU_PUBLIC_KEY")
+	kaytuPrivateKeyStr = os.Getenv("KAYTU_PRIVATE_KEY")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
@@ -120,30 +121,44 @@ func start(ctx context.Context) error {
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
-	b, err := base64.StdEncoding.DecodeString(kaytuPublicKey)
-	if err != nil {
-		return fmt.Errorf("public key decode: %w", err)
+	if kaytuKeyEnabledStr == "" {
+		kaytuKeyEnabledStr = "false"
 	}
-	block, _ := pem.Decode(b)
-	if block == nil {
-		return fmt.Errorf("failed to decode my private key")
-	}
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	kaytuKeyEnabled, err := strconv.ParseBool(kaytuKeyEnabledStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("kaytuKeyEnabled [%s]: %w", kaytuKeyEnabledStr, err)
 	}
 
-	b, err = base64.StdEncoding.DecodeString(kaytuPrivateKey)
-	if err != nil {
-		return fmt.Errorf("private key decode: %w", err)
-	}
-	block, _ = pem.Decode(b)
-	if block == nil {
-		panic("failed to decode private key")
-	}
-	pri, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		panic(err)
+	var kaytuPublicKey *rsa.PublicKey
+	var kaytuPrivateKey *rsa.PrivateKey
+	if kaytuKeyEnabled {
+		b, err := base64.StdEncoding.DecodeString(kaytuPublicKeyStr)
+		if err != nil {
+			return fmt.Errorf("public key decode: %w", err)
+		}
+		block, _ := pem.Decode(b)
+		if block == nil {
+			return fmt.Errorf("failed to decode my private key")
+		}
+		pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			return err
+		}
+		kaytuPublicKey = pub.(*rsa.PublicKey)
+
+		b, err = base64.StdEncoding.DecodeString(kaytuPrivateKeyStr)
+		if err != nil {
+			return fmt.Errorf("private key decode: %w", err)
+		}
+		block, _ = pem.Decode(b)
+		if block == nil {
+			panic("failed to decode private key")
+		}
+		pri, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			panic(err)
+		}
+		kaytuPrivateKey = pri.(*rsa.PrivateKey)
 	}
 
 	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
@@ -178,7 +193,7 @@ func start(ctx context.Context) error {
 
 	authServer := &Server{
 		host:                    kaytuHost,
-		kaytuPublicKey:          pub.(*rsa.PublicKey),
+		kaytuPublicKey:          kaytuPublicKey,
 		verifier:                verifier,
 		verifierNative:          verifierNative,
 		verifierPennywiseNative: verifierPennywiseNative,
@@ -213,7 +228,7 @@ func start(ctx context.Context) error {
 			workspaceClient: workspaceClient,
 			metadataBaseUrl: metadataBaseUrl,
 			auth0Service:    auth0Service,
-			kaytuPrivateKey: pri.(*rsa.PrivateKey),
+			kaytuPrivateKey: kaytuPrivateKey,
 			db:              adb,
 			authServer:      authServer,
 		}
