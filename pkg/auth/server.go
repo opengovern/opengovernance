@@ -15,7 +15,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 	api3 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
@@ -369,7 +368,6 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 
 func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.RoleBinding, error) {
 	var rb api.RoleBinding
-	var limits api2.WorkspaceLimitsUsage
 
 	if user.ExternalUserID == api3.GodUserID {
 		return api.RoleBinding{}, errors.New("claiming to be god is banned")
@@ -406,7 +404,7 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 				zap.String("workspaceName", workspaceName),
 				zap.Any("workspaceAccess", user.WorkspaceAccess),
 			)
-			return rb, fmt.Errorf("access denied: %s", limits.ID)
+			return rb, fmt.Errorf("access denied: %s", workspaceID)
 		}
 	}
 
