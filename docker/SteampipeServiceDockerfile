@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-RUN sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
+RUN /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
@@ -18,9 +18,7 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
-RUN useradd -m -s /bin/bash steampipe
-RUN echo 'steampipe:steampipe' | chpasswd
-RUN echo 'username ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN useradd -ms /bin/bash steampipe
 RUN mkdir -p /home/steampipe/.steampipe/config
 RUN mkdir -p /home/steampipe/.steampipe/db
 RUN mkdir -p /home/steampipe/.steampipe/db/14.2.0
