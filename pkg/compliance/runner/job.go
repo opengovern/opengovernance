@@ -76,6 +76,13 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 }
 
 func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
+	cutOff := time.Now().AddDate(0, -3, 0)
+	w.logger.Info("Deleting old findings", zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
+	if err := w.handleOldFindingsStateByTime(ctx, cutOff, false); err != nil {
+		w.logger.Error("failed to delete old findings", zap.Error(err), zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
+		return 0, err
+	}
+
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
@@ -416,52 +423,21 @@ type FindingsMultiGetResponse struct {
 	} `json:"docs"`
 }
 
-func (w *Worker) setOldFindingsInactive(jobID uint,
-	connectionId *string,
-	benchmarkID,
-	controlID string,
-	ctx context.Context,
-) error {
+func (w *Worker) handleOldFindingsStateByTime(ctx context.Context, cutThreshold time.Time, doDelete bool) error {
 	idx := types.FindingsIndex
 	var filters []map[string]any
 	mustFilters := make([]map[string]any, 0, 4)
 	mustFilters = append(mustFilters, map[string]any{
-		"term": map[string]any{
-			"benchmarkID": benchmarkID,
-		},
-	})
-	mustFilters = append(mustFilters, map[string]any{
-		"term": map[string]any{
-			"controlID": controlID,
-		},
-	})
-	mustFilters = append(mustFilters, map[string]any{
 		"range": map[string]any{
-			"complianceJobID": map[string]any{
-				"lt": jobID,
+			"evaluatedAt": map[string]any{
+				"lt": cutThreshold.UnixMilli(),
 			},
 		},
 	})
-	if connectionId != nil {
-		mustFilters = append(mustFilters, map[string]any{
-			"term": map[string]any{
-				"connectionID": *connectionId,
-			},
-		})
-	}
 
 	filters = append(filters, map[string]any{
 		"bool": map[string]any{
 			"must": []map[string]any{
-				{
-					"bool": map[string]any{
-						"must_not": map[string]any{
-							"term": map[string]any{
-								"complianceJobID": jobID,
-							},
-						},
-					},
-				},
 				{
 					"bool": map[string]any{
 						"filter": mustFilters,
@@ -477,38 +453,70 @@ func (w *Worker) setOldFindingsInactive(jobID uint,
 			"filter": filters,
 		},
 	}
-	request["doc"] = map[string]any{
-		"stateActive": false,
-	}
-
-	query, err := json.Marshal(request)
-	if err != nil {
-		return err
-	}
 
 	es := w.esClient.ES()
-	res, err := es.UpdateByQuery(
-		[]string{idx},
-		es.UpdateByQuery.WithContext(ctx),
-		es.UpdateByQuery.WithBody(bytes.NewReader(query)),
-	)
-	defer kaytu.CloseSafe(res)
-	if err != nil {
-		b, _ := io.ReadAll(res.Body)
-		w.logger.Error("failure while deleting es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("control_id", controlID), zap.String("response", string(b)))
-		return err
-	} else if err := kaytu.CheckError(res); err != nil {
-		if kaytu.IsIndexNotFoundErr(err) {
-			return nil
+	if !doDelete {
+		request["doc"] = map[string]any{
+			"stateActive": false,
 		}
-		b, _ := io.ReadAll(res.Body)
-		w.logger.Error("failure while querying es", zap.Error(err), zap.String("benchmark_id", benchmarkID), zap.String("control_id", controlID), zap.String("response", string(b)))
-		return err
-	}
 
-	_, err = io.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("read response: %w", err)
+		query, err := json.Marshal(request)
+		if err != nil {
+			return err
+		}
+
+		res, err := es.UpdateByQuery(
+			[]string{idx},
+			es.UpdateByQuery.WithContext(ctx),
+			es.UpdateByQuery.WithBody(bytes.NewReader(query)),
+		)
+		defer kaytu.CloseSafe(res)
+		if err != nil {
+			b, _ := io.ReadAll(res.Body)
+			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
+			return err
+		} else if err := kaytu.CheckError(res); err != nil {
+			if kaytu.IsIndexNotFoundErr(err) {
+				return nil
+			}
+			b, _ := io.ReadAll(res.Body)
+			w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
+			return err
+		}
+
+		_, err = io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("read response: %w", err)
+		}
+	} else {
+		query, err := json.Marshal(request)
+		if err != nil {
+			return err
+		}
+
+		res, err := es.DeleteByQuery(
+			[]string{idx},
+			bytes.NewReader(query),
+			es.DeleteByQuery.WithContext(ctx),
+		)
+		defer kaytu.CloseSafe(res)
+		if err != nil {
+			b, _ := io.ReadAll(res.Body)
+			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
+			return err
+		} else if err := kaytu.CheckError(res); err != nil {
+			if kaytu.IsIndexNotFoundErr(err) {
+				return nil
+			}
+			b, _ := io.ReadAll(res.Body)
+			w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
+			return err
+		}
+
+		_, err = io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("read response: %w", err)
+		}
 	}
 
 	return nil
