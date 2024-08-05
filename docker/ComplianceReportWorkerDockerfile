@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-RUN /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
+RUN sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
@@ -27,6 +27,8 @@ RUN chmod -R 755 /home/steampipe
 RUN apt update
 RUN apt install -y procps htop
 USER steampipe
+
+RUN steampipe plugin list
 
 COPY ./build/compliance-report-worker /
 
