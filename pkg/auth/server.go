@@ -201,13 +201,21 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		workspaceName = headerWorkspace
 	}
 
-	_, err = s.auth0Service.GetOrCreateUser(user.ExternalUserID, user.Email)
+	theUser, err := s.auth0Service.GetOrCreateUser(user.ExternalUserID, user.Email)
 	if err != nil {
 		s.logger.Warn("failed to getOrCreate user",
 			zap.String("userId", user.ExternalUserID),
 			zap.String("email", user.Email),
 			zap.Error(err))
 	}
+	user.WorkspaceAccess = theUser.AppMetadata.WorkspaceAccess
+	user.GlobalAccess = theUser.AppMetadata.GlobalAccess
+	user.MemberSince = theUser.AppMetadata.MemberSince
+	user.UserLastLogin = theUser.AppMetadata.LastLogin
+	user.ColorBlindMode = theUser.AppMetadata.ColorBlindMode
+	user.Theme = theUser.AppMetadata.Theme
+	user.ConnectionIDs = theUser.AppMetadata.ConnectionIDs
+
 	if user.WorkspaceAccess == nil {
 		user.WorkspaceAccess = map[string]api3.Role{}
 	}
