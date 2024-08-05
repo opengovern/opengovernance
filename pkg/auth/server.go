@@ -444,7 +444,12 @@ func newDexOidcVerifier(ctx context.Context, domain, clientId string) (*oidc.IDT
 		Transport: transport,
 	}
 
-	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, httpClient), domain)
+	provider, err := oidc.NewProvider(
+		oidc.InsecureIssuerURLContext(
+			oidc.ClientContext(ctx, httpClient),
+			domain,
+		), domain,
+	)
 	if err != nil {
 		return nil, err
 	}
