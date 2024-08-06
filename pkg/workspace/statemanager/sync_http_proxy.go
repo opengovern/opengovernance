@@ -118,7 +118,7 @@ func (s *Service) syncHTTPProxy(ctx context.Context, workspaces []*db.Workspace)
 			Namespace: w.ID,
 			Conditions: []contourv1.MatchCondition{
 				{
-					Prefix: "/api/" + w.Name,
+					Prefix: "/" + w.Name,
 				},
 			},
 		})
