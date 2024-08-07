@@ -70,182 +70,6 @@ definitions:
       value:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action:
-    properties:
-      body:
-        type: string
-      headers:
-        additionalProperties:
-          type: string
-        type: object
-      id:
-        type: integer
-      method:
-        type: string
-      name:
-        type: string
-      url:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition:
-    properties:
-      combinator:
-        type: string
-      field:
-        type: string
-      not:
-        type: boolean
-      operator:
-        type: string
-      rules:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition'
-        type: array
-      value:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq:
-    properties:
-      body:
-        type: string
-      headers:
-        additionalProperties:
-          type: string
-        type: object
-      method:
-        type: string
-      name:
-        type: string
-      url:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest:
-    properties:
-      action_id:
-        type: integer
-      condition:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition'
-      event_type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
-      metadata:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata'
-      scope:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType:
-    properties:
-      benchmark_id:
-        type: string
-      insight_id:
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse:
-    properties:
-      action_id:
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs:
-    properties:
-      atlassian_api_token:
-        type: string
-      atlassian_domain:
-        type: string
-      email:
-        type: string
-      issue_type_id:
-        type: string
-      name:
-        type: string
-      project_id:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata:
-    properties:
-      description:
-        type: string
-      label:
-        items:
-          type: string
-        type: array
-      name:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule:
-    properties:
-      action_id:
-        type: integer
-      condition:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition'
-      event_type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
-      id:
-        type: integer
-      metadata:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata'
-      scope:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
-      trigger_status:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope:
-    properties:
-      connection_group:
-        type: string
-      connection_id:
-        type: string
-      connector:
-        $ref: '#/definitions/source.Type'
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs:
-    properties:
-      channel_name:
-        type: string
-      name:
-        type: string
-      slack_url:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers:
-    properties:
-      action:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action'
-      response_status:
-        type: integer
-      rule:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule'
-      triggered_at:
-        type: string
-      value:
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest:
-    properties:
-      body:
-        type: string
-      headers:
-        additionalProperties:
-          type: string
-        type: object
-      method:
-        type: string
-      name:
-        type: string
-      url:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest:
-    properties:
-      action_id:
-        type: integer
-      condition:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition'
-      event_type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
-      metadata:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata'
-      scope:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType:
     enum:
     - assets
@@ -267,14 +91,13 @@ definitions:
         description: Name of the key
         type: string
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse:
     properties:
@@ -295,14 +118,13 @@ definitions:
         example: example
         type: string
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       token:
         description: Token of the key
         type: string
@@ -310,14 +132,13 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Global Access
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       roleBindings:
         description: List of user roles in each workspace
         items:
@@ -347,14 +168,13 @@ definitions:
         example: "2023-04-21T08:53:09.928Z"
         type: string
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       status:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus'
@@ -382,14 +202,13 @@ definitions:
         example: true
         type: boolean
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Filter by role name
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse:
     properties:
@@ -402,14 +221,13 @@ definitions:
         example: true
         type: boolean
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       userId:
         description: Unique identifier for the user
         example: auth|123456789
@@ -426,14 +244,13 @@ definitions:
         example: johndoe@example.com
         type: string
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
     required:
     - email
     type: object
@@ -453,14 +270,13 @@ definitions:
           type: string
         type: array
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       userId:
         description: Unique identifier for the User
         example: auth|123456789
@@ -469,18 +285,6 @@ definitions:
     - roleName
     - userId
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role:
-    enum:
-    - internal
-    - admin
-    - editor
-    - viewer
-    type: string
-    x-enum-varnames:
-    - InternalRole
-    - AdminRole
-    - EditorRole
-    - ViewerRole
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme:
     enum:
     - system
@@ -494,14 +298,13 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding:
     properties:
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the binding Role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       workspaceID:
         description: Unique identifier for the Workspace
         example: ws123456789
@@ -534,14 +337,13 @@ definitions:
         example: example
         type: string
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       updatedAt:
         description: Last update timestamp in UTC
         example: "2023-04-21T08:53:09.928Z"
@@ -562,14 +364,13 @@ definitions:
         example: "2023-04-21T08:53:09.928Z"
         type: string
       roleName:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
         - editor
         - viewer
         example: admin
+        type: string
       scopedConnectionIDs:
         items:
           type: string
@@ -1555,15 +1356,6 @@ definitions:
       stateActive:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse:
-    properties:
-      dashboards:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard'
-        type: array
-      token:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -1665,186 +1457,6 @@ definitions:
         type: array
       totalCount:
         example: 100
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight:
-    properties:
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Cloud Provider
-        example: Azure
-      description:
-        description: Description
-        example: List clusters that have role-based access control (RBAC) disabled
-        type: string
-      enabled:
-        example: true
-        type: boolean
-      firstOldResultDate:
-        description: Old Total Result Date
-        type: string
-      id:
-        description: Insight ID
-        example: 23
-        type: integer
-      internal:
-        example: false
-        type: boolean
-      links:
-        description: Links
-        items:
-          type: string
-        type: array
-      logoURL:
-        description: Logo URL
-        type: string
-      longTitle:
-        description: Long Title
-        example: List clusters that have role-based access control (RBAC) disabled
-        type: string
-      oldTotalResultValue:
-        description: Number of Old Total Result Value
-        example: 0
-        type: integer
-      query:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query'
-        description: Query
-      result:
-        description: Insight Results
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult'
-        type: array
-      shortTitle:
-        description: Short Title
-        example: Clusters with no RBAC
-        type: string
-      tags:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        description: Tags
-        type: object
-      totalResultValue:
-        description: Number of Total Result Value
-        example: 10
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection:
-    properties:
-      connection_id:
-        type: string
-      original_id:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail:
-    properties:
-      headers:
-        items:
-          type: string
-        type: array
-      rows:
-        items:
-          items: {}
-          type: array
-        type: array
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup:
-    properties:
-      connectors:
-        example:
-        - '["Azure"'
-        - ' "AWS"]'
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
-      description:
-        example: List clusters that have role-based access control (RBAC) disabled
-        type: string
-      firstOldResultDate:
-        example: "2023-04-21T08:53:09.928Z"
-        type: string
-      id:
-        example: 23
-        type: integer
-      insights:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
-        type: array
-      logoURL:
-        example: https://kaytu.io/logo.png
-        type: string
-      longTitle:
-        example: List clusters that have role-based access control (RBAC) disabled
-        type: string
-      oldTotalResultValue:
-        example: 0
-        type: integer
-      shortTitle:
-        example: Clusters with no RBAC
-        type: string
-      tags:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
-      totalResultValue:
-        example: 10
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult:
-    properties:
-      connectionID:
-        description: Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      connections:
-        description: Connections
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection'
-        type: array
-      details:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail'
-        description: Insight Details
-      executedAt:
-        description: Time of Execution
-        example: "2023-04-21T08:53:09.928Z"
-        type: string
-      insightID:
-        description: Insight ID
-        example: 23
-        type: integer
-      jobID:
-        description: Job ID
-        example: 1
-        type: integer
-      locations:
-        description: Locations
-        items:
-          type: string
-        type: array
-      result:
-        description: Result
-        example: 1000
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint:
-    properties:
-      connectionCount:
-        description: Connection Count
-        example: 10
-        type: integer
-      timestamp:
-        description: Time
-        example: 1686346668
-        type: integer
-      value:
-        description: Resource Count
-        example: 1000
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListBenchmarksSummaryResponse:
@@ -2099,13 +1711,6 @@ definitions:
     x-enum-varnames:
     - SortDirectionAscending
     - SortDirectionDescending
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard:
-    properties:
-      ID:
-        type: string
-      Name:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       connection:
@@ -2173,13 +1778,11 @@ definitions:
     - discovery
     - analytics
     - compliance
-    - insight
     type: string
     x-enum-varnames:
     - JobType_Discovery
     - JobType_Analytics
     - JobType_Compliance
-    - JobType_Insight
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes:
     properties:
       awsResourceTypes:
@@ -2616,16 +2219,6 @@ definitions:
         example: 100
         minimum: 0
         type: integer
-      insights:
-        description: List of Insights that support this Resource Type - Metadata (GET
-          only)
-        items:
-          type: integer
-        type: array
-      insights_count:
-        description: Number of Insights that use this Resource Type - Metadata
-        minimum: 0
-        type: integer
       logo_uri:
         description: Logo URI
         example: https://kaytu.io/logo.png
@@ -2867,7 +2460,6 @@ definitions:
     - full_discovery_job_interval
     - cost_discovery_job_interval
     - health_check_job_interval
-    - insight_job_interval
     - metrics_job_interval
     - compliance_job_interval
     - data_retention_duration
@@ -2907,7 +2499,6 @@ definitions:
     - MetadataKeyFullDiscoveryJobInterval
     - MetadataKeyCostDiscoveryJobInterval
     - MetadataKeyHealthCheckJobInterval
-    - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
     - MetadataKeyComplianceJobInterval
     - MetadataKeyDataRetention
@@ -2930,8 +2521,6 @@ definitions:
       assumeAdminRoleName:
         type: string
       assumeRoleName:
-        type: string
-      assumeRolePolicyName:
         type: string
       externalId:
         type: string
@@ -3380,16 +2969,16 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config:
     properties:
+      accessKey:
+        type: string
       accountID:
         type: string
       assumeRoleName:
         type: string
       externalId:
         type: string
-      healthCheckPolicies:
-        items:
-          type: string
-        type: array
+      secretKey:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.CreateCredentialV2Request:
     properties:
@@ -3434,8 +3023,6 @@ definitions:
           type: integer
         type: object
       discoveryStatus:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
-      insightsStatus:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
       maxConnections:
         type: integer
@@ -3590,50 +3177,18 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
-  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse:
-    properties:
-      messages:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message'
-        type: array
-      status:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message:
-    properties:
-      content:
-        type: string
-      role:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest:
-    properties:
-      content:
-        type: string
-      run_id:
-        type: string
-      thread_id:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse:
-    properties:
-      run_id:
-        type: string
-      thread_id:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig:
     properties:
+      accessKey:
+        type: string
       accountID:
         type: string
       assumeRoleName:
         type: string
       externalId:
         type: string
-      healthCheckPolicies:
-        items:
-          type: string
-        type: array
+      secretKey:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AzureCredentialConfig:
     properties:
@@ -4036,74 +3591,82 @@ definitions:
       name:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest:
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageRequest:
     properties:
-      end_time_epoch_millis:
-        type: integer
-      start_time_epoch_millis:
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse:
-    properties:
-      meters:
+      cliVersion:
+        type: string
+      cluster:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsCluster'
+      identification:
+        additionalProperties:
+          type: string
+        type: object
+      instances:
         items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds'
         type: array
-    type: object
-  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter:
-    properties:
-      isTotal:
+      loading:
         type: boolean
-      type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType'
-      value:
-        type: number
-      workspaceName:
+      metrics:
+        additionalProperties:
+          additionalProperties:
+            items:
+              $ref: '#/definitions/types.Datapoint'
+            type: array
+          type: object
+        type: object
+      preferences:
+        additionalProperties:
+          type: string
+        type: object
+      region:
+        type: string
+      requestId:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType:
-    enum:
-    - InventoryDiscoveryJobCount
-    - CostDiscoveryJobCount
-    - MetricEvaluationCount
-    - InsightEvaluationCount
-    - BenchmarkEvaluationCount
-    - TotalFindings
-    - TotalResource
-    - TotalUsers
-    - TotalApiKeys
-    - TotalRules
-    - AlertCount
-    type: string
-    x-enum-varnames:
-    - MeterType_InventoryDiscoveryJobCount
-    - MeterType_CostDiscoveryJobCount
-    - MeterType_MetricEvaluationCount
-    - MeterType_InsightEvaluationCount
-    - MeterType_BenchmarkEvaluationCount
-    - MeterType_TotalFindings
-    - MeterType_TotalResource
-    - MeterType_TotalUsers
-    - MeterType_TotalApiKeys
-    - MeterType_TotalRules
-    - MeterType_AlertCount
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageResponse:
+    properties:
+      rightSizing:
+        additionalProperties:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsRightsizingRecommendation'
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds:
     properties:
+      availabilityZone:
+        type: string
+      backupRetentionPeriod:
+        type: integer
       clusterType:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType'
       engine:
         type: string
       engineVersion:
         type: string
+      hashedInstanceId:
+        type: string
       instanceType:
         type: string
+      licenseModel:
+        type: string
+      performanceInsightsEnabled:
+        type: boolean
+      performanceInsightsRetentionPeriod:
+        type: integer
       storageIops:
         type: integer
       storageSize:
         type: integer
       storageThroughput:
-        type: integer
+        type: number
       storageType:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsCluster:
+    properties:
+      engine:
+        type: string
+      hashedClusterId:
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType:
@@ -4122,13 +3685,35 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds'
       description:
         type: string
+      freeMemoryBytes:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      freeStorageBytes:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      networkThroughputBytes:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
       recommended:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds'
+      storageIops:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      storageThroughputBytes:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      vCPU:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
+      volumeBytesUsed:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage'
     type: object
   github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageRequest:
     properties:
+      cliVersion:
+        type: string
+      identification:
+        additionalProperties:
+          type: string
+        type: object
       instance:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds'
+      loading:
+        type: boolean
       metrics:
         additionalProperties:
           items:
@@ -4140,6 +3725,8 @@ definitions:
           type: string
         type: object
       region:
+        type: string
+      requestId:
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageResponse:
@@ -4243,10 +3830,22 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds:
     properties:
+      architecture:
+        type: string
       clusterType:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType'
+      computeCost:
+        type: number
+      computeCostComponents:
+        additionalProperties:
+          type: number
+        type: object
       cost:
         type: number
+      costComponents:
+        additionalProperties:
+          type: number
+        type: object
       engine:
         type: string
       engineVersion:
@@ -4255,14 +3854,22 @@ definitions:
         type: string
       memoryGb:
         type: integer
+      processor:
+        type: string
       region:
         type: string
+      storageCost:
+        type: number
+      storageCostComponents:
+        additionalProperties:
+          type: number
+        type: object
       storageIops:
         type: integer
       storageSize:
         type: integer
       storageThroughput:
-        type: integer
+        type: number
       storageType:
         type: string
       vCPU:
@@ -4276,6 +3883,10 @@ definitions:
         type: number
       cost:
         type: number
+      costComponents:
+        additionalProperties:
+          type: number
+        type: object
       provisionedIOPS:
         type: integer
       provisionedThroughput:
@@ -4291,6 +3902,10 @@ definitions:
         type: string
       cost:
         type: number
+      costComponents:
+        additionalProperties:
+          type: number
+        type: object
       ebsBandwidth:
         type: string
       ebsIops:
@@ -4309,6 +3924,8 @@ definitions:
         type: string
       processor:
         type: string
+      region:
+        type: string
       vCPU:
         type: integer
     type: object
@@ -4316,6 +3933,8 @@ definitions:
     properties:
       avg:
         type: number
+      last:
+        $ref: '#/definitions/types.Datapoint'
       max:
         type: number
       min:
@@ -4430,338 +4049,6 @@ info:
   title: Kaytu Service API
   version: "1.0"
 paths:
-  /ai/api/v1/gpt/run:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Description of query for KaytuGPT
-        in: body
-        name: query
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              items:
-                type: string
-              type: array
-            type: object
-      security:
-      - BearerToken: []
-      summary: Runs the query on KaytuGPT and returns the generated query
-      tags:
-      - resource
-  /alerting/api/v1/action/create:
-    post:
-      description: create an action by the specified input
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Create action
-      tags:
-      - alerting
-  /alerting/api/v1/action/delete/{actionId}:
-    delete:
-      description: Deleting a single action for the given action id
-      parameters:
-      - description: actionId
-        in: path
-        name: actionId
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Delete action
-      tags:
-      - alerting
-  /alerting/api/v1/action/jira:
-    post:
-      description: Create action with jira url and header and body
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse'
-      security:
-      - BearerToken: []
-      summary: Create Jira Action
-      tags:
-      - alerting
-  /alerting/api/v1/action/list:
-    get:
-      description: returns list of all actions
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List actions
-      tags:
-      - alerting
-  /alerting/api/v1/action/slack:
-    post:
-      description: Create action with slack url and body
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse'
-      security:
-      - BearerToken: []
-      summary: Create Slack Action
-      tags:
-      - alerting
-  /alerting/api/v1/action/update/{actionId}:
-    put:
-      description: Retrieving an action by the specified input
-      parameters:
-      - description: actionId
-        in: path
-        name: actionId
-        required: true
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Update action
-      tags:
-      - alerting
-  /alerting/api/v1/rule/{ruleId}/trigger:
-    get:
-      description: Trigger one rule manually
-      parameters:
-      - description: RuleID
-        in: path
-        name: ruleId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Trigger one rule
-      tags:
-      - alerting
-  /alerting/api/v1/rule/create:
-    post:
-      description: create a rule by the specified input
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Create rule
-      tags:
-      - alerting
-  /alerting/api/v1/rule/delete/{ruleId}:
-    delete:
-      description: Deleting a single rule for the given rule id
-      parameters:
-      - description: ruleId
-        in: path
-        name: ruleId
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Delete rule
-      tags:
-      - alerting
-  /alerting/api/v1/rule/list:
-    get:
-      description: returns list of all rules
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List rules
-      tags:
-      - alerting
-  /alerting/api/v1/rule/update/{ruleId}:
-    put:
-      description: Retrieving a rule by the specified input
-      parameters:
-      - description: ruleId
-        in: path
-        name: ruleId
-        required: true
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Update rule
-      tags:
-      - alerting
-  /alerting/api/v1/trigger/list:
-    get:
-      description: returns list of all the triggers
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List triggers
-      tags:
-      - alerting
-  /assistant/api/v1/{assistant_name}/thread:
-    post:
-      description: Send a message [standalone]
-      parameters:
-      - description: Assistant Name
-        enum:
-        - kaytu-r-assistant
-        - kaytu-assets-assistant
-        - kaytu-score-assistant
-        - kaytu-compliance-assistant
-        in: path
-        name: assistant_name
-        required: true
-        type: string
-      - description: Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse'
-      security:
-      - BearerToken: []
-      summary: Send a message [standalone]
-      tags:
-      - assistant
-  /assistant/api/v1/{assistant_name}/thread/{thread_id}:
-    get:
-      description: List messages of a thread
-      parameters:
-      - description: Thread ID
-        in: path
-        name: thread_id
-        required: true
-        type: string
-      - description: Assistant Name
-        enum:
-        - kaytu-r-assistant
-        - kaytu-assets-assistant
-        - kaytu-score-assistant
-        - kaytu-compliance-assistant
-        in: path
-        name: assistant_name
-        required: true
-        type: string
-      - description: Run ID
-        in: query
-        name: run_id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse'
-      security:
-      - BearerToken: []
-      summary: List messages of a thread
-      tags:
-      - assistant
   /auth/api/v1/key/{id}/delete:
     delete:
       description: Deletes the specified workspace key by ID.
@@ -6162,383 +5449,6 @@ paths:
       summary: Get top field by finding count
       tags:
       - compliance
-  /compliance/api/v1/insight:
-    get:
-      description: |-
-        Retrieving list of insights based on specified filters. Provides details of insights, including results during the specified time period for the specified connection.
-        Returns "all:provider" job results if connectionId is not defined.
-      parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
-        in: query
-        items:
-          type: string
-        name: tag
-        type: array
-      - collectionFormat: csv
-        description: filter insights by connector
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: 'filter the result by connection group '
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - description: unix seconds for the start time of the trend
-        in: query
-        name: startTime
-        type: integer
-      - description: unix seconds for the end time of the trend
-        in: query
-        name: endTime
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List insights
-      tags:
-      - insights
-  /compliance/api/v1/insight/{insightId}:
-    get:
-      description: |-
-        Retrieving the specified insight with ID. Provides details of the insight, including results during the specified time period for the specified connection.
-        Returns "all:provider" job results if connectionId is not defined.
-      parameters:
-      - description: Insight ID
-        in: path
-        name: insightId
-        required: true
-        type: string
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: filter the result by connection group
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - description: unix seconds for the start time of the trend
-        in: query
-        name: startTime
-        type: integer
-      - description: unix seconds for the end time of the trend
-        in: query
-        name: endTime
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
-      security:
-      - BearerToken: []
-      summary: Get insight
-      tags:
-      - insights
-  /compliance/api/v1/insight/{insightId}/trend:
-    get:
-      description: |-
-        Retrieving insight results datapoints for a specified connection during a specified time period.
-        Returns "all:provider" job results if connectionId is not defined.
-      parameters:
-      - description: Insight ID
-        in: path
-        name: insightId
-        required: true
-        type: string
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: filter the result by connection group
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - description: unix seconds for the start time of the trend
-        in: query
-        name: startTime
-        type: integer
-      - description: unix seconds for the end time of the trend
-        in: query
-        name: endTime
-        type: integer
-      - description: number of datapoints to return
-        in: query
-        name: datapointCount
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get insight trend
-      tags:
-      - insights
-  /compliance/api/v1/insight/group:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        Retrieving list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
-        Returns "all:provider" job results if connectionId is not defined.
-      parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
-        in: query
-        items:
-          type: string
-        name: tag
-        type: array
-      - collectionFormat: csv
-        description: filter insights by connector
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: filter the result by connection group
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - description: unix seconds for the start time of the trend
-        in: query
-        name: startTime
-        type: integer
-      - description: unix seconds for the end time of the trend
-        in: query
-        name: endTime
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List insight groups
-      tags:
-      - insights
-  /compliance/api/v1/insight/group/{insightGroupId}:
-    get:
-      description: |-
-        Retrieving the specified insight group with ID.
-        Returns "all:provider" job results if connectionId is not defined.
-      parameters:
-      - description: Insight Group ID
-        in: path
-        name: insightGroupId
-        required: true
-        type: string
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: filter the result by connection group
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - description: unix seconds for the start time of the trend
-        in: query
-        name: startTime
-        type: integer
-      - description: unix seconds for the end time of the trend
-        in: query
-        name: endTime
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup'
-      security:
-      - BearerToken: []
-      summary: Get insight group
-      tags:
-      - insights
-  /compliance/api/v1/insight/group/{insightGroupId}/trend:
-    get:
-      description: |-
-        Retrieving insight group results datapoints for a specified connection during a specified time period.
-        Returns "all:provider" job results if connectionId is not defined.
-      parameters:
-      - description: Insight Group ID
-        in: path
-        name: insightGroupId
-        required: true
-        type: string
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: filter the result by connection group
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - description: unix seconds for the start time of the trend
-        in: query
-        name: startTime
-        type: integer
-      - description: unix seconds for the end time of the trend
-        in: query
-        name: endTime
-        type: integer
-      - description: number of datapoints to return
-        in: query
-        name: datapointCount
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get insight group trend
-      tags:
-      - insights
-  /compliance/api/v1/metadata/insight/{insightId}:
-    get:
-      description: Retrieving insight metadata by id
-      parameters:
-      - description: Insight ID
-        in: path
-        name: insightId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
-      security:
-      - BearerToken: []
-      summary: Get insight metadata
-      tags:
-      - insights
   /compliance/api/v1/metadata/tag/compliance:
     get:
       consumes:
@@ -6560,27 +5470,6 @@ paths:
       summary: List compliance tag keys
       tags:
       - compliance
-  /compliance/api/v1/metadata/tag/insight:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving a list of insights tag keys with their possible values.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              items:
-                type: string
-              type: array
-            type: object
-      security:
-      - BearerToken: []
-      summary: List insights tag keys
-      tags:
-      - insights
   /compliance/api/v1/queries/sync:
     get:
       consumes:
@@ -6625,21 +5514,6 @@ paths:
       summary: List resource findings
       tags:
       - compliance
-  /compliance/api/v1/superset/dashboards/token:
-    post:
-      description: Generate dashboard token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse'
-      security:
-      - BearerToken: []
-      summary: Generate dashboard token
-      tags:
-      - keys
   /integration/api/v1/connections/{connectionId}:
     delete:
       description: Deleting a single connection either AWS / Azure for the given connection
@@ -8965,29 +7839,6 @@ paths:
       summary: List all resource types that will be discovered
       tags:
       - scheduler
-  /schedule/api/v1/insight/trigger/{insight_id}:
-    put:
-      description: Triggers a insight job to run immediately for the given insight
-      parameters:
-      - description: Insight ID
-        in: path
-        name: insight_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: integer
-            type: array
-      security:
-      - BearerToken: []
-      summary: Triggers insight job
-      tags:
-      - describe
   /schedule/api/v1/jobs:
     post:
       parameters:
@@ -9009,29 +7860,6 @@ paths:
       summary: Lists all jobs
       tags:
       - scheduler
-  /subscription/api/v1/metering/list:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse'
-      security:
-      - BearerToken: []
-      summary: Get meters
-      tags:
-      - subscription
   /wastage/api/v1/wastage/aws-rds:
     post:
       description: List wastage in AWS RDS
@@ -9052,6 +7880,28 @@ paths:
       security:
       - BearerToken: []
       summary: List wastage in AWS RDS
+      tags:
+      - wastage
+  /wastage/api/v1/wastage/aws-rds-cluster:
+    post:
+      description: List wastage in AWS RDS Cluster
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageResponse'
+      security:
+      - BearerToken: []
+      summary: List wastage in AWS RDS Cluster
       tags:
       - wastage
   /wastage/api/v1/wastage/ec2-instance:

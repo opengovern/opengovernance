@@ -22,12 +22,9 @@ import (
 	"time"
 
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -96,11 +93,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	connectionsV2 := v2.Group("/connections")
 	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, api.ViewerRole))
-
-	insightsV2 := v2.Group("/insights")
-	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, api.ViewerRole))
-	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, api.ViewerRole))
-	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, api.ViewerRole))
 
 	resourceCollection := v2.Group("/resource-collection")
 	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, api.ViewerRole))
@@ -2426,147 +2418,6 @@ func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string
 	return &resp, nil
 }
 
-func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
-	var err error
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	timeStr := ctx.QueryParam("time")
-	timeAt := time.Now().Unix()
-	if timeStr != "" {
-		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
-
-	insightIdListStr := httpserver.QueryArrayParam(ctx, "insightId")
-	if len(insightIdListStr) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "insight id is required")
-	}
-	insightIdList := make([]uint, 0, len(insightIdListStr))
-	for _, idStr := range insightIdListStr {
-		id, err := strconv.ParseUint(idStr, 10, 32)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
-		}
-		insightIdList = append(insightIdList, uint(id))
-	}
-
-	var insightValues map[uint][]insight.InsightResource
-	if timeStr != "" {
-		insightValues, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, true)
-	} else {
-		insightValues, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, false)
-	}
-	if err != nil {
-		return err
-	}
-
-	firstAvailable, err := es.FetchInsightValueAfter(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList)
-	if err != nil {
-		return err
-	}
-
-	for insightId := range firstAvailable {
-		if results, ok := insightValues[insightId]; ok && len(results) > 0 {
-			continue
-		}
-		insightValues[insightId] = firstAvailable[insightId]
-	}
-
-	return ctx.JSON(http.StatusOK, insightValues)
-}
-
-func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
-	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
-	}
-	timeStr := ctx.QueryParam("time")
-	timeAt := time.Now().Unix()
-	if timeStr != "" {
-		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
-	}
-
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
-
-	var insightResults map[uint][]insight.InsightResource
-	if timeStr != "" {
-		insightResults, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, true)
-	} else {
-		insightResults, err = es.FetchInsightValueAtTime(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, false)
-	}
-	if err != nil {
-		return err
-	}
-
-	firstAvailable, err := es.FetchInsightValueAfter(ctx.Request().Context(), h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
-	if err != nil {
-		return err
-	}
-
-	for insightId := range firstAvailable {
-		if results, ok := insightResults[insightId]; ok && len(results) > 0 {
-			continue
-		}
-		insightResults[insightId] = firstAvailable[insightId]
-	}
-
-	if insightResult, ok := insightResults[uint(insightId)]; ok {
-		return ctx.JSON(http.StatusOK, insightResult)
-	} else {
-		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
-	}
-}
-
-func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
-	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
-	}
-	var startTime, endTime time.Time
-	endTime = time.Now()
-	if timeStr := ctx.QueryParam("endTime"); timeStr != "" {
-		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		endTime = time.Unix(timeInt, 0)
-	}
-	if timeStr := ctx.QueryParam("startTime"); timeStr != "" {
-		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		startTime = time.Unix(timeInt, 0)
-	} else {
-		startTime = endTime.Add(-time.Hour * 24 * 30)
-	}
-
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
-
-	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(ctx.Request().Context(), h.client, startTime, endTime, dataPointCount, nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
-	if err != nil {
-		return err
-	}
-	if insightResult, ok := insightResults[uint(insightId)]; ok {
-		return ctx.JSON(http.StatusOK, insightResult)
-	} else {
-		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
-	}
-}
-
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -2590,35 +2441,9 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	span.End()
 
 	var resourceTypeMetadata []inventoryApi.ResourceType
-	tableCountMap := make(map[string]int)
-	insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), connectors)
-	if err != nil {
-		return err
-	}
-	for _, insightEntity := range insightList {
-		for _, insightTable := range insightEntity.Query.ListOfTables {
-			tableCountMap[insightTable]++
-		}
-	}
 
 	for _, resourceType := range resourceTypes {
 		apiResourceType := resourceType.ToApi()
-
-		var table string
-		switch resourceType.Connector {
-		case source.CloudAWS:
-			table = awsSteampipe.ExtractTableName(resourceType.ResourceType)
-		case source.CloudAzure:
-			table = azureSteampipe.ExtractTableName(resourceType.ResourceType)
-		}
-		insightTableCount := 0
-		if table != "" {
-			insightTableCount = tableCountMap[table]
-		}
-		apiResourceType.InsightsCount = utils.GetPointerOrNil(insightTableCount)
-
-		// TODO: add compliance count
-
 		resourceTypeMetadata = append(resourceTypeMetadata, apiResourceType)
 	}
 

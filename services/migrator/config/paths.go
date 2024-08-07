@@ -5,13 +5,6 @@ const (
 
 	ConfigzGitPath            = "/tmp/loader-analytics-git"
 	ComplianceGitPath         = ConfigzGitPath + "/compliance"
-	InsightsGitPath           = ConfigzGitPath + "/insights"
 	ResourceCollectionGitPath = ConfigzGitPath + "/resource-collections"
 	ConnectionGroupGitPath    = ConfigzGitPath + "/connection_groups"
-	SuperSetGitPath           = ConfigzGitPath + "/superset"
-)
-
-const (
-	InsightsSubPath      = "insights"
-	InsightGroupsSubPath = "insight_groups"
 )

@@ -12,7 +12,5 @@ type MigratorConfig struct {
 	AnalyticsGitURL         string `yaml:"analytics_git_url"`
 	ControlEnrichmentGitURL string `yaml:"control_enrichment_git_url"`
 	GithubToken             string `yaml:"github_token"`
-	SupersetBaseURL         string `yaml:"superset_base_url"`
-	SupersetAdminPassword   string `yaml:"superset_admin_password"`
 	PrometheusPushAddress   string `yaml:"prometheus_push_address"`
 }

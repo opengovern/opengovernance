@@ -3,7 +3,6 @@ package transactions
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
@@ -50,44 +49,6 @@ func (t *EnsureJobsRunning) ApplyIdempotent(ctx context.Context, workspace db.Wo
 			return err
 		}
 		err = t.db.SetWorkspaceAnalyticsJobID(workspace.ID, jobID)
-		if err != nil {
-			return err
-		}
-	}
-
-	// run insight if not running
-	if len(workspace.InsightJobsID) == 0 {
-		ins, err := complianceClient.ListInsights(hctx)
-		if err != nil {
-			return err
-		}
-
-		var allJobIDs []uint
-		for _, insight := range ins {
-			insightJobs, err := schedulerClient.GetJobsByInsightID(hctx, insight.ID)
-			if err != nil {
-				return err
-			}
-
-			hasCreated := false
-			for _, job := range insightJobs {
-				if job.Status == api3.InsightJobCreated {
-					hasCreated = true
-					allJobIDs = append(allJobIDs, job.ID)
-					break
-				}
-			}
-
-			if !hasCreated {
-				jobIDs, err := schedulerClient.TriggerInsightJob(hctx, insight.ID)
-				if err != nil {
-					return err
-				}
-				allJobIDs = append(allJobIDs, jobIDs...)
-			}
-		}
-
-		err = t.db.SetWorkspaceInsightsJobIDs(workspace.ID, allJobIDs)
 		if err != nil {
 			return err
 		}

@@ -48,9 +48,6 @@ func NewCreateHelmRelease(kubeClient k8sclient.Client, vault vault.VaultSourceCo
 
 func (t *CreateHelmRelease) Requirements() []api.TransactionID {
 	return []api.TransactionID{
-		//api.Transaction_CreateInsightBucket,
-		//api.Transaction_CreateOpenSearch,
-		//api.Transaction_CreateIngestionPipeline,
 		api.Transaction_CreateServiceAccountRoles,
 		api.Transaction_CreateWorkspaceKeyId,
 	}
@@ -168,12 +165,6 @@ func (t *CreateHelmRelease) createHelmRelease(ctx context.Context, workspace db.
 				Name:    workspace.Name,
 				Size:    workspace.Size,
 				UserARN: userARN,
-			},
-			Insights: types3.InsightsConfig{
-				S3: types3.S3Config{
-					AccessKey: t.cfg.S3AccessKey,
-					SecretKey: t.cfg.S3SecretKey,
-				},
 			},
 			OpenSearch: types3.OpenSearchConfig{
 				Enabled:                   true,

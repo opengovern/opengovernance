@@ -27,11 +27,8 @@ func (s WaitingForCredential) Requirements(workspace db.Workspace) []api.Transac
 
 	return []api.TransactionID{
 		api.Transaction_CreateWorkspaceKeyId,
-		//api.Transaction_CreateInsightBucket,
 		api.Transaction_CreateMasterCredential,
 		api.Transaction_CreateServiceAccountRoles,
-		//api.Transaction_CreateOpenSearch,
-		//api.Transaction_CreateIngestionPipeline,
 		api.Transaction_CreateHelmRelease,
 		api.Transaction_EnsureCredentialExists,
 	}

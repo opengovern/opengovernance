@@ -24,10 +24,6 @@ type SchedulerServiceClient interface {
 	GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error)
 	TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error)
 	GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (*model.AnalyticsJob, error)
-	TriggerInsightJob(ctx *httpclient.Context, insightID uint) ([]uint, error)
-	GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error)
-	GetJobsByInsightID(ctx *httpclient.Context, insightID uint) ([]model.InsightJob, error)
-	InsightJobInProgress(ctx *httpclient.Context, jobID uint) error
 	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
 }
 
@@ -63,19 +59,6 @@ func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, er
 		return 0, err
 	}
 	return jobID, nil
-}
-
-func (s *schedulerClient) TriggerInsightJob(ctx *httpclient.Context, insightID uint) ([]uint, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/trigger/%d", s.baseURL, insightID)
-
-	var jobIDs []uint
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &jobIDs); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return jobIDs, nil
 }
 
 func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error) {
@@ -115,45 +98,6 @@ func (s *schedulerClient) GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (
 		return nil, err
 	}
 	return res, nil
-}
-
-func (s *schedulerClient) GetInsightJob(ctx *httpclient.Context, jobID uint) (*model.InsightJob, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/job/%d", s.baseURL, jobID)
-
-	var res *model.InsightJob
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return res, nil
-}
-
-func (s *schedulerClient) GetJobsByInsightID(ctx *httpclient.Context, insightID uint) ([]model.InsightJob, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/%d/jobs", s.baseURL, insightID)
-
-	var res []model.InsightJob
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return res, nil
-}
-
-func (s *schedulerClient) InsightJobInProgress(ctx *httpclient.Context, jobID uint) error {
-	url := fmt.Sprintf("%s/api/v1/insight/in_progress/%d", s.baseURL, jobID)
-
-	var res []model.InsightJob
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &res); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
-		}
-		return err
-	}
-	return nil
 }
 
 func (s *schedulerClient) GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error) {

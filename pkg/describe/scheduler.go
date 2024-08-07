@@ -30,7 +30,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/discovery"
-	"github.com/kaytu-io/kaytu-engine/pkg/insight"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
@@ -69,13 +68,6 @@ var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
 	Name:      "queue_job_publishing_blocked",
 	Help:      "The gauge whether publishing tasks to a queue is blocked: 0 for resumed and 1 for blocked",
 }, []string{"queue_name"})
-
-var InsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
-	Subsystem: "scheduler",
-	Name:      "schedule_insight_jobs_total",
-	Help:      "Count of insight jobs in scheduler service",
-}, []string{"status"})
 
 var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "kaytu",
@@ -120,7 +112,6 @@ type Scheduler struct {
 	fullDiscoveryIntervalHours time.Duration
 	costDiscoveryIntervalHours time.Duration
 	describeTimeoutHours       int64
-	insightIntervalHours       time.Duration
 	checkupIntervalHours       int64
 	mustSummarizeIntervalHours int64
 	analyticsIntervalHours     time.Duration
@@ -236,10 +227,6 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
-	if err := s.jq.Stream(ctx, insight.StreamName, "insight job queue", []string{insight.ResultsQueueName, insight.JobsQueueName}, 1000); err != nil {
-		return nil, err
-	}
-
 	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
@@ -311,12 +298,6 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-
-	insightIntervalHours, err := strconv.ParseInt(InsightIntervalHours, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	s.insightIntervalHours = time.Duration(insightIntervalHours) * time.Hour
 
 	s.checkupIntervalHours, err = strconv.ParseInt(checkupIntervalHours, 10, 64)
 	if err != nil {
@@ -429,18 +410,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	insightJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyInsightJobInterval)
-	if err != nil {
-		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
-	} else {
-		if v, ok := insightJobIntM.GetValue().(int); ok {
-			s.insightIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set insight interval", zap.Int64("interval", int64(s.insightIntervalHours.Hours())))
-		} else {
-			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(insightJobIntM.GetType())))
-		}
-	}
-
 	analyticsJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyMetricsJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
@@ -503,15 +472,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunJobSequencer(ctx)
 	})
 
-	// Insights
-	//utils.EnsureRunGoroutine(func() {
-	//	s.RunInsightJobScheduler()
-	//})
-	//wg.Add(1)
-	//utils.EnsureRunGoroutine(func() {
-	//	s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer(ctx)))
-	//	wg.Done()
-	//})
 	utils.EnsureRunGoroutine(func() {
 		s.RunCheckupJobScheduler(ctx)
 	})
@@ -625,10 +585,6 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}
-		err = s.db.CleanupInsightJobsOlderThan(tOlder)
-		if err != nil {
-			s.logger.Error("Failed to cleanup insight jobs", zap.Error(err))
-		}
 		err = s.db.CleanupComplianceJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup compliance report jobs", zap.Error(err))
@@ -640,7 +596,7 @@ func (s *Scheduler) Stop() {
 }
 
 func (s *Scheduler) RunCheckupJobScheduler(ctx context.Context) {
-	s.logger.Info("Scheduling insight jobs on a timer")
+	s.logger.Info("Scheduling checkup jobs on a timer")
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()

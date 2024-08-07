@@ -12,7 +12,6 @@ import (
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {
@@ -107,15 +106,6 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	}
 	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
 	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
-
-	insights, err := s.complianceClient.ListInsights(&httpclient.Context{UserRole: apiAuth.InternalRole})
-	if err != nil {
-		return result, err
-	}
-	for _, ins := range insights {
-		rts := extractResourceTypes(ins.Query.QueryToExecute, []source.Type{ins.Connector})
-		resourceTypes = append(resourceTypes, rts...)
-	}
 
 	queries, err := s.complianceClient.ListQueries(&httpclient.Context{UserRole: apiAuth.InternalRole})
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	api4 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
@@ -14,7 +13,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"golang.org/x/net/context"
-	"strconv"
 	"strings"
 )
 
@@ -50,35 +48,6 @@ func (t *EnsureJobsFinished) ApplyIdempotent(ctx context.Context, workspace db.W
 	}
 
 	if job.Status == api5.JobCreated || job.Status == api5.JobInProgress {
-		return ErrTransactionNeedsTime
-	}
-
-	isInProgress := false
-	for _, insJobIDStr := range strings.Split(workspace.InsightJobsID, ",") {
-		insJobID, err := strconv.ParseUint(insJobIDStr, 10, 64)
-		if err != nil {
-			return err
-		}
-
-		job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
-		if err != nil {
-			return err
-		}
-		if job == nil {
-			return ErrTransactionNeedsTime
-		}
-
-		if job.Status == api3.InsightJobSucceeded {
-			isInProgress = false
-			break
-		}
-
-		if job.Status == api3.InsightJobCreated || job.Status == api3.InsightJobInProgress {
-			isInProgress = true
-		}
-	}
-
-	if isInProgress {
 		return ErrTransactionNeedsTime
 	}
 
