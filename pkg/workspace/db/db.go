@@ -4,9 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
-	"strconv"
-	"strings"
-
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"gorm.io/gorm/clause"
 
@@ -127,15 +124,6 @@ func (s *Database) UpdateWorkspaceOwner(workspaceUUID string, newOwnerID string)
 
 func (s *Database) SetWorkspaceAnalyticsJobID(workspaceID string, jobID uint) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("analytics_job_id", jobID).Error
-}
-
-func (s *Database) SetWorkspaceInsightsJobIDs(workspaceID string, jobIDs []uint) error {
-	var jobIDstr []string
-	for _, j := range jobIDs {
-		jobIDstr = append(jobIDstr, strconv.FormatInt(int64(j), 10))
-	}
-	str := strings.Join(jobIDstr, ",")
-	return s.Orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("insight_jobs_id", str).Error
 }
 
 func (s *Database) SetWorkspaceComplianceTriggered(workspaceID string) error {

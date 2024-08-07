@@ -9,13 +9,11 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0
 	github.com/alitto/pond v1.9.0
-	github.com/andygrunwald/go-jira v1.16.0
 	github.com/aws/aws-sdk-go v1.49.10
 	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.23
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.38.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.1
-	github.com/aws/aws-sdk-go-v2/service/firehose v1.23.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.27.0
@@ -36,16 +34,11 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
-	github.com/gruntwork-io/go-commons v0.17.1
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/vault/api v1.14.0
-	github.com/invopop/jsonschema v0.7.0
-	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.0
-	github.com/jackc/pgx/v4 v4.18.3
-	github.com/kaytu-io/kaytu-aws-describer v0.56.7
+	github.com/kaytu-io/kaytu-aws-describer v0.56.6
 	github.com/kaytu-io/kaytu-azure-describer v0.35.18
 	github.com/kaytu-io/kaytu-util v0.0.0-20240729100022-e4d357e0ebf0
 	github.com/kaytu-io/pennywise v1.7.16
@@ -286,6 +279,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticsearchservice v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/emr v1.35.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.26.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/firehose v1.23.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/fms v1.29.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/fsx v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.19.5 // indirect
@@ -301,14 +295,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.17 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.28.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.7.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.21.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/kms v1.27.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.35.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.32.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/macie2 v1.34.5 // indirect
@@ -326,7 +320,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.9.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/pricing v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ram v1.23.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/rds v1.82.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/rds v1.78.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.39.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.15.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.8.5 // indirect
@@ -431,7 +425,6 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
@@ -444,6 +437,7 @@ require (
 	github.com/hashicorp/go-azure-helpers v0.43.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.7.5 // indirect
+	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.6.0 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
@@ -460,15 +454,16 @@ require (
 	github.com/hashicorp/vault/api/auth/kubernetes v0.7.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
-	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
+	github.com/jackc/pgconn v1.14.3 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
+	github.com/jackc/pgx/v4 v4.18.3 // indirect
 	github.com/jackc/pgx/v5 v5.5.5 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
@@ -548,7 +543,6 @@ require (
 	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
 	github.com/tkrajina/go-reflector v0.5.6 // indirect
 	github.com/tombuildsstuff/giovanni v0.18.0 // indirect
-	github.com/trivago/tgo v1.0.7 // indirect
 	github.com/turbot/go-kit v0.10.0-rc.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

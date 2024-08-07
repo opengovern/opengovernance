@@ -10,7 +10,6 @@ import (
 	"time"
 
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
@@ -19,9 +18,6 @@ import (
 type InventoryServiceClient interface {
 	RunQuery(ctx *httpclient.Context, req api.RunQueryRequest) (*api.RunQueryResponse, error)
 	CountResources(ctx *httpclient.Context) (int64, error)
-	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
-	GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
-	GetInsightTrendResults(ctx *httpclient.Context, connectionIds, resourceCollections []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
 	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, metricIDs []string, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
@@ -94,169 +90,6 @@ func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricTy
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error) {
-	url := fmt.Sprintf("%s/api/v2/insights", s.baseURL)
-	firstParamAttached := false
-	if len(connectors) > 0 {
-		for _, connector := range connectors {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connector=%s", connector.String())
-		}
-	}
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connectionId=%s", connectionId)
-		}
-	}
-	if len(resourceCollections) > 0 {
-		for _, resourceCollection := range resourceCollections {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("resourceCollection=%s", resourceCollection)
-		}
-	}
-	if len(insightIds) > 0 {
-		for _, insightId := range insightIds {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("insightId=%d", insightId)
-		}
-	}
-	if timeAt != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("time=%d", timeAt.Unix())
-	}
-
-	var response map[uint][]insight.InsightResource
-	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		return nil, err
-	}
-	return response, nil
-}
-
-func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error) {
-	url := fmt.Sprintf("%s/api/v2/insights/%d", s.baseURL, insightId)
-	firstParamAttached := false
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connectionId=%s", connectionId)
-		}
-	}
-	if len(resourceCollections) > 0 {
-		for _, resourceCollection := range resourceCollections {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("resourceCollection=%s", resourceCollection)
-		}
-	}
-	if timeAt != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("time=%d", timeAt.Unix())
-	}
-
-	var response []insight.InsightResource
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return response, nil
-}
-
-func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds, resourceCollections []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error) {
-	url := fmt.Sprintf("%s/api/v2/insights/%d/trend", s.baseURL, insightId)
-	firstParamAttached := false
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connectionId=%s", connectionId)
-		}
-	}
-	if len(resourceCollections) > 0 {
-		for _, resourceCollection := range resourceCollections {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("resourceCollection=%s", resourceCollection)
-		}
-	}
-	if startTime != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("startTime=%d", startTime.Unix())
-	}
-	if endTime != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("endTime=%d", endTime.Unix())
-	}
-
-	var response map[int][]insight.InsightResource
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return response, nil
 }
 
 func (s *inventoryClient) ListConnectionsData(

@@ -230,102 +230,6 @@ type BenchmarkControls struct {
 	ControlID   string
 }
 
-type Insight struct {
-	gorm.Model
-	QueryID     string
-	Query       Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:CASCADE;"`
-	Connector   source.Type
-	ShortTitle  string
-	LongTitle   string
-	Description string
-	LogoURL     *string
-
-	Tags    []InsightTag        `gorm:"foreignKey:InsightID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	tagsMap map[string][]string `gorm:"-:all"`
-
-	Links    pq.StringArray `gorm:"type:text[]"`
-	Enabled  bool
-	Internal bool
-}
-
-func (i Insight) GetTagsMap() map[string][]string {
-	if i.tagsMap == nil {
-		tagLikeArr := make([]model.TagLike, 0, len(i.Tags))
-		for _, tag := range i.Tags {
-			tagLikeArr = append(tagLikeArr, tag)
-		}
-		i.tagsMap = model.GetTagsMap(tagLikeArr)
-	}
-	return i.tagsMap
-}
-
-func (i Insight) ToApi() api.Insight {
-	ia := api.Insight{
-		ID:          i.ID,
-		Query:       i.Query.ToApi(),
-		Connector:   i.Connector,
-		ShortTitle:  i.ShortTitle,
-		LongTitle:   i.LongTitle,
-		Description: i.Description,
-		LogoURL:     i.LogoURL,
-		Tags:        i.GetTagsMap(),
-		Links:       i.Links,
-		Enabled:     i.Enabled,
-		Internal:    i.Internal,
-	}
-
-	return ia
-}
-
-type InsightTag struct {
-	model.Tag
-	InsightID uint `gorm:"primaryKey"`
-}
-
-type InsightGroup struct {
-	gorm.Model
-	ShortTitle  string
-	LongTitle   string
-	Description string
-	LogoURL     *string
-
-	Insights []Insight `gorm:"many2many:insight_group_insights;"`
-}
-
-func (i InsightGroup) ToApi() api.InsightGroup {
-	ia := api.InsightGroup{
-		ID:          i.ID,
-		ShortTitle:  i.ShortTitle,
-		LongTitle:   i.LongTitle,
-		Description: i.Description,
-		LogoURL:     i.LogoURL,
-		Insights:    nil,
-	}
-	connectorsMap := make(map[source.Type]bool)
-	for _, insight := range i.Insights {
-		ia.Insights = append(ia.Insights, insight.ToApi())
-		connectorsMap[insight.Connector] = true
-	}
-	ia.Connectors = make([]source.Type, 0, len(connectorsMap))
-	for connector := range connectorsMap {
-		ia.Connectors = append(ia.Connectors, connector)
-	}
-	tags := make([]model.TagLike, 0)
-	for _, insight := range i.Insights {
-		for _, v := range insight.Tags {
-			tags = append(tags, v)
-		}
-	}
-	ia.Tags = model.GetTagsMap(tags)
-
-	return ia
-}
-
-type InsightGroupInsight struct {
-	InsightGroupID uint `gorm:"primaryKey"`
-	InsightID      uint `gorm:"primaryKey"`
-}
-
 type QueryParameter struct {
 	QueryID  string `gorm:"primaryKey"`
 	Key      string `gorm:"primaryKey"`
@@ -347,7 +251,6 @@ type Query struct {
 	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
 	Controls       []Control        `gorm:"foreignKey:QueryID"`
-	Insights       []Insight        `gorm:"foreignKey:QueryID"`
 	Parameters     []QueryParameter `gorm:"foreignKey:QueryID"`
 	Global         bool
 	CreatedAt      time.Time
