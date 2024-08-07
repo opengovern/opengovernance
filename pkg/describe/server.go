@@ -28,7 +28,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
@@ -60,10 +59,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
-	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
-	v1.PUT("/insight/in_progress/:job_id", httpserver.AuthorizeHandler(h.InsightJobInProgress, apiAuth.AdminRole))
-	v1.GET("/insight/job/:job_id", httpserver.AuthorizeHandler(h.GetInsightJob, apiAuth.InternalRole))
-	v1.GET("/insight/:insight_id/jobs", httpserver.AuthorizeHandler(h.GetJobsByInsightID, apiAuth.InternalRole))
 	v1.PUT("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJobs, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id/summary", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJobSummary, apiAuth.AdminRole))
@@ -105,11 +100,6 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		return err
 	}
 
-	insights, err := h.Scheduler.complianceClient.ListInsights(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-
 	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx), nil)
 	if err != nil {
 		return err
@@ -136,14 +126,6 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		for _, src := range srcs {
 			if src.ID.String() == job.ConnectionID {
 				jobSRC = src
-			}
-		}
-
-		if job.JobType == "insight" {
-			for _, ins := range insights {
-				if fmt.Sprintf("%v", ins.ID) == job.Title {
-					job.Title = ins.ShortTitle
-				}
 			}
 		}
 
@@ -350,8 +332,6 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 		count, err = h.DB.CountAnalyticsJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
 	case api.JobType_Compliance:
 		count, err = h.DB.CountComplianceJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
-	case api.JobType_Insight:
-		count, err = h.DB.CountInsightJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
 	default:
 		return errors.New("invalid job type")
 	}
@@ -510,57 +490,6 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		}
 	}
 	return ctx.JSON(http.StatusOK, "")
-}
-
-// TriggerInsightJob godoc
-//
-//	@Summary		Triggers insight job
-//	@Description	Triggers a insight job to run immediately for the given insight
-//	@Security		BearerToken
-//	@Tags			describe
-//	@Produce		json
-//	@Success		200			{object}	[]uint
-//	@Param			insight_id	path		uint	true	"Insight ID"
-//	@Router			/schedule/api/v1/insight/trigger/{insight_id} [put]
-func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
-	insightID, err := strconv.ParseUint(ctx.Param("insight_id"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight_id")
-	}
-
-	insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: apiAuth.ViewerRole}, nil)
-	if err != nil {
-		return err
-	}
-
-	var jobIDs []uint
-	for _, ins := range insights {
-		if ins.ID != uint(insightID) {
-			continue
-		}
-
-		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		jobID, err := h.Scheduler.runInsightJob(ctx.Request().Context(), true, ins, id, id, ins.Connector, nil)
-		if err != nil {
-			return err
-		}
-		jobIDs = append(jobIDs, jobID)
-	}
-	return ctx.JSON(http.StatusOK, jobIDs)
-}
-
-func (h HttpServer) InsightJobInProgress(ctx echo.Context) error {
-	jobID, err := strconv.ParseUint(ctx.Param("job_id"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight_id")
-	}
-
-	err = h.Scheduler.db.UpdateInsightJob(uint(jobID), api2.InsightJobInProgress, "")
-	if err != nil {
-		return err
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }
 
 // TriggerConnectionsComplianceJob godoc
@@ -968,36 +897,6 @@ func (h HttpServer) GetAnalyticsJob(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, job)
-}
-
-func (h HttpServer) GetInsightJob(ctx echo.Context) error {
-	jobIDstr := ctx.Param("job_id")
-	jobID, err := strconv.ParseInt(jobIDstr, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	job, err := h.Scheduler.db.GetInsightJobById(uint(jobID))
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, job)
-}
-
-func (h HttpServer) GetJobsByInsightID(ctx echo.Context) error {
-	insightIDstr := ctx.Param("insight_id")
-	insightID, err := strconv.ParseInt(insightIDstr, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	jobs, err := h.Scheduler.db.GetInsightJobByInsightId(uint(insightID))
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, jobs)
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {

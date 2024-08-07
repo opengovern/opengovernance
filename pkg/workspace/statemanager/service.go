@@ -148,7 +148,6 @@ func (s *Service) CreateWorkspace(ctx context.Context) error {
 		IsCreated:                false,
 		IsBootstrapInputFinished: false,
 		AnalyticsJobID:           0,
-		InsightJobsID:            "",
 		ComplianceTriggered:      false,
 	}
 

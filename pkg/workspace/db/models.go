@@ -22,7 +22,6 @@ type Workspace struct {
 	IsCreated                bool              `json:"is_created"`
 	IsBootstrapInputFinished bool              `json:"is_bootstrap_input_finished"`
 	AnalyticsJobID           uint              `json:"analytics_job_id"`
-	InsightJobsID            string            `json:"insight_jobs_id"`
 	ComplianceTriggered      bool              `json:"complianceTriggered"`
 	OpenSearchEndpoint       string            `json:"open_search_endpoint"`
 	PipelineEndpoint         string            `json:"pipeline_endpoint"`

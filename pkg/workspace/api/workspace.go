@@ -32,7 +32,6 @@ const (
 	BootstrapStatus_WaitingForDiscovery  BootstrapStatus = "WaitingForDiscovery"
 	BootstrapStatus_WaitingForAnalytics  BootstrapStatus = "WaitingForAnalytics"
 	BootstrapStatus_WaitingForCompliance BootstrapStatus = "WaitingForCompliance"
-	BootstrapStatus_WaitingForInsights   BootstrapStatus = "WaitingForInsights"
 	BootstrapStatus_Finished             BootstrapStatus = "Finished"
 )
 
@@ -49,7 +48,6 @@ type BootstrapStatusResponse struct {
 	DiscoveryStatus         BootstrapProgress     `json:"discoveryStatus"`
 	AnalyticsStatus         BootstrapProgress     `json:"analyticsStatus"`
 	ComplianceStatus        BootstrapProgress     `json:"complianceStatus"`
-	InsightsStatus          BootstrapProgress     `json:"insightsStatus"`
 }
 
 type ChangeWorkspaceOwnershipRequest struct {

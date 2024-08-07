@@ -21,7 +21,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	api4 "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -274,7 +273,6 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		IsCreated:                false,
 		IsBootstrapInputFinished: false,
 		AnalyticsJobID:           0,
-		InsightJobsID:            "",
 		ComplianceTriggered:      false,
 	}
 
@@ -317,9 +315,6 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 		},
 		ComplianceStatus: api.BootstrapProgress{
 			Total: int64(complianceTotal),
-		},
-		InsightsStatus: api.BootstrapProgress{
-			Total: 2,
 		},
 	}
 
@@ -416,40 +411,8 @@ func (s *Server) getBootstrapStatus(ws *db2.Workspace, azureCount, awsCount int6
 			}
 		}
 
-		if len(ws.InsightJobsID) > 0 {
-			resp.InsightsStatus.Done = 1
-			inProgress := false
-			for _, insJobIDStr := range strings.Split(ws.InsightJobsID, ",") {
-				insJobID, err := strconv.ParseUint(insJobIDStr, 10, 64)
-				if err != nil {
-					return resp, err
-				}
-
-				job, err := schedulerClient.GetInsightJob(hctx, uint(insJobID))
-				if err != nil {
-					return resp, err
-				}
-
-				if job == nil {
-					continue
-				}
-
-				if job.Status == api4.InsightJobSucceeded {
-					inProgress = false
-					break
-				}
-				if job.Status == api4.InsightJobCreated || job.Status == api4.InsightJobInProgress {
-					inProgress = true
-				}
-			}
-
-			if !inProgress {
-				resp.InsightsStatus.Done = 2
-			}
-		}
 	} else {
 		resp.WorkspaceCreationStatus.Done = resp.WorkspaceCreationStatus.Total
-		resp.InsightsStatus.Done = resp.InsightsStatus.Total
 		resp.ComplianceStatus.Done = resp.ComplianceStatus.Total
 		resp.DiscoveryStatus.Done = resp.DiscoveryStatus.Total
 		resp.AnalyticsStatus.Done = resp.AnalyticsStatus.Total

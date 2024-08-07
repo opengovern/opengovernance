@@ -32,7 +32,6 @@ var (
 	FullDiscoveryIntervalHours = os.Getenv("FULL_DISCOVERY_INTERVAL_HOURS")
 	CostDiscoveryIntervalHours = os.Getenv("COST_DISCOVERY_INTERVAL_HOURS")
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
-	InsightIntervalHours       = os.Getenv("INSIGHT_INTERVAL_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
 	AnalyticsIntervalHours     = os.Getenv("ANALYTICS_INTERVAL_HOURS")

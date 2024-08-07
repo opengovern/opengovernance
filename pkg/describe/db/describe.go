@@ -186,8 +186,6 @@ SELECT * FROM (
 (
 (SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]d HOURS')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'insight' AS job_type, source_id::text AS connection_id, insight_id::text AS title, status, failure_message FROM insight_jobs WHERE created_at > now() - interval '%[1]d HOURS')
-UNION ALL 
 (SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]d HOURS')
 UNION ALL 
 (SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]d HOURS')
@@ -231,8 +229,6 @@ func (db Database) GetAllJobSummary(hours int, typeFilter []string, statusFilter
 SELECT * FROM (
 (
 (SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
-UNION ALL 
-(SELECT 'insight' AS job_type, status, count(*) AS count FROM insight_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
 UNION ALL 
 (SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
 UNION ALL 

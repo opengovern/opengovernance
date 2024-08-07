@@ -15,542 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/ai/api/v1/gpt/run": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "resource"
-                ],
-                "summary": "Runs the query on KaytuGPT and returns the generated query",
-                "parameters": [
-                    {
-                        "description": "Description of query for KaytuGPT",
-                        "name": "query",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/action/create": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "create an action by the specified input",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Create action",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/action/delete/{actionId}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Deleting a single action for the given action id",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Delete action",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "actionId",
-                        "name": "actionId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/action/jira": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Create action with jira url and header and body",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Create Jira Action",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/action/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "returns list of all actions",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "List actions",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/action/slack": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Create action with slack url and body",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Create Slack Action",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/action/update/{actionId}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving an action by the specified input",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Update action",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "actionId",
-                        "name": "actionId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/rule/create": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "create a rule by the specified input",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Create rule",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/rule/delete/{ruleId}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Deleting a single rule for the given rule id",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Delete rule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ruleId",
-                        "name": "ruleId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/rule/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "returns list of all rules",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "List rules",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/rule/update/{ruleId}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving a rule by the specified input",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Update rule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ruleId",
-                        "name": "ruleId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/rule/{ruleId}/trigger": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Trigger one rule manually",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Trigger one rule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "RuleID",
-                        "name": "ruleId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/trigger/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "returns list of all the triggers",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "List triggers",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/assistant/api/v1/{assistant_name}/thread": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Send a message [standalone]",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "assistant"
-                ],
-                "summary": "Send a message [standalone]",
-                "parameters": [
-                    {
-                        "enum": [
-                            "kaytu-r-assistant",
-                            "kaytu-assets-assistant",
-                            "kaytu-score-assistant",
-                            "kaytu-compliance-assistant"
-                        ],
-                        "type": "string",
-                        "description": "Assistant Name",
-                        "name": "assistant_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/assistant/api/v1/{assistant_name}/thread/{thread_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "List messages of a thread",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "assistant"
-                ],
-                "summary": "List messages of a thread",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Thread ID",
-                        "name": "thread_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "kaytu-r-assistant",
-                            "kaytu-assets-assistant",
-                            "kaytu-score-assistant",
-                            "kaytu-compliance-assistant"
-                        ],
-                        "type": "string",
-                        "description": "Assistant Name",
-                        "name": "assistant_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Run ID",
-                        "name": "run_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/api/v1/key/create": {
             "post": {
                 "security": [
@@ -2692,559 +2156,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/insight": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of insights based on specified filters. Provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insights",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Key-Value tags in key=value format to filter by",
-                        "name": "tag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter insights by connector",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by connection group ",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time of the trend",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time of the trend",
-                        "name": "endTime",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/group": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insight groups",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Key-Value tags in key=value format to filter by",
-                        "name": "tag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter insights by connector",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by connection group",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time of the trend",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time of the trend",
-                        "name": "endTime",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/group/{insightGroupId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving the specified insight group with ID.\nReturns \"all:provider\" job results if connectionId is not defined.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Insight Group ID",
-                        "name": "insightGroupId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by connection group",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time of the trend",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time of the trend",
-                        "name": "endTime",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/group/{insightGroupId}/trend": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving insight group results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight group trend",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Insight Group ID",
-                        "name": "insightGroupId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by connection group",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time of the trend",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time of the trend",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "number of datapoints to return",
-                        "name": "datapointCount",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/{insightId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving the specified insight with ID. Provides details of the insight, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Insight ID",
-                        "name": "insightId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by connection group",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time of the trend",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time of the trend",
-                        "name": "endTime",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/{insightId}/trend": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving insight results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight trend",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Insight ID",
-                        "name": "insightId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by connection group",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time of the trend",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time of the trend",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "number of datapoints to return",
-                        "name": "datapointCount",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/metadata/insight/{insightId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving insight metadata by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight metadata",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Insight ID",
-                        "name": "insightId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/metadata/tag/compliance": {
             "get": {
                 "security": [
@@ -3263,40 +2174,6 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "List compliance tag keys",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/metadata/tag/insight": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving a list of insights tag keys with their possible values.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insights tag keys",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3380,31 +2257,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/superset/dashboards/token": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Generate dashboard token",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "keys"
-                ],
-                "summary": "Generate dashboard token",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse"
                         }
                     }
                 }
@@ -6979,43 +5831,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/insight/trigger/{insight_id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Triggers a insight job to run immediately for the given insight",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "describe"
-                ],
-                "summary": "Triggers insight job",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Insight ID",
-                        "name": "insight_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/jobs": {
             "post": {
                 "security": [
@@ -7046,44 +5861,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/subscription/api/v1/metering/list": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "subscription"
-                ],
-                "summary": "Get meters",
-                "parameters": [
-                    {
-                        "description": "Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse"
                         }
                     }
                 }
@@ -7120,6 +5897,42 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wastage/api/v1/wastage/aws-rds-cluster": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "List wastage in AWS RDS Cluster",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wastage"
+                ],
+                "summary": "List wastage in AWS RDS Cluster",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageResponse"
                         }
                     }
                 }
@@ -7551,277 +6364,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "headers": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "method": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition": {
-            "type": "object",
-            "properties": {
-                "combinator": {
-                    "type": "string"
-                },
-                "field": {
-                    "type": "string"
-                },
-                "not": {
-                    "type": "boolean"
-                },
-                "operator": {
-                    "type": "string"
-                },
-                "rules": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "headers": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "method": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest": {
-            "type": "object",
-            "properties": {
-                "action_id": {
-                    "type": "integer"
-                },
-                "condition": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
-                },
-                "event_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
-                },
-                "metadata": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata"
-                },
-                "scope": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType": {
-            "type": "object",
-            "properties": {
-                "benchmark_id": {
-                    "type": "string"
-                },
-                "insight_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse": {
-            "type": "object",
-            "properties": {
-                "action_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs": {
-            "type": "object",
-            "properties": {
-                "atlassian_api_token": {
-                    "type": "string"
-                },
-                "atlassian_domain": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "issue_type_id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "project_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "label": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule": {
-            "type": "object",
-            "properties": {
-                "action_id": {
-                    "type": "integer"
-                },
-                "condition": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
-                },
-                "event_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "metadata": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata"
-                },
-                "scope": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
-                },
-                "trigger_status": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope": {
-            "type": "object",
-            "properties": {
-                "connection_group": {
-                    "type": "string"
-                },
-                "connection_id": {
-                    "type": "string"
-                },
-                "connector": {
-                    "$ref": "#/definitions/source.Type"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs": {
-            "type": "object",
-            "properties": {
-                "channel_name": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "slack_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action"
-                },
-                "response_status": {
-                    "type": "integer"
-                },
-                "rule": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule"
-                },
-                "triggered_at": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "headers": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "method": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest": {
-            "type": "object",
-            "properties": {
-                "action_id": {
-                    "type": "integer"
-                },
-                "condition": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Condition"
-                },
-                "event_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
-                },
-                "metadata": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata"
-                },
-                "scope": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType": {
             "type": "string",
             "enum": [
@@ -7853,15 +6395,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 }
@@ -7892,15 +6430,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -7915,15 +6449,11 @@ const docTemplate = `{
             "properties": {
                 "globalRoles": {
                     "description": "Global Access",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -7966,15 +6496,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -8017,15 +6543,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Filter by role name",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 }
@@ -8046,15 +6568,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -8083,15 +6601,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 }
@@ -8124,15 +6638,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -8142,23 +6652,6 @@ const docTemplate = `{
                     "example": "auth|123456789"
                 }
             }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role": {
-            "type": "string",
-            "enum": [
-                "internal",
-                "kaytu-admin",
-                "admin",
-                "editor",
-                "viewer"
-            ],
-            "x-enum-varnames": [
-                "InternalRole",
-                "KaytuAdminRole",
-                "AdminRole",
-                "EditorRole",
-                "ViewerRole"
-            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme": {
             "type": "string",
@@ -8178,15 +6671,11 @@ const docTemplate = `{
             "properties": {
                 "roleName": {
                     "description": "Name of the binding Role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -8232,15 +6721,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -8271,15 +6756,11 @@ const docTemplate = `{
                 },
                 "roleName": {
                     "description": "Name of the role",
+                    "type": "string",
                     "enum": [
                         "admin",
                         "editor",
                         "viewer"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
-                        }
                     ],
                     "example": "admin"
                 },
@@ -9700,20 +8181,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GenerateSupersetDashboardTokenResponse": {
-            "type": "object",
-            "properties": {
-                "dashboards": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard"
-                    }
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse": {
             "type": "object",
             "properties": {
@@ -9866,261 +8333,6 @@ const docTemplate = `{
                 "totalCount": {
                     "type": "integer",
                     "example": 100
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight": {
-            "type": "object",
-            "properties": {
-                "connector": {
-                    "description": "Cloud Provider",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "description": {
-                    "description": "Description",
-                    "type": "string",
-                    "example": "List clusters that have role-based access control (RBAC) disabled"
-                },
-                "enabled": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "firstOldResultDate": {
-                    "description": "Old Total Result Date",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Insight ID",
-                    "type": "integer",
-                    "example": 23
-                },
-                "internal": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "links": {
-                    "description": "Links",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "logoURL": {
-                    "description": "Logo URL",
-                    "type": "string"
-                },
-                "longTitle": {
-                    "description": "Long Title",
-                    "type": "string",
-                    "example": "List clusters that have role-based access control (RBAC) disabled"
-                },
-                "oldTotalResultValue": {
-                    "description": "Number of Old Total Result Value",
-                    "type": "integer",
-                    "example": 0
-                },
-                "query": {
-                    "description": "Query",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query"
-                        }
-                    ]
-                },
-                "result": {
-                    "description": "Insight Results",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult"
-                    }
-                },
-                "shortTitle": {
-                    "description": "Short Title",
-                    "type": "string",
-                    "example": "Clusters with no RBAC"
-                },
-                "tags": {
-                    "description": "Tags",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "totalResultValue": {
-                    "description": "Number of Total Result Value",
-                    "type": "integer",
-                    "example": 10
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection": {
-            "type": "object",
-            "properties": {
-                "connection_id": {
-                    "type": "string"
-                },
-                "original_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail": {
-            "type": "object",
-            "properties": {
-                "headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {}
-                    }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup": {
-            "type": "object",
-            "properties": {
-                "connectors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    },
-                    "example": [
-                        "[\"Azure\"",
-                        " \"AWS\"]"
-                    ]
-                },
-                "description": {
-                    "type": "string",
-                    "example": "List clusters that have role-based access control (RBAC) disabled"
-                },
-                "firstOldResultDate": {
-                    "type": "string",
-                    "example": "2023-04-21T08:53:09.928Z"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 23
-                },
-                "insights": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
-                    }
-                },
-                "logoURL": {
-                    "type": "string",
-                    "example": "https://kaytu.io/logo.png"
-                },
-                "longTitle": {
-                    "type": "string",
-                    "example": "List clusters that have role-based access control (RBAC) disabled"
-                },
-                "oldTotalResultValue": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "shortTitle": {
-                    "type": "string",
-                    "example": "Clusters with no RBAC"
-                },
-                "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "totalResultValue": {
-                    "type": "integer",
-                    "example": 10
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult": {
-            "type": "object",
-            "properties": {
-                "connectionID": {
-                    "description": "Connection ID",
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
-                "connections": {
-                    "description": "Connections",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection"
-                    }
-                },
-                "details": {
-                    "description": "Insight Details",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail"
-                        }
-                    ]
-                },
-                "executedAt": {
-                    "description": "Time of Execution",
-                    "type": "string",
-                    "example": "2023-04-21T08:53:09.928Z"
-                },
-                "insightID": {
-                    "description": "Insight ID",
-                    "type": "integer",
-                    "example": 23
-                },
-                "jobID": {
-                    "description": "Job ID",
-                    "type": "integer",
-                    "example": 1
-                },
-                "locations": {
-                    "description": "Locations",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "result": {
-                    "description": "Result",
-                    "type": "integer",
-                    "example": 1000
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint": {
-            "type": "object",
-            "properties": {
-                "connectionCount": {
-                    "description": "Connection Count",
-                    "type": "integer",
-                    "example": 10
-                },
-                "timestamp": {
-                    "description": "Time",
-                    "type": "integer",
-                    "example": 1686346668
-                },
-                "value": {
-                    "description": "Resource Count",
-                    "type": "integer",
-                    "example": 1000
                 }
             }
         },
@@ -10491,17 +8703,6 @@ const docTemplate = `{
                 "SortDirectionDescending"
             ]
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SupersetDashboard": {
-            "type": "object",
-            "properties": {
-                "ID": {
-                    "type": "string"
-                },
-                "Name": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",
             "properties": {
@@ -10602,14 +8803,12 @@ const docTemplate = `{
             "enum": [
                 "discovery",
                 "analytics",
-                "compliance",
-                "insight"
+                "compliance"
             ],
             "x-enum-varnames": [
                 "JobType_Discovery",
                 "JobType_Analytics",
-                "JobType_Compliance",
-                "JobType_Insight"
+                "JobType_Compliance"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes": {
@@ -11249,18 +9448,6 @@ const docTemplate = `{
                     "minimum": 0,
                     "example": 100
                 },
-                "insights": {
-                    "description": "List of Insights that support this Resource Type - Metadata (GET only)",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "insights_count": {
-                    "description": "Number of Insights that use this Resource Type - Metadata",
-                    "type": "integer",
-                    "minimum": 0
-                },
                 "logo_uri": {
                     "description": "Logo URI",
                     "type": "string",
@@ -11599,7 +9786,6 @@ const docTemplate = `{
                 "full_discovery_job_interval",
                 "cost_discovery_job_interval",
                 "health_check_job_interval",
-                "insight_job_interval",
                 "metrics_job_interval",
                 "compliance_job_interval",
                 "data_retention_duration",
@@ -11639,7 +9825,6 @@ const docTemplate = `{
                 "MetadataKeyFullDiscoveryJobInterval",
                 "MetadataKeyCostDiscoveryJobInterval",
                 "MetadataKeyHealthCheckJobInterval",
-                "MetadataKeyInsightJobInterval",
                 "MetadataKeyMetricsJobInterval",
                 "MetadataKeyComplianceJobInterval",
                 "MetadataKeyDataRetention",
@@ -11672,9 +9857,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "assumeRoleName": {
-                    "type": "string"
-                },
-                "assumeRolePolicyName": {
                     "type": "string"
                 },
                 "externalId": {
@@ -12309,6 +10491,9 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config": {
             "type": "object",
             "properties": {
+                "accessKey": {
+                    "type": "string"
+                },
                 "accountID": {
                     "type": "string"
                 },
@@ -12318,11 +10503,8 @@ const docTemplate = `{
                 "externalId": {
                     "type": "string"
                 },
-                "healthCheckPolicies": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "secretKey": {
+                    "type": "string"
                 }
             }
         },
@@ -12394,9 +10576,6 @@ const docTemplate = `{
                     }
                 },
                 "discoveryStatus": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
-                },
-                "insightsStatus": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
                 },
                 "maxConnections": {
@@ -12619,59 +10798,12 @@ const docTemplate = `{
                 "SizeLG"
             ]
         },
-        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.ListMessagesResponse": {
-            "type": "object",
-            "properties": {
-                "messages": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message"
-                    }
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.Message": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "run_id": {
-                    "type": "string"
-                },
-                "thread_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_services_assistant_api_entity.SendMessageResponse": {
-            "type": "object",
-            "properties": {
-                "run_id": {
-                    "type": "string"
-                },
-                "thread_id": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.AWSCredentialConfig": {
             "type": "object",
             "properties": {
+                "accessKey": {
+                    "type": "string"
+                },
                 "accountID": {
                     "type": "string"
                 },
@@ -12681,11 +10813,8 @@ const docTemplate = `{
                 "externalId": {
                     "type": "string"
                 },
-                "healthCheckPolicies": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "secretKey": {
+                    "type": "string"
                 }
             }
         },
@@ -13255,77 +11384,76 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersRequest": {
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageRequest": {
             "type": "object",
             "properties": {
-                "end_time_epoch_millis": {
-                    "type": "integer"
+                "cliVersion": {
+                    "type": "string"
                 },
-                "start_time_epoch_millis": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.GetMetersResponse": {
-            "type": "object",
-            "properties": {
-                "meters": {
+                "cluster": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsCluster"
+                },
+                "identification": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "instances": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds"
                     }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.Meter": {
-            "type": "object",
-            "properties": {
-                "isTotal": {
+                },
+                "loading": {
                     "type": "boolean"
                 },
-                "type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType"
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.Datapoint"
+                            }
+                        }
+                    }
                 },
-                "value": {
-                    "type": "number"
+                "preferences": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
-                "workspaceName": {
+                "region": {
+                    "type": "string"
+                },
+                "requestId": {
                     "type": "string"
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_services_subscription_api_entities.MeterType": {
-            "type": "string",
-            "enum": [
-                "InventoryDiscoveryJobCount",
-                "CostDiscoveryJobCount",
-                "MetricEvaluationCount",
-                "InsightEvaluationCount",
-                "BenchmarkEvaluationCount",
-                "TotalFindings",
-                "TotalResource",
-                "TotalUsers",
-                "TotalApiKeys",
-                "TotalRules",
-                "AlertCount"
-            ],
-            "x-enum-varnames": [
-                "MeterType_InventoryDiscoveryJobCount",
-                "MeterType_CostDiscoveryJobCount",
-                "MeterType_MetricEvaluationCount",
-                "MeterType_InsightEvaluationCount",
-                "MeterType_BenchmarkEvaluationCount",
-                "MeterType_TotalFindings",
-                "MeterType_TotalResource",
-                "MeterType_TotalUsers",
-                "MeterType_TotalApiKeys",
-                "MeterType_TotalRules",
-                "MeterType_AlertCount"
-            ]
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsClusterWastageResponse": {
+            "type": "object",
+            "properties": {
+                "rightSizing": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsRightsizingRecommendation"
+                    }
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds": {
             "type": "object",
             "properties": {
+                "availabilityZone": {
+                    "type": "string"
+                },
+                "backupRetentionPeriod": {
+                    "type": "integer"
+                },
                 "clusterType": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType"
                 },
@@ -13335,8 +11463,20 @@ const docTemplate = `{
                 "engineVersion": {
                     "type": "string"
                 },
+                "hashedInstanceId": {
+                    "type": "string"
+                },
                 "instanceType": {
                     "type": "string"
+                },
+                "licenseModel": {
+                    "type": "string"
+                },
+                "performanceInsightsEnabled": {
+                    "type": "boolean"
+                },
+                "performanceInsightsRetentionPeriod": {
+                    "type": "integer"
                 },
                 "storageIops": {
                     "type": "integer"
@@ -13345,9 +11485,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "storageThroughput": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "storageType": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsCluster": {
+            "type": "object",
+            "properties": {
+                "engine": {
+                    "type": "string"
+                },
+                "hashedClusterId": {
                     "type": "string"
                 }
             }
@@ -13374,16 +11525,49 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "freeMemoryBytes": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "freeStorageBytes": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "networkThroughputBytes": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
                 "recommended": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds"
+                },
+                "storageIops": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "storageThroughputBytes": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "vCPU": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
+                },
+                "volumeBytesUsed": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.Usage"
                 }
             }
         },
         "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsWastageRequest": {
             "type": "object",
             "properties": {
+                "cliVersion": {
+                    "type": "string"
+                },
+                "identification": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "instance": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRds"
+                },
+                "loading": {
+                    "type": "boolean"
                 },
                 "metrics": {
                     "type": "object",
@@ -13401,6 +11585,9 @@ const docTemplate = `{
                     }
                 },
                 "region": {
+                    "type": "string"
+                },
+                "requestId": {
                     "type": "string"
                 }
             }
@@ -13560,11 +11747,29 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.RightsizingAwsRds": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "clusterType": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_wastage_api_entity.AwsRdsClusterType"
                 },
+                "computeCost": {
+                    "type": "number"
+                },
+                "computeCostComponents": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
                 "cost": {
                     "type": "number"
+                },
+                "costComponents": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
                 },
                 "engine": {
                     "type": "string"
@@ -13578,8 +11783,20 @@ const docTemplate = `{
                 "memoryGb": {
                     "type": "integer"
                 },
+                "processor": {
+                    "type": "string"
+                },
                 "region": {
                     "type": "string"
+                },
+                "storageCost": {
+                    "type": "number"
+                },
+                "storageCostComponents": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
                 },
                 "storageIops": {
                     "type": "integer"
@@ -13588,7 +11805,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "storageThroughput": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "storageType": {
                     "type": "string"
@@ -13609,6 +11826,12 @@ const docTemplate = `{
                 },
                 "cost": {
                     "type": "number"
+                },
+                "costComponents": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
                 },
                 "provisionedIOPS": {
                     "type": "integer"
@@ -13632,6 +11855,12 @@ const docTemplate = `{
                 },
                 "cost": {
                     "type": "number"
+                },
+                "costComponents": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
                 },
                 "ebsBandwidth": {
                     "type": "string"
@@ -13660,6 +11889,9 @@ const docTemplate = `{
                 "processor": {
                     "type": "string"
                 },
+                "region": {
+                    "type": "string"
+                },
                 "vCPU": {
                     "type": "integer"
                 }
@@ -13670,6 +11902,9 @@ const docTemplate = `{
             "properties": {
                 "avg": {
                     "type": "number"
+                },
+                "last": {
+                    "$ref": "#/definitions/types.Datapoint"
                 },
                 "max": {
                     "type": "number"

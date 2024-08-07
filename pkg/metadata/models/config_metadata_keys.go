@@ -47,8 +47,6 @@ const (
 	MetadataKeyCostDiscoveryJobInterval MetadataKey = "cost_discovery_job_interval"
 	// MetadataKeyHealthCheckJobInterval is the interval in minutes for health check job
 	MetadataKeyHealthCheckJobInterval MetadataKey = "health_check_job_interval"
-	// MetadataKeyInsightJobInterval is the interval in minutes for insight job
-	MetadataKeyInsightJobInterval MetadataKey = "insight_job_interval"
 	// MetadataKeyMetricsJobInterval is the interval in minutes for metrics job
 	MetadataKeyMetricsJobInterval    MetadataKey = "metrics_job_interval"
 	MetadataKeyComplianceJobInterval MetadataKey = "compliance_job_interval"
@@ -91,7 +89,6 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyFullDiscoveryJobInterval,
 	MetadataKeyCostDiscoveryJobInterval,
 	MetadataKeyHealthCheckJobInterval,
-	MetadataKeyInsightJobInterval,
 	MetadataKeyMetricsJobInterval,
 	MetadataKeyComplianceJobInterval,
 	MetadataKeyDataRetention,
@@ -160,8 +157,6 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 	case MetadataKeyCostDiscoveryJobInterval:
 		return ConfigMetadataTypeInt
 	case MetadataKeyHealthCheckJobInterval:
-		return ConfigMetadataTypeInt
-	case MetadataKeyInsightJobInterval:
 		return ConfigMetadataTypeInt
 	case MetadataKeyMetricsJobInterval:
 		return ConfigMetadataTypeInt
@@ -243,8 +238,6 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 		return api.AdminRole
 	case MetadataKeyHealthCheckJobInterval:
 		return api.KaytuAdminRole
-	case MetadataKeyInsightJobInterval:
-		return api.AdminRole
 	case MetadataKeyMetricsJobInterval:
 		return api.AdminRole
 	case MetadataKeyComplianceJobInterval:

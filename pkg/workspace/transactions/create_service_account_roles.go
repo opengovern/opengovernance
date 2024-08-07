@@ -18,12 +18,10 @@ var serviceNames = []string{
 	"compliance-report-worker",
 	"compliance-summarizer",
 	"cost-estimator",
-	"insight-worker",
 	"inventory",
 	"metadata",
 	"migrator",
 	"onboard",
-	"reporter",
 	"scheduler",
 	"steampipe",
 }
@@ -34,7 +32,6 @@ var rolePolicies = map[string][]string{
 	"analytics-worker":         {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
 	"compliance-report-worker": {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
 	"compliance-summarizer":    {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
-	"insight-worker":           {"arn:aws:iam::${accountID}:policy/kaytu-ingestion-${workspaceID}"},
 }
 
 type CreateServiceAccountRoles struct {
