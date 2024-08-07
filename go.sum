@@ -752,8 +752,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.9/go.mod h1:dN/Of9/f
 github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.10 h1:h8uweImUHGgyNKrxIUwpPs6XiH0a6DJ17hSJvFLgPAo=
 github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.10/go.mod h1:LZKVtMBiZfdvUWgwg61Qo6kyAmE5rn9Dw36AqnycvG8=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.27/go.mod h1:EOwBD4J4S5qYszS5/3DpkejfuK+Z5/1uzICfPaZLtqw=
-github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 h1:I9zMeF107l0rJrpnHpjEiiTSCKYAIw8mALiXcPsGBiA=
-github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15/go.mod h1:9xWJ3Q/S6Ojusz1UIkfycgD1mGirJfLLKqq3LPT7WN8=
+github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.17 h1:HGErhhrxZlQ044RiM+WdoZxp0p+EGM62y3L6pwA4olE=
+github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.17/go.mod h1:RkZEx4l0EHYDJpWppMJ3nD9wZJAa8/0lq9aVC+r2UII=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.9 h1:iEAeF6YC3l4FzlJPP9H3Ko1TXpdjdqWffxXjp8SY6uk=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.9/go.mod h1:kjsXoK23q9Z/tLBrckZLLyvjhZoS+AGrzqzUfEClvMM=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.28.5 h1:yCkyZDGahaCaAkdpVx8Te05t6eW2FarBLunVC8S23nU=
@@ -766,8 +766,8 @@ github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.21.5 h1:tiAP+4wiioNKC
 github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.21.5/go.mod h1:5z6vuLXh0JrIdeLrE9KwWJ+dmzTaAHtBkliGG2XQUHs=
 github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.21.5 h1:3BVBavJrQrrv8K1McEJ6TsY49NtWBLCtNSVZyyDEGX4=
 github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.21.5/go.mod h1:6UColZloou6uAkpoJDqgzhd0nKvq5H0BVuXar+OxnDY=
-github.com/aws/aws-sdk-go-v2/service/kms v1.27.9 h1:W9PbZAZAEcelhhjb7KuwUtf+Lbc+i7ByYJRuWLlnxyQ=
-github.com/aws/aws-sdk-go-v2/service/kms v1.27.9/go.mod h1:2tFmR7fQnOdQlM2ZCEPpFnBIQD1U8wmXmduBgZbOag0=
+github.com/aws/aws-sdk-go-v2/service/kms v1.35.3 h1:UPTdlTOwWUX49fVi7cymEN6hDqCwe3LNv1vi7TXUutk=
+github.com/aws/aws-sdk-go-v2/service/kms v1.35.3/go.mod h1:gjDP16zn+WWalyaUqwCCioQ8gU8lzttCCc9jYsiQI/8=
 github.com/aws/aws-sdk-go-v2/service/lakeformation v1.35.3 h1:Rfl7JjXVdriUprd8TTlbgcTyPU/Pl+v/O/nMD9HYpgA=
 github.com/aws/aws-sdk-go-v2/service/lakeformation v1.35.3/go.mod h1:cyogDr92z2UF8fBoRN/+/gKuVTrxBD10bo6PVn3tDeQ=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5 h1:ZHVbzOnoj5nXxUug8iWzqg2Tmp6Jc4CE5tPfoE96qrs=
@@ -810,8 +810,8 @@ github.com/aws/aws-sdk-go-v2/service/pricing v1.24.5 h1:yJniPHxzGy0jtJNkXYTqI8ps
 github.com/aws/aws-sdk-go-v2/service/pricing v1.24.5/go.mod h1:Er8P68q9ayXFNzdTLKH9vGQ5Pq6fzqv0YYjslHxh8GE=
 github.com/aws/aws-sdk-go-v2/service/ram v1.23.6 h1:iyCwaKDJVIHbmudu8AYsrXGdUWSBpQaJCwvox6q1zj4=
 github.com/aws/aws-sdk-go-v2/service/ram v1.23.6/go.mod h1:VgmJolFAkLhZ5Qnnmyfqqyu6+Dt+5E761HzU2ou0Tjg=
-github.com/aws/aws-sdk-go-v2/service/rds v1.78.0 h1:EfurrcA19HaB9gZYd157DiozoPfkX2CH5/QnDZqNFrY=
-github.com/aws/aws-sdk-go-v2/service/rds v1.78.0/go.mod h1:Rw15qGaGWu3jO0dOz7JyvdOEjgae//YrJxVWLYGynvg=
+github.com/aws/aws-sdk-go-v2/service/rds v1.82.0 h1:+1qRsLNukmvIDNBjz5Osqy4dvIBLwpCeMhmrh9evOUw=
+github.com/aws/aws-sdk-go-v2/service/rds v1.82.0/go.mod h1:j27FNXhbbHXC3ExFsJkoxq2Y+4dQypf8KFX1IkgwVvM=
 github.com/aws/aws-sdk-go-v2/service/redshift v1.39.6 h1:3F+My2KgZqnc6CPks4bkVoogqFyf1nP0iF4mAQ96XWc=
 github.com/aws/aws-sdk-go-v2/service/redshift v1.39.6/go.mod h1:8hU0Ax6q6QA+jrMcWTE0A4YH594MQoWP3EzGO3GH5Dw=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.15.4 h1:NUW/8HfY9PsmjyYNO+Juxyi06+x6eKy7NHAS7fIjRFc=
@@ -1793,8 +1793,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.56.6 h1:9Z0c6j51ez0Oprwt9oYpkSKfzADw0NIGjwoAQNZN0Ao=
-github.com/kaytu-io/kaytu-aws-describer v0.56.6/go.mod h1:q/TWtMkG8OJFHhhQlHvkgQBTOaisbz+7oWz8iuZg4no=
+github.com/kaytu-io/kaytu-aws-describer v0.56.7 h1:u1rPb0unXU2EE4VIp6wfFRDo2kbbdynxiEAZk6c7C4Q=
+github.com/kaytu-io/kaytu-aws-describer v0.56.7/go.mod h1:t1/vOoI7LCmohzGVQaLOMOiFgCwU+XsWD5RzdgIiajM=
 github.com/kaytu-io/kaytu-azure-describer v0.35.18 h1:qnzabYMevL2w9jf0Va3BIVsISjyDfj+7LtoiC00Wc84=
 github.com/kaytu-io/kaytu-azure-describer v0.35.18/go.mod h1:wHCaCVbTFEUHEJXfqoA77DOK+FJO6fenosVGBcz/mno=
 github.com/kaytu-io/kaytu-util v0.0.0-20240729100022-e4d357e0ebf0 h1:9H0Hnv9yt41uhiCowx2swIR03mKmSEZpuNgRg1Hfcjc=
