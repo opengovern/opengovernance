@@ -366,7 +366,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Success		200	{object}	api.GetUserResponse
+//	@Success		200	{object}	api.GetMeResponse
 //	@Router			/auth/api/v1/me [get]
 func (r *httpRoutes) GetMe(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)

@@ -129,6 +129,65 @@ definitions:
         description: Token of the key
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetMeResponse:
+    properties:
+      blocked:
+        description: Is the user blocked or not
+        example: false
+        type: boolean
+      colorBlindMode:
+        type: boolean
+      createdAt:
+        description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
+        type: string
+      email:
+        description: Email address of the user
+        example: johndoe@example.com
+        type: string
+      emailVerified:
+        description: Is email verified or not
+        example: true
+        type: boolean
+      lastActivity:
+        description: Last activity timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
+        type: string
+      lastLogin:
+        type: string
+      memberSince:
+        type: string
+      roleName:
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus'
+        description: Invite status
+        enum:
+        - accepted
+        - pending
+        example: accepted
+      theme:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme'
+      userId:
+        description: Unique identifier for the user
+        example: auth|123456789
+        type: string
+      userName:
+        description: Username
+        example: John Doe
+        type: string
+      workspaceAccess:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
@@ -4121,7 +4180,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetMeResponse'
       security:
       - BearerToken: []
       summary: Get Me

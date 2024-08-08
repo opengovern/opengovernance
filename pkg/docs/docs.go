@@ -135,7 +135,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetMeResponse"
                         }
                     }
                 }
@@ -6466,6 +6466,87 @@ const docTemplate = `{
                 "token": {
                     "description": "Token of the key",
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetMeResponse": {
+            "type": "object",
+            "properties": {
+                "blocked": {
+                    "description": "Is the user blocked or not",
+                    "type": "boolean",
+                    "example": false
+                },
+                "colorBlindMode": {
+                    "type": "boolean"
+                },
+                "createdAt": {
+                    "description": "Creation timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
+                },
+                "email": {
+                    "description": "Email address of the user",
+                    "type": "string",
+                    "example": "johndoe@example.com"
+                },
+                "emailVerified": {
+                    "description": "Is email verified or not",
+                    "type": "boolean",
+                    "example": true
+                },
+                "lastActivity": {
+                    "description": "Last activity timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
+                },
+                "lastLogin": {
+                    "type": "string"
+                },
+                "memberSince": {
+                    "type": "string"
+                },
+                "roleName": {
+                    "description": "Name of the role",
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "example": "admin"
+                },
+                "status": {
+                    "description": "Invite status",
+                    "enum": [
+                        "accepted",
+                        "pending"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus"
+                        }
+                    ],
+                    "example": "accepted"
+                },
+                "theme": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Theme"
+                },
+                "userId": {
+                    "description": "Unique identifier for the user",
+                    "type": "string",
+                    "example": "auth|123456789"
+                },
+                "userName": {
+                    "description": "Username",
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "workspaceAccess": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
