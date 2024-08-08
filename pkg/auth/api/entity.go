@@ -138,15 +138,14 @@ type ChangeUserPreferencesRequest struct {
 }
 
 type GetMeResponse struct {
-	UserID          string              `json:"userId" example:"auth|123456789"`                      // Unique identifier for the user
-	UserName        string              `json:"userName" example:"John Doe"`                          // Username
-	Email           string              `json:"email" example:"johndoe@example.com"`                  // Email address of the user
-	EmailVerified   bool                `json:"emailVerified" example:"true"`                         // Is email verified or not
-	RoleName        api.Role            `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
-	Status          InviteStatus        `json:"status" enums:"accepted,pending" example:"accepted"`   // Invite status
-	LastActivity    time.Time           `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
-	CreatedAt       time.Time           `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
-	Blocked         bool                `json:"blocked" example:"false"`                              // Is the user blocked or not
+	UserID          string              `json:"userId" example:"auth|123456789"`                    // Unique identifier for the user
+	UserName        string              `json:"userName" example:"John Doe"`                        // Username
+	Email           string              `json:"email" example:"johndoe@example.com"`                // Email address of the user
+	EmailVerified   bool                `json:"emailVerified" example:"true"`                       // Is email verified or not
+	Status          InviteStatus        `json:"status" enums:"accepted,pending" example:"accepted"` // Invite status
+	LastActivity    time.Time           `json:"lastActivity" example:"2023-04-21T08:53:09.928Z"`    // Last activity timestamp in UTC
+	CreatedAt       time.Time           `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`       // Creation timestamp in UTC
+	Blocked         bool                `json:"blocked" example:"false"`                            // Is the user blocked or not
 	Theme           *Theme              `json:"theme"`
 	ColorBlindMode  *bool               `json:"colorBlindMode"`
 	WorkspaceAccess map[string]api.Role `json:"workspaceAccess"`

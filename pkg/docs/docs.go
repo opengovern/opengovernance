@@ -6506,16 +6506,6 @@ const docTemplate = `{
                 "memberSince": {
                     "type": "string"
                 },
-                "roleName": {
-                    "description": "Name of the role",
-                    "type": "string",
-                    "enum": [
-                        "admin",
-                        "editor",
-                        "viewer"
-                    ],
-                    "example": "admin"
-                },
                 "status": {
                     "description": "Invite status",
                     "enum": [

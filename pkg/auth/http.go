@@ -369,7 +369,6 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 //	@Success		200	{object}	api.GetMeResponse
 //	@Router			/auth/api/v1/me [get]
 func (r *httpRoutes) GetMe(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
 	userID := httpserver.GetUserID(ctx)
 
 	user, err := r.auth0Service.GetUser(userID)
@@ -386,7 +385,6 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		UserName:        user.Name,
 		Email:           user.Email,
 		EmailVerified:   user.EmailVerified,
-		RoleName:        user.AppMetadata.WorkspaceAccess[workspaceID],
 		Status:          status,
 		LastActivity:    user.LastLogin,
 		CreatedAt:       user.CreatedAt,

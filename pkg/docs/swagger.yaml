@@ -157,14 +157,6 @@ definitions:
         type: string
       memberSince:
         type: string
-      roleName:
-        description: Name of the role
-        enum:
-        - admin
-        - editor
-        - viewer
-        example: admin
-        type: string
       status:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus'
