@@ -128,6 +128,10 @@ func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
 	}
 
 	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
+
+	if auth0User.AppMetadata.ConnectionIDs == nil {
+		auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
+	}
 	auth0User.AppMetadata.ConnectionIDs[workspaceID] = req.ConnectionIDs
 	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
 	if err != nil {
