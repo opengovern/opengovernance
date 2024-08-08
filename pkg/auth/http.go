@@ -56,6 +56,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api2.AdminRole))
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))
 	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))
+	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api2.AdminRole))
 	v1.PUT("/user/preferences", httpserver.AuthorizeHandler(r.ChangeUserPreferences, api2.ViewerRole))
 
@@ -352,6 +353,49 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		CreatedAt:     user.CreatedAt,
 		Blocked:       user.Blocked,
 		RoleName:      user.AppMetadata.WorkspaceAccess[workspaceID],
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
+
+}
+
+// GetMe godoc
+//
+//	@Summary		Get Me
+//	@Description	Returns my user details
+//	@Security		BearerToken
+//	@Tags			users
+//	@Produce		json
+//	@Success		200	{object}	api.GetUserResponse
+//	@Router			/auth/api/v1/me [get]
+func (r *httpRoutes) GetMe(ctx echo.Context) error {
+	workspaceID := httpserver.GetWorkspaceID(ctx)
+	userID := httpserver.GetUserID(ctx)
+
+	user, err := r.auth0Service.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
+	status := api.InviteStatus_PENDING
+	if user.EmailVerified {
+		status = api.InviteStatus_ACCEPTED
+	}
+	resp := api.GetMeResponse{
+		UserID:          user.UserId,
+		UserName:        user.Name,
+		Email:           user.Email,
+		EmailVerified:   user.EmailVerified,
+		RoleName:        user.AppMetadata.WorkspaceAccess[workspaceID],
+		Status:          status,
+		LastActivity:    user.LastLogin,
+		CreatedAt:       user.CreatedAt,
+		Blocked:         user.Blocked,
+		Theme:           user.AppMetadata.Theme,
+		ColorBlindMode:  user.AppMetadata.ColorBlindMode,
+		WorkspaceAccess: user.AppMetadata.WorkspaceAccess,
+		MemberSince:     user.AppMetadata.MemberSince,
+		LastLogin:       user.AppMetadata.LastLogin,
 	}
 
 	return ctx.JSON(http.StatusOK, resp)

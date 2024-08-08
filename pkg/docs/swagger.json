@@ -111,6 +111,31 @@
                 }
             }
         },
+        "/auth/api/v1/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns my user details",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Me",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/api/v1/user/invite": {
             "post": {
                 "security": [

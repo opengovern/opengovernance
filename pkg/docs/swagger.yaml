@@ -4112,6 +4112,21 @@ paths:
       summary: Get Workspace Keys
       tags:
       - keys
+  /auth/api/v1/me:
+    get:
+      description: Returns my user details
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse'
+      security:
+      - BearerToken: []
+      summary: Get Me
+      tags:
+      - users
   /auth/api/v1/user/{userId}:
     get:
       description: Returns user details by specified user id.
