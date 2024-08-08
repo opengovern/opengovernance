@@ -444,18 +444,12 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		//	return err
 		//}
 	} else {
-		user, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.RoleName)
+		_, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.RoleName)
 		if err != nil {
 			return err
 		}
 
-		resp, err := r.auth0Service.CreatePasswordChangeTicket(user.UserId)
-		if err != nil {
-			return err
-		}
-
-		emailContent := inviteEmailTemplate
-		emailContent = strings.ReplaceAll(emailContent, "{{ url }}", resp.Ticket)
+		//emailContent := inviteEmailTemplate
 		//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
 		//if err != nil {
 		//	return err

@@ -1,16 +1,12 @@
 package auth0
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
 )
 
 type Service struct {
@@ -20,8 +16,6 @@ type Service struct {
 	appClientID  string
 	Connection   string
 	InviteTTL    int
-
-	token string
 
 	database db.Database
 }
@@ -34,51 +28,8 @@ func New(domain, appClientID, clientID, clientSecret, connection string, inviteT
 		clientSecret: clientSecret,
 		Connection:   connection,
 		InviteTTL:    inviteTTL,
-		token:        "",
 		database:     database,
 	}
-}
-
-func (a *Service) fillToken() error {
-	url := fmt.Sprintf("%s/oauth/token", a.domain)
-	req := TokenRequest{
-		ClientId:     a.clientID,
-		ClientSecret: a.clientSecret,
-		Audience:     fmt.Sprintf("%s/api/v2/", a.domain),
-		GrantType:    "client_credentials",
-	}
-	b, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
-
-	res, err := http.Post(url, "application/json", bytes.NewReader(b))
-	if err != nil {
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		r, _ := ioutil.ReadAll(res.Body)
-		str := ""
-		if r != nil {
-			str = string(r)
-		}
-		return fmt.Errorf("[fillToken] invalid status code: %d. res: %s", res.StatusCode, str)
-	}
-
-	r, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	var resp TokenResponse
-	err = json.Unmarshal(r, &resp)
-	if err != nil {
-		return err
-	}
-
-	a.token = resp.AccessToken
-	return nil
 }
 
 func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
@@ -222,69 +173,19 @@ func (a *Service) AddUser(user *User) error {
 	return nil
 }
 
-func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error) { // This should be deprecated
-	var defaultPass = "kaytu23@"
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	randPass := make([]rune, 10)
-	for i := 0; i < 10; i++ {
-		randPass[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	password := fmt.Sprintf("%s%s", defaultPass, string(randPass))
-
-	usr := CreateUserRequest{
+func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error) {
+	usr := &User{
 		Email:         email,
 		EmailVerified: false,
+		UserId:        fmt.Sprintf("dex|%s", email),
 		AppMetadata: Metadata{
 			WorkspaceAccess: map[string]api.Role{
 				wsName: role,
 			},
 			GlobalAccess: nil,
 		},
-		Password:   password,
-		Connection: a.Connection,
 	}
-
-	if err := a.fillToken(); err != nil {
-		return nil, err
-	}
-
-	body, err := json.Marshal(usr)
-	if err != nil {
-		return nil, err
-	}
-
-	url := fmt.Sprintf("%s/api/v2/users", a.domain)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	fmt.Println("POST", url)
-	fmt.Println(string(body))
-	fmt.Println(body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", "Bearer "+a.token)
-	req.Header.Add("Content-type", "application/json")
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusCreated {
-		r, _ := ioutil.ReadAll(res.Body)
-		return nil, fmt.Errorf("[CreateUser] invalid status code: %d, body=%s", res.StatusCode, string(r))
-	}
-
-	r, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp User
-	err = json.Unmarshal(r, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
+	return usr, a.AddUser(usr)
 }
 
 func (a *Service) DeleteUser(userId string) error {
@@ -293,53 +194,6 @@ func (a *Service) DeleteUser(userId string) error {
 		return err
 	}
 	return nil
-}
-
-func (a *Service) CreatePasswordChangeTicket(userId string) (*CreatePasswordChangeTicketResponse, error) { // I think this should be deprecated
-	request := CreatePasswordChangeTicketRequest{
-		UserId:   userId,
-		ClientId: a.appClientID,
-		TTLSec:   a.InviteTTL,
-	}
-
-	if err := a.fillToken(); err != nil {
-		return nil, err
-	}
-
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-
-	url := fmt.Sprintf("%s/api/v2/tickets/password-change", a.domain)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", "Bearer "+a.token)
-	req.Header.Add("Content-type", "application/json")
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusCreated {
-		r, _ := ioutil.ReadAll(res.Body)
-		return nil, fmt.Errorf("[CreatePasswordChangeTicket] invalid status code: %d, body=%s", res.StatusCode, string(r))
-	}
-
-	r, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp CreatePasswordChangeTicketResponse
-	err = json.Unmarshal(r, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
 }
 
 func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) error {
