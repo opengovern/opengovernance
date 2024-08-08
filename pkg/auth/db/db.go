@@ -265,7 +265,7 @@ func (db Database) GetUsersByEmail(email string) ([]User, error) {
 
 func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 	var users []User
-	query := fmt.Sprintf("SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? '%s'", ws)
+	query := fmt.Sprintf("SELECT * FROM users WHERE (app_metadata->'workspaceAccess')::jsonb ? '%s'", ws)
 	err := db.Orm.Raw(query).Scan(&users).Error
 	if err != nil {
 		return nil, err
@@ -275,7 +275,7 @@ func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 
 func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([]User, error) {
 	var users []User
-	query := fmt.Sprintf("SELECT * FROM users WHERE app_metadata->'workspaceAccess' ? '%s'", ws)
+	query := fmt.Sprintf("SELECT * FROM users WHERE (app_metadata->'workspaceAccess')::jsonb ? '%s'", ws)
 
 	if email != nil {
 		query += fmt.Sprintf(" AND email = %s", *email)
