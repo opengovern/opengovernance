@@ -253,6 +253,10 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 			}
 		}
 
+		s.logger.Info("running describe job scheduler for connection for number of resource types",
+			zap.String("connection_id", connection.ID.String()),
+			zap.String("connector", connection.Connector.String()),
+			zap.String("resource_types", fmt.Sprintf("%v", len(resourceTypes))))
 		for _, resourceType := range resourceTypes {
 			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				s.logger.Warn("resource type is not supported on this connection, skipping describe", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType))
