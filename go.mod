@@ -38,8 +38,8 @@ require (
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/vault/api v1.14.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/kaytu-io/kaytu-aws-describer v0.56.6
-	github.com/kaytu-io/kaytu-azure-describer v0.35.18
+	github.com/kaytu-io/kaytu-aws-describer v0.56.9
+	github.com/kaytu-io/kaytu-azure-describer v0.35.21
 	github.com/kaytu-io/kaytu-util v0.0.0-20240729100022-e4d357e0ebf0
 	github.com/kaytu-io/pennywise v1.7.16
 	github.com/kaytu-io/plugin-aws v0.6.18
@@ -295,14 +295,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.17 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.28.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.7.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.21.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/kms v1.27.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.35.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.32.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/macie2 v1.34.5 // indirect
@@ -320,7 +320,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.9.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/pricing v1.24.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ram v1.23.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/rds v1.78.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/rds v1.82.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.39.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.15.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.8.5 // indirect
