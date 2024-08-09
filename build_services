@@ -6,7 +6,6 @@ compliance-report-worker
 compliance-service
 describe-scheduler
 hopper
-insight-worker
 inventory-service
 metadata-service
 migrator-worker
