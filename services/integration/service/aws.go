@@ -252,6 +252,8 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		sKey = *awsCnf.SecretKey
 	}
 
+	h.logger.Info("auto onboard cred", zap.String("assumedRoleName", awsCnf.AssumeRoleName), zap.String("accountID", awsCnf.AccountID))
+
 	awsConfig, err := aws.GetConfig(
 		ctx,
 		aKey,
