@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"net/http"
 	"strings"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
@@ -521,6 +524,26 @@ func (h Connection) NewAWS(
 		ConnectorType:  provider,
 		Secret:         "",
 		CredentialType: model.CredentialTypeAutoAws,
+	}
+
+	if req.AccountID == "" {
+		awsCred, err := kaytuAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		if err != nil {
+			h.logger.Error("cannot read aws credentials", zap.Error(err))
+
+			return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "cannot read aws credentials")
+		}
+		stsClient := sts.NewFromConfig(awsCred)
+		stsAccount, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			h.logger.Error("cannot read aws account", zap.Error(err))
+			return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "cannot call GetCallerIdentity to read aws account")
+		}
+		if stsAccount.Account == nil {
+			h.logger.Error("cannot read aws account", zap.Error(err))
+			return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "GetCallerIdentity returned empty account id")
+		}
+		req.AccountID = *stsAccount.Account
 	}
 
 	accountName := account.AccountID
