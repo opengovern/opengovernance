@@ -705,6 +705,6 @@ func (s API) Register(g *echo.Group) {
 	g.GET("/:credentialId", httpserver.AuthorizeHandler(s.Get, api.ViewerRole))
 	g.PUT("/aws/:credentialId", httpserver.AuthorizeHandler(s.UpdateAWS, api.EditorRole))
 	g.PUT("/azure/:credentialId", httpserver.AuthorizeHandler(s.UpdateAzure, api.EditorRole))
-	g.POST("aws/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAWS, api.EditorRole))
-	g.POST("azure/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAzure, api.EditorRole))
+	g.POST("/aws/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAWS, api.EditorRole))
+	g.POST("/azure/:credentialId/autoonboard", httpserver.AuthorizeHandler(s.AutoOnboardAzure, api.EditorRole))
 }
