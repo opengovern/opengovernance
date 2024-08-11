@@ -273,10 +273,14 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 	org, err := describer.OrganizationOrganization(ctx, awsConfig)
 	if err != nil {
 		var ae smithy.APIError
-		if !errors.As(err, &ae) ||
-			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+		if !errors.As(err, &ae) {
 			return nil, err
+		}
+		if ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode() {
+			return nil, err
+		} else {
+			h.logger.Warn("failed to get organization", zap.Error(err), zap.Any("smittyError", ae))
 		}
 	}
 
