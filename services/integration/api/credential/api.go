@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
@@ -514,13 +513,8 @@ func (h API) CreateAWS(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	awsConfig, err := h.credentialSvc.AWSSDKConfig(
-		ctx,
-		aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName),
-		req.Config.AccessKey,
-		req.Config.SecretKey,
-		req.Config.ExternalId,
-	)
+	// Account id is passed as a pointer, so if it is empty, it'll be filled in the function.
+	awsConfig, err := h.credentialSvc.AWSSDKConfig(ctx, req.Config.AssumeRoleName, &req.Config.AccountID, req.Config.AccessKey, req.Config.SecretKey, req.Config.ExternalId)
 	if err != nil {
 		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
 

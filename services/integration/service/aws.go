@@ -69,7 +69,7 @@ func (h Credential) NewAWS(
 	return crd, nil
 }
 
-func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, accessKey, secretKey, externalID *string) (awsOfficial.Config, error) {
+func (h Credential) AWSSDKConfig(ctx context.Context, roleName string, accountId, accessKey, secretKey, externalID *string) (awsOfficial.Config, error) {
 	aKey := h.masterAccessKey
 	sKey := h.masterSecretKey
 	if accessKey != nil {
@@ -79,12 +79,30 @@ func (h Credential) AWSSDKConfig(ctx context.Context, roleARN string, accessKey,
 		sKey = *secretKey
 	}
 
+	if accountId == nil || *accountId == "" {
+		awsConfig, err := aws.GetConfig(ctx, aKey, sKey, "", "", nil)
+		if err != nil {
+			h.logger.Error("failed to get aws config", zap.Error(err))
+			return awsOfficial.Config{}, err
+		}
+		thisAccount, err := sts.NewFromConfig(awsConfig).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			h.logger.Error("failed to get aws account", zap.Error(err))
+			return awsOfficial.Config{}, err
+		}
+		if thisAccount.Account == nil {
+			h.logger.Error("failed to get aws account", zap.Error(err))
+			return awsOfficial.Config{}, errors.New("GetCallerIdentity returned empty account id")
+		}
+		accountId = thisAccount.Account
+	}
+
 	awsConfig, err := aws.GetConfig(
 		ctx,
 		aKey,
 		sKey,
 		"",
-		roleARN,
+		aws.GetRoleArnFromName(*accountId, roleName),
 		externalID,
 	)
 	if err != nil {
@@ -176,13 +194,7 @@ func (h Credential) AWSHealthCheck(
 		return false, err
 	}
 
-	sdkCnf, err := h.AWSSDKConfig(
-		ctx,
-		aws.GetRoleArnFromName(awsCnf.AccountID, awsCnf.AssumeRoleName),
-		awsCnf.AccessKey,
-		awsCnf.SecretKey,
-		awsCnf.ExternalId,
-	)
+	sdkCnf, err := h.AWSSDKConfig(ctx, awsCnf.AssumeRoleName, &awsCnf.AccountID, awsCnf.AccessKey, awsCnf.SecretKey, awsCnf.ExternalId)
 
 	org, accounts, err := h.AWSOrgAccounts(ctx, sdkCnf)
 	if err != nil {
@@ -650,16 +662,9 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 		}
 	}
 
-	awsConfig, err := h.AWSSDKConfig(
-		ctx,
-		aws.GetRoleArnFromName(config.AccountID, config.AssumeRoleName),
-		req.Config.AccessKey,
-		req.Config.SecretKey,
-		req.Config.ExternalId,
-	)
+	awsConfig, err := h.AWSSDKConfig(ctx, config.AssumeRoleName, &config.AccountID, req.Config.AccessKey, req.Config.SecretKey, req.Config.ExternalId)
 	if err != nil {
 		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
-
 		return err
 	}
 

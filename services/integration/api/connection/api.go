@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	inventoryAPI "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
@@ -919,7 +918,7 @@ func (h API) AWSCreate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	cfg, err := h.credSvc.AWSSDKConfig(ctx, aws.GetRoleArnFromName(req.Config.AccountID, req.Config.AssumeRoleName), req.Config.AccessKey, req.Config.SecretKey, req.Config.ExternalId)
+	cfg, err := h.credSvc.AWSSDKConfig(ctx, req.Config.AssumeRoleName, &req.Config.AccountID, req.Config.AccessKey, req.Config.SecretKey, req.Config.ExternalId)
 	if err != nil {
 		return err
 	}
