@@ -381,6 +381,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 		}
 
 		if count >= maxConnections {
+			h.logger.Warn("max connections exceeded", zap.Int64("count", count), zap.Int64("maxConnections", maxConnections))
 			return nil, ErrMaxConnectionsExceeded
 		}
 
