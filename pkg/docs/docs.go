@@ -11176,6 +11176,9 @@ const docTemplate = `{
                 "tags": {
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "tier": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Tier"
                 }
             }
         },
@@ -11457,6 +11460,17 @@ const docTemplate = `{
                     "example": 5
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Tier": {
+            "type": "string",
+            "enum": [
+                "Community",
+                "Enterprise"
+            ],
+            "x-enum-varnames": [
+                "Tier_Community",
+                "Tier_Enterprise"
+            ]
         },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAWSCredentialRequest": {
             "type": "object",

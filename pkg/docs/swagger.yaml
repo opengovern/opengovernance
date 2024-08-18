@@ -3426,6 +3426,8 @@ definitions:
       tags:
         additionalProperties: {}
         type: object
+      tier:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Tier'
     type: object
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CountConnectionsResponse:
     properties:
@@ -3628,6 +3630,14 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_services_integration_api_entity.Tier:
+    enum:
+    - Community
+    - Enterprise
+    type: string
+    x-enum-varnames:
+    - Tier_Community
+    - Tier_Enterprise
   github_com_kaytu-io_kaytu-engine_services_integration_api_entity.UpdateAWSCredentialRequest:
     properties:
       config:

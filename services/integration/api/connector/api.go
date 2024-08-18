@@ -94,6 +94,7 @@ func (h API) List(c echo.Context) error {
 				AllowNewConnections: c.AllowNewConnections,
 				MaxConnectionLimit:  c.MaxConnectionLimit,
 				Tags:                tags,
+				Tier:                entity.Tier(c.Tier),
 			},
 			ConnectionCount: count,
 		})

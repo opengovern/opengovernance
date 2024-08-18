@@ -4,6 +4,13 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
+type Tier string
+
+const (
+	Tier_Community  Tier = "Community"
+	Tier_Enterprise Tier = "Enterprise"
+)
+
 type Connector struct {
 	Name                source.Type                   `json:"name" example:"Azure"`
 	Label               string                        `json:"label" example:"Azure"`
@@ -16,6 +23,7 @@ type Connector struct {
 	AllowNewConnections bool                          `json:"allowNewConnections" example:"true"`
 	MaxConnectionLimit  int                           `json:"maxConnectionLimit" example:"10000" minimum:"0"`
 	Tags                map[string]any                `json:"tags"`
+	Tier                Tier                          `json:"tier"`
 }
 
 type ConnectorCount struct {
