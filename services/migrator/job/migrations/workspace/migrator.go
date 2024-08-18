@@ -67,7 +67,7 @@ func OnboardMigration(conf config.MigratorConfig, logger *zap.Logger, onboardFil
 		err := dbm.ORM.Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "name"}}, // key colume
 			DoUpdates: clause.AssignmentColumns([]string{"label", "short_description", "description", "direction",
-				"status", "logo", "auto_onboard_support", "allow_new_connections", "max_connection_limit", "tags"}),
+				"status", "logo", "auto_onboard_support", "allow_new_connections", "max_connection_limit", "tags", "tier"}),
 		}).Create(&obj).Error
 		if err != nil {
 			return err
