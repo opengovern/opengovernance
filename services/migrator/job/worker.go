@@ -68,6 +68,7 @@ func (w *Job) Run(ctx context.Context) error {
 	w.logger.Info("Starting migrator job")
 
 	for name, mig := range migrations {
+		w.logger.Info("running migration", zap.String("migrationName", name))
 		updateNeeded, err := w.CheckIfUpdateIsNeeded(name, mig)
 		if err != nil {
 			w.logger.Error("failed to CheckIfUpdateIsNeeded", zap.Error(err), zap.String("migrationName", name))
