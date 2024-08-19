@@ -57,6 +57,8 @@ func OnboardMigration(conf config.MigratorConfig, logger *zap.Logger, onboardFil
 		return err
 	}
 
+	logger.Info("connectors json:", zap.String("json", string(content)))
+
 	var connectors []model.Connector
 	err = json.Unmarshal(content, &connectors)
 	if err != nil {
@@ -64,6 +66,7 @@ func OnboardMigration(conf config.MigratorConfig, logger *zap.Logger, onboardFil
 	}
 
 	for _, obj := range connectors {
+		logger.Info("connector", zap.Any("obj", obj))
 		err := dbm.ORM.Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "name"}}, // key colume
 			DoUpdates: clause.AssignmentColumns([]string{"label", "short_description", "description", "direction",
