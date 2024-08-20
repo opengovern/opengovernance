@@ -199,7 +199,20 @@ func start(ctx context.Context) error {
 	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()
 
-	grpcServer := grpc.NewServer()
+	var grpcServer grpc.ServiceRegistrar
+	if grpcTlsCertPath == "" {
+		grpcServer = grpc.NewServer()
+	} else {
+		creds, err := newServerCredentials(
+			grpcTlsCertPath,
+			grpcTlsKeyPath,
+			grpcTlsCAPath,
+		)
+		if err != nil {
+			return fmt.Errorf("grpc tls creds: %w", err)
+		}
+		grpcServer = grpc.NewServer(grpc.Creds(creds))
+	}
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
 
 	lis, err := net.Listen("tcp", grpcServerAddress)
