@@ -110,15 +110,6 @@ func start(ctx context.Context) error {
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
-	creds, err := newServerCredentials(
-		grpcTlsCertPath,
-		grpcTlsKeyPath,
-		grpcTlsCAPath,
-	)
-	if err != nil {
-		return fmt.Errorf("grpc tls creds: %w", err)
-	}
-
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
 	if kaytuKeyEnabledStr == "" {
@@ -208,7 +199,7 @@ func start(ctx context.Context) error {
 	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	grpcServer := grpc.NewServer()
 	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
 
 	lis, err := net.Listen("tcp", grpcServerAddress)
