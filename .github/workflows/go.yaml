@@ -163,39 +163,21 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipeServiceDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/SteampipeServiceDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=ghcr.io
           context: .
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -253,34 +235,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/CheckupWorkerDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/CheckupWorkerDockerfile
           context: .
   deploy-compliance-report-worker:
@@ -305,39 +271,21 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/ComplianceReportWorkerDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=ghcr.io
           context: .
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
@@ -360,39 +308,21 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/ComplianceSummarizerDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=ghcr.io
           context: .
   deploy-compliance-service:
     runs-on: ubuntu-latest
@@ -415,34 +345,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/ComplianceServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceServiceDockerfile
           context: .
   deploy-describe-scheduler:
@@ -466,34 +380,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/DescribeSchedulerDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/DescribeSchedulerDockerfile
           context: .
   deploy-integration-service:
@@ -517,34 +415,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/IntegrationServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/IntegrationServiceDockerfile
           context: .
   deploy-es-sink-service:
@@ -568,34 +450,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/es-sink:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/EsSinkServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/es-sink:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/EsSinkServiceDockerfile
           context: .
   deploy-inventory-service:
@@ -619,34 +485,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/InventoryServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InventoryServiceDockerfile
           context: .
   deploy-metadata-service:
@@ -670,34 +520,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/MetadataServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/MetadataServiceDockerfile
           context: .
   deploy-migrator-worker:
@@ -721,34 +555,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/MigratorDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/MigratorDockerfile
           context: .
   deploy-onboard-service:
@@ -772,34 +590,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/OnboardServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/OnboardServiceDockerfile
           context: .
   deploy-swagger-ui-and-redoc:
@@ -823,20 +625,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
-      - name: Build and push Docker images - swagger-ui
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SwaggerUIDockerfile
           context: .
       - name: Build and push Docker images - redoc
@@ -844,29 +644,7 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/RedocDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR - swagger-ui
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/SwaggerUIDockerfile
-          context: .
-      - name: Build and Push to ACR - redoc
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/redoc:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/RedocDockerfile
           context: .
   deploy-workspace-service:
@@ -890,34 +668,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/WorkspaceServiceDockerfile
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/workspace-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/WorkspaceServiceDockerfile
           context: .
   deploy-analytics-worker:
@@ -942,39 +704,21 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=${{ vars.AWS_DOCKER_REGISTRY }}
-          context: .
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/AnalyticsWorkerDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=${{ vars.AZURE_DOCKER_REGISTRY }}
+            PLUGIN_REGISTRY=ghcr.io
           context: .
   deploy-steampipe-plugin-kaytu:
     runs-on: ubuntu-latest
@@ -1012,42 +756,20 @@ jobs:
         if: steps.check_if_push.outputs.do_build == 'true'
         run: |
           tar -xvf build.tar.gz
-      - name: Configure AWS credentials
-        if: steps.check_if_push.outputs.do_build == 'true'
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - name: Login to Docker
-        if: steps.check_if_push.outputs.do_build == 'true'
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.AWS_DOCKER_REGISTRY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
       - name: Build and push Docker images
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AWS_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
-            ${{ vars.AWS_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/SteampipePluginKaytuDockerfile
-          context: .
-      - name: Azure Docker Login
-        if: steps.check_if_push.outputs.do_build == 'true'
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ vars.AZURE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build and Push to ACR
-        if: steps.check_if_push.outputs.do_build == 'true'
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: |
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:0.0.1
-            ${{ vars.AZURE_DOCKER_REGISTRY }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-kaytu:0.0.1
+            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipePluginKaytuDockerfile
           context: .
   deploy-wastage-service:
@@ -1071,18 +793,18 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          login-server: ${{ vars.AZURE_PRIVATE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_PRIVATE_USERNAME }}
-          password: ${{ secrets.ACR_PRIVATE_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AZURE_PRIVATE_DOCKER_REGISTRY }}/wastage-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/WastageServiceDockerfile
           context: .
   deploy-information-service:
@@ -1106,17 +828,17 @@ jobs:
       - name: Unpack artifact
         run: |
           tar -xvf build.tar.gz
-      - name: Azure Docker Login
-        uses: azure/docker-login@v1
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          login-server: ${{ vars.AZURE_PRIVATE_DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_PRIVATE_USERNAME }}
-          password: ${{ secrets.ACR_PRIVATE_PASSWORD }}
-      - name: Build and Push to ACR
-        uses: docker/build-push-action@v2
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
         with:
           push: true
           tags: |
-            ${{ vars.AZURE_PRIVATE_DOCKER_REGISTRY }}/information-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+            ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InformationServiceDockerfile
           context: .
