@@ -177,7 +177,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/SteampipeServiceDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
           context: .
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -285,7 +285,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
           context: .
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
@@ -322,7 +322,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
           context: .
   deploy-compliance-service:
     runs-on: ubuntu-latest
@@ -718,7 +718,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
           context: .
   deploy-steampipe-plugin-kaytu:
     runs-on: ubuntu-latest
