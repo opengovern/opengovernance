@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -72,8 +72,8 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			assetDiscoveryAttached = true
 			spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
 		} else {
-			var awsCnf describe.AWSAccountConfig
-			awsCnf, err = describe.AWSAccountConfigFromMap(cnf)
+			var awsCnf connectors.AWSAccountConfig
+			awsCnf, err = connectors.AWSAccountConfigFromMap(cnf)
 			if err != nil {
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
@@ -113,8 +113,8 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			}
 		}
 	case source.CloudAzure:
-		var azureCnf describe.AzureSubscriptionConfig
-		azureCnf, err = describe.AzureSubscriptionConfigFromMap(cnf)
+		var azureCnf connectors.AzureSubscriptionConfig
+		azureCnf, err = connectors.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err

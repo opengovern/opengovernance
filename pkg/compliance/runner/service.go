@@ -130,7 +130,7 @@ func NewWorker(
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
 
-	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, "compliance-runner", StreamName, []string{JobQueueTopic}, ConsumerGroup,
+	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, "compliance-runner", StreamName, []string{JobQueueTopic},
 		jetstream.ConsumerConfig{
 			DeliverPolicy:     jetstream.DeliverAllPolicy,
 			AckPolicy:         jetstream.AckExplicitPolicy,
@@ -139,7 +139,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			InactiveThreshold: time.Hour,
 			Replicas:          1,
 			MemoryStorage:     false,
-		},
+		}, nil,
 		func(msg jetstream.Msg) {
 			w.logger.Info("received a new job")
 			w.logger.Info("committing")

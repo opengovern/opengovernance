@@ -35,6 +35,7 @@ func (s AzureCredentialConfig) AsMap() map[string]any {
 type CreateAzureCredentialRequest struct {
 	Name        string                `json:"name"`
 	Description string                `json:"description"`
+	Type        CredentialType        `json:"type"`
 	Config      AzureCredentialConfig `json:"config"`
 }
 

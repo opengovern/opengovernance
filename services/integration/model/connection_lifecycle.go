@@ -1,7 +1,5 @@
 package model
 
-import "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-
 type ConnectionLifecycleState string
 
 const (
@@ -23,12 +21,4 @@ func (c ConnectionLifecycleState) IsEnabled() bool {
 
 func GetConnectionLifecycleStateEnabledStates() []ConnectionLifecycleState {
 	return []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress}
-}
-
-func (c ConnectionLifecycleState) ToApi() api.ConnectionLifecycleState {
-	return api.ConnectionLifecycleState(c)
-}
-
-func ConnectionLifecycleStateFromApi(state api.ConnectionLifecycleState) ConnectionLifecycleState {
-	return ConnectionLifecycleState(state)
 }

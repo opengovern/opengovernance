@@ -9,9 +9,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api/entities"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	api3 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -38,7 +40,6 @@ import (
 	"github.com/google/uuid"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 )
@@ -243,7 +244,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return err
 	}
 
-	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
+	src := NewAWSSource(ctx.Request().Context(), h.logger, connectors.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
 
 	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap())
 	if err != nil {
@@ -304,7 +305,7 @@ func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
 		sKey = *req.AWSConfig.SecretKey
 	}
 
-	src := NewAWSSource(ctx.Request().Context(), h.logger, describe.AWSAccountConfig{
+	src := NewAWSSource(ctx.Request().Context(), h.logger, connectors.AWSAccountConfig{
 		AccessKey: aKey,
 		SecretKey: sKey,
 	}, *acc, "")
@@ -417,17 +418,22 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 }
 
 func createAzureCredential(ctx context.Context, name string, credType model.CredentialType, config api.AzureCredentialConfig) (*model.Credential, error) {
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
+	azureCnf, err := connectors.AzureSubscriptionConfigFromMap(config.AsMap())
 	if err != nil {
 		return nil, err
 	}
 
-	metadata, err := getAzureCredentialsMetadata(ctx, azureCnf)
+	metadata, err := getAzureCredentialsMetadata(ctx, azureCnf, credType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credential metadata: %v", err)
 	}
-	if credType == model.CredentialTypeManualAzureSpn {
+	switch credType {
+	case model.CredentialTypeManualAzureSpn:
 		name = metadata.SpnName
+	case model.CredentialTypeManualAzureEntraId:
+		if metadata.DefaultDomain != nil {
+			name = *metadata.DefaultDomain
+		}
 	}
 	cred, err := NewAzureCredential(name, credType, metadata)
 	if err != nil {
@@ -447,7 +453,12 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	cred, err := createAzureCredential(ctx.Request().Context(), "", model.CredentialTypeManualAzureSpn, config)
+	credType := model.CredentialTypeManualAzureSpn
+	if config.CredentialType == entity.CredentialTypeManualAzureEntraId {
+		credType = model.CredentialTypeManualAzureEntraId
+	}
+
+	cred, err := createAzureCredential(ctx.Request().Context(), "", credType, config)
 	if err != nil {
 		return err
 	}
@@ -489,7 +500,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
+	awsCnf, err := connectors.AWSAccountConfigFromMap(config.AsMap())
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
@@ -792,7 +803,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		azureCnf, err := connectors.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			return err
 		}
@@ -824,7 +835,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 				ExternalId:     awsCnf.ExternalId,
 			}
 		} else {
-			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+			awsCnf, err := connectors.AWSAccountConfigFromMap(cnf)
 			if err != nil {
 				return err
 			}
@@ -852,7 +863,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 	if err != nil {
 		return nil, err
 	}
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	azureCnf, err := connectors.AzureSubscriptionConfigFromMap(cnf)
 	if err != nil {
 		return nil, err
 	}
@@ -1028,7 +1039,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential mode
 	if err != nil {
 		return nil, err
 	}
-	awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+	awsCnf, err := connectors.AWSAccountConfigFromMap(cnf)
 	if err != nil {
 		return nil, err
 	}
@@ -1356,7 +1367,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		return ctx.JSON(http.StatusNotFound, "credential not found")
@@ -1374,7 +1385,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	if err != nil {
 		return err
 	}
-	config, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	config, err := connectors.AzureSubscriptionConfigFromMap(cnf)
 	if err != nil {
 		return err
 	}
@@ -1408,7 +1419,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 			config.ClientSecret = newConfig.ClientSecret
 		}
 	}
-	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config, cred.CredentialType)
 	if err != nil {
 		return err
 	}
@@ -1491,7 +1502,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 	if err != nil {
 		return err
 	}
-	config, err := describe.AWSAccountConfigFromMap(cnf)
+	config, err := connectors.AWSAccountConfigFromMap(cnf)
 	if err != nil {
 		return err
 	}
@@ -1745,7 +1756,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 
 	switch src.Type {
 	case source.CloudAWS:
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		awsCnf, err := connectors.AWSAccountConfigFromMap(cnf)
 		if err != nil {
 			return err
 		}
@@ -1758,7 +1769,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 			ExternalId:     awsCnf.ExternalID,
 		})
 	case source.CloudAzure:
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		azureCnf, err := connectors.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			return err
 		}
@@ -2039,7 +2050,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	))
 	span.End()
 
-	reqState := model.ConnectionLifecycleStateFromApi(req.State)
+	reqState := entity.ConnectionLifecycleState(req.State).ToModel()
 	if reqState == connection.LifecycleState {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection already in requested state")
 	}

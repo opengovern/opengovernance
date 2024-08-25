@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strings"
@@ -20,7 +21,6 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
@@ -514,7 +514,7 @@ func (h Connection) NewAWS(
 	if req.SecretKey != nil {
 		sKey = *req.SecretKey
 	}
-	cfg := describe.AWSAccountConfig{
+	cfg := connectors.AWSAccountConfig{
 		AccessKey: aKey,
 		SecretKey: sKey,
 	}

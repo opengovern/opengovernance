@@ -18,13 +18,14 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
@@ -619,12 +620,13 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		}
 
 	case source.CloudAzure:
-		var azureConfig describe.AzureSubscriptionConfig
-		azureConfig, err = describe.AzureSubscriptionConfigFromMap(request.AzureConfig.AsMap())
+		var azureConfig connectors.AzureSubscriptionConfig
+		azureConfig, err = connectors.AzureSubscriptionConfigFromMap(request.AzureConfig.AsMap())
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		err = kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
+
+		authConfig := kaytuAzure.AuthConfig{
 			TenantID:            azureConfig.TenantID,
 			ObjectID:            azureConfig.ObjectID,
 			SecretID:            azureConfig.SecretID,
@@ -634,9 +636,17 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 			CertificatePassword: azureConfig.CertificatePass,
 			Username:            azureConfig.Username,
 			Password:            azureConfig.Password,
-		})
+		}
+		err = kaytuAzure.CheckSPNAccessPermission(authConfig)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		if request.AzureConfig.CredentialType == entity.CredentialTypeManualAzureEntraId {
+			_, err = kaytuAzure.CheckEntraIDPermission(authConfig)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
 		}
 
 		identity, err := azidentity.NewClientSecretCredential(

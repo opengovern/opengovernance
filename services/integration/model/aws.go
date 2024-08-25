@@ -3,12 +3,12 @@ package model
 import (
 	"context"
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 )
 
@@ -86,7 +86,7 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 	return out
 }
 
-func NewAWSConnectionMetadata(ctx context.Context, cfg describe.AWSAccountConfig, connection Connection, account AWSAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(ctx context.Context, cfg connectors.AWSAccountConfig, connection Connection, account AWSAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
