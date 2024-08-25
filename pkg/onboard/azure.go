@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
@@ -118,7 +118,7 @@ func currentAzureSubscription(ctx context.Context, logger *zap.Logger, subId str
 	}, nil
 }
 
-func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig, credType model.CredentialType) (*AzureCredentialMetadata, error) {
+func getAzureCredentialsMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig, credType model.CredentialType) (*AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,

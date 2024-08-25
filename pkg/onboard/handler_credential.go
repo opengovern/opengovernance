@@ -11,7 +11,7 @@ import (
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -391,8 +391,8 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 	}
 	switch cred.ConnectorType {
 	case source.CloudAWS:
-		var awsConfig describe.AWSAccountConfig
-		awsConfig, err = describe.AWSAccountConfigFromMap(config)
+		var awsConfig connectors.AWSAccountConfig
+		awsConfig, err = connectors.AWSAccountConfigFromMap(config)
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -414,8 +414,8 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			cred.Metadata = jsonMetadata
 		}
 	case source.CloudAzure:
-		var azureConfig describe.AzureSubscriptionConfig
-		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
+		var azureConfig connectors.AzureSubscriptionConfig
+		azureConfig, err = connectors.AzureSubscriptionConfigFromMap(config)
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}

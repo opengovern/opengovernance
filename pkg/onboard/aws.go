@@ -10,7 +10,7 @@ import (
 	"github.com/aws/smithy-go"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"go.uber.org/zap"
 )
@@ -59,7 +59,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 	}, nil
 }
 
-func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
+func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config connectors.AWSAccountConfig) (*AWSCredentialMetadata, error) {
 	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err

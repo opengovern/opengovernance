@@ -18,9 +18,9 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 	api5 "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
@@ -620,8 +620,8 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		}
 
 	case source.CloudAzure:
-		var azureConfig describe.AzureSubscriptionConfig
-		azureConfig, err = describe.AzureSubscriptionConfigFromMap(request.AzureConfig.AsMap())
+		var azureConfig connectors.AzureSubscriptionConfig
+		azureConfig, err = connectors.AzureSubscriptionConfigFromMap(request.AzureConfig.AsMap())
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}

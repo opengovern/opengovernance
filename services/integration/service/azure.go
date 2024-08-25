@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
@@ -36,7 +36,7 @@ func (h Credential) NewAzure(
 	credType model.CredentialType,
 	config entity.AzureCredentialConfig,
 ) (*model.Credential, error) {
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
+	azureCnf, err := connectors.AzureSubscriptionConfigFromMap(config.AsMap())
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (h Credential) NewAzureConnection(
 	return s
 }
 
-func (Credential) AzureMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
+func (Credential) AzureMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -150,8 +150,8 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 		return false, err
 	}
 
-	var azureConfig describe.AzureSubscriptionConfig
-	azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
+	var azureConfig connectors.AzureSubscriptionConfig
+	azureConfig, err = connectors.AzureSubscriptionConfigFromMap(config)
 	if err != nil {
 		return false, err
 	}
@@ -190,7 +190,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 		return nil, err
 	}
 
-	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	azureCnf, err := connectors.AzureSubscriptionConfigFromMap(cnf)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +393,7 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 	if err != nil {
 		return err
 	}
-	config, err := fp.FromMap[describe.AzureSubscriptionConfig](cnf)
+	config, err := fp.FromMap[connectors.AzureSubscriptionConfig](cnf)
 	if err != nil {
 		return err
 	}
@@ -449,13 +449,13 @@ func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.Up
 }
 
 // AzureCredentialConfig reads credentials configuration from azure credential secret and return it.
-func (h Credential) AzureCredentialConfig(ctx context.Context, credential model.Credential) (*describe.AzureSubscriptionConfig, error) {
+func (h Credential) AzureCredentialConfig(ctx context.Context, credential model.Credential) (*connectors.AzureSubscriptionConfig, error) {
 	raw, err := h.vault.Decrypt(ctx, credential.Secret)
 	if err != nil {
 		return nil, err
 	}
 
-	cnf, err := describe.AzureSubscriptionConfigFromMap(raw)
+	cnf, err := connectors.AzureSubscriptionConfigFromMap(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +474,7 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 
 	var assetDiscoveryAttached, spendAttached bool
 
-	subscriptionConfig, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	subscriptionConfig, err := connectors.AzureSubscriptionConfigFromMap(cnf)
 	if err != nil {
 		h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 		return connection, err

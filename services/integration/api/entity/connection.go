@@ -32,6 +32,14 @@ const (
 	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
 )
 
+func (c ConnectionLifecycleState) ToModel() model.ConnectionLifecycleState {
+	return model.ConnectionLifecycleState(c)
+}
+
+func ConnectionLifecycleStateFromModel(state model.ConnectionLifecycleState) ConnectionLifecycleState {
+	return ConnectionLifecycleState(state)
+}
+
 func (c ConnectionLifecycleState) Validate() error {
 	switch c {
 	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateDisabled:
