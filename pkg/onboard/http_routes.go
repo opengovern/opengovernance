@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api/entities"
 	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	api3 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -422,12 +423,17 @@ func createAzureCredential(ctx context.Context, name string, credType model.Cred
 		return nil, err
 	}
 
-	metadata, err := getAzureCredentialsMetadata(ctx, azureCnf)
+	metadata, err := getAzureCredentialsMetadata(ctx, azureCnf, credType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credential metadata: %v", err)
 	}
-	if credType == model.CredentialTypeManualAzureSpn {
+	switch credType {
+	case model.CredentialTypeManualAzureSpn:
 		name = metadata.SpnName
+	case model.CredentialTypeManualAzureEntraId:
+		if metadata.DefaultDomain != nil {
+			name = *metadata.DefaultDomain
+		}
 	}
 	cred, err := NewAzureCredential(name, credType, metadata)
 	if err != nil {
@@ -447,7 +453,12 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	cred, err := createAzureCredential(ctx.Request().Context(), "", model.CredentialTypeManualAzureSpn, config)
+	credType := model.CredentialTypeManualAzureSpn
+	if config.CredentialType == entity.CredentialTypeManualAzureEntraId {
+		credType = model.CredentialTypeManualAzureEntraId
+	}
+
+	cred, err := createAzureCredential(ctx.Request().Context(), "", credType, config)
 	if err != nil {
 		return err
 	}
@@ -1356,7 +1367,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		return ctx.JSON(http.StatusNotFound, "credential not found")
@@ -1408,7 +1419,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 			config.ClientSecret = newConfig.ClientSecret
 		}
 	}
-	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config, cred.CredentialType)
 	if err != nil {
 		return err
 	}

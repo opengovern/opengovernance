@@ -428,9 +428,21 @@ func (h API) CreateAzure(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	var credType model.CredentialType
+	switch req.Type {
+	case entity.CredentialTypeAutoAzure:
+		credType = model.CredentialTypeAutoAzure
+	case entity.CredentialTypeManualAzureSpn:
+		credType = model.CredentialTypeManualAzureSpn
+	case entity.CredentialTypeManualAzureEntraId:
+		credType = model.CredentialTypeManualAzureEntraId
+	default:
+		credType = model.CredentialTypeManualAzureSpn
+	}
+
 	cred, err := h.credentialSvc.NewAzure(
 		ctx,
-		model.CredentialTypeManualAzureSpn,
+		credType,
 		req.Config,
 	)
 	if err != nil {

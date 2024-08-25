@@ -156,7 +156,7 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 		return false, err
 	}
 
-	if err := azure.CheckSPNAccessPermission(azure.AuthConfig{
+	authConfig := azure.AuthConfig{
 		TenantID:            azureConfig.TenantID,
 		ObjectID:            azureConfig.ObjectID,
 		SecretID:            azureConfig.SecretID,
@@ -166,8 +166,17 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 		CertificatePassword: azureConfig.CertificatePass,
 		Username:            azureConfig.Username,
 		Password:            azureConfig.Password,
-	}); err != nil {
+	}
+
+	if err := azure.CheckSPNAccessPermission(authConfig); err != nil {
 		return false, err
+	}
+
+	if cred.CredentialType == model.CredentialTypeManualAzureEntraId {
+		_, err = azure.CheckEntraIDPermission(authConfig)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	return true, nil

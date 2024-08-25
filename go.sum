@@ -1079,8 +1079,6 @@ github.com/docker/distribution v2.8.0+incompatible/go.mod h1:J2gT2udsDAN96Uj4Kfc
 github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v1.4.2-0.20200319182547-c7ad2b866182/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
-github.com/docker/docker v27.1.0+incompatible h1:rEHVQc4GZ0MIQKifQPHSFGV/dVgaZafgRf8fCPtDYBs=
-github.com/docker/docker v27.1.0+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v27.1.1+incompatible h1:hO/M4MtV36kzKldqnA37IWhebRA+LnqqcqDja6kVaKY=
 github.com/docker/docker v27.1.1+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker-credential-helpers v0.6.3/go.mod h1:WRaJzqw3CTB9bk10avuGsjVBZsD05qeibJ1/TYlvc0Y=
@@ -1787,10 +1785,10 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.56.9 h1:N9kv9nZ1CS3vI+tGr8rClPyJfqXQkcn2hqld3sbwvoY=
 github.com/kaytu-io/kaytu-aws-describer v0.56.9/go.mod h1:t1/vOoI7LCmohzGVQaLOMOiFgCwU+XsWD5RzdgIiajM=
-github.com/kaytu-io/kaytu-azure-describer v0.35.21 h1:aW1YsZVz9Tbzqor3u0B0iAPh7+0edR6lGMa0noM7/5k=
-github.com/kaytu-io/kaytu-azure-describer v0.35.21/go.mod h1:wHCaCVbTFEUHEJXfqoA77DOK+FJO6fenosVGBcz/mno=
-github.com/kaytu-io/kaytu-util v0.0.0-20240729100022-e4d357e0ebf0 h1:9H0Hnv9yt41uhiCowx2swIR03mKmSEZpuNgRg1Hfcjc=
-github.com/kaytu-io/kaytu-util v0.0.0-20240729100022-e4d357e0ebf0/go.mod h1:6qM5EwFanHjtfC1E3I7bhFN4dIX7B2eiPQwi8xHavd0=
+github.com/kaytu-io/kaytu-azure-describer v0.36.0 h1:oeTlXBOW6loLfYSGrmPu3kaLTv1Mw37gKZ+DCtufh9E=
+github.com/kaytu-io/kaytu-azure-describer v0.36.0/go.mod h1:wuNOZA6J9cmnGv9SEzBzkRCtk/+xFly0lyDLnbcFyKc=
+github.com/kaytu-io/kaytu-util v0.0.0-20240813133701-2520d451f101 h1:zkC9tBSEhbBdupHuGli0qQi9ME53KNL4bvbsBFrufgw=
+github.com/kaytu-io/kaytu-util v0.0.0-20240813133701-2520d451f101/go.mod h1:SnfkVk5OhH7HSNWjkYqaGy7wFgRp/wKkzGsqlM8L0Ds=
 github.com/kaytu-io/pennywise v1.7.16 h1:ppZ80MNFuch4GRpEYzYZgxms4QkLCZWJPAnkxa1THgo=
 github.com/kaytu-io/pennywise v1.7.16/go.mod h1:Egr3Z/zzT/K93sOG+QVSgrgQbkcnK+odwjnl1OQUjpQ=
 github.com/kaytu-io/plugin-aws v0.6.18 h1:mFRKhuCNAczCMPptPVwtcRbQzIt5qFkVlsUU6KIc1EA=

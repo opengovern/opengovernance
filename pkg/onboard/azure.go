@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
@@ -117,7 +118,7 @@ func currentAzureSubscription(ctx context.Context, logger *zap.Logger, subId str
 	}, nil
 }
 
-func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*AzureCredentialMetadata, error) {
+func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig, credType model.CredentialType) (*AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -159,6 +160,19 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 			metadata.SecretExpirationDate = *passwd.GetEndDateTime()
 		}
 	}
+
+	if credType == model.CredentialTypeManualAzureEntraId {
+		entraExtraData, err := azure.CheckEntraIDPermission(azure.AuthConfig{
+			TenantID:     config.TenantID,
+			ClientID:     config.ClientID,
+			ClientSecret: config.ClientSecret,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to check entra id permission: %v", err)
+		}
+		metadata.DefaultDomain = entraExtraData.DefaultDomain
+	}
+
 	//
 	//if metadata.SecretId == "" {
 	//	return nil, fmt.Errorf("failed to find the secret in application's credential list")

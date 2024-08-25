@@ -419,7 +419,8 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		err = kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
+
+		authConfig := kaytuAzure.AuthConfig{
 			TenantID:            azureConfig.TenantID,
 			ObjectID:            azureConfig.ObjectID,
 			SecretID:            azureConfig.SecretID,
@@ -429,17 +430,25 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			CertificatePassword: azureConfig.CertificatePass,
 			Username:            azureConfig.Username,
 			Password:            azureConfig.Password,
-		})
+		}
+
+		err = kaytuAzure.CheckSPNAccessPermission(authConfig)
+
 		if err == nil {
-			metadata, err := getAzureCredentialsMetadata(ctx, azureConfig)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			if cred.CredentialType == model.CredentialTypeManualAzureEntraId {
+				_, err = kaytuAzure.CheckEntraIDPermission(authConfig)
 			}
-			jsonMetadata, err := json.Marshal(metadata)
-			if err != nil {
-				return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			if err == nil {
+				metadata, err := getAzureCredentialsMetadata(ctx, azureConfig, cred.CredentialType)
+				if err != nil {
+					return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				}
+				jsonMetadata, err := json.Marshal(metadata)
+				if err != nil {
+					return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				cred.Metadata = jsonMetadata
 			}
-			cred.Metadata = jsonMetadata
 		}
 	}
 

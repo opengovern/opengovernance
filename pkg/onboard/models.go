@@ -349,7 +349,7 @@ func NewAzureCredential(name string, credentialType model.CredentialType, metada
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
 	}
-	if credentialType == model.CredentialTypeManualAzureSpn {
+	if credentialType == model.CredentialTypeManualAzureSpn || credentialType == model.CredentialTypeManualAzureEntraId {
 		crd.AutoOnboardEnabled = true
 	}
 
@@ -390,6 +390,7 @@ type AWSCredentialMetadata struct {
 }
 
 type AzureCredentialMetadata struct {
+	DefaultDomain        *string   `json:"default_domain"`
 	SpnName              string    `json:"spn_name"`
 	ObjectId             string    `json:"object_id"`
 	SecretId             string    `json:"secret_id"`

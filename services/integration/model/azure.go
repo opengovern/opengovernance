@@ -37,7 +37,7 @@ func NewAzureCredential(credentialType CredentialType, metadata *AzureCredential
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
 	}
-	if credentialType == CredentialTypeManualAzureSpn {
+	if credentialType == CredentialTypeManualAzureSpn || credentialType == CredentialTypeManualAzureEntraId {
 		crd.AutoOnboardEnabled = true
 	}
 

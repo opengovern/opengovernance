@@ -11,6 +11,7 @@ const (
 	CredentialTypeAutoAws               CredentialType = "auto-aws"
 	CredentialTypeManualAwsOrganization CredentialType = "manual-aws-org"
 	CredentialTypeManualAzureSpn        CredentialType = "manual-azure-spn"
+	CredentialTypeManualAzureEntraId    CredentialType = "manual-azure-entra-id"
 )
 
 func (c CredentialType) IsManual() bool {
@@ -28,6 +29,7 @@ func GetCredentialTypes() []CredentialType {
 		CredentialTypeAutoAws,
 		CredentialTypeManualAwsOrganization,
 		CredentialTypeManualAzureSpn,
+		CredentialTypeManualAzureEntraId,
 	}
 }
 
@@ -42,6 +44,7 @@ func GetManualCredentialTypes() []CredentialType {
 	return []CredentialType{
 		CredentialTypeManualAwsOrganization,
 		CredentialTypeManualAzureSpn,
+		CredentialTypeManualAzureEntraId,
 	}
 }
 

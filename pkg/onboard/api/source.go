@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	v2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
-
+	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/google/uuid"
@@ -60,12 +60,13 @@ type SourceAwsRequest struct {
 }
 
 type AzureCredentialConfig struct {
-	SubscriptionId string `json:"subscriptionId"`
-	TenantId       string `json:"tenantId" validate:"required,uuid_rfc4122"`
-	ObjectId       string `json:"objectId" validate:"required,uuid_rfc4122"`
-	SecretId       string `json:"secretId" validate:"required,uuid_rfc4122"`
-	ClientId       string `json:"clientId" validate:"required"`
-	ClientSecret   string `json:"clientSecret" validate:"required"`
+	CredentialType entity.CredentialType `json:"credentialType"`
+	SubscriptionId string                `json:"subscriptionId"`
+	TenantId       string                `json:"tenantId" validate:"required,uuid_rfc4122"`
+	ObjectId       string                `json:"objectId" validate:"required,uuid_rfc4122"`
+	SecretId       string                `json:"secretId" validate:"required,uuid_rfc4122"`
+	ClientId       string                `json:"clientId" validate:"required"`
+	ClientSecret   string                `json:"clientSecret" validate:"required"`
 }
 
 func (s AzureCredentialConfig) AsMap() map[string]any {
