@@ -81,7 +81,7 @@ func (h API) Get(c echo.Context) error {
 		return err
 	}
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", id.String()),
 	))
 
 	connections, err := h.connectionSvc.ListByCredential(ctx, id.String())
@@ -385,7 +385,7 @@ func (h API) Delete(c echo.Context) error {
 	}
 
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", credId.String()),
 	))
 
 	if err := h.credentialSvc.Delete(ctx, *credential); err != nil {
@@ -651,7 +651,7 @@ func (h API) AutoOnboardAWS(c echo.Context) error {
 	}
 
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", credID.String()),
 	))
 
 	connections, err := h.credentialSvc.AWSOnboard(ctx, *credential)
@@ -705,7 +705,7 @@ func (h API) AutoOnboardAzure(c echo.Context) error {
 	}
 
 	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential name", *credential.Name),
+		attribute.String("credential id", credID.String()),
 	))
 
 	connections, err := h.credentialSvc.AzureOnboard(ctx, *credential)
