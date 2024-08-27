@@ -261,7 +261,7 @@ func (h API) List(c echo.Context) error {
 
 	health, _ := source.ParseHealthStatus(c.QueryParam("health"))
 
-	credentialTypes := model.ParseCredentialTypes(c.QueryParams()["credentialType"])
+	credentialTypes := model.ParseCredentialTypes(httpserver.QueryArrayParam(c, "credentialType"))
 	if len(credentialTypes) == 0 {
 		// take note if you want the change this,
 		// the default is used in the frontend AND the checkup worker.
