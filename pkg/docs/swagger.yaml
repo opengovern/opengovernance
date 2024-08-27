@@ -9607,6 +9607,19 @@ paths:
       summary: Create connection credentials
       tags:
       - onboard
+  /schedule/api/v1/analytics/trigger:
+    put:
+      description: Triggers an analytics job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: TriggerAnalyticsJob
+      tags:
+      - describe
   /schedule/api/v1/compliance/re-evaluate/{benchmark_id}:
     get:
       description: Get re-evaluate job for the given connection and control

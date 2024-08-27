@@ -5574,6 +5574,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/analytics/trigger": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers an analytics job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "TriggerAnalyticsJob",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/compliance/re-evaluate/{benchmark_id}": {
             "get": {
                 "security": [
