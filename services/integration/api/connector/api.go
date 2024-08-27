@@ -124,7 +124,7 @@ func (h API) CatalogMetrics(c echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(c, "connector"))
 
-	credentialTypes := model.ParseCredentialTypes(c.QueryParams()["credentialType"])
+	credentialTypes := model.ParseCredentialTypes(httpserver2.QueryArrayParam(c, "credentialType"))
 
 	connections, err := h.connectionSvc.ListWithFilter(ctx, connectors, credentialTypes, nil, nil, nil)
 	if err != nil {
