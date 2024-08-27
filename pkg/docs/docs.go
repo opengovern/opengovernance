@@ -2675,6 +2675,23 @@ const docTemplate = `{
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "auto-azure",
+                                "auto-aws",
+                                "manual-aws-org",
+                                "manual-azure-spn",
+                                "manual-azure-entra-id"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter by credential type",
+                        "name": "credentialType",
+                        "in": "query"
                     }
                 ],
                 "responses": {

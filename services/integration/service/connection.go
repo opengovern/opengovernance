@@ -172,6 +172,7 @@ func (h Connection) Count(ctx context.Context, t *source.Type) (int64, error) {
 func (h Connection) ListWithFilter(
 	ctx context.Context,
 	types []source.Type,
+	credTypes []model.CredentialType,
 	ids []string,
 	lifecycleState []model.ConnectionLifecycleState,
 	healthStates []source.HealthStatus,
@@ -179,7 +180,7 @@ func (h Connection) ListWithFilter(
 	ctx, span := h.tracer.Start(ctx, "list-with-filter")
 	defer span.End()
 
-	conns, err := h.repo.ListWithFilters(ctx, types, ids, lifecycleState, healthStates)
+	conns, err := h.repo.ListWithFilters(ctx, types, credTypes, ids, lifecycleState, healthStates)
 	if err != nil {
 		return nil, err
 	}

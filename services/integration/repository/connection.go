@@ -22,6 +22,7 @@ type Connection interface {
 	ListWithFilters(
 		context.Context,
 		[]source.Type,
+		[]model.CredentialType,
 		[]string,
 		[]model.ConnectionLifecycleState,
 		[]source.HealthStatus,
@@ -81,6 +82,7 @@ func (s ConnectionSQL) ListOfTypes(ctx context.Context, types []source.Type) ([]
 func (s ConnectionSQL) ListWithFilters(
 	ctx context.Context,
 	types []source.Type,
+	credTypes []model.CredentialType,
 	ids []string,
 	lifecycleState []model.ConnectionLifecycleState,
 	healthState []source.HealthStatus,
@@ -91,6 +93,10 @@ func (s ConnectionSQL) ListWithFilters(
 
 	if len(types) > 0 {
 		tx = tx.Where("sources.type IN ?", types)
+	}
+
+	if len(credTypes) > 0 {
+		tx = tx.Joins("left join credentials on sources.credential_id = credentials.id").Where("credentials.type IN ?", credTypes)
 	}
 
 	if len(ids) > 0 {

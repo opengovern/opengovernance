@@ -7709,6 +7709,19 @@ paths:
           type: string
         name: connector
         type: array
+      - collectionFormat: csv
+        description: filter by credential type
+        in: query
+        items:
+          enum:
+          - auto-azure
+          - auto-aws
+          - manual-aws-org
+          - manual-azure-spn
+          - manual-azure-entra-id
+          type: string
+        name: credentialType
+        type: array
       produces:
       - application/json
       responses:

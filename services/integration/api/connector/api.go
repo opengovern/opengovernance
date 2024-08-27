@@ -110,8 +110,9 @@ func (h API) List(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			integration
 //	@Produce		json
-//	@Param			connector	query		[]source.Type	false	"Connector"
-//	@Success		200			{object}	entity.CatalogMetrics
+//	@Param			connector		query		[]source.Type			false	"Connector"
+//	@Param			credentialType	query		[]entity.CredentialType	false	"filter by credential type"
+//	@Success		200				{object}	entity.CatalogMetrics
 //	@Router			/integration/api/v1/connectors/metrics [get]
 func (h API) CatalogMetrics(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
@@ -123,7 +124,9 @@ func (h API) CatalogMetrics(c echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(c, "connector"))
 
-	connections, err := h.connectionSvc.ListWithFilter(ctx, connectors, nil, nil, nil)
+	credentialTypes := model.ParseCredentialTypes(c.QueryParams()["credentialType"])
+
+	connections, err := h.connectionSvc.ListWithFilter(ctx, connectors, credentialTypes, nil, nil, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
