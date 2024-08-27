@@ -96,7 +96,7 @@ func (s ConnectionSQL) ListWithFilters(
 	}
 
 	if len(credTypes) > 0 {
-		tx = tx.Joins("left join credentials on sources.credential_id = credentials.id").Where("credentials.type IN ?", credTypes)
+		tx = tx.Joins("left join credentials on sources.credential_id = credentials.id").Where("credentials.credential_type IN ?", credTypes)
 	}
 
 	if len(ids) > 0 {

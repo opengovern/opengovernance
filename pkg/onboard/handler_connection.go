@@ -3,6 +3,7 @@ package onboard
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -137,14 +138,15 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 		}
 
 		assetDiscoveryAttached = true
-		for _, ruleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
+		for _, rawRuleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
+			ruleID := fmt.Sprintf(rawRuleID, azureCnf.TenantID)
 			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
 			if err != nil {
 				return connection, err
 			}
 
 			if !isAttached {
-				h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+				h.logger.Error("assets rule is not there", zap.String("ruleID", ruleID))
 				assetDiscoveryAttached = false
 			}
 		}
@@ -154,14 +156,15 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			return connection, err
 		}
 		spendAttached = true
-		for _, ruleID := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
+		for _, rawRule := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
+			ruleID := fmt.Sprintf(rawRule, azureCnf.SubscriptionID)
 			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
 			if err != nil {
 				return connection, err
 			}
 
 			if !isAttached {
-				h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+				h.logger.Error("spend rule is not there", zap.String("ruleID", ruleID))
 				spendAttached = false
 			}
 		}
