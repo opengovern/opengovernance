@@ -3,6 +3,8 @@ package credential
 import (
 	"encoding/json"
 	"errors"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
@@ -523,6 +525,26 @@ func (h API) CreateAWS(c echo.Context) error {
 		span.SetStatus(codes.Error, err.Error())
 
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if req.Config.AccountID == "" && req.Config.AccessKey != nil && req.Config.SecretKey != nil {
+		awsCred, err := kaytuAws.GetConfig(ctx, *req.Config.AccessKey, *req.Config.SecretKey, "", "", nil)
+		if err != nil {
+			h.logger.Error("cannot read aws credentials", zap.Error(err))
+
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot read aws credentials")
+		}
+		stsClient := sts.NewFromConfig(awsCred)
+		stsAccount, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			h.logger.Error("cannot read aws account", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot call GetCallerIdentity to read aws account")
+		}
+		if stsAccount.Account == nil {
+			h.logger.Error("cannot read aws account", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "GetCallerIdentity returned empty account id")
+		}
+		req.Config.AccountID = *stsAccount.Account
 	}
 
 	// Account id is passed as a pointer, so if it is empty, it'll be filled in the function.
