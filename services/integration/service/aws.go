@@ -764,7 +764,13 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return connection, err
+			healthMessage := err.Error()
+			connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, nil, nil, update)
+			if err != nil {
+				h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				return connection, err
+			}
+			return connection, nil
 		}
 		for _, policy := range page.AttachedPolicies {
 			policyARNs = append(policyARNs, *policy.PolicyArn)
