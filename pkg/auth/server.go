@@ -399,9 +399,7 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 		rb.WorkspaceID = workspaceID
 		rb.ScopedConnectionIDs = user.ConnectionIDs[workspaceID]
 
-		if workspaceName == "main" {
-			rb.RoleName = api3.AdminRole
-		} else if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
+		if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
 			rb.RoleName = rl
 		} else if user.GlobalAccess != nil {
 			rb.RoleName = *user.GlobalAccess

@@ -43,9 +43,24 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	}
 
 	if user == nil || user.UserId == "" {
+		wm, err := a.database.GetWorkspaceMapByName("main")
+		if err != nil {
+			return nil, err
+		}
+
+		users, err := a.SearchUsersByWorkspace(wm.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		role := api.ViewerRole
+		if len(users) == 0 {
+			role = api.AdminRole
+		}
+
 		var appMetadata Metadata
 		appMetadata.WorkspaceAccess = map[string]api.Role{
-			"main": api.AdminRole,
+			wm.ID: role,
 		}
 		appMetadataJson, err := json.Marshal(appMetadata)
 		if err != nil {
@@ -95,11 +110,6 @@ func (a *Service) GetUser(userID string) (*User, error) {
 		return nil, err
 	}
 
-	if resp.AppMetadata.WorkspaceAccess == nil {
-		resp.AppMetadata.WorkspaceAccess = map[string]api.Role{}
-	}
-	resp.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
-
 	return resp, nil
 }
 
@@ -115,11 +125,6 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		if u.AppMetadata.WorkspaceAccess == nil {
-			u.AppMetadata.WorkspaceAccess = map[string]api.Role{}
-		}
-		u.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
 
 		resp = append(resp, *u)
 	}
