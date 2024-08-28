@@ -370,7 +370,7 @@ func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential)
 
 	for _, account := range accountsToOnboard {
 		h.logger.Info("onboarding account", zap.String("accountID", *account.Id))
-		count, err := h.connSvc.Count(ctx, nil)
+		count, err := h.connSvc.Count(ctx, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -526,7 +526,7 @@ func (h Connection) NewAWS(
 		return model.Connection{}, err
 	}
 
-	currentConnections, err := h.Count(ctx, nil)
+	currentConnections, err := h.Count(ctx, nil, nil)
 	if err != nil {
 		h.logger.Error("cannot read number of the current connections", zap.Error(err))
 

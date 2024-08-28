@@ -256,7 +256,7 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 	for _, sub := range subsToOnboard {
 		h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
 
-		count, err := h.connSvc.Count(ctx, nil)
+		count, err := h.connSvc.Count(ctx, nil, nil)
 		if err != nil {
 			return nil, err
 		}

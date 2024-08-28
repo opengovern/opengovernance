@@ -32,7 +32,7 @@ type Connection interface {
 	Get(context.Context, []string) ([]model.Connection, error)
 
 	Count(context.Context) (int64, error)
-	CountOfType(context.Context, source.Type) (int64, error)
+	CountOfType(context.Context, *source.Type, []model.CredentialType) (int64, error)
 	CountByCredential(context.Context, string, []model.ConnectionLifecycleState, []source.HealthStatus) (int64, error)
 
 	Create(context.Context, model.Connection) error
@@ -143,10 +143,17 @@ func (s ConnectionSQL) Count(ctx context.Context) (int64, error) {
 	return c, nil
 }
 
-func (s ConnectionSQL) CountOfType(ctx context.Context, t source.Type) (int64, error) {
+func (s ConnectionSQL) CountOfType(ctx context.Context, t *source.Type, ct []model.CredentialType) (int64, error) {
 	var c int64
 
-	tx := s.db.DB.WithContext(ctx).Model(new(model.Connection)).Where("type = ?", t.String()).Count(&c)
+	tx := s.db.DB.WithContext(ctx).Model(new(model.Connection))
+	if t != nil {
+		tx = tx.Where("type = ?", t.String())
+	}
+	if len(ct) > 0 {
+		tx = tx.Joins("left join credentials on sources.credential_id = credentials.id").Where("credentials.credential_type IN ?", ct)
+	}
+	tx = tx.Count(&c)
 	if tx.Error != nil {
 		return 0, tx.Error
 	}
