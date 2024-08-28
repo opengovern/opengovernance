@@ -43,8 +43,17 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	}
 
 	if user == nil || user.UserId == "" {
+		var appMetadata Metadata
+		appMetadata.WorkspaceAccess = map[string]api.Role{
+			"main": api.AdminRole,
+		}
+		appMetadataJson, err := json.Marshal(appMetadata)
+		if err != nil {
+			return nil, err
+		}
+
 		appMetadataJsonb := pgtype.JSONB{}
-		err = appMetadataJsonb.Set([]byte(""))
+		err = appMetadataJsonb.Set(appMetadataJson)
 		if err != nil {
 			return nil, err
 		}
@@ -71,10 +80,6 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.AppMetadata.WorkspaceAccess == nil {
-		resp.AppMetadata.WorkspaceAccess = map[string]api.Role{}
-	}
-	resp.AppMetadata.WorkspaceAccess["main"] = api.AdminRole
 
 	return resp, nil
 }
