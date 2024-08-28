@@ -31,6 +31,7 @@ type AWSConnectionMetadata struct {
 
 type AWSCredentialMetadata struct {
 	AccountID                          string    `json:"account_id"`
+	AccountName                        *string   `json:"account_name"`
 	IamUserName                        *string   `json:"iam_user_name"`
 	IamApiKeyCreationDate              time.Time `json:"iam_api_key_creation_date"`
 	AttachedPolicies                   []string  `json:"attached_policies"`
@@ -53,6 +54,12 @@ func ExtractCredentialMetadata(accountID string, org *types.Organization, accoun
 		IamUserName:           nil,
 		IamApiKeyCreationDate: time.Time{},
 		AttachedPolicies:      nil,
+	}
+	for _, account := range accounts {
+		if account.Id != nil && *account.Id == accountID {
+			metadata.AccountName = account.Name
+			break
+		}
 	}
 
 	if org != nil {
