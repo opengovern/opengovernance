@@ -191,7 +191,20 @@ func (h API) Count(c echo.Context) error {
 		st = &t
 	}
 
-	count, err := h.connSvc.Count(ctx, st)
+	var count int64
+	var err error
+	if st != nil {
+		switch strings.ToLower(st.String()) {
+		case "entraid":
+			count, err = h.connSvc.Count(ctx, fp.Optional(source.CloudAzure), []model.CredentialType{model.CredentialTypeManualAzureEntraId})
+		case strings.ToLower(source.CloudAzure.String()):
+			count, err = h.connSvc.Count(ctx, fp.Optional(source.CloudAzure), []model.CredentialType{model.CredentialTypeAutoAzure, model.CredentialTypeManualAzureSpn})
+		default:
+			count, err = h.connSvc.Count(ctx, st, nil)
+		}
+	} else {
+		count, err = h.connSvc.Count(ctx, st, nil)
+	}
 	if err != nil {
 		h.logger.Error("failed to read connections from the service", zap.Error(err))
 
