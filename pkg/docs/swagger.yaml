@@ -9791,6 +9791,10 @@ paths:
         name: connection_id
         required: true
         type: string
+      - description: Force full discovery
+        in: query
+        name: force_full
+        type: boolean
       - collectionFormat: csv
         description: Resource Type
         in: query

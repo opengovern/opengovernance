@@ -350,6 +350,7 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200
 //	@Param			connection_id	path	string		true	"Connection ID"
+//	@Param			force_full		query	bool		false	"Force full discovery"
 //	@Param			resource_type	query	[]string	false	"Resource Type"
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
@@ -359,60 +360,73 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 
 	ctx2 := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	ctx2.Ctx = ctx.Request().Context()
-	src, err := h.Scheduler.onboardClient.GetSource(ctx2, connectionID)
-	if err != nil || src == nil {
+
+	var srcs []onboardapi.Connection
+	if connectionID == "all" {
+		var err error
+		srcs, err = h.Scheduler.onboardClient.ListSources(ctx2, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		} else {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 		}
-	}
-
-	resourceTypes := ctx.QueryParams()["resource_type"]
-
-	if resourceTypes == nil {
-		switch src.Connector {
-		case source.CloudAWS:
-			if forceFull {
-				resourceTypes = aws.ListResourceTypes()
+	} else {
+		src, err := h.Scheduler.onboardClient.GetSource(ctx2, connectionID)
+		if err != nil || src == nil {
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			} else {
-				resourceTypes = aws.ListFastDiscoveryResourceTypes()
-			}
-		case source.CloudAzure:
-			if forceFull {
-				resourceTypes = azure.ListResourceTypes()
-			} else {
-				resourceTypes = azure.ListFastDiscoveryResourceTypes()
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 			}
 		}
+		srcs = []onboardapi.Connection{*src}
 	}
 
 	dependencyIDs := make([]int64, 0)
-	for _, resourceType := range resourceTypes {
-		switch src.Connector {
-		case source.CloudAWS:
-			if _, err := aws.GetResourceType(resourceType); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+	for _, src := range srcs {
+		resourceTypes := ctx.QueryParams()["resource_type"]
+
+		if resourceTypes == nil {
+			switch src.Connector {
+			case source.CloudAWS:
+				if forceFull {
+					resourceTypes = aws.ListResourceTypes()
+				} else {
+					resourceTypes = aws.ListFastDiscoveryResourceTypes()
+				}
+			case source.CloudAzure:
+				if forceFull {
+					resourceTypes = azure.ListResourceTypes()
+				} else {
+					resourceTypes = azure.ListFastDiscoveryResourceTypes()
+				}
 			}
-		case source.CloudAzure:
-			if _, err := azure.GetResourceType(resourceType); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+		}
+
+		for _, resourceType := range resourceTypes {
+			switch src.Connector {
+			case source.CloudAWS:
+				if _, err := aws.GetResourceType(resourceType); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+				}
+			case source.CloudAzure:
+				if _, err := azure.GetResourceType(resourceType); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+				}
 			}
+			if !src.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type for connection: %s", resourceType))
+			}
+			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false)
+			if err == ErrJobInProgress {
+				return echo.NewHTTPError(http.StatusConflict, err.Error())
+			}
+			if err != nil {
+				return err
+			}
+			dependencyIDs = append(dependencyIDs, int64(daj.ID))
 		}
-		if !src.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type for connection: %s", resourceType))
-		}
-		daj, err := h.Scheduler.describe(*src, resourceType, false, costFullDiscovery, false)
-		if err == ErrJobInProgress {
-			return echo.NewHTTPError(http.StatusConflict, err.Error())
-		}
-		if err != nil {
-			return err
-		}
-		dependencyIDs = append(dependencyIDs, int64(daj.ID))
 	}
 
-	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
+	err := h.DB.CreateJobSequencer(&model2.JobSequencer{
 		DependencyList:   dependencyIDs,
 		DependencySource: model2.JobSequencerJobTypeDescribe,
 		NextJob:          model2.JobSequencerJobTypeAnalytics,
