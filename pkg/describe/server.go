@@ -556,8 +556,8 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
-//	@Param			benchmark_id	query	[]string	true	"Benchmark ID"
-//	@Param			connection_id	query	[]string	false	"Connection ID"
+//	@Param			benchmark_id	query	[]string	true	"Benchmark IDs leave empty for everything"
+//	@Param			connection_id	query	[]string	false	"Connection IDs leave empty for default (enabled connections)"
 //	@Router			/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
@@ -565,16 +565,27 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
 
-	for _, benchmarkID := range benchmarkIDs {
-		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+	var benchmarks []complianceapi.Benchmark
+	var err error
+	if len(benchmarkIDs) == 0 {
+		benchmarks, err = h.Scheduler.complianceClient.ListBenchmarks(clientCtx, nil)
 		if err != nil {
 			return fmt.Errorf("error while getting benchmarks: %v", err)
 		}
-
-		if benchmark == nil {
-			return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	} else {
+		for _, benchmarkID := range benchmarkIDs {
+			benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+			if err != nil {
+				return fmt.Errorf("error while getting benchmarks: %v", err)
+			}
+			if benchmark == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmark.ID))
+			}
+			benchmarks = append(benchmarks, *benchmark)
 		}
+	}
 
+	for _, benchmark := range benchmarks {
 		lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
@@ -585,7 +596,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 		}
 
-		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
+		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
@@ -601,23 +612,35 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
-//	@Param			benchmark_id	path	string	true	"Benchmark ID"
+//	@Param			benchmark_id	path	string	true	"Benchmark ID use 'all' for everything"
 //	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id}/summary [put]
 func (h HttpServer) TriggerConnectionsComplianceJobSummary(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	benchmarkID := ctx.Param("benchmark_id")
-	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
-	if err != nil {
-		return fmt.Errorf("error while getting benchmarks: %v", err)
+
+	var benchmarks []complianceapi.Benchmark
+	var err error
+	if benchmarkID == "all" {
+		benchmarks, err = h.Scheduler.complianceClient.ListBenchmarks(clientCtx, nil)
+		if err != nil {
+			return fmt.Errorf("error while getting benchmarks: %v", err)
+		}
+	} else {
+		benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+		if err != nil {
+			return fmt.Errorf("error while getting benchmarks: %v", err)
+		}
+		if benchmark == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmark.ID))
+		}
+		benchmarks = append(benchmarks, *benchmark)
 	}
 
-	if benchmark == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
-	}
-
-	err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmarkID, nil)
-	if err != nil {
-		return fmt.Errorf("error while creating compliance job summarizer: %v", err)
+	for _, benchmark := range benchmarks {
+		err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmark.ID, nil)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job summarizer: %v", err)
+		}
 	}
 	return ctx.JSON(http.StatusOK, "")
 }

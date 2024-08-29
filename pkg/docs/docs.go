@@ -5720,7 +5720,7 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Benchmark ID",
+                        "description": "Benchmark IDs leave empty for everything",
                         "name": "benchmark_id",
                         "in": "query",
                         "required": true
@@ -5731,7 +5731,7 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection ID",
+                        "description": "Connection IDs leave empty for default (enabled connections)",
                         "name": "connection_id",
                         "in": "query"
                     }
@@ -5802,7 +5802,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Benchmark ID",
+                        "description": "Benchmark ID use 'all' for everything",
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true

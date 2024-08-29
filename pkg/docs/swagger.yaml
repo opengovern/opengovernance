@@ -9688,7 +9688,7 @@ paths:
       description: Triggers a compliance job to run immediately for the given benchmark
       parameters:
       - collectionFormat: csv
-        description: Benchmark ID
+        description: Benchmark IDs leave empty for everything
         in: query
         items:
           type: string
@@ -9696,7 +9696,7 @@ paths:
         required: true
         type: array
       - collectionFormat: csv
-        description: Connection ID
+        description: Connection IDs leave empty for default (enabled connections)
         in: query
         items:
           type: string
@@ -9742,7 +9742,7 @@ paths:
     put:
       description: Triggers a compliance job to run immediately for the given benchmark
       parameters:
-      - description: Benchmark ID
+      - description: Benchmark ID use 'all' for everything
         in: path
         name: benchmark_id
         required: true

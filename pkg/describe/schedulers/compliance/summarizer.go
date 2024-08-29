@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
@@ -175,7 +176,17 @@ func (s *JobScheduler) finishComplianceJob(job model.ComplianceJob) error {
 	}
 
 	if len(failedRunners) > 0 {
-		return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed, fmt.Sprintf("%d runners failed", len(failedRunners)))
+		builder := strings.Builder{}
+		builder.WriteString(fmt.Sprintf("%d runners failed: [", len(failedRunners)))
+		for i, runner := range failedRunners {
+			builder.WriteString(fmt.Sprintf("%s", runner.FailureMessage))
+			if i != len(failedRunners)-1 {
+				builder.WriteString(", ")
+			}
+		}
+		builder.WriteString("]")
+
+		return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed, builder.String())
 	}
 
 	failedSummarizers, err := s.db.ListFailedSummarizersWithParentID(job.ID)
@@ -184,7 +195,16 @@ func (s *JobScheduler) finishComplianceJob(job model.ComplianceJob) error {
 	}
 
 	if len(failedSummarizers) > 0 {
-		return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed, fmt.Sprintf("%d summarizers failed", len(failedSummarizers)))
+		builder := strings.Builder{}
+		builder.WriteString(fmt.Sprintf("%d summarizers failed: [", len(failedSummarizers)))
+		for i, summarizer := range failedSummarizers {
+			builder.WriteString(fmt.Sprintf("%s", summarizer.FailureMessage))
+			if i != len(failedSummarizers)-1 {
+				builder.WriteString(", ")
+			}
+		}
+		builder.WriteString("]")
+		return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed, builder.String())
 	}
 
 	return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSucceeded, "")
