@@ -794,8 +794,16 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 				zap.Error(err),
 				zap.String("connectionId", connection.SourceId),
 			)
-
+			healthReason := err.Error()
+			_, err2 := h.credSvc.UpdateHealth(ctx, connection.Credential, source.HealthStatusUnhealthy, &healthReason, true)
+			if err2 != nil {
+				h.logger.Warn("failed to update credential health", zap.Error(err2), zap.String("connectionId", connection.SourceId))
+			}
 			return err
+		}
+		_, err = h.credSvc.UpdateHealth(ctx, connection.Credential, source.HealthStatusHealthy, nil, true)
+		if err != nil {
+			h.logger.Warn("failed to update credential health", zap.Error(err), zap.String("connectionId", connection.SourceId))
 		}
 
 		if !isHealthy {

@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -97,7 +98,7 @@ func (h Credential) NewAzureConnection(
 	return s
 }
 
-func (Credential) AzureMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
+func (h Credential) AzureMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -133,11 +134,22 @@ func (Credential) AzureMetadata(ctx context.Context, config connectors.AzureSubs
 	metadata.SpnName = *result.GetDisplayName()
 	metadata.ObjectId = *result.GetId()
 	metadata.SecretId = config.SecretID
+	metadata.TenantId = config.TenantID
+	metadata.ClientId = config.ClientID
 	for _, passwd := range result.GetPasswordCredentials() {
 		if passwd.GetKeyId() != nil && passwd.GetKeyId().String() == config.SecretID {
 			metadata.SecretId = config.SecretID
 			metadata.SecretExpirationDate = *passwd.GetEndDateTime()
 		}
+	}
+
+	entraExtraData, err := azure.CheckEntraIDPermission(azure.AuthConfig{
+		TenantID:     config.TenantID,
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+	})
+	if err == nil {
+		metadata.DefaultDomain = entraExtraData.DefaultDomain
 	}
 
 	return &metadata, nil
@@ -176,6 +188,16 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 	if err == nil && entraExtra.DefaultDomain != nil {
 		cred.Name = entraExtra.DefaultDomain
 	}
+
+	metadata, err := h.AzureMetadata(ctx, azureConfig)
+	if err != nil {
+		return false, err
+	}
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return false, err
+	}
+	cred.Metadata = jsonMetadata
 
 	return true, nil
 }
@@ -614,4 +636,27 @@ func CurrentAzureSubscription(ctx context.Context, subId string, authConfig azur
 		SubModel:       sub.Subscription,
 		SubTags:        tagList,
 	}, nil
+}
+
+func (h Credential) UpdateHealth(
+	ctx context.Context,
+	credential model.Credential,
+	healthStatus source.HealthStatus,
+	reason *string,
+	updateDatabase bool,
+) (model.Credential, error) {
+	credential.HealthStatus = healthStatus
+	credential.HealthReason = reason
+	credential.LastHealthCheckTime = time.Now()
+
+	if updateDatabase == true {
+		ctx, span := h.tracer.Start(ctx, "update-health")
+		defer span.End()
+
+		if err := h.repo.Update(ctx, &credential); err != nil {
+			return model.Credential{}, err
+		}
+	}
+
+	return credential, nil
 }

@@ -335,7 +335,7 @@ func NewAWSAutoOnboardedConnectionV2(ctx context.Context, org *types.Organizatio
 //	}
 //}
 
-func NewAzureCredential(name string, credentialType model.CredentialType, metadata *AzureCredentialMetadata) (*model.Credential, error) {
+func NewAzureCredential(name string, credentialType model.CredentialType, metadata *model.AzureCredentialMetadata) (*model.Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
@@ -387,18 +387,4 @@ type AWSCredentialMetadata struct {
 	OrganizationMasterAccountEmail     *string   `json:"organization_master_account_email"`
 	OrganizationMasterAccountId        *string   `json:"organization_master_account_id"`
 	OrganizationDiscoveredAccountCount *int      `json:"organization_discovered_account_count"`
-}
-
-type AzureCredentialMetadata struct {
-	DefaultDomain        *string   `json:"default_domain"`
-	SpnName              string    `json:"spn_name"`
-	TenantId             string    `json:"tenant_id"`
-	ClientId             string    `json:"client_id"`
-	ObjectId             string    `json:"object_id"`
-	SecretId             string    `json:"secret_id"`
-	SecretExpirationDate time.Time `json:"secret_expiration_date"`
-}
-
-func (m AzureCredentialMetadata) GetExpirationDate() time.Time {
-	return m.SecretExpirationDate
 }

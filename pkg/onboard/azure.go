@@ -118,7 +118,7 @@ func currentAzureSubscription(ctx context.Context, logger *zap.Logger, subId str
 	}, nil
 }
 
-func getAzureCredentialsMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig, credType model.CredentialType) (*AzureCredentialMetadata, error) {
+func getAzureCredentialsMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig, credType model.CredentialType) (*model.AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -141,7 +141,7 @@ func getAzureCredentialsMetadata(ctx context.Context, config connectors.AzureSub
 
 	graphClient := msgraphsdk.NewGraphServiceClient(requestAdaptor)
 
-	metadata := AzureCredentialMetadata{}
+	metadata := model.AzureCredentialMetadata{}
 	if config.ObjectID == "" {
 		return &metadata, nil
 	}

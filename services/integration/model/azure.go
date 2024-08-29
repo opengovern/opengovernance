@@ -13,7 +13,10 @@ import (
 )
 
 type AzureCredentialMetadata struct {
+	DefaultDomain        *string   `json:"default_domain"`
 	SpnName              string    `json:"spn_name"`
+	TenantId             string    `json:"tenant_id"`
+	ClientId             string    `json:"client_id"`
 	ObjectId             string    `json:"object_id"`
 	SecretId             string    `json:"secret_id"`
 	SecretExpirationDate time.Time `json:"secret_expiration_date"`
