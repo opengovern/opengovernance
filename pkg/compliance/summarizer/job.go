@@ -180,10 +180,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	}
 
 	// Delete old resource findings
-	err = w.deleteOldResourceFindings(ctx, j, resourceIds)
-	if err != nil {
-		w.logger.Error("failed to delete old resource findings", zap.Error(err))
-		return err
+	if len(resourceIds) > 0 {
+		err = w.deleteOldResourceFindings(ctx, j, resourceIds)
+		if err != nil {
+			w.logger.Error("failed to delete old resource findings", zap.Error(err))
+			return err
+		}
 	}
 
 	w.logger.Info("Finished summarizer",
