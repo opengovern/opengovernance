@@ -7,14 +7,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
+
+	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
@@ -556,15 +557,17 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
+	r.logger.Info("getting user", zap.String("userID", userID))
 	usr, err := r.auth0Service.GetUser(userID)
 	if err != nil {
+		r.logger.Error("failed to get user", zap.Error(err))
 		return err
 	}
 
 	if usr == nil {
 		return errors.New("failed to find user in auth0")
 	}
-
+	r.logger.Info("got user", zap.Any("user", usr))
 	u := userClaim{
 		WorkspaceAccess: map[string]api2.Role{
 			"kaytu": api2.EditorRole,
@@ -574,8 +577,10 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		ExternalUserID: usr.UserId,
 	}
 
+	r.logger.Info("creating token")
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
 	if err != nil {
+		r.logger.Error("failed to create token", zap.Error(err))
 		return err
 	}
 
@@ -584,18 +589,21 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	hash := sha512.New()
 	_, err = hash.Write([]byte(token))
 	if err != nil {
+		r.logger.Error("failed to hash token", zap.Error(err))
 		return err
 	}
 	keyHash := hex.EncodeToString(hash.Sum(nil))
+	r.logger.Info("hashed token")
 
 	currentKeyCount, err := r.db.CountApiKeysForUser(userID)
 	if err != nil {
+		r.logger.Error("failed to get user API Keys count", zap.Error(err))
 		return err
 	}
 	if currentKeyCount > 5 {
 		return echo.NewHTTPError(http.StatusNotAcceptable, "maximum number of keys for user reached")
 	}
-
+	r.logger.Info("creating API Key")
 	apikey := db.ApiKey{
 		Name:          req.Name,
 		Role:          api2.EditorRole,
@@ -607,8 +615,10 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		KeyHash:       keyHash,
 	}
 
+	r.logger.Info("adding API Key")
 	err = r.db.AddApiKey(&apikey)
 	if err != nil {
+		r.logger.Error("failed to add API Key", zap.Error(err))
 		return err
 	}
 
