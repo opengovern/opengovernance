@@ -557,7 +557,6 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	r.logger.Info("getting user", zap.String("userID", userID))
 	usr, err := r.auth0Service.GetUser(userID)
 	if err != nil {
 		r.logger.Error("failed to get user", zap.Error(err))
@@ -567,7 +566,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	if usr == nil {
 		return errors.New("failed to find user in auth0")
 	}
-	r.logger.Info("got user", zap.Any("user", usr))
+
 	u := userClaim{
 		WorkspaceAccess: map[string]api2.Role{
 			"kaytu": api2.EditorRole,
@@ -577,7 +576,9 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		ExternalUserID: usr.UserId,
 	}
 
-	r.logger.Info("creating token")
+	if r.kaytuPrivateKey == nil {
+		return errors.New("kaytu api key is disabled")
+	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
 	if err != nil {
 		r.logger.Error("failed to create token", zap.Error(err))
