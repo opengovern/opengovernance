@@ -53,7 +53,7 @@ func NewEsSinkService(ctx context.Context, logger *zap.Logger, elasticSearch ess
 		MaxMsgSize:   50 * 1024 * 1024,
 		Storage:      jetstream.FileStorage,
 		Replicas:     1,
-		Duplicates:   1 * time.Minute,
+		Duplicates:   0,
 		Compression:  jetstream.S2Compression,
 		ConsumerLimits: jetstream.StreamConsumerLimits{
 			MaxAckPending: 1000,
