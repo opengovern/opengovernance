@@ -3436,9 +3436,8 @@ definitions:
         minimum: 0
         type: integer
       name:
-        allOf:
-        - $ref: '#/definitions/source.Type'
         example: Azure
+        type: string
       shortDescription:
         example: This is a short Description for this connector
         type: string

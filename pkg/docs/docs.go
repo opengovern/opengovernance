@@ -11275,11 +11275,7 @@ const docTemplate = `{
                     "example": 10000
                 },
                 "name": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
+                    "type": "string",
                     "example": "Azure"
                 },
                 "shortDescription": {

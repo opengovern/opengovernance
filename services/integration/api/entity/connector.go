@@ -12,7 +12,7 @@ const (
 )
 
 type Connector struct {
-	Name                source.Type                   `json:"name" example:"Azure"`
+	Name                string                        `json:"name" example:"Azure"`
 	Label               string                        `json:"label" example:"Azure"`
 	ShortDescription    string                        `json:"shortDescription" example:"This is a short Description for this connector"`
 	Description         string                        `json:"description" example:"This is a long volume of words for just showing the case of the description for the demo and checking value purposes only and has no meaning whatsoever"`
