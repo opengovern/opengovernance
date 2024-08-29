@@ -435,14 +435,12 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 		err = kaytuAzure.CheckSPNAccessPermission(authConfig)
 
 		if err == nil {
-			var entraExtra *kaytuAzure.EntraIdExtraData
-			if cred.CredentialType == model.CredentialTypeManualAzureEntraId {
-				entraExtra, err = kaytuAzure.CheckEntraIDPermission(authConfig)
+			entraExtra, err2 := kaytuAzure.CheckEntraIDPermission(authConfig)
+			if err2 == nil && cred.Name == nil && entraExtra != nil {
+				cred.Name = entraExtra.DefaultDomain
+
 			}
 			if err == nil {
-				if cred.Name == nil && entraExtra != nil {
-					cred.Name = entraExtra.DefaultDomain
-				}
 				metadata, err := getAzureCredentialsMetadata(ctx, azureConfig, cred.CredentialType)
 				if err != nil {
 					return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())

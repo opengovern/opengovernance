@@ -2433,8 +2433,7 @@ const docTemplate = `{
                                 "auto-azure",
                                 "auto-aws",
                                 "manual-aws-org",
-                                "manual-azure-spn",
-                                "manual-azure-entra-id"
+                                "manual-azure-spn"
                             ],
                             "type": "string"
                         },
@@ -2700,8 +2699,7 @@ const docTemplate = `{
                                 "auto-azure",
                                 "auto-aws",
                                 "manual-aws-org",
-                                "manual-azure-spn",
-                                "manual-azure-entra-id"
+                                "manual-azure-spn"
                             ],
                             "type": "string"
                         },
@@ -2796,8 +2794,7 @@ const docTemplate = `{
                                 "auto-azure",
                                 "auto-aws",
                                 "manual-aws-org",
-                                "manual-azure-spn",
-                                "manual-azure-entra-id"
+                                "manual-azure-spn"
                             ],
                             "type": "string"
                         },
@@ -10109,9 +10106,6 @@ const docTemplate = `{
                 "clientSecret": {
                     "type": "string"
                 },
-                "credentialType": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_services_integration_api_entity.CredentialType"
-                },
                 "objectId": {
                     "type": "string"
                 },
@@ -11499,15 +11493,13 @@ const docTemplate = `{
                 "auto-azure",
                 "auto-aws",
                 "manual-aws-org",
-                "manual-azure-spn",
-                "manual-azure-entra-id"
+                "manual-azure-spn"
             ],
             "x-enum-varnames": [
                 "CredentialTypeAutoAzure",
                 "CredentialTypeAutoAws",
                 "CredentialTypeManualAwsOrganization",
-                "CredentialTypeManualAzureSpn",
-                "CredentialTypeManualAzureEntraId"
+                "CredentialTypeManualAzureSpn"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_services_integration_api_entity.ListConnectionsSummaryResponse": {

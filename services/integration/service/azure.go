@@ -172,14 +172,9 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 		return false, err
 	}
 
-	if cred.CredentialType == model.CredentialTypeManualAzureEntraId {
-		entraExtra, err := azure.CheckEntraIDPermission(authConfig)
-		if err != nil {
-			return false, err
-		}
-		if entraExtra.DefaultDomain != nil {
-			cred.Name = entraExtra.DefaultDomain
-		}
+	entraExtra, err := azure.CheckEntraIDPermission(authConfig)
+	if err == nil && entraExtra.DefaultDomain != nil {
+		cred.Name = entraExtra.DefaultDomain
 	}
 
 	return true, nil

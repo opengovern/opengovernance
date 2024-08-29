@@ -2,15 +2,12 @@ package connector
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"net/http"
-	"strings"
-
 	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	"github.com/kaytu-io/kaytu-engine/services/integration/model"
 	"github.com/kaytu-io/kaytu-engine/services/integration/service"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
+	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -19,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 type API struct {
@@ -69,14 +67,7 @@ func (h API) List(c echo.Context) error {
 		))
 
 		var count int64
-		switch strings.ToLower(c.Name.String()) {
-		case "entraid":
-			count, err = h.connectionSvc.Count(ctx, fp.Optional(source.CloudAzure), []model.CredentialType{model.CredentialTypeManualAzureEntraId})
-		case strings.ToLower(source.CloudAzure.String()):
-			count, err = h.connectionSvc.Count(ctx, fp.Optional(source.CloudAzure), []model.CredentialType{model.CredentialTypeAutoAzure, model.CredentialTypeManualAzureSpn})
-		default:
-			count, err = h.connectionSvc.Count(ctx, fp.Optional(c.Name), nil)
-		}
+		count, err = h.connectionSvc.Count(ctx, fp.Optional(c.Name), nil)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())

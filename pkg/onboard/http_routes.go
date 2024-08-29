@@ -430,10 +430,6 @@ func createAzureCredential(ctx context.Context, name string, credType model.Cred
 	switch credType {
 	case model.CredentialTypeManualAzureSpn:
 		name = metadata.SpnName
-	case model.CredentialTypeManualAzureEntraId:
-		if metadata.DefaultDomain != nil {
-			name = *metadata.DefaultDomain
-		}
 	}
 	cred, err := NewAzureCredential(name, credType, metadata)
 	if err != nil {
@@ -454,9 +450,6 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	}
 
 	credType := model.CredentialTypeManualAzureSpn
-	if config.CredentialType == entity.CredentialTypeManualAzureEntraId {
-		credType = model.CredentialTypeManualAzureEntraId
-	}
 
 	cred, err := createAzureCredential(ctx.Request().Context(), "", credType, config)
 	if err != nil {

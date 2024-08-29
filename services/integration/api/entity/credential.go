@@ -62,7 +62,6 @@ const (
 	CredentialTypeAutoAws               CredentialType = "auto-aws"
 	CredentialTypeManualAwsOrganization CredentialType = "manual-aws-org"
 	CredentialTypeManualAzureSpn        CredentialType = "manual-azure-spn"
-	CredentialTypeManualAzureEntraId    CredentialType = "manual-azure-entra-id"
 )
 
 type Credential struct {

@@ -154,6 +154,8 @@ func getAzureCredentialsMetadata(ctx context.Context, config connectors.AzureSub
 	metadata.SpnName = *result.GetDisplayName()
 	metadata.ObjectId = *result.GetId()
 	metadata.SecretId = config.SecretID
+	metadata.TenantId = config.TenantID
+	metadata.ClientId = config.ClientID
 	for _, passwd := range result.GetPasswordCredentials() {
 		if passwd.GetKeyId() != nil && passwd.GetKeyId().String() == config.SecretID {
 			metadata.SecretId = config.SecretID
@@ -161,15 +163,12 @@ func getAzureCredentialsMetadata(ctx context.Context, config connectors.AzureSub
 		}
 	}
 
-	if credType == model.CredentialTypeManualAzureEntraId {
-		entraExtraData, err := azure.CheckEntraIDPermission(azure.AuthConfig{
-			TenantID:     config.TenantID,
-			ClientID:     config.ClientID,
-			ClientSecret: config.ClientSecret,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to check entra id permission: %v", err)
-		}
+	entraExtraData, err := azure.CheckEntraIDPermission(azure.AuthConfig{
+		TenantID:     config.TenantID,
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+	})
+	if err == nil {
 		metadata.DefaultDomain = entraExtraData.DefaultDomain
 	}
 

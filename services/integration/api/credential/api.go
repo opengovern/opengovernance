@@ -436,8 +436,6 @@ func (h API) CreateAzure(c echo.Context) error {
 		credType = model.CredentialTypeAutoAzure
 	case entity.CredentialTypeManualAzureSpn:
 		credType = model.CredentialTypeManualAzureSpn
-	case entity.CredentialTypeManualAzureEntraId:
-		credType = model.CredentialTypeManualAzureEntraId
 	default:
 		credType = model.CredentialTypeManualAzureSpn
 	}

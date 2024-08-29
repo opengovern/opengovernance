@@ -25,7 +25,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	db2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/statemanager"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
@@ -640,13 +639,6 @@ func (s *Server) AddCredential(ctx echo.Context) error {
 		err = kaytuAzure.CheckSPNAccessPermission(authConfig)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-
-		if request.AzureConfig.CredentialType == entity.CredentialTypeManualAzureEntraId {
-			_, err = kaytuAzure.CheckEntraIDPermission(authConfig)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			}
 		}
 
 		identity, err := azidentity.NewClientSecretCredential(
