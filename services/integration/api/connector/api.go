@@ -83,7 +83,7 @@ func (h API) List(c echo.Context) error {
 
 		res = append(res, entity.ConnectorCount{
 			Connector: entity.Connector{
-				Name:                c.Name,
+				Name:                string(c.Name),
 				Label:               c.Label,
 				ShortDescription:    c.ShortDescription,
 				Description:         c.Description,
