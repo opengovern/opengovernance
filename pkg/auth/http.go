@@ -577,7 +577,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	}
 
 	if r.kaytuPrivateKey == nil {
-		return errors.New("kaytu api key is disabled")
+		return echo.NewHTTPError(http.StatusBadRequest, "kaytu api key is disabled")
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
 	if err != nil {
