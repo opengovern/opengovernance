@@ -38,7 +38,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/vault/api v1.14.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/kaytu-io/kaytu-aws-describer v0.56.9
+	github.com/kaytu-io/kaytu-aws-describer v0.57.8
 	github.com/kaytu-io/kaytu-azure-describer v0.36.0
 	github.com/kaytu-io/kaytu-util v0.0.0-20240829214119-de91fe05574d
 	github.com/kaytu-io/pennywise v1.7.16
