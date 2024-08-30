@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	uuid2 "github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/jq"
@@ -53,7 +54,7 @@ func NewEsSinkService(ctx context.Context, logger *zap.Logger, elasticSearch ess
 		MaxMsgSize:   50 * 1024 * 1024,
 		Storage:      jetstream.FileStorage,
 		Replicas:     1,
-		Duplicates:   1 * time.Minute,
+		Duplicates:   100 * time.Millisecond,
 		Compression:  jetstream.S2Compression,
 		ConsumerLimits: jetstream.StreamConsumerLimits{
 			MaxAckPending: 1000,
@@ -121,7 +122,8 @@ func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) ([]Failed
 				Err: err.Error(),
 			})
 		}
-		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s_-_-_%s", idx, id))
+		uuid := uuid2.New().String()
+		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s_-_-_%s_%s", idx, id, uuid))
 		if err != nil {
 			s.logger.Error("failed to produce message", zap.Error(err), zap.Any("doc", doc))
 			failedDocs = append(failedDocs, FailedDoc{

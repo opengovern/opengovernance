@@ -73,6 +73,7 @@ func (s *Scheduler) runDeleter(ctx context.Context) error {
 				s.logger.Error("failed to unmarshal query", zap.Error(err))
 				return err
 			}
+			s.logger.Info("deleting by query", zap.String("task", task.ID), zap.String("queryIndex", task.Source.QueryIndex), zap.Any("query", query))
 			_, err = es2.DeleteByQuery(ctx, s.esClient.ES(), []string{task.Source.QueryIndex}, query)
 			if err != nil {
 				s.logger.Error("failed to delete by query", zap.Error(err))
