@@ -25,14 +25,14 @@ func NewInformationService(cfg config.InformationConfig, logger *zap.Logger, csp
 }
 
 func (s *InformationService) RecordUsage(ctx context.Context, req shared_entities.CspmUsageRequest) error {
+
 	m := model.CspmUsage{
-		WorkspaceId:               req.WorkspaceId,
-		AwsOrganizationRootEmails: req.AwsOrganizationRootEmails,
-		AwsAccountCount:           req.AwsAccountCount,
-		AzureAdPrimaryDomains:     req.AzureAdPrimaryDomains,
-		AzureSubscriptionCount:    req.AzureSubscriptionCount,
-		Users:                     req.Users,
-		GatherTimestamp:           req.GatherTimestamp,
+		WorkspaceId:            req.WorkspaceId,
+		GatherTimestamp:        req.GatherTimestamp,
+		Hostname:               req.Hostname,
+		AwsAccountCount:        req.AwsAccountCount,
+		AzureSubscriptionCount: req.AzureSubscriptionCount,
+		ApproximateSpend:       req.ApproximateSpend,
 	}
 
 	if err := s.csmpUsageRepo.Create(ctx, &m); err != nil {
