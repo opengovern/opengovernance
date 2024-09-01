@@ -13,6 +13,7 @@ type CspmUsageRepo interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]model.CspmUsage, error)
 	Get(ctx context.Context, id string) (*model.CspmUsage, error)
+	GetLatestByWorkspaceIdAndHostname(ctx context.Context, workspaceId, hostname string) (*model.CspmUsage, error)
 }
 
 type CspmUsageRepoImpl struct {
@@ -49,6 +50,18 @@ func (r *CspmUsageRepoImpl) List(ctx context.Context) ([]model.CspmUsage, error)
 func (r *CspmUsageRepoImpl) Get(ctx context.Context, id string) (*model.CspmUsage, error) {
 	var m model.CspmUsage
 	tx := r.db.WithContext(ctx).Model(&model.CspmUsage{}).Where("id=?", id).First(&m)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &m, nil
+}
+
+func (r *CspmUsageRepoImpl) GetLatestByWorkspaceIdAndHostname(ctx context.Context, workspaceId, hostname string) (*model.CspmUsage, error) {
+	var m model.CspmUsage
+	tx := r.db.WithContext(ctx).Model(&model.CspmUsage{}).Where("workspace_id=? AND hostname=?", workspaceId, hostname).Order("gather_timestamp DESC").First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

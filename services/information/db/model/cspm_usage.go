@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"
 )
@@ -9,11 +8,11 @@ import (
 type CspmUsage struct {
 	gorm.Model
 
-	WorkspaceId               string         `json:"workspace_id" gorm:"index"`
-	AwsOrganizationRootEmails pq.StringArray `gorm:"type:citext[]"`
-	AwsAccountCount           int            `json:"aws_account_count"`
-	AzureAdPrimaryDomains     pq.StringArray `gorm:"type:citext[]"`
-	AzureSubscriptionCount    int            `json:"azure_account_count"`
-	Users                     pq.StringArray `gorm:"type:citext[]"`
-	GatherTimestamp           time.Time      `json:"gather_timestamp"`
+	WorkspaceId     string    `json:"workspace_id" gorm:"index:ws_id_hostname"`
+	GatherTimestamp time.Time `json:"gather_timestamp" gorm:"index:,sort:desc"`
+
+	Hostname               string `json:"hostname" gorm:"index:ws_id_hostname"`
+	AwsAccountCount        int    `json:"aws_account_count"`
+	AzureSubscriptionCount int    `json:"azure_account_count"`
+	ApproximateSpend       int    `json:"approximate_spend"`
 }

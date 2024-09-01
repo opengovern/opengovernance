@@ -6,10 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
+	shared_entities "github.com/kaytu-io/kaytu-util/pkg/api/shared-entities"
 	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/jq"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"math"
+	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
@@ -99,7 +104,71 @@ func (j *Job) Do(
 	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, sinkClient, inventoryClient, logger, config); err != nil {
 		fail(err)
 	}
+
+	if config.DoTelemetry {
+		// send telemetry
+		j.SendTelemetry(ctx, logger, config, onboardClient, inventoryClient)
+	}
+
 	return result
+}
+
+func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfig config.WorkerConfig, onboardClient onboardClient.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient) {
+	now := time.Now()
+
+	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
+
+	req := shared_entities.CspmUsageRequest{
+		WorkspaceId:            workerConfig.TelemetryWorkspaceID,
+		GatherTimestamp:        now,
+		Hostname:               workerConfig.TelemetryHostname,
+		AwsAccountCount:        0,
+		AzureSubscriptionCount: 0,
+		ApproximateSpend:       0,
+	}
+
+	connections, err := onboardClient.ListSources(&httpCtx, nil)
+	if err != nil {
+		logger.Error("failed to list sources", zap.Error(err))
+		return
+	}
+	for _, conn := range connections {
+		switch conn.Connector {
+		case source.CloudAWS:
+			req.AwsAccountCount++
+		case source.CloudAzure:
+			req.AzureSubscriptionCount++
+		}
+	}
+
+	connData, err := inventoryClient.ListConnectionsData(&httpCtx, nil, nil,
+		utils.GetPointer(now.AddDate(0, -1, 0)), &now, nil, true, false)
+	if err != nil {
+		logger.Error("failed to list connections data", zap.Error(err))
+		return
+	}
+	totalSpend := float64(0)
+	for _, conn := range connData {
+		if conn.TotalCost != nil {
+			totalSpend += *conn.TotalCost
+		}
+	}
+
+	req.ApproximateSpend = int(math.Floor(totalSpend/5000000)) * 5000000
+
+	url := fmt.Sprintf("%s/api/v1/information/usage", workerConfig.TelemetryBaseURL)
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		logger.Error("failed to marshal telemetry request", zap.Error(err))
+		return
+	}
+	var resp any
+	if statusCode, err := httpclient.DoRequest(httpCtx.Ctx, http.MethodPost, url, httpCtx.ToHeaders(), reqBytes, &resp); err != nil {
+		logger.Error("failed to send telemetry", zap.Error(err), zap.Int("status_code", statusCode), zap.String("url", url), zap.Any("req", req), zap.Any("resp", resp))
+		return
+	}
+
+	logger.Info("sent telemetry", zap.String("url", url))
 }
 
 func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
