@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/goccy/go-yaml"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -43,43 +44,43 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	err = filepath.Walk(config.ConfigzGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.AssetsGitPath, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateItem(logger, orm, path, info, true)
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 
-	err = filepath.Walk(config.ConfigzGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.SpendGitPath, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateItem(logger, orm, path, info, false)
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 
-	err = filepath.Walk(config.ConfigzGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.FinderPopularGitPath, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateFinderItem(logger, orm, path, info, true)
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 
-	err = filepath.Walk(config.ConfigzGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(config.FinderOthersGitPath, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			return populateFinderItem(logger, orm, path, info, false)
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 
