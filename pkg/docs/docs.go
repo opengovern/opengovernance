@@ -5883,6 +5883,12 @@ const docTemplate = `{
                         "description": "Resource Type",
                         "name": "resource_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Cost discovery",
+                        "name": "cost_discovery",
+                        "in": "query"
                     }
                 ],
                 "responses": {

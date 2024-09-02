@@ -352,10 +352,12 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 //	@Param			connection_id	path	string		true	"Connection ID"
 //	@Param			force_full		query	bool		false	"Force full discovery"
 //	@Param			resource_type	query	[]string	false	"Resource Type"
+//	@Param			cost_discovery	query	bool		false	"Cost discovery"
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
 	forceFull := ctx.QueryParam("force_full") == "true"
+	costDiscovery := ctx.QueryParam("cost_discovery") == "true"
 	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
 
 	ctx2 := &httpclient.Context{UserRole: apiAuth.InternalRole}
@@ -385,18 +387,27 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		resourceTypes := ctx.QueryParams()["resource_type"]
 
 		if resourceTypes == nil {
-			switch src.Connector {
-			case source.CloudAWS:
-				if forceFull {
-					resourceTypes = aws.ListResourceTypes()
-				} else {
-					resourceTypes = aws.ListFastDiscoveryResourceTypes()
+			if costDiscovery {
+				switch src.Connector {
+				case source.CloudAWS:
+					resourceTypes = []string{"AWS::CostExplorer::ByServiceDaily"}
+				case source.CloudAzure:
+					resourceTypes = []string{"Microsoft.CostManagement/CostByResourceType"}
 				}
-			case source.CloudAzure:
-				if forceFull {
-					resourceTypes = azure.ListResourceTypes()
-				} else {
-					resourceTypes = azure.ListFastDiscoveryResourceTypes()
+			} else {
+				switch src.Connector {
+				case source.CloudAWS:
+					if forceFull {
+						resourceTypes = aws.ListResourceTypes()
+					} else {
+						resourceTypes = aws.ListFastDiscoveryResourceTypes()
+					}
+				case source.CloudAzure:
+					if forceFull {
+						resourceTypes = azure.ListResourceTypes()
+					} else {
+						resourceTypes = azure.ListFastDiscoveryResourceTypes()
+					}
 				}
 			}
 		}

@@ -9794,6 +9794,10 @@ paths:
           type: string
         name: resource_type
         type: array
+      - description: Cost discovery
+        in: query
+        name: cost_discovery
+        type: boolean
       produces:
       - application/json
       responses:
