@@ -95,12 +95,14 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 
 	content, err := os.ReadFile(path)
 	if err != nil {
+		logger.Error("failure in reading file", zap.String("path", path), zap.Error(err))
 		return err
 	}
 
 	var metric Metric
 	err = yaml.Unmarshal(content, &metric)
 	if err != nil {
+		logger.Error("failure in unmarshal", zap.String("path", path), zap.Error(err))
 		return err
 	}
 
@@ -175,7 +177,7 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	}).Create(dbMetric).Error
 
 	if err != nil {
-		logger.Error("failure in insert", zap.Error(err))
+		logger.Error("failure in insert", zap.String("path", path), zap.Error(err))
 		return err
 	}
 
@@ -199,6 +201,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	var item SmartQuery
 	err = yaml.Unmarshal(content, &item)
 	if err != nil {
+		logger.Error("failure in unmarshal", zap.String("path", path), zap.Error(err))
 		return err
 	}
 

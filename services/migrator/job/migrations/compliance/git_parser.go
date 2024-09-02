@@ -101,12 +101,14 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
+				g.logger.Error("failed to read control", zap.String("path", path), zap.Error(err))
 				return err
 			}
 
 			var control Control
 			err = yaml.Unmarshal(content, &control)
 			if err != nil {
+				g.logger.Error("failed to unmarshal control", zap.String("path", path), zap.Error(err))
 				return err
 			}
 			tags := make([]db.ControlTag, 0, len(control.Tags))
@@ -231,12 +233,14 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 
 		content, err := os.ReadFile(path)
 		if err != nil {
+			g.logger.Error("failed to read benchmark", zap.String("path", path), zap.Error(err))
 			return err
 		}
 
 		var obj Benchmark
 		err = yaml.Unmarshal(content, &obj)
 		if err != nil {
+			g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
 			return err
 		}
 		benchmarks = append(benchmarks, obj)
