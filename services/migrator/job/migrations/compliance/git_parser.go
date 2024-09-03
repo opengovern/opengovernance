@@ -190,6 +190,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				Title:              control.Title,
 				Description:        control.Description,
 				Tags:               tags,
+				Connector:          control.Connector,
 				Enabled:            true,
 				Benchmarks:         nil,
 				Severity:           types.ParseFindingSeverity(control.Severity),
@@ -201,7 +202,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				q := db.Query{
 					ID:             control.ID,
 					QueryToExecute: control.Query.QueryToExecute,
-					Connector:      control.Query.Connector,
+					Connector:      control.Connector,
 					PrimaryTable:   control.Query.PrimaryTable,
 					ListOfTables:   control.Query.ListOfTables,
 					Engine:         control.Query.Engine,
@@ -216,7 +217,6 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				}
 				g.queries = append(g.queries, q)
 				p.QueryID = &control.ID
-				p.Connector = q.Connector
 			}
 			g.controls = append(g.controls, p)
 		}

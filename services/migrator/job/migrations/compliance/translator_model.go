@@ -19,6 +19,7 @@ type Benchmark struct {
 type Control struct {
 	ID                 string              `json:"ID" yaml:"ID"`
 	Title              string              `json:"Title" yaml:"Title"`
+	Connector          []string            `json:"Connector" yaml:"Connector"`
 	Description        string              `json:"Description" yaml:"Description"`
 	Query              *shared.Query       `json:"Query" yaml:"Query"`
 	ManualVerification bool                `json:"ManualVerification" yaml:"ManualVerification"`

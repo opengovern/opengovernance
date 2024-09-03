@@ -14,7 +14,9 @@ type Metric struct {
 }
 
 type SmartQuery struct {
-	Connectors []source.Type `json:"connectors" yaml:"connectors"`
-	Title      string        `json:"title" yaml:"title"`
-	Query      string        `json:"query" yaml:"query"`
+	Title          string        `json:"title" yaml:"Title"`
+	Description    string        `json:"description" yaml:"Description"`
+	Connectors     []source.Type `json:"connectors" yaml:"Connectors"`
+	QueryToExecute string        `json:"queryToExecute" yaml:"QueryToExecute"`
+	Engine         string        `json:"engine" yaml:"Engine"`
 }

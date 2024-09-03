@@ -214,7 +214,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		ID:         id,
 		Connectors: connectors,
 		Title:      item.Title,
-		Query:      item.Query,
+		Query:      item.QueryToExecute,
 		IsPopular:  isPopular,
 	}
 
