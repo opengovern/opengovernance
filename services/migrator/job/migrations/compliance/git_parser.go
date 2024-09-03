@@ -267,17 +267,15 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 
 		b := db.Benchmark{
-			ID:          o.ID,
-			Title:       o.Title,
-			DisplayCode: o.ReferenceCode,
-			Description: o.Description,
-			Enabled:     o.Enabled,
-			Managed:     o.Managed,
-			AutoAssign:  o.AutoAssign,
-			Baseline:    o.Baseline,
-			Tags:        tags,
-			Children:    nil,
-			Controls:    nil,
+			ID:                o.ID,
+			Title:             o.Title,
+			DisplayCode:       o.ReferenceCode,
+			Description:       o.Description,
+			AutoAssign:        o.AutoAssign,
+			TracksDriftEvents: o.TracksDriftEvents,
+			Tags:              tags,
+			Children:          nil,
+			Controls:          nil,
 		}
 		var connectors []source.Type
 		connectorMap := make(map[string]bool)

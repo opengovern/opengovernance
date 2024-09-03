@@ -518,10 +518,6 @@ definitions:
         description: Whether the benchmark is auto assigned or not
         example: true
         type: boolean
-      baseline:
-        description: Whether the benchmark is baseline or not
-        example: true
-        type: boolean
       category:
         description: Benchmark category
         type: string
@@ -562,10 +558,6 @@ definitions:
         description: Benchmark document URI
         example: benchmarks/azure_cis_v140.md
         type: string
-      enabled:
-        description: Whether the benchmark is enabled or not
-        example: true
-        type: boolean
       id:
         description: Benchmark ID
         example: azure_cis_v140
@@ -573,10 +565,6 @@ definitions:
       logoURI:
         description: Benchmark logo URI
         type: string
-      managed:
-        description: Whether the benchmark is managed or not
-        example: true
-        type: boolean
       referenceCode:
         description: Benchmark display code
         example: CIS 1.4.0
@@ -592,6 +580,10 @@ definitions:
         description: Benchmark title
         example: Azure CIS v1.4.0
         type: string
+      tracksDriftEvents:
+        description: Whether the benchmark tracks drift events or not
+        example: true
+        type: boolean
       updatedAt:
         description: Benchmark last update date
         example: "2020-01-01T00:00:00Z"
@@ -679,10 +671,6 @@ definitions:
         description: Whether the benchmark is auto assigned or not
         example: true
         type: boolean
-      baseline:
-        description: Whether the benchmark is baseline or not
-        example: true
-        type: boolean
       category:
         description: Benchmark category
         type: string
@@ -733,10 +721,6 @@ definitions:
         description: Benchmark document URI
         example: benchmarks/azure_cis_v140.md
         type: string
-      enabled:
-        description: Whether the benchmark is enabled or not
-        example: true
-        type: boolean
       evaluatedAt:
         example: "2020-01-01T00:00:00Z"
         type: string
@@ -750,10 +734,6 @@ definitions:
       logoURI:
         description: Benchmark logo URI
         type: string
-      managed:
-        description: Whether the benchmark is managed or not
-        example: true
-        type: boolean
       referenceCode:
         description: Benchmark display code
         example: CIS 1.4.0
@@ -775,6 +755,10 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
         type: array
+      tracksDriftEvents:
+        description: Whether the benchmark tracks drift events or not
+        example: true
+        type: boolean
       updatedAt:
         description: Benchmark last update date
         example: "2020-01-01T00:00:00Z"
