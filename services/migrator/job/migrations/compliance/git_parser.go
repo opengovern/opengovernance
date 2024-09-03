@@ -269,7 +269,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		b := db.Benchmark{
 			ID:                o.ID,
 			Title:             o.Title,
-			DisplayCode:       o.ReferenceCode,
+			DisplayCode:       o.SectionCode,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,

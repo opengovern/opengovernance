@@ -5,7 +5,7 @@ import "github.com/kaytu-io/kaytu-engine/services/migrator/job/migrations/shared
 type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`
 	Title             string              `json:"Title" yaml:"Title"`
-	ReferenceCode     string              `json:"ReferenceCode" yaml:"ReferenceCode"`
+	SectionCode       string              `json:"SectionCode" yaml:"SectionCode"`
 	Description       string              `json:"Description" yaml:"Description"`
 	Children          []string            `json:"Children" yaml:"Children"`
 	Tags              map[string][]string `json:"Tags" yaml:"Tags"`
