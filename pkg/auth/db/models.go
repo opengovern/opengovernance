@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+type Configuration struct {
+	gorm.Model
+	Key   string
+	Value string
+}
+
 type ApiKey struct {
 	gorm.Model
 	Name          string

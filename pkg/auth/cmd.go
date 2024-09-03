@@ -20,6 +20,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
+	"crypto/rand"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -121,6 +122,33 @@ func start(ctx context.Context) error {
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
+	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse auth0InviteTTL=%s due to %v", auth0InviteTTL, err)
+	}
+
+	// setup postgres connection
+	cfg := postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      conf.PostgreSQL.DB,
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+
+	adb := db.Database{Orm: orm}
+	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
+
+	err = adb.Initialize()
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+
 	if kaytuKeyEnabledStr == "" {
 		kaytuKeyEnabledStr = "false"
 	}
@@ -159,33 +187,88 @@ func start(ctx context.Context) error {
 			panic(err)
 		}
 		kaytuPrivateKey = pri.(*rsa.PrivateKey)
-	}
+	} else {
+		keyPair, err := adb.GetKeyPair()
+		if err != nil {
+			panic(err)
+		}
 
-	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse auth0InviteTTL=%s due to %v", auth0InviteTTL, err)
-	}
+		if len(keyPair) == 0 {
+			kaytuPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+			if err != nil {
+				panic(fmt.Sprintf("Error generating RSA key: %v", err))
+			}
+			kaytuPublicKey = &kaytuPrivateKey.PublicKey
 
-	// setup postgres connection
-	cfg := postgres.Config{
-		Host:    conf.PostgreSQL.Host,
-		Port:    conf.PostgreSQL.Port,
-		User:    conf.PostgreSQL.Username,
-		Passwd:  conf.PostgreSQL.Password,
-		DB:      conf.PostgreSQL.DB,
-		SSLMode: conf.PostgreSQL.SSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
-	if err != nil {
-		return fmt.Errorf("new postgres client: %w", err)
-	}
+			b, err := x509.MarshalPKIXPublicKey(kaytuPublicKey)
+			if err != nil {
+				panic(err)
+			}
+			bp := pem.EncodeToMemory(&pem.Block{
+				Type:    "RSA PUBLIC KEY",
+				Headers: nil,
+				Bytes:   b,
+			})
+			str := base64.StdEncoding.EncodeToString(bp)
+			err = adb.AddConfiguration(&db.Configuration{
+				Key:   "public_key",
+				Value: str,
+			})
+			if err != nil {
+				panic(err)
+			}
 
-	adb := db.Database{Orm: orm}
-	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
+			b, err = x509.MarshalPKCS8PrivateKey(kaytuPrivateKey)
+			if err != nil {
+				panic(err)
+			}
+			bp = pem.EncodeToMemory(&pem.Block{
+				Type:    "RSA PRIVATE KEY",
+				Headers: nil,
+				Bytes:   b,
+			})
+			str = base64.StdEncoding.EncodeToString(bp)
+			err = adb.AddConfiguration(&db.Configuration{
+				Key:   "private_key",
+				Value: str,
+			})
+			if err != nil {
+				panic(err)
+			}
 
-	err = adb.Initialize()
-	if err != nil {
-		return fmt.Errorf("new postgres client: %w", err)
+		} else {
+			for _, k := range keyPair {
+				if k.Key == "public_key" {
+					b, err := base64.StdEncoding.DecodeString(k.Value)
+					if err != nil {
+						return fmt.Errorf("public key decode: %w", err)
+					}
+					block, _ := pem.Decode(b)
+					if block == nil {
+						return fmt.Errorf("failed to decode my private key")
+					}
+					pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+					if err != nil {
+						return err
+					}
+					kaytuPublicKey = pub.(*rsa.PublicKey)
+				} else if k.Key == "private_key" {
+					b, err := base64.StdEncoding.DecodeString(k.Value)
+					if err != nil {
+						return fmt.Errorf("private key decode: %w", err)
+					}
+					block, _ := pem.Decode(b)
+					if block == nil {
+						panic("failed to decode private key")
+					}
+					pri, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+					if err != nil {
+						panic(err)
+					}
+					kaytuPrivateKey = pri.(*rsa.PrivateKey)
+				}
+			}
+		}
 	}
 
 	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,

@@ -18,9 +18,29 @@ func (db Database) Initialize() error {
 		&ApiKey{},
 		&WorkspaceMap{},
 		&User{},
+		&Configuration{},
 	)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db Database) GetKeyPair() ([]Configuration, error) {
+	var s []Configuration
+	tx := db.Orm.Model(&Configuration{}).
+		Where("key = 'private_key' or key = 'public_key'").Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) AddConfiguration(c *Configuration) error {
+	tx := db.Orm.Create(c)
+	if tx.Error != nil {
+		return tx.Error
 	}
 
 	return nil
