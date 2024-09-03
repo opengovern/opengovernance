@@ -79,6 +79,7 @@ func (s *JobScheduler) buildRunners(
 
 		callers := runner.Caller{
 			RootBenchmark:      rootBenchmarkID,
+			TracksDriftEvents:  benchmark.TracksDriftEvents,
 			ParentBenchmarkIDs: append(parentBenchmarkIDs, benchmarkID),
 			ControlID:          control.ID,
 			ControlSeverity:    control.Severity,
