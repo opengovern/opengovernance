@@ -124,6 +124,12 @@ func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) erro
 		}
 		controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: authApi.InternalRole}, parameters.ControlIDs, nil)
 
+		rootBenchmark, err := s.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.InternalRole}, parameters.BenchmarkID)
+		if err != nil {
+			s.logger.Error("failed to get benchmark", zap.Error(err))
+			return err
+		}
+
 		runners := make([]*model.ComplianceRunner, 0, len(parameters.ConnectionIDs)*len(controls))
 		for _, control := range controls {
 			parentPaths, err := s.getParentBenchmarkPaths(parameters.BenchmarkID, control.ID)
@@ -131,11 +137,13 @@ func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) erro
 				s.logger.Error("no parent paths found", zap.String("benchmarkID", parameters.BenchmarkID), zap.String("controlID", control.ID))
 				continue
 			}
+
 			for _, connectionID := range parameters.ConnectionIDs {
 				callers := make([]runner.Caller, 0, len(parentPaths))
 				for _, path := range parentPaths {
 					caller := runner.Caller{
 						RootBenchmark:      parameters.BenchmarkID,
+						TracksDriftEvents:  rootBenchmark.TracksDriftEvents,
 						ParentBenchmarkIDs: path,
 						ControlID:          control.ID,
 						ControlSeverity:    control.Severity,

@@ -7096,11 +7096,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "baseline": {
-                    "description": "Whether the benchmark is baseline or not",
-                    "type": "boolean",
-                    "example": true
-                },
                 "category": {
                     "description": "Benchmark category",
                     "type": "string"
@@ -7152,11 +7147,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "benchmarks/azure_cis_v140.md"
                 },
-                "enabled": {
-                    "description": "Whether the benchmark is enabled or not",
-                    "type": "boolean",
-                    "example": true
-                },
                 "id": {
                     "description": "Benchmark ID",
                     "type": "string",
@@ -7165,11 +7155,6 @@ const docTemplate = `{
                 "logoURI": {
                     "description": "Benchmark logo URI",
                     "type": "string"
-                },
-                "managed": {
-                    "description": "Whether the benchmark is managed or not",
-                    "type": "boolean",
-                    "example": true
                 },
                 "referenceCode": {
                     "description": "Benchmark display code",
@@ -7190,6 +7175,11 @@ const docTemplate = `{
                     "description": "Benchmark title",
                     "type": "string",
                     "example": "Azure CIS v1.4.0"
+                },
+                "tracksDriftEvents": {
+                    "description": "Whether the benchmark tracks drift events or not",
+                    "type": "boolean",
+                    "example": true
                 },
                 "updatedAt": {
                     "description": "Benchmark last update date",
@@ -7317,11 +7307,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "baseline": {
-                    "description": "Whether the benchmark is baseline or not",
-                    "type": "boolean",
-                    "example": true
-                },
                 "category": {
                     "description": "Benchmark category",
                     "type": "string"
@@ -7388,11 +7373,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "benchmarks/azure_cis_v140.md"
                 },
-                "enabled": {
-                    "description": "Whether the benchmark is enabled or not",
-                    "type": "boolean",
-                    "example": true
-                },
                 "evaluatedAt": {
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
@@ -7409,11 +7389,6 @@ const docTemplate = `{
                 "logoURI": {
                     "description": "Benchmark logo URI",
                     "type": "string"
-                },
-                "managed": {
-                    "description": "Whether the benchmark is managed or not",
-                    "type": "boolean",
-                    "example": true
                 },
                 "referenceCode": {
                     "description": "Benchmark display code",
@@ -7443,6 +7418,11 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
                     }
+                },
+                "tracksDriftEvents": {
+                    "description": "Whether the benchmark tracks drift events or not",
+                    "type": "boolean",
+                    "example": true
                 },
                 "updatedAt": {
                     "description": "Benchmark last update date",

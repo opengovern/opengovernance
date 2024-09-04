@@ -190,6 +190,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				Title:              control.Title,
 				Description:        control.Description,
 				Tags:               tags,
+				Connector:          control.Connector,
 				Enabled:            true,
 				Benchmarks:         nil,
 				Severity:           types.ParseFindingSeverity(control.Severity),
@@ -201,7 +202,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				q := db.Query{
 					ID:             control.ID,
 					QueryToExecute: control.Query.QueryToExecute,
-					Connector:      control.Query.Connector,
+					Connector:      control.Connector,
 					PrimaryTable:   control.Query.PrimaryTable,
 					ListOfTables:   control.Query.ListOfTables,
 					Engine:         control.Query.Engine,
@@ -216,7 +217,6 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				}
 				g.queries = append(g.queries, q)
 				p.QueryID = &control.ID
-				p.Connector = q.Connector
 			}
 			g.controls = append(g.controls, p)
 		}
@@ -267,17 +267,15 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 
 		b := db.Benchmark{
-			ID:          o.ID,
-			Title:       o.Title,
-			DisplayCode: o.ReferenceCode,
-			Description: o.Description,
-			Enabled:     o.Enabled,
-			Managed:     o.Managed,
-			AutoAssign:  o.AutoAssign,
-			Baseline:    o.Baseline,
-			Tags:        tags,
-			Children:    nil,
-			Controls:    nil,
+			ID:                o.ID,
+			Title:             o.Title,
+			DisplayCode:       o.SectionCode,
+			Description:       o.Description,
+			AutoAssign:        o.AutoAssign,
+			TracksDriftEvents: o.TracksDriftEvents,
+			Tags:              tags,
+			Children:          nil,
+			Controls:          nil,
 		}
 		var connectors []source.Type
 		connectorMap := make(map[string]bool)

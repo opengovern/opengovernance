@@ -25,6 +25,7 @@ import (
 
 type Caller struct {
 	RootBenchmark      string
+	TracksDriftEvents  bool
 	ParentBenchmarkIDs []string
 	ControlID          string
 	ControlSeverity    types.FindingSeverity
@@ -181,6 +182,14 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		newFindings := make([]types.Finding, 0, len(findings))
 		findingsEvents := make([]types.FindingEvent, 0, len(findings))
 
+		trackDrifts := false
+		for _, f := range j.ExecutionPlan.Callers {
+			if f.TracksDriftEvents {
+				trackDrifts = true
+				break
+			}
+		}
+
 		filtersJSON, _ := json.Marshal(filters)
 		w.logger.Info("Old finding query", zap.Int("length", len(findings)), zap.String("filters", string(filtersJSON)))
 		paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
@@ -242,7 +251,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						fs.EsIndex = idx
 
 						w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
-						findingsEvents = append(findingsEvents, fs)
+						if trackDrifts {
+							findingsEvents = append(findingsEvents, fs)
+						}
 						newFindings = append(newFindings, f)
 					} else {
 						w.logger.Info("Old finding found, it's inactive. doing nothing", zap.Any("finding", f))
@@ -279,7 +290,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					fs.EsIndex = idx
 
 					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
-					findingsEvents = append(findingsEvents, fs)
+					if trackDrifts {
+						findingsEvents = append(findingsEvents, fs)
+					}
 				} else {
 					w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", newFinding))
 					newFinding.LastTransition = f.LastTransition
@@ -317,17 +330,21 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			fs.EsIndex = idx
 
 			w.logger.Info("New finding", zap.Any("finding", newFinding), zap.Any("event", fs))
-			findingsEvents = append(findingsEvents, fs)
+			if trackDrifts {
+				findingsEvents = append(findingsEvents, fs)
+			}
 			newFindings = append(newFindings, newFinding)
 		}
 
 		var docs []es.Doc
-		for _, fs := range findingsEvents {
-			keys, idx := fs.KeysAndIndex()
-			fs.EsID = es.HashOf(keys...)
-			fs.EsIndex = idx
+		if trackDrifts {
+			for _, fs := range findingsEvents {
+				keys, idx := fs.KeysAndIndex()
+				fs.EsID = es.HashOf(keys...)
+				fs.EsIndex = idx
 
-			docs = append(docs, fs)
+				docs = append(docs, fs)
+			}
 		}
 		for _, f := range newFindings {
 			keys, idx := f.KeysAndIndex()

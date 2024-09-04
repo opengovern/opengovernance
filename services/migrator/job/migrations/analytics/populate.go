@@ -211,17 +211,18 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	}
 
 	dbMetric := inventory.SmartQuery{
-		ID:         id,
-		Connectors: connectors,
-		Title:      item.Title,
-		Query:      item.Query,
-		IsPopular:  isPopular,
+		ID:          id,
+		Connectors:  connectors,
+		Title:       item.Title,
+		Description: item.Description,
+		Engine:      item.Engine,
+		Query:       item.QueryToExecute,
+		IsPopular:   isPopular,
 	}
 
 	err = dbc.Model(&inventory.SmartQuery{}).Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "id"}}, // key column
-		DoUpdates: clause.AssignmentColumns([]string{"connectors", "title", "query",
-			"is_popular"}), // column needed to be updated
+		Columns:   []clause.Column{{Name: "id"}},                                                                             // key column
+		DoUpdates: clause.AssignmentColumns([]string{"connectors", "title", "query", "description", "engine", "is_popular"}), // column needed to be updated
 	}).Create(dbMetric).Error
 
 	if err != nil {

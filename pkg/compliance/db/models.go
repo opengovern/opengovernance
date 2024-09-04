@@ -29,18 +29,16 @@ type BenchmarkAssignment struct {
 }
 
 type Benchmark struct {
-	ID          string `gorm:"primarykey"`
-	Title       string
-	DisplayCode string
-	Connector   pq.StringArray `gorm:"type:text[]"`
-	Description string
-	LogoURI     string
-	Category    string
-	DocumentURI string
-	Enabled     bool
-	Managed     bool
-	AutoAssign  bool
-	Baseline    bool
+	ID                string `gorm:"primarykey"`
+	Title             string
+	DisplayCode       string
+	Connector         pq.StringArray `gorm:"type:text[]"`
+	Description       string
+	LogoURI           string
+	Category          string
+	DocumentURI       string
+	AutoAssign        bool
+	TracksDriftEvents bool
 
 	Tags    []BenchmarkTag      `gorm:"foreignKey:BenchmarkID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string `gorm:"-:all"`
@@ -53,20 +51,18 @@ type Benchmark struct {
 
 func (b Benchmark) ToApi() api.Benchmark {
 	ba := api.Benchmark{
-		ID:            b.ID,
-		Title:         b.Title,
-		ReferenceCode: b.DisplayCode,
-		Description:   b.Description,
-		LogoURI:       b.LogoURI,
-		Category:      b.Category,
-		DocumentURI:   b.DocumentURI,
-		Enabled:       b.Enabled,
-		Managed:       b.Managed,
-		AutoAssign:    b.AutoAssign,
-		Baseline:      b.Baseline,
-		CreatedAt:     b.CreatedAt,
-		UpdatedAt:     b.UpdatedAt,
-		Tags:          b.GetTagsMap(),
+		ID:                b.ID,
+		Title:             b.Title,
+		ReferenceCode:     b.DisplayCode,
+		Description:       b.Description,
+		LogoURI:           b.LogoURI,
+		Category:          b.Category,
+		DocumentURI:       b.DocumentURI,
+		AutoAssign:        b.AutoAssign,
+		TracksDriftEvents: b.TracksDriftEvents,
+		CreatedAt:         b.CreatedAt,
+		UpdatedAt:         b.UpdatedAt,
+		Tags:              b.GetTagsMap(),
 	}
 	if b.Connector != nil {
 		ba.Connectors = source.ParseTypes(b.Connector)
