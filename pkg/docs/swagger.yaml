@@ -6468,6 +6468,30 @@ paths:
       summary: Get benchmark controls
       tags:
       - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/settings:
+    post:
+      consumes:
+      - application/json
+      description: Changes benchmark settings.
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        type: string
+      - description: tracksDriftEvents
+        in: query
+        name: tracksDriftEvents
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: change benchmark settings
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
     get:
       consumes:

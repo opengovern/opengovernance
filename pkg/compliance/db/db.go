@@ -576,3 +576,11 @@ func (db Database) ListControlsBare(ctx context.Context) ([]Control, error) {
 	}
 	return s, nil
 }
+
+func (db Database) UpdateBenchmarkTrackDriftEvents(ctx context.Context, benchmarkId string, tracksDriftEvents bool) error {
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Where("id = ?", benchmarkId).Update("tracks_drift_events", tracksDriftEvents)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

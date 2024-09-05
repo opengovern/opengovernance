@@ -918,6 +918,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/settings": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Changes benchmark settings.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "change benchmark settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "tracksDriftEvents",
+                        "name": "tracksDriftEvents",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/benchmarks/{benchmark_id}/summary": {
             "get": {
                 "security": [

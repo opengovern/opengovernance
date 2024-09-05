@@ -55,6 +55,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.InternalRole))
 	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
+	benchmarks.POST("/:benchmark_id/settings", httpserver2.AuthorizeHandler(h.ChangeBenchmarkSettings, authApi.AdminRole))
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
 	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
 	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
@@ -1831,6 +1832,33 @@ func (h *HttpHandler) CountFindingEvents(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// ChangeBenchmarkSettings godoc
+//
+//	@Summary		change benchmark settings
+//	@Description	Changes benchmark settings.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id		path	string	false	"BenchmarkID"
+//	@Param			tracksDriftEvents	query	bool	false	"tracksDriftEvents"
+//	@Success		200
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/settings [post]
+func (h *HttpHandler) ChangeBenchmarkSettings(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	tracksDriftEvents := echoCtx.QueryParam("tracksDriftEvents") == "true"
+	if len(echoCtx.QueryParam("tracksDriftEvents")) > 0 {
+		benchmarkID := echoCtx.Param("benchmark_id")
+		err := h.db.UpdateBenchmarkTrackDriftEvents(ctx, benchmarkID, tracksDriftEvents)
+		if err != nil {
+			return err
+		}
+	}
+
+	return echoCtx.NoContent(http.StatusOK)
 }
 
 // GetFindingEventFilterValues godoc
