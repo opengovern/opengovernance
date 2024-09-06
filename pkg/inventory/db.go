@@ -24,6 +24,7 @@ func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&ResourceType{},
 		&SmartQuery{},
+		&SmartQueryTag{},
 		&SmartQueryHistory{},
 		&ResourceTypeTag{},
 		&analyticsDb.AnalyticMetric{},
