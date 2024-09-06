@@ -17,6 +17,11 @@ type ResourceTypeTag struct {
 	ResourceType string `gorm:"primaryKey; type:citext"`
 }
 
+type SmartQueryTag struct {
+	model.Tag
+	SmartQueryID string `gorm:"primaryKey"`
+}
+
 type SmartQuery struct {
 	ID          string         `gorm:"primarykey"`
 	Connectors  pq.StringArray `gorm:"type:text[]"`
@@ -25,6 +30,7 @@ type SmartQuery struct {
 	Query       string
 	Engine      string
 	IsPopular   bool
+	Tags        []SmartQueryTag `gorm:"foreignKey:SmartQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type SmartQueryHistory struct {
