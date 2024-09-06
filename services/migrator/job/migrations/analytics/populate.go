@@ -247,10 +247,12 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
-	err = tx.Model(&inventory.SmartQueryTag{}).Create(tags).Error
-	if err != nil {
-		logger.Error("failure in insert tags", zap.Error(err))
-		return err
+	if len(tags) > 0 {
+		err = tx.Model(&inventory.SmartQueryTag{}).Create(tags).Error
+		if err != nil {
+			logger.Error("failure in insert tags", zap.Error(err))
+			return err
+		}
 	}
 
 	err = tx.Commit().Error
