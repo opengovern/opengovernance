@@ -210,24 +210,54 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		connectors = append(connectors, string(c))
 	}
 
+	tx := dbc.Begin()
+	defer tx.Rollback()
+
+	tx.Model(&inventory.SmartQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.SmartQuery{})
+	tx.Model(&inventory.SmartQueryTag{}).Where("smart_query_id = ?", id).Unscoped().Delete(&inventory.SmartQueryTag{})
+
 	dbMetric := inventory.SmartQuery{
 		ID:          id,
 		Connectors:  connectors,
 		Title:       item.Title,
 		Description: item.Description,
-		Engine:      item.Engine,
-		Query:       item.QueryToExecute,
+		Engine:      item.Query.Engine,
+		Query:       item.Query.QueryToExecute,
 		IsPopular:   isPopular,
 	}
 
-	err = dbc.Model(&inventory.SmartQuery{}).Clauses(clause.OnConflict{
+	tags := make([]inventory.SmartQueryTag, 0, len(item.Tags))
+	for k, v := range item.Tags {
+		tag := inventory.SmartQueryTag{
+			SmartQueryID: id,
+			Tag: model.Tag{
+				Key:   k,
+				Value: v,
+			},
+		}
+		tags = append(tags, tag)
+	}
+
+	err = tx.Model(&inventory.SmartQuery{}).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},                                                                             // key column
 		DoUpdates: clause.AssignmentColumns([]string{"connectors", "title", "query", "description", "engine", "is_popular"}), // column needed to be updated
 	}).Create(dbMetric).Error
-
 	if err != nil {
-		logger.Error("failure in insert", zap.Error(err))
+		logger.Error("failure in insert query", zap.Error(err))
 		return err
 	}
+
+	err = tx.Model(&inventory.SmartQueryTag{}).Create(tags).Error
+	if err != nil {
+		logger.Error("failure in insert tags", zap.Error(err))
+		return err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		logger.Error("failure in commit", zap.Error(err))
+		return err
+	}
+
 	return nil
 }
