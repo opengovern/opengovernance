@@ -141,6 +141,11 @@ type ListQueryRequest struct {
 	TitleFilter string `json:"titleFilter"` // Specifies the Title
 }
 
+type ListQueryV2Request struct {
+	TitleFilter string              `json:"titleFilter"` // Specifies the Title
+	TagsFilter  map[string][]string `json:"tagsFilter"`
+}
+
 type ConnectionData struct {
 	ConnectionID         string     `json:"connectionID"`
 	Count                *int       `json:"count"`

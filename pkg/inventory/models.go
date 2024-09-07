@@ -22,6 +22,18 @@ type SmartQueryTag struct {
 	SmartQueryID string `gorm:"primaryKey"`
 }
 
+type SmartQueryTagsResult struct {
+	Key          string
+	UniqueValues []string
+}
+
+func (s SmartQueryTagsResult) ToApi() api.SmartQueryTagsResult {
+	return api.SmartQueryTagsResult{
+		Key:          s.Key,
+		UniqueValues: s.UniqueValues,
+	}
+}
+
 type SmartQuery struct {
 	ID          string         `gorm:"primarykey"`
 	Connectors  pq.StringArray `gorm:"type:text[]"`

@@ -69,6 +69,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2 := e.Group("/api/v2")
 
+	queryV2 := v2.Group("/query")
+	queryV2.GET("", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	queryV2.GET("/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
+
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api.ViewerRole))
 
@@ -2062,6 +2066,89 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(200, result)
+}
+
+// ListQueriesV2 godoc
+//
+//	@Summary		List smart queries
+//	@Description	Retrieving list of smart queries by specified filters and tags filters
+//	@Security		BearerToken
+//	@Tags			smart_query
+//	@Produce		json
+//	@Param			request	body		inventoryApi.ListQueryV2Request	true	"Request Body"
+//	@Success		200		{object}	[]inventoryApi.SmartQueryItem
+//	@Router			/inventory/api/v2/query [get]
+func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
+	var req inventoryApi.ListQueryV2Request
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var search *string
+	if len(req.TitleFilter) > 0 {
+		search = &req.TitleFilter
+	}
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetQueriesWithTagsFilters")
+
+	queries, err := h.db.GetQueriesWithTagsFilters(search, req.TagsFilter)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span.End()
+
+	var result []inventoryApi.SmartQueryItem
+	for _, item := range queries {
+		category := ""
+
+		tags := map[string]string{}
+		if item.IsPopular {
+			tags["popular"] = "true"
+		}
+		result = append(result, inventoryApi.SmartQueryItem{
+			ID:         item.ID,
+			Connectors: source.ParseTypes(item.Connectors),
+			Title:      item.Title,
+			Category:   category,
+			Query:      item.Query,
+			Tags:       tags,
+		})
+	}
+	return ctx.JSON(200, result)
+}
+
+// ListQueriesTags godoc
+//
+//	@Summary		List smart queries tags
+//	@Description	Retrieving list of smart queries by specified filters
+//	@Security		BearerToken
+//	@Tags			smart_query
+//	@Produce		json
+//	@Success		200		{object}	[]inventoryApi.SmartQueryTagsResult
+//	@Router			/inventory/api/v2/query/tags [get]
+func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetQueriesWithFilters")
+
+	smartQueriesTags, err := h.db.GetQueriesTags()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	res := make([]inventoryApi.SmartQueryTagsResult, 0, len(smartQueriesTags))
+	for _, history := range smartQueriesTags {
+		res = append(res, history.ToApi())
+	}
+
+	span.End()
+
+	return ctx.JSON(200, res)
 }
 
 // RunQuery godoc

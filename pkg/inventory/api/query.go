@@ -29,3 +29,8 @@ type SmartQueryHistory struct {
 	Query      string    `json:"query"`
 	ExecutedAt time.Time `json:"executed_at"`
 }
+
+type SmartQueryTagsResult struct {
+	Key          string
+	UniqueValues []string
+}

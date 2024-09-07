@@ -66,6 +66,64 @@ func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 	return res, nil
 }
 
+func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string) ([]SmartQuery, error) {
+	var s []SmartQuery
+
+	// Start with the base query for SmartQuery and preload tags
+	m := db.orm.Model(&SmartQuery{}).Preload("Tags")
+
+	// Add a filter for the title if provided
+	if search != nil {
+		m = m.Where("title LIKE ?", "%"+*search+"%")
+	}
+
+	// Add filtering by tag keys and values if any filters are provided
+	if len(tagFilters) > 0 {
+		// Iterate over the tag filters and build AND conditions
+		for key, values := range tagFilters {
+			// Since values are arrays, we use the PostgreSQL @> (contains) operator to filter
+			m = m.Joins("JOIN smart_query_tags t ON t.smart_query_id = smart_queries.id").
+				Where("t.key = ? AND t.value::text[] @> ?", key, pq.Array(values))
+		}
+	}
+
+	// Execute the query
+	tx := m.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	// Remove duplicates by SmartQuery ID
+	v := map[string]SmartQuery{}
+	for _, item := range s {
+		if _, ok := v[item.ID]; !ok {
+			v[item.ID] = item
+		}
+	}
+
+	// Prepare the final result slice
+	var res []SmartQuery
+	for _, val := range v {
+		res = append(res, val)
+	}
+
+	return res, nil
+}
+
+func (db Database) GetQueriesTags() ([]SmartQueryTagsResult, error) {
+	var results []SmartQueryTagsResult
+
+	// Execute the raw SQL query
+	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM smart_query_tags GROUP BY key"
+	err := db.orm.Raw(query).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 func (db Database) GetQueryHistory() ([]SmartQueryHistory, error) {
 	var history []SmartQueryHistory
 	tx := db.orm.Order("executed_at desc").Limit(3).Find(&history)
