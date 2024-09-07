@@ -213,8 +213,19 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	tx := dbc.Begin()
 	defer tx.Rollback()
 
-	tx.Model(&inventory.SmartQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.SmartQuery{})
-	tx.Model(&inventory.SmartQueryTag{}).Where("smart_query_id = ?", id).Unscoped().Delete(&inventory.SmartQueryTag{})
+	logger.Info("Query Update", zap.String("id", id), zap.Any("tags", item.Tags))
+
+	err = tx.Model(&inventory.SmartQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.SmartQuery{}).Error
+	if err != nil {
+		logger.Error("failure in deleting SmartQuery", zap.String("id", id), zap.Error(err))
+		return err
+	}
+
+	err = tx.Model(&inventory.SmartQueryTag{}).Where("smart_query_id = ?", id).Unscoped().Delete(&inventory.SmartQueryTag{}).Error
+	if err != nil {
+		logger.Error("failure in deleting SmartQueryTag", zap.String("smart_query_id", id), zap.Error(err))
+		return err
+	}
 
 	dbMetric := inventory.SmartQuery{
 		ID:          id,
@@ -247,19 +258,24 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
+	logger.Info("parsed the tags", zap.String("id", id), zap.Any("tags", tags))
+
 	if len(tags) > 0 {
-		err = tx.Model(&inventory.SmartQueryTag{}).Create(tags).Error
-		if err != nil {
-			logger.Error("failure in insert tags", zap.Error(err))
-			return err
+		for _, tag := range tags {
+			err = tx.Model(&inventory.SmartQueryTag{}).Create(tag).Error
+			if err != nil {
+				logger.Error("failure in insert tags", zap.Error(err))
+				return err
+			}
 		}
 	}
-
+	logger.Info("inserted tags", zap.String("id", id))
 	err = tx.Commit().Error
 	if err != nil {
 		logger.Error("failure in commit", zap.Error(err))
 		return err
 	}
+	logger.Info("commit finish", zap.String("id", id))
 
 	return nil
 }
