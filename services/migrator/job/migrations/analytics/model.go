@@ -21,5 +21,5 @@ type SmartQuery struct {
 	Description string              `json:"description" yaml:"Description"`
 	Connectors  []source.Type       `json:"connectors" yaml:"Connectors"`
 	Query       shared.Query        `json:"query" yaml:"Query"`
-	Tags        map[string][]string `json:"tags" yaml:"tags"`
+	Tags        map[string][]string `json:"tags" yaml:"Tags"`
 }
