@@ -3152,7 +3152,7 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Produce		json
-//	@Success		200		{object}	[]api.ControlTagsResult
+//	@Success		200	{object}	[]api.ControlTagsResult
 //	@Router			/compliance/api/v1/controls/tags [get]
 func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 	// trace :
@@ -3183,8 +3183,8 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.ListControlsFilter	true	"Request Body"
-//	@Success	200				{object}	[]api.Control
+//	@Param		request	body		api.ListControlsFilter	true	"Request Body"
+//	@Success	200		{object}	[]api.Control
 //	@Router		/compliance/api/v1/controls [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()

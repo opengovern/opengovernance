@@ -14,10 +14,6 @@ type State interface {
 
 func AllStates(db *db.Database, logger *zap.Logger) []State {
 	return []State{
-		WaitingForCredential{db: db, logger: logger},
 		Provisioning{},
-		Deleting{},
-		Reserved{},
 	}
-
 }

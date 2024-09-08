@@ -25,12 +25,12 @@ func NewEnsureDiscoveryFinished(
 }
 
 func (t *EnsureDiscoveryFinished) Requirements() []api3.TransactionID {
-	return []api3.TransactionID{api3.Transaction_EnsureCredentialOnboarded, api3.Transaction_CreateHelmRelease}
+	return []api3.TransactionID{api3.Transaction_EnsureWorkspacePodsRunning}
 }
 
 func (t *EnsureDiscoveryFinished) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	hctx := &httpclient.Context{UserRole: api2.InternalRole}
-	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
+	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", t.cfg.KaytuOctopusNamespace)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
 
 	status, err := schedulerClient.GetDescribeAllJobsStatus(hctx)

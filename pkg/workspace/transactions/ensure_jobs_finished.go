@@ -34,9 +34,9 @@ func (t *EnsureJobsFinished) Requirements() []api4.TransactionID {
 
 func (t *EnsureJobsFinished) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	hctx := &httpclient.Context{UserRole: api2.InternalRole}
-	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
+	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", t.cfg.KaytuOctopusNamespace)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
-	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
+	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", t.cfg.KaytuOctopusNamespace)
 	onboardClient := client3.NewOnboardServiceClient(onboardURL)
 
 	job, err := schedulerClient.GetAnalyticsJob(hctx, workspace.AnalyticsJobID)
