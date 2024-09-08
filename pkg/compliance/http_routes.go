@@ -3244,7 +3244,11 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		results = append(results, apiControl)
 	}
 
-	return echoCtx.JSON(http.StatusOK, results)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ID < results[j].ID
+	})
+
+	return echoCtx.JSON(http.StatusOK, utils.Paginate(req.PageNumber, req.PageSize, results))
 }
 
 func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string) ([]string, error) {

@@ -2117,7 +2117,12 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 			Tags:       tags,
 		})
 	}
-	return ctx.JSON(200, result)
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
+
+	return ctx.JSON(200, utils.Paginate(req.PageNumber, req.PageSize, result))
 }
 
 // ListQueriesTags godoc
