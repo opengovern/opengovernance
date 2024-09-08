@@ -3145,7 +3145,7 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// ListQueriesTags godoc
+// ListControlsTags godoc
 //
 //	@Summary		List controls tags
 //	@Description	Retrieving list of control possible tags
@@ -3229,8 +3229,47 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+	for _, status := range req.FindingFilters.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+	if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
+		lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+	}
+	if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
+		lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+	}
+	if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
+		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+	}
+	if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
+		evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+	}
+
+	var controlIDs []string
+	for _, c := range controls {
+		controlIDs = append(controlIDs, c.ID)
+	}
+
+	fRes, err := es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID, req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID, req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+
 	var results []api.Control
 	for _, control := range controls {
+		if count, ok := fRes[control.ID]; ok {
+			if count == 0 {
+				continue
+			}
+		} else {
+			continue
+		}
+
 		apiControl := control.ToApi()
 		apiControl.Connector = source.ParseTypes(control.Connector)
 

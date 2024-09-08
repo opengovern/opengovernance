@@ -3,6 +3,7 @@ package inventory
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -67,7 +68,7 @@ func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 	return res, nil
 }
 
-func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string) ([]SmartQuery, error) {
+func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string, connectors []string) ([]SmartQuery, error) {
 	var s []SmartQuery
 
 	// Start with the base query for SmartQuery and preload tags
@@ -76,6 +77,14 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 	// Add a filter for the title if provided
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
+	}
+
+	for i, c := range connectors {
+		connectors[i] = strings.ToLower(c)
+	}
+
+	if len(connectors) > 0 {
+		m = m.Where("smart_queries.connector::text[] @> ?", pq.Array(connectors))
 	}
 
 	// Add filtering by tag keys and values if any filters are provided
