@@ -68,7 +68,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	controls := v1.Group("/controls")
 	controls.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
-	controls.GET("/tags", httpserver2.AuthorizeHandler(h.ListQueriesTags, authApi.ViewerRole))
+	controls.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/trend", httpserver2.AuthorizeHandler(h.GetControlTrend, authApi.ViewerRole))
@@ -3154,7 +3154,7 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 //	@Produce		json
 //	@Success		200		{object}	[]api.ControlTagsResult
 //	@Router			/compliance/api/v1/controls/tags [get]
-func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
+func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithFilters")
@@ -3196,29 +3196,32 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 
 	var benchmarks []string
 
-	var rootBenchmarks []string
 	if len(req.RootBenchmark) > 0 {
+		var rootBenchmarks []string
 		for _, rootBenchmark := range req.RootBenchmark {
 			childBenchmarks, err := h.getChildBenchmarks(ctx, rootBenchmark)
 			if err != nil {
-				h.logger.Error("failed to fetch benchmarks from root", zap.Error(err))
-				return err
+				panic(err)
 			}
 			rootBenchmarks = append(rootBenchmarks, childBenchmarks...)
 		}
-	}
-
-	var parentBenchmarks map[string]bool
-	if len(req.ParentBenchmark) > 0 {
-		for _, parentBenchmark := range req.ParentBenchmark {
-			parentBenchmarks[parentBenchmark] = true
+		if len(req.ParentBenchmark) > 0 {
+			parentBenchmarks := make(map[string]bool)
+			for _, parentBenchmark := range req.ParentBenchmark {
+				parentBenchmarks[parentBenchmark] = true
+			}
+			for _, b := range rootBenchmarks {
+				if _, ok := parentBenchmarks[b]; ok {
+					benchmarks = append(benchmarks, b)
+				}
+			}
+		} else {
+			for _, b := range rootBenchmarks {
+				benchmarks = append(benchmarks, b)
+			}
 		}
-	}
-
-	for _, b := range rootBenchmarks {
-		if _, ok := parentBenchmarks[b]; ok {
-			benchmarks = append(benchmarks, b)
-		}
+	} else if len(req.ParentBenchmark) > 0 {
+		benchmarks = req.ParentBenchmark
 	}
 
 	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, benchmarks, req.Tags)

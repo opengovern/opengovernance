@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/lib/pq"
@@ -346,7 +347,7 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 func (db Database) ListControlsByFilter(ctx context.Context, connectors []string, benchmarkIDs []string, tagFilters map[string][]string) ([]Control, error) {
 	var s []Control
 
-	m := db.Orm.WithContext(ctx).Model(&Control{}).
+	m := db.Orm.WithContext(ctx).Model(&Control{}).Distinct("controls.*").
 		Preload("Tags").
 		Preload("Benchmarks")
 
@@ -365,16 +366,18 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 		}
 	}
 
-	if len(connectors) > 0 {
-		m = m.Where("connector::text[] @> ?", pq.Array(connectors))
+	for i, c := range connectors {
+		connectors[i] = strings.ToLower(c)
 	}
 
+	if len(connectors) > 0 {
+		m = m.Where("controls.connector::text[] @> ?", pq.Array(connectors))
+	}
+
+	fmt.Println("BenchmarkIDs", benchmarkIDs)
 	if len(benchmarkIDs) > 0 {
-		var benchmarks []Benchmark
-		for _, b := range benchmarkIDs {
-			benchmarks = append(benchmarks, Benchmark{ID: b})
-		}
-		m = m.Where(Control{Benchmarks: benchmarks})
+		m = m.Joins("JOIN benchmark_controls bc ON bc.control_id = controls.id").
+			Where("bc.benchmark_id IN ?", benchmarkIDs)
 	}
 
 	// Execute the query
