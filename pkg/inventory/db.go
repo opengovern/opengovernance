@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -79,11 +80,16 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 
 	// Add filtering by tag keys and values if any filters are provided
 	if len(tagFilters) > 0 {
-		// Iterate over the tag filters and build AND conditions
+		i := 0
 		for key, values := range tagFilters {
-			// Since values are arrays, we use the PostgreSQL @> (contains) operator to filter
-			m = m.Joins("JOIN smart_query_tags t ON t.smart_query_id = smart_queries.id").
-				Where("t.key = ? AND t.value::text[] @> ?", key, pq.Array(values))
+			// Generate unique alias for each join to avoid alias collision
+			alias := fmt.Sprintf("t%d", i)
+			joinCondition := fmt.Sprintf("JOIN smart_query_tags %s ON %s.smart_query_id = smart_queries.id", alias, alias)
+
+			// Use PostgreSQL array operator @> to filter by tag values (if array comparison is required)
+			m = m.Joins(joinCondition).Where(fmt.Sprintf("%s.key = ? AND %s.value::text[] @> ?", alias, alias), key, pq.Array(values))
+
+			i++ // Increment the alias index
 		}
 	}
 

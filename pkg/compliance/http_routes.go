@@ -67,6 +67,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
 	controls := v1.Group("/controls")
+	controls.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controls.GET("/tags", httpserver2.AuthorizeHandler(h.ListQueriesTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/trend", httpserver2.AuthorizeHandler(h.GetControlTrend, authApi.ViewerRole))
@@ -3141,6 +3143,123 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 	})
 
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// ListQueriesTags godoc
+//
+//	@Summary		List controls tags
+//	@Description	Retrieving list of control possible tags
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Produce		json
+//	@Success		200		{object}	[]api.ControlTagsResult
+//	@Router			/compliance/api/v1/controls/tags [get]
+func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetQueriesWithFilters")
+
+	controlsTags, err := h.db.GetControlsTags()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	res := make([]api.ControlTagsResult, 0, len(controlsTags))
+	for _, history := range controlsTags {
+		res = append(res, history.ToApi())
+	}
+
+	span.End()
+
+	return ctx.JSON(200, res)
+}
+
+// ListControlsFiltered godoc
+//
+//	@Summary	List controls filtered by connector, benchmark, tags
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param			request	body		api.ListControlsFilter	true	"Request Body"
+//	@Success	200				{object}	[]api.Control
+//	@Router		/compliance/api/v1/controls [get]
+func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	var req api.ListControlsFilter
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var benchmarks []string
+
+	var rootBenchmarks []string
+	if len(req.RootBenchmark) > 0 {
+		for _, rootBenchmark := range req.RootBenchmark {
+			childBenchmarks, err := h.getChildBenchmarks(ctx, rootBenchmark)
+			if err != nil {
+				h.logger.Error("failed to fetch benchmarks from root", zap.Error(err))
+				return err
+			}
+			rootBenchmarks = append(rootBenchmarks, childBenchmarks...)
+		}
+	}
+
+	var parentBenchmarks map[string]bool
+	if len(req.ParentBenchmark) > 0 {
+		for _, parentBenchmark := range req.ParentBenchmark {
+			parentBenchmarks[parentBenchmark] = true
+		}
+	}
+
+	for _, b := range rootBenchmarks {
+		if _, ok := parentBenchmarks[b]; ok {
+			benchmarks = append(benchmarks, b)
+		}
+	}
+
+	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, benchmarks, req.Tags)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var results []api.Control
+	for _, control := range controls {
+		apiControl := control.ToApi()
+		apiControl.Connector = source.ParseTypes(control.Connector)
+
+		apiControl.Query = &api.Query{
+			ID:             control.Query.ID,
+			QueryToExecute: control.Query.QueryToExecute,
+			PrimaryTable:   control.Query.PrimaryTable,
+			Engine:         control.Query.Engine,
+			ListOfTables:   control.Query.ListOfTables,
+		}
+		results = append(results, apiControl)
+	}
+
+	return echoCtx.JSON(http.StatusOK, results)
+}
+
+func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string) ([]string, error) {
+	var benchmarks []string
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
+	if err != nil {
+		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
+		return nil, err
+	}
+	for _, child := range benchmark.Children {
+		childBenchmarks, err := h.getChildBenchmarks(ctx, child.ID)
+		if err != nil {
+			return nil, err
+		}
+		benchmarks = append(benchmarks, childBenchmarks...)
+	}
+	benchmarks = append(benchmarks, benchmarkId)
+	return benchmarks, nil
 }
 
 // ListControlsSummary godoc

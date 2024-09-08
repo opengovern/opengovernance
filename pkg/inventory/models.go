@@ -24,7 +24,7 @@ type SmartQueryTag struct {
 
 type SmartQueryTagsResult struct {
 	Key          string
-	UniqueValues []string
+	UniqueValues pq.StringArray `gorm:"type:text[]"`
 }
 
 func (s SmartQueryTagsResult) ToApi() api.SmartQueryTagsResult {

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/lib/pq"
@@ -340,6 +341,101 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 	}
 
 	return s, nil
+}
+
+func (db Database) ListControlsByFilter(ctx context.Context, connectors []string, benchmarkIDs []string, tagFilters map[string][]string) ([]Control, error) {
+	var s []Control
+
+	m := db.Orm.WithContext(ctx).Model(&Control{}).
+		Preload("Tags").
+		Preload("Benchmarks")
+
+	// Add filtering by tag keys and values if any filters are provided
+	if len(tagFilters) > 0 {
+		i := 0
+		for key, values := range tagFilters {
+			// Generate unique alias for each join to avoid alias collision
+			alias := fmt.Sprintf("t%d", i)
+			joinCondition := fmt.Sprintf("JOIN control_tags %s ON %s.control_id = controls.id", alias, alias)
+
+			// Use PostgreSQL array operator @> to filter by tag values (if array comparison is required)
+			m = m.Joins(joinCondition).Where(fmt.Sprintf("%s.key = ? AND %s.value::text[] @> ?", alias, alias), key, pq.Array(values))
+
+			i++ // Increment the alias index
+		}
+	}
+
+	if len(connectors) > 0 {
+		m = m.Where("connector::text[] @> ?", pq.Array(connectors))
+	}
+
+	if len(benchmarkIDs) > 0 {
+		var benchmarks []Benchmark
+		for _, b := range benchmarkIDs {
+			benchmarks = append(benchmarks, Benchmark{ID: b})
+		}
+		m = m.Where(Control{Benchmarks: benchmarks})
+	}
+
+	// Execute the query
+	tx := m.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	v := map[string]Control{}
+	for _, item := range s {
+		if _, ok := v[item.ID]; !ok {
+			v[item.ID] = item
+		}
+	}
+
+	var res []Control
+	for _, val := range v {
+		res = append(res, val)
+	}
+
+	queryIds := make([]string, 0, len(res))
+	for _, control := range res {
+		if control.QueryID != nil {
+			queryIds = append(queryIds, *control.QueryID)
+		}
+	}
+	var queriesMap map[string]Query
+	if len(queryIds) > 0 {
+		var queries []Query
+		qtx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
+		if qtx.Error != nil {
+			return nil, qtx.Error
+		}
+		queriesMap = make(map[string]Query)
+		for _, query := range queries {
+			queriesMap[query.ID] = query
+		}
+	}
+
+	for i, c := range res {
+		if c.QueryID != nil {
+			v := queriesMap[*c.QueryID]
+			res[i].Query = &v
+		}
+	}
+
+	return res, nil
+}
+
+func (db Database) GetControlsTags() ([]ControlTagsResult, error) {
+	var results []ControlTagsResult
+
+	// Execute the raw SQL query
+	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM control_tags GROUP BY key"
+	err := db.Orm.Raw(query).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func (db Database) GetControls(ctx context.Context, controlIDs []string, tags map[string][]string) ([]Control, error) {

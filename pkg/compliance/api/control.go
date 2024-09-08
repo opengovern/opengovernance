@@ -55,3 +55,15 @@ type ControlTrendDatapoint struct {
 	FailedConnectionCount int `json:"failedConnectionCount"`
 	TotalConnectionCount  int `json:"totalConnectionCount"`
 }
+
+type ListControlsFilter struct {
+	Connector       []string            `json:"connector" example:"Azure"`
+	RootBenchmark   []string            `json:"rootBenchmark"`
+	ParentBenchmark []string            `json:"parentBenchmark"`
+	Tags            map[string][]string `json:"tags"`
+}
+
+type ControlTagsResult struct {
+	Key          string
+	UniqueValues []string
+}
