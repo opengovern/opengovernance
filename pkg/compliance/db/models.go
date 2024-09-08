@@ -97,6 +97,18 @@ type BenchmarkTag struct {
 	BenchmarkID string `gorm:"primaryKey"`
 }
 
+type ControlTagsResult struct {
+	Key          string
+	UniqueValues pq.StringArray `gorm:"type:text[]"`
+}
+
+func (s ControlTagsResult) ToApi() api.ControlTagsResult {
+	return api.ControlTagsResult{
+		Key:          s.Key,
+		UniqueValues: s.UniqueValues,
+	}
+}
+
 type Control struct {
 	ID          string `gorm:"primaryKey"`
 	Title       string
