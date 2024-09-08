@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
@@ -30,7 +29,7 @@ func NewDatabase(settings config.Config, logger *zap.Logger) (*Database, error) 
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
-	if err := orm.AutoMigrate(&Organization{}, &Workspace{}, &Credential{}, &MasterCredential{}, &WorkspaceTransaction{}); err != nil {
+	if err := orm.AutoMigrate(&Organization{}, &Workspace{}, &WorkspaceTransaction{}); err != nil {
 		return nil, fmt.Errorf("gorm migrate: %w", err)
 	}
 	return &Database{Orm: orm}, nil
@@ -38,24 +37,6 @@ func NewDatabase(settings config.Config, logger *zap.Logger) (*Database, error) 
 
 func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.Orm.Model(&Workspace{}).Create(m).Error
-}
-
-func (s *Database) GetReservedWorkspace(includeReserving bool) (*Workspace, error) {
-	var workspace Workspace
-	statuses := []api.StateID{api.StateID_Reserved}
-	if includeReserving {
-		statuses = append(statuses, api.StateID_Reserving)
-	}
-	if err := s.Orm.Model(&Workspace{}).Preload(clause.Associations).
-		Where("status IN ?", statuses).
-		First(&workspace).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return &workspace, nil
 }
 
 func (s *Database) UpdateWorkspace(m *Workspace) error {
@@ -66,24 +47,8 @@ func (s *Database) UpdateWorkspaceStatus(id string, status api.StateID) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status).Error
 }
 
-func (s *Database) UpdateWorkspaceOpenSearchEndpoint(id string, openSearchEndpoint string) error {
-	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("open_search_endpoint", openSearchEndpoint).Error
-}
-
-func (s *Database) UpdateWorkspacePipelineEndpoint(id string, endpoint string) error {
-	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("pipeline_endpoint", endpoint).Error
-}
-
 func (s *Database) SetWorkspaceCreated(id string) error {
 	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("is_created", true).Error
-}
-
-func (s *Database) SetWorkspaceBootstrapInputFinished(id string) error {
-	return s.Orm.Model(&Workspace{}).Where("id = ?", id).Update("is_bootstrap_input_finished", true).Error
-}
-
-func (s *Database) DeleteWorkspace(id string) error {
-	return s.Orm.Where("id = ?", id).Unscoped().Delete(&Workspace{}).Error
 }
 
 func (s *Database) GetWorkspace(id string) (*Workspace, error) {
@@ -168,10 +133,6 @@ func (s *Database) ListOrganizations() ([]*Organization, error) {
 
 func (s *Database) UpdateOrganization(newOrganization Organization) error {
 	return s.Orm.Model(&Organization{}).Where("id = ?", newOrganization.ID).Updates(newOrganization).Error
-}
-
-func (s *Database) UpdateCredentialWSID(prevId string, newID string) error {
-	return s.Orm.Model(&Credential{}).Where("workspace_id = ?", prevId).Update("workspace_id", newID).Error
 }
 
 func (s *Database) UpdateWorkspaceAWSUser(workspaceID string, arn *string) error {

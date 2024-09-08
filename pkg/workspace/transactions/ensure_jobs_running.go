@@ -35,11 +35,11 @@ func (t *EnsureJobsRunning) Requirements() []api.TransactionID {
 
 func (t *EnsureJobsRunning) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {
 	hctx := &httpclient.Context{UserRole: api2.InternalRole}
-	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", workspace.ID)
+	schedulerURL := strings.ReplaceAll(t.cfg.Scheduler.BaseURL, "%NAMESPACE%", t.cfg.KaytuOctopusNamespace)
 	schedulerClient := client2.NewSchedulerServiceClient(schedulerURL)
-	complianceURL := strings.ReplaceAll(t.cfg.Compliance.BaseURL, "%NAMESPACE%", workspace.ID)
+	complianceURL := strings.ReplaceAll(t.cfg.Compliance.BaseURL, "%NAMESPACE%", t.cfg.KaytuOctopusNamespace)
 	complianceClient := client.NewComplianceClient(complianceURL)
-	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", workspace.ID)
+	onboardURL := strings.ReplaceAll(t.cfg.Onboard.BaseURL, "%NAMESPACE%", t.cfg.KaytuOctopusNamespace)
 	onboardClient := client3.NewOnboardServiceClient(onboardURL)
 
 	// run analytics if not running

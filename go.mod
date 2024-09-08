@@ -16,17 +16,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.1
 	github.com/aws/aws-sdk-go-v2/service/iam v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5
-	github.com/aws/aws-sdk-go-v2/service/opensearch v1.27.0
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.27.3
-	github.com/aws/aws-sdk-go-v2/service/osis v1.6.5
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/aws/smithy-go v1.20.3
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/envoyproxy/go-control-plane v0.12.0
 	github.com/fluxcd/helm-controller/api v1.0.1
-	github.com/fluxcd/pkg/apis/meta v1.5.0
 	github.com/go-errors/errors v1.4.2
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccy/go-yaml v1.11.2
@@ -56,7 +52,6 @@ require (
 	github.com/open-policy-agent/opa v0.63.0
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/ory/dockertest/v3 v3.10.0
-	github.com/projectcontour/contour v1.22.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/sashabaranov/go-openai v1.20.3
 	github.com/shopspring/decimal v1.3.1
@@ -81,7 +76,6 @@ require (
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.6
 	k8s.io/api v0.30.2
-	k8s.io/apiextensions-apiserver v0.30.1
 	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v0.30.2
 	moul.io/zapgorm2 v1.3.0
@@ -314,6 +308,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.28.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/networkfirewall v1.36.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/oam v1.7.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.27.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.9.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.20.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.26.6 // indirect
@@ -329,6 +324,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.35.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/route53domains v1.20.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.23.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3control v1.41.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sagemaker v1.121.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.25.5 // indirect
@@ -396,6 +392,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v1.5.0 // indirect
+	github.com/fluxcd/pkg/apis/meta v1.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -588,6 +585,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.4.4 // indirect
 	gorm.io/plugin/prometheus v0.1.0 // indirect
+	k8s.io/apiextensions-apiserver v0.30.1 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
