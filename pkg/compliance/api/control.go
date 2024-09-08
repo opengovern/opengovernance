@@ -61,6 +61,8 @@ type ListControlsFilter struct {
 	RootBenchmark   []string            `json:"rootBenchmark"`
 	ParentBenchmark []string            `json:"parentBenchmark"`
 	Tags            map[string][]string `json:"tags"`
+	PageNumber      int64               `json:"pageNumber"`
+	PageSize        int64               `json:"pageSize"`
 }
 
 type ControlTagsResult struct {
