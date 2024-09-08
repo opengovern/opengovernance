@@ -11,6 +11,7 @@ type Query struct {
 }
 
 type QueryParameter struct {
-	Key      string `json:"Key" yaml:"Key"`
-	Required bool   `json:"Required" yaml:"Required"`
+	Key          string  `json:"Key" yaml:"Key"`
+	Required     bool    `json:"Required" yaml:"Required"`
+	DefaultValue *string `json:"DefaultValue" yaml:"DefaultValue"`
 }
