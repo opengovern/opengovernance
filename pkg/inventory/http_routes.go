@@ -2118,11 +2118,16 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		})
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
-	})
-
-	return ctx.JSON(200, utils.Paginate(req.PageNumber, req.PageSize, result))
+	if req.PageSize != nil {
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].ID < result[j].ID
+		})
+		if req.PageNumber == nil {
+			return ctx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, result))
+		}
+		return ctx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, result))
+	}
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // ListQueriesTags godoc

@@ -145,8 +145,8 @@ type ListQueryV2Request struct {
 	TitleFilter string              `json:"titleFilter"` // Specifies the Title
 	TagsFilter  map[string][]string `json:"tagsFilter"`
 	Connectors  []string            `json:"connectors"`
-	PageNumber  int64               `json:"pageNumber"`
-	PageSize    int64               `json:"pageSize"`
+	PageNumber  *int64              `json:"pageNumber"`
+	PageSize    *int64              `json:"pageSize"`
 }
 
 type ConnectionData struct {

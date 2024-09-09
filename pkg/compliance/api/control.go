@@ -58,12 +58,13 @@ type ControlTrendDatapoint struct {
 
 type ListControlsFilter struct {
 	Connector       []string            `json:"connector" example:"Azure"`
+	Severity        []string            `json:"severity"`
 	RootBenchmark   []string            `json:"rootBenchmark"`
 	ParentBenchmark []string            `json:"parentBenchmark"`
 	Tags            map[string][]string `json:"tags"`
-	FindingFilters  FindingFilters      `json:"findingFilters"`
-	PageNumber      int64               `json:"pageNumber"`
-	PageSize        int64               `json:"pageSize"`
+	FindingFilters  *FindingFilters     `json:"findingFilters"`
+	PageNumber      *int64              `json:"pageNumber"`
+	PageSize        *int64              `json:"pageSize"`
 }
 
 type ControlTagsResult struct {

@@ -165,8 +165,8 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client ka
 		"aggs": map[string]any{
 			"controlID_count": map[string]any{
 				"terms": map[string]any{
-					"field": "controlID.keyword", // Use the keyword field for exact matching
-					"size":  1000,                // Adjust if you expect more unique controlIDs
+					"field": "controlID", // Use the keyword field for exact matching
+					"size":  10000,       // Adjust if you expect more unique controlIDs
 				},
 			},
 		},
