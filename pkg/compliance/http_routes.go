@@ -50,8 +50,10 @@ const (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+	v2 := e.Group("/api/v2")
 
 	benchmarks := v1.Group("/benchmarks")
+	benchmarksV2 := v2.Group("/benchmarks")
 
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.InternalRole))
@@ -60,8 +62,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
 	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
 	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
-	benchmarks.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
-	benchmarks.GET("/filtered", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
+	benchmarksV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
+	benchmarksV2.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -70,8 +72,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
 	controls := v1.Group("/controls")
-	controls.GET("/filtered", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
-	controls.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
+	controlsV2 := v2.Group("/controls")
+	controlsV2.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controlsV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/trend", httpserver2.AuthorizeHandler(h.GetControlTrend, authApi.ViewerRole))
@@ -3156,7 +3159,7 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Produce		json
 //	@Success		200	{object}	[]api.ControlTagsResult
-//	@Router			/compliance/api/v1/controls/tags [get]
+//	@Router			/compliance/api/v2/controls/tags [get]
 func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListControlsTags", trace.WithSpanKind(trace.SpanKindServer))
@@ -3188,7 +3191,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
 //	@Success	200				{object}	api.ListControlsFilterResult
-//	@Router		/compliance/api/v1/controls/filtered [get]
+//	@Router		/compliance/api/v2/controls [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4322,7 +4325,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
 //	@Success	200				{object}	[]api.Benchmark
-//	@Router		/compliance/api/v1/benchmarks/filtered [get]
+//	@Router		/compliance/api/v2/benchmarks [get]
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4686,7 +4689,7 @@ func (h *HttpHandler) ListQueries(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Produce		json
 //	@Success		200		{object}	[]api.BenchmarkTagsResult
-//	@Router			/compliance/api/v1/benchmarks/tags [get]
+//	@Router			/compliance/api/v2/benchmarks/tags [get]
 func (h *HttpHandler) ListBenchmarksTags(ctx echo.Context) error {
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListBenchmarksTags", trace.WithSpanKind(trace.SpanKindServer))
