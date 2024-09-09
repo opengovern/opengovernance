@@ -3293,14 +3293,14 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		resultControls = append(resultControls, apiControl)
 	}
 
-	sort.Slice(results, func(i, j int) bool {
+	sort.Slice(resultControls, func(i, j int) bool {
 		return resultControls[i].ID < resultControls[j].ID
 	})
 	if req.PageSize != nil {
 		if req.PageNumber == nil {
-			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, resultControls))
+			resultControls = utils.Paginate(1, *req.PageSize, resultControls)
 		}
-		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, resultControls))
+		resultControls = utils.Paginate(*req.PageNumber, *req.PageSize, resultControls)
 	}
 
 	var controlsData []api.ListControlsFilterControlData
