@@ -11,7 +11,6 @@ import (
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"net"
 	"os"
 	"strconv"
 
@@ -21,10 +20,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
 	"crypto/rand"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -55,11 +52,6 @@ var (
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
-
-	grpcServerAddress = os.Getenv("GRPC_ADDRESS")
-	grpcTlsCertPath   = os.Getenv("GRPC_TLS_CERT_PATH")
-	grpcTlsKeyPath    = os.Getenv("GRPC_TLS_KEY_PATH")
-	grpcTlsCAPath     = os.Getenv("GRPC_TLS_CA_PATH")
 )
 
 func Command() *cobra.Command {
@@ -110,15 +102,6 @@ func start(ctx context.Context) error {
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
-
-	creds, err := newServerCredentials(
-		grpcTlsCertPath,
-		grpcTlsKeyPath,
-		grpcTlsCAPath,
-	)
-	if err != nil {
-		return fmt.Errorf("grpc tls creds: %w", err)
-	}
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
@@ -291,19 +274,7 @@ func start(ctx context.Context) error {
 	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
-	envoyauth.RegisterAuthorizationServer(grpcServer, authServer)
-
-	lis, err := net.Listen("tcp", grpcServerAddress)
-	if err != nil {
-		return fmt.Errorf("grpc listen: %w", err)
-	}
-
 	errors := make(chan error, 1)
-	go func() {
-		errors <- fmt.Errorf("grpc server: %w", grpcServer.Serve(lis))
-	}()
-
 	go func() {
 		routes := httpRoutes{
 			logger: logger,

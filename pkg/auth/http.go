@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	"google.golang.org/grpc/codes"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -51,6 +53,8 @@ type httpRoutes struct {
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
+	v1.GET("/check", r.Check)
+
 	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api2.AdminRole))
 	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api2.AdminRole))
 	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api2.EditorRole))
@@ -78,6 +82,48 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
+}
+
+func (r *httpRoutes) Check(ctx echo.Context) error {
+	checkRequest := envoyauth.CheckRequest{
+		Attributes: &envoyauth.AttributeContext{
+			Request: &envoyauth.AttributeContext_Request{
+				Http: &envoyauth.AttributeContext_HttpRequest{
+					Headers: make(map[string]string),
+				},
+			},
+		},
+	}
+
+	for k, v := range ctx.Request().Header {
+		if len(v) == 0 {
+			checkRequest.Attributes.Request.Http.Headers[k] = ""
+		} else {
+			checkRequest.Attributes.Request.Http.Headers[k] = v[0]
+		}
+	}
+
+	res, err := r.authServer.Check(ctx.Request().Context(), &checkRequest)
+	if err != nil {
+		return err
+	}
+
+	if res.Status.Code != int32(codes.OK) {
+		return echo.NewHTTPError(http.StatusForbidden, res.Status.Message)
+	}
+
+	if res.GetOkResponse() != nil {
+		return echo.NewHTTPError(http.StatusForbidden, "no ok response")
+	}
+
+	for _, header := range res.GetOkResponse().GetHeaders() {
+		if header == nil || header.Header == nil {
+			continue
+		}
+		ctx.Response().Header().Set(header.Header.Key, header.Header.Value)
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 // PutRoleBinding godoc
