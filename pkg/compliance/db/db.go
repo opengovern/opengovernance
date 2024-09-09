@@ -373,8 +373,8 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 
 	return s, nil
 }
-
-func (db Database) ListControlsByFilter(ctx context.Context, connectors []string, severity []string, benchmarkIDs []string, tagFilters map[string][]string) ([]Control, error) {
+func (db Database) ListControlsByFilter(ctx context.Context, connectors []string, severity []string, benchmarkIDs []string,
+	tagFilters map[string][]string, hasParameters *bool, primaryTable []string, listOfTables []string) ([]Control, error) {
 	var s []Control
 
 	m := db.Orm.WithContext(ctx).Model(&Control{}).Distinct("controls.*").
@@ -408,10 +408,32 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 		m = m.Where("controls.severity IN ?", severity)
 	}
 
-	fmt.Println("BenchmarkIDs", benchmarkIDs)
 	if len(benchmarkIDs) > 0 {
 		m = m.Joins("JOIN benchmark_controls bc ON bc.control_id = controls.id").
 			Where("bc.benchmark_id IN ?", benchmarkIDs)
+	}
+
+	// Add filter to include only controls whose query has at least one parameter
+	if hasParameters != nil {
+		if *hasParameters {
+			m = m.Joins("JOIN queries q ON q.id = controls.query_id").
+				Joins("JOIN query_parameters qp ON qp.query_id = q.id").
+				Group("controls.id").
+				Having("COUNT(qp.id) > 0")
+		} else {
+			m = m.Joins("JOIN queries q ON q.id = controls.query_id").
+				Joins("JOIN query_parameters qp ON qp.query_id = q.id").
+				Group("controls.id").
+				Having("COUNT(qp.id) = 0")
+		}
+	}
+
+	if len(primaryTable) > 0 {
+		m = m.Where("controls.primary_table IN ?", primaryTable)
+	}
+
+	if len(listOfTables) > 0 {
+		m = m.Where("controls.list_of_tables::text[] @> ?", pq.Array(listOfTables))
 	}
 
 	// Execute the query

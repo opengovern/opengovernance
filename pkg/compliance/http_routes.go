@@ -3186,12 +3186,12 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilter	true	"Request Body"
-//	@Success	200				{object}	[]api.Control
+//	@Success	200				{object}	api.ListControlsFilterControlData
 //	@Router		/compliance/api/v1/controls/filtered [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	var req api.ListControlsFilter
+	var req api.ListControlsFilterRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -3226,14 +3226,15 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		benchmarks = req.ParentBenchmark
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags)
+	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.Customizable,
+		req.PrimaryTable, req.ListOfTables)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var fRes map[string]int64
+	var fRes map[string]map[string]int64
 
-	if req.FindingFilters != nil {
+	if req.FindingFilters != nil || req.FindingSummary {
 		esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
 		for _, status := range req.FindingFilters.ConformanceStatus {
 			esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
@@ -3266,11 +3267,12 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
 	}
 
-	var results []api.Control
+	var results api.ListControlsFilterResult
+	var resultControls []api.Control
 	for _, control := range controls {
 		if req.FindingFilters != nil {
 			if count, ok := fRes[control.ID]; ok {
-				if count == 0 {
+				if len(count) == 0 {
 					continue
 				}
 			} else {
@@ -3288,18 +3290,27 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			Engine:         control.Query.Engine,
 			ListOfTables:   control.Query.ListOfTables,
 		}
-		results = append(results, apiControl)
+		resultControls = append(resultControls, apiControl)
 	}
 
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].ID < results[j].ID
+		return resultControls[i].ID < resultControls[j].ID
 	})
 	if req.PageSize != nil {
 		if req.PageNumber == nil {
-			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, results))
+			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, resultControls))
 		}
-		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, results))
+		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, resultControls))
 	}
+
+	var controlsData []api.ListControlsFilterControlData
+	for _, control := range resultControls {
+		controlsData = append(controlsData, api.ListControlsFilterControlData{
+			Control:         control,
+			FindingsSummary: fRes[control.ID],
+		})
+	}
+
 	return echoCtx.JSON(http.StatusOK, results)
 }
 
@@ -4265,12 +4276,12 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, k)
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, nil, nil, benchmarkIDs, nil)
+	controls, err := h.db.ListControlsByFilter(ctx, nil, nil, benchmarkIDs, nil, nil, nil, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var fRes map[string]int64
+	var fRes map[string]map[string]int64
 
 	if req.FindingFilters != nil {
 		esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
@@ -4315,7 +4326,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	for _, b := range benchmarks {
 		if req.FindingFilters != nil {
 			if count, ok := fRes[b.ID]; ok {
-				if count == 0 {
+				if len(count) == 0 {
 					continue
 				}
 			} else {
