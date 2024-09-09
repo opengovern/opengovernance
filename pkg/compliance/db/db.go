@@ -405,7 +405,7 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 	}
 
 	if len(severity) > 0 {
-		m = m.Where("controls.severity IN ?", pq.Array(severity))
+		m = m.Where("controls.severity IN ?", severity)
 	}
 
 	fmt.Println("BenchmarkIDs", benchmarkIDs)
