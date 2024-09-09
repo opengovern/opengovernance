@@ -3267,7 +3267,6 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
 	}
 
-	var results api.ListControlsFilterResult
 	var resultControls []api.Control
 	for _, control := range controls {
 		if req.FindingFilters != nil {
@@ -3314,7 +3313,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		controlsData = append(controlsData, controlData)
 	}
 
-	return echoCtx.JSON(http.StatusOK, results)
+	return echoCtx.JSON(http.StatusOK, api.ListControlsFilterResult{ControlsData: controlsData})
 }
 
 func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string) ([]string, error) {
