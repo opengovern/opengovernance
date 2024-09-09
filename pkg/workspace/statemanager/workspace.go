@@ -18,18 +18,10 @@ func (s *Service) getTransactionByTransactionID(currentState state.State, tid ap
 	switch tid {
 	case api.Transaction_CreateWorkspaceKeyId:
 		transaction = transactions.NewCreateWorkspaceKeyId(s.logger, s.vaultSecretHandler, s.cfg, s.db)
-	case api.Transaction_EnsureCredentialExists:
-		transaction = transactions.NewEnsureCredentialExists(s.db)
-	case api.Transaction_CreateHelmRelease:
-		transaction = transactions.NewCreateHelmRelease(s.kubeClient, s.vault, s.vaultSecretHandler, s.cfg, s.db, s.logger)
-	case api.Transaction_CreateMasterCredential:
-		transaction = transactions.NewCreateMasterCredential(s.iamMaster, s.vault, s.cfg, s.db)
+	case api.Transaction_EnsureWorkspacePodsRunning:
+		transaction = transactions.NewEnsureWorkspacePodsRunning(s.kubeClient, s.vault, s.vaultSecretHandler, s.cfg, s.db, s.logger)
 	case api.Transaction_CreateRoleBinding:
 		transaction = transactions.NewCreateRoleBinding(s.authClient)
-	case api.Transaction_CreateServiceAccountRoles:
-		transaction = transactions.NewCreateServiceAccountRoles(s.iam, s.cfg.AWSAccountID, s.cfg.OIDCProvider)
-	case api.Transaction_EnsureCredentialOnboarded:
-		transaction = transactions.NewEnsureCredentialOnboarded(s.vault, s.cfg, s.db)
 	case api.Transaction_EnsureDiscoveryFinished:
 		transaction = transactions.NewEnsureDiscoveryFinished(s.cfg)
 	case api.Transaction_EnsureJobsFinished:

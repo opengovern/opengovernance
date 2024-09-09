@@ -922,6 +922,15 @@ definitions:
       totalResourcesCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTagsResult:
+    properties:
+      key:
+        type: string
+      uniqueValues:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTrendDatapoint:
     properties:
       failedConnectionCount:
@@ -1528,6 +1537,29 @@ definitions:
       totalConformanceStatusSummary:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilter:
+    properties:
+      connector:
+        example:
+        - Azure
+        items:
+          type: string
+        type: array
+      parentBenchmark:
+        items:
+          type: string
+        type: array
+      rootBenchmark:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest:
     properties:
       afterSortKey:
@@ -2082,6 +2114,18 @@ definitions:
         description: Specifies the Title
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryV2Request:
+    properties:
+      tagsFilter:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      titleFilter:
+        description: Specifies the Title
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
     properties:
       others:
@@ -2411,6 +2455,15 @@ definitions:
       field:
         description: fill this with column name
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult:
+    properties:
+      key:
+        type: string
+      uniqueValues:
+        items:
+          type: string
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow:
     properties:
@@ -3052,17 +3105,6 @@ definitions:
       id:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest:
-    properties:
-      awsConfig:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config'
-      azureConfig:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig'
-      connectorType:
-        $ref: '#/definitions/source.Type'
-      singleConnection:
-        type: boolean
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress:
     properties:
       done:
@@ -3089,20 +3131,6 @@ definitions:
       workspaceCreationStatus:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest:
-    properties:
-      name:
-        type: string
-      organization_id:
-        type: integer
-      tier:
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse:
-    properties:
-      id:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization:
     properties:
       address:
@@ -3128,22 +3156,12 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID:
     enum:
-    - RESERVING
-    - RESERVED
-    - WAITING_FOR_CREDENTIAL
     - PROVISIONING
     - PROVISIONED
-    - DELETING
-    - DELETED
     type: string
     x-enum-varnames:
-    - StateID_Reserving
-    - StateID_Reserved
-    - StateID_WaitingForCredential
     - StateID_Provisioning
     - StateID_Provisioned
-    - StateID_Deleting
-    - StateID_Deleted
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier:
     enum:
     - FREE
@@ -3183,12 +3201,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse:
     properties:
-      aws_unique_id:
-        example: kaytu
-        type: string
-      aws_user_arn:
-        example: kaytu
-        type: string
       createdAt:
         example: "2023-05-17T14:39:02.707659Z"
         type: string
@@ -6689,6 +6701,31 @@ paths:
       summary: List benchmarks summaries
       tags:
       - compliance
+  /compliance/api/v1/controls:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilter'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List controls filtered by connector, benchmark, tags
+      tags:
+      - compliance
   /compliance/api/v1/controls/{controlId}/summary:
     get:
       consumes:
@@ -6824,6 +6861,23 @@ paths:
       security:
       - BearerToken: []
       summary: List controls summaries
+      tags:
+      - compliance
+  /compliance/api/v1/controls/tags:
+    get:
+      description: Retrieving list of control possible tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTagsResult'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List controls tags
       tags:
       - compliance
   /compliance/api/v1/finding_events:
@@ -8897,6 +8951,48 @@ paths:
       summary: Get resource collection
       tags:
       - resource_collection
+  /inventory/api/v2/query:
+    get:
+      description: Retrieving list of smart queries by specified filters and tags
+        filters
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryV2Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List smart queries
+      tags:
+      - smart_query
+  /inventory/api/v2/query/tags:
+    get:
+      description: Retrieving list of smart queries by specified filters
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List smart queries tags
+      tags:
+      - smart_query
   /inventory/api/v2/resource-collection:
     get:
       description: Retrieving list of resource collections by specified filters with
@@ -9937,101 +10033,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get bootstrap status
-      tags:
-      - workspace
-  /workspace/api/v1/bootstrap/{workspace_name}/credential:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Workspace Name
-        in: path
-        name: workspace_name
-        required: true
-        type: string
-      - description: Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Add credential for workspace to be onboarded
-      tags:
-      - workspace
-  /workspace/api/v1/bootstrap/{workspace_name}/finish:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Workspace Name
-        in: path
-        name: workspace_name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: finish bootstrap
-      tags:
-      - workspace
-  /workspace/api/v1/workspace:
-    post:
-      consumes:
-      - application/json
-      description: Returns workspace created
-      parameters:
-      - description: Create workspace request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse'
-      security:
-      - BearerToken: []
-      summary: Create workspace for workspace service
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete workspace with workspace id
-      parameters:
-      - description: Workspace ID
-        in: path
-        name: workspace_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Delete workspace for workspace service
       tags:
       - workspace
   /workspace/api/v1/workspace/current:

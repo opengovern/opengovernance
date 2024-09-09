@@ -218,32 +218,39 @@ func InitializeScheduler(
 
 	orm, err := postgres.NewClient(&cfg, s.logger)
 	if err != nil {
+		s.logger.Error("Failed to create postgres client", zap.Error(err))
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
 
 	jq, err := jq.New(conf.NATS.URL, s.logger)
 	if err != nil {
+		s.logger.Error("Failed to create job queue", zap.Error(err))
 		return nil, err
 	}
 	s.jq = jq
 
 	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}, 1000); err != nil {
+		s.logger.Error("Failed to stream to compliance summarizer queue", zap.Error(err))
 		return nil, err
 	}
 
 	if err := s.jq.Stream(ctx, runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}, 1000000); err != nil {
+		s.logger.Error("Failed to stream to compliance runner queue", zap.Error(err))
 		return nil, err
 	}
 
 	if err := s.jq.Stream(ctx, analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
+		s.logger.Error("Failed to stream to analytics queue", zap.Error(err))
 		return nil, err
 	}
 
 	if err := s.jq.Stream(ctx, checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
+		s.logger.Error("Failed to stream to checkup queue", zap.Error(err))
 		return nil, err
 	}
 
 	if err := s.jq.Stream(ctx, DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
+		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
 		return nil, err
 	}
 
@@ -271,6 +278,7 @@ func InitializeScheduler(
 		AssumeRoleArn: &conf.ElasticSearch.AssumeRoleArn,
 	})
 	if err != nil {
+		s.logger.Error("Failed to create elasticsearch client", zap.Error(err))
 		return nil, err
 	}
 
@@ -278,39 +286,46 @@ func InitializeScheduler(
 
 	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse describe interval hours", zap.Error(err))
 		return nil, err
 	}
 	s.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
 
 	fullDiscoveryIntervalHours, err := strconv.ParseInt(FullDiscoveryIntervalHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse full discovery interval hours", zap.Error(err))
 		return nil, err
 	}
 	s.fullDiscoveryIntervalHours = time.Duration(fullDiscoveryIntervalHours) * time.Hour
 
 	costDiscoveryIntervalHours, err := strconv.ParseInt(CostDiscoveryIntervalHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse cost discovery interval hours", zap.Error(err))
 		return nil, err
 	}
 	s.costDiscoveryIntervalHours = time.Duration(costDiscoveryIntervalHours) * time.Hour
 
 	s.describeTimeoutHours, err = strconv.ParseInt(describeTimeoutHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse describe timeout hours", zap.Error(err))
 		return nil, err
 	}
 
 	s.checkupIntervalHours, err = strconv.ParseInt(checkupIntervalHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse checkup interval hours", zap.Error(err))
 		return nil, err
 	}
 
 	s.mustSummarizeIntervalHours, err = strconv.ParseInt(mustSummarizeIntervalHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse must summarize interval hours", zap.Error(err))
 		return nil, err
 	}
 
 	analyticsIntervalHours, err := strconv.ParseInt(AnalyticsIntervalHours, 10, 64)
 	if err != nil {
+		s.logger.Error("Failed to parse analytics interval hours", zap.Error(err))
 		return nil, err
 	}
 	s.analyticsIntervalHours = time.Duration(analyticsIntervalHours) * time.Hour
@@ -325,6 +340,7 @@ func InitializeScheduler(
 	s.sinkClient = esSinkClient.NewEsSinkServiceClient(s.logger, EsSinkBaseURL)
 	authGRPCConn, err := grpc.NewClient(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
+		s.logger.Error("Failed to create auth grpc client", zap.Error(err))
 		return nil, err
 	}
 	s.authGrpcClient = envoyAuth.NewAuthorizationClient(authGRPCConn)
@@ -340,6 +356,7 @@ func InitializeScheduler(
 		UserRole: authAPI.InternalRole,
 	}, CurrentWorkspaceID)
 	if err != nil {
+		s.logger.Error("Failed to get workspace by id", zap.Error(err))
 		return nil, err
 	}
 	s.WorkspaceName = workspace.Name
