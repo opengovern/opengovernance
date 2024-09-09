@@ -413,27 +413,28 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 			Where("bc.benchmark_id IN ?", benchmarkIDs)
 	}
 
-	// Add filter to include only controls whose query has at least one parameter
+	if hasParameters != nil || len(primaryTable) > 0 || len(listOfTables) > 0 {
+		m = m.Joins("JOIN queries q ON q.id = controls.query_id")
+	}
+
 	if hasParameters != nil {
 		if *hasParameters {
-			m = m.Joins("JOIN queries q ON q.id = controls.query_id").
-				Joins("JOIN query_parameters qp ON qp.query_id = q.id").
+			m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
 				Group("controls.id").
-				Having("COUNT(qp.id) > 0")
+				Having("COUNT(qp.query_id) > 0")
 		} else {
-			m = m.Joins("JOIN queries q ON q.id = controls.query_id").
-				Joins("JOIN query_parameters qp ON qp.query_id = q.id").
+			m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
 				Group("controls.id").
-				Having("COUNT(qp.id) = 0")
+				Having("COUNT(qp.query_id) = 0")
 		}
 	}
 
 	if len(primaryTable) > 0 {
-		m = m.Where("controls.primary_table IN ?", primaryTable)
+		m = m.Where("q.primary_table IN ?", primaryTable)
 	}
 
 	if len(listOfTables) > 0 {
-		m = m.Where("controls.list_of_tables::text[] @> ?", pq.Array(listOfTables))
+		m = m.Where("q.list_of_tables::text[] @> ?", pq.Array(listOfTables))
 	}
 
 	// Execute the query

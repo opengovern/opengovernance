@@ -3235,23 +3235,29 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	var fRes map[string]map[string]int64
 
 	if req.FindingFilters != nil || req.FindingSummary {
-		esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
-		for _, status := range req.FindingFilters.ConformanceStatus {
-			esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-		}
-
+		var esConformanceStatuses []kaytuTypes.ConformanceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
-		if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
-			lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
-		}
-		if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
-			lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
-		}
-		if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
-			evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
-		}
-		if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
-			evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+
+		if req.FindingFilters != nil {
+			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+			for _, status := range req.FindingFilters.ConformanceStatus {
+				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+			}
+
+			if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
+				lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+			}
+			if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
+				lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+			}
+			if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
+				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+			}
+			if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
+				evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+			}
+		} else {
+			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0)
 		}
 
 		var controlIDs []string
