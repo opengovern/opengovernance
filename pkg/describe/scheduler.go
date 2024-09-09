@@ -352,9 +352,9 @@ func InitializeScheduler(
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
-	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
+	workspace, err := s.workspaceClient.GetByName(&httpclient.Context{
 		UserRole: authAPI.InternalRole,
-	}, CurrentWorkspaceID)
+	}, CurrentWorkspaceName)
 	if err != nil {
 		s.logger.Error("Failed to get workspace by id", zap.Error(err))
 		return nil, err

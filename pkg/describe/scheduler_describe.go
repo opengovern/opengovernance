@@ -565,7 +565,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	)
 
 	input := describe.DescribeWorkerInput{
-		WorkspaceId:               CurrentWorkspaceID,
+		WorkspaceId:               CurrentWorkspaceName,
 		WorkspaceName:             workspaceName,
 		JobEndpoint:               s.describeExternalEndpoint,
 		DeliverEndpoint:           s.describeExternalEndpoint,

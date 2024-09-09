@@ -9,7 +9,7 @@ import (
 )
 
 type WorkspaceServiceClient interface {
-	GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error)
+	GetByName(ctx *httpclient.Context, workspaceName string) (api.Workspace, error)
 	ListWorkspaces(ctx *httpclient.Context) ([]api.WorkspaceResponse, error)
 }
 
@@ -21,8 +21,8 @@ func NewWorkspaceClient(baseURL string) WorkspaceServiceClient {
 	return &workspaceClient{baseURL: baseURL}
 }
 
-func (s *workspaceClient) GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error) {
-	url := fmt.Sprintf("%s/api/v1/workspaces/byid/%s", s.baseURL, workspaceID)
+func (s *workspaceClient) GetByName(ctx *httpclient.Context, workspaceName string) (api.Workspace, error) {
+	url := fmt.Sprintf("%s/api/v1/workspaces/byname/%s", s.baseURL, workspaceName)
 	var response api.Workspace
 	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.Workspace{}, err
