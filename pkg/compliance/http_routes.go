@@ -59,6 +59,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
 	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
 	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
+	benchmarks.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
+	benchmarks.GET("/filtered", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -67,7 +69,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
 	controls := v1.Group("/controls")
-	controls.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controls.GET("/filtered", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	controls.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
@@ -3156,8 +3158,8 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 //	@Router			/compliance/api/v1/controls/tags [get]
 func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetQueriesWithFilters")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListControlsTags", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListControlsTags")
 
 	controlsTags, err := h.db.GetControlsTags()
 	if err != nil {
@@ -3185,7 +3187,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilter	true	"Request Body"
 //	@Success	200				{object}	[]api.Control
-//	@Router		/compliance/api/v1/controls [get]
+//	@Router		/compliance/api/v1/controls/filtered [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -3201,7 +3203,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		for _, rootBenchmark := range req.RootBenchmark {
 			childBenchmarks, err := h.getChildBenchmarks(ctx, rootBenchmark)
 			if err != nil {
-				panic(err)
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			rootBenchmarks = append(rootBenchmarks, childBenchmarks...)
 		}
@@ -3289,10 +3291,10 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		results = append(results, apiControl)
 	}
 
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].ID < results[j].ID
+	})
 	if req.PageSize != nil {
-		sort.Slice(results, func(i, j int) bool {
-			return results[i].ID < results[j].ID
-		})
 		if req.PageNumber == nil {
 			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, results))
 		}
@@ -4212,6 +4214,130 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 	return echo.NewHTTPError(http.StatusBadRequest, "connection or resource collection is required")
 }
 
+// ListBenchmarksFiltered godoc
+//
+//	@Summary	List benchmarks filtered by connector, being root, tags
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
+//	@Success	200				{object}	[]api.Benchmark
+//	@Router		/compliance/api/v1/benchmarks/filtered [get]
+func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	var req api.ListBenchmarksFilter
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var response []api.Benchmark
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_ListBenchmarksFiltered", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListBenchmarksFiltered")
+	defer span1.End()
+
+	var benchmarks []db.Benchmark
+	var err error
+
+	benchmarks, err = h.db.ListBenchmarksFiltered(ctx, req.Root, req.Connector, req.Tags)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	benchmarkIDsMap := make(map[string]bool)
+	for _, b := range benchmarks {
+		childBenchmarks, err := h.getChildBenchmarks(ctx, b.ID)
+		if err != nil {
+			span1.RecordError(err)
+			span1.SetStatus(codes.Error, err.Error())
+			return err
+		}
+		for _, cb := range childBenchmarks {
+			benchmarkIDsMap[cb] = true
+		}
+	}
+	var benchmarkIDs []string
+	for k, _ := range benchmarkIDsMap {
+		benchmarkIDs = append(benchmarkIDs, k)
+	}
+
+	controls, err := h.db.ListControlsByFilter(ctx, nil, nil, benchmarkIDs, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var fRes map[string]int64
+
+	if req.FindingFilters != nil {
+		esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+		for _, status := range req.FindingFilters.ConformanceStatus {
+			esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+		}
+
+		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+		if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
+			lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+		}
+		if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
+			lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+		}
+		if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
+			evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+		}
+		if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
+			evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+		}
+
+		var controlIDs []string
+		for _, c := range controls {
+			controlIDs = append(controlIDs, c.ID)
+		}
+
+		fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID, req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID, req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+	}
+
+	span1.End()
+
+	// tracer :
+	ctx, span2 := tracer.Start(ctx, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_PopulateConnectors(loop)")
+	defer span2.End()
+
+	for _, b := range benchmarks {
+		if req.FindingFilters != nil {
+			if count, ok := fRes[b.ID]; ok {
+				if count == 0 {
+					continue
+				}
+			} else {
+				continue
+			}
+		}
+		response = append(response, b.ToApi())
+	}
+	span2.End()
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].ID < response[j].ID
+	})
+	if req.PageSize != nil {
+		if req.PageNumber == nil {
+			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, response))
+		}
+		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, response))
+	}
+	return echoCtx.JSON(http.StatusOK, response)
+}
+
 func (h *HttpHandler) ListBenchmarks(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4451,6 +4577,37 @@ func (h *HttpHandler) ListQueries(echoCtx echo.Context) error {
 		resp = append(resp, pa)
 	}
 	return echoCtx.JSON(http.StatusOK, resp)
+}
+
+// ListBenchmarksTags godoc
+//
+//	@Summary		List benchmarks tags
+//	@Description	Retrieving list of benchmark possible tags
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Produce		json
+//	@Success		200		{object}	[]api.BenchmarkTagsResult
+//	@Router			/compliance/api/v1/benchmarks/tags [get]
+func (h *HttpHandler) ListBenchmarksTags(ctx echo.Context) error {
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListBenchmarksTags", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListBenchmarksTags")
+
+	controlsTags, err := h.db.GetBenchmarksTags()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	res := make([]api.BenchmarkTagsResult, 0, len(controlsTags))
+	for _, history := range controlsTags {
+		res = append(res, history.ToApi())
+	}
+
+	span.End()
+
+	return ctx.JSON(200, res)
 }
 
 func (h *HttpHandler) GetQuery(echoCtx echo.Context) error {

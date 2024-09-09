@@ -2118,10 +2118,10 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		})
 	}
 
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
 	if req.PageSize != nil {
-		sort.Slice(result, func(i, j int) bool {
-			return result[i].ID < result[j].ID
-		})
 		if req.PageNumber == nil {
 			return ctx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, result))
 		}

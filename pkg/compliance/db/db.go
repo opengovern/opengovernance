@@ -79,6 +79,36 @@ func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]str
 	return benchmarks, nil
 }
 
+// ListRootBenchmarks returns all benchmarks that are not children of any other benchmark
+// is it important to note that this function does not return the children of the root benchmarks neither the controls
+func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, connectors []string, tags map[string][]string) ([]Benchmark, error) {
+	var benchmarks []Benchmark
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations)
+
+	if root {
+		tx = tx.Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)")
+	}
+	if len(connectors) > 0 {
+		tx = tx.Where("benchmarks.connector::text[] @> ?", pq.Array(connectors))
+	}
+	if len(tags) > 0 {
+		tx = tx.Joins("JOIN benchmark_tags AS tags ON tags.benchmark_id = benchmarks.id")
+		for key, values := range tags {
+			if len(values) != 0 {
+				tx = tx.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
+			} else {
+				tx = tx.Where("tags.key = ?", key)
+			}
+		}
+	}
+	err := tx.Find(&benchmarks).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return benchmarks, nil
+}
+
 func (db Database) ListRootBenchmarksWithSubtreeControls(ctx context.Context, tags map[string][]string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 
@@ -437,6 +467,19 @@ func (db Database) GetControlsTags() ([]ControlTagsResult, error) {
 
 	// Execute the raw SQL query
 	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM control_tags GROUP BY key"
+	err := db.Orm.Raw(query).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func (db Database) GetBenchmarksTags() ([]BenchmarkTagsResult, error) {
+	var results []BenchmarkTagsResult
+
+	// Execute the raw SQL query
+	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM benchmark_tags GROUP BY key"
 	err := db.Orm.Raw(query).Scan(&results).Error
 	if err != nil {
 		return nil, err

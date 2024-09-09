@@ -71,3 +71,17 @@ type ControlTagsResult struct {
 	Key          string
 	UniqueValues []string
 }
+
+type BenchmarkTagsResult struct {
+	Key          string
+	UniqueValues []string
+}
+
+type ListBenchmarksFilter struct {
+	Connector      []string            `json:"connector" example:"Azure"`
+	Root           bool                `json:"root"`
+	Tags           map[string][]string `json:"tags"`
+	FindingFilters *FindingFilters     `json:"findingFilters"`
+	PageNumber     *int64              `json:"pageNumber"`
+	PageSize       *int64              `json:"pageSize"`
+}
