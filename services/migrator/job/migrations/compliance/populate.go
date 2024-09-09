@@ -61,19 +61,14 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	loadedQueries := make(map[string]bool)
 	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		tx.Model(&db.Query{}).Where("1=1").Unscoped().Delete(&db.Query{})
+		tx.Model(&db.QueryParameter{}).Where("1=1").Unscoped().Delete(&db.QueryParameter{})
+
 		for _, obj := range p.queries {
 			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "id"}}, // key column
-				DoUpdates: clause.AssignmentColumns([]string{
-					"query_to_execute",
-					"connector",
-					"list_of_tables",
-					"engine",
-					"updated_at",
-					"primary_table",
-					"global",
-				}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "id"}}, // key column
+				DoNothing: true,
 			}).Create(&obj).Error
 			if err != nil {
 				return err
@@ -81,7 +76,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			for _, param := range obj.Parameters {
 				err = tx.Clauses(clause.OnConflict{
 					Columns:   []clause.Column{{Name: "key"}, {Name: "query_id"}}, // key columns
-					DoUpdates: clause.AssignmentColumns([]string{"required"}),     // column needed to be updated
+					DoNothing: true,
 				}).Create(&param).Error
 				if err != nil {
 					return fmt.Errorf("failure in query parameter insert: %v", err)
@@ -118,6 +113,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		tx.Model(&db.BenchmarkControls{}).Where("1=1").Unscoped().Delete(&db.BenchmarkControls{})
 		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})
 		tx.Model(&db.Control{}).Where("1=1").Unscoped().Delete(&db.Control{})
+		tx.Model(&db.BenchmarkTag{}).Where("1=1").Unscoped().Delete(&db.BenchmarkTag{})
+		tx.Model(&db.ControlTag{}).Where("1=1").Unscoped().Delete(&db.ControlTag{})
 
 		for _, obj := range p.controls {
 			obj.Benchmarks = nil
@@ -127,8 +124,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 				continue
 			}
 			err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                                                                                          // key column
-				DoUpdates: clause.AssignmentColumns([]string{"title", "description", "document_uri", "severity", "manual_verification", "managed", "updated_at"}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "id"}},
+				DoNothing: true,
 			}).Create(&obj).Error
 			if err != nil {
 				return err
@@ -136,7 +133,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			for _, tag := range obj.Tags {
 				err = tx.Clauses(clause.OnConflict{
 					Columns:   []clause.Column{{Name: "key"}, {Name: "control_id"}}, // key columns
-					DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),   // column needed to be updated
+					DoNothing: true,
 				}).Create(&tag).Error
 				if err != nil {
 					return fmt.Errorf("failure in control tag insert: %v", err)
@@ -148,17 +145,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			obj.Children = nil
 			obj.Controls = nil
 			err := tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "id"}}, // key column
-				DoUpdates: clause.AssignmentColumns([]string{
-					"title",
-					"display_code",
-					"description",
-					"logo_uri",
-					"category",
-					"document_uri",
-					"updated_at",
-					"connector",
-				}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "id"}}, // key column
+				DoNothing: true,
 			}).Create(&obj).Error
 			if err != nil {
 				return err
@@ -166,7 +154,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			for _, tag := range obj.Tags {
 				err = tx.Clauses(clause.OnConflict{
 					Columns:   []clause.Column{{Name: "key"}, {Name: "benchmark_id"}}, // key columns
-					DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),     // column needed to be updated
+					DoNothing: true,
 				}).Create(&tag).Error
 				if err != nil {
 					return fmt.Errorf("failure in benchmark tag insert: %v", err)
