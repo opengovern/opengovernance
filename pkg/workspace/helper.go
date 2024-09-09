@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"fmt"
+	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/labstack/echo/v4"
@@ -9,6 +10,11 @@ import (
 )
 
 func (s *Server) CheckRoleInWorkspace(ctx echo.Context, workspaceID, ownerID *string, workspaceName string) error {
+	role := httpserver.GetUserRole(ctx)
+	if role == authApi.InternalRole {
+		return nil
+	}
+
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(ctx))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
