@@ -127,9 +127,6 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 					"logo_uri",
 					"category",
 					"document_uri",
-					"enabled",
-					"managed",
-					"baseline",
 					"updated_at",
 					"connector",
 				}), // column needed to be updated
