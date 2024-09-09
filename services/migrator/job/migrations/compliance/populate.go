@@ -61,8 +61,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	loadedQueries := make(map[string]bool)
 	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		tx.Model(&db.Query{}).Where("1=1").Unscoped().Delete(&db.Query{})
 		tx.Model(&db.QueryParameter{}).Where("1=1").Unscoped().Delete(&db.QueryParameter{})
+		tx.Model(&db.Query{}).Where("1=1").Unscoped().Delete(&db.Query{})
 
 		for _, obj := range p.queries {
 			obj.Controls = nil
@@ -113,8 +113,6 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		tx.Model(&db.BenchmarkControls{}).Where("1=1").Unscoped().Delete(&db.BenchmarkControls{})
 		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})
 		tx.Model(&db.Control{}).Where("1=1").Unscoped().Delete(&db.Control{})
-		tx.Model(&db.BenchmarkTag{}).Where("1=1").Unscoped().Delete(&db.BenchmarkTag{})
-		tx.Model(&db.ControlTag{}).Where("1=1").Unscoped().Delete(&db.ControlTag{})
 
 		for _, obj := range p.controls {
 			obj.Benchmarks = nil
