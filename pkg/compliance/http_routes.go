@@ -3305,10 +3305,13 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 
 	var controlsData []api.ListControlsFilterControlData
 	for _, control := range resultControls {
-		controlsData = append(controlsData, api.ListControlsFilterControlData{
-			Control:         control,
-			FindingsSummary: fRes[control.ID],
-		})
+		controlData := api.ListControlsFilterControlData{
+			Control: control,
+		}
+		if req.FindingSummary {
+			controlData.FindingsSummary = fRes[control.ID]
+		}
+		controlsData = append(controlsData, controlData)
 	}
 
 	return echoCtx.JSON(http.StatusOK, results)
