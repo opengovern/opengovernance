@@ -3187,7 +3187,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
-//	@Success	200				{object}	[]api.ListControlsFilterResult
+//	@Success	200				{object}	api.ListControlsFilterResult
 //	@Router		/compliance/api/v1/controls/filtered [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -3282,7 +3282,9 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
 	}
 
-	var resultControls []api.ListControlsFilterResult
+	var resultControls []api.ListControlsFilterResultControl
+	var uniqueConnectors, uniqueSeverities, uniquePrimaryTables, uniqueListOfTables map[string]bool
+	uniqueTags := make(map[string]map[string]bool)
 	for _, control := range controls {
 		if req.FindingFilters != nil {
 			if count, ok := fRes[control.ID]; ok {
@@ -3294,7 +3296,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			}
 		}
 
-		apiControl := api.ListControlsFilterResult{
+		apiControl := api.ListControlsFilterResultControl{
 			ID:          control.ID,
 			Title:       control.Title,
 			Description: control.Description,
@@ -3319,6 +3321,25 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			apiControl.FindingsSummary = fRes[control.ID]
 		}
 
+		for _, c := range apiControl.Connector {
+			uniqueConnectors[c.String()] = true
+		}
+		uniqueSeverities[apiControl.Severity.String()] = true
+		for _, t := range apiControl.Query.ListOfTables {
+			uniqueListOfTables[t] = true
+		}
+		if apiControl.Query.PrimaryTable != nil {
+			uniquePrimaryTables[*apiControl.Query.PrimaryTable] = true
+		}
+		for k, vs := range apiControl.Tags {
+			if _, ok := uniqueTags[k]; !ok {
+				uniqueTags[k] = make(map[string]bool)
+			}
+			for _, v := range vs {
+				uniqueTags[k][v] = true
+			}
+		}
+
 		resultControls = append(resultControls, apiControl)
 	}
 
@@ -3332,7 +3353,38 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		resultControls = utils.Paginate(*req.PageNumber, *req.PageSize, resultControls)
 	}
 
-	return echoCtx.JSON(http.StatusOK, resultControls)
+	uniqueTagsFinal := make(map[string][]string)
+	for k, vs := range uniqueTags {
+		for v, _ := range vs {
+			uniqueTagsFinal[k] = append(uniqueTagsFinal[k], v)
+		}
+	}
+	result := api.ListControlsFilterResult{
+		Controls: resultControls,
+		Summary: struct {
+			Connector    []string            `json:"connector"`
+			Severity     []string            `json:"severity"`
+			Tags         map[string][]string `json:"tags"`
+			PrimaryTable []string            `json:"primaryTable"`
+			ListOfTables []string            `json:"listOfTables"`
+		}{
+			Connector:    mapToArray(uniqueConnectors),
+			Severity:     mapToArray(uniqueSeverities),
+			Tags:         uniqueTagsFinal,
+			PrimaryTable: mapToArray(uniquePrimaryTables),
+			ListOfTables: mapToArray(uniqueListOfTables),
+		},
+	}
+
+	return echoCtx.JSON(http.StatusOK, result)
+}
+
+func mapToArray(input map[string]bool) []string {
+	var result []string
+	for k, _ := range input {
+		result = append(result, k)
+	}
+	return result
 }
 
 func filterTagsByRegex(regexPattern *string, tags map[string][]string) map[string][]string {

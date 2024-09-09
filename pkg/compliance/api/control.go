@@ -72,7 +72,7 @@ type ListControlsFilterRequest struct {
 	PageSize        *int64              `json:"pageSize"`
 }
 
-type ListControlsFilterResult struct {
+type ListControlsFilterResultControl struct {
 	ID          string                `json:"id"`
 	Title       string                `json:"title"`
 	Description string                `json:"description"`
@@ -85,6 +85,17 @@ type ListControlsFilterResult struct {
 		Parameters   []QueryParameter `json:"parameters"`
 	} `json:"query"`
 	FindingsSummary map[string]int64 `json:"findingsSummary"`
+}
+
+type ListControlsFilterResult struct {
+	Controls []ListControlsFilterResultControl `json:"controls"`
+	Summary  struct {
+		Connector    []string            `json:"connector"`
+		Severity     []string            `json:"severity"`
+		Tags         map[string][]string `json:"tags"`
+		PrimaryTable []string            `json:"primaryTable"`
+		ListOfTables []string            `json:"listOfTables"`
+	} `json:"summary"`
 }
 
 type ControlTagsResult struct {
