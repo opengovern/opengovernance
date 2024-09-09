@@ -3224,50 +3224,56 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		benchmarks = req.ParentBenchmark
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, benchmarks, req.Tags)
+	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
-	for _, status := range req.FindingFilters.ConformanceStatus {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-	}
+	var fRes map[string]int64
 
-	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
-	if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
-		lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
-	}
-	if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
-		lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
-	}
-	if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
-		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
-	}
-	if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
-		evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
-	}
+	if req.FindingFilters != nil {
+		esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+		for _, status := range req.FindingFilters.ConformanceStatus {
+			esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+		}
 
-	var controlIDs []string
-	for _, c := range controls {
-		controlIDs = append(controlIDs, c.ID)
-	}
+		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+		if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
+			lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+		}
+		if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
+			lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+		}
+		if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
+			evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+		}
+		if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
+			evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+		}
 
-	fRes, err := es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID, req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID, req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+		var controlIDs []string
+		for _, c := range controls {
+			controlIDs = append(controlIDs, c.ID)
+		}
 
-	h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+		fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID, req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID, req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+	}
 
 	var results []api.Control
 	for _, control := range controls {
-		if count, ok := fRes[control.ID]; ok {
-			if count == 0 {
+		if req.FindingFilters != nil {
+			if count, ok := fRes[control.ID]; ok {
+				if count == 0 {
+					continue
+				}
+			} else {
 				continue
 			}
-		} else {
-			continue
 		}
 
 		apiControl := control.ToApi()
@@ -3283,11 +3289,16 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		results = append(results, apiControl)
 	}
 
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].ID < results[j].ID
-	})
-
-	return echoCtx.JSON(http.StatusOK, utils.Paginate(req.PageNumber, req.PageSize, results))
+	if req.PageSize != nil {
+		sort.Slice(results, func(i, j int) bool {
+			return results[i].ID < results[j].ID
+		})
+		if req.PageNumber == nil {
+			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, results))
+		}
+		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, results))
+	}
+	return echoCtx.JSON(http.StatusOK, results)
 }
 
 func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string) ([]string, error) {
