@@ -79,7 +79,24 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 	return values, nil
 }
 
-func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]int64, error) {
+type FindingsCountQueryHit struct {
+	Aggregations struct {
+		ControlIDCount struct {
+			Buckets []struct {
+				Key                    string `json:"key"`
+				DocCount               int64  `json:"doc_count"`
+				ConformanceStatusCount struct {
+					Buckets []struct {
+						Key      string `json:"key"`
+						DocCount int64  `json:"doc_count"`
+					} `json:"buckets"`
+				} `json:"conformanceStatus_count"`
+			} `json:"buckets"`
+		} `json:"controlID_count"`
+	} `json:"aggregations"`
+}
+
+func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
 	idx := types.FindingsIndex
 	var filters []kaytu.BoolFilter
 	if len(resourceIDs) > 0 {
@@ -154,9 +171,9 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client ka
 			"", "",
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}
-	// Build the query with a filter on controlID
+
 	query := map[string]any{
-		"size": 0, // No hits, just aggregations
+		"size": 0,
 		"query": map[string]any{
 			"bool": map[string]any{
 				"filter": filters,
@@ -165,8 +182,16 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client ka
 		"aggs": map[string]any{
 			"controlID_count": map[string]any{
 				"terms": map[string]any{
-					"field": "controlID", // Use the keyword field for exact matching
-					"size":  10000,       // Adjust if you expect more unique controlIDs
+					"field": "controlID",
+					"size":  10000,
+				},
+				"aggs": map[string]any{
+					"conformanceStatus_count": map[string]any{
+						"terms": map[string]any{
+							"field": "conformanceStatus",
+							"size":  10,
+						},
+					},
 				},
 			},
 		},
@@ -179,21 +204,18 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client ka
 
 	logger.Info("FindingsCountByControlID", zap.String("query", string(queryJson)), zap.String("index", idx))
 
-	// Make the request
-	var response map[string]any
+	var response FindingsCountQueryHit
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse the aggregation result
-	buckets := response["aggregations"].(map[string]any)["controlID_count"].(map[string]any)["buckets"].([]any)
-	controlIDCount := make(map[string]int64)
-	for _, bucket := range buckets {
-		bucketMap := bucket.(map[string]any)
-		controlID := bucketMap["key"].(string)
-		docCount := int64(bucketMap["doc_count"].(float64))
-		controlIDCount[controlID] = docCount
+	controlIDCount := make(map[string]map[string]int64)
+	for _, bucket := range response.Aggregations.ControlIDCount.Buckets {
+		controlIDCount[bucket.Key] = make(map[string]int64)
+		for _, conformanceBucket := range bucket.ConformanceStatusCount.Buckets {
+			controlIDCount[bucket.Key][conformanceBucket.Key] = conformanceBucket.DocCount
+		}
 	}
 
 	return controlIDCount, nil

@@ -56,15 +56,28 @@ type ControlTrendDatapoint struct {
 	TotalConnectionCount  int `json:"totalConnectionCount"`
 }
 
-type ListControlsFilter struct {
-	Connector       []string            `json:"connector" example:"Azure"`
+type ListControlsFilterRequest struct {
+	Connector       []string            `json:"connector"`
 	Severity        []string            `json:"severity"`
 	RootBenchmark   []string            `json:"rootBenchmark"`
 	ParentBenchmark []string            `json:"parentBenchmark"`
+	Customizable    *bool               `json:"customizable"`
+	PrimaryTable    []string            `json:"primaryTable"`
+	ListOfTables    []string            `json:"listOfTables"`
 	Tags            map[string][]string `json:"tags"`
 	FindingFilters  *FindingFilters     `json:"findingFilters"`
+	FindingSummary  bool                `json:"findingSummary"`
 	PageNumber      *int64              `json:"pageNumber"`
 	PageSize        *int64              `json:"pageSize"`
+}
+
+type ListControlsFilterControlData struct {
+	Control         Control          `json:"control"`
+	FindingsSummary map[string]int64 `json:"findingsSummary"`
+}
+
+type ListControlsFilterResult struct {
+	ControlsData []ListControlsFilterControlData `json:"controlsData"`
 }
 
 type ControlTagsResult struct {
