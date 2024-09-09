@@ -3187,7 +3187,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
-//	@Success	200				{object}	[]api.ListControlsFilterResult
+//	@Success	200				{object}	api.ListControlsFilterResult
 //	@Router		/compliance/api/v1/controls/filtered [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
