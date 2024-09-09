@@ -1144,6 +1144,47 @@
                 }
             }
         },
+        "/compliance/api/v1/controls": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "List controls filtered by connector, benchmark, tags",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/controls/summary": {
             "get": {
                 "security": [
@@ -1210,6 +1251,34 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlSummary"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/controls/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of control possible tags",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "List controls tags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTagsResult"
                             }
                         }
                     }
@@ -4488,6 +4557,73 @@
                 }
             }
         },
+        "/inventory/api/v2/query": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of smart queries by specified filters and tags filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "List smart queries",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryV2Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/query/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of smart queries by specified filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "List smart queries tags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resource-collection": {
             "get": {
                 "security": [
@@ -6135,126 +6271,6 @@
                 }
             }
         },
-        "/workspace/api/v1/bootstrap/{workspace_name}/credential": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Add credential for workspace to be onboarded",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workspace Name",
-                        "name": "workspace_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
-        "/workspace/api/v1/bootstrap/{workspace_name}/finish": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "finish bootstrap",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workspace Name",
-                        "name": "workspace_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/workspace/api/v1/workspace": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns workspace created",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Create workspace for workspace service",
-                "parameters": [
-                    {
-                        "description": "Create workspace request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/workspace/api/v1/workspace/current": {
             "get": {
                 "security": [
@@ -6279,40 +6295,6 @@
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Delete workspace with workspace id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Delete workspace for workspace service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workspace ID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }
@@ -7683,6 +7665,20 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTagsResult": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "uniqueValues": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTrendDatapoint": {
             "type": "object",
             "properties": {
@@ -8590,6 +8586,41 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilter": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Azure"
+                    ]
+                },
+                "parentBenchmark": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rootBenchmark": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest": {
             "type": "object",
             "properties": {
@@ -9404,6 +9435,24 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryV2Request": {
+            "type": "object",
+            "properties": {
+                "tagsFilter": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "titleFilter": {
+                    "description": "Specifies the Title",
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse": {
             "type": "object",
             "properties": {
@@ -9873,6 +9922,20 @@
                 "field": {
                     "description": "fill this with column name",
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "uniqueValues": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -10769,23 +10832,6 @@
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.AddCredentialRequest": {
-            "type": "object",
-            "properties": {
-                "awsConfig": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api_v2.AWSCredentialV2Config"
-                },
-                "azureConfig": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig"
-                },
-                "connectorType": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "singleConnection": {
-                    "type": "boolean"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress": {
             "type": "object",
             "properties": {
@@ -10823,28 +10869,6 @@
                 },
                 "workspaceCreationStatus": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.BootstrapProgress"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "organization_id": {
-                    "type": "integer"
-                },
-                "tier": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
                 }
             }
         },
@@ -10886,22 +10910,12 @@
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.StateID": {
             "type": "string",
             "enum": [
-                "RESERVING",
-                "RESERVED",
-                "WAITING_FOR_CREDENTIAL",
                 "PROVISIONING",
-                "PROVISIONED",
-                "DELETING",
-                "DELETED"
+                "PROVISIONED"
             ],
             "x-enum-varnames": [
-                "StateID_Reserving",
-                "StateID_Reserved",
-                "StateID_WaitingForCredential",
                 "StateID_Provisioning",
-                "StateID_Provisioned",
-                "StateID_Deleting",
-                "StateID_Deleted"
+                "StateID_Provisioned"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier": {
@@ -10957,14 +10971,6 @@
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse": {
             "type": "object",
             "properties": {
-                "aws_unique_id": {
-                    "type": "string",
-                    "example": "kaytu"
-                },
-                "aws_user_arn": {
-                    "type": "string",
-                    "example": "kaytu"
-                },
                 "createdAt": {
                     "type": "string",
                     "example": "2023-05-17T14:39:02.707659Z"

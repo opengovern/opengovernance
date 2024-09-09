@@ -11,8 +11,6 @@ type Workspace struct {
 
 	ID                       string            `json:"id"`
 	Name                     string            `gorm:"uniqueIndex" json:"name"`
-	AWSUniqueId              *string           `json:"aws_unique_id"`
-	AWSUserARN               *string           `json:"aws_user_arn"`
 	OwnerId                  *string           `json:"owner_id"`
 	Status                   api.StateID       `json:"status"`
 	Size                     api.WorkspaceSize `json:"workspace_size"`
@@ -23,8 +21,6 @@ type Workspace struct {
 	IsBootstrapInputFinished bool              `json:"is_bootstrap_input_finished"`
 	AnalyticsJobID           uint              `json:"analytics_job_id"`
 	ComplianceTriggered      bool              `json:"complianceTriggered"`
-	OpenSearchEndpoint       string            `json:"open_search_endpoint"`
-	PipelineEndpoint         string            `json:"pipeline_endpoint"`
 	VaultKeyId               string            `json:"vault_key_id"`
 }
 
@@ -38,8 +34,6 @@ func (w *Workspace) ToAPI() api.Workspace {
 	return api.Workspace{
 		ID:                       w.ID,
 		Name:                     w.Name,
-		AWSUserARN:               w.AWSUserARN,
-		AWSUniqueId:              w.AWSUniqueId,
 		OwnerId:                  w.OwnerId,
 		Status:                   w.Status,
 		Tier:                     w.Tier,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/goccy/go-yaml"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -16,10 +17,11 @@ import (
 )
 
 type GitParser struct {
-	logger     *zap.Logger
-	benchmarks []db.Benchmark
-	controls   []db.Control
-	queries    []db.Query
+	logger      *zap.Logger
+	benchmarks  []db.Benchmark
+	controls    []db.Control
+	queries     []db.Query
+	queryParams []models.QueryParameter
 }
 
 func populateMdMapFromPath(path string) (map[string]string, error) {
@@ -214,6 +216,13 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 						Key:      parameter.Key,
 						Required: parameter.Required,
 					})
+
+					if parameter.DefaultValue != nil {
+						g.queryParams = append(g.queryParams, models.QueryParameter{
+							Key:   parameter.Key,
+							Value: *parameter.DefaultValue,
+						})
+					}
 				}
 				g.queries = append(g.queries, q)
 				p.QueryID = &control.ID

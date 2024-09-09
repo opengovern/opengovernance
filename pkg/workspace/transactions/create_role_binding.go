@@ -24,7 +24,7 @@ func NewCreateRoleBinding(
 }
 
 func (t *CreateRoleBinding) Requirements() []api.TransactionID {
-	return []api.TransactionID{api.Transaction_CreateHelmRelease}
+	return []api.TransactionID{api.Transaction_EnsureWorkspacePodsRunning}
 }
 
 func (t *CreateRoleBinding) ApplyIdempotent(ctx context.Context, workspace db.Workspace) error {

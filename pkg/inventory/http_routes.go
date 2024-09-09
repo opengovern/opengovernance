@@ -2137,7 +2137,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
-//	@Success		200		{object}	[]inventoryApi.SmartQueryTagsResult
+//	@Success		200	{object}	[]inventoryApi.SmartQueryTagsResult
 //	@Router			/inventory/api/v2/query/tags [get]
 func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
 	// trace :

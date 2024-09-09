@@ -11,11 +11,8 @@ type Provisioning struct {
 func (s Provisioning) Requirements(workspace db.Workspace) []api.TransactionID {
 	return []api.TransactionID{
 		api.Transaction_CreateWorkspaceKeyId,
-		api.Transaction_CreateMasterCredential,
-		api.Transaction_CreateServiceAccountRoles,
-		api.Transaction_CreateHelmRelease,
+		api.Transaction_EnsureWorkspacePodsRunning,
 		api.Transaction_CreateRoleBinding,
-		api.Transaction_EnsureCredentialOnboarded,
 		api.Transaction_EnsureDiscoveryFinished,
 		api.Transaction_EnsureJobsRunning,
 		api.Transaction_EnsureJobsFinished,

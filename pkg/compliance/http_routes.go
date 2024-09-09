@@ -3154,7 +3154,7 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Produce		json
-//	@Success		200		{object}	[]api.ControlTagsResult
+//	@Success		200	{object}	[]api.ControlTagsResult
 //	@Router			/compliance/api/v1/controls/tags [get]
 func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 	// trace :
