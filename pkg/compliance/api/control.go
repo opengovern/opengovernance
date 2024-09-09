@@ -65,19 +65,26 @@ type ListControlsFilterRequest struct {
 	PrimaryTable    []string            `json:"primaryTable"`
 	ListOfTables    []string            `json:"listOfTables"`
 	Tags            map[string][]string `json:"tags"`
+	TagsRegex       *string             `json:"tagsRegex"`
 	FindingFilters  *FindingFilters     `json:"findingFilters"`
 	FindingSummary  bool                `json:"findingSummary"`
 	PageNumber      *int64              `json:"pageNumber"`
 	PageSize        *int64              `json:"pageSize"`
 }
 
-type ListControlsFilterControlData struct {
-	Control         Control          `json:"control"`
-	FindingsSummary map[string]int64 `json:"findingsSummary"`
-}
-
 type ListControlsFilterResult struct {
-	ControlsData []ListControlsFilterControlData `json:"controlsData"`
+	ID          string                `json:"id"`
+	Title       string                `json:"title"`
+	Description string                `json:"description"`
+	Connector   []source.Type         `json:"connector"`
+	Severity    types.FindingSeverity `json:"severity"`
+	Tags        map[string][]string   `json:"tags"`
+	Query       struct {
+		PrimaryTable *string          `json:"primaryTable"`
+		ListOfTables []string         `json:"listOfTables"`
+		Parameters   []QueryParameter `json:"parameters"`
+	} `json:"query"`
+	FindingsSummary map[string]int64 `json:"findingsSummary"`
 }
 
 type ControlTagsResult struct {

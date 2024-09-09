@@ -35,6 +35,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sort"
 	"strconv"
@@ -3185,8 +3186,8 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.ListControlsFilter	true	"Request Body"
-//	@Success	200				{object}	api.ListControlsFilterControlData
+//	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
+//	@Success	200				{object}	[]api.ListControlsFilterResult
 //	@Router		/compliance/api/v1/controls/filtered [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -3264,16 +3265,24 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		for _, c := range controls {
 			controlIDs = append(controlIDs, c.ID)
 		}
-
-		fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID, req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID, req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		if req.FindingFilters != nil {
+			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID,
+				req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID,
+				req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity,
+				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+		} else {
+			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
+				nil, nil, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
+				evaluatedAtTo, nil, esConformanceStatuses)
 		}
 
 		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
 	}
 
-	var resultControls []api.Control
+	var resultControls []api.ListControlsFilterResult
 	for _, control := range controls {
 		if req.FindingFilters != nil {
 			if count, ok := fRes[control.ID]; ok {
@@ -3285,16 +3294,31 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			}
 		}
 
-		apiControl := control.ToApi()
-		apiControl.Connector = source.ParseTypes(control.Connector)
-
-		apiControl.Query = &api.Query{
-			ID:             control.Query.ID,
-			QueryToExecute: control.Query.QueryToExecute,
-			PrimaryTable:   control.Query.PrimaryTable,
-			Engine:         control.Query.Engine,
-			ListOfTables:   control.Query.ListOfTables,
+		apiControl := api.ListControlsFilterResult{
+			ID:          control.ID,
+			Title:       control.Title,
+			Description: control.Description,
+			Connector:   source.ParseTypes(control.Connector),
+			Severity:    control.Severity,
+			Tags:        filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(control.GetTagsMap())),
+			Query: struct {
+				PrimaryTable *string              `json:"primaryTable"`
+				ListOfTables []string             `json:"listOfTables"`
+				Parameters   []api.QueryParameter `json:"parameters"`
+			}{
+				PrimaryTable: control.Query.PrimaryTable,
+				ListOfTables: control.Query.ListOfTables,
+				Parameters:   make([]api.QueryParameter, 0, len(control.Query.Parameters)),
+			},
 		}
+		for _, p := range control.Query.Parameters {
+			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
+		}
+
+		if req.FindingSummary {
+			apiControl.FindingsSummary = fRes[control.ID]
+		}
+
 		resultControls = append(resultControls, apiControl)
 	}
 
@@ -3308,18 +3332,22 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		resultControls = utils.Paginate(*req.PageNumber, *req.PageSize, resultControls)
 	}
 
-	var controlsData []api.ListControlsFilterControlData
-	for _, control := range resultControls {
-		controlData := api.ListControlsFilterControlData{
-			Control: control,
-		}
-		if req.FindingSummary {
-			controlData.FindingsSummary = fRes[control.ID]
-		}
-		controlsData = append(controlsData, controlData)
-	}
+	return echoCtx.JSON(http.StatusOK, resultControls)
+}
 
-	return echoCtx.JSON(http.StatusOK, api.ListControlsFilterResult{ControlsData: controlsData})
+func filterTagsByRegex(regexPattern *string, tags map[string][]string) map[string][]string {
+	if regexPattern == nil {
+		return tags
+	}
+	re := regexp.MustCompile(*regexPattern)
+
+	resultsMap := make(map[string][]string)
+	for k, v := range tags {
+		if re.MatchString(k) {
+			resultsMap[k] = v
+		}
+	}
+	return resultsMap
 }
 
 func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string) ([]string, error) {
