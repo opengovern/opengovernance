@@ -3286,7 +3286,10 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	}
 
 	var resultControls []api.ListControlsFilterResultControl
-	var uniqueConnectors, uniqueSeverities, uniquePrimaryTables, uniqueListOfTables map[string]bool
+	uniqueConnectors := make(map[string]bool)
+	uniqueSeverities := make(map[string]bool)
+	uniquePrimaryTables := make(map[string]bool)
+	uniqueListOfTables := make(map[string]bool)
 	uniqueTags := make(map[string]map[string]bool)
 	for _, control := range controls {
 		if req.FindingFilters != nil {
