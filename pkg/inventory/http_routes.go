@@ -2100,15 +2100,15 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	}
 	span.End()
 
-	var result []inventoryApi.SmartQueryItem
+	var result []inventoryApi.SmartQueryItemV2
 	for _, item := range queries {
 		category := ""
 
-		tags := map[string]string{}
+		tags := item.GetTagsMap()
 		if item.IsPopular {
-			tags["popular"] = "true"
+			tags["popular"] = []string{"true"}
 		}
-		result = append(result, inventoryApi.SmartQueryItem{
+		result = append(result, inventoryApi.SmartQueryItemV2{
 			ID:         item.ID,
 			Connectors: source.ParseTypes(item.Connectors),
 			Title:      item.Title,

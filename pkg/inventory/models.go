@@ -45,6 +45,18 @@ type SmartQuery struct {
 	Tags        []SmartQueryTag `gorm:"foreignKey:SmartQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
+func (p SmartQuery) GetTagsMap() map[string][]string {
+	var tagsMap map[string][]string
+	if p.Tags == nil {
+		tagLikeArr := make([]model.TagLike, 0, len(p.Tags))
+		for _, tag := range p.Tags {
+			tagLikeArr = append(tagLikeArr, tag)
+		}
+		tagsMap = model.GetTagsMap(tagLikeArr)
+	}
+	return tagsMap
+}
+
 type SmartQueryHistory struct {
 	Query      string `gorm:"type:citext; primaryKey"`
 	ExecutedAt time.Time

@@ -137,6 +137,15 @@ type SmartQueryItem struct {
 	Tags       map[string]string `json:"tags"`       // Tags
 }
 
+type SmartQueryItemV2 struct {
+	ID         string              `json:"id"`         // Query Id
+	Connectors []source.Type       `json:"connectors"` // Provider
+	Title      string              `json:"title"`      // Title
+	Category   string              `json:"category"`   // Category (Tags[category])
+	Query      string              `json:"query"`      // Query
+	Tags       map[string][]string `json:"tags"`       // Tags
+}
+
 type ListQueryRequest struct {
 	TitleFilter string `json:"titleFilter"` // Specifies the Title
 }
