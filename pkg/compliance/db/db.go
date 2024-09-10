@@ -351,6 +351,38 @@ func (db Database) GetControl(ctx context.Context, id string) (*Control, error) 
 	return &s, nil
 }
 
+func (db Database) GetBenchmarkParent(ctx context.Context, benchmarkID string) (string, error) {
+	var benchmarkIDs string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&BenchmarkChild{}).
+		Select("benchmark_id").
+		Where("child_id = ?", benchmarkID).
+		Find(&benchmarkIDs)
+
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+
+	return benchmarkIDs, nil
+}
+
+func (db Database) GetBenchmarkIdsByControlID(ctx context.Context, controlID string) ([]string, error) {
+	var benchmarkIDs []string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&BenchmarkControls{}).
+		Select("benchmark_id").
+		Where("control_id = ?", controlID).
+		Find(&benchmarkIDs)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return benchmarkIDs, nil
+}
+
 func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID string) ([]Control, error) {
 	var s []Control
 	tx := db.Orm.WithContext(ctx).Model(&Control{}).

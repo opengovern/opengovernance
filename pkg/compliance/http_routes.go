@@ -74,6 +74,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	controls := v1.Group("/controls")
 	controlsV2 := v2.Group("/controls")
 	controlsV2.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controlsV2.GET("/details", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	controlsV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
@@ -3383,6 +3384,85 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, result)
+}
+
+// GetControlDetails godoc
+//
+//	@Summary	Get Control Details by control ID
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param			request	body		api.GetControlDetailsRequest	true	"Request Body"
+//	@Success	200				{object}	api.GetControlDetailsResponse
+//	@Router		/compliance/api/v2/controls/details [get]
+func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	var req api.GetControlDetailsRequest
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	control, err := h.db.GetControl(ctx, req.ControlID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	response := api.GetControlDetailsResponse{
+		ID:          control.ID,
+		Title:       control.Title,
+		Description: control.Description,
+		Connector:   control.Connector,
+		Severity:    control.Severity.String(),
+		Query: struct {
+			Engine         string   `json:"engine"`
+			QueryToExecute string   `json:"queryToExecute"`
+			PrimaryTable   *string  `json:"primaryTable"`
+			ListOfTables   []string `json:"listOfTables"`
+		}{
+			Engine:         control.Query.Engine,
+			QueryToExecute: control.Query.QueryToExecute,
+			PrimaryTable:   control.Query.PrimaryTable,
+			ListOfTables:   control.Query.ListOfTables,
+		},
+		Tags: model.TrimPrivateTags(control.GetTagsMap()),
+	}
+
+	if req.ShowReferences {
+		benchmarks, err := h.db.GetBenchmarkIdsByControlID(ctx, control.ID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		benchmarkPathsMap := make(map[string]bool)
+		rootBenchmarksMap := make(map[string]bool)
+		var benchmarkPaths, rootBenchmarks []string
+		for _, b := range benchmarks {
+			path, err := h.getBenchmarkPath(ctx, b)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			benchmarkPathsMap[path] = true
+			root := strings.Split(path, "/")[0]
+			rootBenchmarksMap[root] = true
+		}
+		for k, _ := range benchmarkPathsMap {
+			benchmarkPaths = append(benchmarkPaths, k)
+		}
+		for k, _ := range rootBenchmarksMap {
+			rootBenchmarks = append(rootBenchmarks, k)
+		}
+		response.Benchmarks = &struct {
+			Roots    []string `json:"roots"`
+			FullPath []string `json:"fullPath"`
+		}{
+			Roots:    rootBenchmarks,
+			FullPath: benchmarkPaths,
+		}
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // ListControlsSummary godoc

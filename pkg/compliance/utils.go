@@ -11,6 +11,24 @@ import (
 	"time"
 )
 
+func (h *HttpHandler) getBenchmarkPath(ctx context.Context, benchmarkId string) (string, error) {
+	parent, err := h.db.GetBenchmarkParent(ctx, benchmarkId)
+	if err != nil {
+		return "", err
+	}
+	if parent == "" {
+		return benchmarkId, nil
+	}
+	parentPath, err := h.getBenchmarkPath(ctx, parent)
+	if err != nil {
+		return "", err
+	}
+	if parentPath == "" {
+		return parent, nil
+	}
+	return parentPath + "/" + benchmarkId, nil
+}
+
 func (h *HttpHandler) getBenchmarkFindingSummary(ctx context.Context, benchmarkId string, findingFilters *api.FindingSummaryFilters) (*api.GetBenchmarkDetailsFindings, error) {
 	findings, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkId)
 	if err != nil {
