@@ -138,12 +138,15 @@ type SmartQueryItem struct {
 }
 
 type SmartQueryItemV2 struct {
-	ID         string              `json:"id"`         // Query Id
-	Connectors []source.Type       `json:"connectors"` // Provider
-	Title      string              `json:"title"`      // Title
-	Category   string              `json:"category"`   // Category (Tags[category])
-	Query      string              `json:"query"`      // Query
-	Tags       map[string][]string `json:"tags"`       // Tags
+	ID          string        `json:"id"`    // Query Id
+	Title       string        `json:"title"` // Title
+	Description string        `json:"description"`
+	Connectors  []source.Type `json:"connectors"` // Provider
+	Query       struct {
+		QueryEngine    string `json:"queryEngine"`
+		QueryToExecute string `json:"queryToExecute"`
+	} `json:"query"` // Query
+	Tags map[string][]string `json:"tags"` // Tags
 }
 
 type ListQueryRequest struct {
@@ -153,6 +156,7 @@ type ListQueryRequest struct {
 type ListQueryV2Request struct {
 	TitleFilter string              `json:"titleFilter"` // Specifies the Title
 	TagsFilter  map[string][]string `json:"tagsFilter"`
+	TagsRegex   *string             `json:"tagsRegex"`
 	Connectors  []string            `json:"connectors"`
 	PageNumber  *int64              `json:"pageNumber"`
 	PageSize    *int64              `json:"pageSize"`

@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"math"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -71,6 +72,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	queryV2 := v2.Group("/query")
 	queryV2.GET("", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	queryV2.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	queryV2.GET("/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 
 	resourcesV2 := v2.Group("/resources")
@@ -2102,19 +2104,23 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 
 	var result []inventoryApi.SmartQueryItemV2
 	for _, item := range queries {
-		category := ""
-
 		tags := item.GetTagsMap()
 		if item.IsPopular {
 			tags["popular"] = []string{"true"}
 		}
 		result = append(result, inventoryApi.SmartQueryItemV2{
-			ID:         item.ID,
-			Connectors: source.ParseTypes(item.Connectors),
-			Title:      item.Title,
-			Category:   category,
-			Query:      item.Query,
-			Tags:       tags,
+			ID:          item.ID,
+			Title:       item.Title,
+			Description: item.Description,
+			Connectors:  source.ParseTypes(item.Connectors),
+			Query: struct {
+				QueryEngine    string `json:"queryEngine"`
+				QueryToExecute string `json:"queryToExecute"`
+			}{
+				QueryEngine:    item.Engine,
+				QueryToExecute: item.Query,
+			},
+			Tags: filterTagsByRegex(req.TagsRegex, tags),
 		})
 	}
 
@@ -2128,6 +2134,67 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, result))
 	}
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetQuery godoc
+//
+//	@Summary		Get smart query by ID
+//	@Description	Retrieving list of smart queries by specified filters and tags filters
+//	@Security		BearerToken
+//	@Tags			smart_query
+//	@Produce		json
+//	@Param			query_id	path		string	true	"QueryID"
+//	@Success		200		{object}	inventoryApi.SmartQueryItem
+//	@Router			/inventory/api/v2/query/{query_id} [get]
+func (h *HttpHandler) GetQuery(ctx echo.Context) error {
+	queryID := ctx.Param("query_id")
+
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetQuery")
+
+	query, err := h.db.GetQuery(queryID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span.End()
+	tags := query.GetTagsMap()
+	if query.IsPopular {
+		tags["popular"] = []string{"true"}
+	}
+	result := inventoryApi.SmartQueryItemV2{
+		ID:          query.ID,
+		Title:       query.Title,
+		Description: query.Description,
+		Connectors:  source.ParseTypes(query.Connectors),
+		Query: struct {
+			QueryEngine    string `json:"queryEngine"`
+			QueryToExecute string `json:"queryToExecute"`
+		}{
+			QueryEngine:    query.Engine,
+			QueryToExecute: query.Query,
+		},
+		Tags: tags,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+func filterTagsByRegex(regexPattern *string, tags map[string][]string) map[string][]string {
+	if regexPattern == nil {
+		return tags
+	}
+	re := regexp.MustCompile(*regexPattern)
+
+	resultsMap := make(map[string][]string)
+	for k, v := range tags {
+		if re.MatchString(k) {
+			resultsMap[k] = v
+		}
+	}
+	return resultsMap
 }
 
 // ListQueriesTags godoc
