@@ -103,6 +103,9 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 		}
 	}
 
+	checkRequest.Attributes.Request.Http.Path = ctx.Request().URL.Path
+	checkRequest.Attributes.Request.Http.Method = ctx.Request().Method
+
 	res, err := r.authServer.Check(ctx.Request().Context(), &checkRequest)
 	if err != nil {
 		return err
