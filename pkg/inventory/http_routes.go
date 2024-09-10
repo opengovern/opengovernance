@@ -72,7 +72,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	queryV2 := v2.Group("/query")
 	queryV2.GET("", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
-	queryV2.GET("/:query_id/details", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
+	queryV2.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	queryV2.GET("/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 
 	resourcesV2 := v2.Group("/resources")
@@ -2145,7 +2145,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			query_id	path		string	true	"QueryID"
 //	@Success		200		{object}	inventoryApi.SmartQueryItem
-//	@Router			/inventory/api/v2/query/{query_id}/details [get]
+//	@Router			/inventory/api/v2/query/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
 
