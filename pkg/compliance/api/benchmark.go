@@ -95,3 +95,45 @@ type BenchmarkControlSummary struct {
 	Controls  []ControlSummary          `json:"control"`
 	Children  []BenchmarkControlSummary `json:"children"`
 }
+
+type GetBenchmarkDetailsRequest struct {
+	BenchmarkID       string                 `json:"benchmarkId"`
+	TagsRegex         *string                `json:"tagsRegex"`
+	FindingFilters    *FindingSummaryFilters `json:"findingFilters"`
+	BenchmarkChildren bool                   `json:"benchmarkChildren"`
+}
+
+type GetBenchmarkDetailsMetadata struct {
+	ID               string              `json:"id"`
+	Title            string              `json:"title"`
+	Description      string              `json:"description"`
+	Enabled          bool                `json:"enabled"`
+	TrackDriftEvents bool                `json:"trackDriftEvents"`
+	Connectors       []source.Type       `json:"connectors"`
+	PrimaryTables    []string            `json:"primaryTables"`
+	ListOfTables     []string            `json:"listOfTables"`
+	Tags             map[string][]string `json:"tags"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	UpdatedAt        time.Time           `json:"updatedAt"`
+}
+
+type GetBenchmarkDetailsFindings struct {
+	Results         map[types.ConformanceStatus]int `json:"results"`
+	LastEvaluatedAt time.Time                       `json:"lastEvaluatedAt"`
+	ConnectionIDs   []string                        `json:"connectionIDs"`
+}
+
+type GetBenchmarkDetailsChildren struct {
+	ID         string                        `json:"id"`
+	Title      string                        `json:"title"`
+	Tags       map[string][]string           `json:"tags"`
+	ControlIDs []string                      `json:"controlIDs"`
+	Findings   GetBenchmarkDetailsFindings   `json:"findings"`
+	Children   []GetBenchmarkDetailsChildren `json:"children"`
+}
+
+type GetBenchmarkDetailsResponse struct {
+	Metadata GetBenchmarkDetailsMetadata   `json:"metadata"`
+	Findings GetBenchmarkDetailsFindings   `json:"findings"`
+	Children []GetBenchmarkDetailsChildren `json:"children"`
+}

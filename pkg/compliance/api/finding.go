@@ -28,6 +28,11 @@ type FindingFilters struct {
 	} `json:"evaluatedAt"`
 }
 
+type FindingSummaryFilters struct {
+	ConnectionID   []string `json:"connectionID"`
+	ResourceTypeID []string `json:"resourceTypeID"`
+}
+
 type FindingFiltersWithMetadata struct {
 	Connector          []FilterWithMetadata `json:"connector"`
 	BenchmarkID        []FilterWithMetadata `json:"benchmarkID"`

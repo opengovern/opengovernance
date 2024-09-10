@@ -35,7 +35,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sort"
 	"strconv"
@@ -64,6 +63,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
 	benchmarksV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
 	benchmarksV2.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
+	benchmarksV2.GET("/details", httpserver2.AuthorizeHandler())
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -3385,47 +3385,6 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, result)
 }
 
-func mapToArray(input map[string]bool) []string {
-	var result []string
-	for k, _ := range input {
-		result = append(result, k)
-	}
-	return result
-}
-
-func filterTagsByRegex(regexPattern *string, tags map[string][]string) map[string][]string {
-	if regexPattern == nil {
-		return tags
-	}
-	re := regexp.MustCompile(*regexPattern)
-
-	resultsMap := make(map[string][]string)
-	for k, v := range tags {
-		if re.MatchString(k) {
-			resultsMap[k] = v
-		}
-	}
-	return resultsMap
-}
-
-func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string) ([]string, error) {
-	var benchmarks []string
-	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
-	if err != nil {
-		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
-		return nil, err
-	}
-	for _, child := range benchmark.Children {
-		childBenchmarks, err := h.getChildBenchmarks(ctx, child.ID)
-		if err != nil {
-			return nil, err
-		}
-		benchmarks = append(benchmarks, childBenchmarks...)
-	}
-	benchmarks = append(benchmarks, benchmarkId)
-	return benchmarks, nil
-}
-
 // ListControlsSummary godoc
 //
 //	@Summary	List controls summaries
@@ -4441,6 +4400,106 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, response))
 	}
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkDetails godoc
+//
+//	@Summary	Get Benchmark Details by BenchmarkID
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
+//	@Success	200				{object}	[]api.Benchmark
+//	@Router		/compliance/api/v2/benchmarks [get]
+func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	var req api.GetBenchmarkDetailsRequest
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmark")
+	defer span1.End()
+
+	benchmark, err := h.db.GetBenchmark(ctx, req.BenchmarkID)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
+	span1.End()
+
+	findings, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmark.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var findingsResult api.GetBenchmarkDetailsFindings
+	findingsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
+	for connection, finding := range findings {
+		if req.FindingFilters != nil && len(req.FindingFilters.ConnectionID) > 0 {
+			if !listContains(req.FindingFilters.ConnectionID, connection) {
+				continue
+			}
+		}
+		if req.FindingFilters != nil && len(req.FindingFilters.ResourceTypeID) > 0 {
+			findingsResult.Results = make(map[kaytuTypes.ConformanceStatus]int)
+			for resourceType, result := range finding.ResourceTypes {
+				if listContains(req.FindingFilters.ResourceTypeID, resourceType) {
+					for k, v := range result.QueryResult {
+						if _, ok := findingsResult.Results[k]; ok {
+							findingsResult.Results[k] += v
+						} else {
+							findingsResult.Results[k] = v
+						}
+					}
+				}
+			}
+		} else {
+			findingsResult.Results = finding.Result.QueryResult
+		}
+		findingsResult.ConnectionIDs = append(findingsResult.ConnectionIDs, connection)
+	}
+
+	var primaryTables, listOfTables []string
+	primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, benchmark.ID)
+	for k, _ := range primaryTablesMap {
+		primaryTables = append(primaryTables, k)
+	}
+	for k, _ := range listOfTablesMap {
+		listOfTables = append(listOfTables, k)
+	}
+	benchmarkMetadata := api.GetBenchmarkDetailsMetadata{
+		ID:               benchmark.ID,
+		Title:            benchmark.Title,
+		Description:      benchmark.Description,
+		TrackDriftEvents: benchmark.TracksDriftEvents,
+		PrimaryTables:    primaryTables,
+		ListOfTables:     listOfTables,
+		Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(benchmark.GetTagsMap())),
+		CreatedAt:        benchmark.CreatedAt,
+		UpdatedAt:        benchmark.UpdatedAt,
+	}
+	if benchmark.Connector != nil {
+		benchmarkMetadata.Connectors = source.ParseTypes(benchmark.Connector)
+	}
+
+	children, err := h.getChildBenchmarksWithDetails(ctx, benchmark.ID, req)
+
+	return echoCtx.JSON(http.StatusOK, api.GetBenchmarkDetailsResponse{
+		Metadata: benchmarkMetadata,
+		Findings: findingsResult,
+		Children: children,
+	})
 }
 
 func (h *HttpHandler) ListBenchmarks(echoCtx echo.Context) error {
