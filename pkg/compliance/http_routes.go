@@ -4359,6 +4359,16 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		response = append(response, benchmarkResult)
 	}
 
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Metadata.ID < response[j].Metadata.ID
+	})
+	if req.PageSize != nil {
+		if req.PageNumber == nil {
+			response = utils.Paginate(1, *req.PageSize, response)
+		}
+		response = utils.Paginate(*req.PageNumber, *req.PageSize, response)
+	}
+
 	return echoCtx.JSON(http.StatusOK, response)
 }
 

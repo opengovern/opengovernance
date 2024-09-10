@@ -147,6 +147,8 @@ type GetBenchmarkListRequest struct {
 	Root              bool                   `json:"root"`
 	FindingFilters    *FindingSummaryFilters `json:"findingFilters"`
 	FindingSummary    bool                   `json:"findingSummary"`
+	PageNumber        *int64                 `json:"pageNumber"`
+	PageSize          *int64                 `json:"pageSize"`
 }
 
 type GetBenchmarkListMetadata struct {
