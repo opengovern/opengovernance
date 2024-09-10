@@ -74,6 +74,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	controls := v1.Group("/controls")
 	controlsV2 := v2.Group("/controls")
 	controlsV2.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controlsV2.GET("/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	controlsV2.GET("/details", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	controlsV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
@@ -3191,7 +3192,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
-//	@Success	200				{object}	api.ListControlsFilterResult
+//	@Success	200				{object}	[]api.ListControlsFilterResultControl
 //	@Router		/compliance/api/v2/controls [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -3360,27 +3361,185 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		resultControls = utils.Paginate(*req.PageNumber, *req.PageSize, resultControls)
 	}
 
+	return echoCtx.JSON(http.StatusOK, resultControls)
+}
+
+// ControlsFilteredSummary godoc
+//
+//	@Summary	List controls filtered by connector, benchmark, tags
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
+//	@Success	200				{object}	api.ListControlsFilterResult
+//	@Router		/compliance/api/v2/controls/summary [get]
+func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	var req api.ControlsFilterSummaryRequest
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var benchmarks []string
+
+	if len(req.RootBenchmark) > 0 {
+		var rootBenchmarks []string
+		for _, rootBenchmark := range req.RootBenchmark {
+			childBenchmarks, err := h.getChildBenchmarks(ctx, rootBenchmark)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			rootBenchmarks = append(rootBenchmarks, childBenchmarks...)
+		}
+		if len(req.ParentBenchmark) > 0 {
+			parentBenchmarks := make(map[string]bool)
+			for _, parentBenchmark := range req.ParentBenchmark {
+				parentBenchmarks[parentBenchmark] = true
+			}
+			for _, b := range rootBenchmarks {
+				if _, ok := parentBenchmarks[b]; ok {
+					benchmarks = append(benchmarks, b)
+				}
+			}
+		} else {
+			for _, b := range rootBenchmarks {
+				benchmarks = append(benchmarks, b)
+			}
+		}
+	} else if len(req.ParentBenchmark) > 0 {
+		benchmarks = req.ParentBenchmark
+	}
+
+	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.Customizable,
+		req.PrimaryTable, req.ListOfTables)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var fRes map[string]map[string]int64
+
+	if req.FindingFilters != nil {
+		var esConformanceStatuses []kaytuTypes.ConformanceStatus
+		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+
+		if req.FindingFilters != nil {
+			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+			for _, status := range req.FindingFilters.ConformanceStatus {
+				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+			}
+
+			if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
+				lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+			}
+			if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
+				lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+			}
+			if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
+				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+			}
+			if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
+				evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+			}
+		} else {
+			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0)
+		}
+
+		var controlIDs []string
+		for _, c := range controls {
+			controlIDs = append(controlIDs, c.ID)
+		}
+		if req.FindingFilters != nil {
+			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID,
+				req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID,
+				req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity,
+				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+		} else {
+			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
+				nil, nil, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
+				evaluatedAtTo, nil, esConformanceStatuses)
+		}
+
+		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+	}
+
+	var resultControls []api.ListControlsFilterResultControl
+	uniqueConnectors := make(map[string]bool)
+	uniqueSeverities := make(map[string]bool)
+	uniquePrimaryTables := make(map[string]bool)
+	uniqueListOfTables := make(map[string]bool)
+	uniqueTags := make(map[string]map[string]bool)
+	for _, control := range controls {
+		if req.FindingFilters != nil {
+			if count, ok := fRes[control.ID]; ok {
+				if len(count) == 0 {
+					continue
+				}
+			} else {
+				continue
+			}
+		}
+
+		apiControl := api.ListControlsFilterResultControl{
+			ID:          control.ID,
+			Title:       control.Title,
+			Description: control.Description,
+			Connector:   source.ParseTypes(control.Connector),
+			Severity:    control.Severity,
+			Tags:        filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(control.GetTagsMap())),
+			Query: struct {
+				PrimaryTable *string              `json:"primaryTable"`
+				ListOfTables []string             `json:"listOfTables"`
+				Parameters   []api.QueryParameter `json:"parameters"`
+			}{
+				PrimaryTable: control.Query.PrimaryTable,
+				ListOfTables: control.Query.ListOfTables,
+				Parameters:   make([]api.QueryParameter, 0, len(control.Query.Parameters)),
+			},
+		}
+		for _, p := range control.Query.Parameters {
+			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
+		}
+
+		for _, c := range apiControl.Connector {
+			uniqueConnectors[c.String()] = true
+		}
+		uniqueSeverities[apiControl.Severity.String()] = true
+		for _, t := range apiControl.Query.ListOfTables {
+			uniqueListOfTables[t] = true
+		}
+		if apiControl.Query.PrimaryTable != nil {
+			uniquePrimaryTables[*apiControl.Query.PrimaryTable] = true
+		}
+		for k, vs := range apiControl.Tags {
+			if _, ok := uniqueTags[k]; !ok {
+				uniqueTags[k] = make(map[string]bool)
+			}
+			for _, v := range vs {
+				uniqueTags[k][v] = true
+			}
+		}
+
+		resultControls = append(resultControls, apiControl)
+	}
+
 	uniqueTagsFinal := make(map[string][]string)
 	for k, vs := range uniqueTags {
 		for v, _ := range vs {
 			uniqueTagsFinal[k] = append(uniqueTagsFinal[k], v)
 		}
 	}
-	result := api.ListControlsFilterResult{
-		Controls: resultControls,
-		Summary: struct {
-			Connector    []string            `json:"connector"`
-			Severity     []string            `json:"severity"`
-			Tags         map[string][]string `json:"tags"`
-			PrimaryTable []string            `json:"primaryTable"`
-			ListOfTables []string            `json:"listOfTables"`
-		}{
-			Connector:    mapToArray(uniqueConnectors),
-			Severity:     mapToArray(uniqueSeverities),
-			Tags:         uniqueTagsFinal,
-			PrimaryTable: mapToArray(uniquePrimaryTables),
-			ListOfTables: mapToArray(uniqueListOfTables),
-		},
+	result := api.ControlsFilterSummaryResult{
+		ControlsCount: int64(len(resultControls)),
+		Connector:     mapToArray(uniqueConnectors),
+		Severity:      mapToArray(uniqueSeverities),
+		Tags:          uniqueTagsFinal,
+		PrimaryTable:  mapToArray(uniquePrimaryTables),
+		ListOfTables:  mapToArray(uniqueListOfTables),
 	}
 
 	return echoCtx.JSON(http.StatusOK, result)
