@@ -11,6 +11,41 @@ import (
 	"time"
 )
 
+func (h *HttpHandler) getBenchmarkFindingSummary(ctx context.Context, benchmarkId string, findingFilters *api.FindingSummaryFilters) (*api.GetBenchmarkDetailsFindings, error) {
+	findings, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkId)
+	if err != nil {
+		return nil, err
+	}
+
+	var findingsResult api.GetBenchmarkDetailsFindings
+	findingsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
+	for connection, finding := range findings {
+		if findingFilters != nil && len(findingFilters.ConnectionID) > 0 {
+			if !listContains(findingFilters.ConnectionID, connection) {
+				continue
+			}
+		}
+		if findingFilters != nil && len(findingFilters.ResourceTypeID) > 0 {
+			findingsResult.Results = make(map[kaytuTypes.ConformanceStatus]int)
+			for resourceType, result := range finding.ResourceTypes {
+				if listContains(findingFilters.ResourceTypeID, resourceType) {
+					for k, v := range result.QueryResult {
+						if _, ok := findingsResult.Results[k]; ok {
+							findingsResult.Results[k] += v
+						} else {
+							findingsResult.Results[k] = v
+						}
+					}
+				}
+			}
+		} else {
+			findingsResult.Results = finding.Result.QueryResult
+		}
+		findingsResult.ConnectionIDs = append(findingsResult.ConnectionIDs, connection)
+	}
+	return &findingsResult, nil
+}
+
 // getTablesUnderBenchmark ctx context.Context, benchmarkId string -> primaryTables, listOfTables, error
 func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId string) (map[string]bool, map[string]bool, error) {
 	primaryTables := make(map[string]bool)
@@ -137,6 +172,16 @@ func listContains(list []string, value string) bool {
 		}
 	}
 	return false
+}
+
+// listContainsList list1 > list2
+func listContainsList(list1 []string, list2 []string) bool {
+	for _, v1 := range list2 {
+		if !listContains(list1, v1) {
+			return false
+		}
+	}
+	return true
 }
 
 func mapToArray(input map[string]bool) []string {

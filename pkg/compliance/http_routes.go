@@ -4291,114 +4291,74 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	var req api.ListBenchmarksFilter
+	var req api.GetBenchmarkListRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var response []api.Benchmark
-	// trace :
-	ctx, span1 := tracer.Start(ctx, "new_ListBenchmarksFiltered", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListBenchmarksFiltered")
-	defer span1.End()
-
-	var benchmarks []db.Benchmark
-	var err error
-
-	benchmarks, err = h.db.ListBenchmarksFiltered(ctx, req.Root, req.Connector, req.Tags)
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-
-	benchmarkIDsMap := make(map[string]bool)
-	for _, b := range benchmarks {
-		childBenchmarks, err := h.getChildBenchmarks(ctx, b.ID)
-		if err != nil {
-			span1.RecordError(err)
-			span1.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		for _, cb := range childBenchmarks {
-			benchmarkIDsMap[cb] = true
-		}
-	}
-	var benchmarkIDs []string
-	for k, _ := range benchmarkIDsMap {
-		benchmarkIDs = append(benchmarkIDs, k)
-	}
-
-	controls, err := h.db.ListControlsByFilter(ctx, nil, nil, benchmarkIDs, nil, nil, nil, nil)
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, req.Root, req.Tags, req.ParentBenchmarkID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var fRes map[string]map[string]int64
-
-	if req.FindingFilters != nil {
-		esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
-		for _, status := range req.FindingFilters.ConformanceStatus {
-			esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
-		}
-
-		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
-		if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
-			lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
-		}
-		if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
-			lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
-		}
-		if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
-			evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
-		}
-		if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
-			evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
-		}
-
-		var controlIDs []string
-		for _, c := range controls {
-			controlIDs = append(controlIDs, c.ID)
-		}
-
-		fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID, req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID, req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-
-		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
-	}
-
-	span1.End()
-
-	// tracer :
-	ctx, span2 := tracer.Start(ctx, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnectors(loop)")
-	defer span2.End()
-
+	var response []api.GetBenchmarkListResponse
 	for _, b := range benchmarks {
-		if req.FindingFilters != nil {
-			if count, ok := fRes[b.ID]; ok {
-				if len(count) == 0 {
+		var findingsResult *api.GetBenchmarkDetailsFindings
+		if req.FindingFilters != nil || req.FindingSummary {
+			findings, err := h.getBenchmarkFindingSummary(ctx, b.ID, req.FindingFilters)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusNotFound, err.Error())
+			}
+			if req.FindingFilters != nil {
+				if findings == nil || findings.Results == nil || len(findings.Results) == 0 {
 					continue
 				}
-			} else {
+			}
+			if req.FindingSummary {
+				findingsResult = findings
+			}
+		}
+
+		var primaryTables, listOfTables []string
+		primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, b.ID)
+		for k, _ := range primaryTablesMap {
+			primaryTables = append(primaryTables, k)
+		}
+		for k, _ := range listOfTablesMap {
+			listOfTables = append(listOfTables, k)
+		}
+		if err != nil {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		}
+		if len(req.PrimaryTable) > 0 {
+			if !listContainsList(primaryTables, req.PrimaryTable) {
 				continue
 			}
 		}
-		response = append(response, b.ToApi())
-	}
-	span2.End()
-
-	sort.Slice(response, func(i, j int) bool {
-		return response[i].ID < response[j].ID
-	})
-	if req.PageSize != nil {
-		if req.PageNumber == nil {
-			return echoCtx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, response))
+		if len(req.ListOfTables) > 0 {
+			if !listContainsList(listOfTables, req.ListOfTables) {
+				continue
+			}
 		}
-		return echoCtx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, response))
+
+		metadata := api.GetBenchmarkListMetadata{
+			ID:          b.ID,
+			Title:       b.Title,
+			Description: b.Description,
+			//Enabled TODO
+			TrackDriftEvents: b.TracksDriftEvents,
+			PrimaryTables:    primaryTables,
+			Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(b.GetTagsMap())),
+			CreatedAt:        b.CreatedAt,
+			UpdatedAt:        b.UpdatedAt,
+		}
+		benchmarkResult := api.GetBenchmarkListResponse{
+			Metadata: metadata,
+			Findings: findingsResult,
+		}
+		response = append(response, benchmarkResult)
 	}
+
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
@@ -4411,7 +4371,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
 //	@Success	200				{object}	[]api.Benchmark
-//	@Router		/compliance/api/v2/benchmarks [get]
+//	@Router		/compliance/api/v2/benchmarks/details [get]
 func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4438,36 +4398,9 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	))
 	span1.End()
 
-	findings, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmark.ID)
+	findingsResult, err := h.getBenchmarkFindingSummary(ctx, benchmark.ID, req.FindingFilters)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var findingsResult api.GetBenchmarkDetailsFindings
-	findingsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
-	for connection, finding := range findings {
-		if req.FindingFilters != nil && len(req.FindingFilters.ConnectionID) > 0 {
-			if !listContains(req.FindingFilters.ConnectionID, connection) {
-				continue
-			}
-		}
-		if req.FindingFilters != nil && len(req.FindingFilters.ResourceTypeID) > 0 {
-			findingsResult.Results = make(map[kaytuTypes.ConformanceStatus]int)
-			for resourceType, result := range finding.ResourceTypes {
-				if listContains(req.FindingFilters.ResourceTypeID, resourceType) {
-					for k, v := range result.QueryResult {
-						if _, ok := findingsResult.Results[k]; ok {
-							findingsResult.Results[k] += v
-						} else {
-							findingsResult.Results[k] = v
-						}
-					}
-				}
-			}
-		} else {
-			findingsResult.Results = finding.Result.QueryResult
-		}
-		findingsResult.ConnectionIDs = append(findingsResult.ConnectionIDs, connection)
+		return echo.NewHTTPError(http.StatusNotFound, "findings not found")
 	}
 
 	var primaryTables, listOfTables []string
@@ -4497,7 +4430,7 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 
 	return echoCtx.JSON(http.StatusOK, api.GetBenchmarkDetailsResponse{
 		Metadata: benchmarkMetadata,
-		Findings: findingsResult,
+		Findings: *findingsResult,
 		Children: children,
 	})
 }

@@ -137,3 +137,31 @@ type GetBenchmarkDetailsResponse struct {
 	Findings GetBenchmarkDetailsFindings   `json:"findings"`
 	Children []GetBenchmarkDetailsChildren `json:"children"`
 }
+
+type GetBenchmarkListRequest struct {
+	ParentBenchmarkID []string               `json:"parentBenchmarkId"`
+	Tags              map[string][]string    `json:"tags"`
+	TagsRegex         *string                `json:"tagsRegex"`
+	PrimaryTable      []string               `json:"primaryTable"`
+	ListOfTables      []string               `json:"listOfTables"`
+	Root              bool                   `json:"root"`
+	FindingFilters    *FindingSummaryFilters `json:"findingFilters"`
+	FindingSummary    bool                   `json:"findingSummary"`
+}
+
+type GetBenchmarkListMetadata struct {
+	ID               string              `json:"id"`
+	Title            string              `json:"title"`
+	Description      string              `json:"description"`
+	Enabled          bool                `json:"enabled"`
+	TrackDriftEvents bool                `json:"trackDriftEvents"`
+	PrimaryTables    []string            `json:"primaryTables"`
+	Tags             map[string][]string `json:"tags"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	UpdatedAt        time.Time           `json:"updatedAt"`
+}
+
+type GetBenchmarkListResponse struct {
+	Metadata GetBenchmarkListMetadata     `json:"metadata"`
+	Findings *GetBenchmarkDetailsFindings `json:"findings"`
+}
