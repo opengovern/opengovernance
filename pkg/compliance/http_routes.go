@@ -4342,10 +4342,10 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		}
 
 		metadata := api.GetBenchmarkListMetadata{
-			ID:          b.ID,
-			Title:       b.Title,
-			Description: b.Description,
-			//Enabled TODO
+			ID:               b.ID,
+			Title:            b.Title,
+			Description:      b.Description,
+			Enabled:          b.Enabled,
 			TrackDriftEvents: b.TracksDriftEvents,
 			PrimaryTables:    primaryTables,
 			Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(b.GetTagsMap())),
@@ -4415,6 +4415,7 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 		ID:               benchmark.ID,
 		Title:            benchmark.Title,
 		Description:      benchmark.Description,
+		Enabled:          benchmark.Enabled,
 		TrackDriftEvents: benchmark.TracksDriftEvents,
 		PrimaryTables:    primaryTables,
 		ListOfTables:     listOfTables,
