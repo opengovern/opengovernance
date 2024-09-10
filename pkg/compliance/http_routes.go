@@ -63,7 +63,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
 	benchmarksV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
 	benchmarksV2.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
-	benchmarksV2.GET("/details", httpserver2.AuthorizeHandler())
+	benchmarksV2.GET("/details", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
