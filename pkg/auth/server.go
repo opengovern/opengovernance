@@ -172,13 +172,17 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 	httpRequest := req.GetAttributes().GetRequest().GetHttp()
 	headers := httpRequest.GetHeaders()
 
-	user, err := s.Verify(ctx, headers[strings.ToLower(echo.HeaderAuthorization)])
+	authHeader := headers[echo.HeaderAuthorization]
+	if authHeader == "" {
+		authHeader = headers[strings.ToLower(echo.HeaderAuthorization)]
+	}
+
+	user, err := s.Verify(ctx, authHeader)
 	if err != nil {
 		s.logger.Warn("denied access due to unsuccessful token verification",
 			zap.String("reqId", httpRequest.Id),
 			zap.String("path", httpRequest.Path),
 			zap.String("method", httpRequest.Method),
-			zap.Any("headers", headers),
 			zap.Error(err))
 		return unAuth, nil
 	}
