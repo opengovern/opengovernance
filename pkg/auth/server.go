@@ -178,6 +178,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			zap.String("reqId", httpRequest.Id),
 			zap.String("path", httpRequest.Path),
 			zap.String("method", httpRequest.Method),
+			zap.Any("headers", headers),
 			zap.Error(err))
 		return unAuth, nil
 	}
