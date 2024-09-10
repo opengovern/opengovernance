@@ -118,7 +118,7 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, res.Status.Message)
 	}
 
-	if res.GetOkResponse() != nil {
+	if res.GetOkResponse() == nil {
 		return echo.NewHTTPError(http.StatusForbidden, "no ok response")
 	}
 
