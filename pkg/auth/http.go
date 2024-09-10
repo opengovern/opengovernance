@@ -102,9 +102,12 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 			checkRequest.Attributes.Request.Http.Headers[k] = v[0]
 		}
 	}
-
-	checkRequest.Attributes.Request.Http.Path = ctx.Request().URL.Path
-	checkRequest.Attributes.Request.Http.Method = ctx.Request().Method
+	originalUri, err := url.Parse(ctx.Request().Header.Get("X-Original-URI"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid original uri")
+	}
+	checkRequest.Attributes.Request.Http.Path = originalUri.Path
+	checkRequest.Attributes.Request.Http.Method = ctx.Request().Header.Get("X-Original-Method")
 
 	res, err := r.authServer.Check(ctx.Request().Context(), &checkRequest)
 	if err != nil {
