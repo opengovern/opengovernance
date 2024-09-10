@@ -116,3 +116,27 @@ type ListBenchmarksFilter struct {
 	PageNumber     *int64              `json:"pageNumber"`
 	PageSize       *int64              `json:"pageSize"`
 }
+
+type GetControlDetailsRequest struct {
+	ControlID      string `json:"controlId"`
+	ShowReferences bool   `json:"showReferences"`
+}
+
+type GetControlDetailsResponse struct {
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Connector   []string `json:"connector"`
+	Severity    string   `json:"severity"`
+	Query       struct {
+		Engine         string   `json:"engine"`
+		QueryToExecute string   `json:"queryToExecute"`
+		PrimaryTable   *string  `json:"primaryTable"`
+		ListOfTables   []string `json:"listOfTables"`
+	} `json:"query"`
+	Tags       map[string][]string `json:"tags"`
+	Benchmarks *struct {
+		Roots    []string `json:"roots"`
+		FullPath []string `json:"fullPath"`
+	} `json:"benchmarks"`
+}
