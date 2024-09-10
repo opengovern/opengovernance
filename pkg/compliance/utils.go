@@ -51,7 +51,7 @@ func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId s
 	primaryTables := make(map[string]bool)
 	listOfTables := make(map[string]bool)
 
-	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
+	benchmark, err := h.db.GetBenchmarkWithControlQueries(ctx, benchmarkId)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
 		return nil, nil, err

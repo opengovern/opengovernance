@@ -185,6 +185,22 @@ func (db Database) GetBenchmark(ctx context.Context, benchmarkId string) (*Bench
 	return &s, nil
 }
 
+func (db Database) GetBenchmarkWithControlQueries(ctx context.Context, benchmarkId string) (*Benchmark, error) {
+	var s Benchmark
+	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations).Preload("Controls").Preload("Controls.Query").
+		Where("id = ?", benchmarkId).
+		First(&s)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &s, nil
+}
+
 func (db Database) GetBenchmarkBare(ctx context.Context, benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
 	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload("Tags").
