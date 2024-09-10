@@ -79,18 +79,18 @@ func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]str
 	return benchmarks, nil
 }
 
-// ListRootBenchmarks returns all benchmarks that are not children of any other benchmark
-// is it important to note that this function does not return the children of the root benchmarks neither the controls
-func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, connectors []string, tags map[string][]string) ([]Benchmark, error) {
+// ListBenchmarksFiltered returns all benchmarks with the associated filters
+func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags map[string][]string, parentBenchmarkId []string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations)
 
 	if root {
 		tx = tx.Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)")
 	}
-	if len(connectors) > 0 {
-		tx = tx.Where("benchmarks.connector::text[] @> ?", pq.Array(connectors))
+	if len(parentBenchmarkId) > 0 {
+		tx = tx.Where("EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id AND benchmark_children.benchmark_id IN ?)", parentBenchmarkId)
 	}
+
 	if len(tags) > 0 {
 		tx = tx.Joins("JOIN benchmark_tags AS tags ON tags.benchmark_id = benchmarks.id")
 		for key, values := range tags {
