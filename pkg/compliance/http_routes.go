@@ -3510,9 +3510,12 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 		}
 		uniqueSeverities[apiControl.Severity.String()] = true
 		for _, t := range apiControl.Query.ListOfTables {
+			if t == "" {
+				continue
+			}
 			uniqueListOfTables[t] = true
 		}
-		if apiControl.Query.PrimaryTable != nil {
+		if apiControl.Query.PrimaryTable != nil && *apiControl.Query.PrimaryTable != "" {
 			uniquePrimaryTables[*apiControl.Query.PrimaryTable] = true
 		}
 		for k, vs := range apiControl.Tags {

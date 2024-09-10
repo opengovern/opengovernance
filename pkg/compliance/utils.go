@@ -76,10 +76,13 @@ func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId s
 	}
 	for _, c := range benchmark.Controls {
 		if c.Query != nil {
-			if c.Query.PrimaryTable != nil {
+			if c.Query.PrimaryTable != nil && *c.Query.PrimaryTable != "" {
 				primaryTables[*c.Query.PrimaryTable] = true
 			}
 			for _, t := range c.Query.ListOfTables {
+				if t == "" {
+					continue
+				}
 				listOfTables[t] = true
 			}
 		}

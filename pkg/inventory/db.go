@@ -68,13 +68,20 @@ func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 	return res, nil
 }
 
+func (db Database) GetQuery(id string) (*SmartQuery, error) {
+	var query SmartQuery
+	tx := db.orm.Model(SmartQuery{}).Preload("Tags").Where("id = ?", id).First(&query)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &query, nil
+}
+
 func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string, connectors []string) ([]SmartQuery, error) {
 	var s []SmartQuery
 
-	// Start with the base query for SmartQuery and preload tags
 	m := db.orm.Model(&SmartQuery{}).Preload("Tags")
 
-	// Add a filter for the title if provided
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
 	}
@@ -87,29 +94,24 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 		m = m.Where("smart_queries.connector::text[] @> ?", pq.Array(connectors))
 	}
 
-	// Add filtering by tag keys and values if any filters are provided
 	if len(tagFilters) > 0 {
 		i := 0
 		for key, values := range tagFilters {
-			// Generate unique alias for each join to avoid alias collision
 			alias := fmt.Sprintf("t%d", i)
 			joinCondition := fmt.Sprintf("JOIN smart_query_tags %s ON %s.smart_query_id = smart_queries.id", alias, alias)
 
-			// Use PostgreSQL array operator @> to filter by tag values (if array comparison is required)
 			m = m.Joins(joinCondition).Where(fmt.Sprintf("%s.key = ? AND %s.value::text[] @> ?", alias, alias), key, pq.Array(values))
 
-			i++ // Increment the alias index
+			i++
 		}
 	}
 
-	// Execute the query
 	tx := m.Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	// Remove duplicates by SmartQuery ID
 	v := map[string]SmartQuery{}
 	for _, item := range s {
 		if _, ok := v[item.ID]; !ok {
@@ -117,7 +119,6 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 		}
 	}
 
-	// Prepare the final result slice
 	var res []SmartQuery
 	for _, val := range v {
 		res = append(res, val)
