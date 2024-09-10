@@ -37,6 +37,7 @@ type Benchmark struct {
 	LogoURI           string
 	Category          string
 	DocumentURI       string
+	Enabled           bool
 	AutoAssign        bool
 	TracksDriftEvents bool
 
