@@ -135,6 +135,27 @@ func (db Database) GetSourceBySourceID(id string) (model.Connection, error) {
 	return s, nil
 }
 
+func (db Database) GetSourcesByFilters(connector, providerNameRegex, providerIdRegex *string) ([]model.Connection, error) {
+	var s []model.Connection
+	tx := db.Orm.Model(&model.Connection{})
+
+	if connector != nil {
+		tx = tx.Where("type = ?", connector)
+	}
+	if providerNameRegex != nil {
+		tx = tx.Where("name ~* ?", providerNameRegex)
+	}
+	if providerIdRegex != nil {
+		tx = tx.Where("source_id ~* ?", *providerIdRegex)
+	}
+
+	tx = tx.Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // GetSourcesByCredentialID list sources with matching credential id
 func (db Database) GetSourcesByCredentialID(id string) ([]model.Connection, error) {
 	var s []model.Connection

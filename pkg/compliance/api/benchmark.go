@@ -97,7 +97,6 @@ type BenchmarkControlSummary struct {
 }
 
 type GetBenchmarkDetailsRequest struct {
-	BenchmarkID       string                 `json:"benchmarkId"`
 	TagsRegex         *string                `json:"tagsRegex"`
 	FindingFilters    *FindingSummaryFilters `json:"findingFilters"`
 	BenchmarkChildren bool                   `json:"benchmarkChildren"`

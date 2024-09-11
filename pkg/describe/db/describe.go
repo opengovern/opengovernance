@@ -273,18 +273,14 @@ func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsByFilters(connectionId *string, accountId *string, resourceType []string,
+func (db Database) ListDescribeJobsByFilters(connectionId string, resourceType []string,
 	discoveryType []string, jobStatus []string, startTime time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
 	tx := db.ORM.Model(&model.DescribeConnectionJob{})
 
-	if connectionId != nil {
-		tx = tx.Where("connection_id = ?", *connectionId)
-	}
-	if accountId != nil {
-		tx = tx.Where("account_id = ?", *accountId)
-	}
+	tx = tx.Where("connection_id = ?", connectionId)
+
 	if len(resourceType) > 0 {
 		tx = tx.Where("resource_type IN ?", resourceType)
 	}

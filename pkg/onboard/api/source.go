@@ -148,3 +148,9 @@ type SourceEvent struct {
 	SourceType source.Type
 	Secret     string
 }
+
+type GetSourceByFiltersRequest struct {
+	Connector         *string `json:"connector"`
+	ProviderIdRegex   *string `json:"providerIdRegex"`
+	ProviderNameRegex *string `json:"providerNameRegex"`
+}

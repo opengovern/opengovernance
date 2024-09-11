@@ -139,11 +139,6 @@ type ListBenchmarksFilter struct {
 	PageSize       *int64              `json:"pageSize"`
 }
 
-type GetControlDetailsRequest struct {
-	ControlID      string `json:"controlId"`
-	ShowReferences bool   `json:"showReferences"`
-}
-
 type GetControlDetailsResponse struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`

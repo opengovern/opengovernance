@@ -112,8 +112,6 @@ type JobSeqCheckResponse struct {
 }
 
 type GetDescribeJobsHistoryRequest struct {
-	ConnectionId  *string    `json:"connectionId"`
-	AccountId     *string    `json:"accountId"`
 	ResourceType  []string   `json:"resourceType"`
 	DiscoveryType []string   `json:"discoveryType"`
 	JobStatus     []string   `json:"jobStatus"`
@@ -166,4 +164,23 @@ type GetAnalyticsJobsHistoryResponse struct {
 	Type      string        `json:"type"`
 	JobStatus api.JobStatus `json:"jobStatus"`
 	DateTime  time.Time     `json:"dateTime"`
+}
+
+type RunBenchmarkByIdRequest struct {
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connectionId"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"providerIdRegex"`
+		ProviderNameRegex *string `json:"providerNameRegex"`
+	} `json:"connectionInfo"`
+}
+
+type RunBenchmarkRequest struct {
+	BenchmarkIds   []string `json:"benchmarkIds"`
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connectionId"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"providerIdRegex"`
+		ProviderNameRegex *string `json:"providerNameRegex"`
+	} `json:"connectionInfo"`
 }
