@@ -199,7 +199,7 @@ type RunBenchmarkResponse struct {
 }
 
 type RunDiscoveryRequest struct {
-	ResourceTypes  []string `json:"benchmarkIds"`
+	ResourceTypes  []string `json:"resourceTypes"`
 	ForceFull      bool     `json:"forceFull"` // force full discovery. only matters if ResourceTypes is empty
 	ConnectionInfo []struct {
 		ConnectionId      *string `json:"connectionId"`
@@ -212,5 +212,7 @@ type RunDiscoveryRequest struct {
 type RunDiscoveryResponse struct {
 	JobId          uint           `json:"jobId"`
 	ResourceType   string         `json:"resourceType"`
+	Status         string         `json:"status"`
+	FailureReason  string         `json:"failureReason"`
 	ConnectionInfo ConnectionInfo `json:"connectionInfo"`
 }
