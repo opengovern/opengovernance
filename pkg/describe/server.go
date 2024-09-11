@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1160,6 +1161,44 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 			DateTime:      j.UpdatedAt,
 		})
 	}
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "discoverytype":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DiscoveryType < jobsResults[j].DiscoveryType
+			})
+		case "resourcetype":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].ResourceType < jobsResults[j].ResourceType
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+	if request.PageSize != nil {
+		if request.PageNumber == nil {
+			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+		}
+		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
 }
@@ -1189,7 +1228,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 	} else {
 		connection, err := h.onboardClient.GetSourceBySourceId(&httpclient.Context{Ctx: ctx.Request().Context(), UserRole: apiAuth.InternalRole}, *request.AccountId)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid accountId")
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		connectionId = connection.ConnectionID
 	}
@@ -1207,6 +1246,40 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 			JobStatus:   j.Status.ToApi(),
 			DateTime:    j.UpdatedAt,
 		})
+	}
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "benchmarkid":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].BenchmarkId < jobsResults[j].BenchmarkId
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+	if request.PageSize != nil {
+		if request.PageNumber == nil {
+			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+		}
+		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1241,6 +1314,41 @@ func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
 			JobStatus: j.Status,
 			DateTime:  j.UpdatedAt,
 		})
+	}
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "type":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].Type < jobsResults[j].Type
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+
+	if request.PageSize != nil {
+		if request.PageNumber == nil {
+			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+		}
+		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)

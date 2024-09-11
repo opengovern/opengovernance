@@ -2987,10 +2987,7 @@ func (h HttpHandler) GetSourceBySourceId(ctx echo.Context) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
-		}
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	span.AddEvent("information", trace.WithAttributes(
 		attribute.String("source name", src.Name),

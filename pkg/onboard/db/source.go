@@ -127,12 +127,10 @@ func (db Database) GetSource(id uuid.UUID) (model.Connection, error) {
 // GetSourceBySourceID gets a source with matching source id
 func (db Database) GetSourceBySourceID(id string) (model.Connection, error) {
 	var s model.Connection
-	tx := db.Orm.First(&s, "source_id = ?", id)
+	tx := db.Orm.Model(&model.Connection{}).Where("source_id = ?", id).First(&s)
 
 	if tx.Error != nil {
 		return model.Connection{}, tx.Error
-	} else if s.SourceId != id {
-		return model.Connection{}, gorm.ErrRecordNotFound
 	}
 	return s, nil
 }
