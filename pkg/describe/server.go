@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	runner2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -36,10 +37,11 @@ import (
 )
 
 type HttpServer struct {
-	Address    string
-	DB         db.Database
-	Scheduler  *Scheduler
-	kubeClient k8sclient.Client
+	Address       string
+	DB            db.Database
+	Scheduler     *Scheduler
+	onboardClient onboardClient.OnboardServiceClient
+	kubeClient    k8sclient.Client
 }
 
 func NewHTTPServer(
@@ -75,6 +77,11 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/discovery/resourcetypes/list", httpserver.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
 	v1.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
+
+	v2 := e.Group("/api/v2")
+	v2.GET("/describe/history", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
+	v2.GET("/compliance/history", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
+	v2.GET("/analytics/history", httpserver.AuthorizeHandler(h.GetAnalyticsJobsHistory, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -1115,4 +1122,126 @@ func removeDuplicates(s []string) []string {
 		}
 	}
 	return result
+}
+
+// GetDescribeJobsHistory godoc
+//
+//	@Summary	Get describe jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
+//	@Router		/schedule/api/v1/jobs [post]
+func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
+	var request api.GetDescribeJobsHistoryRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	if request.AccountId == nil && request.ConnectionId == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "whether accountId or connectionId should be specified")
+	}
+
+	var jobsResults []api.GetDescribeJobsHistoryResponse
+
+	jobs, err := h.DB.ListDescribeJobsByFilters(request.ConnectionId, request.AccountId, request.ResourceType,
+		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	for _, j := range jobs {
+		jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
+			JobId:         j.ID,
+			DiscoveryType: j.DiscoveryType,
+			ResourceType:  j.ResourceType,
+			JobStatus:     j.Status,
+			DateTime:      j.UpdatedAt,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// GetComplianceJobsHistory godoc
+//
+//	@Summary	Get compliance jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Router		/schedule/api/v1/jobs [post]
+func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
+	var request api.GetComplianceJobsHistoryRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	if request.AccountId == nil && request.ConnectionId == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "whether accountId or connectionId should be specified")
+	}
+	var connectionId string
+	if request.ConnectionId != nil {
+		connectionId = *request.ConnectionId
+	} else {
+		connection, err := h.onboardClient.GetSourceBySourceId(&httpclient.Context{Ctx: ctx.Request().Context(), UserRole: apiAuth.InternalRole}, *request.AccountId)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid accountId")
+		}
+		connectionId = connection.ConnectionID
+	}
+
+	jobs, err := h.DB.ListComplianceJobsByFilters(connectionId, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var jobsResults []api.GetComplianceJobsHistoryResponse
+	for _, j := range jobs {
+		jobsResults = append(jobsResults, api.GetComplianceJobsHistoryResponse{
+			JobId:       j.ID,
+			BenchmarkId: j.BenchmarkID,
+			JobStatus:   j.Status.ToApi(),
+			DateTime:    j.UpdatedAt,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// GetAnalyticsJobsHistory godoc
+//
+//	@Summary	Get analytics jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetAnalyticsJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
+//	@Router		/schedule/api/v1/jobs [post]
+func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
+	var request api.GetAnalyticsJobsHistoryRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	jobs, err := h.DB.ListAnalyticsJobsByFilter(request.Type, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var jobsResults []api.GetAnalyticsJobsHistoryResponse
+	for _, j := range jobs {
+		jobsResults = append(jobsResults, api.GetAnalyticsJobsHistoryResponse{
+			JobId:     j.ID,
+			Type:      j.Type,
+			JobStatus: j.Status,
+			DateTime:  j.UpdatedAt,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
 }

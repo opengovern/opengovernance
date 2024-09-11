@@ -273,6 +273,43 @@ func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus
 	return job, nil
 }
 
+func (db Database) ListDescribeJobsByFilters(connectionId *string, accountId *string, resourceType []string,
+	discoveryType []string, jobStatus []string, startTime time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
+	var job []model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+
+	if connectionId != nil {
+		tx = tx.Where("connection_id = ?", *connectionId)
+	}
+	if accountId != nil {
+		tx = tx.Where("account_id = ?", *accountId)
+	}
+	if len(resourceType) > 0 {
+		tx = tx.Where("resource_type IN ?", resourceType)
+	}
+	if len(discoveryType) > 0 {
+		tx = tx.Where("discovery_type IN ?", discoveryType)
+	}
+	if len(jobStatus) > 0 {
+		tx = tx.Where("status IN ?", jobStatus)
+	}
+	tx = tx.Where("updated_at >= ?", startTime)
+	if endTime != nil {
+		tx = tx.Where("updated_at <= ?", *endTime)
+	}
+
+	tx = tx.Find(&job)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]model.DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()

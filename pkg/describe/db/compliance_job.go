@@ -232,3 +232,27 @@ SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
 
 	return jobs, nil
 }
+
+func (db Database) ListComplianceJobsByFilters(connectionId string, benchmarkId []string, status []string,
+	startTime time.Time, endTime *time.Time) ([]model.ComplianceJob, error) {
+	var jobs []model.ComplianceJob
+	tx := db.ORM.Model(&model.ComplianceJob{})
+	tx = tx.Where("? = ANY(connection_ids)", connectionId)
+	if len(benchmarkId) > 0 {
+		tx = tx.Where("benchmark_id IN ?", benchmarkId)
+	}
+	if len(status) > 0 {
+		tx = tx.Where("status IN ?", status)
+	}
+	tx = tx.Where("updated_at >= ?", startTime)
+	if endTime != nil {
+		tx = tx.Where("updated_at <= ?", *endTime)
+	}
+
+	tx = tx.Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
