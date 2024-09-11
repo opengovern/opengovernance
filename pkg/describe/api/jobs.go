@@ -184,3 +184,33 @@ type RunBenchmarkRequest struct {
 		ProviderNameRegex *string `json:"providerNameRegex"`
 	} `json:"connectionInfo"`
 }
+
+type ConnectionInfo struct {
+	ConnectionId string `json:"connectionId"`
+	Connector    string `json:"connector"`
+	ProviderId   string `json:"providerIdRegex"`
+	ProviderName string `json:"providerNameRegex"`
+}
+
+type RunBenchmarkResponse struct {
+	JobId          uint             `json:"jobId"`
+	BenchmarkId    string           `json:"benchmarkId"`
+	ConnectionInfo []ConnectionInfo `json:"connectionInfo"`
+}
+
+type RunDiscoveryRequest struct {
+	ResourceTypes  []string `json:"benchmarkIds"`
+	ForceFull      bool     `json:"forceFull"` // force full discovery. only matters if ResourceTypes is empty
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connectionId"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"providerIdRegex"`
+		ProviderNameRegex *string `json:"providerNameRegex"`
+	} `json:"connectionInfo"`
+}
+
+type RunDiscoveryResponse struct {
+	JobId          uint           `json:"jobId"`
+	ResourceType   string         `json:"resourceType"`
+	ConnectionInfo ConnectionInfo `json:"connectionInfo"`
+}
