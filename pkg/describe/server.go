@@ -1154,7 +1154,7 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 	for _, j := range jobs {
 		jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
 			JobId:         j.ID,
-			DiscoveryType: j.DiscoveryType,
+			DiscoveryType: string(j.DiscoveryType),
 			ResourceType:  j.ResourceType,
 			JobStatus:     j.Status,
 			DateTime:      j.UpdatedAt,
@@ -1237,7 +1237,7 @@ func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
 	for _, j := range jobs {
 		jobsResults = append(jobsResults, api.GetAnalyticsJobsHistoryResponse{
 			JobId:     j.ID,
-			Type:      j.Type,
+			Type:      string(j.Type),
 			JobStatus: j.Status,
 			DateTime:  j.UpdatedAt,
 		})
