@@ -359,9 +359,10 @@ func InitializeScheduler(
 	}, CurrentWorkspaceName)
 	if err != nil {
 		s.logger.Error("Failed to get workspace by id", zap.Error(err))
-		return nil, err
+		s.WorkspaceName = CurrentWorkspaceName
+	} else {
+		s.WorkspaceName = workspace.Name
 	}
-	s.WorkspaceName = workspace.Name
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
