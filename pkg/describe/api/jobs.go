@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"time"
 )
@@ -124,7 +123,7 @@ type GetDescribeJobsHistoryRequest struct {
 
 type GetDescribeJobsHistoryResponse struct {
 	JobId         uint                      `json:"jobId"`
-	DiscoveryType model.DiscoveryType       `json:"discoveryType"`
+	DiscoveryType string                    `json:"discoveryType"`
 	ResourceType  string                    `json:"resourceType"`
 	JobStatus     DescribeResourceJobStatus `json:"jobStatus"`
 	DateTime      time.Time                 `json:"dateTime"`
@@ -154,8 +153,8 @@ type GetAnalyticsJobsHistoryRequest struct {
 }
 
 type GetAnalyticsJobsHistoryResponse struct {
-	JobId     uint                   `json:"jobId"`
-	Type      model.AnalyticsJobType `json:"type"`
-	JobStatus api.JobStatus          `json:"jobStatus"`
-	DateTime  time.Time              `json:"dateTime"`
+	JobId     uint          `json:"jobId"`
+	Type      string        `json:"type"`
+	JobStatus api.JobStatus `json:"jobStatus"`
+	DateTime  time.Time     `json:"dateTime"`
 }
