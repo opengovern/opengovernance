@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1160,6 +1161,9 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 			DateTime:      j.UpdatedAt,
 		})
 	}
+	sort.Slice(jobsResults, func(i, j int) bool {
+		return jobsResults[i].JobId < jobsResults[j].JobId
+	})
 
 	return ctx.JSON(http.StatusOK, jobsResults)
 }
@@ -1208,6 +1212,9 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 			DateTime:    j.UpdatedAt,
 		})
 	}
+	sort.Slice(jobsResults, func(i, j int) bool {
+		return jobsResults[i].JobId < jobsResults[j].JobId
+	})
 
 	return ctx.JSON(http.StatusOK, jobsResults)
 }
@@ -1242,6 +1249,9 @@ func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
 			DateTime:  j.UpdatedAt,
 		})
 	}
+	sort.Slice(jobsResults, func(i, j int) bool {
+		return jobsResults[i].JobId < jobsResults[j].JobId
+	})
 
 	return ctx.JSON(http.StatusOK, jobsResults)
 }
