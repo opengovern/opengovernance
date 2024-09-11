@@ -1413,7 +1413,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 			ProviderName: c.ConnectionName,
 			ProviderId:   c.ConnectionID,
 		})
-		connectionIDs = append(connectionIDs, c.ConnectionID)
+		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
@@ -1497,7 +1497,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			ProviderName: c.ConnectionName,
 			ProviderId:   c.ConnectionID,
 		})
-		connectionIDs = append(connectionIDs, c.ConnectionID)
+		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
 	var benchmarks []complianceapi.Benchmark
@@ -1626,13 +1626,36 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				continue
 			}
+
+			var status, failureReason string
 			job, err := h.Scheduler.describe(connection, resourceType, false, false, false)
 			if err != nil {
-				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				if err.Error() == ErrJobInProgress.Error() {
+					tmpJob, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
+					if err != nil {
+						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
+					}
+					h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+					status = "FAILED"
+					failureReason = fmt.Sprintf("another job is in queue: %v", tmpJob.ID)
+				}
+			}
+
+			var jobId uint
+			if job == nil {
+				status = "FAILED"
+				if err != nil {
+					failureReason = err.Error()
+				}
+			} else {
+				jobId = job.ID
+				status = string(job.Status)
 			}
 			jobs = append(jobs, api.RunDiscoveryResponse{
-				JobId:        job.ID,
-				ResourceType: job.ResourceType,
+				JobId:         jobId,
+				ResourceType:  resourceType,
+				Status:        status,
+				FailureReason: failureReason,
 				ConnectionInfo: api.ConnectionInfo{
 					ConnectionId: connection.ID.String(),
 					Connector:    connection.Connector.String(),
