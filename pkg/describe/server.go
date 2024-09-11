@@ -86,6 +86,11 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v2.POST("/compliance/benchmark/:benchmark-id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v2.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
 	v2.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
+	v2.GET("/jobs/discovery/:job-id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
+	v2.GET("/jobs/compliance/:job-id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
+	v2.GET("/jobs/analytics/:job-id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
+	v2.GET("/jobs/discovery", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
+	v2.GET("/jobs/compliance", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -1666,4 +1671,268 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		}
 	}
 	return ctx.JSON(http.StatusOK, jobs)
+}
+
+// GetDescribeJobStatus godoc
+//
+//	@Summary	Get describe job status by job id
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	api.GetDescribeJobStatusResponse
+//	@Router		/schedule/api/v2/jobs/discovery/{job-id} [post]
+func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	jobId := ctx.Param("job-id")
+
+	j, err := h.DB.GetDescribeJobById(jobId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, j.ConnectionID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	jobsResult := api.GetDescribeJobStatusResponse{
+		JobId: j.ID,
+		ConnectionInfo: api.ConnectionInfo{
+			ConnectionId: connection.ID.String(),
+			Connector:    connection.Connector.String(),
+			ProviderId:   connection.ConnectionID,
+			ProviderName: connection.ConnectionName,
+		},
+		DiscoveryType: string(j.DiscoveryType),
+		ResourceType:  j.ResourceType,
+		JobStatus:     string(j.Status),
+		CreatedAt:     j.CreatedAt,
+		UpdatedAt:     j.UpdatedAt,
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResult)
+}
+
+// GetComplianceJobStatus godoc
+//
+//	@Summary	Get compliance job status by job id
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	jobIdString := ctx.Param("job-id")
+	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+	}
+
+	j, err := h.DB.GetComplianceJobByID(uint(jobId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var connectionInfos []api.ConnectionInfo
+	for _, cid := range j.ConnectionIDs {
+		connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, cid)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connectionInfos = append(connectionInfos, api.ConnectionInfo{
+			ConnectionId: connection.ID.String(),
+			Connector:    connection.Connector.String(),
+			ProviderId:   connection.ConnectionID,
+			ProviderName: connection.ConnectionName,
+		})
+	}
+
+	jobsResult := api.GetComplianceJobStatusResponse{
+		JobId:          j.ID,
+		ConnectionInfo: connectionInfos,
+		BenchmarkId:    j.BenchmarkID,
+		JobStatus:      string(j.Status),
+		CreatedAt:      j.CreatedAt,
+		UpdatedAt:      j.UpdatedAt,
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResult)
+}
+
+// GetAnalyticsJobStatus godoc
+//
+//	@Summary	Get analytics job status by job id
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
+
+	jobIdString := ctx.Param("job-id")
+	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+	}
+
+	j, err := h.DB.GetAnalyticsJobByID(uint(jobId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	jobsResult := api.GetAnalyticsJobStatusResponse{
+		JobId:     j.ID,
+		JobStatus: string(j.Status),
+		CreatedAt: j.CreatedAt,
+		UpdatedAt: j.UpdatedAt,
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResult)
+}
+
+// ListDescribeJobs godoc
+//
+//	@Summary	Get describe jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
+	var request api.ListDescribeJobsRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	var jobsResults []api.GetDescribeJobsHistoryResponse
+
+	jobs, err := h.DB.ListDescribeJobsByFilters(request.ConnectionId, request.ResourceType,
+		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	for _, j := range jobs {
+		jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
+			JobId:         j.ID,
+			DiscoveryType: string(j.DiscoveryType),
+			ResourceType:  j.ResourceType,
+			JobStatus:     j.Status,
+			DateTime:      j.UpdatedAt,
+		})
+	}
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "discoverytype":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DiscoveryType < jobsResults[j].DiscoveryType
+			})
+		case "resourcetype":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].ResourceType < jobsResults[j].ResourceType
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+	if request.PageSize != nil {
+		if request.PageNumber == nil {
+			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+		}
+		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// ListComplianceJobs godoc
+//
+//	@Summary	Get compliance jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Router		/schedule/api/v1/jobs [post]
+func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
+	var request api.ListComplianceJobsRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	jobs, err := h.DB.ListComplianceJobsByFilters(request.ConnectionId, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var jobsResults []api.GetComplianceJobsHistoryResponse
+	for _, j := range jobs {
+		jobsResults = append(jobsResults, api.GetComplianceJobsHistoryResponse{
+			JobId:       j.ID,
+			BenchmarkId: j.BenchmarkID,
+			JobStatus:   j.Status.ToApi(),
+			DateTime:    j.UpdatedAt,
+		})
+	}
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "benchmarkid":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].BenchmarkId < jobsResults[j].BenchmarkId
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+	if request.PageSize != nil {
+		if request.PageNumber == nil {
+			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+		}
+		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
 }
