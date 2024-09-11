@@ -59,30 +59,30 @@ type ControlTrendDatapoint struct {
 type ControlsFilterSummaryRequest struct {
 	Connector       []string            `json:"connector"`
 	Severity        []string            `json:"severity"`
-	RootBenchmark   []string            `json:"rootBenchmark"`
-	ParentBenchmark []string            `json:"parentBenchmark"`
+	RootBenchmark   []string            `json:"root_benchmark"`
+	ParentBenchmark []string            `json:"parent_benchmark"`
 	Customizable    *bool               `json:"customizable"`
-	PrimaryTable    []string            `json:"primaryTable"`
-	ListOfTables    []string            `json:"listOfTables"`
+	PrimaryTable    []string            `json:"primary_table"`
+	ListOfTables    []string            `json:"list_of_tables"`
 	Tags            map[string][]string `json:"tags"`
-	TagsRegex       *string             `json:"tagsRegex"`
-	FindingFilters  *FindingFilters     `json:"findingFilters"`
+	TagsRegex       *string             `json:"tags_regex"`
+	FindingFilters  *FindingFilters     `json:"finding_filters"`
 }
 
 type ListControlsFilterRequest struct {
 	Connector       []string            `json:"connector"`
 	Severity        []string            `json:"severity"`
-	RootBenchmark   []string            `json:"rootBenchmark"`
-	ParentBenchmark []string            `json:"parentBenchmark"`
+	RootBenchmark   []string            `json:"root_benchmark"`
+	ParentBenchmark []string            `json:"parent_benchmark"`
 	Customizable    *bool               `json:"customizable"`
-	PrimaryTable    []string            `json:"primaryTable"`
-	ListOfTables    []string            `json:"listOfTables"`
+	PrimaryTable    []string            `json:"primary_table"`
+	ListOfTables    []string            `json:"list_of_tables"`
 	Tags            map[string][]string `json:"tags"`
-	TagsRegex       *string             `json:"tagsRegex"`
-	FindingFilters  *FindingFilters     `json:"findingFilters"`
-	FindingSummary  bool                `json:"findingSummary"`
-	PageNumber      *int64              `json:"pageNumber"`
-	PageSize        *int64              `json:"pageSize"`
+	TagsRegex       *string             `json:"tags_regex"`
+	FindingFilters  *FindingFilters     `json:"finding_filters"`
+	FindingSummary  bool                `json:"finding_summary"`
+	Cursor          *int64              `json:"cursor"`
+	PerPage         *int64              `json:"per_page"`
 }
 
 type ListControlsFilterResultControl struct {
@@ -93,20 +93,20 @@ type ListControlsFilterResultControl struct {
 	Severity    types.FindingSeverity `json:"severity"`
 	Tags        map[string][]string   `json:"tags"`
 	Query       struct {
-		PrimaryTable *string          `json:"primaryTable"`
-		ListOfTables []string         `json:"listOfTables"`
+		PrimaryTable *string          `json:"primary_table"`
+		ListOfTables []string         `json:"list_of_tables"`
 		Parameters   []QueryParameter `json:"parameters"`
 	} `json:"query"`
-	FindingsSummary map[string]int64 `json:"findingsSummary"`
+	FindingsSummary map[string]int64 `json:"findings_summary"`
 }
 
 type ControlsFilterSummaryResult struct {
-	ControlsCount int64               `json:"controlsCount"`
+	ControlsCount int64               `json:"controls_count"`
 	Connector     []string            `json:"connector"`
 	Severity      []string            `json:"severity"`
 	Tags          map[string][]string `json:"tags"`
-	PrimaryTable  []string            `json:"primaryTable"`
-	ListOfTables  []string            `json:"listOfTables"`
+	PrimaryTable  []string            `json:"primary_table"`
+	ListOfTables  []string            `json:"list_of_tables"`
 }
 
 type ListControlsFilterResult struct {
@@ -115,8 +115,8 @@ type ListControlsFilterResult struct {
 		Connector    []string            `json:"connector"`
 		Severity     []string            `json:"severity"`
 		Tags         map[string][]string `json:"tags"`
-		PrimaryTable []string            `json:"primaryTable"`
-		ListOfTables []string            `json:"listOfTables"`
+		PrimaryTable []string            `json:"primary_table"`
+		ListOfTables []string            `json:"list_of_tables"`
 	} `json:"summary"`
 }
 
@@ -128,15 +128,6 @@ type ControlTagsResult struct {
 type BenchmarkTagsResult struct {
 	Key          string
 	UniqueValues []string
-}
-
-type ListBenchmarksFilter struct {
-	Connector      []string            `json:"connector" example:"Azure"`
-	Root           bool                `json:"root"`
-	Tags           map[string][]string `json:"tags"`
-	FindingFilters *FindingFilters     `json:"findingFilters"`
-	PageNumber     *int64              `json:"pageNumber"`
-	PageSize       *int64              `json:"pageSize"`
 }
 
 type GetControlDetailsResponse struct {
