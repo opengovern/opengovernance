@@ -1189,7 +1189,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 	} else {
 		connection, err := h.onboardClient.GetSourceBySourceId(&httpclient.Context{Ctx: ctx.Request().Context(), UserRole: apiAuth.InternalRole}, *request.AccountId)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid accountId")
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		connectionId = connection.ConnectionID
 	}
