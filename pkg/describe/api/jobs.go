@@ -216,3 +216,51 @@ type RunDiscoveryResponse struct {
 	FailureReason  string         `json:"failureReason"`
 	ConnectionInfo ConnectionInfo `json:"connectionInfo"`
 }
+
+type GetDescribeJobStatusResponse struct {
+	JobId          uint           `json:"jobId"`
+	ConnectionInfo ConnectionInfo `json:"connectionInfo"`
+	JobStatus      string         `json:"jobStatus"`
+	DiscoveryType  string         `json:"discoveryType"`
+	ResourceType   string         `json:"resourceType"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+}
+
+type GetComplianceJobStatusResponse struct {
+	JobId          uint             `json:"jobId"`
+	ConnectionInfo []ConnectionInfo `json:"connectionInfo"`
+	JobStatus      string           `json:"jobStatus"`
+	BenchmarkId    string           `json:"benchmarkId"`
+	CreatedAt      time.Time        `json:"createdAt"`
+	UpdatedAt      time.Time        `json:"updatedAt"`
+}
+type GetAnalyticsJobStatusResponse struct {
+	JobId     uint      `json:"jobId"`
+	JobStatus string    `json:"jobStatus"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type ListDescribeJobsRequest struct {
+	ConnectionId  string     `json:"connectionId"`
+	ResourceType  []string   `json:"resourceType"`
+	DiscoveryType []string   `json:"discoveryType"`
+	JobStatus     []string   `json:"jobStatus"`
+	StartTime     time.Time  `json:"startTime"`
+	EndTime       *time.Time `json:"endTime"`
+	SortBy        *string    `json:"sortBy"`
+	PageNumber    *int64     `json:"pageNumber"`
+	PageSize      *int64     `json:"pageSize"`
+}
+
+type ListComplianceJobsRequest struct {
+	ConnectionId string     `json:"connectionId"`
+	BenchmarkId  []string   `json:"benchmarkId"`
+	JobStatus    []string   `json:"jobStatus"`
+	StartTime    time.Time  `json:"startTime"`
+	EndTime      *time.Time `json:"endTime"`
+	SortBy       *string    `json:"sortBy"`
+	PageNumber   *int64     `json:"pageNumber"`
+	PageSize     *int64     `json:"pageSize"`
+}
