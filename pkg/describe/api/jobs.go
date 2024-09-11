@@ -112,8 +112,6 @@ type JobSeqCheckResponse struct {
 }
 
 type GetDescribeJobsHistoryRequest struct {
-	ConnectionId  *string    `json:"connectionId"`
-	AccountId     *string    `json:"accountId"`
 	ResourceType  []string   `json:"resourceType"`
 	DiscoveryType []string   `json:"discoveryType"`
 	JobStatus     []string   `json:"jobStatus"`

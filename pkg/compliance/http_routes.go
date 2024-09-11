@@ -52,7 +52,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2 := e.Group("/api/v2")
 
 	benchmarks := v1.Group("/benchmarks")
-	benchmarksV2 := v2.Group("/benchmarks")
 
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.InternalRole))
@@ -61,9 +60,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
 	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
 	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
-	benchmarksV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
-	benchmarksV2.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
-	benchmarksV2.GET("/details", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -71,15 +67,21 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id/controls", httpserver2.AuthorizeHandler(h.GetBenchmarkControlsTree, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/controls/:controlId", httpserver2.AuthorizeHandler(h.GetBenchmarkControl, authApi.ViewerRole))
 
+	benchmarksV2 := v2.Group("/benchmark")
+	benchmarksV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
+	benchmarksV2.POST("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
+	benchmarksV2.POST("/:benchmark-id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
+
 	controls := v1.Group("/controls")
-	controlsV2 := v2.Group("/controls")
-	controlsV2.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
-	controlsV2.GET("/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
-	controlsV2.GET("/details", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
-	controlsV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	controls.GET("/summary", httpserver2.AuthorizeHandler(h.ListControlsSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/summary", httpserver2.AuthorizeHandler(h.GetControlSummary, authApi.ViewerRole))
 	controls.GET("/:controlId/trend", httpserver2.AuthorizeHandler(h.GetControlTrend, authApi.ViewerRole))
+
+	controlsV2 := v2.Group("/control")
+	controlsV2.POST("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controlsV2.POST("/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
+	controlsV2.POST("/:control-id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
+	controlsV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver2.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -3193,7 +3195,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
 //	@Success	200				{object}	[]api.ListControlsFilterResultControl
-//	@Router		/compliance/api/v2/controls [get]
+//	@Router		/compliance/api/v2/control [get]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -3373,7 +3375,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
 //	@Success	200				{object}	api.ListControlsFilterResult
-//	@Router		/compliance/api/v2/controls/summary [get]
+//	@Router		/compliance/api/v2/control/summary [get]
 func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -3557,16 +3559,20 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.GetControlDetailsRequest	true	"Request Body"
 //	@Success	200				{object}	api.GetControlDetailsResponse
-//	@Router		/compliance/api/v2/controls/details [get]
+//	@Router		/compliance/api/v2/control/{control-id} [get]
 func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	var req api.GetControlDetailsRequest
-	if err := bindValidate(echoCtx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	controlId := echoCtx.Param("control-id")
+
+	var showReferences bool
+	showReferencesString := echoCtx.QueryParam("showReferences")
+	showReferences, err := strconv.ParseBool(showReferencesString)
+	if err != nil {
+		showReferences = false
 	}
 
-	control, err := h.db.GetControl(ctx, req.ControlID)
+	control, err := h.db.GetControl(ctx, controlId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -3591,7 +3597,7 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 		Tags: model.TrimPrivateTags(control.GetTagsMap()),
 	}
 
-	if req.ShowReferences {
+	if showReferences {
 		benchmarks, err := h.db.GetBenchmarkIdsByControlID(ctx, control.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -4529,7 +4535,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
 //	@Success	200				{object}	[]api.Benchmark
-//	@Router		/compliance/api/v2/benchmarks [get]
+//	@Router		/compliance/api/v2/benchmark [get]
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4623,9 +4629,11 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
 //	@Success	200				{object}	[]api.Benchmark
-//	@Router		/compliance/api/v2/benchmarks/details [get]
+//	@Router		/compliance/api/v2/benchmark/{benchmark-id} [get]
 func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
+
+	benchmarkId := echoCtx.Param("benchmark-id")
 
 	var req api.GetBenchmarkDetailsRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -4636,7 +4644,7 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	span1.SetName("new_GetBenchmark")
 	defer span1.End()
 
-	benchmark, err := h.db.GetBenchmark(ctx, req.BenchmarkID)
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())

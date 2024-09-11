@@ -80,9 +80,9 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
 	v2 := e.Group("/api/v2")
-	v2.GET("/describe/history", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
-	v2.GET("/compliance/history", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
-	v2.GET("/analytics/history", httpserver.AuthorizeHandler(h.GetAnalyticsJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/discovery/connections/:connection-id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/compliance/connections/:connection-id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/analytics", httpserver.AuthorizeHandler(h.GetAnalyticsJobsHistory, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -1133,21 +1133,19 @@ func removeDuplicates(s []string) []string {
 //	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs [post]
+//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
 func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
+	connectionId := ctx.Param("connection-id")
+
 	var request api.GetDescribeJobsHistoryRequest
 	if err := ctx.Bind(&request); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	if request.AccountId == nil && request.ConnectionId == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "whether accountId or connectionId should be specified")
-	}
-
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
-	jobs, err := h.DB.ListDescribeJobsByFilters(request.ConnectionId, request.AccountId, request.ResourceType,
+	jobs, err := h.DB.ListDescribeJobsByFilters(connectionId, request.ResourceType,
 		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -1293,7 +1291,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 //	@Param		request	body	api.GetAnalyticsJobsHistoryRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs [post]
+//	@Router		/schedule/api/v1/jobs/analytics [post]
 func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
 	var request api.GetAnalyticsJobsHistoryRequest
 	if err := ctx.Bind(&request); err != nil {
