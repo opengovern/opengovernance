@@ -23,6 +23,7 @@ import (
 
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
+	GetSourceBySourceId(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
@@ -75,6 +76,26 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 
 	ctx.UserRole = authApi.InternalRole
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
+
+	var source api.Connection
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &source, nil
+}
+
+func (s *onboardClient) GetSourceBySourceId(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
+	if ctx.Ctx == nil {
+		ctx.Ctx = context.Background()
+	}
+	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
+	ctx.UserRole = authApi.InternalRole
+	url := fmt.Sprintf("%s/api/v2/sources/%s", s.baseURL, sourceID)
 
 	var source api.Connection
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {

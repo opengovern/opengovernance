@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"time"
 )
@@ -108,4 +110,52 @@ type ListDiscoveryResourceTypes struct {
 
 type JobSeqCheckResponse struct {
 	IsRunning bool `json:"isRunning"`
+}
+
+type GetDescribeJobsHistoryRequest struct {
+	ConnectionId  *string    `json:"connectionId"`
+	AccountId     *string    `json:"accountId"`
+	ResourceType  []string   `json:"resourceType"`
+	DiscoveryType []string   `json:"discoveryType"`
+	JobStatus     []string   `json:"jobStatus"`
+	StartTime     time.Time  `json:"startTime"`
+	EndTime       *time.Time `json:"endTime"`
+}
+
+type GetDescribeJobsHistoryResponse struct {
+	JobId         uint                      `json:"jobId"`
+	DiscoveryType model.DiscoveryType       `json:"discoveryType"`
+	ResourceType  string                    `json:"resourceType"`
+	JobStatus     DescribeResourceJobStatus `json:"jobStatus"`
+	DateTime      time.Time                 `json:"dateTime"`
+}
+
+type GetComplianceJobsHistoryRequest struct {
+	ConnectionId *string    `json:"connectionId"`
+	AccountId    *string    `json:"accountId"`
+	BenchmarkId  []string   `json:"benchmarkId"`
+	JobStatus    []string   `json:"jobStatus"`
+	StartTime    time.Time  `json:"startTime"`
+	EndTime      *time.Time `json:"endTime"`
+}
+
+type GetComplianceJobsHistoryResponse struct {
+	JobId       uint                `json:"jobId"`
+	BenchmarkId string              `json:"benchmarkId"`
+	JobStatus   ComplianceJobStatus `json:"jobStatus"`
+	DateTime    time.Time           `json:"dateTime"`
+}
+
+type GetAnalyticsJobsHistoryRequest struct {
+	Type      []string   `json:"type"`
+	JobStatus []string   `json:"jobStatus"`
+	StartTime time.Time  `json:"startTime"`
+	EndTime   *time.Time `json:"endTime"`
+}
+
+type GetAnalyticsJobsHistoryResponse struct {
+	JobId     uint                   `json:"jobId"`
+	Type      model.AnalyticsJobType `json:"type"`
+	JobStatus api.JobStatus          `json:"jobStatus"`
+	DateTime  time.Time              `json:"dateTime"`
 }

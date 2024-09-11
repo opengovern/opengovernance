@@ -284,6 +284,8 @@ func InitializeScheduler(
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
+	s.httpServer.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
+
 	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
 		s.logger.Error("Failed to parse describe interval hours", zap.Error(err))

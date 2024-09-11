@@ -90,6 +90,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connectionGroups := v1.Group("/connection-groups")
 	connectionGroups.GET("", httpserver.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
 	connectionGroups.GET("/:connectionGroupName", httpserver.AuthorizeHandler(h.GetConnectionGroup, api3.ViewerRole))
+
+	v2.GET("/sources/:sourceId", httpserver.AuthorizeHandler(h.GetSourceBySourceId, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -2973,4 +2975,47 @@ func arrayContains(array []string, key string) bool {
 		}
 	}
 	return false
+}
+
+func (h HttpHandler) GetSourceBySourceId(ctx echo.Context) error {
+	srcId := ctx.Param("source_id")
+
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSource")
+
+	src, err := h.db.GetSourceBySourceID(srcId)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", src.Name),
+	))
+	span.End()
+
+	metadata := make(map[string]any)
+	if src.Metadata.String() != "" {
+		err := json.Unmarshal(src.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
+	}
+
+	apiRes := entities.NewConnection(src)
+	if httpserver.GetUserRole(ctx) == api3.InternalRole {
+		apiRes.Credential = entities.NewCredential(src.Credential)
+		apiRes.Credential.Config = src.Credential.Secret
+		if apiRes.Credential.Version == 2 {
+			apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), src.Credential)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, apiRes)
 }
