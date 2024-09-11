@@ -69,7 +69,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	benchmarksV2 := v2.Group("/benchmark")
 	benchmarksV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
-	benchmarksV2.POST("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
+	benchmarksV2.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
 	benchmarksV2.POST("/:benchmark-id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 
 	controls := v1.Group("/controls")
@@ -78,7 +78,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	controls.GET("/:controlId/trend", httpserver2.AuthorizeHandler(h.GetControlTrend, authApi.ViewerRole))
 
 	controlsV2 := v2.Group("/control")
-	controlsV2.POST("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	controlsV2.GET("", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	controlsV2.POST("/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	controlsV2.POST("/:control-id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	controlsV2.GET("/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
@@ -3314,8 +3314,8 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			Severity:    control.Severity,
 			Tags:        filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(control.GetTagsMap())),
 			Query: struct {
-				PrimaryTable *string              `json:"primaryTable"`
-				ListOfTables []string             `json:"listOfTables"`
+				PrimaryTable *string              `json:"primary_table"`
+				ListOfTables []string             `json:"list_of_tables"`
 				Parameters   []api.QueryParameter `json:"parameters"`
 			}{
 				PrimaryTable: control.Query.PrimaryTable,
@@ -3356,11 +3356,11 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	sort.Slice(resultControls, func(i, j int) bool {
 		return resultControls[i].ID < resultControls[j].ID
 	})
-	if req.PageSize != nil {
-		if req.PageNumber == nil {
-			resultControls = utils.Paginate(1, *req.PageSize, resultControls)
+	if req.PerPage != nil {
+		if req.Cursor == nil {
+			resultControls = utils.Paginate(1, *req.PerPage, resultControls)
 		}
-		resultControls = utils.Paginate(*req.PageNumber, *req.PageSize, resultControls)
+		resultControls = utils.Paginate(*req.Cursor, *req.PerPage, resultControls)
 	}
 
 	return echoCtx.JSON(http.StatusOK, resultControls)
@@ -3494,8 +3494,8 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 			Severity:    control.Severity,
 			Tags:        filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(control.GetTagsMap())),
 			Query: struct {
-				PrimaryTable *string              `json:"primaryTable"`
-				ListOfTables []string             `json:"listOfTables"`
+				PrimaryTable *string              `json:"primary_table"`
+				ListOfTables []string             `json:"list_of_tables"`
 				Parameters   []api.QueryParameter `json:"parameters"`
 			}{
 				PrimaryTable: control.Query.PrimaryTable,
@@ -4610,11 +4610,11 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	sort.Slice(response, func(i, j int) bool {
 		return response[i].Metadata.ID < response[j].Metadata.ID
 	})
-	if req.PageSize != nil {
-		if req.PageNumber == nil {
-			response = utils.Paginate(1, *req.PageSize, response)
+	if req.PerPage != nil {
+		if req.Cursor == nil {
+			response = utils.Paginate(1, *req.PerPage, response)
 		}
-		response = utils.Paginate(*req.PageNumber, *req.PageSize, response)
+		response = utils.Paginate(*req.Cursor, *req.PerPage, response)
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
