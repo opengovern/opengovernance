@@ -24,6 +24,7 @@ import (
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	GetSourceBySourceId(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
+	GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error)
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
@@ -105,6 +106,24 @@ func (s *onboardClient) GetSourceBySourceId(ctx *httpclient.Context, sourceID st
 		return nil, err
 	}
 	return &source, nil
+}
+
+func (s *onboardClient) GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v2/sources", s.baseURL)
+	var response []api.Connection
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
 }
 
 func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error) {

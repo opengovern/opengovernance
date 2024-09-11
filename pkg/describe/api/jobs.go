@@ -165,3 +165,22 @@ type GetAnalyticsJobsHistoryResponse struct {
 	JobStatus api.JobStatus `json:"jobStatus"`
 	DateTime  time.Time     `json:"dateTime"`
 }
+
+type RunBenchmarkByIdRequest struct {
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connectionId"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"providerIdRegex"`
+		ProviderNameRegex *string `json:"providerNameRegex"`
+	} `json:"connectionInfo"`
+}
+
+type RunBenchmarkRequest struct {
+	BenchmarkIds   []string `json:"benchmarkIds"`
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connectionId"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"providerIdRegex"`
+		ProviderNameRegex *string `json:"providerNameRegex"`
+	} `json:"connectionInfo"`
+}
