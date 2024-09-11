@@ -119,6 +119,9 @@ type GetDescribeJobsHistoryRequest struct {
 	JobStatus     []string   `json:"jobStatus"`
 	StartTime     time.Time  `json:"startTime"`
 	EndTime       *time.Time `json:"endTime"`
+	SortBy        *string    `json:"sortBy"`
+	PageNumber    *int64     `json:"pageNumber"`
+	PageSize      *int64     `json:"pageSize"`
 }
 
 type GetDescribeJobsHistoryResponse struct {
@@ -136,6 +139,9 @@ type GetComplianceJobsHistoryRequest struct {
 	JobStatus    []string   `json:"jobStatus"`
 	StartTime    time.Time  `json:"startTime"`
 	EndTime      *time.Time `json:"endTime"`
+	SortBy       *string    `json:"sortBy"`
+	PageNumber   *int64     `json:"pageNumber"`
+	PageSize     *int64     `json:"pageSize"`
 }
 
 type GetComplianceJobsHistoryResponse struct {
@@ -146,10 +152,13 @@ type GetComplianceJobsHistoryResponse struct {
 }
 
 type GetAnalyticsJobsHistoryRequest struct {
-	Type      []string   `json:"type"`
-	JobStatus []string   `json:"jobStatus"`
-	StartTime time.Time  `json:"startTime"`
-	EndTime   *time.Time `json:"endTime"`
+	Type       []string   `json:"type"`
+	JobStatus  []string   `json:"jobStatus"`
+	StartTime  time.Time  `json:"startTime"`
+	EndTime    *time.Time `json:"endTime"`
+	SortBy     *string    `json:"sortBy"`
+	PageNumber *int64     `json:"pageNumber"`
+	PageSize   *int64     `json:"pageSize"`
 }
 
 type GetAnalyticsJobsHistoryResponse struct {
