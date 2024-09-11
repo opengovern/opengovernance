@@ -85,6 +85,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v2.POST("/jobs/analytics", httpserver.AuthorizeHandler(h.GetAnalyticsJobsHistory, apiAuth.ViewerRole))
 	v2.POST("/compliance/benchmark/:benchmark-id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v2.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
+	v2.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
 }
 
 // ListJobs godoc
@@ -1354,7 +1355,7 @@ func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, jobsResults)
 }
 
-// RubBenchmarkById godoc
+// RunBenchmarkById godoc
 //
 //	@Summary		Triggers compliance job by benchmark id
 //	@Description	Triggers a compliance job to run immediately for the given benchmark
@@ -1364,8 +1365,10 @@ func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
 //	@Success		200
 //	@Param			benchmark_id	path	string		true	"Benchmark ID"
 //	@Param			request	body	api.RunBenchmarkByIdRequest	true	""
-//	@Router			/schedule/api/v1/compliance/benchmark/{benchmark-id}/run [put]
+//	@Router			/schedule/api/v1/compliance/benchmark/{benchmark-id}/run [post]
 func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
 	benchmarkID := ctx.Param("benchmark-id")
 
 	var request api.RunBenchmarkByIdRequest
@@ -1377,13 +1380,19 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
-	var connectionIDs []string
+	var connections []onboardapi.Connection
 	for _, info := range request.ConnectionInfo {
 		if info.ConnectionId != nil {
-			connectionIDs = append(connectionIDs, *info.ConnectionId)
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
 			continue
 		}
-		connections, err := h.Scheduler.onboardClient.GetSourceByFilters(&httpclient.Context{UserRole: apiAuth.InternalRole},
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Connector,
 				ProviderNameRegex: info.ProviderNameRegex,
@@ -1392,9 +1401,19 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		for _, c := range connections {
-			connectionIDs = append(connectionIDs, c.ConnectionID)
-		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var connectionInfo []api.ConnectionInfo
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionInfo = append(connectionInfo, api.ConnectionInfo{
+			ConnectionId: c.ID.String(),
+			Connector:    c.Connector.String(),
+			ProviderName: c.ConnectionName,
+			ProviderId:   c.ConnectionID,
+		})
+		connectionIDs = append(connectionIDs, c.ConnectionID)
 	}
 
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
@@ -1416,19 +1435,23 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
 
-	return ctx.JSON(http.StatusOK, jobId)
+	return ctx.JSON(http.StatusOK, api.RunBenchmarkResponse{
+		JobId:          jobId,
+		BenchmarkId:    benchmark.ID,
+		ConnectionInfo: connectionInfo,
+	})
 }
 
-// RubBenchmark godoc
+// RunBenchmark godoc
 //
 //	@Summary		Triggers compliance job
 //	@Description	Triggers a compliance job to run immediately for the given benchmark
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
-//	@Success		200
+//	@Success		200 {object} []api.RunBenchmarkResponse
 //	@Param			request	body	api.RunBenchmarkRequest		true	""
-//	@Router			/schedule/api/v1/compliance/benchmark/{benchmark-id}/run [put]
+//	@Router			/schedule/api/v1/compliance/benchmark/run [post]
 func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1441,13 +1464,19 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
-	var connectionIDs []string
+	var connections []onboardapi.Connection
 	for _, info := range request.ConnectionInfo {
 		if info.ConnectionId != nil {
-			connectionIDs = append(connectionIDs, *info.ConnectionId)
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
 			continue
 		}
-		connections, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Connector,
 				ProviderNameRegex: info.ProviderNameRegex,
@@ -1456,9 +1485,19 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		for _, c := range connections {
-			connectionIDs = append(connectionIDs, c.ConnectionID)
-		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var connectionInfo []api.ConnectionInfo
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionInfo = append(connectionInfo, api.ConnectionInfo{
+			ConnectionId: c.ID.String(),
+			Connector:    c.Connector.String(),
+			ProviderName: c.ConnectionName,
+			ProviderId:   c.ConnectionID,
+		})
+		connectionIDs = append(connectionIDs, c.ConnectionID)
 	}
 
 	var benchmarks []complianceapi.Benchmark
@@ -1481,7 +1520,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		}
 	}
 
-	var jobIds []uint
+	var jobs []api.RunBenchmarkResponse
 	for _, benchmark := range benchmarks {
 		lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1493,8 +1532,115 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
 
-		jobIds = append(jobIds, jobId)
+		jobs = append(jobs, api.RunBenchmarkResponse{
+			JobId:          jobId,
+			BenchmarkId:    benchmark.ID,
+			ConnectionInfo: connectionInfo,
+		})
 	}
 
-	return ctx.JSON(http.StatusOK, jobIds)
+	return ctx.JSON(http.StatusOK, jobs)
+}
+
+// RunDiscovery godoc
+//
+//	@Summary		Run Discovery job
+//	@Description	Triggers a discovery job to run immediately for the given resource types
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200 {object} []api.RunDiscoveryResponse
+//	@Param			request	body	api.RunBenchmarkRequest		true	""
+//	@Router			/schedule/api/v1/compliance/discovery/run [post]
+func (h HttpServer) RunDiscovery(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.RunDiscoveryRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	if len(request.ConnectionInfo) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
+	}
+
+	var connections []onboardapi.Connection
+	for _, info := range request.ConnectionInfo {
+		if info.ConnectionId != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Connector,
+				ProviderNameRegex: info.ProviderNameRegex,
+				ProviderIdRegex:   info.ProviderIdRegex,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var jobs []api.RunDiscoveryResponse
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
+		rtToDescribe := request.ResourceTypes
+
+		if len(rtToDescribe) == 0 {
+			switch connection.Connector {
+			case source.CloudAWS:
+				if request.ForceFull {
+					rtToDescribe = aws.ListResourceTypes()
+				} else {
+					rtToDescribe = aws.ListFastDiscoveryResourceTypes()
+				}
+			case source.CloudAzure:
+				if request.ForceFull {
+					rtToDescribe = azure.ListResourceTypes()
+				} else {
+					rtToDescribe = azure.ListFastDiscoveryResourceTypes()
+				}
+			}
+		}
+
+		for _, resourceType := range rtToDescribe {
+			switch connection.Connector {
+			case source.CloudAWS:
+				if _, err := aws.GetResourceType(resourceType); err != nil {
+					continue
+				}
+			case source.CloudAzure:
+				if _, err := azure.GetResourceType(resourceType); err != nil {
+					continue
+				}
+			}
+			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
+				continue
+			}
+			job, err := h.Scheduler.describe(connection, resourceType, false, false, false)
+			if err != nil {
+				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			}
+			jobs = append(jobs, api.RunDiscoveryResponse{
+				JobId:        job.ID,
+				ResourceType: job.ResourceType,
+				ConnectionInfo: api.ConnectionInfo{
+					ConnectionId: connection.ID.String(),
+					Connector:    connection.Connector.String(),
+					ProviderId:   connection.ConnectionID,
+					ProviderName: connection.ConnectionName,
+				},
+			})
+		}
+	}
+	return ctx.JSON(http.StatusOK, jobs)
 }
