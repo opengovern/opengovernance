@@ -43,6 +43,12 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
+	err = dbm.ORM.AutoMigrate(&model.ConnectionGroup{})
+	if err != nil {
+		logger.Error("failed to auto migrate connection group", zap.Error(err))
+		return err
+	}
+
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&model.ConnectionGroup{}).Where("1 = 1").Unscoped().Delete(&model.ConnectionGroup{}).Error
 		if err != nil {

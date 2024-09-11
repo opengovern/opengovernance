@@ -65,6 +65,12 @@ func OnboardMigration(conf config.MigratorConfig, logger *zap.Logger, onboardFil
 		return err
 	}
 
+	err = dbm.ORM.AutoMigrate(&model.Connector{})
+	if err != nil {
+		logger.Error("auto migrate error", zap.Error(err))
+		return err
+	}
+
 	for _, obj := range connectors {
 		logger.Info("connector", zap.Any("obj", obj))
 		err := dbm.ORM.Clauses(clause.OnConflict{
@@ -105,6 +111,12 @@ func MetadataMigration(conf config.MigratorConfig, logger *zap.Logger, metadataF
 		return err
 	}
 
+	err = dbm.ORM.AutoMigrate(&models.ConfigMetadata{})
+	if err != nil {
+		logger.Error("auto migrate error", zap.Error(err))
+		return err
+	}
+
 	for _, obj := range metadata {
 		err := dbm.ORM.Clauses(clause.OnConflict{
 			DoNothing: true,
@@ -138,6 +150,12 @@ func MetadataQueryParamMigration(conf config.MigratorConfig, logger *zap.Logger,
 	var queryParameters []models.QueryParameter
 	err = json.Unmarshal(content, &queryParameters)
 	if err != nil {
+		return err
+	}
+
+	err = dbm.ORM.AutoMigrate(&models.QueryParameter{})
+	if err != nil {
+		logger.Error("auto migrate error", zap.Error(err))
 		return err
 	}
 
