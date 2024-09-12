@@ -132,15 +132,13 @@ type GetDescribeJobsHistoryResponse struct {
 }
 
 type GetComplianceJobsHistoryRequest struct {
-	ConnectionId *string    `json:"connection_id"`
-	AccountId    *string    `json:"account_id"`
-	BenchmarkId  []string   `json:"benchmark_id"`
-	JobStatus    []string   `json:"job_status"`
-	StartTime    time.Time  `json:"start_time"`
-	EndTime      *time.Time `json:"end_time"`
-	SortBy       *string    `json:"sort_by"`
-	Cursor       *int64     `json:"cursor"`
-	PerPage      *int64     `json:"per_page"`
+	BenchmarkId []string   `json:"benchmark_id"`
+	JobStatus   []string   `json:"job_status"`
+	StartTime   time.Time  `json:"start_time"`
+	EndTime     *time.Time `json:"end_time"`
+	SortBy      *string    `json:"sort_by"`
+	Cursor      *int64     `json:"cursor"`
+	PerPage     *int64     `json:"per_page"`
 }
 
 type GetComplianceJobsHistoryResponse struct {
@@ -266,6 +264,41 @@ type ListDescribeJobsRequest struct {
 }
 
 type ListComplianceJobsRequest struct {
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
+	BenchmarkId []string   `json:"benchmark_id"`
+	JobStatus   []string   `json:"job_status"`
+	StartTime   time.Time  `json:"start_time"`
+	EndTime     *time.Time `json:"end_time"`
+	SortBy      *string    `json:"sort_by"`
+	Cursor      *int64     `json:"cursor"`
+	PerPage     *int64     `json:"per_page"`
+}
+
+type GetDescribeJobsHistoryByIntegrationRequest struct {
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
+	ResourceType  []string   `json:"resource_type"`
+	DiscoveryType []string   `json:"discovery_type"`
+	JobStatus     []string   `json:"job_status"`
+	StartTime     time.Time  `json:"start_time"`
+	EndTime       *time.Time `json:"end_time"`
+	SortBy        *string    `json:"sort_by"`
+	Cursor        *int64     `json:"cursor"`
+	PerPage       *int64     `json:"per_page"`
+}
+
+type GetComplianceJobsHistoryByIntegrationRequest struct {
 	IntegrationInfo []struct {
 		Integration        *string `json:"integration"`
 		Type               *string `json:"type"`

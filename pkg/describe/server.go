@@ -82,6 +82,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v2 := e.Group("/api/v2")
 	v2.POST("/jobs/discovery/connections/:connection-id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
 	v2.POST("/jobs/compliance/connections/:connection-id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/discovery/connections", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/compliance/connections", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
 	v2.POST("/compliance/benchmark/:benchmark-id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v2.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
 	v2.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
@@ -1218,7 +1220,7 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 //	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs [post]
+//	@Router		/schedule/api/v2/jobs/compliance/connections/{connection-id} [post]
 func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 	var request api.GetComplianceJobsHistoryRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -1226,19 +1228,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	if request.AccountId == nil && request.ConnectionId == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "whether accountId or connectionId should be specified")
-	}
-	var connectionId string
-	if request.ConnectionId != nil {
-		connectionId = *request.ConnectionId
-	} else {
-		connection, err := h.Scheduler.onboardClient.GetSourceBySourceId(&httpclient.Context{UserRole: apiAuth.InternalRole}, *request.AccountId)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-		connectionId = connection.ConnectionID
-	}
+	connectionId := ctx.Param("connection-id")
 
 	jobs, err := h.DB.ListComplianceJobsByFilters([]string{connectionId}, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
@@ -2016,6 +2006,252 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 		})
 	}
 
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// GetDescribeJobsHistoryByIntegration godoc
+//
+//	@Summary	Get describe jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/discovery/connections [post]
+func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.GetDescribeJobsHistoryByIntegrationRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	var connections []onboardapi.Connection
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	connectionInfo := make(map[string]api.IntegrationInfo)
+	for _, c := range connections {
+		connectionInfo[c.ID.String()] = api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
+		}
+	}
+
+	var jobsResults []api.GetDescribeJobsHistoryResponse
+
+	for _, c := range connectionInfo {
+		jobs, err := h.DB.ListDescribeJobsByFilters([]string{c.IntegrationTracker}, request.ResourceType,
+			request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		for _, j := range jobs {
+			jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
+				JobId:           j.ID,
+				DiscoveryType:   string(j.DiscoveryType),
+				ResourceType:    j.ResourceType,
+				JobStatus:       j.Status,
+				DateTime:        j.UpdatedAt,
+				IntegrationInfo: &c,
+			})
+		}
+	}
+
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "discoverytype":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DiscoveryType < jobsResults[j].DiscoveryType
+			})
+		case "resourcetype":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].ResourceType < jobsResults[j].ResourceType
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// GetComplianceJobsHistoryByIntegration godoc
+//
+//	@Summary	Get compliance jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/compliance/connections [post]
+func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.GetComplianceJobsHistoryByIntegrationRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	var connections []onboardapi.Connection
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	connectionInfo := make(map[string]api.IntegrationInfo)
+	for _, c := range connections {
+		connectionInfo[c.ID.String()] = api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
+		}
+	}
+
+	var jobsResults []api.GetComplianceJobsHistoryResponse
+	for _, c := range connectionInfo {
+		jobs, err := h.DB.ListComplianceJobsByFilters([]string{c.IntegrationTracker}, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		for _, j := range jobs {
+			var jobIntegrations []api.IntegrationInfo
+			for _, cid := range j.ConnectionIDs {
+				if info, ok := connectionInfo[cid]; ok {
+					jobIntegrations = append(jobIntegrations, info)
+				} else {
+					connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, cid)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+					}
+					if connection != nil {
+						info = api.IntegrationInfo{
+							IntegrationTracker: connection.ID.String(),
+							Integration:        connection.Connector.String(),
+							IDName:             connection.ConnectionName,
+							ID:                 connection.ConnectionID,
+						}
+						connectionInfo[cid] = info
+						jobIntegrations = append(jobIntegrations, info)
+					}
+				}
+			}
+
+			jobsResults = append(jobsResults, api.GetComplianceJobsHistoryResponse{
+				JobId:           j.ID,
+				BenchmarkId:     j.BenchmarkID,
+				JobStatus:       j.Status.ToApi(),
+				DateTime:        j.UpdatedAt,
+				IntegrationInfo: jobIntegrations,
+			})
+		}
+	}
+
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "benchmarkid":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].BenchmarkId < jobsResults[j].BenchmarkId
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)

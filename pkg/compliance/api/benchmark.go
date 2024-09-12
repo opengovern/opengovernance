@@ -203,15 +203,22 @@ type SeveritySummary struct {
 	Resources int `json:"resources"`
 	Controls  int `json:"controls"`
 }
+type TopIntegration struct {
+	IntegrationInfo IntegrationInfo `json:"integration_info"`
+	Issues          int             `json:"issues"`
+}
 
-//
-//type GetBenchmarkSummaryV2Response struct {
-//	ComplianceScore           *float64                         `json:"compliance_score"`
-//	SeveritySummaryByControl  BenchmarkControlsSeverityStatus  `json:"severity_summary_by_control"`
-//	SeveritySummaryByResource BenchmarkResourcesSeverityStatus `json:"severity_summary_by_resource"`
-//	TopIntegrations           []TopInegrations                 `json:"top_connections"`
-//	FindingsSummary           ConformanceStatusSummary         `json:"findings_summary"`
-//
-//	EvaluatedAt   *time.Time `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
-//	LastJobStatus string     `json:"lastJobStatus" example:"success"`
-//}
+type GetBenchmarkSummaryV2Request struct {
+	Integration          []IntegrationFilter `json:"integration"`
+	TopIntegrationsCount int                 `json:"top_integrations_count"`
+}
+
+type GetBenchmarkSummaryV2Response struct {
+	ComplianceScore           float64                          `json:"compliance_score"`
+	SeveritySummaryByControl  BenchmarkControlsSeverityStatus  `json:"severity_summary_by_control"`
+	SeveritySummaryByResource BenchmarkResourcesSeverityStatus `json:"severity_summary_by_resource"`
+	TopIntegrations           []TopIntegration                 `json:"top_connections"`
+	FindingsSummary           ConformanceStatusSummary         `json:"findings_summary"`
+	EvaluatedAt               *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
+	LastJobStatus             string                           `json:"lastJobStatus" example:"success"`
+}
