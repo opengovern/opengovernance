@@ -235,3 +235,35 @@ type CountFindingsResponse struct {
 type GetFindingEventsByFindingIDResponse struct {
 	FindingEvents []FindingEvent `json:"findingEvents"`
 }
+
+type FindingFiltersV2 struct {
+	Integration       []IntegrationInfoFilter `json:"integration"`
+	BenchmarkID       []string                `json:"benchmark_id"`
+	NotBenchmarkID    []string                `json:"not_benchmark_id"`
+	ControlID         []string                `json:"control_id"`
+	NotControlID      []string                `json:"not_control_id"`
+	Severity          []types.FindingSeverity `json:"severity"`
+	NotSeverity       []types.FindingSeverity `json:"not_severity"`
+	ConformanceStatus []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
+}
+
+type IntegrationInfoFilter struct {
+	Integration        *string `json:"integration"`
+	ID                 *string `json:"id"`
+	IDName             *string `json:"id_name"`
+	IntegrationTracker *string `json:"integration_tracker"`
+}
+
+type FindingsSortV2 struct {
+	BenchmarkID       *SortDirection `json:"benchmark_id"`
+	ControlID         *SortDirection `json:"control_id"`
+	Severity          *SortDirection `json:"severity"`
+	ConformanceStatus *SortDirection `json:"conformance_status"`
+}
+
+type GetFindingsRequestV2 struct {
+	Filters      FindingFiltersV2 `json:"filters"`
+	Sort         []FindingsSortV2 `json:"sort"`
+	Limit        int              `json:"limit" example:"100"`
+	AfterSortKey []any            `json:"afterSortKey"`
+}

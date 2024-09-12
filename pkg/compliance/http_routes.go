@@ -120,6 +120,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v2.GET("/control/:control-id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v2.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
+	v2.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
+
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -5206,4 +5208,216 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 		results = append(results, info)
 	}
 	return echoCtx.JSON(http.StatusOK, results)
+}
+
+// GetFindingsV2 godoc
+//
+//	@Summary		Get findings
+//	@Description	Retrieving all compliance run findings with respect to filters.
+//	@Tags			compliance
+//	@Security		BearerToken
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.GetFindingsRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetFindingsResponse
+//	@Router			/compliance/api/v2/findings [post]
+func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+
+	ctx := echoCtx.Request().Context()
+
+	var req api.GetFindingsRequestV2
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var connections []onboardApi.Connection
+	for _, info := range req.Filters.Integration {
+		if info.IntegrationTracker != nil {
+			connection, err := h.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.onboardClient.GetSourceByFilters(clientCtx,
+			onboardApi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var connectionIds []string
+	for _, c := range connections {
+		connectionIds = append(connectionIds, c.ID.String())
+	}
+
+	var err error
+	connectionIds, err = httpserver2.ResolveConnectionIDs(echoCtx, connectionIds)
+	if err != nil {
+		return err
+	}
+
+	var response api.GetFindingsResponse
+
+	if len(req.Filters.ConformanceStatus) == 0 {
+		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	}
+
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	for _, status := range req.Filters.ConformanceStatus {
+		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	}
+
+	if len(req.Sort) == 0 {
+		req.Sort = []api.FindingsSortV2{
+			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
+		}
+	}
+
+	if len(req.AfterSortKey) != 0 {
+		expectedLen := len(req.Sort) + 1
+		if len(req.AfterSortKey) != expectedLen {
+			return echo.NewHTTPError(http.StatusBadRequest, "sort key length should be zero or match a returned sort key from previous response")
+		}
+	}
+
+	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
+	//if req.Filters.LastEvent.From != nil && *req.Filters.LastEvent.From != 0 {
+	//	lastEventFrom = utils.GetPointer(time.Unix(*req.Filters.LastEvent.From, 0))
+	//}
+	//if req.Filters.LastEvent.To != nil && *req.Filters.LastEvent.To != 0 {
+	//	lastEventTo = utils.GetPointer(time.Unix(*req.Filters.LastEvent.To, 0))
+	//}
+	//if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
+	//	evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
+	//}
+	//if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
+	//	evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+	//}
+
+	res, totalCount, err := es.FindingsQueryV2(ctx, h.logger, h.client, nil, nil, connectionIds, nil,
+		nil, req.Filters.BenchmarkID, req.Filters.NotBenchmarkID, req.Filters.ControlID, req.Filters.NotControlID,
+		req.Filters.Severity, req.Filters.NotSeverity, lastEventFrom, lastEventTo,
+		evaluatedAtFrom, evaluatedAtTo, nil, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+	if err != nil {
+		h.logger.Error("failed to get findings", zap.Error(err))
+		return err
+	}
+
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	if err != nil {
+		h.logger.Error("failed to get sources", zap.Error(err))
+		return err
+	}
+	allSourcesMap := make(map[string]*onboardApi.Connection)
+	for _, src := range allSources {
+		src := src
+		allSourcesMap[src.ID.String()] = &src
+	}
+
+	controls, err := h.db.ListControls(ctx, nil, nil)
+	if err != nil {
+		h.logger.Error("failed to get controls", zap.Error(err))
+		return err
+	}
+	controlsMap := make(map[string]*db.Control)
+	for _, control := range controls {
+		control := control
+		controlsMap[control.ID] = &control
+	}
+
+	benchmarks, err := h.db.ListBenchmarksBare(ctx)
+	if err != nil {
+		h.logger.Error("failed to get benchmarks", zap.Error(err))
+		return err
+	}
+	benchmarksMap := make(map[string]*db.Benchmark)
+	for _, benchmark := range benchmarks {
+		benchmark := benchmark
+		benchmarksMap[benchmark.ID] = &benchmark
+	}
+
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+		nil, nil, nil, false, nil, 10000, 1)
+	if err != nil {
+		h.logger.Error("failed to get resource type metadata", zap.Error(err))
+		return err
+	}
+	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
+	for _, item := range resourceTypeMetadata.ResourceTypes {
+		item := item
+		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
+	}
+
+	for _, h := range res {
+		finding := api.GetAPIFindingFromESFinding(h.Source)
+
+		for _, parentBenchmark := range h.Source.ParentBenchmarks {
+			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
+				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
+			}
+		}
+
+		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
+			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
+			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
+		}
+
+		if control, ok := controlsMap[finding.ControlID]; ok {
+			finding.ControlTitle = control.Title
+		}
+
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
+			finding.ResourceTypeName = rtMetadata.ResourceLabel
+		}
+
+		finding.SortKey = h.Sort
+
+		response.Findings = append(response.Findings, finding)
+	}
+	response.TotalCount = totalCount
+
+	kaytuResourceIds := make([]string, 0, len(response.Findings))
+	for _, finding := range response.Findings {
+		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
+	}
+
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
+	if err != nil {
+		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
+		return err
+	}
+
+	for i, finding := range response.Findings {
+		var lookupResource *es2.LookupResource
+		potentialResources := lookupResourcesMap[finding.KaytuResourceID]
+		for _, r := range potentialResources {
+			r := r
+			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
+				lookupResource = &r
+				break
+			}
+		}
+		if lookupResource != nil {
+			response.Findings[i].ResourceName = lookupResource.Name
+			response.Findings[i].ResourceLocation = lookupResource.Location
+		} else {
+			h.logger.Warn("lookup resource not found",
+				zap.String("kaytu_resource_id", finding.KaytuResourceID),
+				zap.String("resource_id", finding.ResourceID),
+				zap.String("controlId", finding.ControlID),
+			)
+		}
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
 }
