@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -167,9 +168,21 @@ type GetBenchmarkListResponse struct {
 	Findings *GetBenchmarkDetailsFindings `json:"findings"`
 }
 
-type ConnectionInfo struct {
-	ConnectionId string `json:"connection_id"`
-	Connector    string `json:"connector"`
-	ProviderId   string `json:"provider_id"`
-	ProviderName string `json:"provider_name"`
+type IntegrationInfo struct {
+	Integration        string `json:"integration"`
+	Type               string `json:"type"`
+	ID                 string `json:"id"`
+	IDName             string `json:"id_name"`
+	IntegrationTracker string `json:"integration_tracker"`
+}
+
+func GetTypeFromIntegration(integration string) string {
+	switch strings.ToLower(integration) {
+	case "aws":
+		return "aws_account"
+	case "azure":
+		return "azure_subscription"
+	default:
+		return ""
+	}
 }

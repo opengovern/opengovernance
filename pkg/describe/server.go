@@ -1340,14 +1340,14 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		connections = append(connections, connectionsTmp...)
 	}
 
-	var connectionInfo []api.ConnectionInfo
+	var connectionInfo []api.IntegrationInfo
 	var connectionIDs []string
 	for _, c := range connections {
-		connectionInfo = append(connectionInfo, api.ConnectionInfo{
-			ConnectionId: c.ID.String(),
-			Connector:    c.Connector.String(),
-			ProviderName: c.ConnectionName,
-			ProviderId:   c.ConnectionID,
+		connectionInfo = append(connectionInfo, api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
 		})
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
@@ -1372,9 +1372,9 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, api.RunBenchmarkResponse{
-		JobId:          jobId,
-		BenchmarkId:    benchmark.ID,
-		ConnectionInfo: connectionInfo,
+		JobId:           jobId,
+		BenchmarkId:     benchmark.ID,
+		IntegrationInfo: connectionInfo,
 	})
 }
 
@@ -1396,14 +1396,14 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	if len(request.ConnectionInfo) == 0 {
+	if len(request.IntegrationInfo) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
 	var connections []onboardapi.Connection
-	for _, info := range request.ConnectionInfo {
-		if info.ConnectionId != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -1414,9 +1414,9 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		}
 		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Connector,
-				ProviderNameRegex: info.ProviderNameRegex,
-				ProviderIdRegex:   info.ProviderIdRegex,
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1424,14 +1424,14 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		connections = append(connections, connectionsTmp...)
 	}
 
-	var connectionInfo []api.ConnectionInfo
+	var connectionInfo []api.IntegrationInfo
 	var connectionIDs []string
 	for _, c := range connections {
-		connectionInfo = append(connectionInfo, api.ConnectionInfo{
-			ConnectionId: c.ID.String(),
-			Connector:    c.Connector.String(),
-			ProviderName: c.ConnectionName,
-			ProviderId:   c.ConnectionID,
+		connectionInfo = append(connectionInfo, api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
 		})
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
@@ -1469,9 +1469,9 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		}
 
 		jobs = append(jobs, api.RunBenchmarkResponse{
-			JobId:          jobId,
-			BenchmarkId:    benchmark.ID,
-			ConnectionInfo: connectionInfo,
+			JobId:           jobId,
+			BenchmarkId:     benchmark.ID,
+			IntegrationInfo: connectionInfo,
 		})
 	}
 
@@ -1496,14 +1496,14 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	if len(request.ConnectionInfo) == 0 {
+	if len(request.IntegrationInfo) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
 	var connections []onboardapi.Connection
-	for _, info := range request.ConnectionInfo {
-		if info.ConnectionId != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -1514,9 +1514,9 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		}
 		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Connector,
-				ProviderNameRegex: info.ProviderNameRegex,
-				ProviderIdRegex:   info.ProviderIdRegex,
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1566,7 +1566,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			var status, failureReason string
 			job, err := h.Scheduler.describe(connection, resourceType, false, false, false)
 			if err != nil {
-				if err.Error() == ErrJobInProgress.Error() {
+				if err.Error() == "job already in progress" {
 					tmpJob, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
 					if err != nil {
 						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
@@ -1574,15 +1574,14 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 					h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 					status = "FAILED"
 					failureReason = fmt.Sprintf("job already in progress: %v", tmpJob.ID)
+				} else {
+					failureReason = err.Error()
 				}
 			}
 
 			var jobId uint
 			if job == nil {
 				status = "FAILED"
-				if err != nil && failureReason == "" {
-					failureReason = err.Error()
-				}
 			} else {
 				jobId = job.ID
 				status = string(job.Status)
@@ -1592,11 +1591,11 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 				ResourceType:  resourceType,
 				Status:        status,
 				FailureReason: failureReason,
-				ConnectionInfo: api.ConnectionInfo{
-					ConnectionId: connection.ID.String(),
-					Connector:    connection.Connector.String(),
-					ProviderId:   connection.ConnectionID,
-					ProviderName: connection.ConnectionName,
+				IntegrationInfo: api.IntegrationInfo{
+					IntegrationTracker: connection.ID.String(),
+					Integration:        connection.Connector.String(),
+					ID:                 connection.ConnectionID,
+					IDName:             connection.ConnectionName,
 				},
 			})
 		}
@@ -1629,11 +1628,11 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 
 	jobsResult := api.GetDescribeJobStatusResponse{
 		JobId: j.ID,
-		ConnectionInfo: api.ConnectionInfo{
-			ConnectionId: connection.ID.String(),
-			Connector:    connection.Connector.String(),
-			ProviderId:   connection.ConnectionID,
-			ProviderName: connection.ConnectionName,
+		IntegrationInfo: api.IntegrationInfo{
+			IntegrationTracker: connection.ID.String(),
+			Integration:        connection.Connector.String(),
+			ID:                 connection.ConnectionID,
+			IDName:             connection.ConnectionName,
 		},
 		DiscoveryType: string(j.DiscoveryType),
 		ResourceType:  j.ResourceType,
@@ -1668,27 +1667,27 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	var connectionInfos []api.ConnectionInfo
+	var connectionInfos []api.IntegrationInfo
 	for _, cid := range j.ConnectionIDs {
 		connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, cid)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connectionInfos = append(connectionInfos, api.ConnectionInfo{
-			ConnectionId: connection.ID.String(),
-			Connector:    connection.Connector.String(),
-			ProviderId:   connection.ConnectionID,
-			ProviderName: connection.ConnectionName,
+		connectionInfos = append(connectionInfos, api.IntegrationInfo{
+			IntegrationTracker: connection.ID.String(),
+			Integration:        connection.Connector.String(),
+			ID:                 connection.ConnectionID,
+			IDName:             connection.ConnectionName,
 		})
 	}
 
 	jobsResult := api.GetComplianceJobStatusResponse{
-		JobId:          j.ID,
-		ConnectionInfo: connectionInfos,
-		BenchmarkId:    j.BenchmarkID,
-		JobStatus:      string(j.Status),
-		CreatedAt:      j.CreatedAt,
-		UpdatedAt:      j.UpdatedAt,
+		JobId:           j.ID,
+		IntegrationInfo: connectionInfos,
+		BenchmarkId:     j.BenchmarkID,
+		JobStatus:       string(j.Status),
+		CreatedAt:       j.CreatedAt,
+		UpdatedAt:       j.UpdatedAt,
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResult)
@@ -1745,9 +1744,9 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	}
 
 	var connections []onboardapi.Connection
-	for _, info := range request.ConnectionInfo {
-		if info.ConnectionId != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -1758,9 +1757,9 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 		}
 		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Connector,
-				ProviderNameRegex: info.ProviderNameRegex,
-				ProviderIdRegex:   info.ProviderIdRegex,
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1768,14 +1767,14 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 		connections = append(connections, connectionsTmp...)
 	}
 
-	connectionInfo := make(map[string]api.ConnectionInfo)
+	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
 	for _, c := range connections {
-		connectionInfo[c.ID.String()] = api.ConnectionInfo{
-			ConnectionId: c.ID.String(),
-			Connector:    c.Connector.String(),
-			ProviderName: c.ConnectionName,
-			ProviderId:   c.ConnectionID,
+		connectionInfo[c.ID.String()] = api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
 		}
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
@@ -1796,7 +1795,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			DateTime:      j.UpdatedAt,
 		}
 		if info, ok := connectionInfo[j.ConnectionID]; ok {
-			jobResult.ConnectionInfo = &info
+			jobResult.IntegrationInfo = &info
 		}
 		jobsResults = append(jobsResults, jobResult)
 	}
@@ -1861,9 +1860,9 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	}
 
 	var connections []onboardapi.Connection
-	for _, info := range request.ConnectionInfo {
-		if info.ConnectionId != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -1874,9 +1873,9 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		}
 		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Connector,
-				ProviderNameRegex: info.ProviderNameRegex,
-				ProviderIdRegex:   info.ProviderIdRegex,
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1884,14 +1883,14 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		connections = append(connections, connectionsTmp...)
 	}
 
-	connectionInfo := make(map[string]api.ConnectionInfo)
+	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
 	for _, c := range connections {
-		connectionInfo[c.ID.String()] = api.ConnectionInfo{
-			ConnectionId: c.ID.String(),
-			Connector:    c.Connector.String(),
-			ProviderName: c.ConnectionName,
-			ProviderId:   c.ConnectionID,
+		connectionInfo[c.ID.String()] = api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
 		}
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
@@ -1911,7 +1910,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		}
 		for _, c := range j.ConnectionIDs {
 			if info, ok := connectionInfo[c]; ok {
-				jobResult.ConnectionInfo = append(jobResult.ConnectionInfo, info)
+				jobResult.IntegrationInfo = append(jobResult.IntegrationInfo, info)
 			}
 		}
 		jobsResults = append(jobsResults, jobResult)
