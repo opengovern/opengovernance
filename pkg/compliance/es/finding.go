@@ -1330,17 +1330,21 @@ func FetchFindingByID(ctx context.Context, logger *zap.Logger, client kaytu.Clie
 	return &resp.Hits.Hits[0].Source, nil
 }
 
-func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type,
-	connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, notBenchmarkID []string,
-	controlID []string, notControlID []string, severity []types.FindingSeverity, notSeverity []types.FindingSeverity,
-	lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
-	stateActive []bool, conformanceStatuses []types.ConformanceStatus, sorts []api.FindingsSortV2,
-	pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
+func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, notResourceIDs []string,
+	provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, notResourceTypes []string,
+	benchmarkID []string, notBenchmarkID []string, controlID []string, notControlID []string, severity []types.FindingSeverity,
+	notSeverity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, notLastTransitionFrom *time.Time,
+	notLastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool,
+	conformanceStatuses []types.ConformanceStatus, sorts []api.FindingsSortV2, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
 		switch {
+		case sort.ResourceType != nil:
+			requestSort = append(requestSort, map[string]any{
+				"resourceType": *sort.ResourceType,
+			})
 		case sort.BenchmarkID != nil:
 			requestSort = append(requestSort, map[string]any{
 				"benchmarkID": *sort.BenchmarkID,
@@ -1399,6 +1403,10 @@ func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Clien
 					"order": *sort.ConformanceStatus,
 				},
 			})
+		case sort.LastUpdated != nil:
+			requestSort = append(requestSort, map[string]any{
+				"lastTransition": *sort.LastUpdated,
+			})
 		}
 	}
 	requestSort = append(requestSort, map[string]any{
@@ -1409,8 +1417,14 @@ func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Clien
 	if len(resourceIDs) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
 	}
+	if len(notResourceIDs) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("resourceID", notResourceIDs)))
+	}
 	if len(resourceTypes) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
+	}
+	if len(notResourceTypes) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("resourceType", notResourceTypes)))
 	}
 	if len(benchmarkID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
@@ -1477,6 +1491,19 @@ func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Clien
 		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
+	}
+	if notLastTransitionFrom != nil && notLastTransitionTo != nil {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewRangeFilter("lastTransition",
+			"", fmt.Sprintf("%d", notLastTransitionFrom.UnixMilli()),
+			"", fmt.Sprintf("%d", notLastTransitionTo.UnixMilli()))))
+	} else if notLastTransitionFrom != nil {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewRangeFilter("lastTransition",
+			"", fmt.Sprintf("%d", notLastTransitionFrom.UnixMilli()),
+			"", "")))
+	} else if notLastTransitionTo != nil {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewRangeFilter("lastTransition",
+			"", "",
+			"", fmt.Sprintf("%d", notLastTransitionTo.UnixMilli()))))
 	}
 	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
 		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
