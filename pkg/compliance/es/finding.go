@@ -1329,3 +1329,197 @@ func FetchFindingByID(ctx context.Context, logger *zap.Logger, client kaytu.Clie
 
 	return &resp.Hits.Hits[0].Source, nil
 }
+
+func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type,
+	connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, notBenchmarkID []string,
+	controlID []string, notControlID []string, severity []types.FindingSeverity, notSeverity []types.FindingSeverity,
+	lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
+	stateActive []bool, conformanceStatuses []types.ConformanceStatus, sorts []api.FindingsSortV2,
+	pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
+	idx := types.FindingsIndex
+
+	requestSort := make([]map[string]any, 0, len(sorts)+1)
+	for _, sort := range sorts {
+		switch {
+		case sort.BenchmarkID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"benchmarkID": *sort.BenchmarkID,
+			})
+		case sort.ControlID != nil:
+			requestSort = append(requestSort, map[string]any{
+				"controlID": *sort.ControlID,
+			})
+		case sort.Severity != nil:
+			scriptSource :=
+				`if (params['_source']['severity'] == 'critical') {
+					return 5
+				} else if (params['_source']['severity'] == 'high') {
+					return 4
+				} else if (params['_source']['severity'] == 'medium') {
+					return 3
+				} else if (params['_source']['severity'] == 'low') {
+					return 2
+				} else if (params['_source']['severity'] == 'none') {
+					return 1
+				} else {
+					return 1
+				}`
+			requestSort = append(requestSort, map[string]any{
+				"_script": map[string]any{
+					"type": "number",
+					"script": map[string]any{
+						"lang":   "painless",
+						"source": scriptSource,
+					},
+					"order": *sort.Severity,
+				},
+			})
+		case sort.ConformanceStatus != nil:
+			scriptSource :=
+				`if (params['_source']['conformanceStatus'] == 'alarm') {
+					return 5
+				} else if (params['_source']['conformanceStatus'] == 'error') {
+					return 4
+				} else if (params['_source']['conformanceStatus'] == 'info') {
+					return 3
+				} else if (params['_source']['conformanceStatus'] == 'skip') {
+					return 2
+				} else if (params['_source']['conformanceStatus'] == 'ok') {
+					return 1
+				} else {
+					return 1
+				}`
+			requestSort = append(requestSort, map[string]any{
+				"_script": map[string]any{
+					"type": "number",
+					"script": map[string]any{
+						"lang":   "painless",
+						"source": scriptSource,
+					},
+					"order": *sort.ConformanceStatus,
+				},
+			})
+		}
+	}
+	requestSort = append(requestSort, map[string]any{
+		"_id": "asc",
+	})
+
+	var filters []kaytu.BoolFilter
+	if len(resourceIDs) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
+	}
+	if len(resourceTypes) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
+	}
+	if len(benchmarkID) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
+	}
+	if len(notBenchmarkID) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("parentBenchmarks", notBenchmarkID)))
+	}
+	if len(controlID) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+	}
+	if len(notControlID) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("controlID", notControlID)))
+	}
+	if len(severity) > 0 {
+		strSeverity := make([]string, 0)
+		for _, s := range severity {
+			strSeverity = append(strSeverity, string(s))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("severity", strSeverity))
+	}
+	if len(notSeverity) > 0 {
+		strSeverity := make([]string, 0)
+		for _, s := range notSeverity {
+			strSeverity = append(strSeverity, string(s))
+		}
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("severity", strSeverity)))
+	}
+	if len(conformanceStatuses) > 0 {
+		strConformanceStatus := make([]string, 0)
+		for _, cr := range conformanceStatuses {
+			strConformanceStatus = append(strConformanceStatus, string(cr))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", strConformanceStatus))
+	}
+	if len(connectionID) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
+	}
+	if len(notConnectionID) > 0 {
+		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+	}
+	if len(provider) > 0 {
+		var connectors []string
+		for _, p := range provider {
+			connectors = append(connectors, p.String())
+		}
+		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
+	}
+	if len(stateActive) > 0 {
+		strStateActive := make([]string, 0)
+		for _, s := range stateActive {
+			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
+		}
+		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
+	}
+	if lastTransitionFrom != nil && lastTransitionTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
+			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
+	} else if lastTransitionFrom != nil {
+		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
+			"", ""))
+	} else if lastTransitionTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+			"", "",
+			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
+	}
+	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
+	} else if evaluatedAtFrom != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
+			"", ""))
+	} else if evaluatedAtTo != nil {
+		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+			"", "",
+			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
+	}
+
+	query := make(map[string]any)
+	if len(filters) > 0 {
+		query["query"] = map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		}
+	}
+	query["sort"] = requestSort
+	if len(searchAfter) > 0 {
+		query["search_after"] = searchAfter
+	}
+	if pageSizeLimit == 0 {
+		pageSizeLimit = 1000
+	}
+	query["size"] = pageSizeLimit
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	logger.Info("FindingsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
+
+	var response FindingsQueryResponse
+	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return response.Hits.Hits, response.Hits.Total.Value, err
+}
