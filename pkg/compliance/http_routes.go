@@ -114,6 +114,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/benchmarks/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
 	v2.GET("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
 	v2.GET("/benchmark/:benchmark-id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
+	v2.GET("/benchmark/:benchmark-id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
 
 	v2.GET("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v2.GET("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
@@ -5120,4 +5121,89 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 
 	tags = model.TrimPrivateTags(tags)
 	return echoCtx.JSON(http.StatusOK, tags)
+}
+
+// GetBenchmarkAssignments godoc
+//
+//	@Summary	Get Benchmark Assignments by BenchmarkID
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param			assignment_type				query		string							true "assignment_type"
+//	@Param			benchmark-id	path		string	true	"Benchmark ID"
+//	@Success	200				{object}	map[string]api.ConnectionInfo
+//	@Router		/compliance/api/v2/benchmark/{benchmark-id}/assignments [get]
+func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+
+	ctx := echoCtx.Request().Context()
+
+	benchmarkId := echoCtx.Param("benchmark-id")
+	assignmentType := strings.ToLower(echoCtx.QueryParam("assignment_type"))
+	if assignmentType == "" {
+		assignmentType = "any"
+	}
+
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkAssignments", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmarkAssignments")
+	defer span1.End()
+
+	connectionInfos := make(map[string]api.ConnectionInfo)
+
+	if assignmentType == "explicit" || assignmentType == "any" {
+		assignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(ctx, benchmarkId)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		for _, assignment := range assignments {
+			if assignment.ConnectionId != nil {
+				connection, err := h.onboardClient.GetSource(clientCtx, *assignment.ConnectionId)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				}
+				connectionInfos[*assignment.ConnectionId] = api.ConnectionInfo{
+					ConnectionId: connection.ID.String(),
+					Connector:    connection.Connector.String(),
+					ProviderId:   connection.ConnectionID,
+					ProviderName: connection.ConnectionName,
+				}
+			}
+		}
+	}
+	if assignmentType == "implicit" || assignmentType == "any" {
+		benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if benchmark.AutoAssign {
+			var connectors []source.Type
+			for _, connector := range benchmark.Connector {
+				connectorParsed, err := source.ParseType(connector)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				}
+				connectors = append(connectors, connectorParsed)
+			}
+			connections, err := h.onboardClient.ListSources(clientCtx, connectors)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			for _, connection := range connections {
+				connectionInfos[connection.ID.String()] = api.ConnectionInfo{
+					ConnectionId: connection.ID.String(),
+					Connector:    connection.Connector.String(),
+					ProviderId:   connection.ConnectionID,
+					ProviderName: connection.ConnectionName,
+				}
+			}
+		}
+	}
+
+	results := make(map[string][]api.ConnectionInfo)
+	for _, info := range connectionInfos {
+		results[info.Connector] = append(results[info.Connector], info)
+	}
+	return echoCtx.JSON(http.StatusOK, results)
 }

@@ -166,3 +166,10 @@ type GetBenchmarkListResponse struct {
 	Metadata GetBenchmarkListMetadata     `json:"metadata"`
 	Findings *GetBenchmarkDetailsFindings `json:"findings"`
 }
+
+type ConnectionInfo struct {
+	ConnectionId string `json:"connection_id"`
+	Connector    string `json:"connector"`
+	ProviderId   string `json:"provider_id"`
+	ProviderName string `json:"provider_name"`
+}

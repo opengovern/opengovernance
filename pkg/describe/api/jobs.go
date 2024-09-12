@@ -190,8 +190,8 @@ type RunBenchmarkRequest struct {
 type ConnectionInfo struct {
 	ConnectionId string `json:"connection_id"`
 	Connector    string `json:"connector"`
-	ProviderId   string `json:"provider_id_regex"`
-	ProviderName string `json:"provider_name_regex"`
+	ProviderId   string `json:"provider_id"`
+	ProviderName string `json:"provider_name"`
 }
 
 type RunBenchmarkResponse struct {
