@@ -3097,15 +3097,14 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("benchmark ID", benchmark.ID),
-	))
-	span1.End()
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
-
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
+	span1.End()
 	be := benchmark.ToApi()
 
 	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
@@ -5132,7 +5131,7 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param			assignment_type				query		string							true "assignment_type"
 //	@Param			benchmark-id	path		string	true	"Benchmark ID"
-//	@Success	200				{object}	map[string]api.ConnectionInfo
+//	@Success	200				{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v2/benchmark/{benchmark-id}/assignments [get]
 func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
@@ -5150,7 +5149,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	span1.SetName("new_GetBenchmarkAssignments")
 	defer span1.End()
 
-	connectionInfos := make(map[string]api.ConnectionInfo)
+	connectionInfos := make(map[string]api.IntegrationInfo)
 
 	if assignmentType == "explicit" || assignmentType == "any" {
 		assignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(ctx, benchmarkId)
@@ -5163,11 +5162,11 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 				}
-				connectionInfos[*assignment.ConnectionId] = api.ConnectionInfo{
-					ConnectionId: connection.ID.String(),
-					Connector:    connection.Connector.String(),
-					ProviderId:   connection.ConnectionID,
-					ProviderName: connection.ConnectionName,
+				connectionInfos[*assignment.ConnectionId] = api.IntegrationInfo{
+					IntegrationTracker: connection.ID.String(),
+					Integration:        connection.Connector.String(),
+					ID:                 connection.ConnectionID,
+					IDName:             connection.ConnectionName,
 				}
 			}
 		}
@@ -5191,19 +5190,20 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			for _, connection := range connections {
-				connectionInfos[connection.ID.String()] = api.ConnectionInfo{
-					ConnectionId: connection.ID.String(),
-					Connector:    connection.Connector.String(),
-					ProviderId:   connection.ConnectionID,
-					ProviderName: connection.ConnectionName,
+				connectionInfos[connection.ID.String()] = api.IntegrationInfo{
+					IntegrationTracker: connection.ID.String(),
+					Integration:        connection.Connector.String(),
+					ID:                 connection.ConnectionID,
+					IDName:             connection.ConnectionName,
+					Type:               api.GetTypeFromIntegration(connection.Connector.String()),
 				}
 			}
 		}
 	}
 
-	results := make(map[string][]api.ConnectionInfo)
+	var results []api.IntegrationInfo
 	for _, info := range connectionInfos {
-		results[info.Connector] = append(results[info.Connector], info)
+		results = append(results, info)
 	}
 	return echoCtx.JSON(http.StatusOK, results)
 }
