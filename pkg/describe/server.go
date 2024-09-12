@@ -82,15 +82,15 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v2 := e.Group("/api/v2")
 	v2.POST("/jobs/discovery/connections/:connection-id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
 	v2.POST("/jobs/compliance/connections/:connection-id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/jobs/analytics", httpserver.AuthorizeHandler(h.GetAnalyticsJobsHistory, apiAuth.ViewerRole))
 	v2.POST("/compliance/benchmark/:benchmark-id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v2.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
 	v2.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
-	v2.GET("/jobs/discovery/:job-id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
-	v2.GET("/jobs/compliance/:job-id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
-	v2.GET("/jobs/analytics/:job-id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
-	v2.GET("/jobs/discovery", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
-	v2.GET("/jobs/compliance", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
+	v2.GET("/job/discovery/:job-id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
+	v2.GET("/job/compliance/:job-id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
+	v2.GET("/job/analytics/:job-id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
+	v2.GET("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
+	v2.GET("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
+	v2.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -1153,7 +1153,7 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
-	jobs, err := h.DB.ListDescribeJobsByFilters(connectionId, request.ResourceType,
+	jobs, err := h.DB.ListDescribeJobsByFilters([]string{connectionId}, request.ResourceType,
 		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -1199,11 +1199,11 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 			return jobsResults[i].JobId < jobsResults[j].JobId
 		})
 	}
-	if request.PageSize != nil {
-		if request.PageNumber == nil {
-			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1239,7 +1239,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 		connectionId = connection.ConnectionID
 	}
 
-	jobs, err := h.DB.ListComplianceJobsByFilters(connectionId, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+	jobs, err := h.DB.ListComplianceJobsByFilters([]string{connectionId}, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -1281,80 +1281,11 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 			return jobsResults[i].JobId < jobsResults[j].JobId
 		})
 	}
-	if request.PageSize != nil {
-		if request.PageNumber == nil {
-			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
-	}
-
-	return ctx.JSON(http.StatusOK, jobsResults)
-}
-
-// GetAnalyticsJobsHistory godoc
-//
-//	@Summary	Get analytics jobs history for give connection
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Param		request	body	api.GetAnalyticsJobsHistoryRequest	true	"List jobs request"
-//	@Produce	json
-//	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs/analytics [post]
-func (h HttpServer) GetAnalyticsJobsHistory(ctx echo.Context) error {
-	var request api.GetAnalyticsJobsHistoryRequest
-	if err := ctx.Bind(&request); err != nil {
-		ctx.Logger().Errorf("bind the request: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	jobs, err := h.DB.ListAnalyticsJobsByFilter(request.Type, request.JobStatus, request.StartTime, request.EndTime)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	var jobsResults []api.GetAnalyticsJobsHistoryResponse
-	for _, j := range jobs {
-		jobsResults = append(jobsResults, api.GetAnalyticsJobsHistoryResponse{
-			JobId:     j.ID,
-			Type:      string(j.Type),
-			JobStatus: j.Status,
-			DateTime:  j.UpdatedAt,
-		})
-	}
-	if request.SortBy != nil {
-		switch strings.ToLower(*request.SortBy) {
-		case "id":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].JobId < jobsResults[j].JobId
-			})
-		case "datetime":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
-			})
-		case "type":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].Type < jobsResults[j].Type
-			})
-		case "jobstatus":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
-			})
-		default:
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].JobId < jobsResults[j].JobId
-			})
-		}
-	} else {
-		sort.Slice(jobsResults, func(i, j int) bool {
-			return jobsResults[i].JobId < jobsResults[j].JobId
-		})
-	}
-
-	if request.PageSize != nil {
-		if request.PageNumber == nil {
-			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
-		}
-		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1642,14 +1573,14 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 					}
 					h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 					status = "FAILED"
-					failureReason = fmt.Sprintf("another job is in queue: %v", tmpJob.ID)
+					failureReason = fmt.Sprintf("job already in progress: %v", tmpJob.ID)
 				}
 			}
 
 			var jobId uint
 			if job == nil {
 				status = "FAILED"
-				if err != nil {
+				if err != nil && failureReason == "" {
 					failureReason = err.Error()
 				}
 			} else {
@@ -1805,27 +1736,69 @@ func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
 //	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
 func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
 	var request api.ListDescribeJobsRequest
 	if err := ctx.Bind(&request); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
+	var connections []onboardapi.Connection
+	for _, info := range request.ConnectionInfo {
+		if info.ConnectionId != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Connector,
+				ProviderNameRegex: info.ProviderNameRegex,
+				ProviderIdRegex:   info.ProviderIdRegex,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	connectionInfo := make(map[string]api.ConnectionInfo)
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionInfo[c.ID.String()] = api.ConnectionInfo{
+			ConnectionId: c.ID.String(),
+			Connector:    c.Connector.String(),
+			ProviderName: c.ConnectionName,
+			ProviderId:   c.ConnectionID,
+		}
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
-	jobs, err := h.DB.ListDescribeJobsByFilters(request.ConnectionId, request.ResourceType,
+	jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, request.ResourceType,
 		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	for _, j := range jobs {
-		jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
+		jobResult := api.GetDescribeJobsHistoryResponse{
 			JobId:         j.ID,
 			DiscoveryType: string(j.DiscoveryType),
 			ResourceType:  j.ResourceType,
 			JobStatus:     j.Status,
 			DateTime:      j.UpdatedAt,
-		})
+		}
+		if info, ok := connectionInfo[j.ConnectionID]; ok {
+			jobResult.ConnectionInfo = &info
+		}
+		jobsResults = append(jobsResults, jobResult)
 	}
 	if request.SortBy != nil {
 		switch strings.ToLower(*request.SortBy) {
@@ -1859,11 +1832,11 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			return jobsResults[i].JobId < jobsResults[j].JobId
 		})
 	}
-	if request.PageSize != nil {
-		if request.PageNumber == nil {
-			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1879,25 +1852,69 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v1/jobs [post]
 func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
 	var request api.ListComplianceJobsRequest
 	if err := ctx.Bind(&request); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	jobs, err := h.DB.ListComplianceJobsByFilters(request.ConnectionId, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+	var connections []onboardapi.Connection
+	for _, info := range request.ConnectionInfo {
+		if info.ConnectionId != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Connector,
+				ProviderNameRegex: info.ProviderNameRegex,
+				ProviderIdRegex:   info.ProviderIdRegex,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	connectionInfo := make(map[string]api.ConnectionInfo)
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionInfo[c.ID.String()] = api.ConnectionInfo{
+			ConnectionId: c.ID.String(),
+			Connector:    c.Connector.String(),
+			ProviderName: c.ConnectionName,
+			ProviderId:   c.ConnectionID,
+		}
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
+	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	var jobsResults []api.GetComplianceJobsHistoryResponse
 	for _, j := range jobs {
-		jobsResults = append(jobsResults, api.GetComplianceJobsHistoryResponse{
+		jobResult := api.GetComplianceJobsHistoryResponse{
 			JobId:       j.ID,
 			BenchmarkId: j.BenchmarkID,
 			JobStatus:   j.Status.ToApi(),
 			DateTime:    j.UpdatedAt,
-		})
+		}
+		for _, c := range j.ConnectionIDs {
+			if info, ok := connectionInfo[c]; ok {
+				jobResult.ConnectionInfo = append(jobResult.ConnectionInfo, info)
+			}
+		}
+		jobsResults = append(jobsResults, jobResult)
 	}
 	if request.SortBy != nil {
 		switch strings.ToLower(*request.SortBy) {
@@ -1927,11 +1944,80 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			return jobsResults[i].JobId < jobsResults[j].JobId
 		})
 	}
-	if request.PageSize != nil {
-		if request.PageNumber == nil {
-			jobsResults = utils.Paginate(1, *request.PageSize, jobsResults)
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.PageNumber, *request.PageSize, jobsResults)
+		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// ListAnalyticsJobs godoc
+//
+//	@Summary	Get analytics jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.GetAnalyticsJobsHistoryRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
+//	@Router		/schedule/api/v1/jobs/analytics [post]
+func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
+	var request api.GetAnalyticsJobsHistoryRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	jobs, err := h.DB.ListAnalyticsJobsByFilter(request.Type, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var jobsResults []api.GetAnalyticsJobsHistoryResponse
+	for _, j := range jobs {
+		jobsResults = append(jobsResults, api.GetAnalyticsJobsHistoryResponse{
+			JobId:     j.ID,
+			Type:      string(j.Type),
+			JobStatus: j.Status,
+			DateTime:  j.UpdatedAt,
+		})
+	}
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		case "datetime":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+			})
+		case "type":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].Type < jobsResults[j].Type
+			})
+		case "jobstatus":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
+			})
+		default:
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].JobId < jobsResults[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(jobsResults, func(i, j int) bool {
+			return jobsResults[i].JobId < jobsResults[j].JobId
+		})
+	}
+
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		}
+		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)

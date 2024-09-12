@@ -112,155 +112,167 @@ type JobSeqCheckResponse struct {
 }
 
 type GetDescribeJobsHistoryRequest struct {
-	ResourceType  []string   `json:"resourceType"`
-	DiscoveryType []string   `json:"discoveryType"`
-	JobStatus     []string   `json:"jobStatus"`
-	StartTime     time.Time  `json:"startTime"`
-	EndTime       *time.Time `json:"endTime"`
-	SortBy        *string    `json:"sortBy"`
-	PageNumber    *int64     `json:"pageNumber"`
-	PageSize      *int64     `json:"pageSize"`
+	ResourceType  []string   `json:"resource_type"`
+	DiscoveryType []string   `json:"discovery_type"`
+	JobStatus     []string   `json:"job_status"`
+	StartTime     time.Time  `json:"start_time"`
+	EndTime       *time.Time `json:"end_time"`
+	SortBy        *string    `json:"sort_by"`
+	Cursor        *int64     `json:"cursor"`
+	PerPage       *int64     `json:"per_page"`
 }
 
 type GetDescribeJobsHistoryResponse struct {
-	JobId         uint                      `json:"jobId"`
-	DiscoveryType string                    `json:"discoveryType"`
-	ResourceType  string                    `json:"resourceType"`
-	JobStatus     DescribeResourceJobStatus `json:"jobStatus"`
-	DateTime      time.Time                 `json:"dateTime"`
+	JobId          uint                      `json:"job_id"`
+	DiscoveryType  string                    `json:"discovery_type"`
+	ResourceType   string                    `json:"resource_type"`
+	JobStatus      DescribeResourceJobStatus `json:"job_status"`
+	DateTime       time.Time                 `json:"date_time"`
+	ConnectionInfo *ConnectionInfo           `json:"connection_info"`
 }
 
 type GetComplianceJobsHistoryRequest struct {
-	ConnectionId *string    `json:"connectionId"`
-	AccountId    *string    `json:"accountId"`
-	BenchmarkId  []string   `json:"benchmarkId"`
-	JobStatus    []string   `json:"jobStatus"`
-	StartTime    time.Time  `json:"startTime"`
-	EndTime      *time.Time `json:"endTime"`
-	SortBy       *string    `json:"sortBy"`
-	PageNumber   *int64     `json:"pageNumber"`
-	PageSize     *int64     `json:"pageSize"`
+	ConnectionId *string    `json:"connection_id"`
+	AccountId    *string    `json:"account_id"`
+	BenchmarkId  []string   `json:"benchmark_id"`
+	JobStatus    []string   `json:"job_status"`
+	StartTime    time.Time  `json:"start_time"`
+	EndTime      *time.Time `json:"end_time"`
+	SortBy       *string    `json:"sort_by"`
+	Cursor       *int64     `json:"cursor"`
+	PerPage      *int64     `json:"per_page"`
 }
 
 type GetComplianceJobsHistoryResponse struct {
-	JobId       uint                `json:"jobId"`
-	BenchmarkId string              `json:"benchmarkId"`
-	JobStatus   ComplianceJobStatus `json:"jobStatus"`
-	DateTime    time.Time           `json:"dateTime"`
+	JobId          uint                `json:"job_id"`
+	BenchmarkId    string              `json:"benchmark_id"`
+	JobStatus      ComplianceJobStatus `json:"job_status"`
+	DateTime       time.Time           `json:"date_time"`
+	ConnectionInfo []ConnectionInfo    `json:"connection_info"`
 }
 
 type GetAnalyticsJobsHistoryRequest struct {
-	Type       []string   `json:"type"`
-	JobStatus  []string   `json:"jobStatus"`
-	StartTime  time.Time  `json:"startTime"`
-	EndTime    *time.Time `json:"endTime"`
-	SortBy     *string    `json:"sortBy"`
-	PageNumber *int64     `json:"pageNumber"`
-	PageSize   *int64     `json:"pageSize"`
+	Type      []string   `json:"type"`
+	JobStatus []string   `json:"job_status"`
+	StartTime time.Time  `json:"start_time"`
+	EndTime   *time.Time `json:"end_time"`
+	SortBy    *string    `json:"sort_by"`
+	Cursor    *int64     `json:"cursor"`
+	PerPage   *int64     `json:"per_page"`
 }
 
 type GetAnalyticsJobsHistoryResponse struct {
-	JobId     uint          `json:"jobId"`
+	JobId     uint          `json:"job_id"`
 	Type      string        `json:"type"`
-	JobStatus api.JobStatus `json:"jobStatus"`
-	DateTime  time.Time     `json:"dateTime"`
+	JobStatus api.JobStatus `json:"job_status"`
+	DateTime  time.Time     `json:"date_time"`
 }
 
 type RunBenchmarkByIdRequest struct {
 	ConnectionInfo []struct {
-		ConnectionId      *string `json:"connectionId"`
+		ConnectionId      *string `json:"connection_id"`
 		Connector         *string `json:"connector"`
-		ProviderIdRegex   *string `json:"providerIdRegex"`
-		ProviderNameRegex *string `json:"providerNameRegex"`
-	} `json:"connectionInfo"`
+		ProviderIdRegex   *string `json:"provider_id_regex"`
+		ProviderNameRegex *string `json:"provider_name_regex"`
+	} `json:"connection_info"`
 }
 
 type RunBenchmarkRequest struct {
-	BenchmarkIds   []string `json:"benchmarkIds"`
+	BenchmarkIds   []string `json:"benchmark_ids"`
 	ConnectionInfo []struct {
-		ConnectionId      *string `json:"connectionId"`
+		ConnectionId      *string `json:"connection_id"`
 		Connector         *string `json:"connector"`
-		ProviderIdRegex   *string `json:"providerIdRegex"`
-		ProviderNameRegex *string `json:"providerNameRegex"`
-	} `json:"connectionInfo"`
+		ProviderIdRegex   *string `json:"provider_id_regex"`
+		ProviderNameRegex *string `json:"provider_name_regex"`
+	} `json:"connection_info"`
 }
 
 type ConnectionInfo struct {
-	ConnectionId string `json:"connectionId"`
+	ConnectionId string `json:"connection_id"`
 	Connector    string `json:"connector"`
-	ProviderId   string `json:"providerIdRegex"`
-	ProviderName string `json:"providerNameRegex"`
+	ProviderId   string `json:"provider_id_regex"`
+	ProviderName string `json:"provider_name_regex"`
 }
 
 type RunBenchmarkResponse struct {
-	JobId          uint             `json:"jobId"`
-	BenchmarkId    string           `json:"benchmarkId"`
-	ConnectionInfo []ConnectionInfo `json:"connectionInfo"`
+	JobId          uint             `json:"job_id"`
+	BenchmarkId    string           `json:"benchmark_id"`
+	ConnectionInfo []ConnectionInfo `json:"connection_info"`
 }
 
 type RunDiscoveryRequest struct {
-	ResourceTypes  []string `json:"resourceTypes"`
-	ForceFull      bool     `json:"forceFull"` // force full discovery. only matters if ResourceTypes is empty
+	ResourceTypes  []string `json:"resource_types"`
+	ForceFull      bool     `json:"force_full"` // force full discovery. only matters if ResourceTypes is empty
 	ConnectionInfo []struct {
-		ConnectionId      *string `json:"connectionId"`
+		ConnectionId      *string `json:"connection_id"`
 		Connector         *string `json:"connector"`
-		ProviderIdRegex   *string `json:"providerIdRegex"`
-		ProviderNameRegex *string `json:"providerNameRegex"`
-	} `json:"connectionInfo"`
+		ProviderIdRegex   *string `json:"provider_id_regex"`
+		ProviderNameRegex *string `json:"provider_name_regex"`
+	} `json:"connection_info"`
 }
 
 type RunDiscoveryResponse struct {
-	JobId          uint           `json:"jobId"`
-	ResourceType   string         `json:"resourceType"`
+	JobId          uint           `json:"job_id"`
+	ResourceType   string         `json:"resource_type"`
 	Status         string         `json:"status"`
-	FailureReason  string         `json:"failureReason"`
-	ConnectionInfo ConnectionInfo `json:"connectionInfo"`
+	FailureReason  string         `json:"failure_reason"`
+	ConnectionInfo ConnectionInfo `json:"connection_info"`
 }
 
 type GetDescribeJobStatusResponse struct {
-	JobId          uint           `json:"jobId"`
-	ConnectionInfo ConnectionInfo `json:"connectionInfo"`
-	JobStatus      string         `json:"jobStatus"`
-	DiscoveryType  string         `json:"discoveryType"`
-	ResourceType   string         `json:"resourceType"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	UpdatedAt      time.Time      `json:"updatedAt"`
+	JobId          uint           `json:"job_id"`
+	ConnectionInfo ConnectionInfo `json:"connection_info"`
+	JobStatus      string         `json:"job_status"`
+	DiscoveryType  string         `json:"discovery_type"`
+	ResourceType   string         `json:"resource_type"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
 type GetComplianceJobStatusResponse struct {
-	JobId          uint             `json:"jobId"`
-	ConnectionInfo []ConnectionInfo `json:"connectionInfo"`
-	JobStatus      string           `json:"jobStatus"`
-	BenchmarkId    string           `json:"benchmarkId"`
-	CreatedAt      time.Time        `json:"createdAt"`
-	UpdatedAt      time.Time        `json:"updatedAt"`
+	JobId          uint             `json:"job_id"`
+	ConnectionInfo []ConnectionInfo `json:"connection_info"`
+	JobStatus      string           `json:"job_status"`
+	BenchmarkId    string           `json:"benchmark_id"`
+	CreatedAt      time.Time        `json:"created_at"`
+	UpdatedAt      time.Time        `json:"updated_at"`
 }
 type GetAnalyticsJobStatusResponse struct {
-	JobId     uint      `json:"jobId"`
-	JobStatus string    `json:"jobStatus"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	JobId     uint      `json:"job_id"`
+	JobStatus string    `json:"job_status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ListDescribeJobsRequest struct {
-	ConnectionId  string     `json:"connectionId"`
-	ResourceType  []string   `json:"resourceType"`
-	DiscoveryType []string   `json:"discoveryType"`
-	JobStatus     []string   `json:"jobStatus"`
-	StartTime     time.Time  `json:"startTime"`
-	EndTime       *time.Time `json:"endTime"`
-	SortBy        *string    `json:"sortBy"`
-	PageNumber    *int64     `json:"pageNumber"`
-	PageSize      *int64     `json:"pageSize"`
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connection_id"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"provider_id_regex"`
+		ProviderNameRegex *string `json:"provider_name_regex"`
+	} `json:"connection_info"`
+	ResourceType  []string   `json:"resource_type"`
+	DiscoveryType []string   `json:"discovery_type"`
+	JobStatus     []string   `json:"job_status"`
+	StartTime     time.Time  `json:"start_time"`
+	EndTime       *time.Time `json:"end_time"`
+	SortBy        *string    `json:"sort_by"`
+	Cursor        *int64     `json:"cursor"`
+	PerPage       *int64     `json:"per_page"`
 }
 
 type ListComplianceJobsRequest struct {
-	ConnectionId string     `json:"connectionId"`
-	BenchmarkId  []string   `json:"benchmarkId"`
-	JobStatus    []string   `json:"jobStatus"`
-	StartTime    time.Time  `json:"startTime"`
-	EndTime      *time.Time `json:"endTime"`
-	SortBy       *string    `json:"sortBy"`
-	PageNumber   *int64     `json:"pageNumber"`
-	PageSize     *int64     `json:"pageSize"`
+	ConnectionInfo []struct {
+		ConnectionId      *string `json:"connection_id"`
+		Connector         *string `json:"connector"`
+		ProviderIdRegex   *string `json:"provider_id_regex"`
+		ProviderNameRegex *string `json:"provider_name_regex"`
+	} `json:"connection_info"`
+	BenchmarkId []string   `json:"benchmark_id"`
+	JobStatus   []string   `json:"job_status"`
+	StartTime   time.Time  `json:"start_time"`
+	EndTime     *time.Time `json:"end_time"`
+	SortBy      *string    `json:"sort_by"`
+	Cursor      *int64     `json:"cursor"`
+	PerPage     *int64     `json:"per_page"`
 }
