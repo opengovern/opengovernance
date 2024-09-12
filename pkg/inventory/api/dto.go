@@ -143,8 +143,8 @@ type SmartQueryItemV2 struct {
 	Description string        `json:"description"`
 	Connectors  []source.Type `json:"connectors"` // Provider
 	Query       struct {
-		QueryEngine    string `json:"queryEngine"`
-		QueryToExecute string `json:"queryToExecute"`
+		QueryEngine    string `json:"query_engine"`
+		QueryToExecute string `json:"query_to_execute"`
 	} `json:"query"` // Query
 	Tags map[string][]string `json:"tags"` // Tags
 }
@@ -154,12 +154,12 @@ type ListQueryRequest struct {
 }
 
 type ListQueryV2Request struct {
-	TitleFilter string              `json:"titleFilter"` // Specifies the Title
-	TagsFilter  map[string][]string `json:"tagsFilter"`
-	TagsRegex   *string             `json:"tagsRegex"`
+	TitleFilter string              `json:"title_filter"` // Specifies the Title
+	TagsFilter  map[string][]string `json:"tags_filter"`
+	TagsRegex   *string             `json:"tags_regex"`
 	Connectors  []string            `json:"connectors"`
-	PageNumber  *int64              `json:"pageNumber"`
-	PageSize    *int64              `json:"pageSize"`
+	Cursor      *int64              `json:"cursor"`
+	PerPage     *int64              `json:"per_page"`
 }
 
 type ConnectionData struct {
