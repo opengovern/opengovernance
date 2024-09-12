@@ -2113,8 +2113,8 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 			Description: item.Description,
 			Connectors:  source.ParseTypes(item.Connectors),
 			Query: struct {
-				QueryEngine    string `json:"queryEngine"`
-				QueryToExecute string `json:"queryToExecute"`
+				QueryEngine    string `json:"query_engine"`
+				QueryToExecute string `json:"query_to_execute"`
 			}{
 				QueryEngine:    item.Engine,
 				QueryToExecute: item.Query,
@@ -2126,11 +2126,11 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].ID < result[j].ID
 	})
-	if req.PageSize != nil {
-		if req.PageNumber == nil {
-			return ctx.JSON(http.StatusOK, utils.Paginate(1, *req.PageSize, result))
+	if req.PerPage != nil {
+		if req.Cursor == nil {
+			return ctx.JSON(http.StatusOK, utils.Paginate(1, *req.PerPage, result))
 		}
-		return ctx.JSON(http.StatusOK, utils.Paginate(*req.PageNumber, *req.PageSize, result))
+		return ctx.JSON(http.StatusOK, utils.Paginate(*req.Cursor, *req.PerPage, result))
 	}
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -2169,8 +2169,8 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 		Description: query.Description,
 		Connectors:  source.ParseTypes(query.Connectors),
 		Query: struct {
-			QueryEngine    string `json:"queryEngine"`
-			QueryToExecute string `json:"queryToExecute"`
+			QueryEngine    string `json:"query_engine"`
+			QueryToExecute string `json:"query_to_execute"`
 		}{
 			QueryEngine:    query.Engine,
 			QueryToExecute: query.Query,
