@@ -5268,12 +5268,21 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 
 	var response api.GetFindingsResponse
 
-	if len(req.Filters.ConformanceStatus) == 0 {
-		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	var conformanceStatuses []api.ConformanceStatus
+	if len(req.Filters.IsCompliant) == 0 {
+		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	} else {
+		for _, s := range req.Filters.IsCompliant {
+			if s {
+				conformanceStatuses = append(conformanceStatuses, api.ConformanceStatusPassed)
+			} else {
+				conformanceStatuses = append(conformanceStatuses, api.ConformanceStatusFailed)
+			}
+		}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
-	for _, status := range req.Filters.ConformanceStatus {
+	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
@@ -5291,12 +5300,19 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 	}
 
 	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
-	//if req.Filters.LastEvent.From != nil && *req.Filters.LastEvent.From != 0 {
-	//	lastEventFrom = utils.GetPointer(time.Unix(*req.Filters.LastEvent.From, 0))
-	//}
-	//if req.Filters.LastEvent.To != nil && *req.Filters.LastEvent.To != 0 {
-	//	lastEventTo = utils.GetPointer(time.Unix(*req.Filters.LastEvent.To, 0))
-	//}
+	var notLastEventFrom, notLastEventTo *time.Time
+	if req.Filters.LastUpdated.From != nil && *req.Filters.LastUpdated.From != 0 {
+		lastEventFrom = utils.GetPointer(time.Unix(*req.Filters.LastUpdated.From, 0))
+	}
+	if req.Filters.LastUpdated.To != nil && *req.Filters.LastUpdated.To != 0 {
+		lastEventTo = utils.GetPointer(time.Unix(*req.Filters.LastUpdated.To, 0))
+	}
+	if req.Filters.NotLastUpdated.From != nil && *req.Filters.NotLastUpdated.From != 0 {
+		notLastEventFrom = utils.GetPointer(time.Unix(*req.Filters.NotLastUpdated.From, 0))
+	}
+	if req.Filters.NotLastUpdated.To != nil && *req.Filters.NotLastUpdated.To != 0 {
+		notLastEventTo = utils.GetPointer(time.Unix(*req.Filters.NotLastUpdated.To, 0))
+	}
 	//if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
 	//	evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
 	//}
@@ -5304,10 +5320,11 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 	//	evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	//}
 
-	res, totalCount, err := es.FindingsQueryV2(ctx, h.logger, h.client, nil, nil, connectionIds, nil,
-		nil, req.Filters.BenchmarkID, req.Filters.NotBenchmarkID, req.Filters.ControlID, req.Filters.NotControlID,
-		req.Filters.Severity, req.Filters.NotSeverity, lastEventFrom, lastEventTo,
-		evaluatedAtFrom, evaluatedAtTo, nil, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+	res, totalCount, err := es.FindingsQueryV2(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.NotResourceID, nil,
+		connectionIds, nil, req.Filters.ResourceType, req.Filters.NotResourceType, req.Filters.BenchmarkID,
+		req.Filters.NotBenchmarkID, req.Filters.ControlID, req.Filters.NotControlID,
+		req.Filters.Severity, req.Filters.NotSeverity, lastEventFrom, lastEventTo, notLastEventFrom, notLastEventTo,
+		evaluatedAtFrom, evaluatedAtTo, req.Filters.IsActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err

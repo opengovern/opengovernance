@@ -237,14 +237,27 @@ type GetFindingEventsByFindingIDResponse struct {
 }
 
 type FindingFiltersV2 struct {
-	Integration       []IntegrationInfoFilter `json:"integration"`
-	BenchmarkID       []string                `json:"benchmark_id"`
-	NotBenchmarkID    []string                `json:"not_benchmark_id"`
-	ControlID         []string                `json:"control_id"`
-	NotControlID      []string                `json:"not_control_id"`
-	Severity          []types.FindingSeverity `json:"severity"`
-	NotSeverity       []types.FindingSeverity `json:"not_severity"`
-	ConformanceStatus []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
+	Integration     []IntegrationInfoFilter `json:"integration"`
+	BenchmarkID     []string                `json:"benchmark_id"`
+	NotBenchmarkID  []string                `json:"not_benchmark_id"`
+	ControlID       []string                `json:"control_id"`
+	NotControlID    []string                `json:"not_control_id"`
+	Severity        []types.FindingSeverity `json:"severity"`
+	NotSeverity     []types.FindingSeverity `json:"not_severity"`
+	ResourceID      []string                `json:"resource_id"`
+	NotResourceID   []string                `json:"not_resource_id"`
+	IsCompliant     []bool                  `json:"is_compliant"`
+	IsActive        []bool                  `json:"is_active"`
+	ResourceType    []string                `json:"resource_type"`
+	NotResourceType []string                `json:"not_resource_type"`
+	LastUpdated     struct {
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
+	} `json:"last_event"`
+	NotLastUpdated struct {
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
+	} `json:"not_last_event"`
 }
 
 type IntegrationInfoFilter struct {
@@ -259,6 +272,8 @@ type FindingsSortV2 struct {
 	ControlID         *SortDirection `json:"control_id"`
 	Severity          *SortDirection `json:"severity"`
 	ConformanceStatus *SortDirection `json:"conformance_status"`
+	ResourceType      *SortDirection `json:"resource_type"`
+	LastUpdated       *SortDirection `json:"last_updated"`
 }
 
 type GetFindingsRequestV2 struct {
