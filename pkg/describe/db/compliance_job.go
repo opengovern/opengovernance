@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"math/rand"
 	"time"
@@ -233,11 +234,15 @@ SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
 	return jobs, nil
 }
 
-func (db Database) ListComplianceJobsByFilters(connectionId string, benchmarkId []string, status []string,
+func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkId []string, status []string,
 	startTime time.Time, endTime *time.Time) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{})
-	tx = tx.Where("? = ANY(connection_ids)", connectionId)
+
+	if len(connectionId) > 0 {
+		tx = tx.Where("connection_ids && ?", pq.Array(connectionId))
+	}
+
 	if len(benchmarkId) > 0 {
 		tx = tx.Where("benchmark_id IN ?", benchmarkId)
 	}

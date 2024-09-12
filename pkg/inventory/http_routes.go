@@ -70,10 +70,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2 := e.Group("/api/v2")
 
-	queryV2 := v2.Group("/query")
-	queryV2.POST("", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
-	queryV2.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
-	queryV2.GET("/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
+	v2.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	v2.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
+	v2.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api.ViewerRole))
