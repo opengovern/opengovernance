@@ -2129,8 +2129,9 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	if req.PerPage != nil {
 		if req.Cursor == nil {
 			return ctx.JSON(http.StatusOK, utils.Paginate(1, *req.PerPage, result))
+		} else {
+			return ctx.JSON(http.StatusOK, utils.Paginate(*req.Cursor, *req.PerPage, result))
 		}
-		return ctx.JSON(http.StatusOK, utils.Paginate(*req.Cursor, *req.PerPage, result))
 	}
 	return ctx.JSON(http.StatusOK, result)
 }

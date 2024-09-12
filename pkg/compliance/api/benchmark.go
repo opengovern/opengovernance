@@ -176,6 +176,13 @@ type IntegrationInfo struct {
 	IntegrationTracker string `json:"integration_tracker"`
 }
 
+type IntegrationFilter struct {
+	Integration        *string `json:"integration"`
+	ID                 *string `json:"id"`
+	IDName             *string `json:"id_name"`
+	IntegrationTracker *string `json:"integration_tracker"`
+}
+
 func GetTypeFromIntegration(integration string) string {
 	switch strings.ToLower(integration) {
 	case "aws":
@@ -186,3 +193,25 @@ func GetTypeFromIntegration(integration string) string {
 		return ""
 	}
 }
+
+type IntegrationFilterRequest struct {
+	Integration []IntegrationFilter `json:"integration"`
+}
+
+type SeveritySummary struct {
+	Issues    int `json:"issues"`
+	Resources int `json:"resources"`
+	Controls  int `json:"controls"`
+}
+
+//
+//type GetBenchmarkSummaryV2Response struct {
+//	ComplianceScore           *float64                         `json:"compliance_score"`
+//	SeveritySummaryByControl  BenchmarkControlsSeverityStatus  `json:"severity_summary_by_control"`
+//	SeveritySummaryByResource BenchmarkResourcesSeverityStatus `json:"severity_summary_by_resource"`
+//	TopIntegrations           []TopInegrations                 `json:"top_connections"`
+//	FindingsSummary           ConformanceStatusSummary         `json:"findings_summary"`
+//
+//	EvaluatedAt   *time.Time `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
+//	LastJobStatus string     `json:"lastJobStatus" example:"success"`
+//}

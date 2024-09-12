@@ -1202,8 +1202,9 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1284,8 +1285,9 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1834,8 +1836,9 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -1946,8 +1949,9 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
@@ -2015,8 +2019,9 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+		} else {
+			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 		}
-		jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
