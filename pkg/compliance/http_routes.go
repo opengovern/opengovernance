@@ -115,6 +115,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
 	v2.GET("/benchmark/:benchmark-id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 	v2.GET("/benchmark/:benchmark-id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
+	v2.POST("/benchmark/:benchmark-id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
 
 	v2.GET("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v2.GET("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
@@ -3359,8 +3360,9 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	if req.PerPage != nil {
 		if req.Cursor == nil {
 			resultControls = utils.Paginate(1, *req.PerPage, resultControls)
+		} else {
+			resultControls = utils.Paginate(*req.Cursor, *req.PerPage, resultControls)
 		}
-		resultControls = utils.Paginate(*req.Cursor, *req.PerPage, resultControls)
 	}
 
 	return echoCtx.JSON(http.StatusOK, resultControls)
@@ -4613,8 +4615,9 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	if req.PerPage != nil {
 		if req.Cursor == nil {
 			response = utils.Paginate(1, *req.PerPage, response)
+		} else {
+			response = utils.Paginate(*req.Cursor, *req.PerPage, response)
 		}
-		response = utils.Paginate(*req.Cursor, *req.PerPage, response)
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
@@ -5438,3 +5441,370 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 
 	return echoCtx.JSON(http.StatusOK, response)
 }
+
+// AssignBenchmarkToIntegration godoc
+//
+//	@Summary		Create benchmark assignment
+//	@Description	Creating a benchmark assignment for a connection.
+//	@Security		BearerToken
+//	@Tags			benchmarks_assignment
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id		path		string		true	"Benchmark ID"
+//	@Param			connectionId		query		[]string	false	"Connection ID or 'all' for everything"
+//	@Success		200					{object}	[]api.BenchmarkAssignment
+//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [post]
+func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	ctx := echoCtx.Request().Context()
+
+	var req api.IntegrationFilterRequest
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var connections []onboardApi.Connection
+	for _, info := range req.Integration {
+		if info.IntegrationTracker != nil {
+			connection, err := h.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.onboardClient.GetSourceByFilters(clientCtx,
+			onboardApi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
+	if len(connectionIDs) > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
+	}
+
+	benchmarkId := echoCtx.Param("benchmark_id")
+	if benchmarkId == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
+	}
+	// trace :
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmark")
+	defer span1.End()
+
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
+
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
+	}
+
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark Id", benchmark.ID),
+	))
+	span1.End()
+
+	result := make([]api.BenchmarkAssignment, 0, len(connections))
+	// trace :
+	ctx, span4 := tracer.Start(ctx, "new_AddBenchmarkAssignment(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span4.SetName("new_AddBenchmarkAssignment(loop)")
+	defer span4.End()
+
+	for _, src := range connections {
+		assignment := &db.BenchmarkAssignment{
+			BenchmarkId:  benchmarkId,
+			ConnectionId: utils.GetPointer(src.ID.String()),
+			AssignedAt:   time.Now(),
+		}
+		//trace :
+		ctx, span5 := tracer.Start(ctx, "new_AddBenchmarkAssignment", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_AddBenchmarkAssignment")
+
+		if err := h.db.AddBenchmarkAssignment(ctx, assignment); err != nil {
+			span5.RecordError(err)
+			span5.SetStatus(codes.Error, err.Error())
+			span5.End()
+			echoCtx.Logger().Errorf("add benchmark assignment: %v", err)
+			return err
+		}
+		span5.SetAttributes(
+			attribute.String("Benchmark ID", assignment.BenchmarkId),
+		)
+		span5.End()
+
+		for _, connectionId := range connectionIDs {
+			result = append(result, api.BenchmarkAssignment{
+				BenchmarkId:  benchmarkId,
+				ConnectionId: utils.GetPointer(connectionId),
+				AssignedAt:   assignment.AssignedAt,
+			})
+		}
+	}
+	span4.End()
+
+	return echoCtx.NoContent(http.StatusOK)
+}
+
+// GetBenchmarkSummary godoc
+//
+//	@Summary		Get benchmark summary
+//	@Description	Retrieving a summary of a benchmark and its associated checks and results.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id		path		string			true	"Benchmark ID"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
+//	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
+//	@Success		200					{object}	api.BenchmarkEvaluationSummary
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
+//func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
+//	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+//	ctx := echoCtx.Request().Context()
+//
+//	var req api.IntegrationFilterRequest
+//	if err := bindValidate(echoCtx, &req); err != nil {
+//		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+//	}
+//
+//	var connections []onboardApi.Connection
+//	for _, info := range req.Integration {
+//		if info.IntegrationTracker != nil {
+//			connection, err := h.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+//			if err != nil {
+//				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+//			}
+//			if connection != nil {
+//				connections = append(connections, *connection)
+//			}
+//			continue
+//		}
+//		connectionsTmp, err := h.onboardClient.GetSourceByFilters(clientCtx,
+//			onboardApi.GetSourceByFiltersRequest{
+//				Connector:         info.Integration,
+//				ProviderNameRegex: info.IDName,
+//				ProviderIdRegex:   info.ID,
+//			})
+//		if err != nil {
+//			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+//		}
+//		connections = append(connections, connectionsTmp...)
+//	}
+//
+//	var connectionIDs []string
+//	for _, c := range connections {
+//		connectionIDs = append(connectionIDs, c.ID.String())
+//	}
+//
+//	benchmarkID := echoCtx.Param("benchmark_id")
+//	// tracer :
+//	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+//	span1.SetName("new_GetBenchmark")
+//	defer span1.End()
+//
+//	benchmark, err := h.db.GetBenchmark(ctx, benchmarkID)
+//	if err != nil {
+//		span1.RecordError(err)
+//		span1.SetStatus(codes.Error, err.Error())
+//		return err
+//	}
+//	span1.AddEvent("information", trace.WithAttributes(
+//		attribute.String("benchmark ID", benchmark.ID),
+//	))
+//	span1.End()
+//
+//	if benchmark == nil {
+//		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+//	}
+//	be := benchmark.ToApi()
+//
+//	controls, err := h.db.ListControlsByBenchmarkID(ctx, benchmarkID)
+//	if err != nil {
+//		h.logger.Error("failed to get controls", zap.Error(err))
+//		return err
+//	}
+//	controlsMap := make(map[string]*db.Control)
+//	for _, control := range controls {
+//		control := control
+//		controlsMap[strings.ToLower(control.ID)] = &control
+//	}
+//
+//	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx, h.logger, h.client,
+//		[]string{benchmarkID}, connectionIDs, nil,
+//		timeAt, true)
+//	if err != nil {
+//		return err
+//	}
+//
+//	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+//	if err != nil {
+//		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
+//		return err
+//	}
+//
+//	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, nil)
+//	if err != nil {
+//		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
+//		return err
+//	}
+//
+//	summaryAtTime := summariesAtTime[benchmarkID]
+//
+//	csResult := api.ConformanceStatusSummary{}
+//	sResult := kaytuTypes.SeverityResult{}
+//	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+//	connectionsResult := api.BenchmarkStatusResult{}
+//	var costOptimization *float64
+//	addToResults := func(resultGroup types.ResultGroup) {
+//		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+//		sResult.AddResultMap(resultGroup.Result.SeverityResult)
+//		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+//		for controlId, controlResult := range resultGroup.Controls {
+//			control := controlsMap[strings.ToLower(controlId)]
+//			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+//		}
+//	}
+//	if len(resourceCollections) > 0 {
+//		for _, resourceCollection := range resourceCollections {
+//			if len(connectionIDs) > 0 {
+//				for _, connectionID := range connectionIDs {
+//					addToResults(summaryAtTime.ResourceCollections[resourceCollection].Connections[connectionID])
+//					connectionsResult.TotalCount++
+//					if summaryAtTime.ResourceCollections[resourceCollection].Connections[connectionID].Result.IsFullyPassed() {
+//						connectionsResult.PassedCount++
+//					}
+//				}
+//			} else {
+//				addToResults(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult)
+//				for _, connectionResult := range summaryAtTime.ResourceCollections[resourceCollection].Connections {
+//					connectionsResult.TotalCount++
+//					if connectionResult.Result.IsFullyPassed() {
+//						connectionsResult.PassedCount++
+//					}
+//				}
+//			}
+//		}
+//	} else if len(connectionIDs) > 0 {
+//		for _, connectionID := range connectionIDs {
+//			addToResults(summaryAtTime.Connections.Connections[connectionID])
+//			connectionsResult.TotalCount++
+//			if summaryAtTime.Connections.Connections[connectionID].Result.IsFullyPassed() {
+//				connectionsResult.PassedCount++
+//			}
+//		}
+//	} else {
+//		addToResults(summaryAtTime.Connections.BenchmarkResult)
+//		for _, connectionResult := range summaryAtTime.Connections.Connections {
+//			connectionsResult.TotalCount++
+//			if connectionResult.Result.IsFullyPassed() {
+//				connectionsResult.PassedCount++
+//			}
+//		}
+//	}
+//
+//	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmarkID)
+//	if err != nil {
+//		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+//		return err
+//	}
+//
+//	var lastJobStatus string
+//	if lastJob != nil {
+//		lastJobStatus = string(lastJob.Status)
+//	}
+//
+//	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
+//	if topAccountCount > 0 {
+//		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+//		if err != nil {
+//			h.logger.Error("failed to fetch findings top field", zap.Error(err))
+//			return err
+//		}
+//
+//		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+//		if err != nil {
+//			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+//			return err
+//		}
+//		totalCountMap := make(map[string]int)
+//		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+//			totalCountMap[item.Key] += item.DocCount
+//		}
+//
+//		resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+//		for _, item := range res.Aggregations.FieldFilter.Buckets {
+//			resConnectionIDs = append(resConnectionIDs, item.Key)
+//		}
+//		if len(resConnectionIDs) > 0 {
+//			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+//			if err != nil {
+//				h.logger.Error("failed to get connections", zap.Error(err))
+//				return err
+//			}
+//			connectionMap := make(map[string]*onboardApi.Connection)
+//			for _, connection := range connections {
+//				connection := connection
+//				connectionMap[connection.ID.String()] = &connection
+//			}
+//
+//			for _, item := range res.Aggregations.FieldFilter.Buckets {
+//				topConnections = append(topConnections, api.TopFieldRecord{
+//					Connection: connectionMap[item.Key],
+//					Count:      item.DocCount,
+//					TotalCount: totalCountMap[item.Key],
+//				})
+//			}
+//		}
+//	}
+//
+//	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
+//	allResources := allResourcesResult[benchmarkID]
+//	resourcesSeverityResult.Total.TotalCount = allResources.TotalCount
+//	resourcesSeverityResult.Critical.TotalCount = allResources.CriticalCount
+//	resourcesSeverityResult.High.TotalCount = allResources.HighCount
+//	resourcesSeverityResult.Medium.TotalCount = allResources.MediumCount
+//	resourcesSeverityResult.Low.TotalCount = allResources.LowCount
+//	resourcesSeverityResult.None.TotalCount = allResources.NoneCount
+//	passedResource := passedResourcesResult[benchmarkID]
+//	resourcesSeverityResult.Total.PassedCount = passedResource.TotalCount
+//	resourcesSeverityResult.Critical.PassedCount = passedResource.CriticalCount
+//	resourcesSeverityResult.High.PassedCount = passedResource.HighCount
+//	resourcesSeverityResult.Medium.PassedCount = passedResource.MediumCount
+//	resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
+//	resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
+//
+//	response := api.BenchmarkEvaluationSummary{
+//		Benchmark:                be,
+//		ConformanceStatusSummary: csResult,
+//		Checks:                   sResult,
+//		ControlsSeverityStatus:   controlSeverityResult,
+//		ResourcesSeverityStatus:  resourcesSeverityResult,
+//		ConnectionsStatus:        connectionsResult,
+//		CostOptimization:         costOptimization,
+//		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+//		LastJobStatus:            lastJobStatus,
+//	}
+//
+//	return echoCtx.JSON(http.StatusOK, response)
+//}
