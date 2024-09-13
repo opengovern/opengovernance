@@ -461,7 +461,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDescribeJobScheduler(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunDescribeResourceJobs(ctx)
+		s.RunDescribeResourceJobs(ctx, false)
+	})
+	utils.EnsureRunGoroutine(func() {
+		s.RunDescribeResourceJobs(ctx, true)
 	})
 	s.discoveryScheduler.Run(ctx)
 
@@ -489,7 +492,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	)
 	s.complianceScheduler.Run(ctx)
 	utils.EnsureRunGoroutine(func() {
-		s.RunJobSequencer(ctx)
+		s.RunJobSequencer(ctx) // Deprecated
 	})
 
 	utils.EnsureRunGoroutine(func() {

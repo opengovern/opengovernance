@@ -62,7 +62,7 @@ func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
 	}
 }
 
-func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
+func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals bool) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -70,7 +70,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return errors.New("workspace name is empty")
 	}
 
-	count, err := s.db.CountQueuedDescribeConnectionJobs()
+	count, err := s.db.CountQueuedDescribeConnectionJobs(manuals)
 	if err != nil {
 		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeConnectionJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "queue_length").Inc()
@@ -85,7 +85,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
 	}
 
-	count, err = s.db.CountDescribeConnectionJobsRunOverLast10Minutes()
+	count, err = s.db.CountDescribeConnectionJobsRunOverLast10Minutes(manuals)
 	if err != nil {
 		s.logger.Error("failed to get last hour length", zap.String("spot", "CountDescribeConnectionJobsRunOverLastHour"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "last_hour_length").Inc()
@@ -100,7 +100,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		DescribePublishingBlocked.WithLabelValues("hour queued").Set(0)
 	}
 
-	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall))
+	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall), manuals)
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "fetch_error").Inc()
@@ -108,7 +108,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	}
 	s.logger.Info("got the jobs", zap.Int("length", len(dcs)), zap.Int("limit", int(s.MaxConcurrentCall)))
 
-	counts, err := s.db.CountRunningDescribeJobsPerResourceType()
+	counts, err := s.db.CountRunningDescribeJobsPerResourceType(manuals)
 	if err != nil {
 		s.logger.Error("failed to resource type count", zap.String("spot", "CountRunningDescribeJobsPerResourceType"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "resource_type_count").Inc()
@@ -194,13 +194,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
+func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context, manuals bool) {
 	t := ticker.NewTicker(time.Second*30, time.Second*10)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
+			if err := s.RunDescribeResourceJobCycle(ctx, manuals); err != nil {
 				s.logger.Error("failure while RunDescribeResourceJobCycle", zap.Error(err))
 			}
 			t.Reset(time.Second*30, time.Second*10)
@@ -523,6 +523,9 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 		triggerType = enums.DescribeTriggerTypeInitialDiscovery
 	}
+	if !scheduled {
+		triggerType = enums.DescribeTriggerTypeManual
+	}
 	if costFullDiscovery {
 		triggerType = enums.DescribeTriggerTypeCostFullDiscovery
 	}
@@ -715,7 +718,11 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		}
 		switch input.DescribeJob.SourceType {
 		case source.CloudAWS:
-			err = s.jq.Produce(ctx, awsDescriberLocal.JobQueueTopic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+			topic := awsDescriberLocal.JobQueueTopic
+			if dc.TriggerType == enums.DescribeTriggerTypeManual {
+				topic = awsDescriberLocal.JobQueueTopicManuals
+			}
+			err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
 			if err != nil {
 				s.logger.Error("failed to produce message to jetstream",
 					zap.Uint("jobID", dc.ID),
@@ -727,7 +734,11 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 				return fmt.Errorf("failed to produce message to jetstream due to %v", err)
 			}
 		case source.CloudAzure:
-			err = s.jq.Produce(ctx, azureDescriberLocal.JobQueueTopic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+			topic := azureDescriberLocal.JobQueueTopic
+			if dc.TriggerType == enums.DescribeTriggerTypeManual {
+				topic = azureDescriberLocal.JobQueueTopicManuals
+			}
+			err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
 			if err != nil {
 				s.logger.Error("failed to produce message to jetstream",
 					zap.Uint("jobID", dc.ID),
