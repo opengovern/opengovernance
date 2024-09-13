@@ -313,8 +313,21 @@ func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus
 	return job, nil
 }
 
+func (db Database) ListDescribeJobsByIds(ids []string) ([]model.DescribeConnectionJob, error) {
+	var job []model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("id IN ?", ids).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListDescribeJobsByFilters(connectionIds []string, resourceType []string,
-	discoveryType []string, jobStatus []string, startTime time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
+	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
 	tx := db.ORM.Model(&model.DescribeConnectionJob{})
@@ -332,7 +345,9 @@ func (db Database) ListDescribeJobsByFilters(connectionIds []string, resourceTyp
 	if len(jobStatus) > 0 {
 		tx = tx.Where("status IN ?", jobStatus)
 	}
-	tx = tx.Where("updated_at >= ?", startTime)
+	if startTime != nil {
+		tx = tx.Where("updated_at >= ?", startTime)
+	}
 	if endTime != nil {
 		tx = tx.Where("updated_at <= ?", *endTime)
 	}
