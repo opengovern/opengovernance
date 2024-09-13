@@ -153,15 +153,6 @@ type ListQueryRequest struct {
 	TitleFilter string `json:"titleFilter"` // Specifies the Title
 }
 
-type ListQueryV2Request struct {
-	TitleFilter string              `json:"title_filter"` // Specifies the Title
-	TagsFilter  map[string][]string `json:"tags_filter"`
-	TagsRegex   *string             `json:"tags_regex"`
-	Connectors  []string            `json:"connectors"`
-	Cursor      *int64              `json:"cursor"`
-	PerPage     *int64              `json:"per_page"`
-}
-
 type ConnectionData struct {
 	ConnectionID         string     `json:"connectionID"`
 	Count                *int       `json:"count"`
