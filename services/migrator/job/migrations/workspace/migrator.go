@@ -27,6 +27,7 @@ func (m Migration) IsGitBased() bool {
 
 func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
 	if err := OnboardMigration(conf, logger, m.AttachmentFolderPath()+"/onboard.json"); err != nil {
+		logger.Fatal("onboard migration failed", zap.Error(err))
 		return err
 	}
 	if err := MetadataMigration(conf, logger, m.AttachmentFolderPath()+"/metadata.json"); err != nil {
