@@ -37,7 +37,7 @@ func (db Database) GetAnalyticsJobByID(jobID uint) (*model.AnalyticsJob, error) 
 
 func (db Database) ListAnalyticsJobs() ([]model.AnalyticsJob, error) {
 	var jobs []model.AnalyticsJob
-	tx := db.ORM.Model(&model.AnalyticsJob{}).First(&jobs)
+	tx := db.ORM.Model(&model.AnalyticsJob{}).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -47,7 +47,25 @@ func (db Database) ListAnalyticsJobs() ([]model.AnalyticsJob, error) {
 	return jobs, nil
 }
 
-func (db Database) ListAnalyticsJobsByFilter(jobType []string, status []string, startTime time.Time, endTime *time.Time) ([]model.AnalyticsJob, error) {
+func (db Database) ListAnalyticsJobsByIds(ids []string) ([]model.AnalyticsJob, error) {
+	var jobs []model.AnalyticsJob
+	tx := db.ORM.Model(&model.AnalyticsJob{})
+
+	if len(ids) > 0 {
+		tx = tx.Where("id IN ?", ids)
+	}
+
+	tx = tx.Find(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
+func (db Database) ListAnalyticsJobsByFilter(jobType []string, status []string, startTime *time.Time, endTime *time.Time) ([]model.AnalyticsJob, error) {
 	var jobs []model.AnalyticsJob
 	tx := db.ORM.Model(&model.AnalyticsJob{})
 
@@ -57,7 +75,9 @@ func (db Database) ListAnalyticsJobsByFilter(jobType []string, status []string, 
 	if len(status) > 0 {
 		tx = tx.Where("status IN (?)", status)
 	}
-	tx = tx.Where("updated_at >= ?", startTime)
+	if startTime != nil {
+		tx = tx.Where("updated_at >= ?", startTime)
+	}
 	if endTime != nil {
 		tx = tx.Where("updated_at <= ?", *endTime)
 	}

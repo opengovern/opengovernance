@@ -314,3 +314,47 @@ type GetComplianceJobsHistoryByIntegrationRequest struct {
 	Cursor      *int64     `json:"cursor"`
 	PerPage     *int64     `json:"per_page"`
 }
+
+type CancelJobRequest struct {
+	JobType         string   `json:"job_type"`
+	Selector        string   `json:"selector"`
+	JobId           []string `json:"job_id"`
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
+	Status []string `json:"status"`
+}
+
+type CancelJobResponse struct {
+	JobId    string `json:"job_id"`
+	JobType  string `json:"job_type"`
+	Canceled bool   `json:"canceled"`
+	Reason   string `json:"reason"`
+}
+
+type ListJobsByTypeRequest struct {
+	JobType         string   `json:"job_type"`
+	Selector        string   `json:"selector"`
+	JobId           []string `json:"job_id"`
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
+	Status    []string `json:"status"`
+	Benchmark []string `json:"benchmark"`
+}
+
+type ListJobsByTypeResponse struct {
+	JobId     string    `json:"job_id"`
+	JobType   string    `json:"job_type"`
+	JobStatus string    `json:"job_status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}

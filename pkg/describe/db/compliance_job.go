@@ -126,9 +126,43 @@ func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
 	return job, nil
 }
 
+func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
+	var job []model.ComplianceJob
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("connection_ids <@ ?", pq.Array(connectionIds)).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+func (db Database) ListComplianceJobsByBenchmarkID(benchmarkIds []string) ([]model.ComplianceJob, error) {
+	var job []model.ComplianceJob
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id IN ?", benchmarkIds).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListComplianceJobsByStatus(status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Where("status = ?", status).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) ListComplianceJobsByIds(ids []string) ([]model.ComplianceJob, error) {
+	var jobs []model.ComplianceJob
+	tx := db.ORM.Where("id IN ?", ids).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

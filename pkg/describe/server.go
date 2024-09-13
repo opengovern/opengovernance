@@ -95,7 +95,9 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v2.GET("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v2.GET("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v2.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
-	v2.PUT("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
+	v2.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
+	v2.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
+	v2.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.AdminRole))
 }
 
 // ListJobs godoc
@@ -1159,7 +1161,7 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
 	jobs, err := h.DB.ListDescribeJobsByFilters([]string{connectionId}, request.ResourceType,
-		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
+		request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -1777,7 +1779,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
 	jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, request.ResourceType,
-		request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
+		request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -1966,7 +1968,7 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	jobs, err := h.DB.ListAnalyticsJobsByFilter(request.Type, request.JobStatus, request.StartTime, request.EndTime)
+	jobs, err := h.DB.ListAnalyticsJobsByFilter(request.Type, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2076,7 +2078,7 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 
 	for _, c := range connectionInfo {
 		jobs, err := h.DB.ListDescribeJobsByFilters([]string{c.IntegrationTracker}, request.ResourceType,
-			request.DiscoveryType, request.JobStatus, request.StartTime, request.EndTime)
+			request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -2266,7 +2268,7 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 	return ctx.JSON(http.StatusOK, jobsResults)
 }
 
-// CancelJob godoc
+// CancelJobById godoc
 //
 //	@Summary	Cancel job by given job type and job ID
 //	@Security	BearerToken
@@ -2275,8 +2277,8 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 //	@Param		job_type		query	string		true	"Job Type"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/cancel [post]
-func (h HttpServer) CancelJob(ctx echo.Context) error {
+//	@Router		/schedule/api/v2/jobs/cancel [put]
+func (h HttpServer) CancelJobById(ctx echo.Context) error {
 	jobIdStr := ctx.QueryParam("job_id")
 	jobType := strings.ToLower(ctx.QueryParam("job_type"))
 
@@ -2403,4 +2405,504 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 	return echo.NewHTTPError(http.StatusOK, "nothing done")
+}
+
+// CancelJob godoc
+//
+//	@Summary	Cancel job by given job type and job ID
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		job_id			query	string		true	"Job ID"
+//	@Param		job_type		query	string		true	"Job Type"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/cancel [put]
+func (h HttpServer) CancelJob(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.CancelJobRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
+		strings.ToLower(request.JobType) != "analytics" {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
+	}
+
+	var jobIDs []string
+	var results []api.CancelJobResponse
+
+	switch strings.ToLower(request.Selector) {
+	case "job_id":
+		jobIDs = request.JobId
+	case "integration_info":
+		var connections []onboardapi.Connection
+		for _, info := range request.IntegrationInfo {
+			if info.IntegrationTracker != nil {
+				connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				}
+				if connection != nil {
+					connections = append(connections, *connection)
+				}
+				continue
+			}
+			connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+				onboardapi.GetSourceByFiltersRequest{
+					Connector:         info.Integration,
+					ProviderNameRegex: info.IDName,
+					ProviderIdRegex:   info.ID,
+				})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			connections = append(connections, connectionsTmp...)
+		}
+
+		connectionIDsMap := make(map[string]bool)
+		for _, c := range connections {
+			connectionIDsMap[c.ID.String()] = true
+		}
+		var connectionIDs []string
+		switch strings.ToLower(request.JobType) {
+		case "compliance":
+			jobs, err := h.DB.ListComplianceJobsByConnectionID(connectionIDs)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
+			}
+		case "discovery":
+			jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
+			}
+		case "analytics":
+			jobs, err := h.DB.ListAnalyticsJobs()
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
+			}
+		}
+	case "status":
+		for _, status := range request.Status {
+			switch strings.ToLower(request.JobType) {
+			case "compliance":
+				jobs, err := h.DB.ListComplianceJobsByStatus(model2.ComplianceJobStatus(strings.ToUpper(status)))
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				for _, j := range jobs {
+					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
+				}
+			case "discovery":
+				jobs, err := h.DB.ListDescribeJobsByStatus(api.DescribeResourceJobStatus(strings.ToUpper(status)))
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				for _, j := range jobs {
+					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
+				}
+			case "analytics":
+				jobs, err := h.DB.ListAnalyticsJobsByFilter(nil, []string{strings.ToUpper(status)}, nil, nil)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				for _, j := range jobs {
+					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
+				}
+			}
+		}
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid selector. valid values: job_id, integration, status")
+	}
+
+	for _, jobIdStr := range jobIDs {
+		var failureReason string
+		var canceled bool
+		switch strings.ToLower(request.JobType) {
+		case "compliance":
+			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
+			if err != nil {
+				failureReason = "invalid job id"
+				break
+			}
+			complianceJob, err := h.DB.GetComplianceJobByID(uint(jobId))
+			if err != nil {
+				failureReason = err.Error()
+				break
+			}
+			if complianceJob == nil {
+				failureReason = "job not found"
+				break
+			}
+			if complianceJob.Status == model2.ComplianceJobCreated {
+				err = h.DB.UpdateComplianceJob(uint(jobId), model2.ComplianceJobCanceled, "")
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				canceled = true
+				break
+			} else if complianceJob.Status == model2.ComplianceJobSucceeded || complianceJob.Status == model2.ComplianceJobFailed ||
+				complianceJob.Status == model2.ComplianceJobTimeOut || complianceJob.Status == model2.ComplianceJobCanceled {
+				failureReason = "job is already finished"
+				break
+			} else if complianceJob.Status == model2.ComplianceJobSummarizerInProgress || complianceJob.Status == model2.ComplianceJobSinkInProgress {
+				failureReason = "job is already in progress, unable to cancel"
+				break
+			}
+			runners, err := h.DB.ListComplianceJobRunnersWithID(uint(jobId))
+			if err != nil {
+				failureReason = err.Error()
+				break
+			}
+			if len(runners) == 0 {
+				err = h.DB.UpdateComplianceJob(uint(jobId), model2.ComplianceJobCanceled, "")
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				canceled = true
+				break
+			} else {
+				allInProgress := true
+				for _, r := range runners {
+					if r.Status == runner2.ComplianceRunnerCreated {
+						allInProgress = false
+						err = h.DB.UpdateRunnerJob(r.ID, runner2.ComplianceRunnerCanceled, r.StartedAt, nil, "")
+						if err != nil {
+							failureReason = err.Error()
+							break
+						}
+					} else if r.Status == runner2.ComplianceRunnerQueued {
+						allInProgress = false
+						err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), runner2.StreamName, r.NatsSequenceNumber)
+						if err != nil {
+							failureReason = err.Error()
+							break
+						}
+						err = h.DB.UpdateRunnerJob(r.ID, runner2.ComplianceRunnerCanceled, r.StartedAt, nil, "")
+						if err != nil {
+							failureReason = err.Error()
+							break
+						}
+					}
+				}
+				if allInProgress {
+					failureReason = "job is already in progress, unable to cancel"
+					break
+				} else {
+					err = h.DB.UpdateComplianceJob(uint(jobId), model2.ComplianceJobCanceled, "")
+					if err != nil {
+						failureReason = err.Error()
+						break
+					}
+					canceled = true
+					break
+				}
+			}
+		case "discovery":
+			job, err := h.DB.GetDescribeJobById(jobIdStr)
+			if err != nil {
+				failureReason = "invalid job id"
+				break
+			}
+			if job == nil {
+				failureReason = "job not found"
+				break
+			}
+			if job.Status == api.DescribeResourceJobCreated {
+				err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				canceled = true
+				break
+			} else if job.Status == api.DescribeResourceJobCanceled || job.Status == api.DescribeResourceJobFailed ||
+				job.Status == api.DescribeResourceJobSucceeded || job.Status == api.DescribeResourceJobTimeout {
+				failureReason = "job is already finished"
+				break
+			} else if job.Status == api.DescribeResourceJobQueued {
+				err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), awsDescriberLocal.StreamName, job.NatsSequenceNumber)
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				canceled = true
+				break
+			} else {
+				failureReason = "job is already in progress, unable to cancel"
+				break
+			}
+		case "analytics":
+			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
+			if err != nil {
+				failureReason = "invalid job id"
+				break
+			}
+			job, err := h.DB.GetAnalyticsJobByID(uint(jobId))
+			if err != nil {
+				failureReason = err.Error()
+				break
+			}
+			if job == nil {
+				failureReason = "job not found"
+				break
+			}
+			if job.Status == analyticsapi.JobCreated {
+				job.Status = analyticsapi.JobCanceled
+				err = h.DB.UpdateAnalyticsJobStatus(*job)
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				canceled = true
+				break
+			} else if job.Status == analyticsapi.JobInProgress {
+				failureReason = "job is already in progress, unable to cancel"
+				break
+			} else {
+				failureReason = "job is already finished"
+				break
+			}
+		default:
+			failureReason = "invalid job type"
+			break
+		}
+		results = append(results, api.CancelJobResponse{
+			JobId:    jobIdStr,
+			JobType:  strings.ToLower(request.JobType),
+			Canceled: canceled,
+			Reason:   failureReason,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, results)
+}
+
+// ListJobsByType godoc
+//
+//	@Summary	Cancel job by given job type and job ID
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		job_id			body	api.ListJobsByTypeRequest		true	""
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs [post]
+func (h HttpServer) ListJobsByType(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.ListJobsByTypeRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
+		strings.ToLower(request.JobType) != "analytics" {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
+	}
+
+	var results []api.ListJobsByTypeResponse
+
+	switch strings.ToLower(request.Selector) {
+	case "job_id":
+		switch strings.ToLower(request.JobType) {
+		case "compliance":
+			jobs, err := h.DB.ListComplianceJobsByIds(request.JobId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				results = append(results, api.ListJobsByTypeResponse{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
+		case "discovery":
+			jobs, err := h.DB.ListDescribeJobsByIds(request.JobId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				results = append(results, api.ListJobsByTypeResponse{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
+		case "analytics":
+			jobs, err := h.DB.ListAnalyticsJobsByIds(request.JobId)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				results = append(results, api.ListJobsByTypeResponse{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
+		}
+	case "integration_info":
+		var connections []onboardapi.Connection
+		for _, info := range request.IntegrationInfo {
+			if info.IntegrationTracker != nil {
+				connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				}
+				if connection != nil {
+					connections = append(connections, *connection)
+				}
+				continue
+			}
+			connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+				onboardapi.GetSourceByFiltersRequest{
+					Connector:         info.Integration,
+					ProviderNameRegex: info.IDName,
+					ProviderIdRegex:   info.ID,
+				})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			connections = append(connections, connectionsTmp...)
+		}
+
+		connectionIDsMap := make(map[string]bool)
+		for _, c := range connections {
+			connectionIDsMap[c.ID.String()] = true
+		}
+		var connectionIDs []string
+		switch strings.ToLower(request.JobType) {
+		case "compliance":
+			jobs, err := h.DB.ListComplianceJobsByConnectionID(connectionIDs)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				results = append(results, api.ListJobsByTypeResponse{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
+		case "discovery":
+			jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				results = append(results, api.ListJobsByTypeResponse{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
+		case "analytics":
+			jobs, err := h.DB.ListAnalyticsJobs()
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			for _, j := range jobs {
+				results = append(results, api.ListJobsByTypeResponse{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
+		}
+	case "status":
+		for _, status := range request.Status {
+			switch strings.ToLower(request.JobType) {
+			case "compliance":
+				jobs, err := h.DB.ListComplianceJobsByStatus(model2.ComplianceJobStatus(strings.ToUpper(status)))
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				for _, j := range jobs {
+					results = append(results, api.ListJobsByTypeResponse{
+						JobId:     strconv.Itoa(int(j.ID)),
+						JobType:   strings.ToLower(request.JobType),
+						JobStatus: string(j.Status),
+						CreatedAt: j.CreatedAt,
+						UpdatedAt: j.UpdatedAt,
+					})
+				}
+			case "discovery":
+				jobs, err := h.DB.ListDescribeJobsByStatus(api.DescribeResourceJobStatus(strings.ToUpper(status)))
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				for _, j := range jobs {
+					results = append(results, api.ListJobsByTypeResponse{
+						JobId:     strconv.Itoa(int(j.ID)),
+						JobType:   strings.ToLower(request.JobType),
+						JobStatus: string(j.Status),
+						CreatedAt: j.CreatedAt,
+						UpdatedAt: j.UpdatedAt,
+					})
+				}
+			case "analytics":
+				jobs, err := h.DB.ListAnalyticsJobsByFilter(nil, []string{strings.ToUpper(status)}, nil, nil)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				for _, j := range jobs {
+					results = append(results, api.ListJobsByTypeResponse{
+						JobId:     strconv.Itoa(int(j.ID)),
+						JobType:   strings.ToLower(request.JobType),
+						JobStatus: string(j.Status),
+						CreatedAt: j.CreatedAt,
+						UpdatedAt: j.UpdatedAt,
+					})
+				}
+			}
+		}
+	case "benchmark":
+		jobs, err := h.DB.ListComplianceJobsByBenchmarkID(request.Benchmark)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		for _, j := range jobs {
+			results = append(results, api.ListJobsByTypeResponse{
+				JobId:     strconv.Itoa(int(j.ID)),
+				JobType:   strings.ToLower(request.JobType),
+				JobStatus: string(j.Status),
+				CreatedAt: j.CreatedAt,
+				UpdatedAt: j.UpdatedAt,
+			})
+		}
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid selector. valid values: job_id, integration, status, benchmark")
+	}
+
+	return ctx.JSON(http.StatusOK, results)
 }
