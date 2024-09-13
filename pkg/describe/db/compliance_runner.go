@@ -105,6 +105,21 @@ func (db Database) UpdateRunnerJob(
 	return nil
 }
 
+func (db Database) UpdateRunnerJobNatsSeqNum(
+	id uint, seqNum uint64) error {
+	tx := db.ORM.
+		Model(&model.ComplianceRunner{}).
+		Where("id = ?", id).
+		Updates(model.ComplianceRunner{
+			NatsSequenceNumber: seqNum,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) UpdateTimeoutQueuedRunnerJobs() error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
@@ -140,5 +155,15 @@ func (db Database) ListFailedRunnersWithParentID(id uint) ([]model.ComplianceRun
 		}
 		return nil, tx.Error
 	}
+	return jobs, nil
+}
+
+func (db Database) ListComplianceJobRunnersWithID(id uint) ([]model.ComplianceRunner, error) {
+	var jobs []model.ComplianceRunner
+	tx := db.ORM.Where("parent_job_id = ?", id).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
 	return jobs, nil
 }

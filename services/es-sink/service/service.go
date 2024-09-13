@@ -123,7 +123,7 @@ func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) ([]Failed
 			})
 		}
 		uuid := uuid2.New().String()
-		err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s_-_-_%s_%s", idx, id, uuid))
+		_, err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s_-_-_%s_%s", idx, id, uuid))
 		if err != nil {
 			s.logger.Error("failed to produce message", zap.Error(err), zap.Any("doc", doc))
 			failedDocs = append(failedDocs, FailedDoc{

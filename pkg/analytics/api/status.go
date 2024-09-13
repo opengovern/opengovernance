@@ -7,4 +7,5 @@ const (
 	JobInProgress           JobStatus = "IN_PROGRESS"
 	JobCompletedWithFailure JobStatus = "COMPLETED_WITH_FAILURE"
 	JobCompleted            JobStatus = "COMPLETED"
+	JobCanceled             JobStatus = "CANCELED"
 )

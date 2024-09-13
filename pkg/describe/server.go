@@ -22,9 +22,11 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	analyticsapi "github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
@@ -93,6 +95,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v2.GET("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v2.GET("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v2.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
+	v2.PUT("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
 }
 
 // ListJobs godoc
@@ -2261,4 +2264,143 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// CancelJob godoc
+//
+//	@Summary	Cancel job by given job type and job ID
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		job_id			query	string		true	"Job ID"
+//	@Param		job_type		query	string		true	"Job Type"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Router		/schedule/api/v2/jobs/cancel [post]
+func (h HttpServer) CancelJob(ctx echo.Context) error {
+	jobIdStr := ctx.QueryParam("job_id")
+	jobType := strings.ToLower(ctx.QueryParam("job_type"))
+
+	switch jobType {
+	case "compliance":
+		jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+		}
+		complianceJob, err := h.DB.GetComplianceJobByID(uint(jobId))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		if complianceJob == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "job not found")
+		}
+		if complianceJob.Status == model2.ComplianceJobCreated {
+			err = h.DB.UpdateComplianceJob(uint(jobId), model2.ComplianceJobCanceled, "")
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			return ctx.NoContent(http.StatusOK)
+		} else if complianceJob.Status == model2.ComplianceJobSucceeded || complianceJob.Status == model2.ComplianceJobFailed ||
+			complianceJob.Status == model2.ComplianceJobTimeOut || complianceJob.Status == model2.ComplianceJobCanceled {
+			return echo.NewHTTPError(http.StatusOK, "job is already finished")
+		} else if complianceJob.Status == model2.ComplianceJobSummarizerInProgress || complianceJob.Status == model2.ComplianceJobSinkInProgress {
+			return echo.NewHTTPError(http.StatusOK, "job is already in progress, unable to cancel")
+		}
+		runners, err := h.DB.ListComplianceJobRunnersWithID(uint(jobId))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		if len(runners) == 0 {
+			err = h.DB.UpdateComplianceJob(uint(jobId), model2.ComplianceJobCanceled, "")
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			return ctx.NoContent(http.StatusOK)
+		} else {
+			allInProgress := true
+			for _, r := range runners {
+				if r.Status == runner2.ComplianceRunnerCreated {
+					allInProgress = false
+					err = h.DB.UpdateRunnerJob(r.ID, runner2.ComplianceRunnerCanceled, r.StartedAt, nil, "")
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+					}
+				} else if r.Status == runner2.ComplianceRunnerQueued {
+					allInProgress = false
+					err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), runner2.StreamName, r.NatsSequenceNumber)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+					}
+					err = h.DB.UpdateRunnerJob(r.ID, runner2.ComplianceRunnerCanceled, r.StartedAt, nil, "")
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+					}
+				}
+			}
+			if allInProgress {
+				return echo.NewHTTPError(http.StatusOK, "job is already in progress, unable to cancel")
+			} else {
+				err = h.DB.UpdateComplianceJob(uint(jobId), model2.ComplianceJobCanceled, "")
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+				return ctx.NoContent(http.StatusOK)
+			}
+		}
+	case "discovery":
+		job, err := h.DB.GetDescribeJobById(jobIdStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+		}
+		if job == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "job not found")
+		}
+		if job.Status == api.DescribeResourceJobCreated {
+			err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			return ctx.NoContent(http.StatusOK)
+		} else if job.Status == api.DescribeResourceJobCanceled || job.Status == api.DescribeResourceJobFailed ||
+			job.Status == api.DescribeResourceJobSucceeded || job.Status == api.DescribeResourceJobTimeout {
+			return echo.NewHTTPError(http.StatusOK, "job is already finished")
+		} else if job.Status == api.DescribeResourceJobQueued {
+			err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), awsDescriberLocal.StreamName, job.NatsSequenceNumber)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			return ctx.NoContent(http.StatusOK)
+		} else {
+			return echo.NewHTTPError(http.StatusOK, "job is already in progress, unable to cancel")
+		}
+	case "analytics":
+		jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+		}
+		job, err := h.DB.GetAnalyticsJobByID(uint(jobId))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		if job == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "job not found")
+		}
+		if job.Status == analyticsapi.JobCreated {
+			job.Status = analyticsapi.JobCanceled
+			err = h.DB.UpdateAnalyticsJobStatus(*job)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+		} else if job.Status == analyticsapi.JobInProgress {
+			return echo.NewHTTPError(http.StatusOK, "job is already in progress, unable to cancel")
+		} else {
+			return echo.NewHTTPError(http.StatusOK, "job is already finished")
+		}
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
+	}
+	return echo.NewHTTPError(http.StatusOK, "nothing done")
 }

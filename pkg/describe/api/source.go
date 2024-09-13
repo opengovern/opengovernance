@@ -52,6 +52,7 @@ const (
 	DescribeResourceJobFailed              DescribeResourceJobStatus = "FAILED"
 	DescribeResourceJobSucceeded           DescribeResourceJobStatus = "SUCCEEDED"
 	DescribeResourceJobRemovingResources   DescribeResourceJobStatus = "REMOVING_RESOURCES"
+	DescribeResourceJobCanceled            DescribeResourceJobStatus = "CANCELED"
 )
 
 type DescribeAllJobsStatus string

@@ -92,7 +92,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 			w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 
-			if err := w.jq.Produce(ctx, ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", result.JobID)); err != nil {
+			if _, err := w.jq.Produce(ctx, ResultsQueueName, bytes, fmt.Sprintf("job-result-%d", result.JobID)); err != nil {
 				w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
 			}
 

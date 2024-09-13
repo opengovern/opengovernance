@@ -1402,6 +1402,10 @@ github.com/kaytu-io/kaytu-util v0.0.0-20240901132915-fe1493449bab h1:8W9ku0PJXKi
 github.com/kaytu-io/kaytu-util v0.0.0-20240901132915-fe1493449bab/go.mod h1:SnfkVk5OhH7HSNWjkYqaGy7wFgRp/wKkzGsqlM8L0Ds=
 github.com/kaytu-io/kaytu-util v0.0.0-20240913141507-4519f2ae5618 h1:SsjK2hOKMWEpeOlzDSxgVJqDi2SyI04n4JwJZfhJ6Is=
 github.com/kaytu-io/kaytu-util v0.0.0-20240913141507-4519f2ae5618/go.mod h1:SnfkVk5OhH7HSNWjkYqaGy7wFgRp/wKkzGsqlM8L0Ds=
+github.com/kaytu-io/kaytu-util v0.0.0-20240913193706-8c4a45509135 h1:UWZqs1IosnP2kvXDPmZUhTkzPa/LuYt+pEr/+6o57Yg=
+github.com/kaytu-io/kaytu-util v0.0.0-20240913193706-8c4a45509135/go.mod h1:SnfkVk5OhH7HSNWjkYqaGy7wFgRp/wKkzGsqlM8L0Ds=
+github.com/kaytu-io/kaytu-util v0.0.0-20240913202447-fff8217e252a h1:wjiLDsqBdyZ9NRAyFrJT/yIHTHQ6fmJ25uTkPG1SvmA=
+github.com/kaytu-io/kaytu-util v0.0.0-20240913202447-fff8217e252a/go.mod h1:SnfkVk5OhH7HSNWjkYqaGy7wFgRp/wKkzGsqlM8L0Ds=
 github.com/kaytu-io/pennywise v1.7.16 h1:ppZ80MNFuch4GRpEYzYZgxms4QkLCZWJPAnkxa1THgo=
 github.com/kaytu-io/pennywise v1.7.16/go.mod h1:Egr3Z/zzT/K93sOG+QVSgrgQbkcnK+odwjnl1OQUjpQ=
 github.com/kaytu-io/plugin-aws v0.6.18 h1:mFRKhuCNAczCMPptPVwtcRbQzIt5qFkVlsUU6KIc1EA=

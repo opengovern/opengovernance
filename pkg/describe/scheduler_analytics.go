@@ -146,7 +146,7 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob, ctx context.Con
 		return err
 	}
 
-	if err := s.jq.Produce(ctx, analytics.JobQueueTopic, aJobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
+	if _, err := s.jq.Produce(ctx, analytics.JobQueueTopic, aJobJson, fmt.Sprintf("job-%d", job.ID)); err != nil {
 		return err
 	}
 

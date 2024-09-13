@@ -199,7 +199,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			return
 		}
 
-		if err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
+		if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("job-result-%d", job.JobID)); err != nil {
 			w.logger.Error("Failed to send job result", zap.Error(err))
 			return
 		}
