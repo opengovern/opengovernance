@@ -229,12 +229,12 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
-	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.ResultQueueTopic}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.JobQueueTopicManuals, summarizer.ResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to compliance summarizer queue", zap.Error(err))
 		return nil, err
 	}
 
-	if err := s.jq.Stream(ctx, runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.ResultQueueTopic}, 1000000); err != nil {
+	if err := s.jq.Stream(ctx, runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.JobQueueTopicManuals, runner.ResultQueueTopic}, 1000000); err != nil {
 		s.logger.Error("Failed to stream to compliance runner queue", zap.Error(err))
 		return nil, err
 	}
@@ -255,11 +255,11 @@ func InitializeScheduler(
 	}
 
 	if conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		if err := jq.Stream(ctx, awsDescriberLocal.StreamName, "azure describe job runner queue", []string{awsDescriberLocal.JobQueueTopic}, 200000); err != nil {
+		if err := jq.Stream(ctx, awsDescriberLocal.StreamName, "azure describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
 			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
 			return nil, err
 		}
-		if err := jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic}, 200000); err != nil {
+		if err := jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
 			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
 			return nil, err
 		}
@@ -461,7 +461,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunDescribeJobScheduler(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunDescribeResourceJobs(ctx)
+		s.RunDescribeResourceJobs(ctx, false)
+	})
+	utils.EnsureRunGoroutine(func() {
+		s.RunDescribeResourceJobs(ctx, true)
 	})
 	s.discoveryScheduler.Run(ctx)
 
@@ -489,7 +492,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	)
 	s.complianceScheduler.Run(ctx)
 	utils.EnsureRunGoroutine(func() {
-		s.RunJobSequencer(ctx)
+		s.RunJobSequencer(ctx) // Deprecated
 	})
 
 	utils.EnsureRunGoroutine(func() {

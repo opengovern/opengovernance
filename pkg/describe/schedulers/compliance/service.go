@@ -58,10 +58,16 @@ func (s *JobScheduler) Run(ctx context.Context) {
 		s.RunEnqueueRunnersCycle()
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunPublisher(ctx)
+		s.RunPublisher(ctx, false)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunSummarizer(ctx)
+		s.RunPublisher(ctx, true)
+	})
+	utils.EnsureRunGoroutine(func() {
+		s.RunSummarizer(ctx, false)
+	})
+	utils.EnsureRunGoroutine(func() {
+		s.RunSummarizer(ctx, true)
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer(ctx)))
@@ -100,14 +106,14 @@ func (s JobScheduler) RunEnqueueRunnersCycle() {
 	}
 }
 
-func (s *JobScheduler) RunPublisher(ctx context.Context) {
+func (s *JobScheduler) RunPublisher(ctx context.Context, manuals bool) {
 	s.logger.Info("Scheduling publisher on a timer")
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		if err := s.runPublisher(ctx); err != nil {
+		if err := s.runPublisher(ctx, manuals); err != nil {
 			s.logger.Error("failed to run compliance publisher", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
@@ -115,14 +121,14 @@ func (s *JobScheduler) RunPublisher(ctx context.Context) {
 	}
 }
 
-func (s *JobScheduler) RunSummarizer(ctx context.Context) {
+func (s *JobScheduler) RunSummarizer(ctx context.Context, manuals bool) {
 	s.logger.Info("Scheduling compliance summarizer on a timer")
 
 	t := ticker.NewTicker(SummarizerSchedulingInterval, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		if err := s.runSummarizer(ctx); err != nil {
+		if err := s.runSummarizer(ctx, manuals); err != nil {
 			s.logger.Error("failed to run compliance summarizer", zap.Error(err))
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue

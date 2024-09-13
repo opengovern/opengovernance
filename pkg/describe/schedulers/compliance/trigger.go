@@ -21,6 +21,7 @@ func (s *JobScheduler) buildRunners(
 	parentBenchmarkIDs []string,
 	benchmarkID string,
 	currentRunnerExistMap map[string]bool,
+	triggerType model.ComplianceTriggerType,
 ) ([]*model.ComplianceRunner, []*model.ComplianceRunner, error) {
 	ctx := &httpclient.Context{UserRole: api.InternalRole}
 	var runners []*model.ComplianceRunner
@@ -44,7 +45,7 @@ func (s *JobScheduler) buildRunners(
 	}
 
 	for _, child := range benchmark.Children {
-		childRunners, childGlobalRunners, err := s.buildRunners(parentJobID, connectionID, connector, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap)
+		childRunners, childGlobalRunners, err := s.buildRunners(parentJobID, connectionID, connector, resourceCollectionID, rootBenchmarkID, append(parentBenchmarkIDs, benchmarkID), child, currentRunnerExistMap, triggerType)
 		if err != nil {
 			s.logger.Error("error while building child runners", zap.Error(err))
 			return nil, nil, err
@@ -95,6 +96,7 @@ func (s *JobScheduler) buildRunners(
 				RetryCount:           0,
 				Status:               runner.ComplianceRunnerCreated,
 				FailureMessage:       "",
+				TriggerType:          triggerType,
 			}
 			err = runnerJob.SetCallers([]runner.Caller{callers})
 			if err != nil {
@@ -112,6 +114,7 @@ func (s *JobScheduler) buildRunners(
 				RetryCount:           0,
 				Status:               runner.ComplianceRunnerCreated,
 				FailureMessage:       "",
+				TriggerType:          triggerType,
 			}
 			err = runnerJob.SetCallers([]runner.Caller{callers})
 			if err != nil {
@@ -193,7 +196,7 @@ func (s *JobScheduler) buildRunners(
 }
 
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
-	lastJob *model.ComplianceJob, connectionIDs []string) (uint, error) {
+	lastJob *model.ComplianceJob, connectionIDs []string, manual bool) (uint, error) {
 	// delete old runners
 	if lastJob != nil {
 		err := s.db.DeleteOldRunnerJob(&lastJob.ID)
@@ -208,12 +211,17 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 			return 0, err
 		}
 	}
+	triggerType := model.ComplianceTriggerTypeScheduled
+	if manual {
+		triggerType = model.ComplianceTriggerTypeManual
+	}
 
 	job := model.ComplianceJob{
 		BenchmarkID:         benchmarkID,
 		Status:              model.ComplianceJobCreated,
 		AreAllRunnersQueued: false,
 		ConnectionIDs:       connectionIDs,
+		TriggerType:         triggerType,
 	}
 	err := s.db.CreateComplianceJob(nil, &job)
 	if err != nil {
@@ -268,7 +276,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 				continue
 			}
 			connection := it
-			runners, globalRunners, err = s.buildRunners(job.ID, &connection.ConnectionID, &connection.Connector, nil, job.BenchmarkID, nil, job.BenchmarkID, nil)
+			runners, globalRunners, err = s.buildRunners(job.ID, &connection.ConnectionID, &connection.Connector, nil, job.BenchmarkID, nil, job.BenchmarkID, nil, job.TriggerType)
 			if err != nil {
 				s.logger.Error("error while building runners", zap.Error(err))
 				return err

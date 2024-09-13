@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
@@ -36,9 +37,16 @@ func (db Database) CountDescribeJobsByDate(includeCost *bool, start time.Time, e
 	return count, nil
 }
 
-func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
+func (db Database) CountQueuedDescribeConnectionJobs(manuals bool) (int64, error) {
 	var count int64
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+		Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued)
+	if manuals {
+		tx = tx.Where("trigger_type = ?", enums.DescribeTriggerTypeManual)
+	} else {
+		tx = tx.Where("trigger_type <> ?", enums.DescribeTriggerTypeManual)
+	}
+	tx = tx.Count(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return 0, nil
@@ -48,9 +56,16 @@ func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
 	return count, nil
 }
 
-func (db Database) CountDescribeConnectionJobsRunOverLast10Minutes() (int64, error) {
+func (db Database) CountDescribeConnectionJobsRunOverLast10Minutes(manuals bool) (int64, error) {
 	var count int64
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status != ? AND updated_at > now() - interval '10 minutes'", api.DescribeResourceJobCreated).Count(&count)
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+		Where("status != ? AND updated_at > now() - interval '10 minutes'", api.DescribeResourceJobCreated)
+	if manuals {
+		tx = tx.Where("trigger_type = ?", enums.DescribeTriggerTypeManual)
+	} else {
+		tx = tx.Where("trigger_type <> ?", enums.DescribeTriggerTypeManual)
+	}
+	tx = tx.Count(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return 0, nil
@@ -65,10 +80,19 @@ type ResourceTypeCount struct {
 	Count        int
 }
 
-func (db Database) CountRunningDescribeJobsPerResourceType() ([]ResourceTypeCount, error) {
+func (db Database) CountRunningDescribeJobsPerResourceType(manuals bool) ([]ResourceTypeCount, error) {
 	var count []ResourceTypeCount
 	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, api.DescribeResourceJobOldResourceDeletion}
-	tx := db.ORM.Raw(`select resource_type, count(*) as count from describe_connection_jobs where status in ? group by 1`, runningJobs).Find(&count)
+	query := `select resource_type, count(*) as count from describe_connection_jobs where status in ?`
+	if manuals {
+		query = query + ` AND trigger_type = ?`
+	} else {
+		query = query + ` AND trigger_type <> ?`
+	}
+	query = query + ` group by 1`
+	tx := db.ORM.Raw(query, runningJobs, enums.DescribeTriggerTypeManual)
+
+	tx = tx.Find(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -134,23 +158,30 @@ func (db Database) QueueDescribeConnectionJob(id uint) error {
 	return nil
 }
 
-func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, limit int) ([]model.DescribeConnectionJob, error) {
+func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, limit int, manuals bool) ([]model.DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
 	var job []model.DescribeConnectionJob
 
-	//runningJobs := []api.D.RawescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
-	tx := db.ORM.Raw(`
+	query := `
 SELECT
 	*, random() as r
 FROM
 	describe_connection_jobs dr
 WHERE
-	status = ?
-ORDER BY r DESC
+	status = ?`
+
+	if manuals {
+		query = query + ` AND trigger_type = ?`
+	} else {
+		query = query + ` AND trigger_type <> ?`
+	}
+
+	query = query + ` ORDER BY r DESC
 LIMIT ?
-`, api.DescribeResourceJobCreated, limit).Find(&job)
+`
+	tx := db.ORM.Raw(query, api.DescribeResourceJobCreated, enums.DescribeTriggerTypeManual, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

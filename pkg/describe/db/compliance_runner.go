@@ -44,10 +44,18 @@ func (db Database) DeleteOldRunnerJob(parentJobId *uint) error {
 	return nil
 }
 
-func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
+func (db Database) FetchCreatedRunners(manual bool) ([]model.ComplianceRunner, error) {
 	var jobs []model.ComplianceRunner
 	tx := db.ORM.Model(&model.ComplianceRunner{}).
-		Where("status = ?", runner.ComplianceRunnerCreated).Order("created_at ASC").Limit(1000).Find(&jobs)
+		Where("status = ?", runner.ComplianceRunnerCreated)
+
+	if manual {
+		tx = tx.Where("trigger_type = ?", model.ComplianceTriggerTypeManual)
+	} else {
+		tx = tx.Where("trigger_type <> ?", model.ComplianceTriggerTypeManual)
+	}
+
+	tx = tx.Order("created_at ASC").Limit(1000).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

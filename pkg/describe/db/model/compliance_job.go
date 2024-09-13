@@ -12,6 +12,7 @@ import (
 )
 
 type ComplianceJobStatus string
+type ComplianceTriggerType string
 
 const (
 	ComplianceJobCreated              ComplianceJobStatus = "CREATED"
@@ -21,6 +22,10 @@ const (
 	ComplianceJobFailed               ComplianceJobStatus = "FAILED"
 	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
 	ComplianceJobTimeOut              ComplianceJobStatus = "TIMEOUT"
+
+	ComplianceTriggerTypeScheduled ComplianceTriggerType = "scheduled" // default
+	ComplianceTriggerTypeManual    ComplianceTriggerType = "manual"
+	ComplianceTriggerTypeEmpty     ComplianceTriggerType = ""
 )
 
 func (c ComplianceJobStatus) ToApi() api.ComplianceJobStatus {
@@ -34,6 +39,7 @@ type ComplianceJob struct {
 	AreAllRunnersQueued bool
 	ConnectionIDs       pq.StringArray `gorm:"type:text[]"`
 	FailureMessage      string
+	TriggerType         ComplianceTriggerType
 }
 
 func (c ComplianceJob) ToApi() api.ComplianceJob {
@@ -60,6 +66,8 @@ type ComplianceRunner struct {
 	Status            runner.ComplianceRunnerStatus
 	FailureMessage    string
 	RetryCount        int
+
+	TriggerType ComplianceTriggerType
 }
 
 func (cr *ComplianceRunner) GetKeyIdentifier() string {
@@ -95,4 +103,6 @@ type ComplianceSummarizer struct {
 	RetryCount     int
 	Status         summarizer.ComplianceSummarizerStatus
 	FailureMessage string
+
+	TriggerType ComplianceTriggerType
 }

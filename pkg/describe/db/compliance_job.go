@@ -173,14 +173,21 @@ UPDATE compliance_jobs j SET status = 'RUNNERS_IN_PROGRESS' WHERE status = 'CREA
 	return nil
 }
 
-func (db Database) ListJobsWithRunnersCompleted() ([]model.ComplianceJob, error) {
+func (db Database) ListJobsWithRunnersCompleted(manuals bool) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
-	tx := db.ORM.Raw(`
+
+	query := `
 SELECT * FROM compliance_jobs j WHERE status IN ('RUNNERS_IN_PROGRESS', 'SINK_IN_PROGRESS') AND are_all_runners_queued = TRUE AND
 	(select count(*) from compliance_runners where parent_job_id = j.id AND 
 	                                               NOT (status = 'SUCCEEDED' OR status = 'TIMEOUT' OR (status = 'FAILED' and retry_count >= 3))
 	                                         ) = 0
-`).Find(&jobs)
+`
+	if manuals {
+		query = query + ` AND trigger_type = ?`
+	} else {
+		query = query + ` AND trigger_type <> ?`
+	}
+	tx := db.ORM.Raw(query, model.ComplianceTriggerTypeManual).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

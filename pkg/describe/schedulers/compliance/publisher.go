@@ -3,6 +3,7 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"golang.org/x/net/context"
@@ -13,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *JobScheduler) runPublisher(ctx context.Context) error {
+func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 	s.logger.Info("runPublisher")
 	ctx2 := &httpclient.Context{UserRole: api.InternalRole}
 	ctx2.Ctx = ctx
@@ -50,7 +51,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 			s.logger.Error("failed to update timed out runners", zap.Error(err))
 		}
 
-		runners, err := s.db.FetchCreatedRunners()
+		runners, err := s.db.FetchCreatedRunners(manuals)
 		if err != nil {
 			s.logger.Error("failed to fetch created runners", zap.Error(err))
 			continue
@@ -97,7 +98,11 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 			}
 
 			s.logger.Info("publishing runner", zap.Uint("jobId", job.ID))
-			if err := s.jq.Produce(ctx, runner.JobQueueTopic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
+			topic := runner.JobQueueTopic
+			if it.TriggerType == model.ComplianceTriggerTypeManual {
+				topic = runner.JobQueueTopicManuals
+			}
+			if err := s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue

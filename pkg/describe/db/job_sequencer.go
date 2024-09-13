@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Deprecated
 func (db Database) CreateJobSequencer(job *model.JobSequencer) error {
 	tx := db.ORM.
 		Model(&model.JobSequencer{}).
@@ -17,6 +18,7 @@ func (db Database) CreateJobSequencer(job *model.JobSequencer) error {
 	return nil
 }
 
+// Deprecated
 func (db Database) ListWaitingJobSequencers() ([]model.JobSequencer, error) {
 	var jobs []model.JobSequencer
 	tx := db.ORM.Model(&model.JobSequencer{}).
