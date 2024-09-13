@@ -113,13 +113,14 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2.GET("/benchmarks/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
 	v2.GET("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
-	v2.GET("/benchmark/:benchmark-id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
-	v2.GET("/benchmark/:benchmark-id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
-	v2.POST("/benchmark/:benchmark-id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
+	v2.GET("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
+	v2.GET("/benchmark/:benchmark_id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
+	v2.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
+	v2.GET("/benchmark/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummaryV2, authApi.ViewerRole))
 
 	v2.GET("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v2.GET("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
-	v2.GET("/control/:control-id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
+	v2.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v2.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	v2.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
 
@@ -3565,7 +3566,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	controlId := echoCtx.Param("control-id")
+	controlId := echoCtx.Param("control_id")
 
 	var showReferences bool
 	showReferencesString := echoCtx.QueryParam("showReferences")
@@ -4636,7 +4637,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	benchmarkId := echoCtx.Param("benchmark-id")
+	benchmarkId := echoCtx.Param("benchmark_id")
 
 	var req api.GetBenchmarkDetailsRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -5143,7 +5144,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 
 	ctx := echoCtx.Request().Context()
 
-	benchmarkId := echoCtx.Param("benchmark-id")
+	benchmarkId := echoCtx.Param("benchmark_id")
 	assignmentType := strings.ToLower(echoCtx.QueryParam("assignment_type"))
 	if assignmentType == "" {
 		assignmentType = "any"
@@ -5453,7 +5454,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 //	@Param			benchmark_id		path		string		true	"Benchmark ID"
 //	@Param			connectionId		query		[]string	false	"Connection ID or 'all' for everything"
 //	@Success		200					{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [post]
+//	@Router			/compliance/api/v2/benchmark/{benchmark-id}/assign [post]
 func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 	ctx := echoCtx.Request().Context()
