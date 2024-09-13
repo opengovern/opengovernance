@@ -255,11 +255,11 @@ func InitializeScheduler(
 	}
 
 	if conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		if err := jq.Stream(ctx, awsDescriberLocal.StreamName, "azure describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
+		if err := s.jq.Stream(ctx, awsDescriberLocal.StreamName, "aws describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
 			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
 			return nil, err
 		}
-		if err := jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
+		if err := s.jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
 			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
 			return nil, err
 		}
@@ -358,7 +358,7 @@ func InitializeScheduler(
 		UserRole: authAPI.InternalRole,
 	}, CurrentWorkspaceName)
 	if err != nil {
-		s.logger.Error("Failed to get workspace by id", zap.Error(err))
+		s.logger.Error("Failed to get workspace by name", zap.Error(err), zap.String("Workspace Name", CurrentWorkspaceName))
 		s.WorkspaceName = CurrentWorkspaceName
 	} else {
 		s.WorkspaceName = workspace.Name
