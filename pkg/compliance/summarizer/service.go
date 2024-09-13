@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"runtime"
 	"time"
 
@@ -38,6 +39,10 @@ type Worker struct {
 	esSinkClient    esSinkClient.EsSinkServiceClient
 }
 
+var (
+	ManualTrigger = os.Getenv("MANUAL_TRIGGER")
+)
+
 func NewWorker(
 	config Config,
 	logger *zap.Logger,
@@ -62,7 +67,12 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(ctx, StreamName, "compliance summarizer job runner queue", []string{JobQueueTopic, ResultQueueTopic}, 1000); err != nil {
+	queueTopic := JobQueueTopic
+	if ManualTrigger == "true" {
+		queueTopic = JobQueueTopicManuals
+	}
+
+	if err := jq.Stream(ctx, StreamName, "compliance summarizer job runner queue", []string{queueTopic, ResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +94,16 @@ func NewWorker(
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
 
-	consumeCtx, err := w.jq.Consume(ctx, "compliance-summarizer", StreamName, []string{JobQueueTopic}, ConsumerGroup, func(msg jetstream.Msg) {
+	queueTopic := JobQueueTopic
+	service := "compliance-summarizer"
+	consumer := ConsumerGroup
+	if ManualTrigger == "true" {
+		queueTopic = JobQueueTopicManuals
+		consumer = ConsumerGroupManuals
+		service = "compliance-summarizer-manuals"
+	}
+
+	consumeCtx, err := w.jq.Consume(ctx, service, StreamName, []string{queueTopic}, consumer, func(msg jetstream.Msg) {
 		w.logger.Info("received a new job")
 
 		if err := w.ProcessMessage(ctx, msg); err != nil {

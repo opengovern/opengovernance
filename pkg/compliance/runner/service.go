@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"os"
 	"time"
 
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -51,6 +52,10 @@ type Worker struct {
 	benchmarkCache map[string]complianceApi.Benchmark
 }
 
+var (
+	ManualTrigger = os.Getenv("MANUAL_TRIGGER")
+)
+
 func NewWorker(
 	config Config,
 	logger *zap.Logger,
@@ -95,7 +100,12 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{JobQueueTopic, ResultQueueTopic}, 1000000); err != nil {
+	queueTopic := JobQueueTopic
+	if ManualTrigger == "true" {
+		queueTopic = JobQueueTopicManuals
+	}
+
+	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{queueTopic, ResultQueueTopic}, 1000000); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +140,14 @@ func NewWorker(
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
 
-	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, "compliance-runner", StreamName, []string{JobQueueTopic},
+	queueTopic := JobQueueTopic
+	consumer := ConsumerGroup
+	if ManualTrigger == "true" {
+		queueTopic = JobQueueTopicManuals
+		consumer = ConsumerGroupManuals
+	}
+
+	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, consumer, StreamName, []string{queueTopic},
 		jetstream.ConsumerConfig{
 			DeliverPolicy:     jetstream.DeliverAllPolicy,
 			AckPolicy:         jetstream.AckExplicitPolicy,

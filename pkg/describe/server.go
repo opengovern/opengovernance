@@ -570,7 +570,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 	}
 
-	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs, true)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
@@ -625,7 +625,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 		}
 
-		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs)
+		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs, true)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
@@ -666,7 +666,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobSummary(ctx echo.Context) err
 	}
 
 	for _, benchmark := range benchmarks {
-		err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmark.ID, nil)
+		err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmark.ID, nil, model2.ComplianceTriggerTypeManual)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job summarizer: %v", err)
 		}
@@ -1358,7 +1358,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return err
 	}
 
-	jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs)
+	jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs, true)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
@@ -1455,7 +1455,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			return err
 		}
 
-		jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs)
+		jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs, true)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}

@@ -19,10 +19,18 @@ func (db Database) CreateSummarizerJob(summarizer *model.ComplianceSummarizer) e
 	return nil
 }
 
-func (db Database) FetchCreatedSummarizers() ([]model.ComplianceSummarizer, error) {
+func (db Database) FetchCreatedSummarizers(manuals bool) ([]model.ComplianceSummarizer, error) {
 	var jobs []model.ComplianceSummarizer
 	tx := db.ORM.Model(&model.ComplianceSummarizer{}).
-		Where("status = ?", summarizer.ComplianceSummarizerCreated).Order("created_at ASC").Limit(1000).Find(&jobs)
+		Where("status = ?", summarizer.ComplianceSummarizerCreated)
+
+	if manuals {
+		tx = tx.Where("trigger_type = ?", model.ComplianceTriggerTypeManual)
+	} else {
+		tx = tx.Where("trigger_type <> ?", model.ComplianceTriggerTypeManual)
+	}
+
+	tx = tx.Order("created_at ASC").Limit(1000).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
