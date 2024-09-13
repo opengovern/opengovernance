@@ -118,12 +118,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
 	v2.GET("/benchmark/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummaryV2, authApi.ViewerRole))
 
-	v2.GET("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	v2.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v2.GET("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v2.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v2.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	v2.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
-
 }
 
 func bindValidate(ctx echo.Context, i any) error {

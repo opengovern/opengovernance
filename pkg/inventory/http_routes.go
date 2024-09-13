@@ -2076,24 +2076,51 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
+//	@Param			title_filter	query		[]string		false	""
+//	@Param			tags_filter		query		map[string]string		false	""
+//	@Param			connectors		query		string			false	""
+//	@Param			tags_regex		query		string			false	""
+//	@Param			cursor			query		int			false	""
+//	@Param			per_page		query		int			false	""
 //	@Param			request	body		inventoryApi.ListQueryV2Request	true	"Request Body"
 //	@Success		200		{object}	[]inventoryApi.SmartQueryItem
 //	@Router			/inventory/api/v2/query [get]
 func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
-	var req inventoryApi.ListQueryV2Request
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	titleFilter := ctx.QueryParam("title_filter")
+	connectors := httpserver.QueryArrayParam(ctx, "connectors")
+	tagsFilter := httpserver.QueryMapParam(ctx, "tags_filter")
+	var tagsRegex *string
+	tagsRegexStr := ctx.QueryParam("tags_regex")
+	if tagsRegexStr != "" {
+		tagsRegex = &tagsRegexStr
 	}
 
 	var search *string
-	if len(req.TitleFilter) > 0 {
-		search = &req.TitleFilter
+	if len(titleFilter) > 0 {
+		search = &titleFilter
 	}
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 64, 10)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if cursorStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 64, 10)
+		if err != nil {
+			return err
+		}
+	}
+
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithTagsFilters")
 
-	queries, err := h.db.GetQueriesWithTagsFilters(search, req.TagsFilter, req.Connectors)
+	queries, err := h.db.GetQueriesWithTagsFilters(search, tagsFilter, connectors)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -2119,18 +2146,18 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 				QueryEngine:    item.Engine,
 				QueryToExecute: item.Query,
 			},
-			Tags: filterTagsByRegex(req.TagsRegex, tags),
+			Tags: filterTagsByRegex(tagsRegex, tags),
 		})
 	}
 
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].ID < result[j].ID
 	})
-	if req.PerPage != nil {
-		if req.Cursor == nil {
-			return ctx.JSON(http.StatusOK, utils.Paginate(1, *req.PerPage, result))
+	if perPage != 0 {
+		if cursor == 0 {
+			return ctx.JSON(http.StatusOK, utils.Paginate(1, perPage, result))
 		} else {
-			return ctx.JSON(http.StatusOK, utils.Paginate(*req.Cursor, *req.PerPage, result))
+			return ctx.JSON(http.StatusOK, utils.Paginate(cursor, perPage, result))
 		}
 	}
 	return ctx.JSON(http.StatusOK, result)

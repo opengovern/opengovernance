@@ -36,7 +36,7 @@ require (
 	github.com/jackc/pgtype v1.14.0
 	github.com/kaytu-io/kaytu-aws-describer v0.58.3
 	github.com/kaytu-io/kaytu-azure-describer v0.36.2
-	github.com/kaytu-io/kaytu-util v0.0.0-20240901132915-fe1493449bab
+	github.com/kaytu-io/kaytu-util v0.0.0-20240913141507-4519f2ae5618
 	github.com/kaytu-io/pennywise v1.7.16
 	github.com/kaytu-io/plugin-aws v0.6.18
 	github.com/kaytu-io/plugin-gcp v0.0.0-20240717111217-187ef7b38a02
