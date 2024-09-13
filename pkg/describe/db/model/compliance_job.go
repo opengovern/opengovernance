@@ -22,6 +22,7 @@ const (
 	ComplianceJobFailed               ComplianceJobStatus = "FAILED"
 	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
 	ComplianceJobTimeOut              ComplianceJobStatus = "TIMEOUT"
+	ComplianceJobCanceled             ComplianceJobStatus = "CANCELED"
 
 	ComplianceTriggerTypeScheduled ComplianceTriggerType = "scheduled" // default
 	ComplianceTriggerTypeManual    ComplianceTriggerType = "manual"
@@ -67,7 +68,8 @@ type ComplianceRunner struct {
 	FailureMessage    string
 	RetryCount        int
 
-	TriggerType ComplianceTriggerType
+	TriggerType        ComplianceTriggerType
+	NatsSequenceNumber uint64
 }
 
 func (cr *ComplianceRunner) GetKeyIdentifier() string {

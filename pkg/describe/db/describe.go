@@ -158,6 +158,15 @@ func (db Database) QueueDescribeConnectionJob(id uint) error {
 	return nil
 }
 
+func (db Database) UpdateDescribeConnectionJobNatsSeqNum(id uint, seqNum uint64) error {
+	tx := db.ORM.Exec("update describe_connection_jobs set nats_sequence_number = ? where id = ?", seqNum, id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, limit int, manuals bool) ([]model.DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()

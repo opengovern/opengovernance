@@ -2103,14 +2103,14 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	var err error
 	cursorStr := ctx.QueryParam("cursor")
 	if cursorStr != "" {
-		cursor, err = strconv.ParseInt(cursorStr, 64, 10)
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
 		if err != nil {
 			return err
 		}
 	}
 	perPageStr := ctx.QueryParam("per_page")
 	if cursorStr != "" {
-		perPage, err = strconv.ParseInt(perPageStr, 64, 10)
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
 		if err != nil {
 			return err
 		}

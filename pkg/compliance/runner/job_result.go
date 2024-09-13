@@ -11,6 +11,7 @@ const (
 	ComplianceRunnerSucceeded  ComplianceRunnerStatus = "SUCCEEDED"
 	ComplianceRunnerFailed     ComplianceRunnerStatus = "FAILED"
 	ComplianceRunnerTimeOut    ComplianceRunnerStatus = "TIMEOUT"
+	ComplianceRunnerCanceled   ComplianceRunnerStatus = "CANCELED"
 )
 
 type JobResult struct {

@@ -37,4 +37,6 @@ type DescribeConnectionJob struct {
 	ErrorCode              string // Should be NULLSTRING
 	DescribedResourceCount int64
 	DeletingCount          int64
+
+	NatsSequenceNumber uint64
 }

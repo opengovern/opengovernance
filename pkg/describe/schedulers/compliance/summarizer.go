@@ -248,7 +248,7 @@ func (s *JobScheduler) triggerSummarizer(ctx context.Context, job model.Complian
 	if job.TriggerType == model.ComplianceTriggerTypeManual {
 		topic = summarizer.JobQueueTopicManuals
 	}
-	if err := s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, job.RetryCount)); err != nil {
+	if _, err := s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, job.RetryCount)); err != nil {
 		_ = s.db.UpdateSummarizerJob(job.ID, summarizer.ComplianceSummarizerFailed, job.CreatedAt, err.Error())
 		return err
 	}

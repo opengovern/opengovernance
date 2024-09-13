@@ -658,7 +658,7 @@ func (s *Scheduler) scheduleCheckupJob(ctx context.Context) {
 			s.logger.Error("Failed to marshal a checkup job as json", zap.Error(err), zap.Uint("jobId", job.ID))
 		}
 
-		if err := s.jq.Produce(ctx, checkup.JobsQueueName, bytes, fmt.Sprintf("job-%d", job.ID)); err != nil {
+		if _, err := s.jq.Produce(ctx, checkup.JobsQueueName, bytes, fmt.Sprintf("job-%d", job.ID)); err != nil {
 			CheckupJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("Failed to enqueue CheckupJob",
 				zap.Uint("jobId", job.ID),

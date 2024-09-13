@@ -102,12 +102,16 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 			if it.TriggerType == model.ComplianceTriggerTypeManual {
 				topic = runner.JobQueueTopicManuals
 			}
-			if err := s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount)); err != nil {
+			seqNum, err := s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount))
+			if err != nil {
 				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
 				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
 
+			if seqNum != nil {
+				_ = s.db.UpdateRunnerJobNatsSeqNum(job.ID, *seqNum)
+			}
 			_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerQueued, job.CreatedAt, nil, "")
 		}
 	}
