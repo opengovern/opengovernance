@@ -3211,8 +3211,8 @@ func arrayContains(array []string, key string) bool {
 
 // RunQueryByID godoc
 //
-//	@Summary		Run query
-//	@Description	Run provided smart query and returns the result.
+//	@Summary		Run query by smart query or compliance ID
+//	@Description	Run provided smart query or compliance and returns the result.
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Accepts		json
