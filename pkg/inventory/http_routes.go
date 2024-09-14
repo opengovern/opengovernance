@@ -2083,7 +2083,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Param			tags_regex		query		string		false	"Regex for output tag keys in response"
 //	@Param			cursor			query		int			false	"Cursor"
 //	@Param			per_page		query		int			false	"Per Page"
-//	@Success		200				{object}	[]inventoryApi.SmartQueryItemV2
+//	@Success		200				{object}	inventoryApi.ListQueriesV2Response
 //	@Router			/inventory/api/v2/queries [get]
 func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	titleFilter := ctx.QueryParam("title_filter")
@@ -2128,7 +2128,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	}
 	span.End()
 
-	var result []inventoryApi.SmartQueryItemV2
+	var items []inventoryApi.SmartQueryItemV2
 	for _, item := range queries {
 		tags := item.GetTagsMap()
 		if tags == nil || len(tags) == 0 {
@@ -2137,7 +2137,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		if item.IsPopular {
 			tags["popular"] = []string{"true"}
 		}
-		result = append(result, inventoryApi.SmartQueryItemV2{
+		items = append(items, inventoryApi.SmartQueryItemV2{
 			ID:          item.ID,
 			Title:       item.Title,
 			Description: item.Description,
@@ -2153,16 +2153,24 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		})
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
+	totalCount := len(items)
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].ID < items[j].ID
 	})
 	if perPage != 0 {
 		if cursor == 0 {
-			return ctx.JSON(http.StatusOK, utils.Paginate(1, perPage, result))
+			items = utils.Paginate(1, perPage, items)
 		} else {
-			return ctx.JSON(http.StatusOK, utils.Paginate(cursor, perPage, result))
+			items = utils.Paginate(cursor, perPage, items)
 		}
 	}
+
+	result := inventoryApi.ListQueriesV2Response{
+		Items:      items,
+		TotalCount: totalCount,
+	}
+
 	return ctx.JSON(http.StatusOK, result)
 }
 
