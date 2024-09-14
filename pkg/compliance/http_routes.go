@@ -49,7 +49,6 @@ const (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	v2 := e.Group("/api/v2")
 
 	benchmarks := v1.Group("/benchmarks")
 
@@ -111,15 +110,17 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ai := v1.Group("/ai")
 	ai.POST("/control/:controlID/remediation", httpserver2.AuthorizeHandler(h.GetControlRemediation, authApi.ViewerRole))
 
+	v2 := e.Group("/api/v2")
+
 	v2.GET("/benchmarks/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
-	v2.GET("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
-	v2.GET("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
+	v2.POST("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
+	v2.POST("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 	v2.GET("/benchmark/:benchmark_id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
 	v2.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
-	v2.GET("/benchmark/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummaryV2, authApi.ViewerRole))
+	v2.POST("/benchmark/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummaryV2, authApi.ViewerRole))
 
 	v2.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
-	v2.GET("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
+	v2.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v2.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v2.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	v2.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
@@ -3194,9 +3195,9 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
-//	@Success	200				{object}	[]api.ListControlsFilterResultControl
-//	@Router		/compliance/api/v2/control [get]
+//	@Param		request	body		api.ListControlsFilterRequest	true	"Request Body"
+//	@Success	200		{object}	[]api.ListControlsFilterResultControl
+//	@Router		/compliance/api/v2/controls [post]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -3375,9 +3376,9 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.ListControlsFilterRequest	true	"Request Body"
-//	@Success	200				{object}	api.ListControlsFilterResult
-//	@Router		/compliance/api/v2/control/summary [get]
+//	@Param		request	body		api.ControlsFilterSummaryRequest	true	"Request Body"
+//	@Success	200		{object}	api.ControlsFilterSummaryResult
+//	@Router		/compliance/api/v2/controls/summary [post]
 func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -3559,9 +3560,9 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.GetControlDetailsRequest	true	"Request Body"
-//	@Success	200				{object}	api.GetControlDetailsResponse
-//	@Router		/compliance/api/v2/control/{control-id} [get]
+//	@Param		control_id	path		string	true	"Control ID"
+//	@Success	200			{object}	api.GetControlDetailsResponse
+//	@Router		/compliance/api/v2/control/{control_id} [get]
 func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4530,14 +4531,14 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 
 // ListBenchmarksFiltered godoc
 //
-//	@Summary	List benchmarks filtered by connector, being root, tags
+//	@Summary	List benchmarks filtered by integrations and other filters
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
-//	@Success	200				{object}	[]api.Benchmark
-//	@Router		/compliance/api/v2/benchmark [get]
+//	@Param		request	body		api.GetBenchmarkListRequest	true	"Request Body"
+//	@Success	200		{object}	[]api.GetBenchmarkListResponse
+//	@Router		/compliance/api/v2/benchmarks [post]
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4630,9 +4631,10 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			request	body		api.ListBenchmarksFilter	true	"Request Body"
-//	@Success	200				{object}	[]api.Benchmark
-//	@Router		/compliance/api/v2/benchmark/{benchmark-id} [get]
+//	@Param		request			body		api.GetBenchmarkDetailsRequest	true	"Request Body"
+//	@Param		benchmark_id	path		string							true	"benchmark id to get the details for"
+//	@Success	200				{object}	[]api.GetBenchmarkDetailsResponse
+//	@Router		/compliance/api/v2/benchmark/{benchmark_id} [get]
 func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4947,7 +4949,7 @@ func (h *HttpHandler) ListQueries(echoCtx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Produce		json
-//	@Success		200		{object}	[]api.BenchmarkTagsResult
+//	@Success		200	{object}	[]api.BenchmarkTagsResult
 //	@Router			/compliance/api/v2/benchmarks/tags [get]
 func (h *HttpHandler) ListBenchmarksTags(ctx echo.Context) error {
 	// trace :
@@ -5134,8 +5136,8 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param			assignment_type				query		string							true "assignment_type"
-//	@Param			benchmark-id	path		string	true	"Benchmark ID"
+//	@Param		assignment_type	query		string	true	"assignment type. options: implicit, explicit, any"
+//	@Param		benchmark-id	path		string	true	"Benchmark ID"
 //	@Success	200				{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v2/benchmark/{benchmark-id}/assignments [get]
 func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
@@ -5221,7 +5223,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 //	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.GetFindingsRequest	true	"Request Body"
+//	@Param			request	body		api.GetFindingsRequestV2	true	"Request Body"
 //	@Success		200		{object}	api.GetFindingsResponse
 //	@Router			/compliance/api/v2/findings [post]
 func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
@@ -5445,15 +5447,15 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 // AssignBenchmarkToIntegration godoc
 //
 //	@Summary		Create benchmark assignment
-//	@Description	Creating a benchmark assignment for a connection.
+//	@Description	Creating a benchmark assignment for an integration.
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path		string		true	"Benchmark ID"
-//	@Param			connectionId		query		[]string	false	"Connection ID or 'all' for everything"
-//	@Success		200					{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v2/benchmark/{benchmark-id}/assign [post]
+//	@Param			benchmark_id	path		string							true	"Benchmark ID to assign"
+//	@Param			request			body		api.IntegrationFilterRequest	true	"Integrations details to be assigned"
+//	@Success		200				{object}	[]api.BenchmarkAssignment
+//	@Router			/compliance/api/v2/benchmark/{benchmark_id}/assign [post]
 func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 	ctx := echoCtx.Request().Context()
@@ -5570,15 +5572,10 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path		string			true	"Benchmark ID"
-//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
-//	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
-//	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
-//	@Success		200					{object}	api.BenchmarkEvaluationSummary
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
+//	@Param			request			body		api.GetBenchmarkSummaryV2Request	true	"Integrations filter to get the benchmark summary"
+//	@Param			benchmark_id	path		string								true	"Benchmark ID to get the summary"
+//	@Success		200				{object}	api.GetBenchmarkSummaryV2Response
+//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/summary [post]
 func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 	ctx := echoCtx.Request().Context()
