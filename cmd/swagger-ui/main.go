@@ -40,5 +40,6 @@ func main() {
 	e.Use(middleware.Logger())
 
 	e.GET("/swagger/*", swagger.WrapHandler)
+	e.Static("/swagger/doc.json", "./docs/swagger.json")
 	e.Logger.Fatal(e.Start(HttpAddress))
 }
