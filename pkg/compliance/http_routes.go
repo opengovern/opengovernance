@@ -3196,7 +3196,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		request	body		api.ListControlsFilterRequest	true	"Request Body"
-//	@Success	200		{object}	[]api.ListControlsFilterResultControl
+//	@Success	200		{object}	api.ListControlsFilterResponse
 //	@Router		/compliance/api/v2/controls [post]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -3355,6 +3355,8 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		resultControls = append(resultControls, apiControl)
 	}
 
+	totalCount := len(resultControls)
+
 	sort.Slice(resultControls, func(i, j int) bool {
 		return resultControls[i].ID < resultControls[j].ID
 	})
@@ -3366,7 +3368,12 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		}
 	}
 
-	return echoCtx.JSON(http.StatusOK, resultControls)
+	response := api.ListControlsFilterResponse{
+		Items:      resultControls,
+		TotalCount: totalCount,
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
 }
 
 // ControlsFilteredSummary godoc

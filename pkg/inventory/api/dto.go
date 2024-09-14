@@ -137,6 +137,11 @@ type SmartQueryItem struct {
 	Tags       map[string]string `json:"tags"`       // Tags
 }
 
+type ListQueriesV2Response struct {
+	Items      []SmartQueryItemV2 `json:"items"`
+	TotalCount int                `json:"total_count"`
+}
+
 type SmartQueryItemV2 struct {
 	ID          string        `json:"id"`    // Query Id
 	Title       string        `json:"title"` // Title

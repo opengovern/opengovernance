@@ -85,6 +85,11 @@ type ListControlsFilterRequest struct {
 	PerPage         *int64              `json:"per_page"`
 }
 
+type ListControlsFilterResponse struct {
+	Items      []ListControlsFilterResultControl `json:"items"`
+	TotalCount int                               `json:"total_count"`
+}
+
 type ListControlsFilterResultControl struct {
 	ID          string                `json:"id"`
 	Title       string                `json:"title"`
