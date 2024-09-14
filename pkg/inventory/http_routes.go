@@ -2316,7 +2316,12 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("invalid query engine: %s", *req.Engine)
+		resp, err = h.RunSQLSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
 	}
 
 	span.AddEvent("information", trace.WithAttributes(
