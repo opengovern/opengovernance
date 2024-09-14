@@ -3057,6 +3057,7 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 				}
 			}
 		}
+		results = append(results, apiRes)
 	}
 
 	return ctx.JSON(http.StatusOK, results)
