@@ -47,7 +47,7 @@ type SmartQuery struct {
 
 func (p SmartQuery) GetTagsMap() map[string][]string {
 	var tagsMap map[string][]string
-	if p.Tags == nil {
+	if p.Tags != nil {
 		tagLikeArr := make([]model.TagLike, 0, len(p.Tags))
 		for _, tag := range p.Tags {
 			tagLikeArr = append(tagLikeArr, tag)

@@ -2130,6 +2130,9 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	var result []inventoryApi.SmartQueryItemV2
 	for _, item := range queries {
 		tags := item.GetTagsMap()
+		if tags == nil || len(tags) == 0 {
+			tags = make(map[string][]string)
+		}
 		if item.IsPopular {
 			tags["popular"] = []string{"true"}
 		}
