@@ -104,17 +104,19 @@ type GetBenchmarkDetailsRequest struct {
 }
 
 type GetBenchmarkDetailsMetadata struct {
-	ID               string              `json:"id"`
-	Title            string              `json:"title"`
-	Description      string              `json:"description"`
-	Enabled          bool                `json:"enabled"`
-	TrackDriftEvents bool                `json:"track_drift_events"`
-	Connectors       []source.Type       `json:"connectors"`
-	PrimaryTables    []string            `json:"primary_tables"`
-	ListOfTables     []string            `json:"list_of_tables"`
-	Tags             map[string][]string `json:"tags"`
-	CreatedAt        time.Time           `json:"created_at"`
-	UpdatedAt        time.Time           `json:"updated_at"`
+	ID                string              `json:"id"`
+	Title             string              `json:"title"`
+	Description       string              `json:"description"`
+	Enabled           bool                `json:"enabled"`
+	TrackDriftEvents  bool                `json:"track_drift_events"`
+	Connectors        []source.Type       `json:"connectors"`
+	NumberOfControls  int                 `json:"number_of_controls"`
+	SupportedControls []string            `json:"supported_controls"`
+	PrimaryTables     []string            `json:"primary_tables"`
+	ListOfTables      []string            `json:"list_of_tables"`
+	Tags              map[string][]string `json:"tags"`
+	CreatedAt         time.Time           `json:"created_at"`
+	UpdatedAt         time.Time           `json:"updated_at"`
 }
 
 type GetBenchmarkDetailsFindings struct {
@@ -155,6 +157,8 @@ type GetBenchmarkListMetadata struct {
 	ID               string              `json:"id"`
 	Title            string              `json:"title"`
 	Description      string              `json:"description"`
+	Connectors       []source.Type       `json:"connectors"`
+	NumberOfControls int                 `json:"number_of_controls"`
 	Enabled          bool                `json:"enabled"`
 	TrackDriftEvents bool                `json:"track_drift_events"`
 	PrimaryTables    []string            `json:"primary_tables"`
