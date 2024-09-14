@@ -2316,12 +2316,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		resp, err = h.RunSQLSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-			return err
-		}
+		return fmt.Errorf("invalid query engine: %s", *req.Engine)
 	}
 
 	span.AddEvent("information", trace.WithAttributes(
@@ -3305,7 +3300,17 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("invalid query engine: %s", engine)
+		resp, err = h.RunSQLSmartQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+			Page:   req.Page,
+			Query:  &query,
+			Engine: &engine,
+			Sorts:  req.Sorts,
+		})
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
 	}
 
 	span.AddEvent("information", trace.WithAttributes(
