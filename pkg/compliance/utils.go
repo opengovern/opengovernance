@@ -64,6 +64,31 @@ func (h *HttpHandler) getBenchmarkFindingSummary(ctx context.Context, benchmarkI
 	return &findingsResult, nil
 }
 
+// getControlsUnderBenchmark ctx context.Context, benchmarkId string -> primaryTables, listOfTables, error
+func (h *HttpHandler) getControlsUnderBenchmark(ctx context.Context, benchmarkId string) (map[string]bool, error) {
+	controls := make(map[string]bool)
+
+	benchmark, err := h.db.GetBenchmarkWithControlQueries(ctx, benchmarkId)
+	if err != nil {
+		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
+		return nil, err
+	}
+	for _, c := range benchmark.Controls {
+		controls[c.ID] = true
+	}
+
+	for _, child := range benchmark.Children {
+		childControls, err := h.getControlsUnderBenchmark(ctx, child.ID)
+		if err != nil {
+			return nil, err
+		}
+		for k, _ := range childControls {
+			controls[k] = true
+		}
+	}
+	return controls, nil
+}
+
 // getTablesUnderBenchmark ctx context.Context, benchmarkId string -> primaryTables, listOfTables, error
 func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId string) (map[string]bool, map[string]bool, error) {
 	primaryTables := make(map[string]bool)

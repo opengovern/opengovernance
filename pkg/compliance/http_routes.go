@@ -4591,6 +4591,14 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 				continue
 			}
 		}
+		controls, err := h.getControlsUnderBenchmark(ctx, b.ID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		var controlIds []string
+		for c, _ := range controls {
+			controlIds = append(controlIds, c)
+		}
 
 		metadata := api.GetBenchmarkListMetadata{
 			ID:               b.ID,
@@ -4598,10 +4606,14 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 			Description:      b.Description,
 			Enabled:          b.Enabled,
 			TrackDriftEvents: b.TracksDriftEvents,
+			NumberOfControls: len(controlIds),
 			PrimaryTables:    primaryTables,
 			Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(b.GetTagsMap())),
 			CreatedAt:        b.CreatedAt,
 			UpdatedAt:        b.UpdatedAt,
+		}
+		if b.Connector != nil {
+			metadata.Connectors = source.ParseTypes(b.Connector)
 		}
 		benchmarkResult := api.GetBenchmarkListResponse{
 			Metadata: metadata,
@@ -4670,23 +4682,36 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 
 	var primaryTables, listOfTables []string
 	primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, benchmark.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 	for k, _ := range primaryTablesMap {
 		primaryTables = append(primaryTables, k)
 	}
 	for k, _ := range listOfTablesMap {
 		listOfTables = append(listOfTables, k)
 	}
+	controls, err := h.getControlsUnderBenchmark(ctx, benchmark.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	var controlIds []string
+	for c, _ := range controls {
+		controlIds = append(controlIds, c)
+	}
 	benchmarkMetadata := api.GetBenchmarkDetailsMetadata{
-		ID:               benchmark.ID,
-		Title:            benchmark.Title,
-		Description:      benchmark.Description,
-		Enabled:          benchmark.Enabled,
-		TrackDriftEvents: benchmark.TracksDriftEvents,
-		PrimaryTables:    primaryTables,
-		ListOfTables:     listOfTables,
-		Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(benchmark.GetTagsMap())),
-		CreatedAt:        benchmark.CreatedAt,
-		UpdatedAt:        benchmark.UpdatedAt,
+		ID:                benchmark.ID,
+		Title:             benchmark.Title,
+		Description:       benchmark.Description,
+		Enabled:           benchmark.Enabled,
+		TrackDriftEvents:  benchmark.TracksDriftEvents,
+		SupportedControls: controlIds,
+		NumberOfControls:  len(controlIds),
+		PrimaryTables:     primaryTables,
+		ListOfTables:      listOfTables,
+		Tags:              filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(benchmark.GetTagsMap())),
+		CreatedAt:         benchmark.CreatedAt,
+		UpdatedAt:         benchmark.UpdatedAt,
 	}
 	if benchmark.Connector != nil {
 		benchmarkMetadata.Connectors = source.ParseTypes(benchmark.Connector)
