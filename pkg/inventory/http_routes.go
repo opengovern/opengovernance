@@ -70,10 +70,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v2 := e.Group("/api/v2")
 
-	v2.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
-	v2.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
-	v2.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
-
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api.ViewerRole))
 
@@ -110,6 +106,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourceCollectionMetadata := metadata.Group("/resource-collection")
 	resourceCollectionMetadata.GET("", httpserver.AuthorizeHandler(h.ListResourceCollectionsMetadata, api.ViewerRole))
 	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollectionMetadata, api.ViewerRole))
+
+	v2.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	v2.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
+	v2.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -2076,18 +2076,17 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
-//	@Param			title_filter	query		[]string		false	""
-//	@Param			tags_filter		query		map[string]string		false	""
-//	@Param			connectors		query		string			false	""
-//	@Param			tags_regex		query		string			false	""
-//	@Param			cursor			query		int			false	""
-//	@Param			per_page		query		int			false	""
-//	@Param			request	body		inventoryApi.ListQueryV2Request	true	"Request Body"
-//	@Success		200		{object}	[]inventoryApi.SmartQueryItem
-//	@Router			/inventory/api/v2/query [get]
+//	@Param			title_filter	query		[]string	false	"Title Filer"
+//	@Param			tags_filter		query		string		false	"Tags filter input type: tags_filter[key1]=value1&tags_filter[key2]=value2"
+//	@Param			providers		query		string		false	"Providers Filter"
+//	@Param			tags_regex		query		string		false	"Regex for output tag keys in response"
+//	@Param			cursor			query		int			false	"Cursor"
+//	@Param			per_page		query		int			false	"Per Page"
+//	@Success		200				{object}	[]inventoryApi.SmartQueryItemV2
+//	@Router			/inventory/api/v2/queries [get]
 func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	titleFilter := ctx.QueryParam("title_filter")
-	connectors := httpserver.QueryArrayParam(ctx, "connectors")
+	connectors := httpserver.QueryArrayParam(ctx, "providers")
 	tagsFilter := httpserver.QueryMapParam(ctx, "tags_filter")
 	var tagsRegex *string
 	tagsRegexStr := ctx.QueryParam("tags_regex")
@@ -2171,7 +2170,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 //	@Tags			smart_query
 //	@Produce		json
 //	@Param			query_id	path		string	true	"QueryID"
-//	@Success		200		{object}	inventoryApi.SmartQueryItem
+//	@Success		200			{object}	inventoryApi.SmartQueryItemV2
 //	@Router			/inventory/api/v2/query/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")

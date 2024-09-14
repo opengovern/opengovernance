@@ -82,18 +82,18 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
 	v2 := e.Group("/api/v2")
-	v2.POST("/jobs/discovery/connections/:connection-id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/jobs/compliance/connections/:connection-id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/jobs/discovery/connections", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/jobs/compliance/connections", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/compliance/benchmark/:benchmark-id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
+	v2.POST("/jobs/discovery/connections/:connection_id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/compliance/connections/:connection_id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
+	v2.POST("/jobs/discovery/connections", httpserver.AuthorizeHandler(h.GetDescribeJobsHistoryByIntegration, apiAuth.ViewerRole))
+	v2.POST("/jobs/compliance/connections", httpserver.AuthorizeHandler(h.GetComplianceJobsHistoryByIntegration, apiAuth.ViewerRole))
+	v2.POST("/compliance/benchmark/:benchmark_id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v2.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
 	v2.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
-	v2.GET("/job/discovery/:job-id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
-	v2.GET("/job/compliance/:job-id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
-	v2.GET("/job/analytics/:job-id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
-	v2.GET("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
-	v2.GET("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
+	v2.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
+	v2.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
+	v2.GET("/job/analytics/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
+	v2.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
+	v2.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v2.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 	v2.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
 	v2.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
@@ -1145,12 +1145,13 @@ func removeDuplicates(s []string) []string {
 //	@Summary	Get describe jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		request			body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		connection_id	path	string								true	"Connection ID"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection_id} [post]
 func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
-	connectionId := ctx.Param("connection-id")
+	connectionId := ctx.Param("connection_id")
 
 	var request api.GetDescribeJobsHistoryRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -1222,10 +1223,11 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 //	@Summary	Get compliance jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Param		request			body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Param		connection_id	path	string								true	"Connection ID"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/compliance/connections/{connection-id} [post]
+//	@Router		/schedule/api/v2/jobs/compliance/connections/{connection_id} [post]
 func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 	var request api.GetComplianceJobsHistoryRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -1233,7 +1235,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	connectionId := ctx.Param("connection-id")
+	connectionId := ctx.Param("connection_id")
 
 	jobs, err := h.DB.ListComplianceJobsByFilters([]string{connectionId}, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
 	if err != nil {
@@ -1295,28 +1297,28 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
-//	@Success		200
-//	@Param			benchmark_id	path	string		true	"Benchmark ID"
-//	@Param			request	body	api.RunBenchmarkByIdRequest	true	""
-//	@Router			/schedule/api/v1/compliance/benchmark/{benchmark-id}/run [post]
+//	@Param			benchmark_id	path		string						true	"Benchmark ID"
+//	@Param			request			body		api.RunBenchmarkByIdRequest	true	"Integrations filter"
+//	@Success		200				{object}	api.RunBenchmarkResponse
+//	@Router			/schedule/api/v2/compliance/benchmark/{benchmark_id}/run [post]
 func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
-	benchmarkID := ctx.Param("benchmark-id")
+	benchmarkID := ctx.Param("benchmark_id")
 
 	var request api.RunBenchmarkByIdRequest
 	if err := ctx.Bind(&request); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	if len(request.ConnectionInfo) == 0 {
+	if len(request.IntegrationInfo) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
 	var connections []onboardapi.Connection
-	for _, info := range request.ConnectionInfo {
-		if info.ConnectionId != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.ConnectionId)
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -1327,9 +1329,9 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		}
 		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Connector,
-				ProviderNameRegex: info.ProviderNameRegex,
-				ProviderIdRegex:   info.ProviderIdRegex,
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1382,9 +1384,9 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
-//	@Success		200 {object} []api.RunBenchmarkResponse
-//	@Param			request	body	api.RunBenchmarkRequest		true	""
-//	@Router			/schedule/api/v1/compliance/benchmark/run [post]
+//	@Success		200		{object}	[]api.RunBenchmarkResponse
+//	@Param			request	body		api.RunBenchmarkRequest	true	"Requst Body"
+//	@Router			/schedule/api/v2/compliance/run [post]
 func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1478,13 +1480,13 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 // RunDiscovery godoc
 //
 //	@Summary		Run Discovery job
-//	@Description	Triggers a discovery job to run immediately for the given resource types
+//	@Description	Triggers a discovery job to run immediately for the given resource types and Integrations
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
-//	@Success		200 {object} []api.RunDiscoveryResponse
-//	@Param			request	body	api.RunBenchmarkRequest		true	""
-//	@Router			/schedule/api/v1/compliance/discovery/run [post]
+//	@Success		200		{object}	[]api.RunDiscoveryResponse
+//	@Param			request	body		api.RunDiscoveryRequest	true	"Request Body"
+//	@Router			/schedule/api/v12/discovery/run [post]
 func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1605,14 +1607,14 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 //	@Summary	Get describe job status by job id
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		job_id	path	string	true	"Job ID"
 //	@Produce	json
 //	@Success	200	{object}	api.GetDescribeJobStatusResponse
-//	@Router		/schedule/api/v2/jobs/discovery/{job-id} [post]
+//	@Router		/schedule/api/v2/jobs/discovery/{job_id} [get]
 func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
-	jobId := ctx.Param("job-id")
+	jobId := ctx.Param("job_id")
 
 	j, err := h.DB.GetDescribeJobById(jobId)
 	if err != nil {
@@ -1646,14 +1648,14 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 //	@Summary	Get compliance job status by job id
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		job_id	path	string	true	"Job ID"
 //	@Produce	json
-//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+//	@Success	200	{object}	api.GetComplianceJobStatusResponse
+//	@Router		/schedule/api/v2/job/compliance/{job_id} [get]
 func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
-	jobIdString := ctx.Param("job-id")
+	jobIdString := ctx.Param("job_id")
 	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
@@ -1695,13 +1697,13 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 //	@Summary	Get analytics job status by job id
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		job_id	path	string	true	"Job ID"
 //	@Produce	json
-//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+//	@Success	200	{object}	api.GetAnalyticsJobStatusResponse
+//	@Router		/schedule/api/v2/job/analytics/{job_id} [get]
 func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
 
-	jobIdString := ctx.Param("job-id")
+	jobIdString := ctx.Param("job_id")
 	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
@@ -1727,10 +1729,10 @@ func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
 //	@Summary	Get describe jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		request	body	api.ListDescribeJobsRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection-id} [post]
+//	@Router		/schedule/api/v2/jobs/discovery [post]
 func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1844,10 +1846,10 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 //	@Summary	Get compliance jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Param		request	body	api.ListComplianceJobsRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs [post]
+//	@Router		/schedule/api/v1/jobs/compliance [post]
 func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1957,18 +1959,58 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 //	@Summary	Get analytics jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetAnalyticsJobsHistoryRequest	true	"List jobs request"
+//	@Param		job_status	query	[]string	true	"List of job statuses to filter"
+//	@Param		type		query	[]string	true	"List of types to filter"
+//	@Param		sort_by		query	string		true	"sort by field"
+//	@Param		cursor		query	int			true	"cursor"
+//	@Param		per_page	query	int			true	"per page"
+//	@Param		startTime	query	int			false	"timestamp for start of the chart in epoch seconds"
+//	@Param		endTime		query	int			false	"timestamp for end of the chart in epoch seconds"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs/analytics [post]
+//	@Router		/schedule/api/v2/jobs/analytics [get]
 func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
-	var request api.GetAnalyticsJobsHistoryRequest
-	if err := ctx.Bind(&request); err != nil {
-		ctx.Logger().Errorf("bind the request: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	types := httpserver.QueryArrayParam(ctx, "types")
+	jobStatus := httpserver.QueryArrayParam(ctx, "job_status")
+	sortBy := ctx.QueryParam("job_status")
+
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if cursorStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 
-	jobs, err := h.DB.ListAnalyticsJobsByFilter(request.Type, request.JobStatus, &request.StartTime, request.EndTime)
+	var startTime, endTime *time.Time
+	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
+		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		endTimeTmp := time.Unix(endTimeInt, 0)
+		endTime = &endTimeTmp
+	}
+
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		startTimeTmp := time.Unix(startTimeInt, 0)
+		startTime = &startTimeTmp
+	}
+
+	jobs, err := h.DB.ListAnalyticsJobsByFilter(types, jobStatus, startTime, endTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -1982,8 +2024,8 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 			DateTime:  j.UpdatedAt,
 		})
 	}
-	if request.SortBy != nil {
-		switch strings.ToLower(*request.SortBy) {
+	if sortBy != "" {
+		switch strings.ToLower(sortBy) {
 		case "id":
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
@@ -2011,11 +2053,11 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 		})
 	}
 
-	if request.PerPage != nil {
-		if request.Cursor == nil {
-			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
+	if perPage != 0 {
+		if cursor == 0 {
+			jobsResults = utils.Paginate(1, perPage, jobsResults)
 		} else {
-			jobsResults = utils.Paginate(*request.Cursor, *request.PerPage, jobsResults)
+			jobsResults = utils.Paginate(cursor, perPage, jobsResults)
 		}
 	}
 
@@ -2027,7 +2069,7 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 //	@Summary	Get describe jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetDescribeJobsHistoryRequest	true	"List jobs request"
+//	@Param		request	body	api.GetDescribeJobsHistoryByIntegrationRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
 //	@Router		/schedule/api/v2/jobs/discovery/connections [post]
@@ -2142,7 +2184,7 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 //	@Summary	Get compliance jobs history for give connection
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.GetComplianceJobsHistoryRequest	true	"List jobs request"
+//	@Param		request	body	api.GetComplianceJobsHistoryByIntegrationRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v2/jobs/compliance/connections [post]
@@ -2273,11 +2315,11 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 //	@Summary	Cancel job by given job type and job ID
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		job_id			query	string		true	"Job ID"
-//	@Param		job_type		query	string		true	"Job Type"
+//	@Param		job_id		query	string	true	"Job ID"
+//	@Param		job_type	query	string	true	"Job Type"
 //	@Produce	json
-//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/cancel [put]
+//	@Success	200
+//	@Router		/schedule/api/v2/jobs/cancel/byid [put]
 func (h HttpServer) CancelJobById(ctx echo.Context) error {
 	jobIdStr := ctx.QueryParam("job_id")
 	jobType := strings.ToLower(ctx.QueryParam("job_type"))
@@ -2412,11 +2454,10 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 //	@Summary	Cancel job by given job type and job ID
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		job_id			query	string		true	"Job ID"
-//	@Param		job_type		query	string		true	"Job Type"
+//	@Param		request	body	api.CancelJobRequest	true	"Request Body"
 //	@Produce	json
-//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/cancel [put]
+//	@Success	200	{object}	[]api.CancelJobResponse
+//	@Router		/schedule/api/v2/jobs/cancel [post]
 func (h HttpServer) CancelJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -2708,12 +2749,12 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 
 // ListJobsByType godoc
 //
-//	@Summary	Cancel job by given job type and job ID
+//	@Summary	List jobs by job type and filters
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		job_id			body	api.ListJobsByTypeRequest		true	""
+//	@Param		request	body	api.ListJobsByTypeRequest	true	"Request Body"
 //	@Produce	json
-//	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
+//	@Success	200	{object}	[]api.ListJobsByTypeResponse
 //	@Router		/schedule/api/v2/jobs [post]
 func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}

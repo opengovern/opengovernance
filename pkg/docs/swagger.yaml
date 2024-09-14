@@ -82,6 +82,20 @@ definitions:
       value:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_analytics_api.JobStatus:
+    enum:
+    - CREATED
+    - IN_PROGRESS
+    - COMPLETED_WITH_FAILURE
+    - COMPLETED
+    - CANCELED
+    type: string
+    x-enum-varnames:
+    - JobCreated
+    - JobInProgress
+    - JobCompletedWithFailure
+    - JobCompleted
+    - JobCanceled
   github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType:
     enum:
     - assets
@@ -791,6 +805,15 @@ definitions:
       total:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTagsResult:
+    properties:
+      key:
+        type: string
+      uniqueValues:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
     properties:
       checks:
@@ -945,6 +968,72 @@ definitions:
         type: integer
       totalResourcesCount:
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlsFilterSummaryRequest:
+    properties:
+      connector:
+        items:
+          type: string
+        type: array
+      customizable:
+        type: boolean
+      finding_filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      list_of_tables:
+        items:
+          type: string
+        type: array
+      parent_benchmark:
+        items:
+          type: string
+        type: array
+      primary_table:
+        items:
+          type: string
+        type: array
+      root_benchmark:
+        items:
+          type: string
+        type: array
+      severity:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      tags_regex:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlsFilterSummaryResult:
+    properties:
+      connector:
+        items:
+          type: string
+        type: array
+      controls_count:
+        type: integer
+      list_of_tables:
+        items:
+          type: string
+        type: array
+      primary_table:
+        items:
+          type: string
+        type: array
+      severity:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.CountFindingEventsResponse:
     properties:
@@ -1350,6 +1439,75 @@ definitions:
           type: boolean
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersV2:
+    properties:
+      benchmark_id:
+        items:
+          type: string
+        type: array
+      control_id:
+        items:
+          type: string
+        type: array
+      integration:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationInfoFilter'
+        type: array
+      is_active:
+        items:
+          type: boolean
+        type: array
+      is_compliant:
+        items:
+          type: boolean
+        type: array
+      last_event:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
+      not_benchmark_id:
+        items:
+          type: string
+        type: array
+      not_control_id:
+        items:
+          type: string
+        type: array
+      not_last_event:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
+      not_resource_id:
+        items:
+          type: string
+        type: array
+      not_resource_type:
+        items:
+          type: string
+        type: array
+      not_severity:
+        items:
+          $ref: '#/definitions/types.FindingSeverity'
+        type: array
+      resource_id:
+        items:
+          type: string
+        type: array
+      resource_type:
+        items:
+          type: string
+        type: array
+      severity:
+        items:
+          $ref: '#/definitions/types.FindingSeverity'
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersWithMetadata:
     properties:
       benchmarkID:
@@ -1400,6 +1558,17 @@ definitions:
       failedResourceCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSummaryFilters:
+    properties:
+      connectionID:
+        items:
+          type: string
+        type: array
+      resourceTypeID:
+        items:
+          type: string
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSort:
     properties:
       benchmarkID:
@@ -1423,12 +1592,260 @@ definitions:
       stateActive:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSortV2:
+    properties:
+      benchmark_id:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      conformance_status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      control_id:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      last_updated:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      resource_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+      severity:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortDirection'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AccountsFindingsSummary'
         type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsChildren:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsChildren'
+        type: array
+      control_ids:
+        items:
+          type: string
+        type: array
+      findings:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsFindings'
+      id:
+        type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsFindings:
+    properties:
+      connection_ids:
+        items:
+          type: string
+        type: array
+      lastEvaluated_at:
+        type: string
+      results:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsMetadata:
+    properties:
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      list_of_tables:
+        items:
+          type: string
+        type: array
+      primary_tables:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        type: string
+      track_drift_events:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsRequest:
+    properties:
+      benchmark_children:
+        type: boolean
+      finding_filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSummaryFilters'
+      tags_regex:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsResponse:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsChildren'
+        type: array
+      findings:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsFindings'
+      metadata:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsMetadata'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListMetadata:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      primary_tables:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        type: string
+      track_drift_events:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListRequest:
+    properties:
+      cursor:
+        type: integer
+      finding_filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSummaryFilters'
+      finding_summary:
+        type: boolean
+      list_of_tables:
+        items:
+          type: string
+        type: array
+      parent_benchmark_id:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      primary_table:
+        items:
+          type: string
+        type: array
+      root:
+        type: boolean
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      tags_regex:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListResponse:
+    properties:
+      findings:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsFindings'
+      metadata:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListMetadata'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Request:
+    properties:
+      integration:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationFilter'
+        type: array
+      top_integrations_count:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Response:
+    properties:
+      compliance_score:
+        type: number
+      evaluatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+      findings_summary:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
+      lastJobStatus:
+        example: success
+        type: string
+      severity_summary_by_control:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkControlsSeverityStatus'
+      severity_summary_by_resource:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResourcesSeverityStatus'
+      top_connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopIntegration'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetControlDetailsResponse:
+    properties:
+      benchmarks:
+        properties:
+          fullPath:
+            items:
+              type: string
+            type: array
+          roots:
+            items:
+              type: string
+            type: array
+        type: object
+      connector:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      id:
+        type: string
+      query:
+        properties:
+          engine:
+            type: string
+          listOfTables:
+            items:
+              type: string
+            type: array
+          primaryTable:
+            type: string
+          queryToExecute:
+            type: string
+        type: object
+      severity:
+        type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingEventsByFindingIDResponse:
     properties:
@@ -1475,6 +1892,21 @@ definitions:
       sort:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSort'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequestV2:
+    properties:
+      afterSortKey:
+        items: {}
+        type: array
+      filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFiltersV2'
+      limit:
+        example: 100
+        type: integer
+      sort:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingsSortV2'
         type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
@@ -1526,6 +1958,48 @@ definitions:
         example: 100
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationFilter:
+    properties:
+      id:
+        type: string
+      id_name:
+        type: string
+      integration:
+        type: string
+      integration_tracker:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationFilterRequest:
+    properties:
+      integration:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationFilter'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationInfo:
+    properties:
+      id:
+        type: string
+      id_name:
+        type: string
+      integration:
+        type: string
+      integration_tracker:
+        type: string
+      type:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationInfoFilter:
+    properties:
+      id:
+        type: string
+      id_name:
+        type: string
+      integration:
+        type: string
+      integration_tracker:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListBenchmarksSummaryResponse:
     properties:
       benchmarkSummary:
@@ -1537,19 +2011,39 @@ definitions:
       totalConformanceStatusSummary:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ConformanceStatusSummary'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilter:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterRequest:
     properties:
       connector:
-        example:
-        - Azure
         items:
           type: string
         type: array
-      parentBenchmark:
+      cursor:
+        type: integer
+      customizable:
+        type: boolean
+      finding_filters:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      finding_summary:
+        type: boolean
+      list_of_tables:
         items:
           type: string
         type: array
-      rootBenchmark:
+      parent_benchmark:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      primary_table:
+        items:
+          type: string
+        type: array
+      root_benchmark:
+        items:
+          type: string
+        type: array
+      severity:
         items:
           type: string
         type: array
@@ -1559,6 +2053,46 @@ definitions:
             type: string
           type: array
         type: object
+      tags_regex:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl:
+    properties:
+      connector:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      description:
+        type: string
+      findings_summary:
+        additionalProperties:
+          type: integer
+        type: object
+      id:
+        type: string
+      query:
+        properties:
+          list_of_tables:
+            items:
+              type: string
+            type: array
+          parameters:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.QueryParameter'
+            type: array
+          primary_table:
+            type: string
+        type: object
+      severity:
+        $ref: '#/definitions/types.FindingSeverity'
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListResourceFindingsRequest:
     properties:
@@ -1826,6 +2360,311 @@ definitions:
       totalCount:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopIntegration:
+    properties:
+      integration_info:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationInfo'
+      issues:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.CancelJobRequest:
+    properties:
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      job_id:
+        items:
+          type: string
+        type: array
+      job_type:
+        type: string
+      selector:
+        type: string
+      status:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.CancelJobResponse:
+    properties:
+      canceled:
+        type: boolean
+      job_id:
+        type: string
+      job_type:
+        type: string
+      reason:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ComplianceJobStatus:
+    enum:
+    - CREATED
+    - RUNNERS_IN_PROGRESS
+    - SUMMARIZER_IN_PROGRESS
+    - FAILED
+    - SUCCEEDED
+    type: string
+    x-enum-varnames:
+    - ComplianceJobCreated
+    - ComplianceJobRunnersInProgress
+    - ComplianceJobSummarizerInProgress
+    - ComplianceJobFailed
+    - ComplianceJobSucceeded
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus:
+    enum:
+    - CREATED
+    - QUEUED
+    - IN_PROGRESS
+    - OLD_RESOURCE_DELETION
+    - TIMEOUT
+    - FAILED
+    - SUCCEEDED
+    - REMOVING_RESOURCES
+    - CANCELED
+    type: string
+    x-enum-varnames:
+    - DescribeResourceJobCreated
+    - DescribeResourceJobQueued
+    - DescribeResourceJobInProgress
+    - DescribeResourceJobOldResourceDeletion
+    - DescribeResourceJobTimeout
+    - DescribeResourceJobFailed
+    - DescribeResourceJobSucceeded
+    - DescribeResourceJobRemovingResources
+    - DescribeResourceJobCanceled
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetAnalyticsJobStatusResponse:
+    properties:
+      created_at:
+        type: string
+      job_id:
+        type: integer
+      job_status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetAnalyticsJobsHistoryResponse:
+    properties:
+      date_time:
+        type: string
+      job_id:
+        type: integer
+      job_status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_analytics_api.JobStatus'
+      type:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobStatusResponse:
+    properties:
+      benchmark_id:
+        type: string
+      created_at:
+        type: string
+      integration_info:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo'
+        type: array
+      job_id:
+        type: integer
+      job_status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryByIntegrationRequest:
+    properties:
+      benchmark_id:
+        items:
+          type: string
+        type: array
+      cursor:
+        type: integer
+      end_time:
+        type: string
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      job_status:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      sort_by:
+        type: string
+      start_time:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryRequest:
+    properties:
+      benchmark_id:
+        items:
+          type: string
+        type: array
+      cursor:
+        type: integer
+      end_time:
+        type: string
+      job_status:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      sort_by:
+        type: string
+      start_time:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse:
+    properties:
+      benchmark_id:
+        type: string
+      date_time:
+        type: string
+      integration_info:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo'
+        type: array
+      job_id:
+        type: integer
+      job_status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ComplianceJobStatus'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobStatusResponse:
+    properties:
+      created_at:
+        type: string
+      discovery_type:
+        type: string
+      integration_info:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo'
+      job_id:
+        type: integer
+      job_status:
+        type: string
+      resource_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryByIntegrationRequest:
+    properties:
+      cursor:
+        type: integer
+      discovery_type:
+        items:
+          type: string
+        type: array
+      end_time:
+        type: string
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      job_status:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      resource_type:
+        items:
+          type: string
+        type: array
+      sort_by:
+        type: string
+      start_time:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryRequest:
+    properties:
+      cursor:
+        type: integer
+      discovery_type:
+        items:
+          type: string
+        type: array
+      end_time:
+        type: string
+      job_status:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      resource_type:
+        items:
+          type: string
+        type: array
+      sort_by:
+        type: string
+      start_time:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryResponse:
+    properties:
+      date_time:
+        type: string
+      discovery_type:
+        type: string
+      integration_info:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo'
+      job_id:
+        type: integer
+      job_status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus'
+      resource_type:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo:
+    properties:
+      id:
+        type: string
+      id_name:
+        type: string
+      integration:
+        type: string
+      integration_tracker:
+        type: string
+      type:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Job:
     properties:
       connectionID:
@@ -1873,6 +2712,82 @@ definitions:
     - JobType_Discovery
     - JobType_Analytics
     - JobType_Compliance
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListComplianceJobsRequest:
+    properties:
+      benchmark_id:
+        items:
+          type: string
+        type: array
+      cursor:
+        type: integer
+      end_time:
+        type: string
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      job_status:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      sort_by:
+        type: string
+      start_time:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDescribeJobsRequest:
+    properties:
+      cursor:
+        type: integer
+      discovery_type:
+        items:
+          type: string
+        type: array
+      end_time:
+        type: string
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      job_status:
+        items:
+          type: string
+        type: array
+      per_page:
+        type: integer
+      resource_type:
+        items:
+          type: string
+        type: array
+      sort_by:
+        type: string
+      start_time:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDiscoveryResourceTypes:
     properties:
       awsResourceTypes:
@@ -1883,6 +2798,53 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeRequest:
+    properties:
+      benchmark:
+        items:
+          type: string
+        type: array
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      job_id:
+        items:
+          type: string
+        type: array
+      job_type:
+        type: string
+      selector:
+        type: string
+      status:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeResponse:
+    properties:
+      created_at:
+        type: string
+      job_id:
+        type: string
+      job_status:
+        type: string
+      job_type:
+        type: string
+      updated_at:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsRequest:
     properties:
@@ -1915,6 +2877,95 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.JobSummary'
         type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkByIdRequest:
+    properties:
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkRequest:
+    properties:
+      benchmark_ids:
+        items:
+          type: string
+        type: array
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkResponse:
+    properties:
+      benchmark_id:
+        type: string
+      integration_info:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo'
+        type: array
+      job_id:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryRequest:
+    properties:
+      force_full:
+        description: force full discovery. only matters if ResourceTypes is empty
+        type: boolean
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      resource_types:
+        items:
+          type: string
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryResponse:
+    properties:
+      failure_reason:
+        type: string
+      integration_info:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.IntegrationInfo'
+      job_id:
+        type: integer
+      resource_type:
+        type: string
+      status:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsCategoriesResponse:
     properties:
@@ -2110,18 +3161,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
-      titleFilter:
-        description: Specifies the Title
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryV2Request:
-    properties:
-      tagsFilter:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
       titleFilter:
         description: Specifies the Title
         type: string
@@ -2438,6 +3477,37 @@ definitions:
       tags:
         additionalProperties:
           type: string
+        description: Tags
+        type: object
+      title:
+        description: Title
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2:
+    properties:
+      connectors:
+        description: Provider
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      description:
+        type: string
+      id:
+        description: Query Id
+        type: string
+      query:
+        description: Query
+        properties:
+          query_engine:
+            type: string
+          query_to_execute:
+            type: string
+        type: object
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
         description: Tags
         type: object
       title:
@@ -6392,6 +7462,36 @@ paths:
       summary: Get list of benchmark assignments for a resource collection
       tags:
       - benchmarks_assignment
+  /compliance/api/v1/benchmark/{benchmark_id}/summary:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving a summary of a benchmark and its associated checks and
+        results.
+      parameters:
+      - description: Integrations filter to get the benchmark summary
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Request'
+      - description: Benchmark ID to get the summary
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Response'
+      security:
+      - BearerToken: []
+      summary: Get benchmark summary
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/controls:
     get:
       consumes:
@@ -6701,31 +7801,6 @@ paths:
       summary: List benchmarks summaries
       tags:
       - compliance
-  /compliance/api/v1/controls:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilter'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Control'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List controls filtered by connector, benchmark, tags
-      tags:
-      - compliance
   /compliance/api/v1/controls/{controlId}/summary:
     get:
       consumes:
@@ -6861,23 +7936,6 @@ paths:
       security:
       - BearerToken: []
       summary: List controls summaries
-      tags:
-      - compliance
-  /compliance/api/v1/controls/tags:
-    get:
-      description: Retrieving list of control possible tags
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTagsResult'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List controls tags
       tags:
       - compliance
   /compliance/api/v1/finding_events:
@@ -7512,6 +8570,249 @@ paths:
       security:
       - BearerToken: []
       summary: List resource findings
+      tags:
+      - compliance
+  /compliance/api/v2/benchmark/{benchmark-id}/assignments:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 'assignment type. options: implicit, explicit, any'
+        in: query
+        name: assignment_type
+        required: true
+        type: string
+      - description: Benchmark ID
+        in: path
+        name: benchmark-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationInfo'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get Benchmark Assignments by BenchmarkID
+      tags:
+      - compliance
+  /compliance/api/v2/benchmark/{benchmark_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsRequest'
+      - description: benchmark id to get the details for
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkDetailsResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get Benchmark Details by BenchmarkID
+      tags:
+      - compliance
+  /compliance/api/v2/benchmark/{benchmark_id}/assign:
+    post:
+      consumes:
+      - application/json
+      description: Creating a benchmark assignment for an integration.
+      parameters:
+      - description: Benchmark ID to assign
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Integrations details to be assigned
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.IntegrationFilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Create benchmark assignment
+      tags:
+      - benchmarks_assignment
+  /compliance/api/v2/benchmarks:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List benchmarks filtered by integrations and other filters
+      tags:
+      - compliance
+  /compliance/api/v2/benchmarks/tags:
+    get:
+      description: Retrieving list of benchmark possible tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTagsResult'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List benchmarks tags
+      tags:
+      - compliance
+  /compliance/api/v2/control/{control_id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Control ID
+        in: path
+        name: control_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetControlDetailsResponse'
+      security:
+      - BearerToken: []
+      summary: Get Control Details by control ID
+      tags:
+      - compliance
+  /compliance/api/v2/controls:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List controls filtered by connector, benchmark, tags
+      tags:
+      - compliance
+  /compliance/api/v2/controls/summary:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlsFilterSummaryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlsFilterSummaryResult'
+      security:
+      - BearerToken: []
+      summary: List controls filtered by connector, benchmark, tags
+      tags:
+      - compliance
+  /compliance/api/v2/controls/tags:
+    get:
+      description: Retrieving list of control possible tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ControlTagsResult'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List controls tags
+      tags:
+      - compliance
+  /compliance/api/v2/findings:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving all compliance run findings with respect to filters.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequestV2'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings
       tags:
       - compliance
   /integration/api/v1/connections/{connectionId}:
@@ -8951,17 +10252,38 @@ paths:
       summary: Get resource collection
       tags:
       - resource_collection
-  /inventory/api/v2/query:
+  /inventory/api/v2/queries:
     get:
       description: Retrieving list of smart queries by specified filters and tags
         filters
       parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryV2Request'
+      - collectionFormat: csv
+        description: Title Filer
+        in: query
+        items:
+          type: string
+        name: title_filter
+        type: array
+      - description: 'Tags filter input type: tags_filter[key1]=value1&tags_filter[key2]=value2'
+        in: query
+        name: tags_filter
+        type: string
+      - description: Providers Filter
+        in: query
+        name: providers
+        type: string
+      - description: Regex for output tag keys in response
+        in: query
+        name: tags_regex
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: integer
+      - description: Per Page
+        in: query
+        name: per_page
+        type: integer
       produces:
       - application/json
       responses:
@@ -8969,11 +10291,33 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2'
             type: array
       security:
       - BearerToken: []
       summary: List smart queries
+      tags:
+      - smart_query
+  /inventory/api/v2/query/{query_id}:
+    get:
+      description: Retrieving list of smart queries by specified filters and tags
+        filters
+      parameters:
+      - description: QueryID
+        in: path
+        name: query_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2'
+      security:
+      - BearerToken: []
+      summary: Get smart query by ID
       tags:
       - smart_query
   /inventory/api/v2/query/tags:
@@ -9947,6 +11291,415 @@ paths:
       summary: Lists all jobs
       tags:
       - scheduler
+  /schedule/api/v1/jobs/compliance:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListComplianceJobsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get compliance jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v2/compliance/benchmark/{benchmark_id}/run:
+    post:
+      description: Triggers a compliance job to run immediately for the given benchmark
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: Integrations filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkByIdRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkResponse'
+      security:
+      - BearerToken: []
+      summary: Triggers compliance job by benchmark id
+      tags:
+      - describe
+  /schedule/api/v2/compliance/run:
+    post:
+      description: Triggers a compliance job to run immediately for the given benchmark
+      parameters:
+      - description: Requst Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunBenchmarkResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Triggers compliance job
+      tags:
+      - describe
+  /schedule/api/v2/job/analytics/{job_id}:
+    get:
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetAnalyticsJobStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Get analytics job status by job id
+      tags:
+      - scheduler
+  /schedule/api/v2/job/compliance/{job_id}:
+    get:
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Get compliance job status by job id
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List jobs by job type and filters
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/analytics:
+    get:
+      parameters:
+      - collectionFormat: csv
+        description: List of job statuses to filter
+        in: query
+        items:
+          type: string
+        name: job_status
+        required: true
+        type: array
+      - collectionFormat: csv
+        description: List of types to filter
+        in: query
+        items:
+          type: string
+        name: type
+        required: true
+        type: array
+      - description: sort by field
+        in: query
+        name: sort_by
+        required: true
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        required: true
+        type: integer
+      - description: per page
+        in: query
+        name: per_page
+        required: true
+        type: integer
+      - description: timestamp for start of the chart in epoch seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: timestamp for end of the chart in epoch seconds
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetAnalyticsJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get analytics jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/cancel:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.CancelJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.CancelJobResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Cancel job by given job type and job ID
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/cancel/byid:
+    put:
+      parameters:
+      - description: Job ID
+        in: query
+        name: job_id
+        required: true
+        type: string
+      - description: Job Type
+        in: query
+        name: job_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Cancel job by given job type and job ID
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/compliance/connections:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryByIntegrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get compliance jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/compliance/connections/{connection_id}:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryRequest'
+      - description: Connection ID
+        in: path
+        name: connection_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get compliance jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/discovery:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListDescribeJobsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get describe jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/discovery/{job_id}:
+    get:
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Get describe job status by job id
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/discovery/connections:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryByIntegrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get describe jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v2/jobs/discovery/connections/{connection_id}:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryRequest'
+      - description: Connection ID
+        in: path
+        name: connection_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetDescribeJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get describe jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v12/discovery/run:
+    post:
+      description: Triggers a discovery job to run immediately for the given resource
+        types and Integrations
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Run Discovery job
+      tags:
+      - describe
   /wastage/api/v1/wastage/aws-rds:
     post:
       description: List wastage in AWS RDS

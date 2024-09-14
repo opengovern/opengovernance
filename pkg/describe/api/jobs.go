@@ -150,13 +150,9 @@ type GetComplianceJobsHistoryResponse struct {
 }
 
 type GetAnalyticsJobsHistoryRequest struct {
-	Type      []string   `json:"type"`
-	JobStatus []string   `json:"job_status"`
-	StartTime time.Time  `json:"start_time"`
-	EndTime   *time.Time `json:"end_time"`
-	SortBy    *string    `json:"sort_by"`
-	Cursor    *int64     `json:"cursor"`
-	PerPage   *int64     `json:"per_page"`
+	SortBy  *string `json:"sort_by"`
+	Cursor  *int64  `json:"cursor"`
+	PerPage *int64  `json:"per_page"`
 }
 
 type GetAnalyticsJobsHistoryResponse struct {
@@ -167,12 +163,13 @@ type GetAnalyticsJobsHistoryResponse struct {
 }
 
 type RunBenchmarkByIdRequest struct {
-	ConnectionInfo []struct {
-		ConnectionId      *string `json:"connection_id"`
-		Connector         *string `json:"connector"`
-		ProviderIdRegex   *string `json:"provider_id_regex"`
-		ProviderNameRegex *string `json:"provider_name_regex"`
-	} `json:"connection_info"`
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
 }
 
 type RunBenchmarkRequest struct {
