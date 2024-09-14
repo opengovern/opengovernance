@@ -110,6 +110,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
 	v2.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	v2.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
+	v2.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -3206,4 +3207,105 @@ func arrayContains(array []string, key string) bool {
 		}
 	}
 	return false
+}
+
+// RunQueryByID godoc
+//
+//	@Summary		Run query
+//	@Description	Run provided smart query and returns the result.
+//	@Security		BearerToken
+//	@Tags			smart_query
+//	@Accepts		json
+//	@Produce		json
+//	@Param			request	body		inventoryApi.RunQueryByIDRequest	true	"Request Body"
+//	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
+//	@Success		200		{object}	inventoryApi.RunQueryResponse
+//	@Router			/inventory/api/v2/query/run [post]
+func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
+	var req inventoryApi.RunQueryByIDRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if req.ID == "" || req.Type == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type and ID should be provided")
+	}
+	// tracer :
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_RunSmartQuery")
+
+	var query, engineStr string
+	if strings.ToLower(req.Type) == "smartquery" || strings.ToLower(req.Type) == "smart_query" {
+		smartQuery, err := h.db.GetQuery(req.ID)
+		if err != nil || smartQuery == nil {
+			h.logger.Error("failed to get smart query", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not find smart query")
+		}
+		query = smartQuery.Query
+		engineStr = smartQuery.Engine
+	} else if strings.ToLower(req.Type) == "control" {
+		control, err := h.complianceClient.GetControl(&httpclient.Context{UserRole: api.InternalRole}, req.ID)
+		if err != nil || control == nil {
+			h.logger.Error("failed to get compliance", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not find smart query")
+		}
+		if control.Query == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Compliance query is empty")
+		}
+		query = control.Query.QueryToExecute
+		engineStr = control.Query.Engine
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type is not valid. Options: smart_query, control")
+	}
+	var engine inventoryApi.QueryEngine
+	if engineStr == "" {
+		engine = inventoryApi.QueryEngine_OdysseusSQL
+	} else {
+		engine = inventoryApi.QueryEngine(engineStr)
+	}
+
+	queryParamMap := req.QueryParams
+
+	queryTemplate, err := template.New("query").Parse(query)
+	if err != nil {
+		return err
+	}
+	var queryOutput bytes.Buffer
+	if err := queryTemplate.Execute(&queryOutput, queryParamMap); err != nil {
+		return fmt.Errorf("failed to execute query template: %w", err)
+	}
+
+	var resp *inventoryApi.RunQueryResponse
+	if engine == inventoryApi.QueryEngine_OdysseusSQL {
+		resp, err = h.RunSQLSmartQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+			Page:   req.Page,
+			Query:  &query,
+			Engine: &engine,
+			Sorts:  req.Sorts,
+		})
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
+	} else if engine == inventoryApi.QueryEngine_OdysseusRego {
+		resp, err = h.RunRegoSmartQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+			Page:   req.Page,
+			Query:  &query,
+			Engine: &engine,
+			Sorts:  req.Sorts,
+		})
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
+	} else {
+		return fmt.Errorf("invalid query engine: %s", engine)
+	}
+
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("query title ", resp.Title),
+	))
+	span.End()
+	return ctx.JSON(200, resp)
 }

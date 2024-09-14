@@ -34,3 +34,11 @@ type SmartQueryTagsResult struct {
 	Key          string
 	UniqueValues []string
 }
+
+type RunQueryByIDRequest struct {
+	Page        Page                 `json:"page" validate:"required"`
+	Type        string               `json:"type"`
+	ID          string               `json:"id"`
+	Sorts       []SmartQuerySortItem `json:"sorts"`
+	QueryParams map[string]string    `json:"query_params"`
+}
