@@ -138,6 +138,21 @@ func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]m
 	return job, nil
 }
 
+func (db Database) ListPendingComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
+	var job []model.ComplianceJob
+	tx := db.ORM.Model(&model.ComplianceJob{}).
+		Where("connection_ids <@ ?", pq.Array(connectionIds)).
+		Where("status IN ?", []model.ComplianceJobStatus{model.ComplianceJobCreated, model.ComplianceJobRunnersInProgress}).
+		Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListComplianceJobsByBenchmarkID(benchmarkIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id IN ?", benchmarkIds).Find(&job)

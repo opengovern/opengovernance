@@ -47,6 +47,20 @@ func (db Database) ListAnalyticsJobs() ([]model.AnalyticsJob, error) {
 	return jobs, nil
 }
 
+func (db Database) ListPendingAnalyticsJobs() ([]model.AnalyticsJob, error) {
+	var jobs []model.AnalyticsJob
+	tx := db.ORM.Model(&model.AnalyticsJob{}).
+		Where("status = ?", api.JobCreated).
+		Find(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 func (db Database) ListAnalyticsJobsByIds(ids []string) ([]model.AnalyticsJob, error) {
 	var jobs []model.AnalyticsJob
 	tx := db.ORM.Model(&model.AnalyticsJob{})

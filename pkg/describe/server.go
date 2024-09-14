@@ -2468,7 +2468,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		var connectionIDs []string
 		switch strings.ToLower(request.JobType) {
 		case "compliance":
-			jobs, err := h.DB.ListComplianceJobsByConnectionID(connectionIDs)
+			jobs, err := h.DB.ListPendingComplianceJobsByConnectionID(connectionIDs)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2476,7 +2476,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 			}
 		case "discovery":
-			jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
+			jobs, err := h.DB.ListPendingDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2484,7 +2484,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 			}
 		case "analytics":
-			jobs, err := h.DB.ListAnalyticsJobs()
+			jobs, err := h.DB.ListPendingAnalyticsJobs()
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2496,6 +2496,10 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		for _, status := range request.Status {
 			switch strings.ToLower(request.JobType) {
 			case "compliance":
+				if model2.ComplianceJobStatus(strings.ToUpper(status)) != model2.ComplianceJobCreated &&
+					model2.ComplianceJobStatus(strings.ToUpper(status)) != model2.ComplianceJobRunnersInProgress {
+					continue
+				}
 				jobs, err := h.DB.ListComplianceJobsByStatus(model2.ComplianceJobStatus(strings.ToUpper(status)))
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -2504,6 +2508,10 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 				}
 			case "discovery":
+				if api.DescribeResourceJobStatus(strings.ToUpper(status)) != api.DescribeResourceJobCreated &&
+					api.DescribeResourceJobStatus(strings.ToUpper(status)) != api.DescribeResourceJobQueued {
+					continue
+				}
 				jobs, err := h.DB.ListDescribeJobsByStatus(api.DescribeResourceJobStatus(strings.ToUpper(status)))
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -2512,6 +2520,9 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 				}
 			case "analytics":
+				if strings.ToUpper(status) != "CREATED" {
+					continue
+				}
 				jobs, err := h.DB.ListAnalyticsJobsByFilter(nil, []string{strings.ToUpper(status)}, nil, nil)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

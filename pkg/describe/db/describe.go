@@ -363,6 +363,45 @@ func (db Database) ListDescribeJobsByFilters(connectionIds []string, resourceTyp
 	return job, nil
 }
 
+func (db Database) ListPendingDescribeJobsByFilters(connectionIds []string, resourceType []string,
+	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
+	var job []model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+
+	if len(connectionIds) > 0 {
+		tx = tx.Where("connection_id IN ?", connectionIds)
+	}
+
+	if len(resourceType) > 0 {
+		tx = tx.Where("resource_type IN ?", resourceType)
+	}
+	if len(discoveryType) > 0 {
+		tx = tx.Where("discovery_type IN ?", discoveryType)
+	}
+	if len(jobStatus) > 0 {
+		tx = tx.Where("status IN ?", jobStatus)
+	}
+	if startTime != nil {
+		tx = tx.Where("updated_at >= ?", startTime)
+	}
+	if endTime != nil {
+		tx = tx.Where("updated_at <= ?", *endTime)
+	}
+
+	tx = tx.Where("status IN ?", []api.DescribeResourceJobStatus{api.DescribeResourceJobCreated, api.DescribeResourceJobQueued})
+
+	tx = tx.Find(&job)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) GetDescribeJobById(jobId string) (*model.DescribeConnectionJob, error) {
 	var job model.DescribeConnectionJob
 
