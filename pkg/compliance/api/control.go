@@ -74,7 +74,7 @@ type ListControlsFilterRequest struct {
 	Severity        []string            `json:"severity"`
 	RootBenchmark   []string            `json:"root_benchmark"`
 	ParentBenchmark []string            `json:"parent_benchmark"`
-	Customizable    *bool               `json:"customizable"`
+	HasParameters   *bool               `json:"has_parameters"`
 	PrimaryTable    []string            `json:"primary_table"`
 	ListOfTables    []string            `json:"list_of_tables"`
 	Tags            map[string][]string `json:"tags"`

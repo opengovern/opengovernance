@@ -1,9 +1,7 @@
 package compliance
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -3238,7 +3236,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		benchmarks = req.ParentBenchmark
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.Customizable,
+	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
 		req.PrimaryTable, req.ListOfTables)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -5803,8 +5801,15 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 		})
 	}
 
+	var complianceScore float64
+	if controlSeverityResult.Total.TotalCount > 0 {
+		complianceScore = float64(controlSeverityResult.Total.PassedCount) / float64(controlSeverityResult.Total.TotalCount)
+	} else {
+		complianceScore = 0
+	}
+
 	response := api.GetBenchmarkSummaryV2Response{
-		ComplianceScore:           float64(controlSeverityResult.Total.PassedCount) / float64(controlSeverityResult.Total.TotalCount),
+		ComplianceScore:           complianceScore,
 		SeveritySummaryByControl:  controlSeverityResult,
 		SeveritySummaryByResource: resourcesSeverityResult,
 		TopIntegrations:           topIntegrations,
@@ -5816,17 +5821,5 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 		LastJobStatus: lastJobStatus,
 	}
 
-	b, err := json.Marshal(response)
-	if err != nil {
-		h.logger.Error("failed to marshal response", zap.Error(err))
-		return err
-	}
-	b = bytes.Replace(b, []byte(":NaN"), []byte(":null"), -1)
-
-	err = json.Unmarshal(b, &response)
-	if err != nil {
-		h.logger.Error("failed to unmarshal response", zap.Error(err))
-		return err
-	}
 	return echoCtx.JSON(http.StatusOK, response)
 }
