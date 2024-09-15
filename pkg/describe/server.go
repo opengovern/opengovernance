@@ -2315,7 +2315,7 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 //	@Summary	Cancel job by given job type and job ID
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		job_id		query	string	true	"Job ID"
+//	@Param		job_id		query	string	true	"Job ID to Cancel"
 //	@Param		job_type	query	string	true	"Job Type"
 //	@Produce	json
 //	@Success	200
