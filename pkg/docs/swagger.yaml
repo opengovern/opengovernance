@@ -11618,7 +11618,7 @@ paths:
   /schedule/api/v3/jobs/cancel/byid:
     put:
       parameters:
-      - description: Job ID
+      - description: Job ID to Cancel
         in: query
         name: job_id
         required: true

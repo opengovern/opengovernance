@@ -6974,7 +6974,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Job ID",
+                        "description": "Job ID to Cancel",
                         "name": "job_id",
                         "in": "query",
                         "required": true
