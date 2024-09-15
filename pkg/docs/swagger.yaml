@@ -975,10 +975,10 @@ definitions:
         items:
           type: string
         type: array
-      customizable:
-        type: boolean
       finding_filters:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
+      has_parameters:
+        type: boolean
       list_of_tables:
         items:
           type: string
@@ -1668,7 +1668,13 @@ definitions:
         items:
           type: string
         type: array
+      number_of_controls:
+        type: integer
       primary_tables:
+        items:
+          type: string
+        type: array
+      supported_controls:
         items:
           type: string
         type: array
@@ -1707,6 +1713,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListMetadata:
     properties:
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       created_at:
         type: string
       description:
@@ -1715,6 +1725,8 @@ definitions:
         type: boolean
       id:
         type: string
+      number_of_controls:
+        type: integer
       primary_tables:
         items:
           type: string
@@ -2019,11 +2031,11 @@ definitions:
         type: array
       cursor:
         type: integer
-      customizable:
-        type: boolean
       finding_filters:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
       finding_summary:
+        type: boolean
+      has_parameters:
         type: boolean
       list_of_tables:
         items:
@@ -2055,6 +2067,15 @@ definitions:
         type: object
       tags_regex:
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl'
+        type: array
+      total_count:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl:
     properties:
@@ -2799,12 +2820,34 @@ definitions:
           type: string
         type: array
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeItem:
+    properties:
+      created_at:
+        type: string
+      job_id:
+        type: string
+      job_status:
+        type: string
+      job_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeRequest:
     properties:
       benchmark:
         items:
           type: string
         type: array
+      created_at:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
+      cursor:
+        type: integer
       integration_info:
         items:
           properties:
@@ -2826,25 +2869,34 @@ definitions:
         type: array
       job_type:
         type: string
+      per_page:
+        type: integer
       selector:
+        type: string
+      sort_by:
+        type: string
+      sort_order:
         type: string
       status:
         items:
           type: string
         type: array
+      updated_at:
+        properties:
+          from:
+            type: integer
+          to:
+            type: integer
+        type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeResponse:
     properties:
-      created_at:
-        type: string
-      job_id:
-        type: string
-      job_status:
-        type: string
-      job_type:
-        type: string
-      updated_at:
-        type: string
+      items:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeItem'
+        type: array
+      total_count:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsRequest:
     properties:
@@ -3159,6 +3211,15 @@ definitions:
       total_old_count:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueriesV2Response:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2'
+        type: array
+      total_count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       titleFilter:
@@ -3410,6 +3471,25 @@ definitions:
         type: integer
       totalSuccessfulDescribedConnectionCount:
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryByIDRequest:
+    properties:
+      id:
+        type: string
+      page:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page'
+      query_params:
+        additionalProperties:
+          type: string
+        type: object
+      sorts:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem'
+        type: array
+      type:
+        type: string
+    required:
+    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
     properties:
@@ -7462,36 +7542,6 @@ paths:
       summary: Get list of benchmark assignments for a resource collection
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmark/{benchmark_id}/summary:
-    post:
-      consumes:
-      - application/json
-      description: Retrieving a summary of a benchmark and its associated checks and
-        results.
-      parameters:
-      - description: Integrations filter to get the benchmark summary
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Request'
-      - description: Benchmark ID to get the summary
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Response'
-      security:
-      - BearerToken: []
-      summary: Get benchmark summary
-      tags:
-      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/controls:
     get:
       consumes:
@@ -8572,7 +8622,7 @@ paths:
       summary: List resource findings
       tags:
       - compliance
-  /compliance/api/v2/benchmark/{benchmark-id}/assignments:
+  /compliance/api/v3/benchmark/{benchmark-id}/assignments:
     get:
       consumes:
       - application/json
@@ -8601,7 +8651,7 @@ paths:
       summary: Get Benchmark Assignments by BenchmarkID
       tags:
       - compliance
-  /compliance/api/v2/benchmark/{benchmark_id}:
+  /compliance/api/v3/benchmark/{benchmark_id}:
     get:
       consumes:
       - application/json
@@ -8631,7 +8681,7 @@ paths:
       summary: Get Benchmark Details by BenchmarkID
       tags:
       - compliance
-  /compliance/api/v2/benchmark/{benchmark_id}/assign:
+  /compliance/api/v3/benchmark/{benchmark_id}/assign:
     post:
       consumes:
       - application/json
@@ -8662,7 +8712,37 @@ paths:
       summary: Create benchmark assignment
       tags:
       - benchmarks_assignment
-  /compliance/api/v2/benchmarks:
+  /compliance/api/v3/benchmark/{benchmark_id}/summary:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving a summary of a benchmark and its associated checks and
+        results.
+      parameters:
+      - description: Integrations filter to get the benchmark summary
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Request'
+      - description: Benchmark ID to get the summary
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Response'
+      security:
+      - BearerToken: []
+      summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v3/benchmarks:
     post:
       consumes:
       - application/json
@@ -8687,7 +8767,7 @@ paths:
       summary: List benchmarks filtered by integrations and other filters
       tags:
       - compliance
-  /compliance/api/v2/benchmarks/tags:
+  /compliance/api/v3/benchmarks/tags:
     get:
       description: Retrieving list of benchmark possible tags
       produces:
@@ -8704,7 +8784,7 @@ paths:
       summary: List benchmarks tags
       tags:
       - compliance
-  /compliance/api/v2/control/{control_id}:
+  /compliance/api/v3/control/{control_id}:
     get:
       consumes:
       - application/json
@@ -8726,7 +8806,7 @@ paths:
       summary: Get Control Details by control ID
       tags:
       - compliance
-  /compliance/api/v2/controls:
+  /compliance/api/v3/controls:
     post:
       consumes:
       - application/json
@@ -8743,15 +8823,13 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResponse'
       security:
       - BearerToken: []
       summary: List controls filtered by connector, benchmark, tags
       tags:
       - compliance
-  /compliance/api/v2/controls/summary:
+  /compliance/api/v3/controls/summary:
     post:
       consumes:
       - application/json
@@ -8774,7 +8852,7 @@ paths:
       summary: List controls filtered by connector, benchmark, tags
       tags:
       - compliance
-  /compliance/api/v2/controls/tags:
+  /compliance/api/v3/controls/tags:
     get:
       description: Retrieving list of control possible tags
       produces:
@@ -8791,7 +8869,7 @@ paths:
       summary: List controls tags
       tags:
       - compliance
-  /compliance/api/v2/findings:
+  /compliance/api/v3/findings:
     post:
       consumes:
       - application/json
@@ -10252,91 +10330,6 @@ paths:
       summary: Get resource collection
       tags:
       - resource_collection
-  /inventory/api/v2/queries:
-    get:
-      description: Retrieving list of smart queries by specified filters and tags
-        filters
-      parameters:
-      - collectionFormat: csv
-        description: Title Filer
-        in: query
-        items:
-          type: string
-        name: title_filter
-        type: array
-      - description: 'Tags filter input type: tags_filter[key1]=value1&tags_filter[key2]=value2'
-        in: query
-        name: tags_filter
-        type: string
-      - description: Providers Filter
-        in: query
-        name: providers
-        type: string
-      - description: Regex for output tag keys in response
-        in: query
-        name: tags_regex
-        type: string
-      - description: Cursor
-        in: query
-        name: cursor
-        type: integer
-      - description: Per Page
-        in: query
-        name: per_page
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List smart queries
-      tags:
-      - smart_query
-  /inventory/api/v2/query/{query_id}:
-    get:
-      description: Retrieving list of smart queries by specified filters and tags
-        filters
-      parameters:
-      - description: QueryID
-        in: path
-        name: query_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2'
-      security:
-      - BearerToken: []
-      summary: Get smart query by ID
-      tags:
-      - smart_query
-  /inventory/api/v2/query/tags:
-    get:
-      description: Retrieving list of smart queries by specified filters
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List smart queries tags
-      tags:
-      - smart_query
   /inventory/api/v2/resource-collection:
     get:
       description: Retrieving list of resource collections by specified filters with
@@ -10416,6 +10409,119 @@ paths:
       summary: Get resource collection landscape
       tags:
       - resource_collection
+  /inventory/api/v3/queries:
+    get:
+      description: Retrieving list of smart queries by specified filters and tags
+        filters
+      parameters:
+      - collectionFormat: csv
+        description: Title Filer
+        in: query
+        items:
+          type: string
+        name: title_filter
+        type: array
+      - description: 'Tags filter input type: tags_filter[key1]=value1&tags_filter[key2]=value2'
+        in: query
+        name: tags_filter
+        type: string
+      - description: Providers Filter
+        in: query
+        name: providers
+        type: string
+      - description: Regex for output tag keys in response
+        in: query
+        name: tags_regex
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: integer
+      - description: Per Page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueriesV2Response'
+      security:
+      - BearerToken: []
+      summary: List smart queries
+      tags:
+      - smart_query
+  /inventory/api/v3/query/{query_id}:
+    get:
+      description: Retrieving list of smart queries by specified filters and tags
+        filters
+      parameters:
+      - description: QueryID
+        in: path
+        name: query_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2'
+      security:
+      - BearerToken: []
+      summary: Get smart query by ID
+      tags:
+      - smart_query
+  /inventory/api/v3/query/run:
+    post:
+      description: Run provided smart query or compliance and returns the result.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryByIDRequest'
+      - description: Accept header
+        enum:
+        - application/json
+        - text/csv
+        in: header
+        name: accept
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse'
+      security:
+      - BearerToken: []
+      summary: Run query by smart query or compliance ID
+      tags:
+      - smart_query
+  /inventory/api/v3/query/tags:
+    get:
+      description: Retrieving list of smart queries by specified filters
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List smart queries tags
+      tags:
+      - smart_query
   /metadata/api/v1/filter:
     get:
       produces:
@@ -11291,30 +11397,7 @@ paths:
       summary: Lists all jobs
       tags:
       - scheduler
-  /schedule/api/v1/jobs/compliance:
-    post:
-      parameters:
-      - description: List jobs request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListComplianceJobsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get compliance jobs history for give connection
-      tags:
-      - scheduler
-  /schedule/api/v2/compliance/benchmark/{benchmark_id}/run:
+  /schedule/api/v3/compliance/benchmark/{benchmark_id}/run:
     post:
       description: Triggers a compliance job to run immediately for the given benchmark
       parameters:
@@ -11341,7 +11424,7 @@ paths:
       summary: Triggers compliance job by benchmark id
       tags:
       - describe
-  /schedule/api/v2/compliance/run:
+  /schedule/api/v3/compliance/run:
     post:
       description: Triggers a compliance job to run immediately for the given benchmark
       parameters:
@@ -11365,7 +11448,32 @@ paths:
       summary: Triggers compliance job
       tags:
       - describe
-  /schedule/api/v2/job/analytics/{job_id}:
+  /schedule/api/v3/discovery/run:
+    post:
+      description: Triggers a discovery job to run immediately for the given resource
+        types and Integrations
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Run Discovery job
+      tags:
+      - describe
+  /schedule/api/v3/job/analytics/{job_id}:
     get:
       parameters:
       - description: Job ID
@@ -11385,7 +11493,7 @@ paths:
       summary: Get analytics job status by job id
       tags:
       - scheduler
-  /schedule/api/v2/job/compliance/{job_id}:
+  /schedule/api/v3/job/compliance/{job_id}:
     get:
       parameters:
       - description: Job ID
@@ -11405,7 +11513,7 @@ paths:
       summary: Get compliance job status by job id
       tags:
       - scheduler
-  /schedule/api/v2/jobs:
+  /schedule/api/v3/jobs:
     post:
       parameters:
       - description: Request Body
@@ -11428,7 +11536,7 @@ paths:
       summary: List jobs by job type and filters
       tags:
       - scheduler
-  /schedule/api/v2/jobs/analytics:
+  /schedule/api/v3/jobs/analytics:
     get:
       parameters:
       - collectionFormat: csv
@@ -11484,7 +11592,7 @@ paths:
       summary: Get analytics jobs history for give connection
       tags:
       - scheduler
-  /schedule/api/v2/jobs/cancel:
+  /schedule/api/v3/jobs/cancel:
     post:
       parameters:
       - description: Request Body
@@ -11507,7 +11615,7 @@ paths:
       summary: Cancel job by given job type and job ID
       tags:
       - scheduler
-  /schedule/api/v2/jobs/cancel/byid:
+  /schedule/api/v3/jobs/cancel/byid:
     put:
       parameters:
       - description: Job ID
@@ -11530,7 +11638,30 @@ paths:
       summary: Cancel job by given job type and job ID
       tags:
       - scheduler
-  /schedule/api/v2/jobs/compliance/connections:
+  /schedule/api/v3/jobs/compliance:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListComplianceJobsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get compliance jobs history for give connection
+      tags:
+      - scheduler
+  /schedule/api/v3/jobs/compliance/connections:
     post:
       parameters:
       - description: List jobs request
@@ -11553,7 +11684,7 @@ paths:
       summary: Get compliance jobs history for give connection
       tags:
       - scheduler
-  /schedule/api/v2/jobs/compliance/connections/{connection_id}:
+  /schedule/api/v3/jobs/compliance/connections/{connection_id}:
     post:
       parameters:
       - description: List jobs request
@@ -11581,7 +11712,7 @@ paths:
       summary: Get compliance jobs history for give connection
       tags:
       - scheduler
-  /schedule/api/v2/jobs/discovery:
+  /schedule/api/v3/jobs/discovery:
     post:
       parameters:
       - description: List jobs request
@@ -11604,7 +11735,7 @@ paths:
       summary: Get describe jobs history for give connection
       tags:
       - scheduler
-  /schedule/api/v2/jobs/discovery/{job_id}:
+  /schedule/api/v3/jobs/discovery/{job_id}:
     get:
       parameters:
       - description: Job ID
@@ -11624,7 +11755,7 @@ paths:
       summary: Get describe job status by job id
       tags:
       - scheduler
-  /schedule/api/v2/jobs/discovery/connections:
+  /schedule/api/v3/jobs/discovery/connections:
     post:
       parameters:
       - description: List jobs request
@@ -11647,7 +11778,7 @@ paths:
       summary: Get describe jobs history for give connection
       tags:
       - scheduler
-  /schedule/api/v2/jobs/discovery/connections/{connection_id}:
+  /schedule/api/v3/jobs/discovery/connections/{connection_id}:
     post:
       parameters:
       - description: List jobs request
@@ -11675,31 +11806,6 @@ paths:
       summary: Get describe jobs history for give connection
       tags:
       - scheduler
-  /schedule/api/v12/discovery/run:
-    post:
-      description: Triggers a discovery job to run immediately for the given resource
-        types and Integrations
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Run Discovery job
-      tags:
-      - describe
   /wastage/api/v1/wastage/aws-rds:
     post:
       description: List wastage in AWS RDS
