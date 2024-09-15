@@ -4559,7 +4559,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var response []api.GetBenchmarkListResponse
+	var items []api.GetBenchmarkListItem
 	for _, b := range benchmarks {
 		var findingsResult *api.GetBenchmarkDetailsFindings
 		if req.FindingFilters != nil || req.FindingSummary {
@@ -4622,22 +4622,29 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		if b.Connector != nil {
 			metadata.Connectors = source.ParseTypes(b.Connector)
 		}
-		benchmarkResult := api.GetBenchmarkListResponse{
+		benchmarkResult := api.GetBenchmarkListItem{
 			Metadata: metadata,
 			Findings: findingsResult,
 		}
-		response = append(response, benchmarkResult)
+		items = append(items, benchmarkResult)
 	}
 
-	sort.Slice(response, func(i, j int) bool {
-		return response[i].Metadata.ID < response[j].Metadata.ID
+	totalCount := len(items)
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Metadata.ID < items[j].Metadata.ID
 	})
 	if req.PerPage != nil {
 		if req.Cursor == nil {
-			response = utils.Paginate(1, *req.PerPage, response)
+			items = utils.Paginate(1, *req.PerPage, items)
 		} else {
-			response = utils.Paginate(*req.Cursor, *req.PerPage, response)
+			items = utils.Paginate(*req.Cursor, *req.PerPage, items)
 		}
+	}
+
+	response := api.GetBenchmarkListResponse{
+		Items:      items,
+		TotalCount: totalCount,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
