@@ -2769,7 +2769,13 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
-	var results []api.ListJobsByTypeResponse
+	sortBy := "id"
+	switch request.SortBy {
+	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
+		sortBy = string(request.SortBy)
+	}
+
+	var items []api.ListJobsByTypeItem
 
 	switch strings.ToLower(request.Selector) {
 	case "job_id":
@@ -2780,7 +2786,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			for _, j := range jobs {
-				results = append(results, api.ListJobsByTypeResponse{
+				items = append(items, api.ListJobsByTypeItem{
 					JobId:     strconv.Itoa(int(j.ID)),
 					JobType:   strings.ToLower(request.JobType),
 					JobStatus: string(j.Status),
@@ -2794,7 +2800,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			for _, j := range jobs {
-				results = append(results, api.ListJobsByTypeResponse{
+				items = append(items, api.ListJobsByTypeItem{
 					JobId:     strconv.Itoa(int(j.ID)),
 					JobType:   strings.ToLower(request.JobType),
 					JobStatus: string(j.Status),
@@ -2808,7 +2814,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			for _, j := range jobs {
-				results = append(results, api.ListJobsByTypeResponse{
+				items = append(items, api.ListJobsByTypeItem{
 					JobId:     strconv.Itoa(int(j.ID)),
 					JobType:   strings.ToLower(request.JobType),
 					JobStatus: string(j.Status),
@@ -2854,7 +2860,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			for _, j := range jobs {
-				results = append(results, api.ListJobsByTypeResponse{
+				items = append(items, api.ListJobsByTypeItem{
 					JobId:     strconv.Itoa(int(j.ID)),
 					JobType:   strings.ToLower(request.JobType),
 					JobStatus: string(j.Status),
@@ -2868,7 +2874,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			for _, j := range jobs {
-				results = append(results, api.ListJobsByTypeResponse{
+				items = append(items, api.ListJobsByTypeItem{
 					JobId:     strconv.Itoa(int(j.ID)),
 					JobType:   strings.ToLower(request.JobType),
 					JobStatus: string(j.Status),
@@ -2882,7 +2888,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			for _, j := range jobs {
-				results = append(results, api.ListJobsByTypeResponse{
+				items = append(items, api.ListJobsByTypeItem{
 					JobId:     strconv.Itoa(int(j.ID)),
 					JobType:   strings.ToLower(request.JobType),
 					JobStatus: string(j.Status),
@@ -2900,7 +2906,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 				}
 				for _, j := range jobs {
-					results = append(results, api.ListJobsByTypeResponse{
+					items = append(items, api.ListJobsByTypeItem{
 						JobId:     strconv.Itoa(int(j.ID)),
 						JobType:   strings.ToLower(request.JobType),
 						JobStatus: string(j.Status),
@@ -2914,7 +2920,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 				}
 				for _, j := range jobs {
-					results = append(results, api.ListJobsByTypeResponse{
+					items = append(items, api.ListJobsByTypeItem{
 						JobId:     strconv.Itoa(int(j.ID)),
 						JobType:   strings.ToLower(request.JobType),
 						JobStatus: string(j.Status),
@@ -2928,7 +2934,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 				}
 				for _, j := range jobs {
-					results = append(results, api.ListJobsByTypeResponse{
+					items = append(items, api.ListJobsByTypeItem{
 						JobId:     strconv.Itoa(int(j.ID)),
 						JobType:   strings.ToLower(request.JobType),
 						JobStatus: string(j.Status),
@@ -2944,7 +2950,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		for _, j := range jobs {
-			results = append(results, api.ListJobsByTypeResponse{
+			items = append(items, api.ListJobsByTypeItem{
 				JobId:     strconv.Itoa(int(j.ID)),
 				JobType:   strings.ToLower(request.JobType),
 				JobStatus: string(j.Status),
@@ -2953,8 +2959,48 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 			})
 		}
 	default:
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid selector. valid values: job_id, integration, status, benchmark")
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid selector. valid values: job_id, integration_info, status, benchmark")
 	}
 
-	return ctx.JSON(http.StatusOK, results)
+	switch sortBy {
+	case api.JobSort_ByJobID:
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].JobId < items[j].JobId
+		})
+	case "created_at":
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].CreatedAt.Before(items[j].CreatedAt)
+		})
+	case "updated_at":
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].UpdatedAt.Before(items[j].UpdatedAt)
+		})
+	case api.JobSort_ByStatus:
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].JobStatus < items[j].JobStatus
+		})
+	}
+
+	if request.SortOrder == api.JobSortOrder_DESC {
+		sort.Slice(items, func(i, j int) bool {
+			return i > j
+		})
+	}
+
+	totalCount := len(items)
+
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			items = utils.Paginate(1, *request.PerPage, items)
+		} else {
+			items = utils.Paginate(*request.Cursor, *request.PerPage, items)
+		}
+	}
+
+	response := api.ListJobsByTypeResponse{
+		Items:      items,
+		TotalCount: totalCount,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }

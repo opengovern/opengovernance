@@ -344,14 +344,31 @@ type ListJobsByTypeRequest struct {
 		IDName             *string `json:"id_name"`
 		IntegrationTracker *string `json:"integration_tracker"`
 	} `json:"integration_info"`
-	Status    []string `json:"status"`
-	Benchmark []string `json:"benchmark"`
+	Status    []string     `json:"status"`
+	Benchmark []string     `json:"benchmark"`
+	SortBy    JobSort      `json:"sort_by"`
+	SortOrder JobSortOrder `json:"sort_order"`
+	UpdatedAt struct {
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
+	} `json:"updated_at"`
+	CreatedAt struct {
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
+	} `json:"created_at"`
+	Cursor  *int64 `json:"cursor"`
+	PerPage *int64 `json:"per_page"`
 }
 
-type ListJobsByTypeResponse struct {
+type ListJobsByTypeItem struct {
 	JobId     string    `json:"job_id"`
 	JobType   string    `json:"job_type"`
 	JobStatus string    `json:"job_status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ListJobsByTypeResponse struct {
+	Items      []ListJobsByTypeItem `json:"items"`
+	TotalCount int                  `json:"total_count"`
 }
