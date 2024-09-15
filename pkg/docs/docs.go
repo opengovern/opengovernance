@@ -686,52 +686,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/benchmark/{benchmark_id}/summary": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving a summary of a benchmark and its associated checks and results.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark summary",
-                "parameters": [
-                    {
-                        "description": "Integrations filter to get the benchmark summary",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Request"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID to get the summary",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Response"
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/benchmarks/summary": {
             "get": {
                 "security": [
@@ -2373,7 +2327,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/benchmark/{benchmark-id}/assignments": {
+        "/compliance/api/v3/benchmark/{benchmark-id}/assignments": {
             "get": {
                 "security": [
                     {
@@ -2419,7 +2373,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/benchmark/{benchmark_id}": {
+        "/compliance/api/v3/benchmark/{benchmark_id}": {
             "get": {
                 "security": [
                     {
@@ -2467,7 +2421,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/benchmark/{benchmark_id}/assign": {
+        "/compliance/api/v3/benchmark/{benchmark_id}/assign": {
             "post": {
                 "security": [
                     {
@@ -2516,7 +2470,53 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/benchmarks": {
+        "/compliance/api/v3/benchmark/{benchmark_id}/summary": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving a summary of a benchmark and its associated checks and results.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark summary",
+                "parameters": [
+                    {
+                        "description": "Integrations filter to get the benchmark summary",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Request"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID to get the summary",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkSummaryV2Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/benchmarks": {
             "post": {
                 "security": [
                     {
@@ -2557,7 +2557,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/benchmarks/tags": {
+        "/compliance/api/v3/benchmarks/tags": {
             "get": {
                 "security": [
                     {
@@ -2585,7 +2585,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/control/{control_id}": {
+        "/compliance/api/v3/control/{control_id}": {
             "get": {
                 "security": [
                     {
@@ -2621,7 +2621,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/controls": {
+        "/compliance/api/v3/controls": {
             "post": {
                 "security": [
                     {
@@ -2653,16 +2653,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResponse"
                         }
                     }
                 }
             }
         },
-        "/compliance/api/v2/controls/summary": {
+        "/compliance/api/v3/controls/summary": {
             "post": {
                 "security": [
                     {
@@ -2700,7 +2697,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/controls/tags": {
+        "/compliance/api/v3/controls/tags": {
             "get": {
                 "security": [
                     {
@@ -2728,7 +2725,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v2/findings": {
+        "/compliance/api/v3/findings": {
             "post": {
                 "security": [
                     {
@@ -4934,138 +4931,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/queries": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of smart queries by specified filters and tags filters",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "smart_query"
-                ],
-                "summary": "List smart queries",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Title Filer",
-                        "name": "title_filter",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Tags filter input type: tags_filter[key1]=value1\u0026tags_filter[key2]=value2",
-                        "name": "tags_filter",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Providers Filter",
-                        "name": "providers",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Regex for output tag keys in response",
-                        "name": "tags_regex",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Per Page",
-                        "name": "per_page",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/query/tags": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of smart queries by specified filters",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "smart_query"
-                ],
-                "summary": "List smart queries tags",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/query/{query_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of smart queries by specified filters and tags filters",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "smart_query"
-                ],
-                "summary": "Get smart query by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "QueryID",
-                        "name": "query_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/resource-collection": {
             "get": {
                 "security": [
@@ -5184,6 +5049,182 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceCollectionLandscape"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v3/queries": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of smart queries by specified filters and tags filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "List smart queries",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Title Filer",
+                        "name": "title_filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tags filter input type: tags_filter[key1]=value1\u0026tags_filter[key2]=value2",
+                        "name": "tags_filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Providers Filter",
+                        "name": "providers",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Regex for output tag keys in response",
+                        "name": "tags_regex",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Per Page",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueriesV2Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v3/query/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Run provided smart query or compliance and returns the result.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "Run query by smart query or compliance ID",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryByIDRequest"
+                        }
+                    },
+                    {
+                        "enum": [
+                            "application/json",
+                            "text/csv"
+                        ],
+                        "type": "string",
+                        "description": "Accept header",
+                        "name": "accept",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v3/query/tags": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of smart queries by specified filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "List smart queries tags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryTagsResult"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v3/query/{query_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving list of smart queries by specified filters and tags filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "Get smart query by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "QueryID",
+                        "name": "query_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2"
                         }
                     }
                 }
@@ -6569,84 +6610,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/jobs/compliance": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "scheduler"
-                ],
-                "summary": "Get compliance jobs history for give connection",
-                "parameters": [
-                    {
-                        "description": "List jobs request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListComplianceJobsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v12/discovery/run": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Triggers a discovery job to run immediately for the given resource types and Integrations",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "describe"
-                ],
-                "summary": "Run Discovery job",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v2/compliance/benchmark/{benchmark_id}/run": {
+        "/schedule/api/v3/compliance/benchmark/{benchmark_id}/run": {
             "post": {
                 "security": [
                     {
@@ -6689,7 +6653,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/compliance/run": {
+        "/schedule/api/v3/compliance/run": {
             "post": {
                 "security": [
                     {
@@ -6728,7 +6692,46 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/job/analytics/{job_id}": {
+        "/schedule/api/v3/discovery/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a discovery job to run immediately for the given resource types and Integrations",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Run Discovery job",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.RunDiscoveryResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v3/job/analytics/{job_id}": {
             "get": {
                 "security": [
                     {
@@ -6761,7 +6764,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/job/compliance/{job_id}": {
+        "/schedule/api/v3/job/compliance/{job_id}": {
             "get": {
                 "security": [
                     {
@@ -6794,7 +6797,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs": {
+        "/schedule/api/v3/jobs": {
             "post": {
                 "security": [
                     {
@@ -6832,7 +6835,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/analytics": {
+        "/schedule/api/v3/jobs/analytics": {
             "get": {
                 "security": [
                     {
@@ -6916,7 +6919,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/cancel": {
+        "/schedule/api/v3/jobs/cancel": {
             "post": {
                 "security": [
                     {
@@ -6954,7 +6957,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/cancel/byid": {
+        "/schedule/api/v3/jobs/cancel/byid": {
             "put": {
                 "security": [
                     {
@@ -6991,7 +6994,45 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/compliance/connections": {
+        "/schedule/api/v3/jobs/compliance": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "Get compliance jobs history for give connection",
+                "parameters": [
+                    {
+                        "description": "List jobs request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListComplianceJobsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetComplianceJobsHistoryResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v3/jobs/compliance/connections": {
             "post": {
                 "security": [
                     {
@@ -7029,7 +7070,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/compliance/connections/{connection_id}": {
+        "/schedule/api/v3/jobs/compliance/connections/{connection_id}": {
             "post": {
                 "security": [
                     {
@@ -7074,7 +7115,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/discovery": {
+        "/schedule/api/v3/jobs/discovery": {
             "post": {
                 "security": [
                     {
@@ -7112,7 +7153,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/discovery/connections": {
+        "/schedule/api/v3/jobs/discovery/connections": {
             "post": {
                 "security": [
                     {
@@ -7150,7 +7191,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/discovery/connections/{connection_id}": {
+        "/schedule/api/v3/jobs/discovery/connections/{connection_id}": {
             "post": {
                 "security": [
                     {
@@ -7195,7 +7236,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v2/jobs/discovery/{job_id}": {
+        "/schedule/api/v3/jobs/discovery/{job_id}": {
             "get": {
                 "security": [
                     {
@@ -8842,11 +8883,11 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "customizable": {
-                    "type": "boolean"
-                },
                 "finding_filters": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
+                },
+                "has_parameters": {
+                    "type": "boolean"
                 },
                 "list_of_tables": {
                     "type": "array",
@@ -9884,7 +9925,16 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "number_of_controls": {
+                    "type": "integer"
+                },
                 "primary_tables": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "supported_controls": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9944,6 +9994,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarkListMetadata": {
             "type": "object",
             "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -9955,6 +10011,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "number_of_controls": {
+                    "type": "integer"
                 },
                 "primary_tables": {
                     "type": "array",
@@ -10417,13 +10476,13 @@ const docTemplate = `{
                 "cursor": {
                     "type": "integer"
                 },
-                "customizable": {
-                    "type": "boolean"
-                },
                 "finding_filters": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
                 },
                 "finding_summary": {
+                    "type": "boolean"
+                },
+                "has_parameters": {
                     "type": "boolean"
                 },
                 "list_of_tables": {
@@ -10470,6 +10529,20 @@ const docTemplate = `{
                 },
                 "tags_regex": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ListControlsFilterResultControl"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -11576,6 +11649,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeItem": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "job_status": {
+                    "type": "string"
+                },
+                "job_type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeRequest": {
             "type": "object",
             "properties": {
@@ -11584,6 +11677,20 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "created_at": {
+                    "type": "object",
+                    "properties": {
+                        "from": {
+                            "type": "integer"
+                        },
+                        "to": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "cursor": {
+                    "type": "integer"
                 },
                 "integration_info": {
                     "type": "array",
@@ -11617,7 +11724,16 @@ const docTemplate = `{
                 "job_type": {
                     "type": "string"
                 },
+                "per_page": {
+                    "type": "integer"
+                },
                 "selector": {
+                    "type": "string"
+                },
+                "sort_by": {
+                    "type": "string"
+                },
+                "sort_order": {
                     "type": "string"
                 },
                 "status": {
@@ -11625,26 +11741,31 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "updated_at": {
+                    "type": "object",
+                    "properties": {
+                        "from": {
+                            "type": "integer"
+                        },
+                        "to": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListJobsByTypeItem"
+                    }
                 },
-                "job_id": {
-                    "type": "string"
-                },
-                "job_status": {
-                    "type": "string"
-                },
-                "job_type": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -12115,6 +12236,20 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueriesV2Response": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItemV2"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
             "properties": {
@@ -12470,6 +12605,35 @@ const docTemplate = `{
                 },
                 "totalSuccessfulDescribedConnectionCount": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryByIDRequest": {
+            "type": "object",
+            "required": [
+                "page"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "page": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page"
+                },
+                "query_params": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem"
+                    }
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },

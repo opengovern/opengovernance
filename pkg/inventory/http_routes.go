@@ -107,10 +107,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourceCollectionMetadata.GET("", httpserver.AuthorizeHandler(h.ListResourceCollectionsMetadata, api.ViewerRole))
 	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollectionMetadata, api.ViewerRole))
 
-	v2.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
-	v2.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
-	v2.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
-	v2.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
+	v3 := e.Group("/api/v3")
+	v3.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	v3.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
+	v3.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
+	v3.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -2084,7 +2085,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Param			cursor			query		int			false	"Cursor"
 //	@Param			per_page		query		int			false	"Per Page"
 //	@Success		200				{object}	inventoryApi.ListQueriesV2Response
-//	@Router			/inventory/api/v2/queries [get]
+//	@Router			/inventory/api/v3/queries [get]
 func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	titleFilter := ctx.QueryParam("title_filter")
 	connectors := httpserver.QueryArrayParam(ctx, "providers")
@@ -2183,7 +2184,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			query_id	path		string	true	"QueryID"
 //	@Success		200			{object}	inventoryApi.SmartQueryItemV2
-//	@Router			/inventory/api/v2/query/{query_id} [get]
+//	@Router			/inventory/api/v3/query/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
 
@@ -2243,7 +2244,7 @@ func filterTagsByRegex(regexPattern *string, tags map[string][]string) map[strin
 //	@Tags			smart_query
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.SmartQueryTagsResult
-//	@Router			/inventory/api/v2/query/tags [get]
+//	@Router			/inventory/api/v3/query/tags [get]
 func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
@@ -3226,9 +3227,9 @@ func arrayContains(array []string, key string) bool {
 //	@Accepts		json
 //	@Produce		json
 //	@Param			request	body		inventoryApi.RunQueryByIDRequest	true	"Request Body"
-//	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
+//	@Param			accept	header		string								true	"Accept header"	Enums(application/json,text/csv)
 //	@Success		200		{object}	inventoryApi.RunQueryResponse
-//	@Router			/inventory/api/v2/query/run [post]
+//	@Router			/inventory/api/v3/query/run [post]
 func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	var req inventoryApi.RunQueryByIDRequest
 	if err := bindValidate(ctx, &req); err != nil {

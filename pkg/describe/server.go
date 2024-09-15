@@ -81,23 +81,23 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
 
-	v2 := e.Group("/api/v2")
-	v2.POST("/jobs/discovery/connections/:connection_id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/jobs/compliance/connections/:connection_id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
-	v2.POST("/jobs/discovery/connections", httpserver.AuthorizeHandler(h.GetDescribeJobsHistoryByIntegration, apiAuth.ViewerRole))
-	v2.POST("/jobs/compliance/connections", httpserver.AuthorizeHandler(h.GetComplianceJobsHistoryByIntegration, apiAuth.ViewerRole))
-	v2.POST("/compliance/benchmark/:benchmark_id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
-	v2.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
-	v2.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
-	v2.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
-	v2.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
-	v2.GET("/job/analytics/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
-	v2.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
-	v2.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
-	v2.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
-	v2.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
-	v2.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
-	v2.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.AdminRole))
+	v3 := e.Group("/api/v3")
+	v3.POST("/jobs/discovery/connections/:connection_id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
+	v3.POST("/jobs/compliance/connections/:connection_id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
+	v3.POST("/jobs/discovery/connections", httpserver.AuthorizeHandler(h.GetDescribeJobsHistoryByIntegration, apiAuth.ViewerRole))
+	v3.POST("/jobs/compliance/connections", httpserver.AuthorizeHandler(h.GetComplianceJobsHistoryByIntegration, apiAuth.ViewerRole))
+	v3.POST("/compliance/benchmark/:benchmark_id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
+	v3.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
+	v3.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
+	v3.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
+	v3.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
+	v3.GET("/job/analytics/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
+	v3.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
+	v3.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
+	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
+	v3.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
+	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
+	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.AdminRole))
 }
 
 // ListJobs godoc
@@ -1149,7 +1149,7 @@ func removeDuplicates(s []string) []string {
 //	@Param		connection_id	path	string								true	"Connection ID"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery/connections/{connection_id} [post]
+//	@Router		/schedule/api/v3/jobs/discovery/connections/{connection_id} [post]
 func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 	connectionId := ctx.Param("connection_id")
 
@@ -1227,7 +1227,7 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 //	@Param		connection_id	path	string								true	"Connection ID"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/compliance/connections/{connection_id} [post]
+//	@Router		/schedule/api/v3/jobs/compliance/connections/{connection_id} [post]
 func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 	var request api.GetComplianceJobsHistoryRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -1300,7 +1300,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 //	@Param			benchmark_id	path		string						true	"Benchmark ID"
 //	@Param			request			body		api.RunBenchmarkByIdRequest	true	"Integrations filter"
 //	@Success		200				{object}	api.RunBenchmarkResponse
-//	@Router			/schedule/api/v2/compliance/benchmark/{benchmark_id}/run [post]
+//	@Router			/schedule/api/v3/compliance/benchmark/{benchmark_id}/run [post]
 func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1386,7 +1386,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200		{object}	[]api.RunBenchmarkResponse
 //	@Param			request	body		api.RunBenchmarkRequest	true	"Requst Body"
-//	@Router			/schedule/api/v2/compliance/run [post]
+//	@Router			/schedule/api/v3/compliance/run [post]
 func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1486,7 +1486,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200		{object}	[]api.RunDiscoveryResponse
 //	@Param			request	body		api.RunDiscoveryRequest	true	"Request Body"
-//	@Router			/schedule/api/v12/discovery/run [post]
+//	@Router			/schedule/api/v3/discovery/run [post]
 func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1610,7 +1610,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 //	@Param		job_id	path	string	true	"Job ID"
 //	@Produce	json
 //	@Success	200	{object}	api.GetDescribeJobStatusResponse
-//	@Router		/schedule/api/v2/jobs/discovery/{job_id} [get]
+//	@Router		/schedule/api/v3/jobs/discovery/{job_id} [get]
 func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1651,7 +1651,7 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 //	@Param		job_id	path	string	true	"Job ID"
 //	@Produce	json
 //	@Success	200	{object}	api.GetComplianceJobStatusResponse
-//	@Router		/schedule/api/v2/job/compliance/{job_id} [get]
+//	@Router		/schedule/api/v3/job/compliance/{job_id} [get]
 func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1700,7 +1700,7 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 //	@Param		job_id	path	string	true	"Job ID"
 //	@Produce	json
 //	@Success	200	{object}	api.GetAnalyticsJobStatusResponse
-//	@Router		/schedule/api/v2/job/analytics/{job_id} [get]
+//	@Router		/schedule/api/v3/job/analytics/{job_id} [get]
 func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
 
 	jobIdString := ctx.Param("job_id")
@@ -1732,7 +1732,7 @@ func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
 //	@Param		request	body	api.ListDescribeJobsRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery [post]
+//	@Router		/schedule/api/v3/jobs/discovery [post]
 func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1849,7 +1849,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 //	@Param		request	body	api.ListComplianceJobsRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v1/jobs/compliance [post]
+//	@Router		/schedule/api/v3/jobs/compliance [post]
 func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -1968,7 +1968,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 //	@Param		endTime		query	int			false	"timestamp for end of the chart in epoch seconds"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/analytics [get]
+//	@Router		/schedule/api/v3/jobs/analytics [get]
 func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 	types := httpserver.QueryArrayParam(ctx, "types")
 	jobStatus := httpserver.QueryArrayParam(ctx, "job_status")
@@ -2072,7 +2072,7 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 //	@Param		request	body	api.GetDescribeJobsHistoryByIntegrationRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/discovery/connections [post]
+//	@Router		/schedule/api/v3/jobs/discovery/connections [post]
 func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -2187,7 +2187,7 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 //	@Param		request	body	api.GetComplianceJobsHistoryByIntegrationRequest	true	"List jobs request"
 //	@Produce	json
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
-//	@Router		/schedule/api/v2/jobs/compliance/connections [post]
+//	@Router		/schedule/api/v3/jobs/compliance/connections [post]
 func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -2319,7 +2319,7 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 //	@Param		job_type	query	string	true	"Job Type"
 //	@Produce	json
 //	@Success	200
-//	@Router		/schedule/api/v2/jobs/cancel/byid [put]
+//	@Router		/schedule/api/v3/jobs/cancel/byid [put]
 func (h HttpServer) CancelJobById(ctx echo.Context) error {
 	jobIdStr := ctx.QueryParam("job_id")
 	jobType := strings.ToLower(ctx.QueryParam("job_type"))
@@ -2457,7 +2457,7 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 //	@Param		request	body	api.CancelJobRequest	true	"Request Body"
 //	@Produce	json
 //	@Success	200	{object}	[]api.CancelJobResponse
-//	@Router		/schedule/api/v2/jobs/cancel [post]
+//	@Router		/schedule/api/v3/jobs/cancel [post]
 func (h HttpServer) CancelJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -2755,7 +2755,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 //	@Param		request	body	api.ListJobsByTypeRequest	true	"Request Body"
 //	@Produce	json
 //	@Success	200	{object}	[]api.ListJobsByTypeResponse
-//	@Router		/schedule/api/v2/jobs [post]
+//	@Router		/schedule/api/v3/jobs [post]
 func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
