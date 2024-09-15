@@ -5607,15 +5607,16 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 //	@Param			request			body		api.GetBenchmarkSummaryV2Request	true	"Integrations filter to get the benchmark summary"
 //	@Param			benchmark_id	path		string								true	"Benchmark ID to get the summary"
 //	@Success		200				{object}	api.GetBenchmarkSummaryV2Response
-//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/summary [post]
+//	@Router			/compliance/api/v2/benchmark/{benchmark_id}/summary [post]
 func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 	ctx := echoCtx.Request().Context()
-
+	h.logger.Info("LANDMARK 1")
 	var req api.GetBenchmarkSummaryV2Request
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	h.logger.Info("LANDMARK 2")
 
 	var connections []onboardApi.Connection
 	for _, info := range req.Integration {
@@ -5645,6 +5646,7 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 	for _, c := range connections {
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
+	h.logger.Info("LANDMARK 3")
 
 	benchmarkID := echoCtx.Param("benchmark_id")
 	// tracer :
@@ -5678,6 +5680,7 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 		controlsMap[strings.ToLower(control.ID)] = &control
 	}
 	timeAt := time.Now()
+	h.logger.Info("LANDMARK 4")
 
 	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx, h.logger, h.client,
 		[]string{benchmarkID}, connectionIDs, nil,
@@ -5685,25 +5688,27 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	h.logger.Info("LANDMARK 5")
 
 	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, nil, nil, kaytuTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
 	}
+	h.logger.Info("LANDMARK 6")
 
 	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, nil, nil, nil)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
 		return err
 	}
+	h.logger.Info("LANDMARK 7")
 
 	summaryAtTime := summariesAtTime[benchmarkID]
 
 	csResult := api.ConformanceStatusSummary{}
 	sResult := kaytuTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
-	connectionsResult := api.BenchmarkStatusResult{}
 	var costOptimization *float64
 	addToResults := func(resultGroup types.ResultGroup) {
 		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
@@ -5714,19 +5719,19 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
 		}
 	}
+	h.logger.Info("LANDMARK 8")
+
 	for _, connectionID := range connectionIDs {
 		addToResults(summaryAtTime.Connections.Connections[connectionID])
-		connectionsResult.TotalCount++
-		if summaryAtTime.Connections.Connections[connectionID].Result.IsFullyPassed() {
-			connectionsResult.PassedCount++
-		}
 	}
+	h.logger.Info("LANDMARK 9")
 
 	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return err
 	}
+	h.logger.Info("LANDMARK 10")
 
 	var lastJobStatus string
 	if lastJob != nil {
@@ -5776,6 +5781,7 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 			}
 		}
 	}
+	h.logger.Info("LANDMARK 11")
 
 	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
 	allResources := allResourcesResult[benchmarkID]
@@ -5792,6 +5798,7 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 	resourcesSeverityResult.Medium.PassedCount = passedResource.MediumCount
 	resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
 	resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
+	h.logger.Info("LANDMARK 12")
 
 	var topIntegrations []api.TopIntegration
 	for _, tf := range topConnections {
@@ -5805,6 +5812,7 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 			},
 		})
 	}
+	h.logger.Info("LANDMARK 13")
 
 	response := api.GetBenchmarkSummaryV2Response{
 		ComplianceScore:           float64(controlSeverityResult.Total.PassedCount) / float64(controlSeverityResult.Total.TotalCount),
@@ -5818,6 +5826,7 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 		EvaluatedAt:   utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus: lastJobStatus,
 	}
+	h.logger.Info("LANDMARK 14")
 
 	return echoCtx.JSON(http.StatusOK, response)
 }
