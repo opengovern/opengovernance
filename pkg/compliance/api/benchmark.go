@@ -167,9 +167,14 @@ type GetBenchmarkListMetadata struct {
 	UpdatedAt        time.Time           `json:"updated_at"`
 }
 
-type GetBenchmarkListResponse struct {
+type GetBenchmarkListItem struct {
 	Metadata GetBenchmarkListMetadata     `json:"metadata"`
 	Findings *GetBenchmarkDetailsFindings `json:"findings"`
+}
+
+type GetBenchmarkListResponse struct {
+	Items      []GetBenchmarkListItem `json:"items"`
+	TotalCount int                    `json:"total_count"`
 }
 
 type IntegrationInfo struct {
