@@ -2771,7 +2771,8 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 
 	sortBy := "id"
 	switch request.SortBy {
-	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
+	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus, api.JobSort_ByCreatedAt,
+		api.JobSort_ByUpdatedAt:
 		sortBy = string(request.SortBy)
 	}
 
@@ -2967,11 +2968,11 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		sort.Slice(items, func(i, j int) bool {
 			return items[i].JobId < items[j].JobId
 		})
-	case "created_at":
+	case api.JobSort_ByCreatedAt:
 		sort.Slice(items, func(i, j int) bool {
 			return items[i].CreatedAt.Before(items[j].CreatedAt)
 		})
-	case "updated_at":
+	case api.JobSort_ByUpdatedAt:
 		sort.Slice(items, func(i, j int) bool {
 			return items[i].UpdatedAt.Before(items[j].UpdatedAt)
 		})
