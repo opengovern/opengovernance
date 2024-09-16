@@ -4694,7 +4694,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	totalCount := len(items)
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].Metadata.ID < items[j].Metadata.ID
+		return items[i].Benchmark.ID < items[j].Benchmark.ID
 	})
 	if req.PerPage != nil {
 		if req.Cursor == nil {
