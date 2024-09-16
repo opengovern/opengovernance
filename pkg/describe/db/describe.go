@@ -329,7 +329,7 @@ func (db Database) ListDescribeJobsByIds(ids []string) ([]model.DescribeConnecti
 func (db Database) ListDescribeJobsForInterval(interval string) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("NOW() - updated_at < INTERVAL ?", interval).Find(&job)
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval)).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
