@@ -2356,6 +2356,67 @@ func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSever
 	return controlSeverityResult
 }
 
+func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSeverityStatusV2, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatusV2 {
+	if control == nil {
+		control = &db.Control{
+			Severity: kaytuTypes.FindingSeverityNone,
+		}
+	}
+	switch control.Severity {
+	case kaytuTypes.FindingSeverityCritical:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.Critical.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.Critical.PassedCount++
+		} else {
+			controlSeverityResult.Total.FailedCount++
+			controlSeverityResult.Critical.FailedCount++
+		}
+	case kaytuTypes.FindingSeverityHigh:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.High.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.High.PassedCount++
+		} else {
+			controlSeverityResult.Total.FailedCount++
+			controlSeverityResult.High.FailedCount++
+		}
+	case kaytuTypes.FindingSeverityMedium:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.Medium.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.Medium.PassedCount++
+		} else {
+			controlSeverityResult.Total.FailedCount++
+			controlSeverityResult.Medium.FailedCount++
+		}
+	case kaytuTypes.FindingSeverityLow:
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.Low.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.Low.PassedCount++
+		} else {
+			controlSeverityResult.Total.FailedCount++
+			controlSeverityResult.Low.FailedCount++
+		}
+	case kaytuTypes.FindingSeverityNone, "":
+		controlSeverityResult.Total.TotalCount++
+		controlSeverityResult.None.TotalCount++
+		if controlResult.Passed {
+			controlSeverityResult.Total.PassedCount++
+			controlSeverityResult.None.PassedCount++
+		} else {
+			controlSeverityResult.Total.FailedCount++
+			controlSeverityResult.None.FailedCount++
+		}
+	}
+	return controlSeverityResult
+}
+
 // ListBenchmarksSummary godoc
 //
 //	@Summary		List benchmarks summaries
@@ -5706,9 +5767,9 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 
 	summaryAtTime := summariesAtTime[benchmarkID]
 
-	csResult := api.ConformanceStatusSummary{}
+	csResult := api.ConformanceStatusSummaryV2{}
 	sResult := kaytuTypes.SeverityResult{}
-	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+	controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
 	var costOptimization *float64
 	addToResults := func(resultGroup types.ResultGroup) {
 		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
@@ -5716,7 +5777,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
 		for controlId, controlResult := range resultGroup.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
-			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+			controlSeverityResult = addToControlSeverityResultV2(controlSeverityResult, control, controlResult)
 		}
 	}
 
@@ -5730,9 +5791,10 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		return err
 	}
 
-	var lastJobStatus string
+	var lastJobStatus, lastJobId string
 	if lastJob != nil {
 		lastJobStatus = string(lastJob.Status)
+		lastJobId = strconv.Itoa(int(lastJob.ID))
 	}
 
 	var topResourceTypes, topResources, topControls []api.TopFiledRecordV2
@@ -5750,6 +5812,10 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 			Issues: v.AlarmCount,
 		})
 	}
+	sort.Slice(topResourceTypes, func(i, j int) bool {
+		return topResourceTypes[i].Issues > topResourceTypes[j].Issues
+	})
+
 	topResourcesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceID", connectionIDs, nil,
 		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
 	if err != nil {
@@ -5763,6 +5829,10 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 			Issues: v.AlarmCount,
 		})
 	}
+	sort.Slice(topResources, func(i, j int) bool {
+		return topResources[i].Issues > topResources[j].Issues
+	})
+
 	topControlsMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "controlID", connectionIDs, nil,
 		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
 	if err != nil {
@@ -5776,8 +5846,11 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 			Issues: v.AlarmCount,
 		})
 	}
+	sort.Slice(topControls, func(i, j int) bool {
+		return topControls[i].Issues > topControls[j].Issues
+	})
 
-	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
+	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatusV2{}
 	allResources := allResourcesResult[benchmarkID]
 	resourcesSeverityResult.Total.TotalCount = allResources.TotalCount
 	resourcesSeverityResult.Critical.TotalCount = allResources.CriticalCount
@@ -5793,6 +5866,13 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 	resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
 	resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
 
+	resourcesSeverityResult.Total.FailedCount = allResources.TotalCount - passedResource.TotalCount
+	resourcesSeverityResult.Critical.FailedCount = allResources.CriticalCount - passedResource.CriticalCount
+	resourcesSeverityResult.High.FailedCount = allResources.HighCount - passedResource.HighCount
+	resourcesSeverityResult.Medium.FailedCount = allResources.MediumCount - passedResource.MediumCount
+	resourcesSeverityResult.Low.FailedCount = allResources.LowCount - passedResource.LowCount
+	resourcesSeverityResult.None.FailedCount = allResources.NoneCount - passedResource.NoneCount
+
 	var complianceScore float64
 	if controlSeverityResult.Total.TotalCount > 0 {
 		complianceScore = float64(controlSeverityResult.Total.PassedCount) / float64(controlSeverityResult.Total.TotalCount)
@@ -5801,18 +5881,17 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 	}
 
 	response := api.ComplianceSummaryOfIntegrationResponse{
-		ComplianceScore:           complianceScore,
-		SeveritySummaryByControl:  controlSeverityResult,
-		SeveritySummaryByResource: resourcesSeverityResult,
-		FindingsSummary: api.ConformanceStatusSummary{
-			FailedCount: controlSeverityResult.Total.TotalCount - controlSeverityResult.Total.PassedCount,
-			PassedCount: controlSeverityResult.Total.PassedCount,
-		},
+		ComplianceScore:            complianceScore,
+		SeveritySummaryByControl:   controlSeverityResult,
+		SeveritySummaryByResource:  resourcesSeverityResult,
+		FindingsSummary:            csResult,
+		IssuesCount:                csResult.FailedCount,
 		TopControlsWithIssues:      topControls,
 		TopResourcesWithIssues:     topResources,
 		TopResourceTypesWithIssues: topResourceTypes,
 		LastEvaluatedAt:            utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:              lastJobStatus,
+		LastJobId:                  lastJobId,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
@@ -5845,11 +5924,15 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	if req.ShowTop == 0 {
 		req.ShowTop = 5
 	}
+	if req.IsRoot == nil {
+		trueBool := true
+		req.IsRoot = &trueBool
+	}
 
 	var benchmarks []db.Benchmark
 	var err error
 	if len(req.Benchmarks) == 0 {
-		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, req.IsRoot, nil, nil)
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -5901,9 +5984,9 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		summaryAtTime := summariesAtTime[benchmark.ID]
 
-		csResult := api.ConformanceStatusSummary{}
+		csResult := api.ConformanceStatusSummaryV2{}
 		sResult := kaytuTypes.SeverityResult{}
-		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+		controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
 		var costOptimization *float64
 		addToResults := func(resultGroup types.ResultGroup) {
 			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
@@ -5911,7 +5994,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
 			for controlId, controlResult := range resultGroup.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
-				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+				controlSeverityResult = addToControlSeverityResultV2(controlSeverityResult, control, controlResult)
 			}
 		}
 
@@ -5923,9 +6006,10 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			return err
 		}
 
-		var lastJobStatus string
+		var lastJobStatus, lastJobId string
 		if lastJob != nil {
 			lastJobStatus = string(lastJob.Status)
+			lastJobId = strconv.Itoa(int(lastJob.ID))
 		}
 
 		topConnections := make([]api.TopFieldRecord, 0, req.ShowTop)
@@ -5987,6 +6071,10 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				Issues: v.AlarmCount,
 			})
 		}
+		sort.Slice(topResourceTypes, func(i, j int) bool {
+			return topResourceTypes[i].Issues > topResourceTypes[j].Issues
+		})
+
 		topResourcesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceID", nil, nil,
 			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
 		if err != nil {
@@ -6000,6 +6088,10 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				Issues: v.AlarmCount,
 			})
 		}
+		sort.Slice(topResources, func(i, j int) bool {
+			return topResources[i].Issues > topResources[j].Issues
+		})
+
 		topControlsMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "controlID", nil, nil,
 			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
 		if err != nil {
@@ -6013,8 +6105,11 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				Issues: v.AlarmCount,
 			})
 		}
+		sort.Slice(topControls, func(i, j int) bool {
+			return topControls[i].Issues > topControls[j].Issues
+		})
 
-		resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
+		resourcesSeverityResult := api.BenchmarkResourcesSeverityStatusV2{}
 		allResources := allResourcesResult[benchmark.ID]
 		resourcesSeverityResult.Total.TotalCount = allResources.TotalCount
 		resourcesSeverityResult.Critical.TotalCount = allResources.CriticalCount
@@ -6030,15 +6125,23 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
 		resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
 
+		resourcesSeverityResult.Total.FailedCount = allResources.TotalCount - passedResource.TotalCount
+		resourcesSeverityResult.Critical.FailedCount = allResources.CriticalCount - passedResource.CriticalCount
+		resourcesSeverityResult.High.FailedCount = allResources.HighCount - passedResource.HighCount
+		resourcesSeverityResult.Medium.FailedCount = allResources.MediumCount - passedResource.MediumCount
+		resourcesSeverityResult.Low.FailedCount = allResources.LowCount - passedResource.LowCount
+		resourcesSeverityResult.None.FailedCount = allResources.NoneCount - passedResource.NoneCount
+
 		var topIntegrations []api.TopIntegration
 		for _, tf := range topConnections {
 			topIntegrations = append(topIntegrations, api.TopIntegration{
 				Issues: tf.Count,
 				IntegrationInfo: api.IntegrationInfo{
-					ID:          tf.Connection.ConnectionID,
-					IDName:      tf.Connection.ConnectionName,
-					Integration: tf.Connection.Connector.String(),
-					Type:        api.GetTypeFromIntegration(tf.Connection.Connector.String()),
+					ID:                 tf.Connection.ConnectionID,
+					IDName:             tf.Connection.ConnectionName,
+					Integration:        tf.Connection.Connector.String(),
+					Type:               api.GetTypeFromIntegration(tf.Connection.Connector.String()),
+					IntegrationTracker: tf.Connection.ID.String(),
 				},
 			})
 		}
@@ -6051,6 +6154,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		}
 
 		response = append(response, api.ComplianceSummaryOfBenchmarkResponse{
+			BenchmarkID:                benchmark.ID,
 			ComplianceScore:            complianceScore,
 			SeveritySummaryByControl:   controlSeverityResult,
 			SeveritySummaryByResource:  resourcesSeverityResult,
@@ -6058,12 +6162,11 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			TopResourceTypesWithIssues: topResourceTypes,
 			TopResourcesWithIssues:     topResources,
 			TopControlsWithIssues:      topControls,
-			FindingsSummary: api.ConformanceStatusSummary{
-				FailedCount: controlSeverityResult.Total.TotalCount - controlSeverityResult.Total.PassedCount,
-				PassedCount: controlSeverityResult.Total.PassedCount,
-			},
-			LastEvaluatedAt: utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
-			LastJobStatus:   lastJobStatus,
+			FindingsSummary:            csResult,
+			IssuesCount:                csResult.FailedCount,
+			LastEvaluatedAt:            utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			LastJobStatus:              lastJobStatus,
+			LastJobId:                  lastJobId,
 		})
 	}
 
