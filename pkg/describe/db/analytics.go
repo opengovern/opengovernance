@@ -79,6 +79,19 @@ func (db Database) ListAnalyticsJobsByIds(ids []string) ([]model.AnalyticsJob, e
 	return jobs, nil
 }
 
+func (db Database) ListAnalyticsJobsForInterval(interval string) ([]model.AnalyticsJob, error) {
+	var job []model.AnalyticsJob
+
+	tx := db.ORM.Model(&model.AnalyticsJob{}).Where("NOW() - updated_at < INTERVAL ?", interval).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListAnalyticsJobsByFilter(jobType []string, status []string, startTime *time.Time, endTime *time.Time) ([]model.AnalyticsJob, error) {
 	var jobs []model.AnalyticsJob
 	tx := db.ORM.Model(&model.AnalyticsJob{})
