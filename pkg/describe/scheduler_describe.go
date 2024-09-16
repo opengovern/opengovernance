@@ -724,14 +724,34 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			}
 			seqNum, err := s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
 			if err != nil {
-				s.logger.Error("failed to produce message to jetstream",
-					zap.Uint("jobID", dc.ID),
-					zap.String("connectionID", dc.ConnectionID),
-					zap.String("resourceType", dc.ResourceType),
-					zap.Error(err),
-				)
-				isFailed = true
-				return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+				if err.Error() == "nats: no response from stream" {
+					err = s.SetupNatsStreams(ctx)
+					if err != nil {
+						s.logger.Error("Failed to setup nats streams", zap.Error(err))
+						return err
+					}
+					seqNum, err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+					if err != nil {
+						s.logger.Error("failed to produce message to jetstream",
+							zap.Uint("jobID", dc.ID),
+							zap.String("connectionID", dc.ConnectionID),
+							zap.String("resourceType", dc.ResourceType),
+							zap.Error(err),
+						)
+						isFailed = true
+						return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+					}
+				} else {
+					s.logger.Error("failed to produce message to jetstream",
+						zap.Uint("jobID", dc.ID),
+						zap.String("connectionID", dc.ConnectionID),
+						zap.String("resourceType", dc.ResourceType),
+						zap.Error(err),
+						zap.String("error message", err.Error()),
+					)
+					isFailed = true
+					return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+				}
 			}
 			if seqNum != nil {
 				if err := s.db.UpdateDescribeConnectionJobNatsSeqNum(dc.ID, *seqNum); err != nil {
@@ -749,14 +769,34 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			}
 			seqNum, err := s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
 			if err != nil {
-				s.logger.Error("failed to produce message to jetstream",
-					zap.Uint("jobID", dc.ID),
-					zap.String("connectionID", dc.ConnectionID),
-					zap.String("resourceType", dc.ResourceType),
-					zap.Error(err),
-				)
-				isFailed = true
-				return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+				if err.Error() == "nats: no response from stream" {
+					err = s.SetupNatsStreams(ctx)
+					if err != nil {
+						s.logger.Error("Failed to setup nats streams", zap.Error(err))
+						return err
+					}
+					seqNum, err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+					if err != nil {
+						s.logger.Error("failed to produce message to jetstream",
+							zap.Uint("jobID", dc.ID),
+							zap.String("connectionID", dc.ConnectionID),
+							zap.String("resourceType", dc.ResourceType),
+							zap.Error(err),
+						)
+						isFailed = true
+						return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+					}
+				} else {
+					s.logger.Error("failed to produce message to jetstream",
+						zap.Uint("jobID", dc.ID),
+						zap.String("connectionID", dc.ConnectionID),
+						zap.String("resourceType", dc.ResourceType),
+						zap.Error(err),
+						zap.String("error message", err.Error()),
+					)
+					isFailed = true
+					return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+				}
 			}
 			if seqNum != nil {
 				if err := s.db.UpdateDescribeConnectionJobNatsSeqNum(dc.ID, *seqNum); err != nil {

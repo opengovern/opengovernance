@@ -18,6 +18,7 @@ import (
 const JobSchedulingInterval = 1 * time.Minute
 
 type JobScheduler struct {
+	runSetupNatsStreams     func(context.Context) error
 	conf                    config.SchedulerConfig
 	logger                  *zap.Logger
 	complianceClient        client.ComplianceServiceClient
@@ -29,6 +30,7 @@ type JobScheduler struct {
 }
 
 func New(
+	runSetupNatsStreams func(context.Context) error,
 	conf config.SchedulerConfig,
 	logger *zap.Logger,
 	complianceClient client.ComplianceServiceClient,
@@ -39,6 +41,7 @@ func New(
 	complianceIntervalHours time.Duration,
 ) *JobScheduler {
 	return &JobScheduler{
+		runSetupNatsStreams:     runSetupNatsStreams,
 		conf:                    conf,
 		logger:                  logger,
 		complianceClient:        complianceClient,

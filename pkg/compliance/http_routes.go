@@ -4685,8 +4685,8 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 			metadata.Connectors = source.ParseTypes(b.Connector)
 		}
 		benchmarkResult := api.GetBenchmarkListItem{
-			Metadata: metadata,
-			Findings: findingsResult,
+			Benchmark: metadata,
+			Findings:  findingsResult,
 		}
 		items = append(items, benchmarkResult)
 	}
