@@ -45,6 +45,12 @@ type BenchmarkStatusResult struct {
 	TotalCount  int `json:"total"`
 }
 
+type BenchmarkStatusResultV2 struct {
+	TotalCount  int `json:"total"`
+	PassedCount int `json:"passed"`
+	FailedCount int `json:"failed"`
+}
+
 type BenchmarkControlsSeverityStatus struct {
 	Total BenchmarkStatusResult `json:"total"`
 
@@ -65,7 +71,33 @@ type BenchmarkResourcesSeverityStatus struct {
 	None     BenchmarkStatusResult `json:"none"`
 }
 
+type BenchmarkControlsSeverityStatusV2 struct {
+	Total BenchmarkStatusResultV2 `json:"total"`
+
+	Critical BenchmarkStatusResultV2 `json:"critical"`
+	High     BenchmarkStatusResultV2 `json:"high"`
+	Medium   BenchmarkStatusResultV2 `json:"medium"`
+	Low      BenchmarkStatusResultV2 `json:"low"`
+	None     BenchmarkStatusResultV2 `json:"none"`
+}
+
+type BenchmarkResourcesSeverityStatusV2 struct {
+	Total BenchmarkStatusResultV2 `json:"total"`
+
+	Critical BenchmarkStatusResultV2 `json:"critical"`
+	High     BenchmarkStatusResultV2 `json:"high"`
+	Medium   BenchmarkStatusResultV2 `json:"medium"`
+	Low      BenchmarkStatusResultV2 `json:"low"`
+	None     BenchmarkStatusResultV2 `json:"none"`
+}
+
 type ConformanceStatusSummary struct {
+	PassedCount int `json:"passed"`
+	FailedCount int `json:"failed"`
+}
+
+type ConformanceStatusSummaryV2 struct {
+	TotalCount  int `json:"total_count"`
 	PassedCount int `json:"passed"`
 	FailedCount int `json:"failed"`
 }
@@ -76,6 +108,16 @@ func (c *ConformanceStatusSummary) AddESConformanceStatusMap(summary map[types.C
 	c.PassedCount += summary[types.ConformanceStatusINFO]
 	c.PassedCount += summary[types.ConformanceStatusSKIP]
 	c.FailedCount += summary[types.ConformanceStatusERROR]
+}
+
+func (c *ConformanceStatusSummaryV2) AddESConformanceStatusMap(summary map[types.ConformanceStatus]int) {
+	c.PassedCount += summary[types.ConformanceStatusOK]
+	c.FailedCount += summary[types.ConformanceStatusALARM]
+	c.PassedCount += summary[types.ConformanceStatusINFO]
+	c.PassedCount += summary[types.ConformanceStatusSKIP]
+	c.FailedCount += summary[types.ConformanceStatusERROR]
+
+	c.TotalCount = c.FailedCount + c.PassedCount
 }
 
 type BenchmarkEvaluationSummary struct {
@@ -230,15 +272,17 @@ type TopFiledRecordV2 struct {
 }
 
 type ComplianceSummaryOfIntegrationResponse struct {
-	ComplianceScore            float64                          `json:"compliance_score"`
-	SeveritySummaryByControl   BenchmarkControlsSeverityStatus  `json:"severity_summary_by_control"`
-	SeveritySummaryByResource  BenchmarkResourcesSeverityStatus `json:"severity_summary_by_resource"`
-	FindingsSummary            ConformanceStatusSummary         `json:"findings_summary"`
-	TopResourcesWithIssues     []TopFiledRecordV2               `json:"top_resources_with_issues"`
-	TopResourceTypesWithIssues []TopFiledRecordV2               `json:"top_resource_types_with_issues"`
-	TopControlsWithIssues      []TopFiledRecordV2               `json:"top_controls_with_issues"`
-	LastEvaluatedAt            *time.Time                       `json:"last_evaluated_at"`
-	LastJobStatus              string                           `json:"last_job_status"`
+	ComplianceScore            float64                            `json:"compliance_score"`
+	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
+	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
+	FindingsSummary            ConformanceStatusSummaryV2         `json:"findings_summary"`
+	IssuesCount                int                                `json:"issues_count"`
+	TopResourcesWithIssues     []TopFiledRecordV2                 `json:"top_resources_with_issues"`
+	TopResourceTypesWithIssues []TopFiledRecordV2                 `json:"top_resource_types_with_issues"`
+	TopControlsWithIssues      []TopFiledRecordV2                 `json:"top_controls_with_issues"`
+	LastEvaluatedAt            *time.Time                         `json:"last_evaluated_at"`
+	LastJobStatus              string                             `json:"last_job_status"`
+	LastJobId                  string                             `json:"last_job_id"`
 }
 
 type ComplianceSummaryOfBenchmarkRequest struct {
@@ -248,15 +292,17 @@ type ComplianceSummaryOfBenchmarkRequest struct {
 }
 
 type ComplianceSummaryOfBenchmarkResponse struct {
-	BenchmarkID                string                           `json:"benchmark_id"`
-	ComplianceScore            float64                          `json:"compliance_score"`
-	SeveritySummaryByControl   BenchmarkControlsSeverityStatus  `json:"severity_summary_by_control"`
-	SeveritySummaryByResource  BenchmarkResourcesSeverityStatus `json:"severity_summary_by_resource"`
-	FindingsSummary            ConformanceStatusSummary         `json:"findings_summary"`
-	TopIntegrations            []TopIntegration                 `json:"top_integrations"`
-	TopResourcesWithIssues     []TopFiledRecordV2               `json:"top_resources_with_issues"`
-	TopResourceTypesWithIssues []TopFiledRecordV2               `json:"top_resource_types_with_issues"`
-	TopControlsWithIssues      []TopFiledRecordV2               `json:"top_controls_with_issues"`
-	LastEvaluatedAt            *time.Time                       `json:"last_evaluated_at"`
-	LastJobStatus              string                           `json:"last_job_status"`
+	BenchmarkID                string                             `json:"benchmark_id"`
+	ComplianceScore            float64                            `json:"compliance_score"`
+	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
+	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
+	FindingsSummary            ConformanceStatusSummaryV2         `json:"findings_summary"`
+	IssuesCount                int                                `json:"issues_count"`
+	TopIntegrations            []TopIntegration                   `json:"top_integrations"`
+	TopResourcesWithIssues     []TopFiledRecordV2                 `json:"top_resources_with_issues"`
+	TopResourceTypesWithIssues []TopFiledRecordV2                 `json:"top_resource_types_with_issues"`
+	TopControlsWithIssues      []TopFiledRecordV2                 `json:"top_controls_with_issues"`
+	LastEvaluatedAt            *time.Time                         `json:"last_evaluated_at"`
+	LastJobStatus              string                             `json:"last_job_status"`
+	LastJobId                  string                             `json:"last_job_id"`
 }
