@@ -5711,6 +5711,14 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		connection = connectionsTmp
 	}
 
+	integrationInfo := api.IntegrationInfo{
+		ID:                 connection.ConnectionID,
+		IDName:             connection.ConnectionName,
+		Integration:        connection.Connector.String(),
+		Type:               api.GetTypeFromIntegration(connection.Connector.String()),
+		IntegrationTracker: connection.ID.String(),
+	}
+
 	connectionIDs := []string{connection.ID.String()}
 
 	benchmarkID := req.BenchmarkId
@@ -5881,6 +5889,8 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 	}
 
 	response := api.ComplianceSummaryOfIntegrationResponse{
+		BenchmarkID:                benchmarkID,
+		Integration:                integrationInfo,
 		ComplianceScore:            complianceScore,
 		SeveritySummaryByControl:   controlSeverityResult,
 		SeveritySummaryByResource:  resourcesSeverityResult,

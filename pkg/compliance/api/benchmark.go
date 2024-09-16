@@ -272,6 +272,8 @@ type TopFiledRecordV2 struct {
 }
 
 type ComplianceSummaryOfIntegrationResponse struct {
+	BenchmarkID                string                             `json:"benchmark_id"`
+	Integration                IntegrationInfo                    `json:"integration"`
 	ComplianceScore            float64                            `json:"compliance_score"`
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
