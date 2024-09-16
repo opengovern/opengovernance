@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/kaytu-io/kaytu-engine/services/wastage/db/model"
+	"github.com/kaytu-io/open-governance/services/wastage/db/model"
 	"time"
 )
 

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/services/information"
+	"github.com/kaytu-io/open-governance/services/information"
 	"os"
 	"os/signal"
 	"syscall"

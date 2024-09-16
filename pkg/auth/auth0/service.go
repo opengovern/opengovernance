@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/open-governance/pkg/auth/db"
 )
 
 type Service struct {

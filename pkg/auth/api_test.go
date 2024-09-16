@@ -16,9 +16,9 @@ import (
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/open-governance/pkg/auth/api"
+	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
+	"github.com/kaytu-io/open-governance/pkg/auth/db"
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"

@@ -1,6 +1,6 @@
 package db
 
-import "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+import "github.com/kaytu-io/open-governance/pkg/workspace/api"
 
 func (s *Database) CreateWorkspaceTransaction(m *WorkspaceTransaction) error {
 	return s.Orm.Model(&WorkspaceTransaction{}).Create(m).Error

@@ -3,13 +3,13 @@ package service
 import (
 	"context"
 
-	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
-	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	describe "github.com/kaytu-io/open-governance/pkg/describe/client"
+	inventory "github.com/kaytu-io/open-governance/pkg/inventory/client"
+	"github.com/kaytu-io/open-governance/services/integration/meta"
+	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/kaytu-io/open-governance/services/integration/repository"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

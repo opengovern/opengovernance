@@ -3,17 +3,17 @@ package onboard
 import (
 	"context"
 	"fmt"
-	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/db"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	describeClient "github.com/kaytu-io/open-governance/pkg/describe/client"
+	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/kaytu-io/open-governance/pkg/onboard/db"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 
-	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	inventory "github.com/kaytu-io/open-governance/pkg/inventory/client"
 )
 
 type HttpHandler struct {

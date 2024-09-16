@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/open-governance/pkg/analytics/es/resource"
+	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"go.uber.org/zap"
 )
 

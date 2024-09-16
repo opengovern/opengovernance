@@ -1,7 +1,7 @@
 package model
 
 import (
-	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	checkupapi "github.com/kaytu-io/open-governance/pkg/checkup/api"
 	"gorm.io/gorm"
 )
 

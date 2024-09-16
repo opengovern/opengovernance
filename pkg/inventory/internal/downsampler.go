@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/haoel/downsampling/core"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/open-governance/pkg/inventory/api"
 )
 
 func resourceTypeTrendDataPointsToPoints(trendDataPoints []api.ResourceTypeTrendDatapoint) []core.Point {

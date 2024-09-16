@@ -13,11 +13,11 @@ import (
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
+	"github.com/kaytu-io/open-governance/pkg/describe/api"
+	"github.com/kaytu-io/open-governance/pkg/describe/es"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )

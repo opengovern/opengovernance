@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
 	"time"
 
-	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
+	describeApi "github.com/kaytu-io/open-governance/pkg/describe/api"
+	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	"go.uber.org/zap"
 )
 

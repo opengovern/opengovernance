@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
+	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
 	"go.opentelemetry.io/otel"
 	"io"
 	"net/http"
@@ -18,7 +18,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/open-governance/pkg/onboard/api"
 )
 
 type OnboardServiceClient interface {

@@ -2,8 +2,8 @@ package kaytu
 
 import (
 	"context"
-	metric "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	kaytu_client "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-client"
+	metric "github.com/kaytu-io/open-governance/pkg/analytics/db"
+	kaytu_client "github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"

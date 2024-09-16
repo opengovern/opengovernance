@@ -2,12 +2,12 @@ package kaytu_client
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	"github.com/kaytu-io/open-governance/pkg/analytics/es/spend"
 	"runtime"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 

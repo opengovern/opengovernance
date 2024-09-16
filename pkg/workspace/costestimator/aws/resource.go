@@ -2,10 +2,10 @@ package aws
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
 	"go.uber.org/zap"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
 )
 
 // Provider is an implementation of the terraform.Provider, used to extract component queries from

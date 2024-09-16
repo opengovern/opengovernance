@@ -2,14 +2,14 @@ package client
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/open-governance/pkg/describe/api"
 )
 
 type TimeRangeFilter struct {

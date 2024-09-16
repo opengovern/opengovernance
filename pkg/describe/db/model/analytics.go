@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/api"
+	"github.com/kaytu-io/open-governance/pkg/analytics/api"
 	"gorm.io/gorm"
 )
 

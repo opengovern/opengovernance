@@ -2,16 +2,16 @@ package describe
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/open-governance/pkg/utils"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	analyticsDb "github.com/kaytu-io/open-governance/pkg/analytics/db"
+	"github.com/kaytu-io/open-governance/pkg/describe/api"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 )
 
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {

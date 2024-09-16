@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	metadataErrors "github.com/kaytu-io/kaytu-engine/pkg/metadata/errors"
+	metadataErrors "github.com/kaytu-io/open-governance/pkg/metadata/errors"
 )
 
 func (t ConfigMetadataType) SerializeValue(value any) (string, error) {

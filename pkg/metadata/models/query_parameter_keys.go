@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/errors"
+	"github.com/kaytu-io/open-governance/pkg/metadata/errors"
 	"strings"
 )
 

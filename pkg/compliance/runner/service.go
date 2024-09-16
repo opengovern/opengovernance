@@ -8,11 +8,6 @@ import (
 	"os"
 	"time"
 
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -20,6 +15,11 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	complianceApi "github.com/kaytu-io/open-governance/pkg/compliance/api"
+	complianceClient "github.com/kaytu-io/open-governance/pkg/compliance/client"
+	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
+	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )

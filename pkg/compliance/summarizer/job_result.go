@@ -3,7 +3,7 @@ package summarizer
 import (
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
+	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
 )
 
 type ComplianceSummarizerStatus string

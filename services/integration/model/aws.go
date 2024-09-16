@@ -3,7 +3,7 @@ package model
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
+	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/organizations"

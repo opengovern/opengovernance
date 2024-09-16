@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/open-governance/pkg/metadata/api"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 )
 
 var ErrConfigNotFound = errors.New("config not found")

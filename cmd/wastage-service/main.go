@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/services/wastage"
+	"github.com/kaytu-io/open-governance/services/wastage"
 	"os"
 	"os/signal"
 	"syscall"

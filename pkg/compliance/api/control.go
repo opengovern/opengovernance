@@ -1,9 +1,9 @@
 package api
 
 import (
-	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
+	"github.com/kaytu-io/open-governance/pkg/types"
 	"time"
 )
 

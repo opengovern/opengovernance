@@ -2,12 +2,12 @@ package discovery
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/open-governance/pkg/compliance/client"
+	config2 "github.com/kaytu-io/open-governance/pkg/describe/config"
+	"github.com/kaytu-io/open-governance/pkg/describe/db"
+	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
+	"github.com/kaytu-io/open-governance/pkg/utils"
 	"go.uber.org/zap"
 )
 
