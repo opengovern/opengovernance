@@ -129,7 +129,7 @@ func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
 func (db Database) ListComplianceJobsForInterval(interval string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("NOW() - updated_at < INTERVAL ?", interval).Find(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval)).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
