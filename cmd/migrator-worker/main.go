@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/services/migrator"
+	"github.com/kaytu-io/open-governance/services/migrator"
 	"os"
 	"os/signal"
 	"syscall"

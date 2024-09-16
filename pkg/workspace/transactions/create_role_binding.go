@@ -2,12 +2,12 @@ package transactions
 
 import (
 	"fmt"
-	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	authapi "github.com/kaytu-io/open-governance/pkg/auth/api"
+	authclient "github.com/kaytu-io/open-governance/pkg/auth/client"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	"golang.org/x/net/context"
 )
 

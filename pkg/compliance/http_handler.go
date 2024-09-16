@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
+	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
 	"github.com/sashabaranov/go-openai"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -12,13 +12,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	describeClient "github.com/kaytu-io/open-governance/pkg/describe/client"
+	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 
 	"go.uber.org/zap"
 )

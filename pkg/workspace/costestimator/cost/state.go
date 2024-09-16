@@ -3,8 +3,8 @@ package cost
 import (
 	"fmt"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/backend"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/backend"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
 )
 
 // State represents a collection of all the Resource costs (either prior or planned.) It is not tied to any specific

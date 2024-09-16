@@ -2,7 +2,7 @@ package types
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
+	"github.com/kaytu-io/open-governance/services/migrator/config"
 	"go.uber.org/zap"
 )
 

@@ -2,19 +2,19 @@ package inventory
 
 import (
 	"fmt"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
+	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
 
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	complianceClient "github.com/kaytu-io/open-governance/pkg/compliance/client"
+	describeClient "github.com/kaytu-io/open-governance/pkg/describe/client"
+	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"go.uber.org/zap"
 )

@@ -1,8 +1,8 @@
 package kaytu_client
 
 import (
-	pgsdk "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	pgsdk "github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
 )
 
 type Client struct {

@@ -1,8 +1,8 @@
 package azure
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
 )
 
 // VirtualNetwork is the entity that holds the logic to calculate price

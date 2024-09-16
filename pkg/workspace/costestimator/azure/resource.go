@@ -2,8 +2,8 @@ package azure
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
 	"go.uber.org/zap"
 )
 

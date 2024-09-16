@@ -3,7 +3,7 @@ package onboard
 import (
 	"fmt"
 	"github.com/goccy/go-yaml"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/open-governance/services/integration/model"
 	"io/fs"
 	"os"
 	"path/filepath"

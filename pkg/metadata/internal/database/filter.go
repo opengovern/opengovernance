@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 )
 
 func (db Database) AddFilter(filter models.Filter) error {

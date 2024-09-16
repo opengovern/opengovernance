@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
+	"github.com/kaytu-io/open-governance/services/integration/model"
 	"strings"
 	"time"
 

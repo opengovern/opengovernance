@@ -8,13 +8,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
-	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
 	"github.com/kaytu-io/kaytu-util/pkg/jq"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
+	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
 )

@@ -17,7 +17,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/ory/dockertest/v3"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"

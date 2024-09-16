@@ -3,8 +3,8 @@ package job
 import (
 	"crypto/sha256"
 	"encoding/base64"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/db/model"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/job/types"
+	"github.com/kaytu-io/open-governance/services/migrator/db/model"
+	"github.com/kaytu-io/open-governance/services/migrator/job/types"
 	"go.uber.org/zap"
 	"io/fs"
 	"os"

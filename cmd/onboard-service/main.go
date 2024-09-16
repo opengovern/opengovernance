@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard"
+	"github.com/kaytu-io/open-governance/pkg/onboard"
 )
 
 func main() {

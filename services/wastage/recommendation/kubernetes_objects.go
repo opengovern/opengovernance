@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/api/entity"
+	"github.com/kaytu-io/open-governance/services/wastage/api/entity"
 	"github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"github.com/labstack/echo/v4"

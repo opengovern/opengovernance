@@ -1,8 +1,8 @@
 package api
 
 import (
-	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
+	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"

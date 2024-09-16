@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/open-governance/pkg/checkup/api"
+	"github.com/kaytu-io/open-governance/pkg/onboard/client"
+	"github.com/kaytu-io/open-governance/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"

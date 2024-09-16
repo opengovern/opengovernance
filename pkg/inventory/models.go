@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )

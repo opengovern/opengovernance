@@ -3,9 +3,9 @@ package compliance
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/open-governance/pkg/compliance/db"
+	"github.com/kaytu-io/open-governance/services/migrator/config"
 	"go.uber.org/zap"
 
 	"gorm.io/gorm"

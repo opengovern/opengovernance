@@ -1,4 +1,4 @@
-module github.com/kaytu-io/kaytu-engine
+module github.com/kaytu-io/open-governance
 
 go 1.22.0
 

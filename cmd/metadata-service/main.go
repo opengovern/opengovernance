@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata"
+	"github.com/kaytu-io/open-governance/pkg/metadata"
 )
 
 func main() {

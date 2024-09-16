@@ -2,13 +2,13 @@ package transactions
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"github.com/kaytu-io/open-governance/pkg/compliance/client"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/config"
+	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	"go.uber.org/zap"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"

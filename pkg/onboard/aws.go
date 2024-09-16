@@ -10,8 +10,8 @@ import (
 	"github.com/aws/smithy-go"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/connectors"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
+	"github.com/kaytu-io/open-governance/pkg/utils"
 	"go.uber.org/zap"
 )
 

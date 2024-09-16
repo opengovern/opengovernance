@@ -1,8 +1,8 @@
 package recommendation
 
 import (
-	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/db/repo"
+	"github.com/kaytu-io/open-governance/services/wastage/cost"
+	"github.com/kaytu-io/open-governance/services/wastage/db/repo"
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 )

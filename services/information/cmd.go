@@ -1,14 +1,14 @@
 package information
 
 import (
-	"github.com/kaytu-io/kaytu-engine/services/information/api"
-	"github.com/kaytu-io/kaytu-engine/services/information/config"
-	"github.com/kaytu-io/kaytu-engine/services/information/db/model"
-	"github.com/kaytu-io/kaytu-engine/services/information/db/repo"
-	"github.com/kaytu-io/kaytu-engine/services/information/service"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/open-governance/services/information/api"
+	"github.com/kaytu-io/open-governance/services/information/config"
+	"github.com/kaytu-io/open-governance/services/information/db/model"
+	"github.com/kaytu-io/open-governance/services/information/db/repo"
+	"github.com/kaytu-io/open-governance/services/information/service"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

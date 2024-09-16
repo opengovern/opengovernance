@@ -2,10 +2,10 @@ package compliance
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
-	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/kaytu-io/open-governance/pkg/compliance/es"
+	kaytuTypes "github.com/kaytu-io/open-governance/pkg/types"
 	"go.uber.org/zap"
 	"regexp"
 	"time"

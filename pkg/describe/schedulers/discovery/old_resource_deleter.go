@@ -3,10 +3,10 @@ package discovery
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/ticker"
+	"github.com/kaytu-io/open-governance/pkg/describe/api"
+	"github.com/kaytu-io/open-governance/pkg/describe/es"
 
 	"go.uber.org/zap"
 	"strings"

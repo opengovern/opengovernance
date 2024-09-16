@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	"time"
 
-	onboardAPI "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	onboardAPI "github.com/kaytu-io/open-governance/pkg/onboard/api"
 )
 
 func (s *JobScheduler) runScheduler() error {

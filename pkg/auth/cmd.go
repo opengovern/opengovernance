@@ -14,10 +14,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
+	"github.com/kaytu-io/open-governance/pkg/auth/db"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	"github.com/kaytu-io/open-governance/pkg/workspace/client"
 
 	"crypto/rand"
 	"github.com/spf13/cobra"

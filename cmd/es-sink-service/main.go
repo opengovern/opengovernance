@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	esSink "github.com/kaytu-io/kaytu-engine/services/es-sink"
+	esSink "github.com/kaytu-io/open-governance/services/es-sink"
 	"os"
 	"os/signal"
 	"syscall"

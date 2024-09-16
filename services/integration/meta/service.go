@@ -6,9 +6,9 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strings"
 
-	metadata "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
+	metadata "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 )
 
 type Meta struct {

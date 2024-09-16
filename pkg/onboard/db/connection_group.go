@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/open-governance/services/integration/model"
 )
 
 func (db Database) ListConnectionGroups() ([]model.ConnectionGroup, error) {

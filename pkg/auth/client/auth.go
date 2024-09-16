@@ -7,7 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/open-governance/pkg/auth/api"
 )
 
 type AuthServiceClient interface {

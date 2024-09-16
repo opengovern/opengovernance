@@ -1,9 +1,9 @@
 package onboard
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	apiv2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/open-governance/pkg/onboard/api"
+	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
+	"github.com/kaytu-io/open-governance/services/integration/model"
 	"golang.org/x/net/context"
 )
 

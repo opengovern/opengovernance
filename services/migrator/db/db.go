@@ -2,7 +2,7 @@ package db
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/db/model"
+	"github.com/kaytu-io/open-governance/services/migrator/db/model"
 	"gorm.io/gorm"
 )
 

@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
