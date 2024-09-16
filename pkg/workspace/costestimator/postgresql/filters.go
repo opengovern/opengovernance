@@ -2,7 +2,7 @@ package postgresql
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
 )
 
 func parseProductFilter(filter *product.Filter) string {

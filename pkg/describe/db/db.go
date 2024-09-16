@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	"gorm.io/gorm"
 )
 

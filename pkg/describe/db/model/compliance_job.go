@@ -3,9 +3,9 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
+	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer"
+	"github.com/kaytu-io/open-governance/pkg/describe/api"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"

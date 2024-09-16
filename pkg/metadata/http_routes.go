@@ -13,9 +13,9 @@ import (
 	_ "gorm.io/gorm"
 	"net/http"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/src"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	"github.com/kaytu-io/open-governance/pkg/metadata/api"
+	"github.com/kaytu-io/open-governance/pkg/metadata/internal/src"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/labstack/echo/v4"
 )
 

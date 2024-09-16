@@ -3,19 +3,19 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/open-governance/pkg/utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/open-governance/pkg/types"
 	"github.com/lib/pq"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/open-governance/pkg/compliance/api"
 
 	"gorm.io/gorm"
 )

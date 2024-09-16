@@ -1,15 +1,15 @@
 package integration
 
 import (
-	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api"
-	"github.com/kaytu-io/kaytu-engine/services/integration/config"
-	"github.com/kaytu-io/kaytu-engine/services/integration/db"
-	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	describe "github.com/kaytu-io/open-governance/pkg/describe/client"
+	inventory "github.com/kaytu-io/open-governance/pkg/inventory/client"
+	"github.com/kaytu-io/open-governance/services/integration/api"
+	"github.com/kaytu-io/open-governance/services/integration/config"
+	"github.com/kaytu-io/open-governance/services/integration/db"
+	"github.com/kaytu-io/open-governance/services/integration/meta"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

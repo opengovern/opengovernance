@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/kaytu-io/open-governance/pkg/types"
 	"go.uber.org/zap"
 	"time"
 )

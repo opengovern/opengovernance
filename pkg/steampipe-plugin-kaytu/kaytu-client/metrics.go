@@ -2,9 +2,9 @@ package kaytu_client
 
 import (
 	"context"
-	metric "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	metric "github.com/kaytu-io/open-governance/pkg/analytics/db"
+	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"gorm.io/gorm/clause"
 	"runtime"

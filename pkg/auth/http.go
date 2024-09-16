@@ -19,17 +19,17 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/open-governance/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
+	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
+	"github.com/kaytu-io/open-governance/pkg/workspace/client"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/open-governance/pkg/auth/api"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )

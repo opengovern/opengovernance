@@ -2,11 +2,11 @@ package auth0
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/open-governance/pkg/auth/db"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/open-governance/pkg/auth/api"
 )
 
 type TokenRequest struct {

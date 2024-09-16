@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	compliance "github.com/kaytu-io/open-governance/pkg/compliance/api"
 )
 
 type ComplianceServiceClient interface {

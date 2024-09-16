@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace"
+	"github.com/kaytu-io/open-governance/pkg/workspace"
 )
 
 func main() {

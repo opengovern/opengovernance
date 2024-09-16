@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/jq"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"

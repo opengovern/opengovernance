@@ -1,9 +1,9 @@
 package types
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
 )
 
 type KaytuWorkspaceSettings struct {

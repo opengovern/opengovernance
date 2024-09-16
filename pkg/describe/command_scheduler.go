@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 
-	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	config2 "github.com/kaytu-io/open-governance/pkg/describe/config"
 	"github.com/spf13/cobra"
 )
 

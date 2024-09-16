@@ -2,8 +2,8 @@ package entities
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/open-governance/pkg/onboard/api"
+	"github.com/kaytu-io/open-governance/services/integration/model"
 )
 
 func NewConnection(s model.Connection) api.Connection {

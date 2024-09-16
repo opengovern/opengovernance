@@ -3,7 +3,7 @@ package recommendation
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/services/wastage/cost"
+	"github.com/kaytu-io/open-governance/services/wastage/cost"
 	pb "github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"

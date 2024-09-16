@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
+	"github.com/kaytu-io/open-governance/pkg/auth/db"
 )
 
 type tokenStruct struct {

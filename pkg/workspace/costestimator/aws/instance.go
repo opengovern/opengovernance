@@ -2,16 +2,16 @@ package aws
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
 	"strings"
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/aws/region"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/price"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/product"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/util"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/aws/region"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/price"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/util"
 )
 
 // Instance represents an EC2 instance definition that can be cost-estimated.

@@ -1,17 +1,17 @@
 package api
 
 import (
-	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/connection"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/connector"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/credential"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/healthz"
-	"github.com/kaytu-io/kaytu-engine/services/integration/db"
-	"github.com/kaytu-io/kaytu-engine/services/integration/meta"
-	"github.com/kaytu-io/kaytu-engine/services/integration/repository"
-	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	describe "github.com/kaytu-io/open-governance/pkg/describe/client"
+	inventory "github.com/kaytu-io/open-governance/pkg/inventory/client"
+	"github.com/kaytu-io/open-governance/services/integration/api/connection"
+	"github.com/kaytu-io/open-governance/services/integration/api/connector"
+	"github.com/kaytu-io/open-governance/services/integration/api/credential"
+	"github.com/kaytu-io/open-governance/services/integration/api/healthz"
+	"github.com/kaytu-io/open-governance/services/integration/db"
+	"github.com/kaytu-io/open-governance/services/integration/meta"
+	"github.com/kaytu-io/open-governance/services/integration/repository"
+	"github.com/kaytu-io/open-governance/services/integration/service"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )

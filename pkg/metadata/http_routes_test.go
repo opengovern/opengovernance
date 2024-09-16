@@ -16,9 +16,9 @@ import (
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/database"
-	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
+	"github.com/kaytu-io/open-governance/pkg/metadata/api"
+	"github.com/kaytu-io/open-governance/pkg/metadata/internal/database"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"go.uber.org/zap"
 
 	"github.com/labstack/echo/v4"

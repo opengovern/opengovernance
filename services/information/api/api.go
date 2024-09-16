@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-engine/services/information/config"
-	"github.com/kaytu-io/kaytu-engine/services/information/service"
 	shared_entities "github.com/kaytu-io/kaytu-util/pkg/api/shared-entities"
+	"github.com/kaytu-io/open-governance/services/information/config"
+	"github.com/kaytu-io/open-governance/services/information/service"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"

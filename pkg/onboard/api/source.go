@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	v2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api/v2"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	v2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
 
 	"github.com/google/uuid"
 )

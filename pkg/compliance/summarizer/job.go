@@ -9,13 +9,13 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
-	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
-	es3 "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/kaytu-io/open-governance/pkg/compliance/es"
+	types2 "github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
+	es3 "github.com/kaytu-io/open-governance/pkg/describe/es"
+	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
+	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
+	"github.com/kaytu-io/open-governance/pkg/types"
 	"go.uber.org/zap"
 )
 

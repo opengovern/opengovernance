@@ -2,13 +2,13 @@ package connector
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/services/integration/api/entity"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
-	"github.com/kaytu-io/kaytu-engine/services/integration/service"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/fp"
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/open-governance/services/integration/api/entity"
+	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/kaytu-io/open-governance/services/integration/service"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

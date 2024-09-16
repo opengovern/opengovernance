@@ -2,8 +2,8 @@ package transactions
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	"golang.org/x/net/context"
 )
 

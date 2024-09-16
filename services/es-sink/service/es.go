@@ -2,10 +2,10 @@ package service
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-engine/services/es-sink/metrics"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/kaytu-io/open-governance/services/es-sink/metrics"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"

@@ -3,10 +3,10 @@ package grpcApi
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-engine/services/es-sink/service"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
+	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/kaytu-io/open-governance/services/es-sink/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"net"

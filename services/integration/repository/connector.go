@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"github.com/kaytu-io/kaytu-engine/services/integration/db"
-	"github.com/kaytu-io/kaytu-engine/services/integration/model"
+	"github.com/kaytu-io/open-governance/services/integration/db"
+	"github.com/kaytu-io/open-governance/services/integration/model"
 )
 
 type Connector interface {

@@ -2,12 +2,12 @@ package kaytu_client
 
 import (
 	"context"
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-sdk/services"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	complianceApi "github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/services"
+	"github.com/kaytu-io/open-governance/pkg/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"runtime"
 	"time"

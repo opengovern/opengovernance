@@ -3,14 +3,14 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	"golang.org/x/net/context"
 
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	complianceApi "github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
+	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	"go.uber.org/zap"
 )
 

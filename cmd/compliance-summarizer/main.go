@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
+	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer"
 )
 
 func main() {

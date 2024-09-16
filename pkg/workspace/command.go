@@ -2,10 +2,10 @@ package workspace
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/config"
-	vault2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/vault"
 	"github.com/kaytu-io/kaytu-util/pkg/koanf"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"github.com/kaytu-io/open-governance/pkg/workspace/config"
+	vault2 "github.com/kaytu-io/open-governance/pkg/workspace/vault"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

@@ -3,9 +3,9 @@ package job
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/config"
-	"github.com/kaytu-io/kaytu-engine/services/migrator/db"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/open-governance/services/migrator/config"
+	"github.com/kaytu-io/open-governance/services/migrator/db"
 	"go.uber.org/zap"
 )
 

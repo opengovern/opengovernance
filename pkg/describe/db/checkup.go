@@ -3,8 +3,8 @@ package db
 import (
 	"errors"
 	"fmt"
-	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	checkupapi "github.com/kaytu-io/open-governance/pkg/checkup/api"
+	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	"gorm.io/gorm"
 )
 

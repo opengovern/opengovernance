@@ -6,8 +6,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"os"
 
-	config3 "github.com/kaytu-io/kaytu-engine/pkg/inventory/config"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	config3 "github.com/kaytu-io/open-governance/pkg/inventory/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

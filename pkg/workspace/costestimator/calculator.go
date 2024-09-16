@@ -2,11 +2,11 @@ package costestimator
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/cost"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/postgresql"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/query"
-	kaytuResources "github.com/kaytu-io/kaytu-engine/pkg/workspace/costestimator/resources"
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/db"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/cost"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/postgresql"
+	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
+	kaytuResources "github.com/kaytu-io/open-governance/pkg/workspace/costestimator/resources"
+	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	"go.uber.org/zap"
 )
 

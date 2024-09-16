@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/kaytu-io/open-governance/pkg/workspace/api"
 	"gorm.io/gorm"
 	"time"
 )

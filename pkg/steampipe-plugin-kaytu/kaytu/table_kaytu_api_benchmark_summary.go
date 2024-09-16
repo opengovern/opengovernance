@@ -2,8 +2,8 @@ package kaytu
 
 import (
 	"context"
-	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	kaytu_client "github.com/kaytu-io/kaytu-engine/pkg/steampipe-plugin-kaytu/kaytu-client"
+	compliance "github.com/kaytu-io/open-governance/pkg/compliance/api"
+	kaytu_client "github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"
