@@ -243,7 +243,7 @@ type ComplianceSummaryOfIntegrationResponse struct {
 
 type ComplianceSummaryOfBenchmarkRequest struct {
 	Benchmarks []string `json:"benchmarks"`
-	IsRoot     bool     `json:"is_root"`
+	IsRoot     *bool    `json:"is_root"`
 	ShowTop    int      `json:"show_top"`
 }
 

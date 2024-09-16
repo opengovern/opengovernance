@@ -5750,6 +5750,10 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 			Issues: v.AlarmCount,
 		})
 	}
+	sort.Slice(topResourceTypes, func(i, j int) bool {
+		return topResourceTypes[i].Issues > topResourceTypes[j].Issues
+	})
+
 	topResourcesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceID", connectionIDs, nil,
 		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
 	if err != nil {
@@ -5763,6 +5767,10 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 			Issues: v.AlarmCount,
 		})
 	}
+	sort.Slice(topResources, func(i, j int) bool {
+		return topResources[i].Issues > topResources[j].Issues
+	})
+
 	topControlsMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "controlID", connectionIDs, nil,
 		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
 	if err != nil {
@@ -5776,6 +5784,9 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 			Issues: v.AlarmCount,
 		})
 	}
+	sort.Slice(topControls, func(i, j int) bool {
+		return topControls[i].Issues > topControls[j].Issues
+	})
 
 	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
 	allResources := allResourcesResult[benchmarkID]
@@ -5845,11 +5856,15 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	if req.ShowTop == 0 {
 		req.ShowTop = 5
 	}
+	if req.IsRoot == nil {
+		trueBool := true
+		req.IsRoot = &trueBool
+	}
 
 	var benchmarks []db.Benchmark
 	var err error
 	if len(req.Benchmarks) == 0 {
-		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, req.IsRoot, nil, nil)
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -5987,6 +6002,10 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				Issues: v.AlarmCount,
 			})
 		}
+		sort.Slice(topResourceTypes, func(i, j int) bool {
+			return topResourceTypes[i].Issues > topResourceTypes[j].Issues
+		})
+
 		topResourcesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceID", nil, nil,
 			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
 		if err != nil {
@@ -6000,6 +6019,10 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				Issues: v.AlarmCount,
 			})
 		}
+		sort.Slice(topResources, func(i, j int) bool {
+			return topResources[i].Issues > topResources[j].Issues
+		})
+
 		topControlsMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "controlID", nil, nil,
 			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
 		if err != nil {
@@ -6013,6 +6036,9 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				Issues: v.AlarmCount,
 			})
 		}
+		sort.Slice(topControls, func(i, j int) bool {
+			return topControls[i].Issues > topControls[j].Issues
+		})
 
 		resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
 		allResources := allResourcesResult[benchmark.ID]
@@ -6051,6 +6077,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		}
 
 		response = append(response, api.ComplianceSummaryOfBenchmarkResponse{
+			BenchmarkID:                benchmark.ID,
 			ComplianceScore:            complianceScore,
 			SeveritySummaryByControl:   controlSeverityResult,
 			SeveritySummaryByResource:  resourcesSeverityResult,
