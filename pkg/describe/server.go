@@ -1327,7 +1327,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -1411,7 +1411,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -1511,7 +1511,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -1754,7 +1754,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -1871,7 +1871,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -2094,7 +2094,7 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -2209,7 +2209,7 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardapi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -2490,7 +2490,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				}
 				continue
 			}
-			connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 				onboardapi.GetSourceByFiltersRequest{
 					Connector:         info.Integration,
 					ProviderNameRegex: info.IDName,
@@ -2837,7 +2837,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				}
 				continue
 			}
-			connectionsTmp, err := h.Scheduler.onboardClient.GetSourceByFilters(clientCtx,
+			connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
 				onboardapi.GetSourceByFiltersRequest{
 					Connector:         info.Integration,
 					ProviderNameRegex: info.IDName,

@@ -24,7 +24,8 @@ import (
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	GetSourceBySourceId(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
-	GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error)
+	ListSourcesByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error)
+	GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) (api.Connection, error)
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
@@ -108,7 +109,7 @@ func (s *onboardClient) GetSourceBySourceId(ctx *httpclient.Context, sourceID st
 	return &source, nil
 }
 
-func (s *onboardClient) GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error) {
+func (s *onboardClient) ListSourcesByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error) {
 	url := fmt.Sprintf("%s/api/v2/sources", s.baseURL)
 	var response []api.Connection
 
@@ -122,6 +123,24 @@ func (s *onboardClient) GetSourceByFilters(ctx *httpclient.Context, req api.GetS
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
+	}
+	return response, nil
+}
+
+func (s *onboardClient) GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) (api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v2/source", s.baseURL)
+	var response api.Connection
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return api.Connection{}, err
+	}
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return api.Connection{}, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return api.Connection{}, err
 	}
 	return response, nil
 }

@@ -92,7 +92,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connectionGroups.GET("/:connectionGroupName", httpserver.AuthorizeHandler(h.GetConnectionGroup, api3.ViewerRole))
 
 	v2.GET("/sources/:sourceId", httpserver.AuthorizeHandler(h.GetSourceBySourceId, api3.ViewerRole))
-	v2.POST("/sources", httpserver.AuthorizeHandler(h.GetSourceByFilters, api3.ViewerRole))
+	v2.POST("/sources", httpserver.AuthorizeHandler(h.ListSourcesByFilters, api3.ViewerRole))
+	v2.POST("/source", httpserver.AuthorizeHandler(h.GetSourceByFilters, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -3018,7 +3019,7 @@ func (h HttpHandler) GetSourceBySourceId(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiRes)
 }
 
-func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
+func (h HttpHandler) ListSourcesByFilters(ctx echo.Context) error {
 	var request api.GetSourceByFiltersRequest
 	if err := ctx.Bind(&request); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
@@ -3028,7 +3029,7 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetSourceByFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetSourceByFilters")
 
-	sources, err := h.db.GetSourcesByFilters(request.Connector, request.ProviderNameRegex, request.ProviderIdRegex)
+	sources, err := h.db.ListSourcesByFilters(request.Connector, request.ProviderNameRegex, request.ProviderIdRegex)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -3061,4 +3062,47 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, results)
+}
+
+func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
+	var request api.GetSourceByFiltersRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetSourceByFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSourceByFilters")
+
+	src, err := h.db.GetSourceByFilters(request.Connector, request.ProviderNameRegex, request.ProviderIdRegex)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	span.End()
+	var result api.Connection
+
+	metadata := make(map[string]any)
+	if src.Metadata.String() != "" {
+		err := json.Unmarshal(src.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
+	}
+	apiRes := entities.NewConnection(src)
+	if httpserver.GetUserRole(ctx) == api3.InternalRole {
+		apiRes.Credential = entities.NewCredential(src.Credential)
+		apiRes.Credential.Config = src.Credential.Secret
+		if apiRes.Credential.Version == 2 {
+			apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), src.Credential)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	result = apiRes
+
+	return ctx.JSON(http.StatusOK, result)
 }

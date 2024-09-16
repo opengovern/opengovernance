@@ -117,7 +117,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 	v3.GET("/benchmark/:benchmark_id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
-	v3.POST("/benchmark/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummaryV2, authApi.ViewerRole))
+	v3.POST("/compliance/summary/integration", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfIntegration, authApi.ViewerRole))
+	v3.POST("/compliance/summary/benchmark", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
 
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v3.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
@@ -5287,7 +5288,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardApi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -5516,7 +5517,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 			}
 			continue
 		}
-		connectionsTmp, err := h.onboardClient.GetSourceByFilters(clientCtx,
+		connectionsTmp, err := h.onboardClient.ListSourcesByFilters(clientCtx,
 			onboardApi.GetSourceByFiltersRequest{
 				Connector:         info.Integration,
 				ProviderNameRegex: info.IDName,
@@ -5603,7 +5604,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 	return echoCtx.NoContent(http.StatusOK)
 }
 
-// GetBenchmarkSummaryV2 godoc
+// ComplianceSummaryOfIntegration godoc
 //
 //	@Summary		Get benchmark summary
 //	@Description	Retrieving a summary of a benchmark and its associated checks and results.
@@ -5614,45 +5615,44 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 //	@Param			request			body		api.GetBenchmarkSummaryV2Request	true	"Integrations filter to get the benchmark summary"
 //	@Param			benchmark_id	path		string								true	"Benchmark ID to get the summary"
 //	@Success		200				{object}	api.GetBenchmarkSummaryV2Response
-//	@Router			/compliance/api/v3/benchmark/{benchmark_id}/summary [post]
-func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
+//	@Router			/compliance/api/v3/compliance/summary/integration [post]
+func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 	ctx := echoCtx.Request().Context()
-	var req api.GetBenchmarkSummaryV2Request
+	var req api.ComplianceSummaryOfIntegrationRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var connections []onboardApi.Connection
-	for _, info := range req.Integration {
-		if info.IntegrationTracker != nil {
-			connection, err := h.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			}
-			if connection != nil {
-				connections = append(connections, *connection)
-			}
-			continue
+	if req.ShowTop == 0 {
+		req.ShowTop = 5
+	}
+
+	var connection onboardApi.Connection
+	if req.Integration.IntegrationTracker != nil {
+		connectionTmp, err := h.onboardClient.GetSource(clientCtx, *req.Integration.IntegrationTracker)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+		if connectionTmp != nil {
+			connection = *connectionTmp
+		}
+	} else {
 		connectionsTmp, err := h.onboardClient.GetSourceByFilters(clientCtx,
 			onboardApi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+				Connector:         req.Integration.Integration,
+				ProviderNameRegex: req.Integration.IDName,
+				ProviderIdRegex:   req.Integration.ID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = append(connections, connectionsTmp...)
+		connection = connectionsTmp
 	}
 
-	var connectionIDs []string
-	for _, c := range connections {
-		connectionIDs = append(connectionIDs, c.ID.String())
-	}
+	connectionIDs := []string{connection.ID.String()}
 
-	benchmarkID := echoCtx.Param("benchmark_id")
+	benchmarkID := req.BenchmarkId
 	// tracer :
 	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
@@ -5735,48 +5735,46 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 		lastJobStatus = string(lastJob.Status)
 	}
 
-	topConnections := make([]api.TopFieldRecord, 0, req.TopIntegrationsCount)
-	if req.TopIntegrationsCount > 0 {
-		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.TopIntegrationsCount)
-		if err != nil {
-			h.logger.Error("failed to fetch findings top field", zap.Error(err))
-			return err
-		}
+	var topResourceTypes, topResources, topControls []api.TopFiledRecordV2
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil, connectionIDs, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.TopIntegrationsCount)
-		if err != nil {
-			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
-			return err
-		}
-		totalCountMap := make(map[string]int)
-		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
-			totalCountMap[item.Key] += item.DocCount
-		}
-
-		resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
-		for _, item := range res.Aggregations.FieldFilter.Buckets {
-			resConnectionIDs = append(resConnectionIDs, item.Key)
-		}
-		if len(resConnectionIDs) > 0 {
-			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
-			if err != nil {
-				h.logger.Error("failed to get connections", zap.Error(err))
-				return err
-			}
-			connectionMap := make(map[string]*onboardApi.Connection)
-			for _, connection := range connections {
-				connection := connection
-				connectionMap[connection.ID.String()] = &connection
-			}
-
-			for _, item := range res.Aggregations.FieldFilter.Buckets {
-				topConnections = append(topConnections, api.TopFieldRecord{
-					Connection: connectionMap[item.Key],
-					Count:      item.DocCount,
-					TotalCount: totalCountMap[item.Key],
-				})
-			}
-		}
+	topResourceTypesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceType", connectionIDs, nil,
+		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
+	if err != nil {
+		h.logger.Error("failed to get top resource types for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
+	for k, v := range topResourceTypesMap {
+		topResourceTypes = append(topResourceTypes, api.TopFiledRecordV2{
+			Field:  "ResourceType",
+			Key:    k,
+			Issues: v.AlarmCount,
+		})
+	}
+	topResourcesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceID", connectionIDs, nil,
+		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
+	if err != nil {
+		h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
+	for k, v := range topResourcesMap {
+		topResources = append(topResources, api.TopFiledRecordV2{
+			Field:  "Resource",
+			Key:    k,
+			Issues: v.AlarmCount,
+		})
+	}
+	topControlsMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "controlID", connectionIDs, nil,
+		nil, nil, []string{benchmarkID}, nil, req.ShowTop)
+	if err != nil {
+		h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
+		return err
+	}
+	for k, v := range topControlsMap {
+		topControls = append(topControls, api.TopFiledRecordV2{
+			Field:  "Control",
+			Key:    k,
+			Issues: v.AlarmCount,
+		})
 	}
 
 	resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
@@ -5795,19 +5793,6 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 	resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
 	resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
 
-	var topIntegrations []api.TopIntegration
-	for _, tf := range topConnections {
-		topIntegrations = append(topIntegrations, api.TopIntegration{
-			Issues: tf.Count,
-			IntegrationInfo: api.IntegrationInfo{
-				ID:          tf.Connection.ConnectionID,
-				IDName:      tf.Connection.ConnectionName,
-				Integration: tf.Connection.Connector.String(),
-				Type:        api.GetTypeFromIntegration(tf.Connection.Connector.String()),
-			},
-		})
-	}
-
 	var complianceScore float64
 	if controlSeverityResult.Total.TotalCount > 0 {
 		complianceScore = float64(controlSeverityResult.Total.PassedCount) / float64(controlSeverityResult.Total.TotalCount)
@@ -5815,17 +5800,271 @@ func (h *HttpHandler) GetBenchmarkSummaryV2(echoCtx echo.Context) error {
 		complianceScore = 0
 	}
 
-	response := api.GetBenchmarkSummaryV2Response{
+	response := api.ComplianceSummaryOfIntegrationResponse{
 		ComplianceScore:           complianceScore,
 		SeveritySummaryByControl:  controlSeverityResult,
 		SeveritySummaryByResource: resourcesSeverityResult,
-		TopIntegrations:           topIntegrations,
 		FindingsSummary: api.ConformanceStatusSummary{
 			FailedCount: controlSeverityResult.Total.TotalCount - controlSeverityResult.Total.PassedCount,
 			PassedCount: controlSeverityResult.Total.PassedCount,
 		},
-		EvaluatedAt:   utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
-		LastJobStatus: lastJobStatus,
+		TopControlsWithIssues:      topControls,
+		TopResourcesWithIssues:     topResources,
+		TopResourceTypesWithIssues: topResourceTypes,
+		LastEvaluatedAt:            utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+		LastJobStatus:              lastJobStatus,
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// ComplianceSummaryOfBenchmark godoc
+//
+//	@Summary		Get benchmark summary
+//	@Description	Retrieving a summary of a benchmark and its associated checks and results.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			request			body		api.GetBenchmarkSummaryV2Request	true	"Integrations filter to get the benchmark summary"
+//	@Param			benchmark_id	path		string								true	"Benchmark ID to get the summary"
+//	@Success		200				{object}	api.GetBenchmarkSummaryV2Response
+//	@Router			/compliance/api/v3/compliance/summary/benchmark [post]
+func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+	var req api.ComplianceSummaryOfBenchmarkRequest
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// tracer :
+	ctx, span1 := tracer.Start(ctx, "new_ComplianceSummaryOfBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ComplianceSummaryOfBenchmark")
+	defer span1.End()
+
+	if req.ShowTop == 0 {
+		req.ShowTop = 5
+	}
+
+	var benchmarks []db.Benchmark
+	var err error
+	if len(req.Benchmarks) == 0 {
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, req.IsRoot, nil, nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	} else {
+		benchmarks, err = h.db.GetBenchmarksBare(ctx, req.Benchmarks)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	}
+
+	var response []api.ComplianceSummaryOfBenchmarkResponse
+	for _, benchmark := range benchmarks {
+
+		span1.AddEvent("information", trace.WithAttributes(
+			attribute.String("benchmark ID", benchmark.ID),
+		))
+		span1.End()
+
+		controls, err := h.db.ListControlsByBenchmarkID(ctx, benchmark.ID)
+		if err != nil {
+			h.logger.Error("failed to get controls", zap.Error(err))
+			return err
+		}
+		controlsMap := make(map[string]*db.Control)
+		for _, control := range controls {
+			control := control
+			controlsMap[strings.ToLower(control.ID)] = &control
+		}
+		timeAt := time.Now()
+
+		summariesAtTime, err := es.ListBenchmarkSummariesAtTime(ctx, h.logger, h.client,
+			[]string{benchmark.ID}, nil, nil,
+			timeAt, true)
+		if err != nil {
+			return err
+		}
+
+		passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmark.ID}, nil, nil, nil, kaytuTypes.GetPassedConformanceStatuses())
+		if err != nil {
+			h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
+			return err
+		}
+
+		allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmark.ID}, nil, nil, nil, nil)
+		if err != nil {
+			h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
+			return err
+		}
+
+		summaryAtTime := summariesAtTime[benchmark.ID]
+
+		csResult := api.ConformanceStatusSummary{}
+		sResult := kaytuTypes.SeverityResult{}
+		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
+		var costOptimization *float64
+		addToResults := func(resultGroup types.ResultGroup) {
+			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+			sResult.AddResultMap(resultGroup.Result.SeverityResult)
+			costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+			for controlId, controlResult := range resultGroup.Controls {
+				control := controlsMap[strings.ToLower(controlId)]
+				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
+			}
+		}
+
+		addToResults(summaryAtTime.Connections.BenchmarkResult)
+
+		lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmark.ID)
+		if err != nil {
+			h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmark.ID))
+			return err
+		}
+
+		var lastJobStatus string
+		if lastJob != nil {
+			lastJobStatus = string(lastJob.Status)
+		}
+
+		topConnections := make([]api.TopFieldRecord, 0, req.ShowTop)
+		if req.ShowTop > 0 {
+			res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil, nil, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop)
+			if err != nil {
+				h.logger.Error("failed to fetch findings top field", zap.Error(err))
+				return err
+			}
+
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil, nil, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop)
+			if err != nil {
+				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+				return err
+			}
+			totalCountMap := make(map[string]int)
+			for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
+				totalCountMap[item.Key] += item.DocCount
+			}
+
+			resConnectionIDs := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+			for _, item := range res.Aggregations.FieldFilter.Buckets {
+				resConnectionIDs = append(resConnectionIDs, item.Key)
+			}
+			if len(resConnectionIDs) > 0 {
+				connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+				if err != nil {
+					h.logger.Error("failed to get connections", zap.Error(err))
+					return err
+				}
+				connectionMap := make(map[string]*onboardApi.Connection)
+				for _, connection := range connections {
+					connection := connection
+					connectionMap[connection.ID.String()] = &connection
+				}
+
+				for _, item := range res.Aggregations.FieldFilter.Buckets {
+					topConnections = append(topConnections, api.TopFieldRecord{
+						Connection: connectionMap[item.Key],
+						Count:      item.DocCount,
+						TotalCount: totalCountMap[item.Key],
+					})
+				}
+			}
+		}
+
+		var topResourceTypes, topResources, topControls []api.TopFiledRecordV2
+
+		topResourceTypesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceType", nil, nil,
+			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
+		if err != nil {
+			h.logger.Error("failed to get top resource types for benchmark", zap.Error(err), zap.String("benchmarkID", benchmark.ID))
+			return err
+		}
+		for k, v := range topResourceTypesMap {
+			topResourceTypes = append(topResourceTypes, api.TopFiledRecordV2{
+				Field:  "ResourceType",
+				Key:    k,
+				Issues: v.AlarmCount,
+			})
+		}
+		topResourcesMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "resourceID", nil, nil,
+			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
+		if err != nil {
+			h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmark.ID))
+			return err
+		}
+		for k, v := range topResourcesMap {
+			topResources = append(topResources, api.TopFiledRecordV2{
+				Field:  "Resource",
+				Key:    k,
+				Issues: v.AlarmCount,
+			})
+		}
+		topControlsMap, err := es.GetPerFieldTopWithIssues(ctx, h.logger, h.client, "controlID", nil, nil,
+			nil, nil, []string{benchmark.ID}, nil, req.ShowTop)
+		if err != nil {
+			h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmark.ID))
+			return err
+		}
+		for k, v := range topControlsMap {
+			topControls = append(topControls, api.TopFiledRecordV2{
+				Field:  "Control",
+				Key:    k,
+				Issues: v.AlarmCount,
+			})
+		}
+
+		resourcesSeverityResult := api.BenchmarkResourcesSeverityStatus{}
+		allResources := allResourcesResult[benchmark.ID]
+		resourcesSeverityResult.Total.TotalCount = allResources.TotalCount
+		resourcesSeverityResult.Critical.TotalCount = allResources.CriticalCount
+		resourcesSeverityResult.High.TotalCount = allResources.HighCount
+		resourcesSeverityResult.Medium.TotalCount = allResources.MediumCount
+		resourcesSeverityResult.Low.TotalCount = allResources.LowCount
+		resourcesSeverityResult.None.TotalCount = allResources.NoneCount
+		passedResource := passedResourcesResult[benchmark.ID]
+		resourcesSeverityResult.Total.PassedCount = passedResource.TotalCount
+		resourcesSeverityResult.Critical.PassedCount = passedResource.CriticalCount
+		resourcesSeverityResult.High.PassedCount = passedResource.HighCount
+		resourcesSeverityResult.Medium.PassedCount = passedResource.MediumCount
+		resourcesSeverityResult.Low.PassedCount = passedResource.LowCount
+		resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
+
+		var topIntegrations []api.TopIntegration
+		for _, tf := range topConnections {
+			topIntegrations = append(topIntegrations, api.TopIntegration{
+				Issues: tf.Count,
+				IntegrationInfo: api.IntegrationInfo{
+					ID:          tf.Connection.ConnectionID,
+					IDName:      tf.Connection.ConnectionName,
+					Integration: tf.Connection.Connector.String(),
+					Type:        api.GetTypeFromIntegration(tf.Connection.Connector.String()),
+				},
+			})
+		}
+
+		var complianceScore float64
+		if controlSeverityResult.Total.TotalCount > 0 {
+			complianceScore = float64(controlSeverityResult.Total.PassedCount) / float64(controlSeverityResult.Total.TotalCount)
+		} else {
+			complianceScore = 0
+		}
+
+		response = append(response, api.ComplianceSummaryOfBenchmarkResponse{
+			ComplianceScore:            complianceScore,
+			SeveritySummaryByControl:   controlSeverityResult,
+			SeveritySummaryByResource:  resourcesSeverityResult,
+			TopIntegrations:            topIntegrations,
+			TopResourceTypesWithIssues: topResourceTypes,
+			TopResourcesWithIssues:     topResources,
+			TopControlsWithIssues:      topControls,
+			FindingsSummary: api.ConformanceStatusSummary{
+				FailedCount: controlSeverityResult.Total.TotalCount - controlSeverityResult.Total.PassedCount,
+				PassedCount: controlSeverityResult.Total.PassedCount,
+			},
+			LastEvaluatedAt: utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			LastJobStatus:   lastJobStatus,
+		})
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)

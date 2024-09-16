@@ -135,7 +135,7 @@ func (db Database) GetSourceBySourceID(id string) (model.Connection, error) {
 	return s, nil
 }
 
-func (db Database) GetSourcesByFilters(connector, providerNameRegex, providerIdRegex *string) ([]model.Connection, error) {
+func (db Database) ListSourcesByFilters(connector, providerNameRegex, providerIdRegex *string) ([]model.Connection, error) {
 	var s []model.Connection
 	tx := db.Orm.Model(&model.Connection{})
 
@@ -152,6 +152,27 @@ func (db Database) GetSourcesByFilters(connector, providerNameRegex, providerIdR
 	tx = tx.Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetSourceByFilters(connector, providerName, providerId *string) (model.Connection, error) {
+	var s model.Connection
+	tx := db.Orm.Model(&model.Connection{})
+
+	if connector != nil {
+		tx = tx.Where("type = ?", connector)
+	}
+	if providerName != nil {
+		tx = tx.Where("name = ?", providerName)
+	}
+	if providerId != nil {
+		tx = tx.Where("source_id = ?", *providerId)
+	}
+
+	tx = tx.First(&s)
+	if tx.Error != nil {
+		return model.Connection{}, tx.Error
 	}
 	return s, nil
 }
