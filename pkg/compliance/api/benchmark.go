@@ -210,8 +210,8 @@ type GetBenchmarkListMetadata struct {
 }
 
 type GetBenchmarkListItem struct {
-	Metadata GetBenchmarkListMetadata     `json:"metadata"`
-	Findings *GetBenchmarkDetailsFindings `json:"findings"`
+	Benchmark GetBenchmarkListMetadata     `json:"benchmark"`
+	Findings  *GetBenchmarkDetailsFindings `json:"findings"`
 }
 
 type GetBenchmarkListResponse struct {

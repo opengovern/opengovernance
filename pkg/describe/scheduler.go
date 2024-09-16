@@ -6,6 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
+	azureDescriberLocal "github.com/kaytu-io/kaytu-azure-describer/local"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"net"
 	"net/http"
 	"strconv"
@@ -16,14 +21,9 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
-	azureDescriberLocal "github.com/kaytu-io/kaytu-azure-describer/local"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupAPI "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
@@ -229,40 +229,10 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
-	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.JobQueueTopicManuals, summarizer.ResultQueueTopic}, 1000); err != nil {
-		s.logger.Error("Failed to stream to compliance summarizer queue", zap.Error(err))
+	err = s.SetupNatsStreams(ctx)
+	if err != nil {
+		s.logger.Error("Failed to setup nats streams", zap.Error(err))
 		return nil, err
-	}
-
-	if err := s.jq.Stream(ctx, runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.JobQueueTopicManuals, runner.ResultQueueTopic}, 1000000); err != nil {
-		s.logger.Error("Failed to stream to compliance runner queue", zap.Error(err))
-		return nil, err
-	}
-
-	if err := s.jq.Stream(ctx, analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
-		s.logger.Error("Failed to stream to analytics queue", zap.Error(err))
-		return nil, err
-	}
-
-	if err := s.jq.Stream(ctx, checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
-		s.logger.Error("Failed to stream to checkup queue", zap.Error(err))
-		return nil, err
-	}
-
-	if err := s.jq.Stream(ctx, DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
-		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
-		return nil, err
-	}
-
-	if conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		if err := s.jq.Stream(ctx, awsDescriberLocal.StreamName, "aws describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
-			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
-			return nil, err
-		}
-		if err := s.jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
-			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
-			return nil, err
-		}
 	}
 
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
@@ -382,6 +352,45 @@ func InitializeScheduler(
 	return s, nil
 }
 
+func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
+	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.JobQueueTopicManuals, summarizer.ResultQueueTopic}, 1000); err != nil {
+		s.logger.Error("Failed to stream to compliance summarizer queue", zap.Error(err))
+		return err
+	}
+
+	if err := s.jq.Stream(ctx, runner.StreamName, "compliance runner job queues", []string{runner.JobQueueTopic, runner.JobQueueTopicManuals, runner.ResultQueueTopic}, 1000000); err != nil {
+		s.logger.Error("Failed to stream to compliance runner queue", zap.Error(err))
+		return err
+	}
+
+	if err := s.jq.Stream(ctx, analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
+		s.logger.Error("Failed to stream to analytics queue", zap.Error(err))
+		return err
+	}
+
+	if err := s.jq.Stream(ctx, checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
+		s.logger.Error("Failed to stream to checkup queue", zap.Error(err))
+		return err
+	}
+
+	if err := s.jq.Stream(ctx, DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
+		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
+		return err
+	}
+
+	if s.conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
+		if err := s.jq.Stream(ctx, awsDescriberLocal.StreamName, "aws describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
+			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
+			return err
+		}
+		if err := s.jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
+			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Scheduler) Run(ctx context.Context) error {
 	err := s.db.Initialize()
 	if err != nil {
@@ -481,6 +490,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 
 	// Compliance
 	s.complianceScheduler = compliance.New(
+		func(ctx context.Context) error {
+			return s.SetupNatsStreams(ctx)
+		},
 		s.conf,
 		s.logger,
 		s.complianceClient,

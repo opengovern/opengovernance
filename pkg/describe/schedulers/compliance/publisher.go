@@ -104,9 +104,23 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 			}
 			seqNum, err := s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount))
 			if err != nil {
-				_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
-				s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
-				continue
+				if err.Error() == "nats: no response from stream" {
+					err = s.runSetupNatsStreams(ctx)
+					if err != nil {
+						s.logger.Error("Failed to setup nats streams", zap.Error(err))
+						return err
+					}
+					seqNum, err = s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d-%d", job.ID, it.RetryCount))
+					if err != nil {
+						_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
+						s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID))
+						continue
+					}
+				} else {
+					_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerFailed, job.CreatedAt, nil, err.Error())
+					s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", it.ID), zap.String("error message", err.Error()))
+					continue
+				}
 			}
 
 			if seqNum != nil {
