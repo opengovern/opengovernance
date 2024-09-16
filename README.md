@@ -1,12 +1,8 @@
-# Kaytu Engine
+# OpenGovernance
 
 ## Introduction
 
-The main mono repository for Kaytu microservices. Microservices are written into the `/services` folder
-(Please note that migration is in progress which means some of the microservice are still in `/pkg`).
-
-The main job queuing system is NATS (again migration is in progress from Kafka and RabbitMQ).
-Jobs usually defined in the scheduler and then handle by their related services. The result
+OpenGovernance centralizes control of your entire tech stack with a unified inventory, enforcing compliance, streamlining operations, and driving faster, secure deployments.
 is put back for the schedular.
 
 ## Build
