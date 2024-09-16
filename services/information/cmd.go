@@ -38,11 +38,12 @@ func Command() *cobra.Command {
 			cmd.SilenceUsage = true
 
 			db, err := postgres.NewClient(&postgres.Config{
-				Host:   cnf.Postgres.Host,
-				Port:   cnf.Postgres.Port,
-				User:   cnf.Postgres.Username,
-				Passwd: cnf.Postgres.Password,
-				DB:     cnf.Postgres.DB,
+				Host:    cnf.Postgres.Host,
+				Port:    cnf.Postgres.Port,
+				User:    cnf.Postgres.Username,
+				Passwd:  cnf.Postgres.Password,
+				DB:      cnf.Postgres.DB,
+				SSLMode: cnf.Postgres.SSLMode,
 			}, logger)
 			if err != nil {
 				return err
