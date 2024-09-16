@@ -616,3 +616,179 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 
 	return result, nil
 }
+
+func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+	field string,
+	connectionIDs []string, notConnectionIDs []string,
+	resourceCollections []string,
+	controlIDs []string, benchmarkIDs []string,
+	severities []types.FindingSeverity, topCount int) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
+	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" &&
+		field != "resourceType" && field != "resourceID" {
+		return nil, fmt.Errorf("field %s is not supported", field)
+	}
+	request := make(map[string]any)
+	filters := make([]map[string]any, 0)
+	nestedFilters := make([]map[string]any, 0)
+	if len(connectionIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string][]string{
+				"findings.connectionID": connectionIDs,
+			},
+		})
+	}
+	if len(notConnectionIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"bool": map[string]any{
+				"must_not": []map[string]any{
+					{
+						"terms": map[string][]string{
+							"findings.connectionID": notConnectionIDs,
+						},
+					},
+				},
+			},
+		})
+	}
+	if len(controlIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string][]string{
+				"findings.controlID": controlIDs,
+			},
+		})
+	}
+	if len(benchmarkIDs) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string][]string{
+				"findings.benchmarkID": benchmarkIDs,
+			},
+		})
+	}
+	if len(resourceCollections) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"resourceCollections": resourceCollections,
+			},
+		})
+	}
+	if len(severities) > 0 {
+		nestedFilters = append(nestedFilters, map[string]any{
+			"terms": map[string]any{
+				"findings.severity": severities,
+			},
+		})
+	}
+	conformanceStatuses := []types.ConformanceStatus{types.ConformanceStatusALARM}
+
+	nestedFilters = append(nestedFilters, map[string]any{
+		"terms": map[string]any{
+			"findings.conformanceStatus": conformanceStatuses,
+		},
+	})
+
+	requestQuery := make(map[string]any, 0)
+	if len(nestedFilters) > 0 {
+		requestQuery["nested"] = map[string]any{
+			"path":  "findings",
+			"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
+		}
+	}
+	if len(filters) > 0 {
+		requestQuery["bool"] = map[string]any{
+			"filter": filters,
+		}
+	}
+	if len(requestQuery) > 0 {
+		request["query"] = requestQuery
+	}
+	request["size"] = 0
+
+	request["aggs"] = map[string]any{
+		"findings": map[string]any{
+			"nested": map[string]any{
+				"path": "findings",
+			},
+			"aggs": map[string]any{
+				"conformanceFilter": map[string]any{
+					"filter": map[string]any{
+						"terms": map[string]any{
+							"findings.conformanceStatus": conformanceStatuses,
+						},
+					},
+					"aggs": map[string]any{
+						"fieldGroup": map[string]any{
+							"terms": map[string]any{
+								"field": fmt.Sprintf("findings.%s", field),
+								"size":  topCount,
+								"order": map[string]any{
+									"conformanceGroup>resourceCount.doc_count": "desc",
+								},
+							},
+							"aggs": map[string]any{
+								"conformanceGroup": map[string]any{
+									"filter": map[string]any{
+										"terms": map[string]any{
+											"findings.conformanceStatus": conformanceStatuses,
+										},
+									},
+									"aggs": map[string]any{
+										"resourceCount": map[string]any{
+											"reverse_nested": map[string]any{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		logger.Error("Error while marshaling es request", zap.Error(err))
+		return nil, err
+	}
+
+	logger.Info("request for GetPerFieldTopWithIssues", zap.String("request", string(query)))
+	var response GetPerFieldTopWithIssuesResponse
+	err = client.Search(ctx, types.ResourceFindingsIndex, string(query), &response)
+	if err != nil {
+		logger.Error("Error while searching es request", zap.Error(err))
+		return nil, err
+	}
+
+	result := make(map[string]types.ConformanceStatusSummaryWithTotal)
+	for _, connectionBucket := range response.Aggregations.Findings.ConformanceFilter.FieldGroup.Buckets {
+		conformanceStatusSummary := types.ConformanceStatusSummaryWithTotal{
+			TotalCount: connectionBucket.ConformanceGroup.ResourceCount.DocCount,
+			ConformanceStatusSummary: types.ConformanceStatusSummary{
+				AlarmCount: connectionBucket.ConformanceGroup.ResourceCount.DocCount,
+			},
+		}
+
+		result[connectionBucket.Key] = conformanceStatusSummary
+	}
+
+	return result, nil
+}
+
+type GetPerFieldTopWithIssuesResponse struct {
+	Aggregations struct {
+		Findings struct {
+			ConformanceFilter struct {
+				FieldGroup struct {
+					Buckets []struct {
+						Key              string `json:"key"`
+						ConformanceGroup struct {
+							ResourceCount struct {
+								DocCount int `json:"doc_count"`
+							} `json:"resourceCount"`
+						} `json:"conformanceGroup"`
+					} `json:"buckets"`
+				} `json:"fieldGroup"`
+			} `json:"conformanceFilter"`
+		} `json:"findings"`
+	} `json:"aggregations"`
+}
