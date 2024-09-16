@@ -97,7 +97,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 	v3.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
-	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.AdminRole))
+	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.ViewerRole))
+	v3.GET("/jobs/interval", httpserver.AuthorizeHandler(h.ListJobsInterval, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -3004,4 +3005,112 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListJobsInterval godoc
+//
+//	@Summary	List jobs by job type and filters
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		job_type	query	string	true	"Job Type"
+//	@Param		interval	query	string	true	"Time Interval to filter by"
+//	@Produce	json
+//	@Success	200	{object}	[]api.ListJobsByTypeItem
+//	@Router		/schedule/api/v3/jobs/interval [get]
+func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
+	jobType := ctx.QueryParam("job_type")
+	interval := ctx.QueryParam("interval")
+
+	convertedInterval, err := convertInterval(interval)
+	if err != nil {
+		h.Scheduler.logger.Error("invalid interval", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid interval")
+	}
+
+	if strings.ToLower(jobType) != "compliance" && strings.ToLower(jobType) != "discovery" &&
+		strings.ToLower(jobType) != "analytics" {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
+	}
+
+	var items []api.ListJobsByTypeItem
+
+	switch strings.ToLower(jobType) {
+	case "compliance":
+		jobs, err := h.DB.ListComplianceJobsForInterval(convertedInterval)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		for _, j := range jobs {
+			items = append(items, api.ListJobsByTypeItem{
+				JobId:     strconv.Itoa(int(j.ID)),
+				JobType:   strings.ToLower(jobType),
+				JobStatus: string(j.Status),
+				CreatedAt: j.CreatedAt,
+				UpdatedAt: j.UpdatedAt,
+			})
+		}
+	case "discovery":
+		jobs, err := h.DB.ListDescribeJobsForInterval(convertedInterval)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		for _, j := range jobs {
+			items = append(items, api.ListJobsByTypeItem{
+				JobId:     strconv.Itoa(int(j.ID)),
+				JobType:   strings.ToLower(jobType),
+				JobStatus: string(j.Status),
+				CreatedAt: j.CreatedAt,
+				UpdatedAt: j.UpdatedAt,
+			})
+		}
+	case "analytics":
+		jobs, err := h.DB.ListAnalyticsJobsForInterval(convertedInterval)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		for _, j := range jobs {
+			items = append(items, api.ListJobsByTypeItem{
+				JobId:     strconv.Itoa(int(j.ID)),
+				JobType:   strings.ToLower(jobType),
+				JobStatus: string(j.Status),
+				CreatedAt: j.CreatedAt,
+				UpdatedAt: j.UpdatedAt,
+			})
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, items)
+}
+
+func convertInterval(input string) (string, error) {
+	// Define regex to match shorthand formats like 90m, 50s, 1h
+	re := regexp.MustCompile(`^(\d+)([smhd])$`)
+
+	// Check if the input matches the shorthand format
+	matches := re.FindStringSubmatch(input)
+	if len(matches) == 3 {
+		number := matches[1]
+		unit := matches[2]
+
+		// Map shorthand units to full words
+		unitMap := map[string]string{
+			"s": "seconds",
+			"m": "minutes",
+			"h": "hours",
+			"d": "days",
+		}
+
+		// Convert the shorthand unit to full word
+		if fullUnit, ok := unitMap[unit]; ok {
+			return fmt.Sprintf("%s %s", number, fullUnit), nil
+		}
+	}
+
+	// If the input doesn't match shorthand, assume it's already in the correct format
+	if strings.Contains(input, "minute") || strings.Contains(input, "second") || strings.Contains(input, "hour") || strings.Contains(input, "day") {
+		return input, nil
+	}
+
+	// If the input is invalid, return an error
+	return "", fmt.Errorf("invalid interval format: %s", input)
 }

@@ -126,6 +126,19 @@ func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
 	return job, nil
 }
 
+func (db Database) ListComplianceJobsForInterval(interval string) ([]model.ComplianceJob, error) {
+	var job []model.ComplianceJob
+
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("NOW() - updated_at < INTERVAL ?", interval).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).Where("connection_ids <@ ?", pq.Array(connectionIds)).Find(&job)
