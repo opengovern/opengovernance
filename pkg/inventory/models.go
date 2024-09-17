@@ -35,14 +35,14 @@ func (s NamedQueryTagsResult) ToApi() api.NamedQueryTagsResult {
 }
 
 type NamedQuery struct {
-	ID          string         `gorm:"primarykey"`
-	Connectors  pq.StringArray `gorm:"type:text[]"`
-	Title       string
-	Description string
-	QueryID     *string
-	Query       *Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
-	IsPopular   bool
-	Tags        []NamedQueryTag `gorm:"foreignKey:NamedQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ID           string         `gorm:"primarykey"`
+	Connectors   pq.StringArray `gorm:"type:text[]"`
+	Title        string
+	Description  string
+	QueryID      *string
+	Query        *Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
+	IsBookmarked bool
+	Tags         []NamedQueryTag `gorm:"foreignKey:NamedQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type QueryParameter struct {

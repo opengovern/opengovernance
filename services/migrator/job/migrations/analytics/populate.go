@@ -67,19 +67,9 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	err = filepath.Walk(config.FinderPopularGitPath, func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".yaml") {
-			return populateFinderItem(logger, orm, path, info, true)
-		}
-		return nil
-	})
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
-	}
-
-	err = filepath.Walk(config.FinderOthersGitPath, func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".yaml") {
-			return populateFinderItem(logger, orm, path, info, false)
+	err = filepath.Walk(config.QueriesGitPath, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() && strings.HasSuffix(path, ".yaml") {
+			return populateFinderItem(logger, orm, path, info)
 		}
 		return nil
 	})
@@ -222,7 +212,7 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	return nil
 }
 
-func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
+func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo) error {
 	id := strings.TrimSuffix(info.Name(), ".yaml")
 
 	content, err := os.ReadFile(path)
@@ -270,13 +260,29 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
+	isBookmarked := false
+	tags := make([]inventory.NamedQueryTag, 0, len(item.Tags))
+	for k, v := range item.Tags {
+		if k == "platform_queries_bookmark" {
+			isBookmarked = true
+		}
+		tag := inventory.NamedQueryTag{
+			NamedQueryID: id,
+			Tag: model.Tag{
+				Key:   k,
+				Value: v,
+			},
+		}
+		tags = append(tags, tag)
+	}
+
 	dbMetric := inventory.NamedQuery{
-		ID:          id,
-		Connectors:  connectors,
-		Title:       item.Title,
-		Description: item.Description,
-		IsPopular:   isPopular,
-		QueryID:     &id,
+		ID:           id,
+		Connectors:   connectors,
+		Title:        item.Title,
+		Description:  item.Description,
+		IsBookmarked: isBookmarked,
+		QueryID:      &id,
 	}
 	queryParams := []inventory.QueryParameter{}
 	for _, qp := range item.Query.Parameters {
@@ -318,18 +324,6 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		if err != nil {
 			return fmt.Errorf("failure in query parameter insert: %v", err)
 		}
-	}
-
-	tags := make([]inventory.NamedQueryTag, 0, len(item.Tags))
-	for k, v := range item.Tags {
-		tag := inventory.NamedQueryTag{
-			NamedQueryID: id,
-			Tag: model.Tag{
-				Key:   k,
-				Value: v,
-			},
-		}
-		tags = append(tags, tag)
 	}
 
 	err = tx.Model(&inventory.NamedQuery{}).Clauses(clause.OnConflict{
