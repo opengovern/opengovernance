@@ -142,16 +142,30 @@ type ListQueriesV2Response struct {
 	TotalCount int                `json:"total_count"`
 }
 
+type QueryParameter struct {
+	Key      string `json:"key" example:"key"`
+	Required bool   `json:"required" example:"true"`
+}
+
+type Query struct {
+	ID             string           `json:"id" example:"azure_ad_manual_control"`
+	QueryToExecute string           `json:"queryToExecute" example:"select\n  -- Required Columns\n  'active_directory' as resource,\n  'info' as status,\n  'Manual verification required.' as reason;\n"`
+	PrimaryTable   *string          `json:"primaryTable" example:"null"`
+	ListOfTables   []string         `json:"listOfTables" example:"null"`
+	Engine         string           `json:"engine" example:"steampipe-v0.5"`
+	Parameters     []QueryParameter `json:"parameters"`
+	Global         bool             `json:"Global"`
+	CreatedAt      time.Time        `json:"createdAt" example:"2023-06-07T14:00:15.677558Z"`
+	UpdatedAt      time.Time        `json:"updatedAt" example:"2023-06-16T14:58:08.759554Z"`
+}
+
 type SmartQueryItemV2 struct {
-	ID          string        `json:"id"`    // Query Id
-	Title       string        `json:"title"` // Title
-	Description string        `json:"description"`
-	Connectors  []source.Type `json:"connectors"` // Provider
-	Query       struct {
-		QueryEngine    string `json:"query_engine"`
-		QueryToExecute string `json:"query_to_execute"`
-	} `json:"query"` // Query
-	Tags map[string][]string `json:"tags"` // Tags
+	ID          string              `json:"id"`    // Query Id
+	Title       string              `json:"title"` // Title
+	Description string              `json:"description"`
+	Connectors  []source.Type       `json:"connectors"` // Provider
+	Query       Query               `json:"query"`      // Query
+	Tags        map[string][]string `json:"tags"`       // Tags
 }
 
 type ListQueryRequest struct {
