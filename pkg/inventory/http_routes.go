@@ -2065,7 +2065,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 			Connectors: source.ParseTypes(item.Connectors),
 			Title:      item.Title,
 			Category:   category,
-			Query:      item.Query,
+			Query:      item.Query.QueryToExecute,
 			Tags:       tags,
 		})
 	}
@@ -2144,14 +2144,8 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 			Title:       item.Title,
 			Description: item.Description,
 			Connectors:  source.ParseTypes(item.Connectors),
-			Query: struct {
-				QueryEngine    string `json:"query_engine"`
-				QueryToExecute string `json:"query_to_execute"`
-			}{
-				QueryEngine:    item.Engine,
-				QueryToExecute: item.Query,
-			},
-			Tags: filterTagsByRegex(tagsRegex, tags),
+			Query:       item.Query.ToApi(),
+			Tags:        filterTagsByRegex(tagsRegex, tags),
 		})
 	}
 
@@ -2209,14 +2203,8 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 		Title:       query.Title,
 		Description: query.Description,
 		Connectors:  source.ParseTypes(query.Connectors),
-		Query: struct {
-			QueryEngine    string `json:"query_engine"`
-			QueryToExecute string `json:"query_to_execute"`
-		}{
-			QueryEngine:    query.Engine,
-			QueryToExecute: query.Query,
-		},
-		Tags: tags,
+		Query:       query.Query.ToApi(),
+		Tags:        tags,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -3250,8 +3238,8 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			h.logger.Error("failed to get smart query", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "Could not find smart query")
 		}
-		query = smartQuery.Query
-		engineStr = smartQuery.Engine
+		query = smartQuery.Query.QueryToExecute
+		engineStr = smartQuery.Query.Engine
 	} else if strings.ToLower(req.Type) == "control" {
 		control, err := h.complianceClient.GetControl(&httpclient.Context{UserRole: api.InternalRole}, req.ID)
 		if err != nil || control == nil {

@@ -24,6 +24,8 @@ func NewDatabase(orm *gorm.DB) Database {
 
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
+		&Query{},
+		&QueryParameter{},
 		&ResourceType{},
 		&SmartQuery{},
 		&SmartQueryTag{},
@@ -65,22 +67,44 @@ func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 	for _, val := range v {
 		res = append(res, val)
 	}
+
+	for i, sq := range res {
+		if sq.QueryID != nil {
+			var query Query
+			tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *sq.QueryID).First(&query)
+			if tx.Error != nil {
+				return nil, tx.Error
+			}
+			res[i].Query = &query
+		}
+	}
+
 	return res, nil
 }
 
 func (db Database) GetQuery(id string) (*SmartQuery, error) {
-	var query SmartQuery
-	tx := db.orm.Model(SmartQuery{}).Preload("Tags").Where("id = ?", id).First(&query)
+	var s SmartQuery
+	tx := db.orm.Model(SmartQuery{}).Preload(clause.Associations).Preload("Tags").Where("id = ?", id).First(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	return &query, nil
+
+	if s.QueryID != nil {
+		var query Query
+		tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *s.QueryID).First(&query)
+		if tx.Error != nil {
+			return nil, tx.Error
+		}
+		s.Query = &query
+	}
+
+	return &s, nil
 }
 
 func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string, connectors []string) ([]SmartQuery, error) {
 	var s []SmartQuery
 
-	m := db.orm.Model(&SmartQuery{}).Preload("Tags")
+	m := db.orm.Model(&SmartQuery{}).Preload(clause.Associations).Preload("Tags")
 
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
@@ -122,6 +146,17 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 	var res []SmartQuery
 	for _, val := range v {
 		res = append(res, val)
+	}
+
+	for i, sq := range res {
+		if sq.QueryID != nil {
+			var query Query
+			tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *sq.QueryID).First(&query)
+			if tx.Error != nil {
+				return nil, tx.Error
+			}
+			res[i].Query = &query
+		}
 	}
 
 	return res, nil

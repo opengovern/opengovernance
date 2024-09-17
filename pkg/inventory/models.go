@@ -39,10 +39,54 @@ type SmartQuery struct {
 	Connectors  pq.StringArray `gorm:"type:text[]"`
 	Title       string
 	Description string
-	Query       string
-	Engine      string
+	QueryID     *string
+	Query       *Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
 	IsPopular   bool
 	Tags        []SmartQueryTag `gorm:"foreignKey:SmartQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+}
+
+type QueryParameter struct {
+	QueryID  string `gorm:"primaryKey"`
+	Key      string `gorm:"primaryKey"`
+	Required bool   `gorm:"not null"`
+}
+
+func (qp QueryParameter) ToApi() api.QueryParameter {
+	return api.QueryParameter{
+		Key:      qp.Key,
+		Required: qp.Required,
+	}
+}
+
+type Query struct {
+	ID             string `gorm:"primaryKey"`
+	QueryToExecute string
+	PrimaryTable   *string
+	ListOfTables   pq.StringArray `gorm:"type:text[]"`
+	Engine         string
+	SmartQuery     []SmartQuery     `gorm:"foreignKey:QueryID"`
+	Parameters     []QueryParameter `gorm:"foreignKey:QueryID"`
+	Global         bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (q Query) ToApi() api.Query {
+	query := api.Query{
+		ID:             q.ID,
+		QueryToExecute: q.QueryToExecute,
+		ListOfTables:   q.ListOfTables,
+		PrimaryTable:   q.PrimaryTable,
+		Engine:         q.Engine,
+		Parameters:     make([]api.QueryParameter, 0, len(q.Parameters)),
+		Global:         q.Global,
+		CreatedAt:      q.CreatedAt,
+		UpdatedAt:      q.UpdatedAt,
+	}
+	for _, p := range q.Parameters {
+		query.Parameters = append(query.Parameters, p.ToApi())
+	}
+	return query
 }
 
 func (p SmartQuery) GetTagsMap() map[string][]string {

@@ -215,6 +215,17 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 
 	logger.Info("Query Update", zap.String("id", id), zap.Any("tags", item.Tags))
 
+	err = tx.Model(&inventory.QueryParameter{}).Where("query_id = ?", id).Unscoped().Delete(&inventory.QueryParameter{}).Error
+	if err != nil {
+		logger.Error("failure in deleting QueryParameter", zap.String("id", id), zap.Error(err))
+		return err
+	}
+	err = tx.Model(&inventory.Query{}).Where("id = ?", id).Unscoped().Delete(&inventory.Query{}).Error
+	if err != nil {
+		logger.Error("failure in deleting Query", zap.String("id", id), zap.Error(err))
+		return err
+	}
+
 	err = tx.Model(&inventory.SmartQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.SmartQuery{}).Error
 	if err != nil {
 		logger.Error("failure in deleting SmartQuery", zap.String("id", id), zap.Error(err))
@@ -232,9 +243,42 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		Connectors:  connectors,
 		Title:       item.Title,
 		Description: item.Description,
-		Engine:      item.Query.Engine,
-		Query:       item.Query.QueryToExecute,
 		IsPopular:   isPopular,
+		QueryID:     &id,
+	}
+	queryParams := []inventory.QueryParameter{}
+	for _, qp := range item.Query.Parameters {
+		queryParams = append(queryParams, inventory.QueryParameter{
+			Key:      qp.Key,
+			Required: qp.Required,
+			QueryID:  dbMetric.ID,
+		})
+	}
+	query := inventory.Query{
+		ID:             dbMetric.ID,
+		QueryToExecute: item.Query.QueryToExecute,
+		PrimaryTable:   item.Query.PrimaryTable,
+		ListOfTables:   item.Query.ListOfTables,
+		Engine:         item.Query.Engine,
+		Parameters:     queryParams,
+		Global:         item.Query.Global,
+	}
+	err = tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}}, // key column
+		DoNothing: true,
+	}).Create(&query).Error
+	if err != nil {
+		logger.Error("failure in Creating Query", zap.String("query_id", id), zap.Error(err))
+		return err
+	}
+	for _, param := range query.Parameters {
+		err = tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "key"}, {Name: "query_id"}}, // key columns
+			DoNothing: true,
+		}).Create(&param).Error
+		if err != nil {
+			return fmt.Errorf("failure in query parameter insert: %v", err)
+		}
 	}
 
 	tags := make([]inventory.SmartQueryTag, 0, len(item.Tags))
