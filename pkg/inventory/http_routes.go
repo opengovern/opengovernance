@@ -2057,8 +2057,8 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		category := ""
 
 		tags := map[string]string{}
-		if item.IsPopular {
-			tags["popular"] = "true"
+		if item.IsBookmarked {
+			tags["platform_queries_bookmark"] = "true"
 		}
 		result = append(result, inventoryApi.NamedQueryItem{
 			ID:         item.ID,
@@ -2136,8 +2136,8 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		if tags == nil || len(tags) == 0 {
 			tags = make(map[string][]string)
 		}
-		if item.IsPopular {
-			tags["popular"] = []string{"true"}
+		if item.IsBookmarked {
+			tags["platform_queries_bookmark"] = []string{"true"}
 		}
 		items = append(items, inventoryApi.NamedQueryItemV2{
 			ID:          item.ID,
@@ -2195,8 +2195,8 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	}
 	span.End()
 	tags := query.GetTagsMap()
-	if query.IsPopular {
-		tags["popular"] = []string{"true"}
+	if query.IsBookmarked {
+		tags["platform_queries_bookmark"] = []string{"true"}
 	}
 	result := inventoryApi.NamedQueryItemV2{
 		ID:          query.ID,
