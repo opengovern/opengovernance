@@ -801,3 +801,74 @@ func (db Database) UpdateBenchmarkTrackDriftEvents(ctx context.Context, benchmar
 	}
 	return nil
 }
+
+func (db Database) ListControlsUniqueConnectors(ctx context.Context) ([]string, error) {
+	var connectors []string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&Control{}).
+		Select("DISTINCT UNNEST(connector) AS unique_connector").
+		Scan(&connectors)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return connectors, nil
+}
+
+func (db Database) ListControlsUniqueSeverity(ctx context.Context) ([]string, error) {
+	var severities []string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&Control{}).
+		Select("DISTINCT severity").
+		Scan(&severities)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return severities, nil
+}
+
+func (db Database) ListControlsUniqueParentBenchmarks(ctx context.Context) ([]string, error) {
+	var parentBenchmarks []string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&BenchmarkControls{}).
+		Select("DISTINCT benchmark_id").
+		Scan(&parentBenchmarks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return parentBenchmarks, nil
+}
+
+func (db Database) ListQueriesUniquePrimaryTables(ctx context.Context) ([]string, error) {
+	var primaryTables []string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&Query{}).
+		Select("DISTINCT primary_table").
+		Where("primary_table is not NULL").
+		Scan(&primaryTables)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return primaryTables, nil
+}
+
+func (db Database) ListQueriesUniqueTables(ctx context.Context) ([]string, error) {
+	var tables []string
+
+	tx := db.Orm.WithContext(ctx).
+		Model(&Query{}).
+		Select("DISTINCT UNNEST(list_of_tables)").
+		Scan(&tables)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return tables, nil
+}

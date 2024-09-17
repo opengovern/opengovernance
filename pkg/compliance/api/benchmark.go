@@ -308,3 +308,9 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	LastJobStatus              string                             `json:"last_job_status"`
 	LastJobId                  string                             `json:"last_job_id"`
 }
+
+type ListBenchmarksFiltersResponse struct {
+	ParentBenchmarkID []string `json:"parent_benchmark_id"`
+	PrimaryTable      []string `json:"primary_table"`
+	ListOfTables      []string `json:"list_of_tables"`
+}

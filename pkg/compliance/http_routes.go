@@ -114,6 +114,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v3.GET("/benchmarks/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
 	v3.POST("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
+	v3.GET("/benchmarks/filters", httpserver2.AuthorizeHandler(h.ListBenchmarksFilters, authApi.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 	v3.GET("/benchmark/:benchmark_id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
@@ -121,6 +122,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/compliance/summary/benchmark", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
 
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	v3.GET("/controls/filters", httpserver2.AuthorizeHandler(h.ListControlsFilters, authApi.ViewerRole))
 	v3.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v3.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v3.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
@@ -6178,6 +6180,113 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			LastJobStatus:              lastJobStatus,
 			LastJobId:                  lastJobId,
 		})
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// ListControlsFilters godoc
+//
+//	@Summary	List possible values for each filter in List Controls
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	api.ListControlsFiltersResponse
+//	@Router		/compliance/api/v3/controls/filters [get]
+func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	connectors, err := h.db.ListControlsUniqueConnectors(ctx)
+	if err != nil {
+		h.logger.Error("failed to get connectors list", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get connectors list")
+	}
+
+	severities, err := h.db.ListControlsUniqueSeverity(ctx)
+	if err != nil {
+		h.logger.Error("failed to get severities list", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get severities list")
+	}
+
+	rootBenchmarks, err := h.db.ListRootBenchmarks(ctx, nil)
+	if err != nil {
+		h.logger.Error("failed to get rootBenchmarks", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get rootBenchmarks")
+	}
+	var rootBenchmarkIds []string
+	for _, b := range rootBenchmarks {
+		rootBenchmarkIds = append(rootBenchmarkIds, b.ID)
+	}
+
+	parentBenchmarks, err := h.db.ListControlsUniqueParentBenchmarks(ctx)
+	if err != nil {
+		h.logger.Error("failed to get parentBenchmarks", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get parentBenchmarks")
+	}
+
+	primaryTables, err := h.db.ListQueriesUniquePrimaryTables(ctx)
+	if err != nil {
+		h.logger.Error("failed to get primaryTables", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get primaryTables")
+	}
+
+	listOfTables, err := h.db.ListQueriesUniqueTables(ctx)
+	if err != nil {
+		h.logger.Error("failed to get listOfTables", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get listOfTables")
+	}
+
+	response := api.ListControlsFiltersResponse{
+		Provider:        connectors,
+		Severity:        severities,
+		RootBenchmark:   rootBenchmarkIds,
+		ParentBenchmark: parentBenchmarks,
+		PrimaryTable:    primaryTables,
+		ListOfTables:    listOfTables,
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// ListBenchmarksFilters godoc
+//
+//	@Summary	List possible values for each filter in List Benchmarks
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	api.ListBenchmarksFiltersResponse
+//	@Router		/compliance/api/v3/benchmarks/filters [get]
+func (h *HttpHandler) ListBenchmarksFilters(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	benchmarks, err := h.db.ListBenchmarks(ctx)
+	if err != nil {
+		h.logger.Error("failed to get rootBenchmarks", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get rootBenchmarks")
+	}
+	var benchmarkIds []string
+	for _, b := range benchmarks {
+		benchmarkIds = append(benchmarkIds, b.ID)
+	}
+
+	primaryTables, err := h.db.ListQueriesUniquePrimaryTables(ctx)
+	if err != nil {
+		h.logger.Error("failed to get primaryTables", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get primaryTables")
+	}
+
+	listOfTables, err := h.db.ListQueriesUniqueTables(ctx)
+	if err != nil {
+		h.logger.Error("failed to get listOfTables", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get listOfTables")
+	}
+
+	response := api.ListBenchmarksFiltersResponse{
+		ParentBenchmarkID: benchmarkIds,
+		PrimaryTable:      primaryTables,
+		ListOfTables:      listOfTables,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)

@@ -290,3 +290,17 @@ func (db Database) GetResourceCollection(collectionID string) (*ResourceCollecti
 
 	return &collection, nil
 }
+
+func (db Database) ListSmartQueriesUniqueProviders() ([]string, error) {
+	var connectors []string
+
+	tx := db.orm.
+		Model(&SmartQuery{}).
+		Select("DISTINCT UNNEST(connectors)").
+		Scan(&connectors)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return connectors, nil
+}

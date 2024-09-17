@@ -153,3 +153,12 @@ type GetControlDetailsResponse struct {
 		FullPath []string `json:"fullPath"`
 	} `json:"benchmarks"`
 }
+
+type ListControlsFiltersResponse struct {
+	Provider        []string `json:"provider"`
+	Severity        []string `json:"severity"`
+	RootBenchmark   []string `json:"root_benchmark"`
+	ParentBenchmark []string `json:"parent_benchmark"`
+	PrimaryTable    []string `json:"primary_table"`
+	ListOfTables    []string `json:"list_of_tables"`
+}
