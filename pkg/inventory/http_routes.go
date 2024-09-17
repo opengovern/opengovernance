@@ -109,6 +109,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v3 := e.Group("/api/v3")
 	v3.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	v3.GET("/queries/filters", httpserver.AuthorizeHandler(h.ListQueriesFilters, api.ViewerRole))
 	v3.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	v3.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 	v3.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
@@ -3327,4 +3328,27 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	))
 	span.End()
 	return ctx.JSON(200, resp)
+}
+
+// ListQueriesFilters godoc
+//
+//	@Summary	List possible values for each filter in List Controls
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	inventoryApi.ListQueriesFiltersResponse
+//	@Router		/inventory/api/v3/queries/filters [get]
+func (h *HttpHandler) ListQueriesFilters(echoCtx echo.Context) error {
+	providers, err := h.db.ListSmartQueriesUniqueProviders()
+	if err != nil {
+		h.logger.Error("failed to get providers list", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get providers list")
+	}
+
+	response := inventoryApi.ListQueriesFiltersResponse{
+		Providers: providers,
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
 }

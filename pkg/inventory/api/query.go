@@ -42,3 +42,7 @@ type RunQueryByIDRequest struct {
 	Sorts       []SmartQuerySortItem `json:"sorts"`
 	QueryParams map[string]string    `json:"query_params"`
 }
+
+type ListQueriesFiltersResponse struct {
+	Providers []string `json:"providers"`
+}
