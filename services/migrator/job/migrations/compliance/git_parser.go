@@ -186,6 +186,9 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 					ControlID: control.ID,
 				})
 			}
+			if control.Severity == "" {
+				control.Severity = "low"
+			}
 
 			p := db.Control{
 				ID:                 control.ID,
