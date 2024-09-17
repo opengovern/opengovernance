@@ -1,6 +1,8 @@
 # OpenGovernance
 
-OpenGovernance centralizes control of your entire tech stack with a unified inventory and compliance, streamlining operations, and driving faster, secure deployments.
+OpenGovernance streamlines governance across multi-cloud and multi-platform environments by centralizing discovery, policy enforcement, compliance checking, and change tracking. Your infrastructure, regardless of where it resides, remains secure, optimized, and compliant.
+
+Think of it as a Customer Data Platform for your entire tech stack. It provides a unified view—cloud providers, Kubernetes clusters, code repositories, security tools—allowing for effective governance from a single platform.
 
 ![enter image description here](https://docs.opengovernance.io/~gitbook/image?url=https://content.gitbook.com/content/flsJtdaedb8TrA13g8H6/blobs/flOcrYsPU0eBrF73O6tN/Screenshot%2520by%2520Dropbox%2520Capture.png&width=768&dpr=4&quality=100&sign=424ffc86&sv=1)
 
