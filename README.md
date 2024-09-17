@@ -1,9 +1,8 @@
 # OpenGovernance
 
-## Introduction
+OpenGovernance centralizes control of your entire tech stack with a unified inventory and compliance, streamlining operations, and driving faster, secure deployments.
 
-OpenGovernance centralizes control of your entire tech stack with a unified inventory, enforcing compliance, streamlining operations, and driving faster, secure deployments.
-is put back for the schedular.
+![enter image description here](https://docs.opengovernance.io/~gitbook/image?url=https://content.gitbook.com/content/flsJtdaedb8TrA13g8H6/blobs/flOcrYsPU0eBrF73O6tN/Screenshot%2520by%2520Dropbox%2520Capture.png&width=768&dpr=4&quality=100&sign=424ffc86&sv=1)
 
 ## Build
 
