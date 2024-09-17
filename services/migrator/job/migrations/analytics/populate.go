@@ -247,17 +247,6 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 
 	logger.Info("Query Update", zap.String("id", id), zap.Any("tags", item.Tags))
 
-	err = tx.Model(&inventory.QueryParameter{}).Where("query_id = ?", id).Unscoped().Delete(&inventory.QueryParameter{}).Error
-	if err != nil {
-		logger.Error("failure in deleting QueryParameter", zap.String("id", id), zap.Error(err))
-		return err
-	}
-	err = tx.Model(&inventory.Query{}).Where("id = ?", id).Unscoped().Delete(&inventory.Query{}).Error
-	if err != nil {
-		logger.Error("failure in deleting Query", zap.String("id", id), zap.Error(err))
-		return err
-	}
-
 	err = tx.Model(&inventory.NamedQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.NamedQuery{}).Error
 	if err != nil {
 		logger.Error("failure in deleting NamedQuery", zap.String("id", id), zap.Error(err))
@@ -267,6 +256,17 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	err = tx.Model(&inventory.NamedQueryTag{}).Where("named_query_id = ?", id).Unscoped().Delete(&inventory.NamedQueryTag{}).Error
 	if err != nil {
 		logger.Error("failure in deleting NamedQueryTag", zap.String("named_query_id", id), zap.Error(err))
+		return err
+	}
+
+	err = tx.Model(&inventory.QueryParameter{}).Where("query_id = ?", id).Unscoped().Delete(&inventory.QueryParameter{}).Error
+	if err != nil {
+		logger.Error("failure in deleting QueryParameter", zap.String("id", id), zap.Error(err))
+		return err
+	}
+	err = tx.Model(&inventory.Query{}).Where("id = ?", id).Unscoped().Delete(&inventory.Query{}).Error
+	if err != nil {
+		logger.Error("failure in deleting Query", zap.String("id", id), zap.Error(err))
 		return err
 	}
 
