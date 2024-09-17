@@ -64,7 +64,7 @@ type ResourceSortItem struct {
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
-type SmartQuerySortItem struct {
+type NamedQuerySortItem struct {
 	// fill this with column name
 	Field     string        `json:"field"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
@@ -128,7 +128,7 @@ type SummaryQueryHit struct {
 	Sort    []any             `json:"sort"`
 }
 
-type SmartQueryItem struct {
+type NamedQueryItem struct {
 	ID         string            `json:"id"`         // Query Id
 	Connectors []source.Type     `json:"connectors"` // Provider
 	Title      string            `json:"title"`      // Title
@@ -138,7 +138,7 @@ type SmartQueryItem struct {
 }
 
 type ListQueriesV2Response struct {
-	Items      []SmartQueryItemV2 `json:"items"`
+	Items      []NamedQueryItemV2 `json:"items"`
 	TotalCount int                `json:"total_count"`
 }
 
@@ -159,7 +159,7 @@ type Query struct {
 	UpdatedAt      time.Time        `json:"updatedAt" example:"2023-06-16T14:58:08.759554Z"`
 }
 
-type SmartQueryItemV2 struct {
+type NamedQueryItemV2 struct {
 	ID          string              `json:"id"`    // Query Id
 	Title       string              `json:"title"` // Title
 	Description string              `json:"description"`

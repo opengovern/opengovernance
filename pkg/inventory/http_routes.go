@@ -2022,13 +2022,13 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 
 // ListQueries godoc
 //
-//	@Summary		List smart queries
-//	@Description	Retrieving list of smart queries by specified filters
+//	@Summary		List named queries
+//	@Description	Retrieving list of named queries by specified filters
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Produce		json
 //	@Param			request	body		inventoryApi.ListQueryRequest	true	"Request Body"
-//	@Success		200		{object}	[]inventoryApi.SmartQueryItem
+//	@Success		200		{object}	[]inventoryApi.NamedQueryItem
 //	@Router			/inventory/api/v1/query [get]
 func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	var req inventoryApi.ListQueryRequest
@@ -2052,7 +2052,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	}
 	span.End()
 
-	var result []inventoryApi.SmartQueryItem
+	var result []inventoryApi.NamedQueryItem
 	for _, item := range queries {
 		category := ""
 
@@ -2060,7 +2060,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		if item.IsPopular {
 			tags["popular"] = "true"
 		}
-		result = append(result, inventoryApi.SmartQueryItem{
+		result = append(result, inventoryApi.NamedQueryItem{
 			ID:         item.ID,
 			Connectors: source.ParseTypes(item.Connectors),
 			Title:      item.Title,
@@ -2074,10 +2074,10 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 
 // ListQueriesV2 godoc
 //
-//	@Summary		List smart queries
-//	@Description	Retrieving list of smart queries by specified filters and tags filters
+//	@Summary		List named queries
+//	@Description	Retrieving list of named queries by specified filters and tags filters
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Produce		json
 //	@Param			title_filter	query		[]string	false	"Title Filer"
 //	@Param			tags_filter		query		string		false	"Tags filter input type: tags_filter[key1]=value1&tags_filter[key2]=value2"
@@ -2130,7 +2130,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	}
 	span.End()
 
-	var items []inventoryApi.SmartQueryItemV2
+	var items []inventoryApi.NamedQueryItemV2
 	for _, item := range queries {
 		tags := item.GetTagsMap()
 		if tags == nil || len(tags) == 0 {
@@ -2139,7 +2139,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		if item.IsPopular {
 			tags["popular"] = []string{"true"}
 		}
-		items = append(items, inventoryApi.SmartQueryItemV2{
+		items = append(items, inventoryApi.NamedQueryItemV2{
 			ID:          item.ID,
 			Title:       item.Title,
 			Description: item.Description,
@@ -2172,13 +2172,13 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 
 // GetQuery godoc
 //
-//	@Summary		Get smart query by ID
-//	@Description	Retrieving list of smart queries by specified filters and tags filters
+//	@Summary		Get named query by ID
+//	@Description	Retrieving list of named queries by specified filters and tags filters
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Produce		json
 //	@Param			query_id	path		string	true	"QueryID"
-//	@Success		200			{object}	inventoryApi.SmartQueryItemV2
+//	@Success		200			{object}	inventoryApi.NamedQueryItemV2
 //	@Router			/inventory/api/v3/query/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
@@ -2198,7 +2198,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	if query.IsPopular {
 		tags["popular"] = []string{"true"}
 	}
-	result := inventoryApi.SmartQueryItemV2{
+	result := inventoryApi.NamedQueryItemV2{
 		ID:          query.ID,
 		Title:       query.Title,
 		Description: query.Description,
@@ -2227,27 +2227,27 @@ func filterTagsByRegex(regexPattern *string, tags map[string][]string) map[strin
 
 // ListQueriesTags godoc
 //
-//	@Summary		List smart queries tags
-//	@Description	Retrieving list of smart queries by specified filters
+//	@Summary		List named queries tags
+//	@Description	Retrieving list of named queries by specified filters
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Produce		json
-//	@Success		200	{object}	[]inventoryApi.SmartQueryTagsResult
+//	@Success		200	{object}	[]inventoryApi.NamedQueryTagsResult
 //	@Router			/inventory/api/v3/query/tags [get]
 func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithFilters")
 
-	smartQueriesTags, err := h.db.GetQueriesTags()
+	namedQueriesTags, err := h.db.GetQueriesTags()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
-	res := make([]inventoryApi.SmartQueryTagsResult, 0, len(smartQueriesTags))
-	for _, history := range smartQueriesTags {
+	res := make([]inventoryApi.NamedQueryTagsResult, 0, len(namedQueriesTags))
+	for _, history := range namedQueriesTags {
 		res = append(res, history.ToApi())
 	}
 
@@ -2259,9 +2259,9 @@ func (h *HttpHandler) ListQueriesTags(ctx echo.Context) error {
 // RunQuery godoc
 //
 //	@Summary		Run query
-//	@Description	Run provided smart query and returns the result.
+//	@Description	Run provided named query and returns the result.
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Accepts		json
 //	@Produce		json
 //	@Param			request	body		inventoryApi.RunQueryRequest	true	"Request Body"
@@ -2277,8 +2277,8 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Query is required")
 	}
 	// tracer :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_RunSmartQuery")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_RunQuery")
 
 	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.InternalRole})
 	if err != nil {
@@ -2300,14 +2300,14 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 
 	var resp *inventoryApi.RunQueryResponse
 	if req.Engine == nil || *req.Engine == inventoryApi.QueryEngine_OdysseusSQL {
-		resp, err = h.RunSQLSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
+		resp, err = h.RunSQLNamedQuery(outputS, *req.Query, queryOutput.String(), &req)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
 	} else if *req.Engine == inventoryApi.QueryEngine_OdysseusRego {
-		resp, err = h.RunRegoSmartQuery(outputS, *req.Query, queryOutput.String(), &req)
+		resp, err = h.RunRegoNamedQuery(outputS, *req.Query, queryOutput.String(), &req)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -2329,17 +2329,17 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Summary		List recently ran queries
 //	@Description	List queries which have been run recently
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200	{object}	[]inventoryApi.SmartQueryHistory
+//	@Success		200	{object}	[]inventoryApi.NamedQueryHistory
 //	@Router			/inventory/api/v1/query/run/history [get]
 func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueryHistory", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueryHistory")
 
-	smartQueryHistories, err := h.db.GetQueryHistory()
+	namedQueryHistories, err := h.db.GetQueryHistory()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -2348,8 +2348,8 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	}
 	span.End()
 
-	res := make([]inventoryApi.SmartQueryHistory, 0, len(smartQueryHistories))
-	for _, history := range smartQueryHistories {
+	res := make([]inventoryApi.NamedQueryHistory, 0, len(namedQueryHistories))
+	for _, history := range namedQueryHistories {
 		res = append(res, history.ToApi())
 	}
 
@@ -2368,7 +2368,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, totalCount)
 }
 
-func (h *HttpHandler) RunSQLSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
+func (h *HttpHandler) RunSQLNamedQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
@@ -2394,7 +2394,7 @@ func (h *HttpHandler) RunSQLSmartQuery(ctx context.Context, title, query string,
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	h.logger.Info("executing smart query", zap.String("query", query))
+	h.logger.Info("executing named query", zap.String("query", query))
 	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, orderBy, steampipe.DirectionType(direction))
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2467,7 +2467,7 @@ type resourceFieldItem struct {
 	value     interface{}
 }
 
-func (h *HttpHandler) RunRegoSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
+func (h *HttpHandler) RunRegoNamedQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
@@ -3209,10 +3209,10 @@ func arrayContains(array []string, key string) bool {
 
 // RunQueryByID godoc
 //
-//	@Summary		Run query by smart query or compliance ID
-//	@Description	Run provided smart query or compliance and returns the result.
+//	@Summary		Run query by named query or compliance ID
+//	@Description	Run provided named query or compliance and returns the result.
 //	@Security		BearerToken
-//	@Tags			smart_query
+//	@Tags			named_query
 //	@Accepts		json
 //	@Produce		json
 //	@Param			request	body		inventoryApi.RunQueryByIDRequest	true	"Request Body"
@@ -3228,23 +3228,23 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type and ID should be provided")
 	}
 	// tracer :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_RunSmartQuery")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunNamedQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_RunNamedQuery")
 
 	var query, engineStr string
-	if strings.ToLower(req.Type) == "smartquery" || strings.ToLower(req.Type) == "smart_query" {
-		smartQuery, err := h.db.GetQuery(req.ID)
-		if err != nil || smartQuery == nil {
-			h.logger.Error("failed to get smart query", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "Could not find smart query")
+	if strings.ToLower(req.Type) == "namedquery" || strings.ToLower(req.Type) == "named_query" {
+		namedQuery, err := h.db.GetQuery(req.ID)
+		if err != nil || namedQuery == nil {
+			h.logger.Error("failed to get named query", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not find named query")
 		}
-		query = smartQuery.Query.QueryToExecute
-		engineStr = smartQuery.Query.Engine
+		query = namedQuery.Query.QueryToExecute
+		engineStr = namedQuery.Query.Engine
 	} else if strings.ToLower(req.Type) == "control" {
 		control, err := h.complianceClient.GetControl(&httpclient.Context{UserRole: api.InternalRole}, req.ID)
 		if err != nil || control == nil {
 			h.logger.Error("failed to get compliance", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "Could not find smart query")
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not find named query")
 		}
 		if control.Query == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Compliance query is empty")
@@ -3252,7 +3252,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 		query = control.Query.QueryToExecute
 		engineStr = control.Query.Engine
 	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type is not valid. Options: smart_query, control")
+		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type is not valid. Options: named_query, control")
 	}
 	var engine inventoryApi.QueryEngine
 	if engineStr == "" {
@@ -3274,7 +3274,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 
 	var resp *inventoryApi.RunQueryResponse
 	if engine == inventoryApi.QueryEngine_OdysseusSQL {
-		resp, err = h.RunSQLSmartQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+		resp, err = h.RunSQLNamedQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
 			Engine: &engine,
@@ -3286,7 +3286,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			return err
 		}
 	} else if engine == inventoryApi.QueryEngine_OdysseusRego {
-		resp, err = h.RunRegoSmartQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+		resp, err = h.RunRegoNamedQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
 			Engine: &engine,
@@ -3298,7 +3298,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		resp, err = h.RunSQLSmartQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+		resp, err = h.RunSQLNamedQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
 			Engine: &engine,
@@ -3328,20 +3328,20 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 //	@Success	200	{object}	inventoryApi.ListQueriesFiltersResponse
 //	@Router		/inventory/api/v3/queries/filters [get]
 func (h *HttpHandler) ListQueriesFilters(echoCtx echo.Context) error {
-	providers, err := h.db.ListSmartQueriesUniqueProviders()
+	providers, err := h.db.ListNamedQueriesUniqueProviders()
 	if err != nil {
 		h.logger.Error("failed to get providers list", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get providers list")
 	}
 
-	smartQueriesTags, err := h.db.GetQueriesTags()
+	namedQueriesTags, err := h.db.GetQueriesTags()
 	if err != nil {
-		h.logger.Error("failed to get smartQueriesTags", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get smartQueriesTags")
+		h.logger.Error("failed to get namedQueriesTags", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get namedQueriesTags")
 	}
 
-	tags := make([]inventoryApi.SmartQueryTagsResult, 0, len(smartQueriesTags))
-	for _, history := range smartQueriesTags {
+	tags := make([]inventoryApi.NamedQueryTagsResult, 0, len(namedQueriesTags))
+	for _, history := range namedQueriesTags {
 		tags = append(tags, history.ToApi())
 	}
 

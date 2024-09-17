@@ -27,9 +27,9 @@ func (db Database) Initialize() error {
 		&Query{},
 		&QueryParameter{},
 		&ResourceType{},
-		&SmartQuery{},
-		&SmartQueryTag{},
-		&SmartQueryHistory{},
+		&NamedQuery{},
+		&NamedQueryTag{},
+		&NamedQueryHistory{},
 		&ResourceTypeTag{},
 		&analyticsDb.AnalyticMetric{},
 		&analyticsDb.MetricTag{},
@@ -43,10 +43,10 @@ func (db Database) Initialize() error {
 	return nil
 }
 
-func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
-	var s []SmartQuery
+func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
+	var s []NamedQuery
 
-	m := db.orm.Model(&SmartQuery{})
+	m := db.orm.Model(&NamedQuery{})
 
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
@@ -57,13 +57,13 @@ func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 		return nil, tx.Error
 	}
 
-	v := map[string]SmartQuery{}
+	v := map[string]NamedQuery{}
 	for _, item := range s {
 		if _, ok := v[item.ID]; !ok {
 			v[item.ID] = item
 		}
 	}
-	var res []SmartQuery
+	var res []NamedQuery
 	for _, val := range v {
 		res = append(res, val)
 	}
@@ -82,9 +82,9 @@ func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 	return res, nil
 }
 
-func (db Database) GetQuery(id string) (*SmartQuery, error) {
-	var s SmartQuery
-	tx := db.orm.Model(SmartQuery{}).Preload(clause.Associations).Preload("Tags").Where("id = ?", id).First(&s)
+func (db Database) GetQuery(id string) (*NamedQuery, error) {
+	var s NamedQuery
+	tx := db.orm.Model(NamedQuery{}).Preload(clause.Associations).Preload("Tags").Where("id = ?", id).First(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -101,10 +101,10 @@ func (db Database) GetQuery(id string) (*SmartQuery, error) {
 	return &s, nil
 }
 
-func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string, connectors []string) ([]SmartQuery, error) {
-	var s []SmartQuery
+func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string, connectors []string) ([]NamedQuery, error) {
+	var s []NamedQuery
 
-	m := db.orm.Model(&SmartQuery{}).Preload(clause.Associations).Preload("Tags")
+	m := db.orm.Model(&NamedQuery{}).Preload(clause.Associations).Preload("Tags")
 
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
@@ -115,14 +115,14 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 	}
 
 	if len(connectors) > 0 {
-		m = m.Where("smart_queries.connector::text[] @> ?", pq.Array(connectors))
+		m = m.Where("named_queries.connector::text[] @> ?", pq.Array(connectors))
 	}
 
 	if len(tagFilters) > 0 {
 		i := 0
 		for key, values := range tagFilters {
 			alias := fmt.Sprintf("t%d", i)
-			joinCondition := fmt.Sprintf("JOIN smart_query_tags %s ON %s.smart_query_id = smart_queries.id", alias, alias)
+			joinCondition := fmt.Sprintf("JOIN named_query_tags %s ON %s.named_query_id = named_queries.id", alias, alias)
 
 			m = m.Joins(joinCondition).Where(fmt.Sprintf("%s.key = ? AND %s.value::text[] @> ?", alias, alias), key, pq.Array(values))
 
@@ -136,14 +136,14 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 		return nil, tx.Error
 	}
 
-	v := map[string]SmartQuery{}
+	v := map[string]NamedQuery{}
 	for _, item := range s {
 		if _, ok := v[item.ID]; !ok {
 			v[item.ID] = item
 		}
 	}
 
-	var res []SmartQuery
+	var res []NamedQuery
 	for _, val := range v {
 		res = append(res, val)
 	}
@@ -162,11 +162,11 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 	return res, nil
 }
 
-func (db Database) GetQueriesTags() ([]SmartQueryTagsResult, error) {
-	var results []SmartQueryTagsResult
+func (db Database) GetQueriesTags() ([]NamedQueryTagsResult, error) {
+	var results []NamedQueryTagsResult
 
 	// Execute the raw SQL query
-	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM smart_query_tags GROUP BY key"
+	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM named_query_tags GROUP BY key"
 	err := db.orm.Raw(query).Scan(&results).Error
 	if err != nil {
 		return nil, err
@@ -175,8 +175,8 @@ func (db Database) GetQueriesTags() ([]SmartQueryTagsResult, error) {
 	return results, nil
 }
 
-func (db Database) GetQueryHistory() ([]SmartQueryHistory, error) {
-	var history []SmartQueryHistory
+func (db Database) GetQueryHistory() ([]NamedQueryHistory, error) {
+	var history []NamedQueryHistory
 	tx := db.orm.Order("executed_at desc").Limit(3).Find(&history)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -186,7 +186,7 @@ func (db Database) GetQueryHistory() ([]SmartQueryHistory, error) {
 }
 
 func (db Database) UpdateQueryHistory(query string) error {
-	history := SmartQueryHistory{
+	history := NamedQueryHistory{
 		Query:      query,
 		ExecutedAt: time.Now(),
 	}
@@ -202,18 +202,18 @@ func (db Database) UpdateQueryHistory(query string) error {
 	// Only keep latest 100 queries in history
 	const keepNumber = 100
 	var count int64
-	err = db.orm.Model(&SmartQueryHistory{}).Count(&count).Error
+	err = db.orm.Model(&NamedQueryHistory{}).Count(&count).Error
 	if err != nil {
 		return err
 	}
 	if count > keepNumber {
-		var oldest SmartQueryHistory
-		err = db.orm.Model(&SmartQueryHistory{}).Order("executed_at desc").Offset(keepNumber - 1).Limit(1).Find(&oldest).Error
+		var oldest NamedQueryHistory
+		err = db.orm.Model(&NamedQueryHistory{}).Order("executed_at desc").Offset(keepNumber - 1).Limit(1).Find(&oldest).Error
 		if err != nil {
 			return err
 		}
 
-		err = db.orm.Model(&SmartQueryHistory{}).Where("executed_at < ?", oldest.ExecutedAt).Delete(&SmartQueryHistory{}).Error
+		err = db.orm.Model(&NamedQueryHistory{}).Where("executed_at < ?", oldest.ExecutedAt).Delete(&NamedQueryHistory{}).Error
 		if err != nil {
 			return err
 		}
@@ -326,11 +326,11 @@ func (db Database) GetResourceCollection(collectionID string) (*ResourceCollecti
 	return &collection, nil
 }
 
-func (db Database) ListSmartQueriesUniqueProviders() ([]string, error) {
+func (db Database) ListNamedQueriesUniqueProviders() ([]string, error) {
 	var connectors []string
 
 	tx := db.orm.
-		Model(&SmartQuery{}).
+		Model(&NamedQuery{}).
 		Select("DISTINCT UNNEST(connectors)").
 		Scan(&connectors)
 	if tx.Error != nil {

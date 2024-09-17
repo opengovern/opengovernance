@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	analyticsDB "github.com/kaytu-io/open-governance/pkg/analytics/db"
 	"github.com/kaytu-io/open-governance/pkg/inventory"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/services/migrator/config"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -19,6 +20,8 @@ import (
 	"regexp"
 	"strings"
 )
+
+var QueryParameters []models.QueryParameter
 
 type Migration struct {
 }
@@ -41,7 +44,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		SSLMode: conf.PostgreSQL.SSLMode,
 	}, logger)
 	if err != nil {
-		return fmt.Errorf("new postgres client: %w", err)
+		return fmt.Errorf("new inventory postgres client: %w", err)
 	}
 
 	err = filepath.Walk(config.AssetsGitPath, func(path string, info fs.FileInfo, err error) error {
@@ -81,6 +84,35 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+
+	metadataOrm, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "metadata",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
+	if err != nil {
+		return fmt.Errorf("new metadata postgres client: %w", err)
+	}
+
+	err = metadataOrm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, obj := range QueryParameters {
+			err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "key"}}, // key column
+				DoUpdates: clause.AssignmentColumns([]string{"value"}),
+			}).Create(&obj).Error
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to insert query params", zap.Error(err))
 		return err
 	}
 
@@ -198,7 +230,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
-	var item SmartQuery
+	var item NamedQuery
 	err = yaml.Unmarshal(content, &item)
 	if err != nil {
 		logger.Error("failure in unmarshal", zap.String("path", path), zap.Error(err))
@@ -226,19 +258,19 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
-	err = tx.Model(&inventory.SmartQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.SmartQuery{}).Error
+	err = tx.Model(&inventory.NamedQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.NamedQuery{}).Error
 	if err != nil {
-		logger.Error("failure in deleting SmartQuery", zap.String("id", id), zap.Error(err))
+		logger.Error("failure in deleting NamedQuery", zap.String("id", id), zap.Error(err))
 		return err
 	}
 
-	err = tx.Model(&inventory.SmartQueryTag{}).Where("smart_query_id = ?", id).Unscoped().Delete(&inventory.SmartQueryTag{}).Error
+	err = tx.Model(&inventory.NamedQueryTag{}).Where("named_query_id = ?", id).Unscoped().Delete(&inventory.NamedQueryTag{}).Error
 	if err != nil {
-		logger.Error("failure in deleting SmartQueryTag", zap.String("smart_query_id", id), zap.Error(err))
+		logger.Error("failure in deleting NamedQueryTag", zap.String("named_query_id", id), zap.Error(err))
 		return err
 	}
 
-	dbMetric := inventory.SmartQuery{
+	dbMetric := inventory.NamedQuery{
 		ID:          id,
 		Connectors:  connectors,
 		Title:       item.Title,
@@ -253,6 +285,13 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 			Required: qp.Required,
 			QueryID:  dbMetric.ID,
 		})
+		if qp.DefaultValue != nil {
+			queryParamObj := models.QueryParameter{
+				Key:   qp.Key,
+				Value: *qp.DefaultValue,
+			}
+			QueryParameters = append(QueryParameters, queryParamObj)
+		}
 	}
 	query := inventory.Query{
 		ID:             dbMetric.ID,
@@ -281,10 +320,10 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		}
 	}
 
-	tags := make([]inventory.SmartQueryTag, 0, len(item.Tags))
+	tags := make([]inventory.NamedQueryTag, 0, len(item.Tags))
 	for k, v := range item.Tags {
-		tag := inventory.SmartQueryTag{
-			SmartQueryID: id,
+		tag := inventory.NamedQueryTag{
+			NamedQueryID: id,
 			Tag: model.Tag{
 				Key:   k,
 				Value: v,
@@ -293,7 +332,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		tags = append(tags, tag)
 	}
 
-	err = tx.Model(&inventory.SmartQuery{}).Clauses(clause.OnConflict{
+	err = tx.Model(&inventory.NamedQuery{}).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}}, // key column
 		DoNothing: true,                          // column needed to be updated
 	}).Create(dbMetric).Error
@@ -306,7 +345,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 
 	if len(tags) > 0 {
 		for _, tag := range tags {
-			err = tx.Model(&inventory.SmartQueryTag{}).Create(&tag).Error
+			err = tx.Model(&inventory.NamedQueryTag{}).Create(&tag).Error
 			if err != nil {
 				logger.Error("failure in insert tags", zap.Error(err))
 				return err

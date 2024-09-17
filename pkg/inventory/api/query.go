@@ -15,7 +15,7 @@ type RunQueryRequest struct {
 	AccountId *string              `json:"account_id"`
 	SourceId  *string              `json:"source_id"`
 	Engine    *QueryEngine         `json:"engine"`
-	Sorts     []SmartQuerySortItem `json:"sorts"`
+	Sorts     []NamedQuerySortItem `json:"sorts"`
 }
 
 type RunQueryResponse struct {
@@ -25,12 +25,12 @@ type RunQueryResponse struct {
 	Result  [][]any  `json:"result"`  // Result of query. in order to access a specific cell please use Result[Row][Column]
 }
 
-type SmartQueryHistory struct {
+type NamedQueryHistory struct {
 	Query      string    `json:"query"`
 	ExecutedAt time.Time `json:"executed_at"`
 }
 
-type SmartQueryTagsResult struct {
+type NamedQueryTagsResult struct {
 	Key          string
 	UniqueValues []string
 }
@@ -39,11 +39,11 @@ type RunQueryByIDRequest struct {
 	Page        Page                 `json:"page" validate:"required"`
 	Type        string               `json:"type"`
 	ID          string               `json:"id"`
-	Sorts       []SmartQuerySortItem `json:"sorts"`
+	Sorts       []NamedQuerySortItem `json:"sorts"`
 	QueryParams map[string]string    `json:"query_params"`
 }
 
 type ListQueriesFiltersResponse struct {
 	Providers []string               `json:"providers"`
-	Tags      []SmartQueryTagsResult `json:"tags"`
+	Tags      []NamedQueryTagsResult `json:"tags"`
 }

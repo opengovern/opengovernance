@@ -16,7 +16,7 @@ type Metric struct {
 	Status                   string              `json:"status" yaml:"status"`
 }
 
-type SmartQuery struct {
+type NamedQuery struct {
 	Title       string              `json:"title" yaml:"Title"`
 	Description string              `json:"description" yaml:"Description"`
 	Connectors  []source.Type       `json:"connectors" yaml:"Connectors"`
