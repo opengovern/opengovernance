@@ -17,24 +17,24 @@ type ResourceTypeTag struct {
 	ResourceType string `gorm:"primaryKey; type:citext"`
 }
 
-type SmartQueryTag struct {
+type NamedQueryTag struct {
 	model.Tag
-	SmartQueryID string `gorm:"primaryKey"`
+	NamedQueryID string `gorm:"primaryKey"`
 }
 
-type SmartQueryTagsResult struct {
+type NamedQueryTagsResult struct {
 	Key          string
 	UniqueValues pq.StringArray `gorm:"type:text[]"`
 }
 
-func (s SmartQueryTagsResult) ToApi() api.SmartQueryTagsResult {
-	return api.SmartQueryTagsResult{
+func (s NamedQueryTagsResult) ToApi() api.NamedQueryTagsResult {
+	return api.NamedQueryTagsResult{
 		Key:          s.Key,
 		UniqueValues: s.UniqueValues,
 	}
 }
 
-type SmartQuery struct {
+type NamedQuery struct {
 	ID          string         `gorm:"primarykey"`
 	Connectors  pq.StringArray `gorm:"type:text[]"`
 	Title       string
@@ -42,7 +42,7 @@ type SmartQuery struct {
 	QueryID     *string
 	Query       *Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
 	IsPopular   bool
-	Tags        []SmartQueryTag `gorm:"foreignKey:SmartQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tags        []NamedQueryTag `gorm:"foreignKey:NamedQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type QueryParameter struct {
@@ -64,7 +64,7 @@ type Query struct {
 	PrimaryTable   *string
 	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
-	SmartQuery     []SmartQuery     `gorm:"foreignKey:QueryID"`
+	NamedQuery     []NamedQuery     `gorm:"foreignKey:QueryID"`
 	Parameters     []QueryParameter `gorm:"foreignKey:QueryID"`
 	Global         bool
 	CreatedAt      time.Time
@@ -89,7 +89,7 @@ func (q Query) ToApi() api.Query {
 	return query
 }
 
-func (p SmartQuery) GetTagsMap() map[string][]string {
+func (p NamedQuery) GetTagsMap() map[string][]string {
 	var tagsMap map[string][]string
 	if p.Tags != nil {
 		tagLikeArr := make([]model.TagLike, 0, len(p.Tags))
@@ -101,13 +101,13 @@ func (p SmartQuery) GetTagsMap() map[string][]string {
 	return tagsMap
 }
 
-type SmartQueryHistory struct {
+type NamedQueryHistory struct {
 	Query      string `gorm:"type:citext; primaryKey"`
 	ExecutedAt time.Time
 }
 
-func (s SmartQueryHistory) ToApi() api.SmartQueryHistory {
-	return api.SmartQueryHistory{
+func (s NamedQueryHistory) ToApi() api.NamedQueryHistory {
+	return api.NamedQueryHistory{
 		Query:      s.Query,
 		ExecutedAt: s.ExecutedAt,
 	}
