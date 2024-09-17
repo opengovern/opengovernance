@@ -3337,7 +3337,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200		{object}	inventoryApi.ListQueriesFiltersResponse
+//	@Success	200	{object}	inventoryApi.ListQueriesFiltersResponse
 //	@Router		/inventory/api/v3/queries/filters [get]
 func (h *HttpHandler) ListQueriesFilters(echoCtx echo.Context) error {
 	providers, err := h.db.ListSmartQueriesUniqueProviders()
@@ -3346,8 +3346,20 @@ func (h *HttpHandler) ListQueriesFilters(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get providers list")
 	}
 
+	smartQueriesTags, err := h.db.GetQueriesTags()
+	if err != nil {
+		h.logger.Error("failed to get smartQueriesTags", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get smartQueriesTags")
+	}
+
+	tags := make([]inventoryApi.SmartQueryTagsResult, 0, len(smartQueriesTags))
+	for _, history := range smartQueriesTags {
+		tags = append(tags, history.ToApi())
+	}
+
 	response := inventoryApi.ListQueriesFiltersResponse{
 		Providers: providers,
+		Tags:      tags,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)

@@ -5675,9 +5675,9 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			request			body		api.GetBenchmarkSummaryV2Request	true	"Integrations filter to get the benchmark summary"
-//	@Param			benchmark_id	path		string								true	"Benchmark ID to get the summary"
-//	@Success		200				{object}	api.GetBenchmarkSummaryV2Response
+//	@Param			request			body		api.ComplianceSummaryOfIntegrationRequest	true	"Integrations filter to get the benchmark summary"
+//	@Param			benchmark_id	path		string										true	"Benchmark ID to get the summary"
+//	@Success		200				{object}	api.ComplianceSummaryOfIntegrationResponse
 //	@Router			/compliance/api/v3/compliance/summary/integration [post]
 func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
@@ -5917,9 +5917,9 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			request			body		api.GetBenchmarkSummaryV2Request	true	"Integrations filter to get the benchmark summary"
-//	@Param			benchmark_id	path		string								true	"Benchmark ID to get the summary"
-//	@Success		200				{object}	api.GetBenchmarkSummaryV2Response
+//	@Param			request			body		api.ComplianceSummaryOfBenchmarkRequest	true	"Integrations filter to get the benchmark summary"
+//	@Param			benchmark_id	path		string									true	"Benchmark ID to get the summary"
+//	@Success		200				{object}	api.ComplianceSummaryOfBenchmarkResponse
 //	@Router			/compliance/api/v3/compliance/summary/benchmark [post]
 func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -6192,7 +6192,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200		{object}	api.ListControlsFiltersResponse
+//	@Success	200	{object}	api.ListControlsFiltersResponse
 //	@Router		/compliance/api/v3/controls/filters [get]
 func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -6237,6 +6237,17 @@ func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get listOfTables")
 	}
 
+	controlsTags, err := h.db.GetControlsTags()
+	if err != nil {
+		h.logger.Error("failed to get controlsTags", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get controlsTags")
+	}
+
+	tags := make([]api.ControlTagsResult, 0, len(controlsTags))
+	for _, history := range controlsTags {
+		tags = append(tags, history.ToApi())
+	}
+
 	response := api.ListControlsFiltersResponse{
 		Provider:        connectors,
 		Severity:        severities,
@@ -6244,6 +6255,7 @@ func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
 		ParentBenchmark: parentBenchmarks,
 		PrimaryTable:    primaryTables,
 		ListOfTables:    listOfTables,
+		Tags:            tags,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
@@ -6256,7 +6268,7 @@ func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200		{object}	api.ListBenchmarksFiltersResponse
+//	@Success	200	{object}	api.ListBenchmarksFiltersResponse
 //	@Router		/compliance/api/v3/benchmarks/filters [get]
 func (h *HttpHandler) ListBenchmarksFilters(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -6283,10 +6295,22 @@ func (h *HttpHandler) ListBenchmarksFilters(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get listOfTables")
 	}
 
+	benchmarksTags, err := h.db.GetBenchmarksTags()
+	if err != nil {
+		h.logger.Error("failed to get benchmarksTags", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get benchmarksTags")
+	}
+
+	tags := make([]api.BenchmarkTagsResult, 0, len(benchmarksTags))
+	for _, history := range benchmarksTags {
+		tags = append(tags, history.ToApi())
+	}
+
 	response := api.ListBenchmarksFiltersResponse{
 		ParentBenchmarkID: benchmarkIds,
 		PrimaryTable:      primaryTables,
 		ListOfTables:      listOfTables,
+		Tags:              tags,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)

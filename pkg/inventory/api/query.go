@@ -44,5 +44,6 @@ type RunQueryByIDRequest struct {
 }
 
 type ListQueriesFiltersResponse struct {
-	Providers []string `json:"providers"`
+	Providers []string               `json:"providers"`
+	Tags      []SmartQueryTagsResult `json:"tags"`
 }

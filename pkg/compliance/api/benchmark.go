@@ -310,7 +310,8 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 }
 
 type ListBenchmarksFiltersResponse struct {
-	ParentBenchmarkID []string `json:"parent_benchmark_id"`
-	PrimaryTable      []string `json:"primary_table"`
-	ListOfTables      []string `json:"list_of_tables"`
+	ParentBenchmarkID []string              `json:"parent_benchmark_id"`
+	PrimaryTable      []string              `json:"primary_table"`
+	ListOfTables      []string              `json:"list_of_tables"`
+	Tags              []BenchmarkTagsResult `json:"tags"`
 }
