@@ -294,8 +294,8 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	}
 
 	err = tx.Model(&inventory.SmartQuery{}).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}},                                                                             // key column
-		DoUpdates: clause.AssignmentColumns([]string{"connectors", "title", "query", "description", "engine", "is_popular"}), // column needed to be updated
+		Columns:   []clause.Column{{Name: "id"}}, // key column
+		DoNothing: true,                          // column needed to be updated
 	}).Create(dbMetric).Error
 	if err != nil {
 		logger.Error("failure in insert query", zap.Error(err))
