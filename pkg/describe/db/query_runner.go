@@ -17,7 +17,7 @@ func (db Database) CreateQueryRunnerJob(job *model.QueryRunnerJob) (uint, error)
 
 func (db Database) GetQueryRunnerJob(id uint) (*model.QueryRunnerJob, error) {
 	var job model.QueryRunnerJob
-	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("run_id = ?", id).First(&job)
+	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("id = ?", id).First(&job)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -42,7 +42,7 @@ func (db Database) DeleteQueryRunnerJob(id uint) error {
 }
 
 func (db Database) UpdateQueryRunnerJobStatus(jobId uint, status queryrunner.QueryRunnerStatus, failureReason string) error {
-	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("run_id = ?", jobId).
+	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("id = ?", jobId).
 		Updates(model.QueryRunnerJob{Status: status, FailureMessage: failureReason})
 	if tx.Error != nil {
 		return tx.Error
@@ -54,7 +54,7 @@ func (db Database) UpdateQueryRunnerJobNatsSeqNum(
 	id uint, seqNum uint64) error {
 	tx := db.ORM.
 		Model(&model.QueryRunnerJob{}).
-		Where("run_id = ?", id).
+		Where("id = ?", id).
 		Updates(model.QueryRunnerJob{
 			NatsSequenceNumber: seqNum,
 		})
