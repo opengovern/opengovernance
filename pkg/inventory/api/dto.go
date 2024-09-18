@@ -168,6 +168,15 @@ type Query struct {
 	UpdatedAt      time.Time        `json:"updatedAt" example:"2023-06-16T14:58:08.759554Z"`
 }
 
+type ListQueryV2Request struct {
+	TitleFilter string              `json:"titleFilter"`
+	Providers   []string            `json:"providers"`
+	Tags        map[string][]string `json:"tags"`
+	TagsRegex   *string             `json:"tags_regex"`
+	Cursor      *int64              `json:"cursor"`
+	PerPage     *int64              `json:"per_page"`
+}
+
 type ListQueryRequest struct {
 	TitleFilter string `json:"titleFilter"` // Specifies the Title
 }

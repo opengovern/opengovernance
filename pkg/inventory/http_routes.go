@@ -108,7 +108,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourceCollectionMetadata.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollectionMetadata, api.ViewerRole))
 
 	v3 := e.Group("/api/v3")
-	v3.GET("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
+	v3.POST("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
 	v3.GET("/queries/filters", httpserver.AuthorizeHandler(h.ListQueriesFilters, api.ViewerRole))
 	v3.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	v3.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
@@ -2079,50 +2079,25 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			named_query
 //	@Produce		json
-//	@Param			title_filter	query		[]string	false	"Title Filer"
-//	@Param			tags_filter		query		string		false	"Tags filter input type: tags_filter[key1]=value1&tags_filter[key2]=value2"
-//	@Param			providers		query		string		false	"Providers Filter"
-//	@Param			tags_regex		query		string		false	"Regex for output tag keys in response"
-//	@Param			cursor			query		int			false	"Cursor"
-//	@Param			per_page		query		int			false	"Per Page"
+//	@Param			request		body		inventoryApi.ListQueryV2Request			true	"List Queries Filters"
 //	@Success		200				{object}	inventoryApi.ListQueriesV2Response
-//	@Router			/inventory/api/v3/queries [get]
+//	@Router			/inventory/api/v3/queries [post]
 func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
-	titleFilter := ctx.QueryParam("title_filter")
-	connectors := httpserver.QueryArrayParam(ctx, "providers")
-	tagsFilter := httpserver.QueryMapParam(ctx, "tags_filter")
-	var tagsRegex *string
-	tagsRegexStr := ctx.QueryParam("tags_regex")
-	if tagsRegexStr != "" {
-		tagsRegex = &tagsRegexStr
+	var req inventoryApi.ListQueryV2Request
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var search *string
-	if len(titleFilter) > 0 {
-		search = &titleFilter
-	}
-	var cursor, perPage int64
-	var err error
-	cursorStr := ctx.QueryParam("cursor")
-	if cursorStr != "" {
-		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-	perPageStr := ctx.QueryParam("per_page")
-	if cursorStr != "" {
-		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
-		if err != nil {
-			return err
-		}
+	if len(req.TitleFilter) > 0 {
+		search = &req.TitleFilter
 	}
 
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithTagsFilters")
 
-	queries, err := h.db.GetQueriesWithTagsFilters(search, tagsFilter, connectors)
+	queries, err := h.db.GetQueriesWithTagsFilters(search, req.Tags, req.Providers)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -2145,7 +2120,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 			Description: item.Description,
 			Connectors:  source.ParseTypes(item.Connectors),
 			Query:       item.Query.ToApi(),
-			Tags:        filterTagsByRegex(tagsRegex, tags),
+			Tags:        filterTagsByRegex(req.TagsRegex, tags),
 		})
 	}
 
@@ -2154,11 +2129,11 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].ID < items[j].ID
 	})
-	if perPage != 0 {
-		if cursor == 0 {
-			items = utils.Paginate(1, perPage, items)
+	if req.PerPage != nil {
+		if req.Cursor == nil {
+			items = utils.Paginate(1, *req.PerPage, items)
 		} else {
-			items = utils.Paginate(cursor, perPage, items)
+			items = utils.Paginate(*req.Cursor, *req.PerPage, items)
 		}
 	}
 
