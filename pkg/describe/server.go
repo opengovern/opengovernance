@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	runner2 "github.com/kaytu-io/open-governance/pkg/compliance/runner"
+	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/kaytu-io/open-governance/pkg/utils"
 	"github.com/labstack/echo/v4"
@@ -89,6 +90,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/compliance/benchmark/:benchmark_id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v3.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
 	v3.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
+	v3.PUT("/query/:query_id/run", httpserver.AuthorizeHandler(h.RunQuery, apiAuth.AdminRole))
 	v3.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/analytics/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
@@ -3113,4 +3115,30 @@ func convertInterval(input string) (string, error) {
 
 	// If the input is invalid, return an error
 	return "", fmt.Errorf("invalid interval format: %s", input)
+}
+
+// RunQuery godoc
+//
+//	@Summary	List jobs by job type and filters
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		query_id	query	string	true	"Job Type"
+//	@Produce	json
+//	@Success	200	{object}	[]api.ListJobsByTypeItem
+//	@Router		/schedule/api/v3/query/{query_id}/run [put]
+func (h *HttpServer) RunQuery(ctx echo.Context) error {
+	job := &model2.QueryRunnerJob{
+		Status:         queryrunner.QueryRunnerCreated,
+		CreatedBy:      "",
+		FailureMessage: "",
+		RetryCount:     0,
+	}
+	jobId, err := h.DB.CreateQueryRunnerJob(job)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to create query runner job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create query runner job")
+	}
+
+	job.ID = jobId
+	return ctx.JSON(http.StatusOK, job)
 }

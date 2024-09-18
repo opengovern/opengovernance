@@ -2166,7 +2166,10 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if query == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "query not found")
 	}
 	span.End()
 	tags := query.GetTagsMap()

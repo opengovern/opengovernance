@@ -5,4 +5,5 @@ const (
 	FindingEventsIndex    = "finding_events"
 	ResourceFindingsIndex = "resource_findings"
 	BenchmarkSummaryIndex = "benchmark_summary"
+	QueryRunIndex         = "query_run"
 )

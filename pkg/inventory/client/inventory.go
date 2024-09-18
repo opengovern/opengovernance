@@ -17,6 +17,7 @@ import (
 
 type InventoryServiceClient interface {
 	RunQuery(ctx *httpclient.Context, req api.RunQueryRequest) (*api.RunQueryResponse, error)
+	GetQuery(ctx *httpclient.Context, id string) (*api.NamedQueryItemV2, error)
 	CountResources(ctx *httpclient.Context) (int64, error)
 	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, metricIDs []string, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
@@ -66,6 +67,18 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 		return 0, err
 	}
 	return count, nil
+}
+
+func (s *inventoryClient) GetQuery(ctx *httpclient.Context, id string) (*api.NamedQueryItemV2, error) {
+	url := fmt.Sprintf("%s/api/v3/query/%s", s.baseURL, id)
+
+	var namedQuery api.NamedQueryItemV2
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &namedQuery); err != nil {
+		if statusCode == http.StatusNotFound {
+			return nil, nil
+		}
+	}
+	return &namedQuery, nil
 }
 
 func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error) {
