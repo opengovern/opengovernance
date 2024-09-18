@@ -19,6 +19,7 @@ import (
 	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"
+	"strconv"
 	"time"
 )
 
@@ -188,6 +189,8 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	if err := json.Unmarshal(msg.Data(), &job); err != nil {
 		return true, false, err
 	}
+
+	w.logger.Info("job message delivered", zap.String("jobID", strconv.Itoa(int(job.ID))))
 
 	result := JobResult{
 		ID:             job.ID,
