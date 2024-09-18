@@ -537,7 +537,17 @@ func (db Database) GetControlsTags() ([]ControlTagsResult, error) {
 	var results []ControlTagsResult
 
 	// Execute the raw SQL query
-	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM control_tags GROUP BY key"
+	query := `SELECT 
+    key, 
+    ARRAY_AGG(DISTINCT value) AS unique_values
+FROM (
+    SELECT 
+        key, 
+        UNNEST(value) AS value
+    FROM control_tags
+) AS expanded_values
+GROUP BY key;
+`
 	err := db.Orm.Raw(query).Scan(&results).Error
 	if err != nil {
 		return nil, err
@@ -550,7 +560,17 @@ func (db Database) GetBenchmarksTags() ([]BenchmarkTagsResult, error) {
 	var results []BenchmarkTagsResult
 
 	// Execute the raw SQL query
-	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM benchmark_tags GROUP BY key"
+	query := `SELECT 
+    key, 
+    ARRAY_AGG(DISTINCT value) AS unique_values
+FROM (
+    SELECT 
+        key, 
+        UNNEST(value) AS value
+    FROM benchmark_tags
+) AS expanded_values
+GROUP BY key;
+`
 	err := db.Orm.Raw(query).Scan(&results).Error
 	if err != nil {
 		return nil, err

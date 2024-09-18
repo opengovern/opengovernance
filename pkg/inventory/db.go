@@ -166,7 +166,17 @@ func (db Database) GetQueriesTags() ([]NamedQueryTagsResult, error) {
 	var results []NamedQueryTagsResult
 
 	// Execute the raw SQL query
-	query := "SELECT key, ARRAY_AGG(DISTINCT value::text) AS unique_values FROM named_query_tags GROUP BY key"
+	query := `SELECT 
+    key, 
+    ARRAY_AGG(DISTINCT value) AS unique_values
+FROM (
+    SELECT 
+        key, 
+        UNNEST(value) AS value
+    FROM named_query_tags
+) AS expanded_values
+GROUP BY key;
+`
 	err := db.orm.Raw(query).Scan(&results).Error
 	if err != nil {
 		return nil, err
