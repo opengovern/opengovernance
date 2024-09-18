@@ -179,7 +179,19 @@ func (s *JobScheduler) finishComplianceJob(job model.ComplianceJob) error {
 		builder := strings.Builder{}
 		builder.WriteString(fmt.Sprintf("%d runners failed: [", len(failedRunners)))
 		for i, runner := range failedRunners {
-			builder.WriteString(fmt.Sprintf("%s", runner.FailureMessage))
+			identify := fmt.Sprintf("query[%s]", runner.QueryID)
+			if callers, cErr := runner.GetCallers(); cErr == nil {
+				ids := map[string]any{}
+				for _, c := range callers {
+					ids[c.ControlID] = struct{}{}
+				}
+				var uniqIDs []string
+				for c := range ids {
+					uniqIDs = append(uniqIDs, c)
+				}
+				identify = fmt.Sprintf("controls[%s]", strings.Join(uniqIDs, ","))
+			}
+			builder.WriteString(fmt.Sprintf("%s: %s", identify, runner.FailureMessage))
 			if i != len(failedRunners)-1 {
 				builder.WriteString(", ")
 			}

@@ -3,6 +3,7 @@ package job
 import (
 	"encoding/json"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
@@ -12,6 +13,7 @@ import (
 	"github.com/kaytu-io/open-governance/services/migrator/config"
 	"go.uber.org/zap"
 	"os"
+	"strings"
 )
 
 func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
@@ -44,11 +46,17 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 		}
 	}
 	os.RemoveAll(config.ConfigzGitPath)
-	res, err := git.PlainClone(config.ConfigzGitPath, false, &git.CloneOptions{
+	co := git.CloneOptions{
 		Auth:     authMethod,
 		URL:      gitConfig.AnalyticsGitURL,
 		Progress: os.Stdout,
-	})
+	}
+	if strings.Contains(co.URL, "@") {
+		newUrl, tag, _ := strings.Cut(co.URL, "@")
+		co.URL = newUrl
+		co.ReferenceName = plumbing.ReferenceName("refs/tags/" + tag)
+	}
+	res, err := git.PlainClone(config.ConfigzGitPath, false, &co)
 	if err != nil {
 		logger.Error("Failure while cloning analytics repo", zap.Error(err))
 		return "", err
@@ -63,11 +71,17 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
 
 	os.RemoveAll(config.ControlEnrichmentGitPath)
-	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &git.CloneOptions{
+	co = git.CloneOptions{
 		Auth:     authMethod,
 		URL:      gitConfig.ControlEnrichmentGitURL,
 		Progress: os.Stdout,
-	})
+	}
+	if strings.Contains(co.URL, "@") {
+		newUrl, tag, _ := strings.Cut(co.URL, "@")
+		co.URL = newUrl
+		co.ReferenceName = plumbing.ReferenceName("refs/tags/" + tag)
+	}
+	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &co)
 	if err != nil {
 		logger.Error("Failure while cloning control enrichment repo", zap.Error(err))
 		return "", err
