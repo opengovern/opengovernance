@@ -38,6 +38,7 @@ func New(
 	jq *jq.JobQueue,
 	esClient kaytu.Client,
 	inventoryClient inventoryClient.InventoryServiceClient,
+	complianceClient complianceClient.ComplianceServiceClient,
 ) *JobScheduler {
 	return &JobScheduler{
 		runSetupNatsStreams: runSetupNatsStreams,
@@ -47,6 +48,7 @@ func New(
 		jq:                  jq,
 		esClient:            esClient,
 		inventoryClient:     inventoryClient,
+		complianceClient:    complianceClient,
 	}
 }
 

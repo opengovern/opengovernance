@@ -3122,12 +3122,14 @@ func convertInterval(input string) (string, error) {
 //	@Summary	List jobs by job type and filters
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		query_id	query	string	true	"Job Type"
+//	@Param		query_id	path	string	true	"Query ID"
 //	@Produce	json
 //	@Success	200	{object}	[]api.ListJobsByTypeItem
 //	@Router		/schedule/api/v3/query/{query_id}/run [put]
 func (h *HttpServer) RunQuery(ctx echo.Context) error {
+	queryId := ctx.Param("query_id")
 	job := &model2.QueryRunnerJob{
+		QueryId:        queryId,
 		Status:         queryrunner.QueryRunnerCreated,
 		CreatedBy:      "",
 		FailureMessage: "",
