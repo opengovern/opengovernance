@@ -3672,14 +3672,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving list of smart queries by specified filters",
+                "description": "Retrieving list of named queries by specified filters",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
-                "summary": "List smart queries",
+                "summary": "List named queries",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -3697,7 +3697,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryItem"
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItem"
                             }
                         }
                     }
@@ -3711,12 +3711,12 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Run provided smart query and returns the result.",
+                "description": "Run provided named query and returns the result.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
                 "summary": "Run query",
                 "parameters": [
@@ -3763,7 +3763,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
                 "summary": "List recently ran queries",
                 "responses": {
@@ -3772,7 +3772,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryHistory"
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryHistory"
                             }
                         }
                     }
@@ -5155,60 +5155,29 @@ const docTemplate = `{
             }
         },
         "/inventory/api/v3/queries": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving list of smart queries by specified filters and tags filters",
+                "description": "Retrieving list of named queries by specified filters and tags filters",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
-                "summary": "List smart queries",
+                "summary": "List named queries",
                 "parameters": [
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Title Filer",
-                        "name": "title_filter",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Tags filter input type: tags_filter[key1]=value1\u0026tags_filter[key2]=value2",
-                        "name": "tags_filter",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Providers Filter",
-                        "name": "providers",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Regex for output tag keys in response",
-                        "name": "tags_regex",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Per Page",
-                        "name": "per_page",
-                        "in": "query"
+                        "description": "List Queries Filters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ListQueryV2Request"
+                        }
                     }
                 ],
                 "responses": {
@@ -5255,14 +5224,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Run provided smart query or compliance and returns the result.",
+                "description": "Run provided named query or compliance and returns the result.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
-                "summary": "Run query by smart query or compliance ID",
+                "summary": "Run query by named query or compliance ID",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -5302,21 +5271,21 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving list of smart queries by specified filters",
+                "description": "Retrieving list of named queries by specified filters",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
-                "summary": "List smart queries tags",
+                "summary": "List named queries tags",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryTagsResult"
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryTagsResult"
                             }
                         }
                     }
@@ -5330,14 +5299,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving list of smart queries by specified filters and tags filters",
+                "description": "Retrieving list of named queries by specified filters and tags filters",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "smart_query"
+                    "named_query"
                 ],
-                "summary": "Get smart query by ID",
+                "summary": "Get named query by ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -5351,7 +5320,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryItemV2"
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItemV2"
                         }
                     }
                 }
@@ -7422,6 +7391,42 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Time Interval to filter by",
                         "name": "interval",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListJobsByTypeItem"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v3/query/{query_id}/run": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "List jobs by job type and filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job Type",
+                        "name": "query_id",
                         "in": "query",
                         "required": true
                     }
@@ -10544,6 +10549,12 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         },
+                        "parameters": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.QueryParameter"
+                            }
+                        },
                         "primaryTable": {
                             "type": "string"
                         },
@@ -12691,7 +12702,7 @@ const docTemplate = `{
                 "tags": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryTagsResult"
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryTagsResult"
                     }
                 }
             }
@@ -12702,7 +12713,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryItemV2"
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItemV2"
                     }
                 },
                 "total_count": {
@@ -12715,6 +12726,38 @@ const docTemplate = `{
             "properties": {
                 "titleFilter": {
                     "description": "Specifies the Title",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.ListQueryV2Request": {
+            "type": "object",
+            "properties": {
+                "cursor": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "tags_regex": {
+                    "type": "string"
+                },
+                "titleFilter": {
                     "type": "string"
                 }
             }
@@ -12798,6 +12841,127 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryHistory": {
+            "type": "object",
+            "properties": {
+                "executed_at": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "Category (Tags[category])",
+                    "type": "string"
+                },
+                "connectors": {
+                    "description": "Provider",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
+                "id": {
+                    "description": "Query Id",
+                    "type": "string"
+                },
+                "query": {
+                    "description": "Query",
+                    "type": "string"
+                },
+                "tags": {
+                    "description": "Tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "description": "Title",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItemV2": {
+            "type": "object",
+            "properties": {
+                "connectors": {
+                    "description": "Provider",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Query Id",
+                    "type": "string"
+                },
+                "query": {
+                    "description": "Query",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.Query"
+                        }
+                    ]
+                },
+                "tags": {
+                    "description": "Tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "title": {
+                    "description": "Title",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQuerySortItem": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.DirectionType"
+                        }
+                    ]
+                },
+                "field": {
+                    "description": "fill this with column name",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryTagsResult": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "uniqueValues": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_inventory_api.Page": {
             "type": "object",
             "properties": {
@@ -12806,6 +12970,66 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.Query": {
+            "type": "object",
+            "properties": {
+                "Global": {
+                    "type": "boolean"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2023-06-07T14:00:15.677558Z"
+                },
+                "engine": {
+                    "type": "string",
+                    "example": "steampipe-v0.5"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "azure_ad_manual_control"
+                },
+                "listOfTables": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "null"
+                    ]
+                },
+                "parameters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.QueryParameter"
+                    }
+                },
+                "primaryTable": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "queryToExecute": {
+                    "type": "string",
+                    "example": "select\n  -- Required Columns\n  'active_directory' as resource,\n  'info' as status,\n  'Manual verification required.' as reason;\n"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2023-06-16T14:58:08.759554Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.QueryParameter": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "example": "key"
+                },
+                "required": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -13089,7 +13313,7 @@ const docTemplate = `{
                 "sorts": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQuerySortItem"
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQuerySortItem"
                     }
                 },
                 "type": {
@@ -13118,7 +13342,7 @@ const docTemplate = `{
                 "sorts": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQuerySortItem"
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQuerySortItem"
                     }
                 },
                 "source_id": {
@@ -13151,131 +13375,6 @@ const docTemplate = `{
                 "title": {
                     "description": "Query Title",
                     "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryHistory": {
-            "type": "object",
-            "properties": {
-                "executed_at": {
-                    "type": "string"
-                },
-                "query": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryItem": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "description": "Category (Tags[category])",
-                    "type": "string"
-                },
-                "connectors": {
-                    "description": "Provider",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
-                "id": {
-                    "description": "Query Id",
-                    "type": "string"
-                },
-                "query": {
-                    "description": "Query",
-                    "type": "string"
-                },
-                "tags": {
-                    "description": "Tags",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "description": "Title",
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryItemV2": {
-            "type": "object",
-            "properties": {
-                "connectors": {
-                    "description": "Provider",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Query Id",
-                    "type": "string"
-                },
-                "query": {
-                    "description": "Query",
-                    "type": "object",
-                    "properties": {
-                        "query_engine": {
-                            "type": "string"
-                        },
-                        "query_to_execute": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "tags": {
-                    "description": "Tags",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "title": {
-                    "description": "Title",
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQuerySortItem": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.DirectionType"
-                        }
-                    ]
-                },
-                "field": {
-                    "description": "fill this with column name",
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.SmartQueryTagsResult": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "uniqueValues": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
