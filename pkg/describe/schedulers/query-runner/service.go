@@ -39,6 +39,7 @@ func New(
 	esClient kaytu.Client,
 	inventoryClient inventoryClient.InventoryServiceClient,
 	complianceClient complianceClient.ComplianceServiceClient,
+	metadataClient metadataClient.MetadataServiceClient,
 ) *JobScheduler {
 	return &JobScheduler{
 		runSetupNatsStreams: runSetupNatsStreams,
@@ -49,6 +50,7 @@ func New(
 		esClient:            esClient,
 		inventoryClient:     inventoryClient,
 		complianceClient:    complianceClient,
+		metadataClient:      metadataClient,
 	}
 }
 
