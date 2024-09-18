@@ -4,11 +4,8 @@ import (
 	"errors"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
-
-var Tracer = otel.Tracer("new_query_runner")
 
 func WorkerCommand() *cobra.Command {
 	var (
