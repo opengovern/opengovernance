@@ -9,7 +9,7 @@ import (
 )
 
 func (s *JobScheduler) RunQueryRunnerReportJobResultsConsumer(ctx context.Context) error {
-	if _, err := s.jq.Consume(ctx, queryrunner.ConsumerGroup, queryrunner.StreamName, []string{queryrunner.JobResultQueueTopic}, queryrunner.StreamName, func(msg jetstream.Msg) {
+	if _, err := s.jq.Consume(ctx, "scheduler-query-runner", queryrunner.StreamName, []string{queryrunner.JobResultQueueTopic}, "scheduler-query-runner", func(msg jetstream.Msg) {
 		if err := msg.Ack(); err != nil {
 			s.logger.Error("Failed committing message", zap.Error(err))
 		}

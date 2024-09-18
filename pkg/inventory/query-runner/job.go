@@ -2,6 +2,7 @@ package query_runner
 
 import (
 	"context"
+	"fmt"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -28,6 +29,15 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 		return err
 	}
 
+	var results [][]string
+	for _, rs := range queryResult.Result {
+		row := make([]string, 0)
+		for _, r := range rs {
+			row = append(row, fmt.Sprintf("%v", r))
+		}
+		results = append(results, row)
+	}
+
 	queryRunResult := types.QueryRunResult{
 		RunId:       strconv.Itoa(int(job.ID)),
 		CreatedBy:   job.CreatedBy,
@@ -36,7 +46,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 		QueryID:     job.QueryId,
 		Parameters:  job.Parameters,
 		ColumnNames: queryResult.Headers,
-		Result:      queryResult.Result,
+		Result:      results,
 	}
 	keys, idx := queryRunResult.KeysAndIndex()
 	queryRunResult.EsID = es.HashOf(keys...)
