@@ -6,13 +6,13 @@ import (
 	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 )
 
-func (db Database) CreateQueryRunnerJob(job model.QueryRunnerJob) error {
-	tx := db.ORM.Model(&model.QueryRunnerJob{}).Create(job)
+func (db Database) CreateQueryRunnerJob(job *model.QueryRunnerJob) (uint, error) {
+	tx := db.ORM.Create(job)
 	if tx.Error != nil {
-		return tx.Error
+		return 0, tx.Error
 	}
 
-	return nil
+	return job.ID, nil
 }
 
 func (db Database) GetQueryRunnerJob(id uint) (*model.QueryRunnerJob, error) {

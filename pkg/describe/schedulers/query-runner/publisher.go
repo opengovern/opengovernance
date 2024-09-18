@@ -83,7 +83,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 		}
 
 		runnerJobMsg := queryrunner.Job{
-			RunId:       job.RunId,
+			ID:          job.ID,
 			RetryCount:  0,
 			CreatedBy:   job.CreatedBy,
 			TriggeredAt: job.CreatedAt.UnixMilli(),

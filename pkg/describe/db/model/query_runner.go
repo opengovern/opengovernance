@@ -7,7 +7,6 @@ import (
 
 type QueryRunnerJob struct {
 	gorm.Model
-	RunId              uint
 	QueryId            string
 	CreatedBy          string
 	RetryCount         int

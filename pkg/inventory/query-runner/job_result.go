@@ -13,7 +13,7 @@ const (
 )
 
 type JobResult struct {
-	RunId          uint              `json:"runID"`
+	ID             uint              `json:"ID"`
 	Status         QueryRunnerStatus `json:"status"`
 	FailureMessage string            `json:"failureMessage"`
 }

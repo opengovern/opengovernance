@@ -13,7 +13,7 @@ import (
 )
 
 type Job struct {
-	RunId       uint                 `json:"runID"`
+	ID          uint                 `json:"ID"`
 	RetryCount  int                  `json:"retryCount"`
 	CreatedBy   string               `json:"createdBy"`
 	TriggeredAt int64                `json:"triggeredAt"`
@@ -29,7 +29,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 	}
 
 	queryRunResult := types.QueryRunResult{
-		RunId:       strconv.Itoa(int(job.RunId)),
+		RunId:       strconv.Itoa(int(job.ID)),
 		CreatedBy:   job.CreatedBy,
 		TriggeredAt: job.TriggeredAt,
 		EvaluatedAt: time.Now().UnixMilli(),
@@ -46,7 +46,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 	doc = append(doc, queryRunResult)
 
 	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, doc); err != nil {
-		w.logger.Error("Failed to sink Query Run Result", zap.String("RunID", strconv.Itoa(int(job.RunId))), zap.String("QueryID", job.QueryId), zap.Error(err))
+		w.logger.Error("Failed to sink Query Run Result", zap.String("RunID", strconv.Itoa(int(job.ID))), zap.String("QueryID", job.QueryId), zap.Error(err))
 		return err
 	}
 

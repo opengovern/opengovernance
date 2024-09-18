@@ -21,13 +21,13 @@ func (s *JobScheduler) RunQueryRunnerReportJobResultsConsumer(ctx context.Contex
 		}
 
 		s.logger.Info("Processing ReportJobResult for Job",
-			zap.Uint("jobId", result.RunId),
+			zap.Uint("jobId", result.ID),
 			zap.String("status", string(result.Status)),
 		)
-		err := s.db.UpdateQueryRunnerJobStatus(result.RunId, result.Status, result.FailureMessage)
+		err := s.db.UpdateQueryRunnerJobStatus(result.ID, result.Status, result.FailureMessage)
 		if err != nil {
 			s.logger.Error("Failed to update the status of QueryRunnerReportJob",
-				zap.Uint("jobId", result.RunId),
+				zap.Uint("jobId", result.ID),
 				zap.Error(err))
 			return
 		}

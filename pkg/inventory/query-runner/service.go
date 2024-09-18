@@ -190,7 +190,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	}
 
 	result := JobResult{
-		RunId:          job.RunId,
+		ID:             job.ID,
 		Status:         QueryRunnerInProgress,
 		FailureMessage: "",
 	}
@@ -209,7 +209,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 			return
 		}
 
-		if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("query-runner-result-%d-%d", job.RunId, job.RetryCount)); err != nil {
+		if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("query-runner-result-%d-%d", job.ID, job.RetryCount)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
@@ -220,7 +220,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 		return true, false, err
 	}
 
-	if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("query-runner-inprogress-%d-%d", job.RunId, job.RetryCount)); err != nil {
+	if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("query-runner-inprogress-%d-%d", job.ID, job.RetryCount)); err != nil {
 		w.logger.Error("failed to publish job in progress", zap.String("jobInProgress", string(resultJson)), zap.Error(err))
 	}
 
