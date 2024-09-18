@@ -15,7 +15,7 @@ type QueryRunResult struct {
 	QueryID     string               `json:"queryID"`
 	Parameters  []api.QueryParameter `json:"parameters"`
 	ColumnNames []string             `json:"columnNames"`
-	Result      [][]any              `json:"result"`
+	Result      [][]string           `json:"result"`
 }
 
 func (r QueryRunResult) KeysAndIndex() ([]string, string) {
