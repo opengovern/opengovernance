@@ -12,17 +12,8 @@ import (
 
 func (w *Worker) RunSQLNamedQuery(ctx context.Context, query string) (*QueryResult, error) {
 	var err error
-	//lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	direction := inventoryApi.DirectionType("")
-	//orderBy := ""
-	//if req.Sorts != nil && len(req.Sorts) > 0 {
-	//	direction = req.Sorts[0].Direction
-	//	orderBy = req.Sorts[0].Field
-	//}
-	//if len(req.Sorts) > 1 {
-	//	return nil, errors.New("multiple sort items not supported")
-	//}
 
 	for i := 0; i < 10; i++ {
 		err = w.steampipeConn.Conn().Ping(ctx)

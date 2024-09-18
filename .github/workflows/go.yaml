@@ -73,7 +73,7 @@ jobs:
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
       wastage-service: ${{ steps.build_services.outputs.wastage-service }}
       information-service: ${{ steps.build_services.outputs.information-service }}
-      query-runner-service: ${{ steps.build_services.outputs.query-runner-service }}
+      query-runner-worker: ${{ steps.build_services.outputs.query-runner-worker }}
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -843,7 +843,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/InformationServiceDockerfile
           context: .
-  deploy-query-runner-service:
+  deploy-query-runner-worker:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -852,7 +852,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.query-runner-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: needs.build.outputs.query-runner-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -875,6 +875,6 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/query-runner-service:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
-          file: docker/QueryRunnerServiceDockerfile
+            ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/QueryRunnerWorkerDockerfile
           context: .
