@@ -2079,8 +2079,8 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			named_query
 //	@Produce		json
-//	@Param			request		body		inventoryApi.ListQueryV2Request			true	"List Queries Filters"
-//	@Success		200				{object}	inventoryApi.ListQueriesV2Response
+//	@Param			request	body		inventoryApi.ListQueryV2Request	true	"List Queries Filters"
+//	@Success		200		{object}	inventoryApi.ListQueriesV2Response
 //	@Router			/inventory/api/v3/queries [post]
 func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	var req inventoryApi.ListQueryV2Request
