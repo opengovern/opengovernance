@@ -877,4 +877,6 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
           file: docker/QueryRunnerWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
           context: .

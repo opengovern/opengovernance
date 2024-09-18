@@ -206,6 +206,8 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 			result.Status = QueryRunnerSucceeded
 		}
 
+		w.logger.Info("job is finished with status", zap.String("ID", strconv.Itoa(int(job.ID))), zap.String("status", string(result.Status)))
+
 		resultJson, err := json.Marshal(result)
 		if err != nil {
 			w.logger.Error("failed to create job result json", zap.Error(err))
