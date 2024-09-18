@@ -3648,7 +3648,10 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 
 	control, err := h.db.GetControl(ctx, controlId)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if control == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "control not found")
 	}
 
 	response := api.GetControlDetailsResponse{

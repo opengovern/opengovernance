@@ -28,6 +28,7 @@ type ComplianceServiceClient interface {
 	CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error)
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
 	ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error)
+	GetControlDetails(ctx *httpclient.Context, controlID string) (*compliance.GetControlDetailsResponse, error)
 }
 
 type complianceClient struct {
@@ -60,6 +61,18 @@ func (s *complianceClient) GetBenchmark(ctx *httpclient.Context, benchmarkID str
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
 		return nil, err
+	}
+	return &response, nil
+}
+
+func (s *complianceClient) GetControlDetails(ctx *httpclient.Context, controlID string) (*compliance.GetControlDetailsResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/control/%s", s.baseURL, controlID)
+
+	var response compliance.GetControlDetailsResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if statusCode == http.StatusNotFound {
+			return nil, nil
+		}
 	}
 	return &response, nil
 }

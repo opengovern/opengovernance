@@ -32,7 +32,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 		RunId:       strconv.Itoa(int(job.RunId)),
 		CreatedBy:   job.CreatedBy,
 		TriggeredAt: job.TriggeredAt,
-		EvaluatedAt: time.Now().Unix(),
+		EvaluatedAt: time.Now().UnixMilli(),
 		QueryID:     job.QueryId,
 		Parameters:  job.Parameters,
 		ColumnNames: queryResult.Headers,
