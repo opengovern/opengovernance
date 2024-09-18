@@ -507,6 +507,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.jq,
 		s.es,
 		s.inventoryClient,
+		s.complianceClient,
 	)
 	s.queryRunnerScheduler.Run(ctx)
 
