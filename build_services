@@ -19,3 +19,4 @@ analytics-worker
 alerting-service
 cost-estimator-service
 wastage-service
+query-runner-service
