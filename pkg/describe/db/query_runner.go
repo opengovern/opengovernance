@@ -1,8 +1,9 @@
 package db
 
 import (
+	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
 	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
-	query_runner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 )
 
 func (db Database) CreateQueryRunnerJob(job model.QueryRunnerJob) error {
@@ -25,7 +26,7 @@ func (db Database) GetQueryRunnerJob(id uint) (*model.QueryRunnerJob, error) {
 
 func (db Database) FetchCreatedQueryRunnerJobs() ([]model.QueryRunnerJob, error) {
 	var jobs []model.QueryRunnerJob
-	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("status = ?", query_runner.QueryRunnerCreated).Find(&jobs)
+	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("status = ?", queryrunner.QueryRunnerCreated).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -40,10 +41,52 @@ func (db Database) DeleteQueryRunnerJob(id uint) error {
 	return nil
 }
 
-func (db Database) UpdateQueryRunnerJobStatus(jobId uint, status query_runner.QueryRunnerStatus) error {
-	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("run_id = ?", jobId).Updates(model.QueryRunnerJob{Status: status})
+func (db Database) UpdateQueryRunnerJobStatus(jobId uint, status queryrunner.QueryRunnerStatus, failureReason string) error {
+	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("run_id = ?", jobId).
+		Updates(model.QueryRunnerJob{Status: status, FailureMessage: failureReason})
 	if tx.Error != nil {
 		return tx.Error
 	}
+	return nil
+}
+
+func (db Database) UpdateQueryRunnerJobNatsSeqNum(
+	id uint, seqNum uint64) error {
+	tx := db.ORM.
+		Model(&model.QueryRunnerJob{}).
+		Where("run_id = ?", id).
+		Updates(model.QueryRunnerJob{
+			NatsSequenceNumber: seqNum,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateTimedOutInProgressQueryRunners() error {
+	tx := db.ORM.
+		Model(&model.QueryRunnerJob{}).
+		Where("status = ?", runner.ComplianceRunnerInProgress).
+		Where("updated_at < NOW() - INTERVAL '15 MINUTES'").
+		Updates(model.QueryRunnerJob{Status: queryrunner.QueryRunnerTimeOut, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateTimedOutQueuedQueryRunners() error {
+	tx := db.ORM.
+		Model(&model.QueryRunnerJob{}).
+		Where("status = ?", runner.ComplianceRunnerInProgress).
+		Where("updated_at < NOW() - INTERVAL '12 HOURS'").
+		Updates(model.QueryRunnerJob{Status: queryrunner.QueryRunnerTimeOut, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	return nil
 }

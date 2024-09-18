@@ -3653,6 +3653,10 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 	if control == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "control not found")
 	}
+	var parameters []api.QueryParameter
+	for _, qp := range control.Query.Parameters {
+		parameters = append(parameters, qp.ToApi())
+	}
 
 	response := api.GetControlDetailsResponse{
 		ID:          control.ID,
@@ -3661,15 +3665,17 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 		Connector:   control.Connector,
 		Severity:    control.Severity.String(),
 		Query: struct {
-			Engine         string   `json:"engine"`
-			QueryToExecute string   `json:"queryToExecute"`
-			PrimaryTable   *string  `json:"primaryTable"`
-			ListOfTables   []string `json:"listOfTables"`
+			Engine         string               `json:"engine"`
+			QueryToExecute string               `json:"queryToExecute"`
+			PrimaryTable   *string              `json:"primaryTable"`
+			ListOfTables   []string             `json:"listOfTables"`
+			Parameters     []api.QueryParameter `json:"parameters"`
 		}{
 			Engine:         control.Query.Engine,
 			QueryToExecute: control.Query.QueryToExecute,
 			PrimaryTable:   control.Query.PrimaryTable,
 			ListOfTables:   control.Query.ListOfTables,
+			Parameters:     parameters,
 		},
 		Tags: model.TrimPrivateTags(control.GetTagsMap()),
 	}

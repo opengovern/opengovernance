@@ -142,10 +142,11 @@ type GetControlDetailsResponse struct {
 	Connector   []string `json:"connector"`
 	Severity    string   `json:"severity"`
 	Query       struct {
-		Engine         string   `json:"engine"`
-		QueryToExecute string   `json:"queryToExecute"`
-		PrimaryTable   *string  `json:"primaryTable"`
-		ListOfTables   []string `json:"listOfTables"`
+		Engine         string           `json:"engine"`
+		QueryToExecute string           `json:"queryToExecute"`
+		PrimaryTable   *string          `json:"primaryTable"`
+		ListOfTables   []string         `json:"listOfTables"`
+		Parameters     []QueryParameter `json:"parameters"`
 	} `json:"query"`
 	Tags       map[string][]string `json:"tags"`
 	Benchmarks *struct {

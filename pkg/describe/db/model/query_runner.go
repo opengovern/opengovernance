@@ -7,9 +7,11 @@ import (
 
 type QueryRunnerJob struct {
 	gorm.Model
-	RunId      uint
-	RetryCount int
-	Status     query_runner.QueryRunnerStatus
-	CreatedBy  string
-	QueryId    string
+	RunId              uint
+	QueryId            string
+	CreatedBy          string
+	RetryCount         int
+	Status             query_runner.QueryRunnerStatus
+	FailureMessage     string
+	NatsSequenceNumber uint64
 }

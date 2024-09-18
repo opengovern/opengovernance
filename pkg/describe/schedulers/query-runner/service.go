@@ -16,19 +16,18 @@ import (
 	"go.uber.org/zap"
 )
 
-const JobSchedulingInterval = 1 * time.Minute
+const JobSchedulingInterval = 10 * time.Second
 
 type JobScheduler struct {
-	runSetupNatsStreams     func(context.Context) error
-	conf                    config.SchedulerConfig
-	logger                  *zap.Logger
-	db                      db.Database
-	jq                      *jq.JobQueue
-	esClient                kaytu.Client
-	complianceIntervalHours time.Duration
-	inventoryClient         inventoryClient.InventoryServiceClient
-	complianceClient        complianceClient.ComplianceServiceClient
-	metadataClient          metadataClient.MetadataServiceClient
+	runSetupNatsStreams func(context.Context) error
+	conf                config.SchedulerConfig
+	logger              *zap.Logger
+	db                  db.Database
+	jq                  *jq.JobQueue
+	esClient            kaytu.Client
+	inventoryClient     inventoryClient.InventoryServiceClient
+	complianceClient    complianceClient.ComplianceServiceClient
+	metadataClient      metadataClient.MetadataServiceClient
 }
 
 func New(
@@ -38,18 +37,16 @@ func New(
 	db db.Database,
 	jq *jq.JobQueue,
 	esClient kaytu.Client,
-	complianceIntervalHours time.Duration,
 	inventoryClient inventoryClient.InventoryServiceClient,
 ) *JobScheduler {
 	return &JobScheduler{
-		runSetupNatsStreams:     runSetupNatsStreams,
-		conf:                    conf,
-		logger:                  logger,
-		db:                      db,
-		jq:                      jq,
-		esClient:                esClient,
-		complianceIntervalHours: complianceIntervalHours,
-		inventoryClient:         inventoryClient,
+		runSetupNatsStreams: runSetupNatsStreams,
+		conf:                conf,
+		logger:              logger,
+		db:                  db,
+		jq:                  jq,
+		esClient:            esClient,
+		inventoryClient:     inventoryClient,
 	}
 }
 
@@ -58,7 +55,7 @@ func (s *JobScheduler) Run(ctx context.Context) {
 		s.RunPublisher(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer(ctx)))
+		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunQueryRunnerReportJobResultsConsumer(ctx)))
 	})
 }
 

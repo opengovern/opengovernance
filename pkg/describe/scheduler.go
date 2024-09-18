@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	query_runner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	queryrunnerscheduler "github.com/kaytu-io/open-governance/pkg/describe/schedulers/query-runner"
+	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 	"net"
 	"net/http"
 	"strconv"
@@ -145,9 +146,10 @@ type Scheduler struct {
 	lambdaClient     *lambda.Client
 	serviceBusClient *azservicebus.Client
 
-	complianceScheduler *compliance.JobScheduler
-	discoveryScheduler  *discovery.Scheduler
-	conf                config.SchedulerConfig
+	complianceScheduler  *compliance.JobScheduler
+	discoveryScheduler   *discovery.Scheduler
+	queryRunnerScheduler *queryrunnerscheduler.JobScheduler
+	conf                 config.SchedulerConfig
 }
 
 func InitializeScheduler(
@@ -354,7 +356,7 @@ func InitializeScheduler(
 }
 
 func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
-	if err := s.jq.Stream(ctx, query_runner.StreamName, "Query Runner job queues", []string{query_runner.JobQueueTopic, query_runner.JobResultQueueTopic}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, queryrunner.StreamName, "Query Runner job queues", []string{queryrunner.JobQueueTopic, queryrunner.JobResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to Query Runner queue", zap.Error(err))
 		return err
 	}
@@ -493,6 +495,20 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer(ctx)))
 		wg.Done()
 	})
+
+	// Query Runner
+	s.queryRunnerScheduler = queryrunnerscheduler.New(
+		func(ctx context.Context) error {
+			return s.SetupNatsStreams(ctx)
+		},
+		s.conf,
+		s.logger,
+		s.db,
+		s.jq,
+		s.es,
+		s.inventoryClient,
+	)
+	s.queryRunnerScheduler.Run(ctx)
 
 	// Compliance
 	s.complianceScheduler = compliance.New(

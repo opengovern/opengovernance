@@ -5,7 +5,7 @@ import (
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/kaytu-io/open-governance/pkg/types"
 	"go.uber.org/zap"
 	"strconv"
@@ -13,13 +13,13 @@ import (
 )
 
 type Job struct {
-	RunId       uint                    `json:"runID"`
-	RetryCount  int                     `json:"retryCount"`
-	CreatedBy   string                  `json:"createdBy"`
-	TriggeredAt int64                   `json:"triggeredAt"`
-	QueryId     string                  `json:"queryId"`
-	Parameters  []models.QueryParameter `json:"parameters"`
-	Query       string                  `json:"query"`
+	RunId       uint                 `json:"runID"`
+	RetryCount  int                  `json:"retryCount"`
+	CreatedBy   string               `json:"createdBy"`
+	TriggeredAt int64                `json:"triggeredAt"`
+	QueryId     string               `json:"queryId"`
+	Parameters  []api.QueryParameter `json:"parameters"`
+	Query       string               `json:"query"`
 }
 
 func (w *Worker) RunJob(ctx context.Context, job Job) error {
