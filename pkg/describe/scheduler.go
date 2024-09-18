@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	query_runner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 	"net"
 	"net/http"
 	"strconv"
@@ -353,6 +354,11 @@ func InitializeScheduler(
 }
 
 func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
+	if err := s.jq.Stream(ctx, query_runner.StreamName, "Query Runner job queues", []string{query_runner.JobQueueTopic, query_runner.JobResultQueueTopic}, 1000); err != nil {
+		s.logger.Error("Failed to stream to Query Runner queue", zap.Error(err))
+		return err
+	}
+
 	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.JobQueueTopicManuals, summarizer.ResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to compliance summarizer queue", zap.Error(err))
 		return err
