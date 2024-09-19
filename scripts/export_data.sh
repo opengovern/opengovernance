@@ -8,10 +8,10 @@ curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH
       --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
       --output="/tmp/es_backup/map_$index" \
       --type=mapping
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/es_backup/$index" \
-#      --type=data
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index" \
+      --type=data
   fi
 done
 
