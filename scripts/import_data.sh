@@ -5,17 +5,21 @@ aws s3 cp s3://opengovernance-demo-export/postgres /tmp/postgres --recursive
 
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
-  if [ "$(echo "$index" | cut -c 1)" != "." ]; then
-    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-      --input="/tmp/es_backup/map_$index" \
-      --output="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --type=mapping
-    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-      --input="/tmp/es_backup/$index" \
-      --output="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --type=data
-  fi
+DIR_PATH="/tmp/es_backup"
+
+find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
+    file_name=$(basename "$file")
+
+    if [ "${file_name#map_}" = "$file_name" ]; then
+        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+          --input="/tmp/es_backup/map_$file_name" \
+          --output="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+          --type=mapping
+        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+          --input="/tmp/es_backup/$file_name" \
+          --output="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+          --type=data
+    fi
 done
 
 PGPASSWORD="$POSTGRESQL_PASSWORD"
