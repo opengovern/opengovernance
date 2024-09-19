@@ -1,32 +1,6 @@
-FROM postgres:14.13 as postgres-client
+FROM postgres:14.13
 
 ARG DEBIAN_FRONTEND=noninteractive
-
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf awscliv2.zip
-
-COPY ../scripts/export_sql_data.sh /usr/local/bin/export_sql_data.sh
-
-RUN chmod +x /usr/local/bin/export_sql_data.sh
-
-RUN /usr/local/bin/export_sql_data.sh
-
-FROM ubuntu:20.04
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && \
-    apt-get install -y \
-    curl \
-    unzip \
-    gnupg \
-    lsb-release \
-    nodejs \
-    npm && \
-    rm -rf /var/lib/apt/lists/*
-
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
@@ -37,10 +11,8 @@ RUN npm install -g elasticdump
 
 RUN mkdir -p /tmp/es_backup /tmp/postgres
 
-COPY ../scripts/export_es_data.sh /usr/local/bin/export_es_data.sh
+COPY ../scripts/export_data.sh /usr/local/bin/export_data.sh
 
-RUN chmod +x /usr/local/bin/export_es_data.sh
+RUN chmod +x /usr/local/bin/export_data.sh
 
-RUN /usr/local/bin/export_es_data.sh
-
-CMD ["bash"]
+ENTRYPOINT ["/usr/local/bin/export_data.sh"]
