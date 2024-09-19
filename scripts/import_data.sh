@@ -12,10 +12,12 @@ multielasticdump \
   --input=/tmp/es_backup \
   --output="$ELASTICSEARCH_ADDRESS"
 
+PGPASSWORD="$OCT_POSTGRESQL_PASSWORD"
+psql --host="$OCT_POSTGRES_HOST" --port="$OCT_POSTGRES_PORT" --username "$OCT_POSTGRES_USER" --dbname "pennywise" < /tmp/postgres/pennywise.sql
+psql --host="$OCT_POSTGRES_HOST" --port="$OCT_POSTGRES_PORT" --username "$OCT_POSTGRES_USER" --dbname "workspace" > /tmp/postgres/workspace.sql
+psql --host="$OCT_POSTGRES_HOST" --port="$OCT_POSTGRES_PORT" --username "$OCT_POSTGRES_USER" --dbname "auth" > /tmp/postgres/auth.sql
+
 PGPASSWORD="$POSTGRESQL_PASSWORD"
-psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "pennywise" < /tmp/postgres/pennywise.sql
-psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "workspace" > /tmp/postgres/workspace.sql
-psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "auth" > /tmp/postgres/auth.sql
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "migrator" > /tmp/postgres/migrator.sql
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "describe" > /tmp/postgres/describe.sql
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "onboard" > /tmp/postgres/onboard.sql
