@@ -10,7 +10,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
   --direction=load \
   --match='^[a-zA-Z]' \
   --input=/tmp/es_backup \
-  --output="$ELASTICSEARCH_ADDRESS"
+  --output="$ELASTICSEARCH_ADDRESS" \
+  --type=data
 
 PGPASSWORD="$POSTGRESQL_PASSWORD"
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "pennywise" < /tmp/postgres/pennywise.sql
