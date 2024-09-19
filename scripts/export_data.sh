@@ -2,8 +2,8 @@
 
 ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-NODE_TLS_REJECT_UNAUTHORIZED=0
-multielasticdump \
+
+NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
   --direction=dump \
   --match='^.*$' \
   --input="$ELASTICSEARCH_ADDRESS" \
@@ -19,7 +19,7 @@ pg_dump --dbname="postgresql://$POSTGRESQL_USERNAME:$POSTGRESQL_PASSWORD@$POSTGR
 pg_dump --dbname="postgresql://$POSTGRESQL_USERNAME:$POSTGRESQL_PASSWORD@$POSTGRESQL_HOST:$POSTGRESQL_PORT/compliance" > /tmp/postgres/compliance.sql
 pg_dump --dbname="postgresql://$POSTGRESQL_USERNAME:$POSTGRESQL_PASSWORD@$POSTGRESQL_HOST:$POSTGRESQL_PORT/metadata" > /tmp/postgres/metadata.sql
 
-aws s3 cp /tmp/es_backup s3://opengovernance-demo-export/es_backup --recursive
-aws s3 cp /tmp/postgres/ s3://opengovernance-demo-export/postgres --recursive
+aws s3 cp /tmp/es_backup s3://opengovernance-demo-export/es_backup --recursive --acl public-read
+aws s3 cp /tmp/postgres/ s3://opengovernance-demo-export/postgres --recursive --acl public-read
 
 rm -rf /tmp/es_backup /tmp/postgres
