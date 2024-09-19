@@ -1,0 +1,20 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && \
+    apt-get install -y curl unzip postgresql-client nodejs npm && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip
+
+RUN npm install -g elasticdump
+
+RUN mkdir -p /tmp/es_backup /tmp/postgres
+
+COPY ../scripts/export_data.sh /usr/local/bin/export_data.sh
+
+RUN chmod +x /usr/local/bin/export_data.sh
+
+ENTRYPOINT ["/usr/local/bin/export_data.sh"]
