@@ -8,7 +8,7 @@ ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWOR
 
 NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
   --direction=load \
-  --match='^.*$' \
+  --match='^[a-zA-Z]' \
   --input=/tmp/es_backup \
   --output="$ELASTICSEARCH_ADDRESS"
 
