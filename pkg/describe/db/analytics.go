@@ -82,7 +82,14 @@ func (db Database) ListAnalyticsJobsByIds(ids []string) ([]model.AnalyticsJob, e
 func (db Database) ListAnalyticsJobsForInterval(interval string) ([]model.AnalyticsJob, error) {
 	var job []model.AnalyticsJob
 
-	tx := db.ORM.Model(&model.AnalyticsJob{}).Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval)).Find(&job)
+	tx := db.ORM.Model(&model.AnalyticsJob{})
+
+	if interval != "" {
+		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
+	}
+
+	tx = tx.Find(&job)
+
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

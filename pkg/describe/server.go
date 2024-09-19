@@ -2506,12 +2506,11 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		strings.ToLower(request.JobType) != "analytics" && strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
+		strings.ToLower(request.JobType) != "analytics" && strings.ToLower(request.JobType) != "query" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
-	if (strings.ToLower(request.JobType) == "query_run" || strings.ToLower(request.JobType) == "queryrun") &&
-		strings.ToLower(request.Selector) != "job_id" {
+	if strings.ToLower(request.JobType) == "query" && strings.ToLower(request.Selector) != "job_id" {
 		return echo.NewHTTPError(http.StatusBadRequest, "only jobId is acceptable for query run")
 	}
 
@@ -2776,7 +2775,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				failureReason = "job is already finished"
 				break
 			}
-		case "query_run", "queryrun":
+		case "query":
 			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
 			if err != nil {
 				failureReason = "invalid job id"
@@ -2860,8 +2859,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		sortBy = string(request.SortBy)
 	}
 
-	if (strings.ToLower(request.JobType) == "query_run" || strings.ToLower(request.JobType) == "queryrun") &&
-		strings.ToLower(request.Selector) != "job_id" {
+	if strings.ToLower(request.JobType) == "query" && strings.ToLower(request.Selector) != "job_id" {
 		return echo.NewHTTPError(http.StatusBadRequest, "only jobId is acceptable for query run")
 	}
 
@@ -2871,7 +2869,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 	switch strings.ToLower(request.Selector) {
 	case "job_id":
 		switch strings.ToLower(request.JobType) {
-		case "query_run", "queryrun":
+		case "query":
 			var jobs []model2.QueryRunnerJob
 			if len(request.JobId) == 0 {
 				jobs, err = h.DB.ListQueryRunnerJobs()
@@ -3140,7 +3138,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 	}
 
 	if strings.ToLower(jobType) != "compliance" && strings.ToLower(jobType) != "discovery" &&
-		strings.ToLower(jobType) != "analytics" {
+		strings.ToLower(jobType) != "analytics" && strings.ToLower(jobType) != "analytics" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -3189,12 +3187,29 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 				UpdatedAt: j.UpdatedAt,
 			})
 		}
+	case "query":
+		jobs, err := h.DB.ListQueryRunnerJobForInterval(convertedInterval)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		for _, j := range jobs {
+			items = append(items, api.ListJobsByTypeItem{
+				JobId:     strconv.Itoa(int(j.ID)),
+				JobType:   strings.ToLower(jobType),
+				JobStatus: string(j.Status),
+				CreatedAt: j.CreatedAt,
+				UpdatedAt: j.UpdatedAt,
+			})
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, items)
 }
 
 func convertInterval(input string) (string, error) {
+	if input == "" {
+		return "", nil
+	}
 	// Define regex to match shorthand formats like 90m, 50s, 1h
 	re := regexp.MustCompile(`^(\d+)([smhd])$`)
 
