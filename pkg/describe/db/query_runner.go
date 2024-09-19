@@ -1,8 +1,11 @@
 package db
 
 import (
+	"errors"
+	"fmt"
 	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	"gorm.io/gorm"
 )
 
 func (db Database) CreateQueryRunnerJob(job *model.QueryRunnerJob) (uint, error) {
@@ -106,4 +109,24 @@ func (db Database) UpdateTimedOutQueuedQueryRunners() error {
 	}
 
 	return nil
+}
+
+func (db Database) ListQueryRunnerJobForInterval(interval string) ([]model.QueryRunnerJob, error) {
+	var job []model.QueryRunnerJob
+
+	tx := db.ORM.Model(&model.QueryRunnerJob{})
+
+	if interval != "" {
+		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
+	}
+
+	tx = tx.Find(&job)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
 }
