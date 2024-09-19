@@ -2,7 +2,14 @@ FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y postgresql-client-14
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget https://ftp.postgresql.org/pub/source/v14.13/postgresql-14.13.tar.gz && \
+    tar -xzf postgresql-14.13.tar.gz && \
+    cd postgresql-14.13 && \
+    ./configure && \
+    make && \
+    make install
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
