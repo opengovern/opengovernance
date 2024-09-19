@@ -13,11 +13,11 @@ find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
     if [ "${file_name#map_}" = "$file_name" ]; then
         NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
           --input="/tmp/es_backup/map_$file_name" \
-          --output="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
           --type=mapping
         NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
           --input="/tmp/es_backup/$file_name" \
-          --output="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
           --type=data
     fi
 done
