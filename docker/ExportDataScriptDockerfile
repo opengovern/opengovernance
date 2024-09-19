@@ -6,6 +6,7 @@ RUN apt-get update && \
     apt-get install -y \
     curl \
     unzip \
+    jq \
     gnupg \
     lsb-release && \
     rm -rf /var/lib/apt/lists/*
