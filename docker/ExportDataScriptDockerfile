@@ -11,7 +11,7 @@ COPY ../scripts/export_sql_data.sh /usr/local/bin/export_sql_data.sh
 
 RUN chmod +x /usr/local/bin/export_sql_data.sh
 
-ENTRYPOINT ["/usr/local/bin/export_sql_data.sh"]
+RUN /usr/local/bin/export_sql_data.sh
 
 FROM ubuntu:20.04
 
@@ -41,4 +41,6 @@ COPY ../scripts/export_es_data.sh /usr/local/bin/export_es_data.sh
 
 RUN chmod +x /usr/local/bin/export_es_data.sh
 
-ENTRYPOINT ["/usr/local/bin/export_es_data.sh"]
+RUN /usr/local/bin/export_es_data.sh
+
+CMD ["bash"]
