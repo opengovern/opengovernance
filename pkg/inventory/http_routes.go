@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 	"github.com/kaytu-io/open-governance/pkg/inventory/rego_runner"
 	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	"github.com/kaytu-io/open-governance/pkg/types"
@@ -113,6 +114,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	v3.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 	v3.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
+	v3.GET("/query/async/run/:run_id/result", httpserver.AuthorizeHandler(h.GetAsyncQueryRunResult, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -3205,8 +3207,12 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	if req.ID == "" || req.Type == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type and ID should be provided")
 	}
+
+	newCtx, cancel := context.WithTimeout(ctx.Request().Context(), 30*time.Second)
+	defer cancel()
+
 	// tracer :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunNamedQuery", trace.WithSpanKind(trace.SpanKindServer))
+	newCtx, span := tracer.Start(newCtx, "new_RunNamedQuery", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_RunNamedQuery")
 
 	var query, engineStr string
@@ -3252,7 +3258,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 
 	var resp *inventoryApi.RunQueryResponse
 	if engine == inventoryApi.QueryEngine_OdysseusSQL {
-		resp, err = h.RunSQLNamedQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+		resp, err = h.RunSQLNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
 			Engine: &engine,
@@ -3264,7 +3270,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			return err
 		}
 	} else if engine == inventoryApi.QueryEngine_OdysseusRego {
-		resp, err = h.RunRegoNamedQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+		resp, err = h.RunRegoNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
 			Engine: &engine,
@@ -3276,7 +3282,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		resp, err = h.RunSQLNamedQuery(outputS, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
+		resp, err = h.RunSQLNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
 			Engine: &engine,
@@ -3293,7 +3299,18 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 		attribute.String("query title ", resp.Title),
 	))
 	span.End()
-	return ctx.JSON(200, resp)
+	select {
+	case <-newCtx.Done():
+		job, err := h.schedulerClient.RunQuery(&httpclient.Context{UserRole: api.InternalRole}, req.ID)
+		if err != nil {
+			h.logger.Error("failed to run async query run", zap.Error(err))
+			return echo.NewHTTPError(http.StatusRequestTimeout, "Query execution timed out and failed to create async query run")
+		}
+		msg := fmt.Sprintf("Query execution timed out, created an async query run instead: jobid = %v", job.ID)
+		return echo.NewHTTPError(http.StatusRequestTimeout, msg)
+	default:
+		return ctx.JSON(200, resp)
+	}
 }
 
 // ListQueriesFilters godoc
@@ -3329,4 +3346,55 @@ func (h *HttpHandler) ListQueriesFilters(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// GetAsyncQueryRunResult godoc
+//
+//	@Summary		Run async query run result by run id
+//	@Description	Run async query run result by run id.
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Accepts		json
+//	@Produce		json
+//	@Param			run_id	path		string	true	"Run ID to get the result for"
+//	@Success		200		{object}	inventoryApi.GetAsyncQueryRunResultResponse
+//	@Router			/query/async/run/:run_id/result [get]
+func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
+	runId := ctx.Param("run_id")
+	// tracer :
+	newCtx, span := tracer.Start(ctx.Request().Context(), "new_GetAsyncQueryRunResult", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetAsyncQueryRunResult")
+
+	job, err := h.schedulerClient.GetAsyncQueryRunJobStatus(&httpclient.Context{UserRole: api.InternalRole}, runId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to find async query run job status")
+	}
+	if job.JobStatus == queryrunner.QueryRunnerCreated || job.JobStatus == queryrunner.QueryRunnerQueued || job.JobStatus == queryrunner.QueryRunnerInProgress {
+		return echo.NewHTTPError(http.StatusOK, "Job is still in progress")
+	} else if job.JobStatus == queryrunner.QueryRunnerFailed {
+		return echo.NewHTTPError(http.StatusOK, fmt.Sprintf("Job has been failed: %s", job.FailureMessage))
+	} else if job.JobStatus == queryrunner.QueryRunnerTimeOut {
+		return echo.NewHTTPError(http.StatusOK, "Job has been timed out")
+	} else if job.JobStatus == queryrunner.QueryRunnerCanceled {
+		return echo.NewHTTPError(http.StatusOK, "Job has been canceled")
+	}
+
+	runResult, err := es.GetAsyncQueryRunResult(newCtx, h.logger, h.client, runId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to find async query run result")
+	}
+
+	resp := inventoryApi.GetAsyncQueryRunResultResponse{
+		RunId:       runResult.RunId,
+		QueryID:     runResult.QueryID,
+		Parameters:  runResult.Parameters,
+		ColumnNames: runResult.ColumnNames,
+		CreatedBy:   runResult.CreatedBy,
+		TriggeredAt: runResult.TriggeredAt,
+		EvaluatedAt: runResult.EvaluatedAt,
+		Result:      runResult.Result,
+	}
+
+	span.End()
+	return ctx.JSON(200, resp)
 }
