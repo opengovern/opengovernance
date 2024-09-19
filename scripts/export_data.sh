@@ -7,7 +7,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
   --direction=dump \
   --match='^[a-zA-Z]' \
   --input="$ELASTICSEARCH_ADDRESS" \
-  --output=/tmp/es_backup
+  --output=/tmp/es_backup \
+  --type=data
 
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/pennywise" > /tmp/postgres/pennywise.sql
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/workspace" > /tmp/postgres/workspace.sql
