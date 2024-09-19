@@ -880,3 +880,73 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/kaytu-io
           context: .
+  deploy-import-data-script:
+    runs-on: ubuntu-latest
+    needs:
+      - tag
+    permissions:
+      id-token: write
+      contents: read
+    environment: docker
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar.gz
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/import-data-script:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/ImportDataScriptDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+          context: .
+  deploy-export-data-script:
+    runs-on: ubuntu-latest
+    needs:
+      - tag
+    permissions:
+      id-token: write
+      contents: read
+    environment: docker
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: .
+      - name: Unpack artifact
+        run: |
+          tar -xvf build.tar.gz
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/export-data-script:${{ needs.tag.outputs.latest_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/ExportDataScriptDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+          context: .
