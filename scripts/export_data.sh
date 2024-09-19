@@ -1,14 +1,15 @@
 # https://github.com/elasticsearch-dump/elasticsearch-dump
 
-ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
+NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-
-NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
-  --direction=dump \
-  --match='^[a-zA-Z]' \
-  --input="$ELASTICSEARCH_ADDRESS" \
-  --output=/tmp/es_backup \
-  --type=data
+curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
+  if [ "$(echo "$index" | cut -c 1)" != "." ]; then
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index" \
+      --type=data
+  fi
+done
 
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/pennywise" > /tmp/postgres/pennywise.sql
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/workspace" > /tmp/postgres/workspace.sql
