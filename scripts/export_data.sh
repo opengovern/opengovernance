@@ -2,8 +2,8 @@
 
 ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-NODE_TLS_REJECT_UNAUTHORIZED=0
-multielasticdump \
+
+NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
   --direction=dump \
   --match='^.*$' \
   --input="$ELASTICSEARCH_ADDRESS" \
