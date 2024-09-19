@@ -24,6 +24,8 @@ type Job struct {
 }
 
 func (w *Worker) RunJob(ctx context.Context, job Job) error {
+	ctx, cancel := context.WithTimeout(ctx, JobTimeout)
+	defer cancel()
 	queryResult, err := w.RunSQLNamedQuery(ctx, job.Query)
 	if err != nil {
 		return err

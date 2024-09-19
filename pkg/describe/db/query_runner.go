@@ -1,7 +1,6 @@
 package db
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
 	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 )
@@ -22,6 +21,24 @@ func (db Database) GetQueryRunnerJob(id uint) (*model.QueryRunnerJob, error) {
 		return nil, tx.Error
 	}
 	return &job, nil
+}
+
+func (db Database) ListQueryRunnerJobsById(ids []string) ([]model.QueryRunnerJob, error) {
+	var jobs []model.QueryRunnerJob
+	tx := db.ORM.Model(&model.QueryRunnerJob{}).Where("id IN ?", ids).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
+func (db Database) ListQueryRunnerJobs() ([]model.QueryRunnerJob, error) {
+	var jobs []model.QueryRunnerJob
+	tx := db.ORM.Model(&model.QueryRunnerJob{}).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
 }
 
 func (db Database) FetchCreatedQueryRunnerJobs() ([]model.QueryRunnerJob, error) {
@@ -68,8 +85,8 @@ func (db Database) UpdateQueryRunnerJobNatsSeqNum(
 func (db Database) UpdateTimedOutInProgressQueryRunners() error {
 	tx := db.ORM.
 		Model(&model.QueryRunnerJob{}).
-		Where("status = ?", runner.ComplianceRunnerInProgress).
-		Where("updated_at < NOW() - INTERVAL '15 MINUTES'").
+		Where("status = ?", queryrunner.QueryRunnerInProgress).
+		Where("updated_at < NOW() - INTERVAL '? MINUTES'", queryrunner.JobTimeoutMinutes).
 		Updates(model.QueryRunnerJob{Status: queryrunner.QueryRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
@@ -81,7 +98,7 @@ func (db Database) UpdateTimedOutInProgressQueryRunners() error {
 func (db Database) UpdateTimedOutQueuedQueryRunners() error {
 	tx := db.ORM.
 		Model(&model.QueryRunnerJob{}).
-		Where("status = ?", runner.ComplianceRunnerInProgress).
+		Where("status = ?", queryrunner.QueryRunnerQueued).
 		Where("updated_at < NOW() - INTERVAL '12 HOURS'").
 		Updates(model.QueryRunnerJob{Status: queryrunner.QueryRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {

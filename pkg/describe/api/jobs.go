@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/open-governance/pkg/analytics/api"
+	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 	"time"
 )
 
@@ -242,6 +243,16 @@ type GetAnalyticsJobStatusResponse struct {
 	JobStatus string    `json:"job_status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type GetAsyncQueryRunJobStatusResponse struct {
+	JobId          uint                          `json:"job_id"`
+	QueryId        string                        `json:"query_id"`
+	CreatedAt      time.Time                     `json:"created_at"`
+	UpdatedAt      time.Time                     `json:"updated_at"`
+	CreatedBy      string                        `json:"created_by"`
+	JobStatus      queryrunner.QueryRunnerStatus `json:"job_status"`
+	FailureMessage string                        `json:"failure_message"`
 }
 
 type ListDescribeJobsRequest struct {

@@ -94,6 +94,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/analytics/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
+	v3.GET("/job/query/:job_id", httpserver.AuthorizeHandler(h.GetAsyncQueryRunJobStatus, apiAuth.ViewerRole))
 	v3.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v3.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
@@ -1727,6 +1728,41 @@ func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, jobsResult)
 }
 
+// GetAsyncQueryRunJobStatus godoc
+//
+//	@Summary	Get async query run job status by job id
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		job_id	path	string	true	"Job ID"
+//	@Produce	json
+//	@Success	200	{object}	api.GetAsyncQueryRunJobStatusResponse
+//	@Router		/schedule/api/v3/job/query/{job_id} [get]
+func (h HttpServer) GetAsyncQueryRunJobStatus(ctx echo.Context) error {
+
+	jobIdString := ctx.Param("job_id")
+	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+	}
+
+	j, err := h.DB.GetQueryRunnerJob(uint(jobId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	jobsResult := api.GetAsyncQueryRunJobStatusResponse{
+		JobId:          j.ID,
+		QueryId:        j.QueryId,
+		CreatedAt:      j.CreatedAt,
+		UpdatedAt:      j.UpdatedAt,
+		CreatedBy:      j.CreatedBy,
+		JobStatus:      j.Status,
+		FailureMessage: j.FailureMessage,
+	}
+
+	return ctx.JSON(http.StatusOK, jobsResult)
+}
+
 // ListDescribeJobs godoc
 //
 //	@Summary	Get describe jobs history for give connection
@@ -2470,8 +2506,13 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		strings.ToLower(request.JobType) != "analytics" {
+		strings.ToLower(request.JobType) != "analytics" && strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
+	}
+
+	if (strings.ToLower(request.JobType) == "query_run" || strings.ToLower(request.JobType) == "queryrun") &&
+		strings.ToLower(request.Selector) != "job_id" {
+		return echo.NewHTTPError(http.StatusBadRequest, "only jobId is acceptable for query run")
 	}
 
 	var jobIDs []string
@@ -2735,6 +2776,46 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				failureReason = "job is already finished"
 				break
 			}
+		case "query_run", "queryrun":
+			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
+			if err != nil {
+				failureReason = "invalid job id"
+				break
+			}
+			job, err := h.DB.GetQueryRunnerJob(uint(jobId))
+			if err != nil {
+				failureReason = err.Error()
+				break
+			}
+			if job == nil {
+				failureReason = "job not found"
+				break
+			}
+			if job.Status == queryrunner.QueryRunnerCreated {
+				err = h.DB.UpdateQueryRunnerJobStatus(job.ID, queryrunner.QueryRunnerCanceled, "")
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+			} else if job.Status == queryrunner.QueryRunnerInProgress {
+				failureReason = "job is already in progress, unable to cancel"
+				break
+			} else if job.Status == queryrunner.QueryRunnerQueued {
+				err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), queryrunner.StreamName, job.NatsSequenceNumber)
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+				err = h.DB.UpdateQueryRunnerJobStatus(job.ID, queryrunner.QueryRunnerCanceled, "")
+				if err != nil {
+					failureReason = err.Error()
+					break
+				}
+			} else {
+				failureReason = "job is already finished"
+				break
+			}
+
 		default:
 			failureReason = "invalid job type"
 			break
@@ -2768,7 +2849,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		strings.ToLower(request.JobType) != "analytics" {
+		strings.ToLower(request.JobType) != "analytics" && strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -2779,11 +2860,40 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		sortBy = string(request.SortBy)
 	}
 
+	if (strings.ToLower(request.JobType) == "query_run" || strings.ToLower(request.JobType) == "queryrun") &&
+		strings.ToLower(request.Selector) != "job_id" {
+		return echo.NewHTTPError(http.StatusBadRequest, "only jobId is acceptable for query run")
+	}
+
 	var items []api.ListJobsByTypeItem
 
+	var err error
 	switch strings.ToLower(request.Selector) {
 	case "job_id":
 		switch strings.ToLower(request.JobType) {
+		case "query_run", "queryrun":
+			var jobs []model2.QueryRunnerJob
+			if len(request.JobId) == 0 {
+				jobs, err = h.DB.ListQueryRunnerJobs()
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+			} else {
+				jobs, err = h.DB.ListQueryRunnerJobsById(request.JobId)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				}
+			}
+
+			for _, j := range jobs {
+				items = append(items, api.ListJobsByTypeItem{
+					JobId:     strconv.Itoa(int(j.ID)),
+					JobType:   strings.ToLower(request.JobType),
+					JobStatus: string(j.Status),
+					CreatedAt: j.CreatedAt,
+					UpdatedAt: j.UpdatedAt,
+				})
+			}
 		case "compliance":
 			jobs, err := h.DB.ListComplianceJobsByIds(request.JobId)
 			if err != nil {

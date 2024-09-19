@@ -47,3 +47,14 @@ type ListQueriesFiltersResponse struct {
 	Providers []string               `json:"providers"`
 	Tags      []NamedQueryTagsResult `json:"tags"`
 }
+
+type GetAsyncQueryRunResultResponse struct {
+	RunId       string           `json:"runID"`
+	QueryID     string           `json:"queryID"`
+	Parameters  []QueryParameter `json:"parameters"`
+	ColumnNames []string         `json:"columnNames"`
+	CreatedBy   string           `json:"createdBy"`
+	TriggeredAt int64            `json:"triggeredAt"`
+	EvaluatedAt int64            `json:"evaluatedAt"`
+	Result      [][]string       `json:"result"`
+}

@@ -25,6 +25,8 @@ type SchedulerServiceClient interface {
 	TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error)
 	GetAnalyticsJob(ctx *httpclient.Context, jobID uint) (*model.AnalyticsJob, error)
 	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
+	GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error)
+	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
 }
 
 type schedulerClient struct {
@@ -46,6 +48,32 @@ func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*ap
 		return nil, err
 	}
 	return &status, nil
+}
+
+func (s *schedulerClient) GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/job/query/%s", s.baseURL, jobID)
+
+	var job api.GetAsyncQueryRunJobStatusResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &job, nil
+}
+
+func (s *schedulerClient) RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error) {
+	url := fmt.Sprintf("%s/api/v3/query/%s/run", s.baseURL, queryID)
+
+	var job model.QueryRunnerJob
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &job); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &job, nil
 }
 
 func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error) {
