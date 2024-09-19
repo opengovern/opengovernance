@@ -2669,6 +2669,23 @@ definitions:
       type:
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.GetAsyncQueryRunJobStatusResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      failure_message:
+        type: string
+      job_id:
+        type: integer
+      job_status:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_query-runner.QueryRunnerStatus'
+      query_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.GetComplianceJobStatusResponse:
     properties:
       benchmark_id:
@@ -3346,6 +3363,33 @@ definitions:
     x-enum-varnames:
     - DirectionAscending
     - DirectionDescending
+  github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse:
+    properties:
+      columnNames:
+        items:
+          type: string
+        type: array
+      createdBy:
+        type: string
+      evaluatedAt:
+        type: integer
+      parameters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.QueryParameter'
+        type: array
+      queryID:
+        type: string
+      result:
+        items:
+          items:
+            type: string
+          type: array
+        type: array
+      runID:
+        type: string
+      triggeredAt:
+        type: integer
+    type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.ListCostCompositionResponse:
     properties:
       others:
@@ -3895,6 +3939,24 @@ definitions:
         example: Compute
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_query-runner.QueryRunnerStatus:
+    enum:
+    - CREATED
+    - QUEUED
+    - IN_PROGRESS
+    - SUCCEEDED
+    - FAILED
+    - TIMEOUT
+    - CANCELED
+    type: string
+    x-enum-varnames:
+    - QueryRunnerCreated
+    - QueryRunnerQueued
+    - QueryRunnerInProgress
+    - QueryRunnerSucceeded
+    - QueryRunnerFailed
+    - QueryRunnerTimeOut
+    - QueryRunnerCanceled
   github_com_kaytu-io_open-governance_pkg_metadata_api.ListQueryParametersResponse:
     properties:
       queryParameters:
@@ -11467,6 +11529,27 @@ paths:
       summary: Create connection credentials
       tags:
       - onboard
+  /query/async/run/:run_id/result:
+    get:
+      description: Run async query run result by run id.
+      parameters:
+      - description: Run ID to get the result for
+        in: path
+        name: run_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse'
+      security:
+      - BearerToken: []
+      summary: Run async query run result by run id
+      tags:
+      - named_query
   /schedule/api/v1/analytics/trigger:
     put:
       description: Triggers an analytics job to run immediately
@@ -11827,6 +11910,26 @@ paths:
       summary: Get compliance job status by job id
       tags:
       - scheduler
+  /schedule/api/v3/job/query/{job_id}:
+    get:
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.GetAsyncQueryRunJobStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Get async query run job status by job id
+      tags:
+      - scheduler
   /schedule/api/v3/jobs:
     post:
       parameters:
@@ -12150,8 +12253,8 @@ paths:
   /schedule/api/v3/query/{query_id}/run:
     put:
       parameters:
-      - description: Job Type
-        in: query
+      - description: Query ID
+        in: path
         name: query_id
         required: true
         type: string

@@ -6320,6 +6320,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/query/async/run/:run_id/result": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Run async query run result by run id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Run async query run result by run id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Run ID to get the result for",
+                        "name": "run_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/analytics/trigger": {
             "put": {
                 "security": [
@@ -6893,6 +6927,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v3/job/query/{job_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "Get async query run job status by job id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.GetAsyncQueryRunJobStatusResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v3/jobs": {
             "post": {
                 "security": [
@@ -7425,9 +7492,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Job Type",
+                        "description": "Query ID",
                         "name": "query_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -11596,6 +11663,32 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_describe_api.GetAsyncQueryRunJobStatusResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "failure_message": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "type": "integer"
+                },
+                "job_status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_query-runner.QueryRunnerStatus"
+                },
+                "query_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_describe_api.GetComplianceJobStatusResponse": {
             "type": "object",
             "properties": {
@@ -12623,6 +12716,47 @@ const docTemplate = `{
                 "DirectionDescending"
             ]
         },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse": {
+            "type": "object",
+            "properties": {
+                "columnNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "parameters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.QueryParameter"
+                    }
+                },
+                "queryID": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "runID": {
+                    "type": "string"
+                },
+                "triggeredAt": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_inventory_api.ListCostCompositionResponse": {
             "type": "object",
             "properties": {
@@ -13412,6 +13546,27 @@ const docTemplate = `{
                     "example": "Compute"
                 }
             }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_query-runner.QueryRunnerStatus": {
+            "type": "string",
+            "enum": [
+                "CREATED",
+                "QUEUED",
+                "IN_PROGRESS",
+                "SUCCEEDED",
+                "FAILED",
+                "TIMEOUT",
+                "CANCELED"
+            ],
+            "x-enum-varnames": [
+                "QueryRunnerCreated",
+                "QueryRunnerQueued",
+                "QueryRunnerInProgress",
+                "QueryRunnerSucceeded",
+                "QueryRunnerFailed",
+                "QueryRunnerTimeOut",
+                "QueryRunnerCanceled"
+            ]
         },
         "github_com_kaytu-io_open-governance_pkg_metadata_api.ListQueryParametersResponse": {
             "type": "object",
