@@ -3138,7 +3138,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 	}
 
 	if strings.ToLower(jobType) != "compliance" && strings.ToLower(jobType) != "discovery" &&
-		strings.ToLower(jobType) != "analytics" && strings.ToLower(jobType) != "analytics" {
+		strings.ToLower(jobType) != "analytics" && strings.ToLower(jobType) != "query" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
