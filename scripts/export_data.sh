@@ -6,8 +6,12 @@ curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH
   if [ "$(echo "$index" | cut -c 1)" != "." ]; then
     NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
       --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --output="/tmp/es_backup/$index" \
-      --type=data
+      --output="/tmp/es_backup/map_$index" \
+      --type=mapping
+#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+#      --output="/tmp/es_backup/$index" \
+#      --type=data
   fi
 done
 
