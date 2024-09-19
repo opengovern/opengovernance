@@ -3249,14 +3249,17 @@ func convertInterval(input string) (string, error) {
 //	@Tags		scheduler
 //	@Param		query_id	path	string	true	"Query ID"
 //	@Produce	json
-//	@Success	200	{object}	[]api.ListJobsByTypeItem
+//	@Success	200	{object}	api.RunQueryResponse
 //	@Router		/schedule/api/v3/query/{query_id}/run [put]
 func (h *HttpServer) RunQuery(ctx echo.Context) error {
 	queryId := ctx.Param("query_id")
+
+	userID := httpserver.GetUserID(ctx)
+
 	job := &model2.QueryRunnerJob{
 		QueryId:        queryId,
 		Status:         queryrunner.QueryRunnerCreated,
-		CreatedBy:      "",
+		CreatedBy:      userID,
 		FailureMessage: "",
 		RetryCount:     0,
 	}
@@ -3266,6 +3269,12 @@ func (h *HttpServer) RunQuery(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create query runner job")
 	}
 
-	job.ID = jobId
-	return ctx.JSON(http.StatusOK, job)
+	response := api.RunQueryResponse{
+		ID:        jobId,
+		QueryId:   queryId,
+		CreatedAt: job.CreatedAt,
+		CreatedBy: userID,
+		Status:    job.Status,
+	}
+	return ctx.JSON(http.StatusOK, response)
 }

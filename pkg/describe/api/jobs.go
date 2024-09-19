@@ -385,3 +385,11 @@ type ListJobsByTypeResponse struct {
 	Items      []ListJobsByTypeItem `json:"items"`
 	TotalCount int                  `json:"total_count"`
 }
+
+type RunQueryResponse struct {
+	ID        uint                          `json:"id"`
+	CreatedAt time.Time                     `json:"created_at"`
+	QueryId   string                        `json:"query_id"`
+	CreatedBy string                        `json:"created_by"`
+	Status    queryrunner.QueryRunnerStatus `json:"status"`
+}
