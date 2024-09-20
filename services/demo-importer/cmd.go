@@ -1,8 +1,6 @@
 package demo_importer
 
 import (
-	"archive/tar"
-	"bytes"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -11,7 +9,6 @@ import (
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"io"
 	"os"
 )
 
@@ -32,9 +29,9 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			_, err = fetch.GitClone(cnf, logger)
+			filePath, err := fetch.DownloadS3Object(cnf.DemoDataS3URL)
 			if err != nil {
-				return fmt.Errorf("failure while running git clone: %w", err)
+				return err
 			}
 
 			esClient, err := es.NewClient(es.ClientConfig{
@@ -49,14 +46,20 @@ func Command() *cobra.Command {
 				return fmt.Errorf("failure while creating ES Client: %w", err)
 			}
 
-			decryptedData, err := fetch.DecryptString(cnf.OpensslPassword)
+			decryptedData, err := fetch.DecryptString(filePath, cnf.OpensslPassword)
 
-			decryptedReader := tar.NewReader(io.NopCloser(io.MultiReader(
-				// Use MultiReader to read from the decrypted data buffer
-				bytes.NewReader(decryptedData),
-			)))
+			err = os.WriteFile(types.DemoDecryptedDataFilePath, decryptedData, 0644)
+			if err != nil {
+				return err
+			}
 
-			err = fetch.Unzip(decryptedReader)
+			file, err := os.Open(types.DemoDecryptedDataFilePath)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			err = fetch.Unzip(file)
 			if err != nil {
 				return fmt.Errorf("failure while unzipping file: %w", err)
 			}
