@@ -22,23 +22,23 @@ mkdir -p /tmp/backup-data
 
 mkdir -p /tmp/backup-data/es-backup
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
-#
-#curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
-#  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/backup-data/es_backup/$index.settings.json" \
-#      --type=settings
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/backup-data/es_backup/$index.mapping.json" \
-#      --type=mapping
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/backup-data/es_backup/$index.json" \
-#      --type=data
-#  fi
-#done
+
+curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
+  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/backup-data/es_backup/$index.settings.json" \
+      --type=settings
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/backup-data/es_backup/$index.mapping.json" \
+      --type=mapping
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/backup-data/es_backup/$index.json" \
+      --type=data
+  fi
+done
 
 mkdir -p /tmp/backup-data/postgres
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/pennywise" > /tmp/backup-data/postgres/pennywise.sql
