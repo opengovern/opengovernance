@@ -1,4 +1,4 @@
-package demo_importer
+package fetch
 
 import (
 	"encoding/json"
