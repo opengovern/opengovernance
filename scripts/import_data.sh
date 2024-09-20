@@ -23,25 +23,19 @@ NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PAS
 
 DIR_PATH="/tmp/es_backup"
 
-NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
-  --direction=load \
-  --match='^.*$' \
-  --input="/tmp/es_backup" \
-  --output="$NEW_ELASTICSEARCH_ADDRESS" \
+find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
+    file_name=$(basename "$file")
 
-#find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
-#    file_name=$(basename "$file")
-#
-#    if [ "${file_name#map_}" = "$file_name" ]; then
-#        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#          --input="/tmp/es_backup/map_$file_name" \
-#          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
-#          --type=mapping
-#        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#          --input="/tmp/es_backup/$file_name" \
-#          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
-#          --type=data
-#    fi
-#done
+    if [ "${file_name%.settings.json}" = "$file_name" ] && [ "${file_name%.mapping.json}" = "$file_name" ]; then
+        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+          --input="/tmp/es_backup/$file_name.mapping.json" \
+          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
+          --type=mapping
+        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+          --input="/tmp/es_backup/$file_name.json" \
+          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
+          --type=data
+    fi
+done
 
 rm -rf /tmp/es_backup /tmp/postgres
