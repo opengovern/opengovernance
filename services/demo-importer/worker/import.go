@@ -38,6 +38,8 @@ func ImportJob(logger *zap.Logger, client essdk.Client) error {
 		return err
 	}
 
+	logger.Info("Read Data Files Done", zap.String("files", strings.Join(dataFiles, ",")))
+
 	var wg sync.WaitGroup
 
 	for _, file := range dataFiles {

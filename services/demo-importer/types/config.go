@@ -11,4 +11,5 @@ type DemoImporterConfig struct {
 	DemoDataGitURL        string `yaml:"demo_data_git_url"`
 	GithubToken           string `yaml:"github_token"`
 	PrometheusPushAddress string `yaml:"prometheus_push_address"`
+	OpensslPassword       string `yaml:"openssl_password"`
 }

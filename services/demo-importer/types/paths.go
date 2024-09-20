@@ -1,8 +1,10 @@
 package types
 
 const (
-	DemoDataPath = "/tmp/demo-data"
+	DemoDataPath     = "/tmp/demo-data"
+	DemoDataFilePath = DemoDataPath + "/backup_data.bin"
 
-	ESBackupPath         = DemoDataPath + "/es-backup"
+	DemoUnzipPath        = DemoDataPath + "/backup-data"
+	ESBackupPath         = DemoUnzipPath + "/es-backup"
 	PostgresqlBackupPath = DemoDataPath + "/postgresql-backup"
 )
