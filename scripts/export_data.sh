@@ -13,35 +13,32 @@ fi
 
 cd "$LOCAL_REPO_PATH"
 
-# Checkout the desired branch
-git checkout -b "$BRANCH"
+git checkout -b "$GITHUB_BRANCH"
 
-# Remove all files in the repository except the .git directory
 find . -mindepth 1 -not -path "./.git*" -delete
 
 mkdir -p /tmp/es_backup
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-#curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
-#  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/es_backup/$index.settings.json" \
-#      --type=settings
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/es_backup/$index.mapping.json" \
-#      --type=mapping
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/es_backup/$index.json" \
-#      --type=data
-#  fi
-#done
+curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
+  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index.settings.json" \
+      --type=settings
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index.mapping.json" \
+      --type=mapping
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index.json" \
+      --type=data
+  fi
+done
 
-# Move backup files to the repository directory
-#mkdir -p "$LOCAL_REPO_PATH/es_backup"
-#cp -r /tmp/es_backup/* "$LOCAL_REPO_PATH/es_backup/"
+mkdir -p "$LOCAL_REPO_PATH/es_backup"
+cp -r /tmp/es_backup/* "$LOCAL_REPO_PATH/es_backup/"
 
 mkdir -p /tmp/postgres
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/pennywise" > /tmp/postgres/pennywise.sql
