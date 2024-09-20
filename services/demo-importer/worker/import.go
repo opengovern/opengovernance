@@ -21,6 +21,7 @@ func ImportJob(logger *zap.Logger, client essdk.Client) error {
 		logger.Error("Error reading index configs", zap.Error(err))
 		return err
 	}
+	logger.Info("Read Index Configs Done")
 
 	for indexName, config := range indexConfigs {
 		err := CreateIndex(osClient, indexName, config.Settings, config.Mappings)
@@ -29,6 +30,7 @@ func ImportJob(logger *zap.Logger, client essdk.Client) error {
 			return err
 		}
 	}
+	logger.Info("Create Indices Done")
 
 	dataFiles, err := filepath.Glob(filepath.Join(dir, "*.json"))
 	if err != nil {

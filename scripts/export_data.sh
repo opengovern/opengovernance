@@ -37,8 +37,8 @@ curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH
   fi
 done
 
-mkdir -p "$LOCAL_REPO_PATH/es_backup"
-cp -r /tmp/es_backup/* "$LOCAL_REPO_PATH/es_backup/"
+mkdir -p "$LOCAL_REPO_PATH/es-backup"
+cp -r /tmp/es_backup/* "$LOCAL_REPO_PATH/es-backup/"
 
 mkdir -p /tmp/postgres
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/pennywise" > /tmp/postgres/pennywise.sql
