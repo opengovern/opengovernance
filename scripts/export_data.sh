@@ -3,7 +3,7 @@
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
 curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
-  if [ "$(echo "$index" | cut -c 1)" != "." ]; then
+  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
     NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
       --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
       --output="/tmp/es_backup/map_$index" \

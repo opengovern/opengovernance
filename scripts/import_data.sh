@@ -1,26 +1,17 @@
 # https://github.com/elasticsearch-dump/elasticsearch-dump
 
-aws s3 cp s3://opengovernance-demo-export/es_backup /tmp/es_backup --recursive
+#aws s3 cp s3://opengovernance-demo-export/es_backup /tmp/es_backup --recursive
 aws s3 cp s3://opengovernance-demo-export/postgres /tmp/postgres --recursive
 
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
 DIR_PATH="/tmp/es_backup"
 
-find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
-    file_name=$(basename "$file")
 
-    if [ "${file_name#map_}" = "$file_name" ]; then
-        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-          --input="/tmp/es_backup/map_$file_name" \
-          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
-          --type=mapping
-        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-          --input="/tmp/es_backup/$file_name" \
-          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
-          --type=data
-    fi
-done
+echo "$POSTGRES_HOST"
+echo "$POSTGRES_PORT"
+echo "$POSTGRES_USER"
+echo "$POSTGRESQL_PASSWORD"
 
 PGPASSWORD="$POSTGRESQL_PASSWORD"
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "pennywise" < /tmp/postgres/pennywise.sql
@@ -32,5 +23,20 @@ psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER"
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "inventory" < /tmp/postgres/inventory.sql
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "compliance" < /tmp/postgres/compliance.sql
 psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "metadata" < /tmp/postgres/metadata.sql
+
+#find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
+#    file_name=$(basename "$file")
+#
+#    if [ "${file_name#map_}" = "$file_name" ]; then
+#        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+#          --input="/tmp/es_backup/map_$file_name" \
+#          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
+#          --type=mapping
+#        NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+#          --input="/tmp/es_backup/$file_name" \
+#          --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
+#          --type=data
+#    fi
+#done
 
 rm -rf /tmp/es_backup /tmp/postgres
