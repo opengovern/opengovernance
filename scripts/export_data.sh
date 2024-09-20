@@ -27,15 +27,15 @@ curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH
   if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
     NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
       --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --output="/tmp/backup-data/es_backup/$index.settings.json" \
+      --output="/tmp/backup-data/es-backup/$index.settings.json" \
       --type=settings
     NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
       --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --output="/tmp/backup-data/es_backup/$index.mapping.json" \
+      --output="/tmp/backup-data/es-backup/$index.mapping.json" \
       --type=mapping
     NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
       --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --output="/tmp/backup-data/es_backup/$index.json" \
+      --output="/tmp/backup-data/es-backup/$index.json" \
       --type=data
   fi
 done
@@ -53,7 +53,7 @@ pg_dump --dbname="postgresql://$POSTGRESQL_USERNAME:$POSTGRESQL_PASSWORD@$POSTGR
 
 cd /tmp
 
-tar -cO backup-data | openssl enc -aes-256-cbc -md md5 -pass pass:mypassword > backup_data.bin
+tar -cO backup-data | openssl enc -aes-256-cbc -md md5 -pass pass:"$OPENSSL_PASSWORD" > backup_data.bin
 
 cp -r /tmp/backup_data.bin "$LOCAL_REPO_PATH/"
 
