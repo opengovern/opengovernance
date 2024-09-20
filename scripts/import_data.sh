@@ -22,6 +22,12 @@ PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGR
 PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "compliance" < /tmp/postgres/compliance.sql
 PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "metadata" < /tmp/postgres/metadata.sql
 
+NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
+  --direction=load \
+  --match='^.*$' \
+  --input="/tmp/es_backup" \
+  --output="$NEW_ELASTICSEARCH_ADDRESS" \
+
 #find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
 #    file_name=$(basename "$file")
 #
