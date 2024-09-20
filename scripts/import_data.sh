@@ -1,11 +1,6 @@
 # https://github.com/elasticsearch-dump/elasticsearch-dump
 
-#aws s3 cp s3://opengovernance-demo-export/es_backup /tmp/es_backup --recursive
 aws s3 cp s3://opengovernance-demo-export/postgres /tmp/postgres --recursive
-
-NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
-
-DIR_PATH="/tmp/es_backup"
 
 echo "$POSTGRESQL_HOST"
 echo "$POSTGRESQL_PORT"
@@ -21,6 +16,12 @@ PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGR
 PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "inventory" < /tmp/postgres/inventory.sql
 PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "compliance" < /tmp/postgres/compliance.sql
 PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "metadata" < /tmp/postgres/metadata.sql
+
+aws s3 cp s3://opengovernance-demo-export/es_backup /tmp/es_backup --recursive
+
+NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
+
+DIR_PATH="/tmp/es_backup"
 
 NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
   --direction=load \
