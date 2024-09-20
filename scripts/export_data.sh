@@ -2,26 +2,22 @@
 
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-
-NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
-  --direction=dump \
-  --match='^(?!\.|security-auditlog-).*' \
-  --input="$NEW_ELASTICSEARCH_ADDRESS" \
-  --output="/tmp/es_backup" \
-  --ignoreChildError=true
-
-#curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
-#  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/es_backup/map_$index.json" \
-#      --type=mapping
-#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-#      --output="/tmp/es_backup/$index.json" \
-#      --type=data
-#  fi
-#done
+curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
+  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index.settings.json" \
+      --type=settings
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index.mapping.json" \
+      --type=mapping
+    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+      --output="/tmp/es_backup/$index.json" \
+      --type=data
+  fi
+done
 
 aws s3 cp /tmp/es_backup s3://opengovernance-demo-export/es_backup --recursive
 
