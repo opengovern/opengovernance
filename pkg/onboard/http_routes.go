@@ -2121,16 +2121,6 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		apiRes := entities.NewConnection(s)
-		if httpserver.GetUserRole(ctx) == api3.InternalRole {
-			apiRes.Credential = entities.NewCredential(s.Credential)
-			apiRes.Credential.Config = s.Credential.Secret
-			if apiRes.Credential.Version == 2 {
-				apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), s.Credential)
-				if err != nil {
-					return err
-				}
-			}
-		}
 		resp = append(resp, apiRes)
 	}
 
