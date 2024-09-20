@@ -1,16 +1,18 @@
-package _import
+package worker
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 const (
@@ -22,7 +24,7 @@ type IndexConfig struct {
 	Mappings json.RawMessage `json:"mappings"`
 }
 
-func BulkIndexData(es *elasticsearch.Client, requests []map[string]interface{}, indexName string) error {
+func BulkIndexData(osClient *opensearch.Client, requests []map[string]interface{}, indexName string) error {
 	var buf bytes.Buffer
 	for _, req := range requests {
 		meta := []byte(`{ "index" : { "_index" : "` + indexName + `" } }` + "\n")
@@ -36,11 +38,11 @@ func BulkIndexData(es *elasticsearch.Client, requests []map[string]interface{}, 
 		buf.WriteByte('\n')
 	}
 
-	req := esapi.BulkRequest{
+	req := opensearchapi.BulkRequest{
 		Body: bytes.NewReader(buf.Bytes()),
 	}
 
-	res, err := req.Do(context.Background(), es)
+	res, err := req.Do(context.Background(), osClient)
 	if err != nil {
 		return err
 	}
@@ -54,10 +56,13 @@ func BulkIndexData(es *elasticsearch.Client, requests []map[string]interface{}, 
 	return nil
 }
 
-func ProcessJSONFile(es *elasticsearch.Client, filePath, indexName string) error {
+func ProcessJSONFile(logger *zap.Logger, osClient *opensearch.Client, filePath, indexName string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	file, err := os.Open(filePath)
 	if err != nil {
-		return err
+		logger.Error("Error reading data file", zap.String("filePath", filePath), zap.String("indexName", indexName), zap.Error(err))
+		return
 	}
 	defer file.Close()
 
@@ -66,34 +71,38 @@ func ProcessJSONFile(es *elasticsearch.Client, filePath, indexName string) error
 
 	_, err = decoder.Token()
 	if err != nil {
-		return err
+		logger.Error("Error decoding data file", zap.String("filePath", filePath), zap.String("indexName", indexName), zap.Error(err))
+		return
 	}
 
 	for decoder.More() {
 		var doc map[string]interface{}
 		err := decoder.Decode(&doc)
 		if err != nil {
-			return err
+			logger.Error("Error decoding data file", zap.String("filePath", filePath), zap.String("indexName", indexName), zap.Error(err))
+			return
 		}
+
 		requests = append(requests, doc)
 
 		if len(requests) >= bulkSize {
-			err = BulkIndexData(es, requests, indexName)
+			err = BulkIndexData(osClient, requests, indexName)
 			if err != nil {
-				return err
+				logger.Error("Error Bulking file", zap.String("indexName", indexName), zap.Error(err))
+				return
 			}
+
 			requests = nil
 		}
 	}
 
 	if len(requests) > 0 {
-		err = BulkIndexData(es, requests, indexName)
+		err = BulkIndexData(osClient, requests, indexName)
 		if err != nil {
-			return err
+			logger.Error("Error Bulking file", zap.String("indexName", indexName), zap.Error(err))
+			return
 		}
 	}
-
-	return nil
 }
 
 func ReadIndexConfigs(dir string) (map[string]IndexConfig, error) {
