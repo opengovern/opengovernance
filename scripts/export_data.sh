@@ -1,5 +1,7 @@
 # https://github.com/elasticsearch-dump/elasticsearch-dump
 
+git config --global user.email "arta-c@kaytu.io"
+git config --global user.name "artaasadi"
 
 LOCAL_REPO_PATH="/tmp/demo"
 
