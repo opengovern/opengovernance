@@ -1,18 +1,18 @@
 package worker
 
 import (
+	"context"
 	"fmt"
-	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
-	"github.com/labstack/gommon/log"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.uber.org/zap"
 	"path/filepath"
 	"strings"
 	"sync"
 )
 
-func ImportJob(logger *zap.Logger, client essdk.Client) error {
-	osClient := client.ES()
+func ImportJob(logger *zap.Logger, client *opensearchapi.Client) error {
+	ctx := context.Background()
 
 	dir := types.ESBackupPath
 
@@ -24,7 +24,7 @@ func ImportJob(logger *zap.Logger, client essdk.Client) error {
 	logger.Info("Read Index Configs Done")
 
 	for indexName, config := range indexConfigs {
-		err := CreateIndex(osClient, indexName, config.Settings, config.Mappings)
+		err := CreateIndex(ctx, client, indexName, config.Settings, config.Mappings)
 		if err != nil {
 			logger.Error("Error creating index", zap.String("indexName", indexName), zap.Error(err))
 			return err
@@ -50,9 +50,9 @@ func ImportJob(logger *zap.Logger, client essdk.Client) error {
 		indexName := strings.TrimSuffix(filepath.Base(file), ".json")
 		if _, exists := indexConfigs[indexName]; exists {
 			wg.Add(1)
-			go ProcessJSONFile(logger, osClient, file, indexName, &wg)
+			go ProcessJSONFile(ctx, logger, client, file, indexName, &wg)
 		} else {
-			log.Printf("No index config found for file: %s", file)
+			fmt.Println("No index config found for file: %s", file)
 		}
 	}
 

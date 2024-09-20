@@ -1,14 +1,17 @@
 package demo_importer
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
-	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/open-governance/services/demo-importer/fetch"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
+	"github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"net/http"
 	"os"
 )
 
@@ -31,17 +34,20 @@ func Command() *cobra.Command {
 				return fmt.Errorf("failure creating path: %w", err)
 			}
 
-			esClient, err := es.NewClient(es.ClientConfig{
-				Addresses:    []string{cnf.ElasticSearch.Address},
-				Username:     &cnf.ElasticSearch.Username,
-				Password:     &cnf.ElasticSearch.Password,
-				IsOpenSearch: &cnf.ElasticSearch.IsOpenSearch,
-				IsOnAks:      &cnf.ElasticSearch.IsOnAks,
-				ExternalID:   &cnf.ElasticSearch.ExternalID,
-			})
-			if err != nil {
-				return fmt.Errorf("failure while creating ES Client: %w", err)
+			cfg := opensearchapi.Config{
+				opensearch.Config{
+					Addresses:           []string{cnf.ElasticSearch.Address},
+					Username:            cnf.ElasticSearch.Username,
+					Password:            cnf.ElasticSearch.Password,
+					CompressRequestBody: true,
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
 			}
+			es, err := opensearchapi.NewClient(cfg)
 
 			cmd.SilenceUsage = true
 
@@ -90,7 +96,7 @@ func Command() *cobra.Command {
 				}
 			}
 
-			err = worker.ImportJob(logger, esClient)
+			err = worker.ImportJob(logger, es)
 			if err != nil {
 				return fmt.Errorf("failure while importing job: %w", err)
 			}
