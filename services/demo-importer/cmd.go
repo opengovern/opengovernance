@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/open-governance/services/demo-importer/fetch"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
 	"github.com/spf13/cobra"
@@ -27,7 +28,7 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			_, err = GitClone(cnf, logger)
+			_, err = fetch.GitClone(cnf, logger)
 			if err != nil {
 				return fmt.Errorf("failure while running git clone: %w", err)
 			}
