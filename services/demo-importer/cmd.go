@@ -29,10 +29,13 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
+			logger.Info("Downloading file", zap.String("address", cnf.DemoDataS3URL))
 			filePath, err := fetch.DownloadS3Object(cnf.DemoDataS3URL)
 			if err != nil {
 				return err
 			}
+
+			logger.Info("File Downloaded", zap.String("file", filePath))
 
 			esClient, err := es.NewClient(es.ClientConfig{
 				Addresses:    []string{cnf.ElasticSearch.Address},
@@ -53,6 +56,8 @@ func Command() *cobra.Command {
 				return err
 			}
 
+			logger.Info("Successfully decrypted", zap.String("file", filePath))
+
 			file, err := os.Open(types.DemoDecryptedDataFilePath)
 			if err != nil {
 				return err
@@ -64,6 +69,8 @@ func Command() *cobra.Command {
 				return fmt.Errorf("failure while unzipping file: %w", err)
 			}
 
+			logger.Info("Successfully unzipped", zap.String("file", filePath))
+
 			files, err := os.ReadDir(types.DemoDataPath)
 			if err != nil {
 				return fmt.Errorf("failure while reading directory: %w", err)
@@ -71,9 +78,9 @@ func Command() *cobra.Command {
 
 			for _, file := range files {
 				if file.IsDir() {
-					fmt.Printf("[DIR]  %s\n", file.Name())
+					logger.Info(fmt.Sprintf("[DIR]  %s\n", file.Name()))
 				} else {
-					fmt.Printf("[FILE] %s\n", file.Name())
+					logger.Info(fmt.Sprintf("[FILE] %s\n", file.Name()))
 				}
 			}
 
