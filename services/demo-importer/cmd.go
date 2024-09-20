@@ -63,14 +63,15 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully decrypted", zap.String("file", filePath))
 
-			err = os.WriteFile(types.DemoDecryptedDataFilePath, decryptedData, 0644)
+			decryptedFile := types.DemoDecryptedDataFilePath
+			err = os.WriteFile(decryptedFile, decryptedData, 0644)
 			if err != nil {
 				return err
 			}
 
 			logger.Info("Successfully decrypted file written", zap.String("file", filePath))
 
-			file, err := os.Open(types.DemoDecryptedDataFilePath)
+			file, err := os.Open(decryptedFile)
 			if err != nil {
 				return err
 			}
@@ -83,7 +84,7 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
 
-			files, err := os.ReadDir(types.DemoDataPath)
+			files, err := os.ReadDir("/")
 			if err != nil {
 				return fmt.Errorf("failure while reading directory: %w", err)
 			}
@@ -96,7 +97,7 @@ func Command() *cobra.Command {
 				}
 			}
 
-			err = worker.ImportJob(logger, es)
+			err = worker.ImportJob(logger, es, "/demo-data")
 			if err != nil {
 				return fmt.Errorf("failure while importing job: %w", err)
 			}
