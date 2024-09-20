@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.uber.org/zap"
 	"path/filepath"
@@ -11,10 +10,8 @@ import (
 	"sync"
 )
 
-func ImportJob(logger *zap.Logger, client *opensearchapi.Client) error {
+func ImportJob(logger *zap.Logger, client *opensearchapi.Client, dir string) error {
 	ctx := context.Background()
-
-	dir := types.ESBackupPath
 
 	indexConfigs, err := ReadIndexConfigs(dir)
 	if err != nil {
