@@ -8,7 +8,8 @@ RUN apt-get update && \
     unzip \
     jq \
     gnupg \
-    lsb-release && \
+    lsb-release \
+    git && \
     rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
@@ -20,8 +21,6 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     rm -rf awscliv2.zip
 
 RUN npm install -g elasticdump
-
-RUN mkdir -p /tmp/es_backup /tmp/postgres
 
 COPY ../scripts/export_data.sh /usr/local/bin/export_data.sh
 
