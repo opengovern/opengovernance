@@ -1,15 +1,15 @@
-package _import
+package worker
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 )
 
-func CreateIndex(es *elasticsearch.Client, indexName string, settings, mappings json.RawMessage) error {
+func CreateIndex(osClient *opensearch.Client, indexName string, settings, mappings json.RawMessage) error {
 	config := map[string]json.RawMessage{
 		"settings": settings,
 		"mappings": mappings,
@@ -20,12 +20,12 @@ func CreateIndex(es *elasticsearch.Client, indexName string, settings, mappings 
 		return err
 	}
 
-	req := esapi.IndicesCreateRequest{
+	req := opensearchapi.IndicesCreateRequest{
 		Index: indexName,
 		Body:  bytes.NewReader(configJSON),
 	}
 
-	res, err := req.Do(context.Background(), es)
+	res, err := req.Do(context.Background(), osClient)
 	if err != nil {
 		return err
 	}

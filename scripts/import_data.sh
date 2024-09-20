@@ -25,8 +25,9 @@ DIR_PATH="/tmp/es_backup"
 
 find "$DIR_PATH" -maxdepth 1 -type f | while IFS= read -r file; do
     file_name=$(basename "$file")
+    file_name="${file_name%.json}"
 
-    if [ "${file_name%.settings.json}" = "$file_name" ] && [ "${file_name%.mapping.json}" = "$file_name" ]; then
+    if [ "${file_name%.settings}" = "$file_name" ] && [ "${file_name%.mapping}" = "$file_name" ]; then
         NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
           --input="/tmp/es_backup/$file_name.mapping.json" \
           --output="$NEW_ELASTICSEARCH_ADDRESS/$file_name" \
