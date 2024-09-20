@@ -5,6 +5,6 @@ const (
 	DemoDecryptedDataFilePath = DemoDataPath + "/demo_data.tar.gz"
 
 	DemoUnzipPath        = DemoDataPath + "/demo-data"
-	ESBackupPath         = DemoUnzipPath + "/es-backup"
-	PostgresqlBackupPath = DemoDataPath + "/postgresql-backup"
+	ESBackupPath         = DemoUnzipPath + "/es-demo"
+	PostgresqlBackupPath = DemoDataPath + "/postgres"
 )
