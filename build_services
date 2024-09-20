@@ -20,3 +20,4 @@ alerting-service
 cost-estimator-service
 wastage-service
 query-runner-worker
+demo-importer-worker
