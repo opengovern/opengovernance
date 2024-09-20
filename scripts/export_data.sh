@@ -60,6 +60,6 @@ cp -r /tmp/backup_data.bin "$LOCAL_REPO_PATH/"
 cd "$LOCAL_REPO_PATH"
 git add .
 git commit -m "Backup Elasticsearch and PostgreSQL data"
-git push --set-upstream origin "$BRANCH"
+git push --set-upstream origin "$GITHUB_BRANCH"
 
 rm -rf "$LOCAL_REPO_PATH/postgres"
