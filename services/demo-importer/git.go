@@ -6,10 +6,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/pkg/metadata/client"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"go.uber.org/zap"
 	"os"
@@ -25,17 +21,6 @@ func GitClone(conf types.DemoImporterConfig, logger *zap.Logger) (string, error)
 	gitConfig := GitConfig{
 		DemoDataGitURL: conf.DemoDataGitURL,
 		githubToken:    conf.GithubToken,
-	}
-
-	metadataClient := client.NewMetadataServiceClient(conf.Metadata.BaseURL)
-	value, err := metadataClient.GetConfigMetadata(&httpclient.Context{
-		UserRole: api.AdminRole,
-	}, models.MetadataKeyAnalyticsGitURL)
-
-	if err == nil && len(value.GetValue().(string)) > 0 {
-		gitConfig.DemoDataGitURL = value.GetValue().(string)
-	} else if err != nil {
-		logger.Error("failed to get demo data git url from metadata", zap.Error(err))
 	}
 
 	logger.Info("using git repo", zap.String("url", gitConfig.DemoDataGitURL))
