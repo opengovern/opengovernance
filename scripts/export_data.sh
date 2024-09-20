@@ -3,7 +3,7 @@
 
 LOCAL_REPO_PATH="/tmp/demo"
 
-GITHUB_REPO_URL="https://abc123:${GITHUB_TOKEN}@github.com/kaytu-io/demo-data.git"
+GITHUB_REPO_URL="https://abc123:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_REPO}.git"
 
 if [ ! -d "$LOCAL_REPO_PATH" ]; then
   git clone "$GITHUB_REPO_URL" "$LOCAL_REPO_PATH"
