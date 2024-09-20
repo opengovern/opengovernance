@@ -2,18 +2,26 @@
 
 NEW_ELASTICSEARCH_ADDRESS="https://${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}@${ELASTICSEARCH_ADDRESS#https://}"
 
-curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
-  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
-    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --output="/tmp/es_backup/map_$index" \
-      --type=mapping
-    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
-      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
-      --output="/tmp/es_backup/$index" \
-      --type=data
-  fi
-done
+
+NODE_TLS_REJECT_UNAUTHORIZED=0 multielasticdump \
+  --direction=dump \
+  --match='^(?!\.|security-auditlog-).*' \
+  --input="$NEW_ELASTICSEARCH_ADDRESS" \
+  --output="/tmp/es_backup" \
+  --ignoreChildError=true
+
+#curl -X GET "$ELASTICSEARCH_ADDRESS/_cat/indices?format=json" -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" --insecure | jq -r '.[].index' | while read -r index; do
+#  if [ "$(echo "$index" | cut -c 1)" != "." ] && [ "${index#security-auditlog-}" = "$index" ]; then
+#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+#      --output="/tmp/es_backup/map_$index.json" \
+#      --type=mapping
+#    NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump \
+#      --input="$NEW_ELASTICSEARCH_ADDRESS/$index" \
+#      --output="/tmp/es_backup/$index.json" \
+#      --type=data
+#  fi
+#done
 
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/pennywise" > /tmp/postgres/pennywise.sql
 pg_dump --dbname="postgresql://$OCT_POSTGRESQL_USERNAME:$OCT_POSTGRESQL_PASSWORD@$OCT_POSTGRESQL_HOST:$POSTGRESQL_PORT/workspace" > /tmp/postgres/workspace.sql
