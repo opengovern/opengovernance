@@ -49,10 +49,7 @@ func Command() *cobra.Command {
 				return fmt.Errorf("failure while creating ES Client: %w", err)
 			}
 
-			decryptedData, err := fetch.DecodeFile(cnf.OpensslPassword)
-			if err != nil {
-				return fmt.Errorf("failure while decrypting file: %w", err)
-			}
+			decryptedData, err := fetch.DecryptString(cnf.OpensslPassword)
 
 			decryptedReader := tar.NewReader(io.NopCloser(io.MultiReader(
 				// Use MultiReader to read from the decrypted data buffer

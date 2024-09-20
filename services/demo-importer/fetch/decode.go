@@ -3,11 +3,12 @@ package fetch
 import (
 	"fmt"
 	"github.com/Luzifer/go-openssl/v4"
+	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"os"
 )
 
 func DecryptString(passphrase string) ([]byte, error) {
-	encryptedBase64String, err := os.ReadFile("/home/arta/data/codes/Work/Kaytu/kaytu-scripts/test-decode-and-unzip/output.bin")
+	encryptedBase64String, err := os.ReadFile(types.DemoDataFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading file: %v\n", err)
 	}
