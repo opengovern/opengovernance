@@ -1,60 +1,22 @@
 package fetch
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/md5"
 	"fmt"
-	"github.com/kaytu-io/open-governance/services/demo-importer/types"
-	"io"
+	"github.com/Luzifer/go-openssl/v4"
 	"os"
 )
 
-func DecodeFile(password string) ([]byte, error) {
-	encryptedData, err := os.ReadFile(types.DemoDataFilePath)
+func DecryptString(passphrase string) ([]byte, error) {
+	encryptedBase64String, err := os.ReadFile("/home/arta/data/codes/Work/Kaytu/kaytu-scripts/test-decode-and-unzip/output.bin")
 	if err != nil {
 		return nil, fmt.Errorf("error reading file: %v\n", err)
 	}
 
-	decryptedReader, err := decryptAES256CBC(encryptedData, password)
+	o := openssl.New()
+
+	dec, err := o.DecryptBytes(passphrase, []byte(encryptedBase64String), openssl.BytesToKeyMD5)
 	if err != nil {
-		return nil, fmt.Errorf("error decrypting file: %v\n", err)
+		fmt.Printf("An error occurred: %s\n", err)
 	}
-	return decryptedReader, nil
-}
-
-func deriveKey(password string) []byte {
-	hash := md5.New()
-	io.WriteString(hash, password)
-	return hash.Sum(nil)
-}
-
-func decryptAES256CBC(encryptedData []byte, password string) ([]byte, error) {
-	iv := encryptedData[:aes.BlockSize]
-	encryptedData = encryptedData[aes.BlockSize:]
-
-	key := deriveKey(password)
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, fmt.Errorf("error creating AES cipher: %v", err)
-	}
-
-	if len(encryptedData)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("encrypted data is not a multiple of the block size")
-	}
-
-	mode := cipher.NewCBCDecrypter(block, iv)
-
-	decryptedData := make([]byte, len(encryptedData))
-	mode.CryptBlocks(decryptedData, encryptedData)
-
-	decryptedData = unpad(decryptedData)
-
-	return decryptedData, nil
-}
-
-func unpad(data []byte) []byte {
-	paddingLength := int(data[len(data)-1])
-	return data[:len(data)-paddingLength]
+	return dec, nil
 }
