@@ -1,6 +1,8 @@
 package demo_importer
 
 import (
+	"archive/tar"
+	"bytes"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -9,6 +11,8 @@ import (
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"io"
+	"os"
 )
 
 func Command() *cobra.Command {
@@ -43,6 +47,34 @@ func Command() *cobra.Command {
 			})
 			if err != nil {
 				return fmt.Errorf("failure while creating ES Client: %w", err)
+			}
+
+			decryptedData, err := fetch.DecodeFile(cnf.OpensslPassword)
+			if err != nil {
+				return fmt.Errorf("failure while decrypting file: %w", err)
+			}
+
+			decryptedReader := tar.NewReader(io.NopCloser(io.MultiReader(
+				// Use MultiReader to read from the decrypted data buffer
+				bytes.NewReader(decryptedData),
+			)))
+
+			err = fetch.Unzip(decryptedReader)
+			if err != nil {
+				return fmt.Errorf("failure while unzipping file: %w", err)
+			}
+
+			files, err := os.ReadDir(types.DemoDataPath)
+			if err != nil {
+				return fmt.Errorf("failure while reading directory: %w", err)
+			}
+
+			for _, file := range files {
+				if file.IsDir() {
+					fmt.Printf("[DIR]  %s\n", file.Name())
+				} else {
+					fmt.Printf("[FILE] %s\n", file.Name())
+				}
 			}
 
 			err = worker.ImportJob(logger, esClient)
