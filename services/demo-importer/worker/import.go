@@ -10,9 +10,7 @@ import (
 	"sync"
 )
 
-func ImportJob(logger *zap.Logger, client *opensearchapi.Client, dir string) error {
-	ctx := context.Background()
-
+func ImportJob(ctx context.Context, logger *zap.Logger, client *opensearchapi.Client, dir string) error {
 	indexConfigs, err := ReadIndexConfigs(dir)
 	if err != nil {
 		logger.Error("Error reading index configs", zap.Error(err))

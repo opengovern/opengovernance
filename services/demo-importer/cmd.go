@@ -1,6 +1,7 @@
 package demo_importer
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
@@ -29,6 +30,8 @@ func Command() *cobra.Command {
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
+
 			err = os.MkdirAll(types.DemoDataPath, os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("failure creating path: %w", err)
@@ -84,13 +87,16 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
 
-			worker.ImportPsqlData(cnf, "/demo-data/postgres")
+			err = worker.ImportPsqlData(ctx, cnf, "/demo-data/postgres")
+			if err != nil {
+				return fmt.Errorf("failure while importing postgres databases: %w", err)
+			}
 
 			logger.Info("postgres data imported")
 
-			err = worker.ImportJob(logger, es, "/demo-data/es-demo")
+			err = worker.ImportJob(ctx, logger, es, "/demo-data/es-demo")
 			if err != nil {
-				return fmt.Errorf("failure while importing job: %w", err)
+				return fmt.Errorf("failure while importing es indices: %w", err)
 			}
 
 			return nil
