@@ -21,6 +21,7 @@ func ImportPsqlData(cnf types.DemoImporterConfig, dataPath string) {
 	}
 
 	for dbName, sqlFilePath := range databases {
+		fmt.Println("Importing database " + dbName)
 		err := runPsqlCommand(cnf, dbName, sqlFilePath)
 		if err != nil {
 			fmt.Printf("Failed to import data for %s: %v\n", dbName, err)
@@ -41,7 +42,6 @@ func runPsqlCommand(cnf types.DemoImporterConfig, dbName, sqlFilePath string) er
 		return fmt.Errorf("psql not found in PATH: %v", err)
 	}
 
-	// Prepare the PGPASSWORD environment variable
 	cmd := exec.Command(psqlPath,
 		"--host="+postgresHost,
 		"--port="+postgresPort,
@@ -49,10 +49,8 @@ func runPsqlCommand(cnf types.DemoImporterConfig, dbName, sqlFilePath string) er
 		"--dbname="+dbName,
 		"-f", sqlFilePath)
 
-	// Set PGPASSWORD as part of the environment
 	cmd.Env = append(os.Environ(), "PGPASSWORD="+postgresPassword)
 
-	// Run the command
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error running psql for database %s: %v, output: %s", dbName, err, string(output))
