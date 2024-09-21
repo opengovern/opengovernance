@@ -6418,5 +6418,51 @@ func (h *HttpHandler) SyncDemo(echoCtx echo.Context) error {
 		return err
 	}
 
+	var importDemoDbJob batchv1.Job
+	err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: currentNamespace,
+		Name:      "import-psql-demo-data",
+	}, &importDemoJob)
+	if err != nil {
+		return err
+	}
+
+	err = h.kubeClient.Delete(ctx, &importDemoDbJob)
+	if err != nil {
+		return err
+	}
+
+	for {
+		err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
+			Namespace: currentNamespace,
+			Name:      "import-psql-demo-data",
+		}, &importDemoDbJob)
+		if err != nil {
+			if k8sclient.IgnoreNotFound(err) == nil {
+				break
+			}
+			return err
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	importDemoDbJob.ObjectMeta = metav1.ObjectMeta{
+		Name:      "import-psql-demo-data",
+		Namespace: currentNamespace,
+		Annotations: map[string]string{
+			"helm.sh/hook":        "post-install,post-upgrade",
+			"helm.sh/hook-weight": "0",
+		},
+	}
+	importDemoDbJob.Spec.Selector = nil
+	importDemoDbJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
+	importDemoDbJob.Status = batchv1.JobStatus{}
+
+	err = h.kubeClient.Create(ctx, &importDemoDbJob)
+	if err != nil {
+		return err
+	}
+
 	return echoCtx.JSON(http.StatusOK, struct{}{})
 }
