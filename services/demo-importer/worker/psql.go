@@ -41,7 +41,6 @@ func runPsqlCommand(cnf types.DemoImporterConfig, dbName, sqlFilePath string) er
 	if err != nil {
 		return fmt.Errorf("psql not found in PATH: %v", err)
 	}
-	fmt.Println("psql path", psqlPath)
 
 	cmd := exec.Command(psqlPath,
 		"--host="+postgresHost,
