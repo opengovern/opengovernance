@@ -84,32 +84,9 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
 
-			files, err := os.ReadDir("/")
-			if err != nil {
-				return fmt.Errorf("failure while reading directory: %w", err)
-			}
+			worker.ImportPsqlData(cnf, "/demo-data/postgres")
 
-			for _, file := range files {
-				if file.IsDir() {
-					logger.Info(fmt.Sprintf("[DIR]  %s\n", file.Name()))
-				} else {
-					logger.Info(fmt.Sprintf("[FILE] %s\n", file.Name()))
-				}
-			}
-			logger.Info("====================")
-
-			files, err = os.ReadDir("/demo-data")
-			if err != nil {
-				return fmt.Errorf("failure while reading directory: %w", err)
-			}
-
-			for _, file := range files {
-				if file.IsDir() {
-					logger.Info(fmt.Sprintf("[DIR]  %s\n", file.Name()))
-				} else {
-					logger.Info(fmt.Sprintf("[FILE] %s\n", file.Name()))
-				}
-			}
+			logger.Info("postgres data imported")
 
 			err = worker.ImportJob(logger, es, "/demo-data/es-demo")
 			if err != nil {
