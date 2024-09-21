@@ -79,6 +79,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 
 	v3 := e.Group("/api/v3")
 	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.AdminRole))
+	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.AdminRole))
+	v3.PUT("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -815,18 +817,30 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 			},
 		}
 
-		_, err = dexClient.CreatePassword(context.TODO(), dexReq)
+		resp, err := dexClient.CreatePassword(context.TODO(), dexReq)
 		if err != nil {
 			r.logger.Error("failed to create dex password", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+		}
+		if resp.AlreadyExists {
+			dexReq := &dexApi.UpdatePasswordReq{
+				Email:   req.EmailAddress,
+				NewHash: hashedPassword,
+			}
+
+			_, err = dexClient.UpdatePassword(context.TODO(), dexReq)
+			if err != nil {
+				r.logger.Error("failed to update dex password", zap.Error(err))
+				return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+			}
 		}
 	}
 
 	ws := CurrentWorkspaceName
 
 	role := api2.ViewerRole
-	if req.RoleName != nil {
-		role = *req.RoleName
+	if req.Role != nil {
+		role = *req.Role
 	}
 
 	var appMetadata auth0.Metadata
@@ -857,6 +871,124 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		UserMetadata: userMetadataJsonb,
 	}
 	err = r.db.CreateUser(user)
+	if err != nil {
+		r.logger.Error("failed to create user", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// UpdateUser godoc
+//
+//	@Summary		Create User
+//	@Description	Creates User.
+//	@Security		BearerToken
+//	@Tags			keys
+//	@Produce		json
+//	@Param			request	body		api.UpdateUserRequest	true	"Request Body"
+//	@Success		200
+//	@Router			/auth/api/v3/user/update [post]
+func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
+	var req api.UpdateUserRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if req.EmailAddress == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
+	}
+
+	if req.Password != nil {
+		dexClient, err := newDexClient(dexGrpcAddress)
+		if err != nil {
+			r.logger.Error("failed to create dex client", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			r.logger.Error("failed to hash token", zap.Error(err))
+			return err
+		}
+
+		dexReq := &dexApi.UpdatePasswordReq{
+			Email:   req.EmailAddress,
+			NewHash: hashedPassword,
+		}
+
+		_, err = dexClient.UpdatePassword(context.TODO(), dexReq)
+		if err != nil {
+			r.logger.Error("failed to update dex password", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+		}
+	}
+
+	ws := CurrentWorkspaceName
+
+	if req.Role != nil {
+		user, err := r.db.GetUsersByEmail(req.EmailAddress)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+		}
+		if user == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
+		}
+		auth0User, err := r.auth0Service.GetUser(user[0].UserId)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+		}
+		auth0User.AppMetadata.WorkspaceAccess[ws] = *req.Role
+
+		if auth0User.AppMetadata.ConnectionIDs == nil {
+			auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
+		}
+		err = r.auth0Service.PatchUserAppMetadata(user[0].UserId, auth0User.AppMetadata)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user role")
+		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// DeleteUser godoc
+//
+//	@Summary		Delete User
+//	@Description	Delete User.
+//	@Security		BearerToken
+//	@Tags			keys
+//	@Produce		json
+//	@Param			email_address	path		string	true	"Request Body"
+//	@Success		200
+//	@Router			/auth/api/v3/user/{email_address}/delete [put]
+func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
+	var req api.CreateUserRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	emailAddress := ctx.Param("email_address")
+	if emailAddress == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
+	}
+
+	dexClient, err := newDexClient(dexGrpcAddress)
+	if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+	}
+
+	dexReq := &dexApi.DeletePasswordReq{
+		Email: emailAddress,
+	}
+
+	_, err = dexClient.DeletePassword(context.TODO(), dexReq)
+	if err != nil {
+		r.logger.Error("failed to create dex password", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+	}
+
+	err = r.db.DeleteUserWithEmail(emailAddress)
 	if err != nil {
 		r.logger.Error("failed to create user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")

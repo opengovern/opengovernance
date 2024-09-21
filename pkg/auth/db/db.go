@@ -248,6 +248,16 @@ func (db Database) DeleteUser(userId string) error {
 	return nil
 }
 
+func (db Database) DeleteUserWithEmail(emailAddress string) error {
+	tx := db.Orm.Model(&User{}).
+		Where("email", emailAddress).
+		Delete(&User{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
 func (db Database) GetUser(userId string) (*User, error) {
 	var s User
 	tx := db.Orm.Model(&User{}).

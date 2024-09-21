@@ -37,6 +37,12 @@ type UpdateKeyRoleRequest struct {
 
 type CreateUserRequest struct {
 	EmailAddress string    `json:"email_address"`
-	RoleName     *api.Role `json:"role_name" enums:"admin,editor,viewer" example:"admin"`
+	Role         *api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"`
+	Password     *string   `json:"password"`
+}
+
+type UpdateUserRequest struct {
+	EmailAddress string    `json:"email_address"`
+	Role         *api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"`
 	Password     *string   `json:"password"`
 }
