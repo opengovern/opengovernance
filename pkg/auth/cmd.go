@@ -32,6 +32,7 @@ var (
 
 	dexAuthDomain                = os.Getenv("DEX_AUTH_DOMAIN")
 	dexAuthPublicClientID        = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
+	dexGrpcAddress               = os.Getenv("DEX_GRPC_ADDR")
 	auth0Domain                  = os.Getenv("AUTH0_DOMAIN")
 	auth0ClientID                = os.Getenv("AUTH0_CLIENT_ID")
 	auth0ClientIDNative          = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
