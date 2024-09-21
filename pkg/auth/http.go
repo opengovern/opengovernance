@@ -796,6 +796,14 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
 
+	users, err := r.db.GetUsersByEmail(req.EmailAddress)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
+	}
+	if len(users) > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
+	}
+
 	userId := fmt.Sprintf("dex|%s", req.EmailAddress)
 	if req.Password != nil {
 		dexClient, err := newDexClient(dexGrpcAddress)
@@ -916,10 +924,25 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			NewHash: hashedPassword,
 		}
 
-		_, err = dexClient.UpdatePassword(context.TODO(), dexReq)
+		resp, err := dexClient.UpdatePassword(context.TODO(), dexReq)
 		if err != nil {
 			r.logger.Error("failed to update dex password", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+		}
+		if resp.NotFound {
+			dexReq := &dexApi.CreatePasswordReq{
+				Password: &dexApi.Password{
+					UserId: fmt.Sprintf("dex|%s", req.EmailAddress),
+					Email:  req.EmailAddress,
+					Hash:   hashedPassword,
+				},
+			}
+
+			_, err = dexClient.CreatePassword(context.TODO(), dexReq)
+			if err != nil {
+				r.logger.Error("failed to create dex password", zap.Error(err))
+				return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+			}
 		}
 	}
 
@@ -930,7 +953,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 		}
-		if user == nil {
+		if user == nil || len(user) == 0 {
 			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
 		}
 		auth0User, err := r.auth0Service.GetUser(user[0].UserId)
