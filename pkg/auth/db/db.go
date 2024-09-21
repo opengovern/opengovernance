@@ -239,7 +239,7 @@ func (db Database) CreateUser(user *User) error {
 }
 
 func (db Database) DeleteUser(userId string) error {
-	tx := db.Orm.Model(&User{}).
+	tx := db.Orm.
 		Where("user_id = ?", userId).
 		Delete(&User{})
 	if tx.Error != nil {
@@ -249,7 +249,7 @@ func (db Database) DeleteUser(userId string) error {
 }
 
 func (db Database) DeleteUserWithEmail(emailAddress string) error {
-	tx := db.Orm.Model(&User{}).
+	tx := db.Orm.
 		Where("email = ?", emailAddress).
 		Delete(&User{})
 	if tx.Error != nil {

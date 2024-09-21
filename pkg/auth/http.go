@@ -797,9 +797,6 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 	}
 
 	user, err := r.db.GetUserByEmail(req.EmailAddress)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
-	}
 	if user != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
@@ -893,8 +890,8 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 
 // UpdateUser godoc
 //
-//	@Summary		Create User
-//	@Description	Creates User.
+//	@Summary		Update User
+//	@Description	Updates User.
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
@@ -993,11 +990,6 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v3/user/{email_address}/delete [put]
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
-	var req api.CreateUserRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
 	emailAddress := ctx.Param("email_address")
 	if emailAddress == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
@@ -1019,9 +1011,22 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
 	}
 
+	user, err := r.db.GetUserByEmail(emailAddress)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+	if user == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+
 	err = r.db.DeleteUserWithEmail(emailAddress)
 	if err != nil {
-		r.logger.Error("failed to create user", zap.Error(err))
+		r.logger.Error("failed to delete user", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
+	}
+	err = r.db.DeleteUser(user.UserId)
+	if err != nil {
+		r.logger.Error("failed to delete user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
 	}
 
