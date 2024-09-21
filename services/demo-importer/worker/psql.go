@@ -1,66 +1,59 @@
 package worker
 
 import (
-	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"os"
+	"os/exec"
 )
 
-func ImportPsqlData(ctx context.Context, cnf types.DemoImporterConfig, dataPath string) error {
-	dbHost := cnf.PostgreSQL.Host
-	dbPort := cnf.PostgreSQL.Port
-	dbUser := cnf.PostgreSQL.Username
-	dbPass := cnf.PostgreSQL.Password
-	dbNames := []string{"pennywise", "workspace", "auth", "migrator", "describe", "onboard", "inventory", "compliance", "metadata"}
-
-	for _, dbName := range dbNames {
-		filePath := fmt.Sprintf("%s/%s.sql", dataPath, dbName)
-
-		connStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPass, dbHost, dbPort, dbName)
-
-		config, err := pgxpool.ParseConfig(connStr)
-		if err != nil {
-			return err
-		}
-
-		dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
-		if err != nil {
-			return err
-		}
-
-		config.ConnConfig.Database = dbName
-
-		dbPool, err = pgxpool.NewWithConfig(context.Background(), config)
-		if err != nil {
-			return err
-		}
-
-		err = runSQLFile(ctx, dbPool, filePath)
-		if err != nil {
-			return err
-		} else {
-			fmt.Println("Successfully imported data for ", dbName)
-		}
-
-		dbPool.Close()
+func ImportPsqlData(cnf types.DemoImporterConfig, dataPath string) {
+	databases := map[string]string{
+		"pennywise":  dataPath + "/pennywise.sql",
+		"workspace":  dataPath + "/workspace.sql",
+		"auth":       dataPath + "/auth.sql",
+		"migrator":   dataPath + "/migrator.sql",
+		"describe":   dataPath + "/describe.sql",
+		"onboard":    dataPath + "/onboard.sql",
+		"inventory":  dataPath + "/inventory.sql",
+		"compliance": dataPath + "/compliance.sql",
+		"metadata":   dataPath + "/metadata.sql",
 	}
-	return nil
+
+	for dbName, sqlFilePath := range databases {
+		fmt.Println("Importing database " + dbName)
+		err := runPsqlCommand(cnf, dbName, sqlFilePath)
+		if err != nil {
+			fmt.Printf("Failed to import data for %s: %v\n", dbName, err)
+		} else {
+			fmt.Printf("Successfully imported data for %s\n", dbName)
+		}
+	}
 }
 
-func runSQLFile(ctx context.Context, db *pgxpool.Pool, filePath string) error {
-	sqlBytes, err := os.ReadFile(filePath)
+func runPsqlCommand(cnf types.DemoImporterConfig, dbName, sqlFilePath string) error {
+	postgresPassword := cnf.PostgreSQL.Password
+	postgresHost := cnf.PostgreSQL.Host
+	postgresPort := cnf.PostgreSQL.Port
+	postgresUser := cnf.PostgreSQL.Username
+
+	psqlPath, err := exec.LookPath("psql")
 	if err != nil {
-		return fmt.Errorf("failed to read SQL file: %v", err)
+		return fmt.Errorf("psql not found in PATH: %v", err)
 	}
 
-	sql := string(sqlBytes)
+	cmd := exec.Command(psqlPath,
+		"--host="+postgresHost,
+		"--port="+postgresPort,
+		"--username="+postgresUser,
+		"--dbname="+dbName,
+		"-f", sqlFilePath)
 
-	_, err = db.Exec(ctx, sql)
+	cmd.Env = append(os.Environ(), "PGPASSWORD="+postgresPassword)
+
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to execute SQL file: %v", err)
+		return fmt.Errorf("error running psql for database %s: %v, output: %s", dbName, err, string(output))
 	}
-
 	return nil
 }
