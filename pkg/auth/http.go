@@ -796,11 +796,11 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
 
-	users, err := r.db.GetUsersByEmail(req.EmailAddress)
+	user, err := r.db.GetUserByEmail(req.EmailAddress)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
 	}
-	if len(users) > 0 {
+	if user != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
 
@@ -844,7 +844,11 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		}
 	}
 
-	ws := CurrentWorkspaceName
+	wm, err := r.db.GetWorkspaceMapByName("main")
+	if err != nil {
+		r.logger.Error("failed to get main workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
 
 	role := api2.ViewerRole
 	if req.Role != nil {
@@ -853,7 +857,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 
 	var appMetadata auth0.Metadata
 	appMetadata.WorkspaceAccess = map[string]api2.Role{
-		ws: role,
+		wm.ID: role,
 	}
 	appMetadataJson, err := json.Marshal(appMetadata)
 	if err != nil {
@@ -872,13 +876,13 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal user metadata")
 	}
 
-	user := &db.User{
+	newUser := &db.User{
 		Email:        req.EmailAddress,
 		UserId:       userId,
 		AppMetadata:  appMetadataJsonb,
 		UserMetadata: userMetadataJsonb,
 	}
-	err = r.db.CreateUser(user)
+	err = r.db.CreateUser(newUser)
 	if err != nil {
 		r.logger.Error("failed to create user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
@@ -946,26 +950,30 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		}
 	}
 
-	ws := CurrentWorkspaceName
+	wm, err := r.db.GetWorkspaceMapByName("main")
+	if err != nil {
+		r.logger.Error("failed to get main workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
 
 	if req.Role != nil {
-		user, err := r.db.GetUsersByEmail(req.EmailAddress)
+		user, err := r.db.GetUserByEmail(req.EmailAddress)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 		}
-		if user == nil || len(user) == 0 {
+		if user == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
 		}
-		auth0User, err := r.auth0Service.GetUser(user[0].UserId)
+		auth0User, err := r.auth0Service.GetUser(user.UserId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 		}
-		auth0User.AppMetadata.WorkspaceAccess[ws] = *req.Role
+		auth0User.AppMetadata.WorkspaceAccess[wm.ID] = *req.Role
 
 		if auth0User.AppMetadata.ConnectionIDs == nil {
 			auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
 		}
-		err = r.auth0Service.PatchUserAppMetadata(user[0].UserId, auth0User.AppMetadata)
+		err = r.auth0Service.PatchUserAppMetadata(user.UserId, auth0User.AppMetadata)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user role")
 		}
