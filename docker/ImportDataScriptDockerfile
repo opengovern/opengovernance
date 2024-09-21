@@ -6,7 +6,6 @@ RUN apt-get update && \
     apt-get install -y \
     curl \
     unzip \
-    jq \
     gnupg \
     lsb-release && \
     rm -rf /var/lib/apt/lists/*
@@ -14,17 +13,11 @@ RUN apt-get update && \
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs
 
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf awscliv2.zip
-
-RUN npm install -g elasticdump
 
 RUN mkdir -p /tmp/es_backup /tmp/postgres
 
-COPY ../scripts/import_data.sh /usr/local/bin/import_data.sh
+COPY ../scripts/import_psql_data.sh /usr/local/bin/import_psql_data.sh
 
-RUN chmod +x /usr/local/bin/import_data.sh
+RUN chmod +x /usr/local/bin/import_psql_data.sh
 
-ENTRYPOINT ["/usr/local/bin/import_data.sh"]
+ENTRYPOINT ["/usr/local/bin/import_psql_data.sh"]
