@@ -52,6 +52,8 @@ var (
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
+
+	CurrentWorkspaceName = os.Getenv("WORKSPACE_NAME")
 )
 
 func Command() *cobra.Command {

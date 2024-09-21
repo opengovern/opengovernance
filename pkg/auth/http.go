@@ -1,14 +1,21 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/sha512"
+	"crypto/tls"
 	_ "embed"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	"github.com/jackc/pgtype"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -70,6 +77,9 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
 
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api2.InternalRole))
+
+	v3 := e.Group("/api/v3")
+	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -763,4 +773,98 @@ func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
 		return err
 	}
 	return ctx.NoContent(http.StatusOK)
+}
+
+// CreateUser godoc
+//
+//	@Summary		Create User
+//	@Description	Creates User.
+//	@Security		BearerToken
+//	@Tags			keys
+//	@Produce		json
+//	@Param			request	body		api.CreateUserRequest	true	"Request Body"
+//	@Success		200
+//	@Router			/auth/api/v3/user/create [post]
+func (r *httpRoutes) CreateUser(ctx echo.Context) error {
+	var req api.CreateUserRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if req.EmailAddress == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
+	}
+
+	userId := fmt.Sprintf("dex|%s", req.EmailAddress)
+	if req.Password != nil {
+		dexClient, err := newDexClient("127.0.0.1:5557")
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+		hash := sha512.New()
+		_, err = hash.Write([]byte(*req.Password))
+		if err != nil {
+			r.logger.Error("failed to hash token", zap.Error(err))
+			return err
+		}
+
+		dexReq := &dexApi.CreatePasswordReq{
+			Password: &dexApi.Password{
+				UserId: userId,
+				Email:  req.EmailAddress,
+				Hash:   hash.Sum(nil),
+			},
+		}
+
+		_, err = dexClient.CreatePassword(context.TODO(), dexReq)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
+		}
+	}
+
+	ws := CurrentWorkspaceName
+
+	role := api2.ViewerRole
+	if req.RoleName != nil {
+		role = *req.RoleName
+	}
+
+	var appMetadata auth0.Metadata
+	appMetadata.WorkspaceAccess = map[string]api2.Role{
+		ws: role,
+	}
+	appMetadataJson, err := json.Marshal(appMetadata)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
+	}
+
+	appMetadataJsonb := pgtype.JSONB{}
+	err = appMetadataJsonb.Set(appMetadataJson)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
+	}
+
+	userMetadataJsonb := pgtype.JSONB{}
+	err = userMetadataJsonb.Set([]byte(""))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal user metadata")
+	}
+
+	user := &db.User{
+		Email:        req.EmailAddress,
+		UserId:       userId,
+		AppMetadata:  appMetadataJsonb,
+		UserMetadata: userMetadataJsonb,
+	}
+	err = r.db.CreateUser(user)
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
+	conn, err := grpc.NewClient(hostAndPort, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	if err != nil {
+		return nil, fmt.Errorf("dial: %v", err)
+	}
+	return dexApi.NewDexClient(conn), nil
 }
