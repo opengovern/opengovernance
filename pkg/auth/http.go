@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/sha512"
-	"crypto/tls"
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
@@ -13,9 +12,9 @@ import (
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/jackc/pgtype"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -802,8 +801,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 			r.logger.Error("failed to create dex client", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 		}
-		hash := sha512.New()
-		_, err = hash.Write([]byte(*req.Password))
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
 		if err != nil {
 			r.logger.Error("failed to hash token", zap.Error(err))
 			return err
@@ -813,7 +811,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 			Password: &dexApi.Password{
 				UserId: userId,
 				Email:  req.EmailAddress,
-				Hash:   hash.Sum(nil),
+				Hash:   hashedPassword,
 			},
 		}
 
@@ -868,7 +866,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 }
 
 func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
-	conn, err := grpc.NewClient(hostAndPort, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
+	conn, err := grpc.NewClient(hostAndPort, grpc.WithInsecure())
 	if err != nil {
 		return nil, fmt.Errorf("dial: %v", err)
 	}
