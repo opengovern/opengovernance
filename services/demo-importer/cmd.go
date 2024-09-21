@@ -87,13 +87,6 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
 
-			worker.ImportPsqlData(cnf, "/demo-data/postgres")
-			if err != nil {
-				return fmt.Errorf("failure while importing postgres databases: %w", err)
-			}
-
-			logger.Info("postgres data imported")
-
 			err = worker.ImportJob(ctx, logger, es, "/demo-data/es-demo")
 			if err != nil {
 				return fmt.Errorf("failure while importing es indices: %w", err)

@@ -1,14 +1,7 @@
 FROM docker.io/golang:alpine as build
+RUN apk --no-cache add ca-certificates
 
-RUN apk --no-cache add ca-certificates postgresql-client
-
-FROM alpine:latest
-
+FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-COPY ./build/demo-importer-worker /demo-importer-worker
-
-COPY --from=build /usr/bin/psql /usr/bin/psql
-
-
-CMD ["/demo-importer-worker"]
+COPY ./build/demo-importer-worker /
+CMD [ "/demo-importer-worker" ]
