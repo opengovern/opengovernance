@@ -79,7 +79,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api2.InternalRole))
 
 	v3 := e.Group("/api/v3")
-	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))
+	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -799,6 +799,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 	if req.Password != nil {
 		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
+			r.logger.Error("failed to create dex client", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 		}
 		hash := sha512.New()
@@ -818,7 +819,8 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 
 		_, err = dexClient.CreatePassword(context.TODO(), dexReq)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
+			r.logger.Error("failed to create dex password", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
 		}
 	}
 
@@ -857,6 +859,10 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		UserMetadata: userMetadataJsonb,
 	}
 	err = r.db.CreateUser(user)
+	if err != nil {
+		r.logger.Error("failed to create user", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
+	}
 
 	return ctx.NoContent(http.StatusOK)
 }
