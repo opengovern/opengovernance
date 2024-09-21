@@ -56,12 +56,12 @@ func BulkIndexData(ctx context.Context, client *opensearchapi.Client, requests [
 		fmt.Println("err", err)
 		return err
 	}
-	respAsJson, err := json.MarshalIndent(bulkResp, "", "  ")
+	_, err = json.MarshalIndent(bulkResp, "", "  ")
 	if err != nil {
 		fmt.Println("err", err)
 		return err
 	}
-	fmt.Printf("Bulk Resp:\n%s\n", string(respAsJson))
+	//fmt.Printf("Bulk Resp:\n%s\n", string(respAsJson))
 
 	return nil
 }
@@ -110,6 +110,8 @@ func ProcessJSONFile(ctx context.Context, logger *zap.Logger, osClient *opensear
 			return
 		}
 	}
+
+	fmt.Println("Index data import completed:", indexName)
 }
 
 func ReadIndexConfigs(dir string) (map[string]IndexConfig, error) {
