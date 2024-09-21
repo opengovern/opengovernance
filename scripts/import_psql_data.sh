@@ -2,7 +2,7 @@
 
 curl -O "$DEMO_DATA_S3_URL"
 
-openssl enc -d -aes-256-cbc -md md5 -pass pass:mypassword -in demo_data.tar.gz.enc -out demo_data.tar.gz
+openssl enc -d -aes-256-cbc -md md5 -pass pass:"$OPENSSL_PASSWORD" -base64 -in demo_data.tar.gz.enc -out demo_data.tar.gz
 tar -xvf demo_data.tar.gz
 
 echo "$POSTGRESQL_HOST"
