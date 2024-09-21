@@ -4,4 +4,6 @@ RUN apk --no-cache add ca-certificates postgresql-client
 FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY ./build/demo-importer-worker /
+COPY --from=build /usr/bin/psql /usr/bin/psql
+COPY --from=build /usr/lib /usr/lib
 CMD [ "/demo-importer-worker" ]
