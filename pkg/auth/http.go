@@ -80,7 +80,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v3 := e.Group("/api/v3")
 	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.AdminRole))
 	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.AdminRole))
-	v3.PUT("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
+	v3.DELETE("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

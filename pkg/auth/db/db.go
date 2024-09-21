@@ -250,7 +250,7 @@ func (db Database) DeleteUser(userId string) error {
 
 func (db Database) DeleteUserWithEmail(emailAddress string) error {
 	tx := db.Orm.Model(&User{}).
-		Where("email", emailAddress).
+		Where("email = ?", emailAddress).
 		Delete(&User{})
 	if tx.Error != nil {
 		return tx.Error
