@@ -4,7 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/services/demo-importer/fetch"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
@@ -54,7 +58,19 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
-			logger.Info("Downloading file", zap.String("address", cnf.DemoDataS3URL))
+			metadataClient := client.NewMetadataServiceClient(cnf.Metadata.BaseURL)
+
+			s3Url := cnf.DemoDataS3URL
+			value, err := metadataClient.GetConfigMetadata(&httpclient.Context{
+				UserRole: api.AdminRole,
+			}, models.DemoDataS3URL)
+			if err == nil && len(value.GetValue().(string)) > 0 {
+				s3Url = value.GetValue().(string)
+			} else if err != nil {
+				logger.Error("failed to get demo data s3 url from metadata", zap.Error(err))
+			}
+
+			logger.Info("Downloading file", zap.String("address", s3Url))
 			filePath, err := fetch.DownloadS3Object(cnf.DemoDataS3URL)
 			if err != nil {
 				return err

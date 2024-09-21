@@ -127,6 +127,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v3.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	v3.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
+	v3.GET("/demo/sync", httpserver2.AuthorizeHandler(h.SyncDemo, authApi.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -6323,4 +6324,99 @@ func (h *HttpHandler) ListBenchmarksFilters(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+// SyncDemo godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/compliance/api/v1/demo/sync [get]
+func (h *HttpHandler) SyncDemo(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+
+	enabled, err := h.metadataClient.GetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.MetadataKeyCustomizationEnabled)
+	if err != nil {
+		h.logger.Error("get config metadata", zap.Error(err))
+		return err
+	}
+
+	if !enabled.GetValue().(bool) {
+		return echo.NewHTTPError(http.StatusForbidden, "customization is not allowed")
+	}
+
+	demoDataS3URL := echoCtx.QueryParam("demo_data_s3_url")
+	if demoDataS3URL != "" {
+		// validate url
+		_, err := url.ParseRequestURI(demoDataS3URL)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid url")
+		}
+
+		err = h.metadataClient.SetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.DemoDataS3URL, demoDataS3URL)
+		if err != nil {
+			h.logger.Error("set config metadata", zap.Error(err))
+			return err
+		}
+	}
+
+	currentNamespace, ok := os.LookupEnv("CURRENT_NAMESPACE")
+	if !ok {
+		return errors.New("current namespace lookup failed")
+	}
+
+	var importDemoJob batchv1.Job
+	err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: currentNamespace,
+		Name:      "import-es-demo-data",
+	}, &importDemoJob)
+	if err != nil {
+		return err
+	}
+
+	err = h.kubeClient.Delete(ctx, &importDemoJob)
+	if err != nil {
+		return err
+	}
+
+	for {
+		err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
+			Namespace: currentNamespace,
+			Name:      "import-es-demo-data",
+		}, &importDemoJob)
+		if err != nil {
+			if k8sclient.IgnoreNotFound(err) == nil {
+				break
+			}
+			return err
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	importDemoJob.ObjectMeta = metav1.ObjectMeta{
+		Name:      "import-es-demo-data",
+		Namespace: currentNamespace,
+		Annotations: map[string]string{
+			"helm.sh/hook":        "post-install,post-upgrade",
+			"helm.sh/hook-weight": "0",
+		},
+	}
+	importDemoJob.Spec.Selector = nil
+	importDemoJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
+	importDemoJob.Status = batchv1.JobStatus{}
+
+	err = h.kubeClient.Create(ctx, &importDemoJob)
+	if err != nil {
+		return err
+	}
+
+	return echoCtx.JSON(http.StatusOK, struct{}{})
 }

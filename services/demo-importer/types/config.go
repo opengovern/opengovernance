@@ -8,7 +8,6 @@ type DemoImporterConfig struct {
 	PostgreSQL            config.Postgres
 	ElasticSearch         config.ElasticSearch
 	Metadata              config.KaytuService
-	DemoDataGitURL        string `yaml:"demo_data_git_url"`
 	DemoDataS3URL         string `yaml:"demo_data_s3_url"`
 	GithubToken           string `yaml:"github_token"`
 	PrometheusPushAddress string `yaml:"prometheus_push_address"`

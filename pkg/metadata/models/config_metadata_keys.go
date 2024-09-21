@@ -53,6 +53,7 @@ const (
 	// MetadataKeyDataRetention retention period in days
 	MetadataKeyDataRetention               MetadataKey = "data_retention_duration"
 	MetadataKeyAnalyticsGitURL             MetadataKey = "analytics_git_url"
+	DemoDataS3URL                          MetadataKey = "demo_data_s3_url"
 	MetadataKeyAssetDiscoveryAWSPolicyARNs MetadataKey = "asset_discovery_aws_policy_arns"
 	MetadataKeySpendDiscoveryAWSPolicyARNs MetadataKey = "spend_discovery_aws_policy_arns"
 	MetadataKeyAssetDiscoveryAzureRoleIDs  MetadataKey = "asset_discovery_azure_role_ids"
