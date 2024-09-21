@@ -797,7 +797,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 
 	userId := fmt.Sprintf("dex|%s", req.EmailAddress)
 	if req.Password != nil {
-		dexClient, err := newDexClient("127.0.0.1:5557")
+		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 		}
