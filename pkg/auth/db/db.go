@@ -240,7 +240,7 @@ func (db Database) CreateUser(user *User) error {
 
 func (db Database) DeleteUser(userId string) error {
 	tx := db.Orm.Model(&User{}).
-		Where("user_id", userId).
+		Where("user_id = ?", userId).
 		Delete(&User{})
 	if tx.Error != nil {
 		return tx.Error
@@ -250,7 +250,7 @@ func (db Database) DeleteUser(userId string) error {
 
 func (db Database) DeleteUserWithEmail(emailAddress string) error {
 	tx := db.Orm.Model(&User{}).
-		Where("email", emailAddress).
+		Where("email = ?", emailAddress).
 		Delete(&User{})
 	if tx.Error != nil {
 		return tx.Error
@@ -261,7 +261,7 @@ func (db Database) DeleteUserWithEmail(emailAddress string) error {
 func (db Database) GetUser(userId string) (*User, error) {
 	var s User
 	tx := db.Orm.Model(&User{}).
-		Where("user_id", userId).
+		Where("user_id = ?", userId).
 		Find(&s)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -274,7 +274,7 @@ func (db Database) GetUser(userId string) (*User, error) {
 
 func (db Database) UpdateUserAppMetadata(userId string, metadata pgtype.JSONB) error {
 	tx := db.Orm.Model(&User{}).
-		Where("user_id", userId).
+		Where("user_id = ?", userId).
 		Update("app_metadata", metadata)
 	if tx.Error != nil {
 		return tx.Error
@@ -285,12 +285,23 @@ func (db Database) UpdateUserAppMetadata(userId string, metadata pgtype.JSONB) e
 func (db Database) GetUsersByEmail(email string) ([]User, error) {
 	var s []User
 	tx := db.Orm.Model(&User{}).
-		Where("email", email).
+		Where("email = ?", email).
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return s, nil
+}
+
+func (db Database) GetUserByEmail(email string) (*User, error) {
+	var s User
+	tx := db.Orm.Model(&User{}).
+		Where("email = ?", email).
+		First(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &s, nil
 }
 
 func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
