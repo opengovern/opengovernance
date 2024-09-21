@@ -22,6 +22,7 @@ require (
 	github.com/aws/smithy-go v1.20.4
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
 	github.com/coreos/go-oidc/v3 v3.10.0
+	github.com/dexidp/dex/api/v2 v2.2.0
 	github.com/envoyproxy/go-control-plane v0.12.0
 	github.com/fluxcd/helm-controller/api v1.0.1
 	github.com/go-errors/errors v1.4.2
