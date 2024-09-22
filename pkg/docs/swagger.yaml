@@ -3433,6 +3433,13 @@ definitions:
       triggeredAt:
         type: integer
     type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory'
+        type: array
+    type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.ListCostCompositionResponse:
     properties:
       others:
@@ -3719,6 +3726,15 @@ definitions:
         example: true
         type: boolean
     type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory:
+    properties:
+      category:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2'
+        type: array
+    type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCollection:
     properties:
       connection_count:
@@ -3899,6 +3915,19 @@ definitions:
         type: integer
       totalSuccessfulDescribedConnectionCount:
         type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2:
+    properties:
+      category:
+        type: string
+      provider_name:
+        $ref: '#/definitions/source.Type'
+      resource_id:
+        type: string
+      resource_name:
+        type: string
+      steampipe_table:
+        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.RunQueryByIDRequest:
     properties:
@@ -4374,6 +4403,8 @@ definitions:
       tags:
         additionalProperties: {}
         type: object
+      tier:
+        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_onboard_api.CreateAwsConnectionRequest:
     properties:
@@ -7719,7 +7750,7 @@ paths:
       tags:
       - users
   /auth/api/v3/user/{email_address}/delete:
-    put:
+    delete:
       description: Delete User.
       parameters:
       - description: Request Body
@@ -8409,26 +8440,6 @@ paths:
       security:
       - BearerToken: []
       summary: List controls summaries
-      tags:
-      - compliance
-  /compliance/api/v1/demo/sync:
-    get:
-      consumes:
-      - application/json
-      description: Syncs demo with the git backend.
-      parameters:
-      - description: Demo Data S3 URL
-        in: query
-        name: demo_data_s3_url
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Sync demo
       tags:
       - compliance
   /compliance/api/v1/finding_events:
@@ -9398,6 +9409,29 @@ paths:
       summary: Get findings
       tags:
       - compliance
+  /compliance/api/v3/sample/purge:
+    put:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      parameters:
+      - collectionFormat: csv
+        description: ignore_source_ids
+        in: query
+        items:
+          type: string
+        name: ignore_source_ids
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
   /integration/api/v1/connections/{connectionId}:
     delete:
       description: Deleting a single connection either AWS / Azure for the given connection
@@ -10975,6 +11009,27 @@ paths:
       summary: Get named query by ID
       tags:
       - named_query
+  /inventory/api/v3/query/async/run/:run_id/result:
+    get:
+      description: Run async query run result by run id.
+      parameters:
+      - description: Run ID to get the result for
+        in: path
+        name: run_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse'
+      security:
+      - BearerToken: []
+      summary: Run async query run result by run id
+      tags:
+      - named_query
   /inventory/api/v3/query/run:
     post:
       description: Run provided named query or compliance and returns the result.
@@ -11020,6 +11075,21 @@ paths:
       security:
       - BearerToken: []
       summary: List named queries tags
+      tags:
+      - named_query
+  /inventory/api/v3/resources/categories:
+    get:
+      description: Get list of unique resource categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult'
+      security:
+      - BearerToken: []
+      summary: Get list of unique resource categories
       tags:
       - named_query
   /metadata/api/v1/filter:
@@ -11366,7 +11436,20 @@ paths:
       - connections
   /onboard/api/v1/connector:
     get:
-      description: Returns list of all connectors
+      description: Returns list of all connectors v2
+      parameters:
+      - description: Tier (Community, Enterprise, (default both)
+        in: query
+        name: tier
+        type: string
+      - description: PerPage
+        in: query
+        name: per_page
+        type: integer
+      - description: Cursor
+        in: query
+        name: cursor
+        type: integer
       produces:
       - application/json
       responses:
@@ -11378,7 +11461,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List connectors
+      summary: List connectors v2
       tags:
       - onboard
   /onboard/api/v1/credential:
@@ -11653,27 +11736,6 @@ paths:
       summary: Create connection credentials
       tags:
       - onboard
-  /query/async/run/:run_id/result:
-    get:
-      description: Run async query run result by run id.
-      parameters:
-      - description: Run ID to get the result for
-        in: path
-        name: run_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse'
-      security:
-      - BearerToken: []
-      summary: Run async query run result by run id
-      tags:
-      - named_query
   /schedule/api/v1/analytics/trigger:
     put:
       description: Triggers an analytics job to run immediately
@@ -12394,6 +12456,21 @@ paths:
       summary: List jobs by job type and filters
       tags:
       - scheduler
+  /schedule/api/v3/sample/purge:
+    put:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
   /wastage/api/v1/wastage/aws-rds:
     post:
       description: List wastage in AWS RDS
@@ -12544,6 +12621,41 @@ paths:
       summary: Get workspace limits
       tags:
       - workspace
+  /workspace/api/v3/sample/purge:
+    put:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
+  /workspace/api/v3/sample/sync:
+    put:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
 schemes:
 - https
 securityDefinitions:

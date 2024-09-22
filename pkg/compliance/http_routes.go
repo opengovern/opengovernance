@@ -6338,7 +6338,7 @@ func (h *HttpHandler) ListBenchmarksFilters(echoCtx echo.Context) error {
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
-//	@Param			ignore_source_ids	query		[]string	false	"ignore_source_ids"
+//	@Param			ignore_source_ids	query	[]string	false	"ignore_source_ids"
 //	@Success		200
 //	@Router			/compliance/api/v3/sample/purge [put]
 func (s *HttpHandler) PurgeSampleData(c echo.Context) error {

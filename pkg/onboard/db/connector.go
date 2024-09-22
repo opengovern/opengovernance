@@ -28,3 +28,19 @@ func (db Database) GetConnector(name source.Type) (model.Connector, error) {
 
 	return c, nil
 }
+
+// ListConnectorsTierFiltered gets list of all connectors
+func (db Database) ListConnectorsTierFiltered(tier string) ([]model.Connector, error) {
+	var s []model.Connector
+	tx := db.Orm.Model(&model.Connector{})
+	if tier != "" {
+		tx = tx.Where("tier = ?", tier)
+	}
+	tx = tx.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
