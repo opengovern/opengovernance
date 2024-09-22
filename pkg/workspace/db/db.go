@@ -139,3 +139,7 @@ func (s *Database) UpdateWorkspaceAWSUser(workspaceID string, arn *string) error
 	return s.Orm.Model(&Workspace{}).Where("id = ?", workspaceID).Update("aws_user_arn", arn).Error
 
 }
+
+func (s *Database) WorkspaceSampleDataDeleted(wsName string) error {
+	return s.Orm.Model(&Workspace{}).Where("name = ?", wsName).Update("contain_sample_data", true).Error
+}

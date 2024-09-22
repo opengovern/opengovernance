@@ -94,6 +94,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v2.GET("/sources/:sourceId", httpserver.AuthorizeHandler(h.GetSourceBySourceId, api3.ViewerRole))
 	v2.POST("/sources", httpserver.AuthorizeHandler(h.ListSourcesByFilters, api3.ViewerRole))
 	v2.POST("/source", httpserver.AuthorizeHandler(h.GetSourceByFilters, api3.ViewerRole))
+
+	v3 := r.Group("/api/v3")
+	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.InternalRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -3095,4 +3098,35 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 	result = apiRes
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// PurgeSampleData godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			ignore_source_ids	query		[]string	false	"ignore_source_ids"
+//	@Success		200
+//	@Router			/workspace/api/v3/sample/purge [put]
+func (s HttpHandler) PurgeSampleData(c echo.Context) error {
+
+	ids := httpserver.QueryArrayParam(c, "ignore_source_ids")
+
+	err := s.db.DeleteSourcesNotIn(ids)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete sources")
+	}
+	err = s.db.DeleteCredentials()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete credentials")
+	}
+	err = s.db.DeleteConnectionGroups()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete connection groups")
+	}
+
+	return c.NoContent(http.StatusOK)
 }

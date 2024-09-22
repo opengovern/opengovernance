@@ -27,6 +27,7 @@ type SchedulerServiceClient interface {
 	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
 	GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error)
 	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
+	PurgeSampleData(ctx *httpclient.Context) error
 }
 
 type schedulerClient struct {
@@ -48,6 +49,18 @@ func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*ap
 		return nil, err
 	}
 	return &status, nil
+}
+
+func (s *schedulerClient) PurgeSampleData(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *schedulerClient) GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error) {

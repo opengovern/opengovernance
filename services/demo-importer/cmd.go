@@ -7,8 +7,10 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/open-governance/pkg/metadata/client"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	"github.com/kaytu-io/open-governance/services/demo-importer/fetch"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
@@ -39,6 +41,18 @@ func Command() *cobra.Command {
 			err = os.MkdirAll(types.DemoDataPath, os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("failure creating path: %w", err)
+			}
+			psqlCfg := postgres.Config{
+				Host:    cnf.PostgreSQL.Host,
+				Port:    cnf.PostgreSQL.Port,
+				User:    cnf.PostgreSQL.Username,
+				Passwd:  cnf.PostgreSQL.Password,
+				DB:      cnf.PostgreSQL.DB,
+				SSLMode: cnf.PostgreSQL.SSLMode,
+			}
+			orm, err := postgres.NewClient(&psqlCfg, logger)
+			if err != nil {
+				return fmt.Errorf("new postgres client: %w", err)
 			}
 
 			cfg := opensearchapi.Config{
@@ -106,6 +120,10 @@ func Command() *cobra.Command {
 			err = worker.ImportJob(ctx, logger, es, "/demo-data/es-demo")
 			if err != nil {
 				return fmt.Errorf("failure while importing es indices: %w", err)
+			}
+			err = orm.Model(&db.Workspace{}).Where("name = 'main'").Update("contain_sample_data", true).Error
+			if err != nil {
+				return fmt.Errorf("failure while updating main workspace: %w", err)
 			}
 
 			return nil

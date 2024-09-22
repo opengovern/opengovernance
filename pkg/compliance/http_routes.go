@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -11,18 +12,23 @@ import (
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/open-governance/pkg/analytics/es/resource"
+	"github.com/kaytu-io/open-governance/pkg/analytics/es/spend"
 	"github.com/kaytu-io/open-governance/pkg/compliance/api"
 	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 	"github.com/kaytu-io/open-governance/pkg/compliance/es"
 	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
 	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/open-governance/pkg/demo"
+	es2 "github.com/kaytu-io/open-governance/pkg/describe/es"
 	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/open-governance/pkg/types"
 	"github.com/kaytu-io/open-governance/pkg/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -128,6 +134,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	v3.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
 	v3.GET("/demo/sync", httpserver2.AuthorizeHandler(h.SyncDemo, authApi.AdminRole))
+
+	v3.GET("/sample/purge", httpserver2.AuthorizeHandler(h.PurgeSampleData, authApi.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -6465,4 +6473,67 @@ func (h *HttpHandler) SyncDemo(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, struct{}{})
+}
+
+// PurgeSampleData godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			ignore_source_ids	query		[]string	false	"ignore_source_ids"
+//	@Success		200
+//	@Router			/compliance/api/v3/sample/purge [put]
+func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
+	err := s.db.CleanupAllBenchmarkAssignments()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete benchmark assignments")
+	}
+
+	cfg := opensearchapi.Config{
+		Client: opensearch.Config{
+			Addresses:           []string{s.conf.ElasticSearch.Address},
+			Username:            s.conf.ElasticSearch.Username,
+			Password:            s.conf.ElasticSearch.Password,
+			CompressRequestBody: true,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
+	}
+	esClient, err := opensearchapi.NewClient(cfg)
+	if err != nil || esClient == nil {
+		s.logger.Error("failed to create elasticsearch client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create elasticsearch client")
+	}
+
+	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
+		Indices: []string{"aws_*"},
+	}); err != nil {
+		s.logger.Error("failed to delete aws resources", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete aws resources")
+	}
+	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
+		Indices: []string{"microsoft_*"},
+	}); err != nil {
+		s.logger.Error("failed to delete microsoft resources", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete microsoft resources")
+	}
+	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
+		Indices: []string{kaytuTypes.FindingsIndex, kaytuTypes.FindingEventsIndex, kaytuTypes.ResourceFindingsIndex,
+			kaytuTypes.BenchmarkSummaryIndex, kaytuTypes.QueryRunIndex, es.InventorySummaryIndex,
+			"delete_tasks", resource.AnalyticsConnectorSummaryIndex, resource.AnalyticsConnectionSummaryIndex,
+			spend.AnalyticsSpendConnectorSummaryIndex, spend.AnalyticsSpendConnectionSummaryIndex,
+			resource.AnalyticsRegionSummaryIndex, resource.ResourceCollectionsAnalyticsRegionSummaryIndex,
+			resource.ResourceCollectionsAnalyticsConnectionSummaryIndex, resource.ResourceCollectionsAnalyticsConnectorSummaryIndex},
+	}); err != nil {
+		s.logger.Error("failed to delete findings indices", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete findings indices")
+	}
+
+	return c.NoContent(http.StatusOK)
 }
