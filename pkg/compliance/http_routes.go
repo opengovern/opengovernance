@@ -4632,7 +4632,11 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, req.Root, req.Tags, req.ParentBenchmarkID)
+	isRoot := true
+	if req.Root != nil {
+		isRoot = *req.Root
+	}
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -4656,7 +4660,8 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		}
 
 		var primaryTables, listOfTables []string
-		primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, b.ID)
+		benchmarkTablesCache := make(map[string]BenchmarkTablesCache)
+		primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, b.ID, benchmarkTablesCache)
 		for k, _ := range primaryTablesMap {
 			primaryTables = append(primaryTables, k)
 		}
@@ -4676,7 +4681,9 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 				continue
 			}
 		}
-		controls, err := h.getControlsUnderBenchmark(ctx, b.ID)
+
+		benchmarkControlsCache := make(map[string]BenchmarkControlsCache)
+		controls, err := h.getControlsUnderBenchmark(ctx, b.ID, benchmarkControlsCache)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -4773,7 +4780,8 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	}
 
 	var primaryTables, listOfTables []string
-	primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, benchmark.ID)
+	benchmarkTablesCache := make(map[string]BenchmarkTablesCache)
+	primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, benchmark.ID, benchmarkTablesCache)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -4783,7 +4791,9 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	for k, _ := range listOfTablesMap {
 		listOfTables = append(listOfTables, k)
 	}
-	controls, err := h.getControlsUnderBenchmark(ctx, benchmark.ID)
+
+	benchmarkControlsCache := make(map[string]BenchmarkControlsCache)
+	controls, err := h.getControlsUnderBenchmark(ctx, benchmark.ID, benchmarkControlsCache)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
