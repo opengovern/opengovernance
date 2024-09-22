@@ -96,6 +96,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v2.POST("/source", httpserver.AuthorizeHandler(h.GetSourceByFilters, api3.ViewerRole))
 
 	v3 := r.Group("/api/v3")
+	v3.GET("/connector", httpserver.AuthorizeHandler(h.ListConnectorsV2, api3.ViewerRole))
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.InternalRole))
 }
 
@@ -3108,7 +3109,7 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
-//	@Param			ignore_source_ids	query		[]string	false	"ignore_source_ids"
+//	@Param			ignore_source_ids	query	[]string	false	"ignore_source_ids"
 //	@Success		200
 //	@Router			/workspace/api/v3/sample/purge [put]
 func (s HttpHandler) PurgeSampleData(c echo.Context) error {
@@ -3129,4 +3130,107 @@ func (s HttpHandler) PurgeSampleData(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// ListConnectorsV2 godoc
+//
+//	@Summary		List connectors v2
+//	@Description	Returns list of all connectors v2
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			tier		query		string	false	"Tier (Community, Enterprise, (default both)"
+//	@Param			per_page	query		int		false	"PerPage"
+//	@Param			cursor		query		int		false	"Cursor"
+//	@Success		200			{object}	[]api.ConnectorCount
+//	@Router			/onboard/api/v1/connector [get]
+func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
+	//trace :
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_ListConnectorsV2", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListConnectorsV2")
+	tier := ""
+	if model.Tier(ctx.QueryParam("tier")) == model.Tier_Community || model.Tier(ctx.QueryParam("tier")) == model.Tier_Enterprise {
+		tier = ctx.QueryParam("tier")
+	}
+
+	perPageStr := ctx.QueryParam("per_page")
+	cursorStr := ctx.QueryParam("cursor")
+	var perPage, cursor int64
+	if perPageStr != "" {
+		perPage, _ = strconv.ParseInt(perPageStr, 10, 64)
+	}
+	if cursorStr != "" {
+		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
+	}
+
+	connectors, err := h.db.ListConnectorsTierFiltered(tier)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.End()
+
+	var items []api.ConnectorCount
+
+	//trace :
+	outputS2, span2 := tracer.Start(outputS, "new_CountSourcesOfType(loop)")
+	span2.SetName("new_CountSourcesOfType(loop)")
+
+	for _, c := range connectors {
+		_, span3 := tracer.Start(outputS2, "new_CountSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
+		span3.SetName("new_CountSourcesOfType")
+
+		count, err := h.db.CountSourcesOfType(c.Name)
+		if err != nil {
+			span3.RecordError(err)
+			span3.SetStatus(codes.Error, err.Error())
+			return err
+		}
+		span3.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", string(c.Name)),
+		))
+		span3.End()
+
+		tags := make(map[string]any)
+		err = json.Unmarshal(c.Tags, &tags)
+		if err != nil {
+			return err
+		}
+		items = append(items, api.ConnectorCount{
+			Connector: api.Connector{
+				Name:                c.Name,
+				Label:               c.Label,
+				ShortDescription:    c.ShortDescription,
+				Description:         c.Description,
+				Direction:           c.Direction,
+				Status:              c.Status,
+				Tier:                string(c.Tier),
+				Logo:                c.Logo,
+				AutoOnboardSupport:  c.AutoOnboardSupport,
+				AllowNewConnections: c.AllowNewConnections,
+				MaxConnectionLimit:  c.MaxConnectionLimit,
+				Tags:                tags,
+			},
+			ConnectionCount: count,
+		})
+	}
+	totalCount := len(items)
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Label < items[j].Label
+	})
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+
+	span2.End()
+	return ctx.JSON(http.StatusOK, api.ListConnectorsV2Response{
+		Connectors: items,
+		TotalCount: int64(totalCount),
+	})
 }

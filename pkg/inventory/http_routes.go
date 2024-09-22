@@ -3408,7 +3408,7 @@ func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 //	@Tags			named_query
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200		{object}	inventoryApi.GetResourceCategoriesResult
+//	@Success		200	{object}	inventoryApi.GetResourceCategoriesResult
 //	@Router			/inventory/api/v3/resources/categories [get]
 func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 	categories, err := h.db.ListResourceTypesUniqueCategories()

@@ -462,7 +462,7 @@ const docTemplate = `{
             }
         },
         "/auth/api/v3/user/{email_address}/delete": {
-            "put": {
+            "delete": {
                 "security": [
                     {
                         "BearerToken": []
@@ -1453,39 +1453,6 @@ const docTemplate = `{
                                 "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ControlTrendDatapoint"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/demo/sync": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Syncs demo with the git backend.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Sync demo",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Demo Data S3 URL",
-                        "name": "demo_data_s3_url",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }
@@ -2990,6 +2957,43 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetFindingsResponse"
                         }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/sample/purge": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns all workspaces with owner id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "List all workspaces with owner id",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ignore_source_ids",
+                        "name": "ignore_source_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -5347,6 +5351,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v3/query/async/run/:run_id/result": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Run async query run result by run id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Run async query run result by run id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Run ID to get the result for",
+                        "name": "run_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v3/query/run": {
             "post": {
                 "security": [
@@ -5451,6 +5489,31 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItemV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v3/resources/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of unique resource categories",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Get list of unique resource categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult"
                         }
                     }
                 }
@@ -5999,14 +6062,34 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns list of all connectors",
+                "description": "Returns list of all connectors v2",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "List connectors",
+                "summary": "List connectors v2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tier (Community, Enterprise, (default both)",
+                        "name": "tier",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "PerPage",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6445,40 +6528,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_onboard_api_v2.CreateCredentialV2Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/query/async/run/:run_id/result": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Run async query run result by run id.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "named_query"
-                ],
-                "summary": "Run async query run result by run id",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Run ID to get the result for",
-                        "name": "run_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetAsyncQueryRunResultResponse"
                         }
                     }
                 }
@@ -7638,6 +7687,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v3/sample/purge": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns all workspaces with owner id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "List all workspaces with owner id",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/wastage/api/v1/wastage/aws-rds": {
             "post": {
                 "security": [
@@ -7879,6 +7953,64 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.WorkspaceLimitsUsage"
                         }
+                    }
+                }
+            }
+        },
+        "/workspace/api/v3/sample/purge": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns all workspaces with owner id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "List all workspaces with owner id",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/workspace/api/v3/sample/sync": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Syncs demo with the git backend.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Sync demo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Demo Data S3 URL",
+                        "name": "demo_data_s3_url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -12952,6 +13084,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_inventory_api.ListCostCompositionResponse": {
             "type": "object",
             "properties": {
@@ -13362,6 +13505,20 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCollection": {
             "type": "object",
             "properties": {
@@ -13618,6 +13775,26 @@ const docTemplate = `{
                 },
                 "totalSuccessfulDescribedConnectionCount": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "provider_name": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "resource_id": {
+                    "type": "string"
+                },
+                "resource_name": {
+                    "type": "string"
+                },
+                "steampipe_table": {
+                    "type": "string"
                 }
             }
         },
@@ -14269,6 +14446,9 @@ const docTemplate = `{
                 "tags": {
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "tier": {
+                    "type": "string"
                 }
             }
         },
