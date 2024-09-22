@@ -22,6 +22,14 @@ type ResourceType struct {
 	Attributes      []string `json:"attributes"`                   // List supported steampipe Attributes (columns) for this resource type - Metadata (GET only)
 }
 
+type ResourceTypeV2 struct {
+	ProviderName   source.Type `json:"provider_name"`
+	ResourceName   string      `json:"resource_name"`
+	ResourceID     string      `json:"resource_id"`
+	SteampipeTable string      `json:"steampipe_table"`
+	Category       string      `json:"category"`
+}
+
 type ListResourceTypeMetadataResponse struct {
 	TotalResourceTypeCount int            `json:"total_resource_type_count" example:"100" minimum:"0"`
 	ResourceTypes          []ResourceType `json:"resource_types"`
