@@ -83,3 +83,11 @@ func (db Database) UpdateCheckupJobsTimedOut(checkupIntervalHours int64) error {
 
 	return nil
 }
+
+func (db Database) CleanupAllCheckupJobs() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.CheckupJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

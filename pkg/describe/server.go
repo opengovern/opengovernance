@@ -102,6 +102,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
 	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.ViewerRole))
 	v3.GET("/jobs/interval", httpserver.AuthorizeHandler(h.ListJobsInterval, apiAuth.ViewerRole))
+	v3.GET("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, apiAuth.AdminRole))
 }
 
 // ListJobs godoc
@@ -3277,4 +3278,47 @@ func (h *HttpServer) RunQuery(ctx echo.Context) error {
 		Status:    job.Status,
 	}
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// PurgeSampleData godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v3/sample/purge [put]
+func (s *HttpServer) PurgeSampleData(c echo.Context) error {
+	err := s.DB.CleanupAllDescribeConnectionJobs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete describe connection jobs")
+	}
+	err = s.DB.CleanupAllQueryRunnerJobs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete query runner jobs")
+	}
+	err = s.DB.CleanupAllComplianceJobs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance jobs")
+	}
+	err = s.DB.CleanupAllComplianceSummarizerJobs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance summarizer jobs")
+	}
+	err = s.DB.CleanupAllComplianceRunners()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance runners")
+	}
+	err = s.DB.CleanupAllCheckupJobs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete checkup jobs")
+	}
+	err = s.DB.CleanupAllAnalyticsJobs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete analytics jobs")
+	}
+
+	return c.NoContent(http.StatusOK)
 }

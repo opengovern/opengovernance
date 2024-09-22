@@ -337,3 +337,11 @@ func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkI
 
 	return jobs, nil
 }
+
+func (db Database) CleanupAllComplianceJobs() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.ComplianceJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

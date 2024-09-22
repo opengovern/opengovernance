@@ -732,3 +732,11 @@ func (db Database) CountJobsAndResources() (*int64, *int64, error) {
 	}
 	return count, sum, nil
 }
+
+func (db Database) CleanupAllDescribeConnectionJobs() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.DescribeConnectionJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

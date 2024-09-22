@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	api5 "github.com/kaytu-io/open-governance/pkg/analytics/api"
+	client4 "github.com/kaytu-io/open-governance/pkg/compliance/client"
 	api3 "github.com/kaytu-io/open-governance/pkg/describe/api"
 	client3 "github.com/kaytu-io/open-governance/pkg/describe/client"
 	"github.com/kaytu-io/open-governance/pkg/workspace/config"
@@ -172,6 +173,9 @@ func (s *Server) Register(e *echo.Echo) {
 	costEstimatorGroup := v1Group.Group("/costestimator")
 	costEstimatorGroup.GET("/aws", httpserver2.AuthorizeHandler(s.GetAwsCost, api2.ViewerRole))
 	costEstimatorGroup.GET("/azure", httpserver2.AuthorizeHandler(s.GetAzureCost, api2.ViewerRole))
+
+	v3 := e.Group("/api/v3")
+	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(s.PurgeSampleData, api2.AdminRole))
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -676,4 +680,53 @@ func (s *Server) DeleteOrganization(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusAccepted)
+}
+
+// PurgeSampleData godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/sample/purge [put]
+func (s *Server) PurgeSampleData(c echo.Context) error {
+	wsName := httpserver2.GetWorkspaceName(c)
+	ctx := &httpclient.Context{UserRole: api2.InternalRole}
+
+	ws, err := s.db.GetWorkspaceByName(wsName)
+	if err != nil {
+		s.logger.Error("failed to get workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
+	if ws.ContainSampleData == false {
+		return echo.NewHTTPError(http.StatusNotFound, "Workspace does not contain sample data")
+	}
+
+	schedulerURL := strings.ReplaceAll(s.cfg.Scheduler.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
+	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
+
+	complianceURL := strings.ReplaceAll(s.cfg.Compliance.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
+	complianceClient := client4.NewComplianceClient(complianceURL)
+
+	err = schedulerClient.PurgeSampleData(ctx)
+	if err != nil {
+		s.logger.Error("failed to purge scheduler data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge onboard data")
+	}
+	err = complianceClient.PurgeSampleData(ctx)
+	if err != nil {
+		s.logger.Error("failed to purge compliance data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge onboard data")
+	}
+
+	err = s.db.WorkspaceSampleDataDeleted(wsName)
+	if err != nil {
+		s.logger.Error("failed to update workspace sample data check", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
+	}
+
+	return c.NoContent(http.StatusOK)
 }

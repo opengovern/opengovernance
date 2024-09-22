@@ -21,3 +21,15 @@ func (db Database) GetConnectionGroupByName(name string) (*model.ConnectionGroup
 	}
 	return &cg, nil
 }
+
+func (db Database) DeleteConnectionGroups() error {
+	tx := db.Orm.
+		Where("1 = 1").
+		Unscoped().
+		Delete(&model.ConnectionGroup{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}

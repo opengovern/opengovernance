@@ -130,3 +130,11 @@ func (db Database) ListQueryRunnerJobForInterval(interval string) ([]model.Query
 	}
 	return job, nil
 }
+
+func (db Database) CleanupAllQueryRunnerJobs() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.QueryRunnerJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

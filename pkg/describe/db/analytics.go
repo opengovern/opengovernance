@@ -182,3 +182,11 @@ func (db Database) UpdateAnalyticsJob(jobID uint, status api.JobStatus, failedMe
 	}
 	return nil
 }
+
+func (db Database) CleanupAllAnalyticsJobs() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.AnalyticsJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

@@ -654,6 +654,14 @@ func (db Database) GetQueriesIdAndConnector(ctx context.Context, queryIDs []stri
 
 // =========== BenchmarkAssignment ===========
 
+func (db Database) CleanupAllBenchmarkAssignments() error {
+	tx := db.Orm.Where("1 = 1").Unscoped().Delete(&BenchmarkAssignment{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
 func (db Database) AddBenchmarkAssignment(ctx context.Context, assignment *BenchmarkAssignment) error {
 	tx := db.Orm.WithContext(ctx).Where(BenchmarkAssignment{
 		BenchmarkId:  assignment.BenchmarkId,

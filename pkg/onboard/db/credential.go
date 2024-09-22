@@ -94,3 +94,15 @@ func (db Database) DeleteCredentialByID(id uuid.UUID) error {
 
 	return nil
 }
+
+func (db Database) DeleteCredentials() error {
+	tx := db.Orm.
+		Where("1 = 1").
+		Unscoped().
+		Delete(&model.Credential{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
