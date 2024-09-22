@@ -69,3 +69,12 @@ type RegionsResourceCountResponse struct {
 type AnalyticsCategoriesResponse struct {
 	CategoryResourceType map[string][]string `json:"categoryResourceType"`
 }
+
+type ResourceCategory struct {
+	Category  string           `json:"category"`
+	Resources []ResourceTypeV2 `json:"resources"`
+}
+
+type GetResourceCategoriesResult struct {
+	Categories []ResourceCategory `json:"categories"`
+}

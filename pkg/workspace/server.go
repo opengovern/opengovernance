@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -751,7 +750,7 @@ func (s *Server) PurgeSampleData(c echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
-//	@Router			/workspace/api/v3/sample/sync [get]
+//	@Router			/workspace/api/v3/sample/sync [put]
 func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -783,16 +782,11 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		}
 	}
 
-	currentNamespace, ok := os.LookupEnv("CURRENT_NAMESPACE")
-	if !ok {
-		return errors.New("current namespace lookup failed")
-	}
-
 	fmt.Println("here1")
 
 	var importDemoJob batchv1.Job
 	err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: currentNamespace,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 		Name:      "import-es-demo-data",
 	}, &importDemoJob)
 	if err != nil {
@@ -807,7 +801,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 	for {
 		err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
-			Namespace: currentNamespace,
+			Namespace: s.cfg.KaytuOctopusNamespace,
 			Name:      "import-es-demo-data",
 		}, &importDemoJob)
 		if err != nil {
@@ -823,7 +817,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 	importDemoJob.ObjectMeta = metav1.ObjectMeta{
 		Name:      "import-es-demo-data",
-		Namespace: currentNamespace,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 		Annotations: map[string]string{
 			"helm.sh/hook":        "post-install,post-upgrade",
 			"helm.sh/hook-weight": "0",
@@ -842,7 +836,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 	var importDemoDbJob batchv1.Job
 	err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: currentNamespace,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 		Name:      "import-psql-demo-data",
 	}, &importDemoDbJob)
 	if err != nil {
@@ -858,7 +852,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 	for {
 		err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
-			Namespace: currentNamespace,
+			Namespace: s.cfg.KaytuOctopusNamespace,
 			Name:      "import-psql-demo-data",
 		}, &importDemoDbJob)
 		if err != nil {
@@ -874,7 +868,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 	importDemoDbJob.ObjectMeta = metav1.ObjectMeta{
 		Name:      "import-psql-demo-data",
-		Namespace: currentNamespace,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 		Annotations: map[string]string{
 			"helm.sh/hook":        "post-install,post-upgrade",
 			"helm.sh/hook-weight": "0",

@@ -988,7 +988,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			email_address	path	string	true	"Request Body"
 //	@Success		200
-//	@Router			/auth/api/v3/user/{email_address}/delete [put]
+//	@Router			/auth/api/v3/user/{email_address}/delete [delete]
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 	emailAddress := ctx.Param("email_address")
 	if emailAddress == "" {
