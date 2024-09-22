@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
