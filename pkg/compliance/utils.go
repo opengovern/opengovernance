@@ -64,8 +64,12 @@ func (h *HttpHandler) getBenchmarkFindingSummary(ctx context.Context, benchmarkI
 	return &findingsResult, nil
 }
 
+type BenchmarkControlsCache struct {
+	Controls map[string]bool
+}
+
 // getControlsUnderBenchmark ctx context.Context, benchmarkId string -> primaryTables, listOfTables, error
-func (h *HttpHandler) getControlsUnderBenchmark(ctx context.Context, benchmarkId string) (map[string]bool, error) {
+func (h *HttpHandler) getControlsUnderBenchmark(ctx context.Context, benchmarkId string, benchmarksCache map[string]BenchmarkControlsCache) (map[string]bool, error) {
 	controls := make(map[string]bool)
 
 	benchmark, err := h.db.GetBenchmarkWithControlQueries(ctx, benchmarkId)
@@ -78,9 +82,15 @@ func (h *HttpHandler) getControlsUnderBenchmark(ctx context.Context, benchmarkId
 	}
 
 	for _, child := range benchmark.Children {
-		childControls, err := h.getControlsUnderBenchmark(ctx, child.ID)
-		if err != nil {
-			return nil, err
+		var childControls map[string]bool
+		if cache, ok := benchmarksCache[child.ID]; ok {
+			childControls = cache.Controls
+		} else {
+			childControls, err = h.getControlsUnderBenchmark(ctx, child.ID, benchmarksCache)
+			if err != nil {
+				return nil, err
+			}
+			benchmarksCache[child.ID] = BenchmarkControlsCache{Controls: childControls}
 		}
 		for k, _ := range childControls {
 			controls[k] = true
@@ -89,8 +99,13 @@ func (h *HttpHandler) getControlsUnderBenchmark(ctx context.Context, benchmarkId
 	return controls, nil
 }
 
+type BenchmarkTablesCache struct {
+	PrimaryTables map[string]bool
+	ListTables    map[string]bool
+}
+
 // getTablesUnderBenchmark ctx context.Context, benchmarkId string -> primaryTables, listOfTables, error
-func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId string) (map[string]bool, map[string]bool, error) {
+func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId string, benchmarkCache map[string]BenchmarkTablesCache) (map[string]bool, map[string]bool, error) {
 	primaryTables := make(map[string]bool)
 	listOfTables := make(map[string]bool)
 
@@ -114,10 +129,21 @@ func (h *HttpHandler) getTablesUnderBenchmark(ctx context.Context, benchmarkId s
 	}
 
 	for _, child := range benchmark.Children {
-		childPrimaryTables, childListOfTables, err := h.getTablesUnderBenchmark(ctx, child.ID)
-		if err != nil {
-			return nil, nil, err
+		var childPrimaryTables, childListOfTables map[string]bool
+		if cache, ok := benchmarkCache[child.ID]; ok {
+			childPrimaryTables = cache.PrimaryTables
+			childListOfTables = cache.ListTables
+		} else {
+			childPrimaryTables, childListOfTables, err = h.getTablesUnderBenchmark(ctx, child.ID, benchmarkCache)
+			if err != nil {
+				return nil, nil, err
+			}
+			benchmarkCache[child.ID] = BenchmarkTablesCache{
+				PrimaryTables: childPrimaryTables,
+				ListTables:    childListOfTables,
+			}
 		}
+
 		for k, _ := range childPrimaryTables {
 			primaryTables[k] = true
 		}
