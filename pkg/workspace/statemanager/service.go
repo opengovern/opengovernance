@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -14,6 +15,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/workspace/transactions"
 	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"runtime/debug"
@@ -163,6 +165,12 @@ func (s *Service) StartReconciler(ctx context.Context) {
 func NewKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := helmv2.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := v1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	kubeClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
