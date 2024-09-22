@@ -884,6 +884,12 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		return err
 	}
 	fmt.Println("here10")
+	wsName := httpserver2.GetWorkspaceName(echoCtx)
+	err = s.db.WorkspaceSampleDataSynced(wsName)
+	if err != nil {
+		s.logger.Error("failed to update workspace sample data check", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
+	}
 
 	return echoCtx.JSON(http.StatusOK, struct{}{})
 }
