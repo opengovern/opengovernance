@@ -115,6 +115,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 	v3.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
 	v3.GET("/query/async/run/:run_id/result", httpserver.AuthorizeHandler(h.GetAsyncQueryRunResult, api.ViewerRole))
+	v3.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetResourceCategories, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -3358,7 +3359,7 @@ func (h *HttpHandler) ListQueriesFilters(echoCtx echo.Context) error {
 //	@Produce		json
 //	@Param			run_id	path		string	true	"Run ID to get the result for"
 //	@Success		200		{object}	inventoryApi.GetAsyncQueryRunResultResponse
-//	@Router			/query/async/run/:run_id/result [get]
+//	@Router			/inventory/api/v3/query/async/run/:run_id/result [get]
 func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 	runId := ctx.Param("run_id")
 	// tracer :
@@ -3396,5 +3397,44 @@ func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 	}
 
 	span.End()
+	return ctx.JSON(200, resp)
+}
+
+// GetResourceCategories godoc
+//
+//	@Summary		Get list of unique resource categories
+//	@Description	Get list of unique resource categories
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200		{object}	inventoryApi.GetResourceCategoriesResult
+//	@Router			/inventory/api/v3/resources/categories [get]
+func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
+	categories, err := h.db.ListResourceTypesUniqueCategories()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
+	}
+
+	var categoriesApi []inventoryApi.ResourceCategory
+	for _, c := range categories {
+		resourceTypes, err := h.db.ListCategoryResourceTypes(c)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "list category resource types")
+		}
+		var resourceTypesApi []inventoryApi.ResourceTypeV2
+		for _, r := range resourceTypes {
+			resourceTypesApi = append(resourceTypesApi, r.ToApi())
+		}
+		categoriesApi = append(categoriesApi, inventoryApi.ResourceCategory{
+			Category:  c,
+			Resources: resourceTypesApi,
+		})
+	}
+
+	resp := inventoryApi.GetResourceCategoriesResult{
+		Categories: categoriesApi,
+	}
+
 	return ctx.JSON(200, resp)
 }

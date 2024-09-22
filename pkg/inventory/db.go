@@ -350,3 +350,31 @@ func (db Database) ListNamedQueriesUniqueProviders() ([]string, error) {
 
 	return connectors, nil
 }
+
+func (db Database) ListResourceTypesUniqueCategories() ([]string, error) {
+	var connectors []string
+
+	tx := db.orm.
+		Model(&ResourceTypeV2{}).
+		Select("DISTINCT category").
+		Scan(&connectors)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return connectors, nil
+}
+
+func (db Database) ListCategoryResourceTypes(category string) ([]ResourceTypeV2, error) {
+	var resourceTypes []ResourceTypeV2
+
+	tx := db.orm.
+		Model(&ResourceTypeV2{}).
+		Where("category = ?", category).
+		Find(&resourceTypes)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return resourceTypes, nil
+}
