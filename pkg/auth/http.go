@@ -783,7 +783,7 @@ func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
-//	@Param			request	body		api.CreateUserRequest	true	"Request Body"
+//	@Param			request	body	api.CreateUserRequest	true	"Request Body"
 //	@Success		200
 //	@Router			/auth/api/v3/user/create [post]
 func (r *httpRoutes) CreateUser(ctx echo.Context) error {
@@ -895,7 +895,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
-//	@Param			request	body		api.UpdateUserRequest	true	"Request Body"
+//	@Param			request	body	api.UpdateUserRequest	true	"Request Body"
 //	@Success		200
 //	@Router			/auth/api/v3/user/update [post]
 func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
@@ -986,7 +986,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
-//	@Param			email_address	path		string	true	"Request Body"
+//	@Param			email_address	path	string	true	"Request Body"
 //	@Success		200
 //	@Router			/auth/api/v3/user/{email_address}/delete [put]
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {

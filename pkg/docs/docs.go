@@ -395,6 +395,103 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/api/v3/user/create": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Creates User.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Create User",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_auth_api.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/auth/api/v3/user/update": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Updates User.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Update User",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_auth_api.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/auth/api/v3/user/{email_address}/delete": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Delete User.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Delete User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request Body",
+                        "name": "email_address",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/ai/control/{controlID}/remediation": {
             "post": {
                 "security": [
@@ -1356,6 +1453,39 @@ const docTemplate = `{
                                 "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ControlTrendDatapoint"
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/demo/sync": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Syncs demo with the git backend.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Sync demo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Demo Data S3 URL",
+                        "name": "demo_data_s3_url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -7502,10 +7632,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListJobsByTypeItem"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.RunQueryResponse"
                         }
                     }
                 }
@@ -7977,6 +8104,30 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_auth_api.CreateUserRequest": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Role"
+                        }
+                    ],
+                    "example": "admin"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_auth_api.GetMeResponse": {
             "type": "object",
             "properties": {
@@ -8293,6 +8444,30 @@ const docTemplate = `{
                 "Theme_Light",
                 "Theme_Dark"
             ]
+        },
+        "github_com_kaytu-io_open-governance_pkg_auth_api.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Role"
+                        }
+                    ],
+                    "example": "admin"
+                }
+            }
         },
         "github_com_kaytu-io_open-governance_pkg_auth_api.UserRoleBinding": {
             "type": "object",
@@ -12502,6 +12677,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_describe_api.RunQueryResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "query_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_query-runner.QueryRunnerStatus"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_inventory_api.AnalyticsCategoriesResponse": {
             "type": "object",
             "properties": {
@@ -13684,6 +13879,7 @@ const docTemplate = `{
                 "compliance_job_interval",
                 "data_retention_duration",
                 "analytics_git_url",
+                "demo_data_s3_url",
                 "asset_discovery_aws_policy_arns",
                 "spend_discovery_aws_policy_arns",
                 "asset_discovery_azure_role_ids",
@@ -13723,6 +13919,7 @@ const docTemplate = `{
                 "MetadataKeyComplianceJobInterval",
                 "MetadataKeyDataRetention",
                 "MetadataKeyAnalyticsGitURL",
+                "DemoDataS3URL",
                 "MetadataKeyAssetDiscoveryAWSPolicyARNs",
                 "MetadataKeySpendDiscoveryAWSPolicyARNs",
                 "MetadataKeyAssetDiscoveryAzureRoleIDs",
