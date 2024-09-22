@@ -183,6 +183,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v3 := e.Group("/api/v3")
 	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(s.PurgeSampleData, api2.AdminRole))
 	v3.PUT("/sample/sync", httpserver2.AuthorizeHandler(s.SyncDemo, api2.AdminRole))
+	v3.PUT("/sample/loaded", httpserver2.AuthorizeHandler(s.WorkspaceLoadedSampleData, api2.ViewerRole))
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -782,8 +783,6 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		}
 	}
 
-	fmt.Println("here1")
-
 	var importDemoJob batchv1.Job
 	err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
 		Namespace: s.cfg.KaytuOctopusNamespace,
@@ -797,7 +796,6 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("here2")
 
 	for {
 		err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
@@ -813,7 +811,6 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 		time.Sleep(1 * time.Second)
 	}
-	fmt.Println("here3")
 
 	importDemoJob.ObjectMeta = metav1.ObjectMeta{
 		Name:      "import-es-demo-data",
@@ -826,13 +823,11 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	importDemoJob.Spec.Selector = nil
 	importDemoJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	importDemoJob.Status = batchv1.JobStatus{}
-	fmt.Println("here4")
 
 	err = s.kubeClient.Create(ctx, &importDemoJob)
 	if err != nil {
 		return err
 	}
-	fmt.Println("here5")
 
 	var importDemoDbJob batchv1.Job
 	err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
@@ -842,13 +837,11 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("here6")
 
 	err = s.kubeClient.Delete(ctx, &importDemoDbJob)
 	if err != nil {
 		return err
 	}
-	fmt.Println("here7")
 
 	for {
 		err = s.kubeClient.Get(ctx, k8sclient.ObjectKey{
@@ -864,7 +857,6 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 		time.Sleep(1 * time.Second)
 	}
-	fmt.Println("here8")
 
 	importDemoDbJob.ObjectMeta = metav1.ObjectMeta{
 		Name:      "import-psql-demo-data",
@@ -877,13 +869,11 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	importDemoDbJob.Spec.Selector = nil
 	importDemoDbJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	importDemoDbJob.Status = batchv1.JobStatus{}
-	fmt.Println("here9")
 
 	err = s.kubeClient.Create(ctx, &importDemoDbJob)
 	if err != nil {
 		return err
 	}
-	fmt.Println("here10")
 	wsName := httpserver2.GetWorkspaceName(echoCtx)
 	err = s.db.WorkspaceSampleDataSynced(wsName)
 	if err != nil {
@@ -892,4 +882,33 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, struct{}{})
+}
+
+// WorkspaceLoadedSampleData godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/sample/loaded [put]
+func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
+	wsName := httpserver2.GetWorkspaceName(echoCtx)
+
+	ws, err := s.db.GetWorkspaceByName(wsName)
+	if err != nil {
+		s.logger.Error("failed to get workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
+
+	if ws.ContainSampleData {
+		return echoCtx.String(http.StatusOK, "True")
+	} else {
+		return echoCtx.String(http.StatusOK, "False")
+	}
 }
