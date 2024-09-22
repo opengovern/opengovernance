@@ -157,6 +157,21 @@ definitions:
         description: Token of the key
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_auth_api.CreateUserRequest:
+    properties:
+      email_address:
+        type: string
+      password:
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
+    type: object
   github_com_kaytu-io_open-governance_pkg_auth_api.GetMeResponse:
     properties:
       blocked:
@@ -380,6 +395,21 @@ definitions:
     - Theme_System
     - Theme_Light
     - Theme_Dark
+  github_com_kaytu-io_open-governance_pkg_auth_api.UpdateUserRequest:
+    properties:
+      email_address:
+        type: string
+      password:
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/api.Role'
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
+    type: object
   github_com_kaytu-io_open-governance_pkg_auth_api.UserRoleBinding:
     properties:
       roleName:
@@ -3218,6 +3248,19 @@ definitions:
       status:
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.RunQueryResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: integer
+      query_id:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_query-runner.QueryRunnerStatus'
+    type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.AnalyticsCategoriesResponse:
     properties:
       categoryResourceType:
@@ -4044,6 +4087,7 @@ definitions:
     - compliance_job_interval
     - data_retention_duration
     - analytics_git_url
+    - demo_data_s3_url
     - asset_discovery_aws_policy_arns
     - spend_discovery_aws_policy_arns
     - asset_discovery_azure_role_ids
@@ -4083,6 +4127,7 @@ definitions:
     - MetadataKeyComplianceJobInterval
     - MetadataKeyDataRetention
     - MetadataKeyAnalyticsGitURL
+    - DemoDataS3URL
     - MetadataKeyAssetDiscoveryAWSPolicyARNs
     - MetadataKeySpendDiscoveryAWSPolicyARNs
     - MetadataKeyAssetDiscoveryAzureRoleIDs
@@ -7673,6 +7718,65 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
+  /auth/api/v3/user/{email_address}/delete:
+    put:
+      description: Delete User.
+      parameters:
+      - description: Request Body
+        in: path
+        name: email_address
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Delete User
+      tags:
+      - keys
+  /auth/api/v3/user/create:
+    post:
+      description: Creates User.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_auth_api.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Create User
+      tags:
+      - keys
+  /auth/api/v3/user/update:
+    post:
+      description: Updates User.
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_auth_api.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Update User
+      tags:
+      - keys
   /compliance/api/v1/ai/control/{controlID}/remediation:
     post:
       consumes:
@@ -8305,6 +8409,26 @@ paths:
       security:
       - BearerToken: []
       summary: List controls summaries
+      tags:
+      - compliance
+  /compliance/api/v1/demo/sync:
+    get:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
       tags:
       - compliance
   /compliance/api/v1/finding_events:
@@ -12264,9 +12388,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListJobsByTypeItem'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.RunQueryResponse'
       security:
       - BearerToken: []
       summary: List jobs by job type and filters
