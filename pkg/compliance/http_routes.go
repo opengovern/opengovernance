@@ -12,8 +12,6 @@ import (
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/analytics/es/resource"
-	"github.com/kaytu-io/open-governance/pkg/analytics/es/spend"
 	"github.com/kaytu-io/open-governance/pkg/compliance/api"
 	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 	"github.com/kaytu-io/open-governance/pkg/compliance/es"
@@ -6381,12 +6379,7 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete microsoft resources")
 	}
 	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
-		Indices: []string{kaytuTypes.FindingsIndex, kaytuTypes.FindingEventsIndex, kaytuTypes.ResourceFindingsIndex,
-			kaytuTypes.BenchmarkSummaryIndex, kaytuTypes.QueryRunIndex, es.InventorySummaryIndex,
-			"delete_tasks", resource.AnalyticsConnectorSummaryIndex, resource.AnalyticsConnectionSummaryIndex,
-			spend.AnalyticsSpendConnectorSummaryIndex, spend.AnalyticsSpendConnectionSummaryIndex,
-			resource.AnalyticsRegionSummaryIndex, resource.ResourceCollectionsAnalyticsRegionSummaryIndex,
-			resource.ResourceCollectionsAnalyticsConnectionSummaryIndex, resource.ResourceCollectionsAnalyticsConnectorSummaryIndex},
+		Indices: []string{"*,-.*"},
 	}); err != nil {
 		s.logger.Error("failed to delete findings indices", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete findings indices")
