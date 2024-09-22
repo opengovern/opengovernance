@@ -12,6 +12,7 @@ type Config struct {
 	Onboard    koanf.KaytuService `yaml:"onboard" koanf:"onboard"`
 	Scheduler  koanf.KaytuService `yaml:"scheduler" koanf:"scheduler"`
 	Compliance koanf.KaytuService `yaml:"compliance" koanf:"compliance"`
+	Metadata   koanf.KaytuService `yaml:"metadata" koanf:"metadata"`
 	Inventory  koanf.KaytuService `yaml:"inventory" koanf:"inventory"`
 
 	Vault vault.Config `yaml:"vault" koanf:"vault"`
