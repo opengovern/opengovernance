@@ -47,7 +47,7 @@ func Command() *cobra.Command {
 				Port:    cnf.PostgreSQL.Port,
 				User:    cnf.PostgreSQL.Username,
 				Passwd:  cnf.PostgreSQL.Password,
-				DB:      cnf.PostgreSQL.DB,
+				DB:      "workspace",
 				SSLMode: cnf.PostgreSQL.SSLMode,
 			}
 			orm, err := postgres.NewClient(&psqlCfg, logger)
@@ -121,6 +121,14 @@ func Command() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failure while importing es indices: %w", err)
 			}
+
+			var workspaces []db.Workspace
+			err = orm.Model(&db.Workspace{}).Find(&workspaces).Error
+			if err != nil {
+				return fmt.Errorf("failure while getting workspaces: %w", err)
+			}
+			fmt.Println("Workspaces: ", workspaces)
+
 			err = orm.Model(&db.Workspace{}).Where("name = 'main'").Update("contain_sample_data", true).Error
 			if err != nil {
 				return fmt.Errorf("failure while updating main workspace: %w", err)
