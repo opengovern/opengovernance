@@ -216,3 +216,22 @@ func (r ResourceCollection) GetTagsMap() map[string][]string {
 	}
 	return r.tagsMap
 }
+
+type ResourceTypeV2 struct {
+	ProviderName   source.Type `gorm:"column:provider_name"`
+	ResourceName   string      `gorm:"column:resource_name"`
+	ResourceID     string      `gorm:"primaryKey"`
+	SteampipeTable string      `gorm:"column:steampipe_table"`
+	Category       string      `gorm:"column:category"`
+}
+
+func (r ResourceTypeV2) ToApi() api.ResourceTypeV2 {
+	apiResourceType := api.ResourceTypeV2{
+		ProviderName:   r.ProviderName,
+		ResourceName:   r.ResourceName,
+		ResourceID:     r.ResourceID,
+		SteampipeTable: r.SteampipeTable,
+		Category:       r.Category,
+	}
+	return apiResourceType
+}

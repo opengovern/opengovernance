@@ -35,6 +35,7 @@ func (db Database) Initialize() error {
 		&analyticsDb.MetricTag{},
 		&ResourceCollection{},
 		&ResourceCollectionTag{},
+		&ResourceTypeV2{},
 	)
 	if err != nil {
 		return err
