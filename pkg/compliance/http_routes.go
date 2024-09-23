@@ -3,6 +3,7 @@ package compliance
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -4636,7 +4637,11 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	if req.Root != nil {
 		isRoot = *req.Root
 	}
-	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID)
+	assigned := true
+	if req.Assigned != nil {
+		assigned = *req.Assigned
+	}
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, assigned)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -4659,15 +4664,19 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 			}
 		}
 
-		var primaryTables, listOfTables []string
-		benchmarkTablesCache := make(map[string]BenchmarkTablesCache)
-		primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, b.ID, benchmarkTablesCache)
-		for k, _ := range primaryTablesMap {
-			primaryTables = append(primaryTables, k)
+		metadata := db.BenchmarkMetadata{}
+
+		if len(b.Metadata.Bytes) > 0 {
+			err := json.Unmarshal(b.Metadata.Bytes, &metadata)
+			if err != nil {
+				h.logger.Error("failed to unmarshal metadata", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
 		}
-		for k, _ := range listOfTablesMap {
-			listOfTables = append(listOfTables, k)
-		}
+
+		primaryTables := metadata.PrimaryTables
+		listOfTables := metadata.ListOfTables
+
 		if err != nil {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
@@ -4681,34 +4690,29 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 				continue
 			}
 		}
-
-		benchmarkControlsCache := make(map[string]BenchmarkControlsCache)
-		controls, err := h.getControlsUnderBenchmark(ctx, b.ID, benchmarkControlsCache)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		var controlIds []string
-		for c, _ := range controls {
-			controlIds = append(controlIds, c)
+		if len(req.Controls) > 0 {
+			if !listContainsList(metadata.Controls, req.Controls) {
+				continue
+			}
 		}
 
-		metadata := api.GetBenchmarkListMetadata{
+		benchmarkDetails := api.GetBenchmarkListMetadata{
 			ID:               b.ID,
 			Title:            b.Title,
 			Description:      b.Description,
 			Enabled:          b.Enabled,
 			TrackDriftEvents: b.TracksDriftEvents,
-			NumberOfControls: len(controlIds),
+			NumberOfControls: len(metadata.Controls),
 			PrimaryTables:    primaryTables,
 			Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(b.GetTagsMap())),
 			CreatedAt:        b.CreatedAt,
 			UpdatedAt:        b.UpdatedAt,
 		}
 		if b.Connector != nil {
-			metadata.Connectors = source.ParseTypes(b.Connector)
+			benchmarkDetails.Connectors = source.ParseTypes(b.Connector)
 		}
 		benchmarkResult := api.GetBenchmarkListItem{
-			Benchmark: metadata,
+			Benchmark: benchmarkDetails,
 			Findings:  findingsResult,
 		}
 		items = append(items, benchmarkResult)
@@ -4779,36 +4783,26 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "findings not found")
 	}
 
-	var primaryTables, listOfTables []string
-	benchmarkTablesCache := make(map[string]BenchmarkTablesCache)
-	primaryTablesMap, listOfTablesMap, err := h.getTablesUnderBenchmark(ctx, benchmark.ID, benchmarkTablesCache)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	for k, _ := range primaryTablesMap {
-		primaryTables = append(primaryTables, k)
-	}
-	for k, _ := range listOfTablesMap {
-		listOfTables = append(listOfTables, k)
-	}
+	metadata := db.BenchmarkMetadata{}
 
-	benchmarkControlsCache := make(map[string]BenchmarkControlsCache)
-	controls, err := h.getControlsUnderBenchmark(ctx, benchmark.ID, benchmarkControlsCache)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	if len(benchmark.Metadata.Bytes) > 0 {
+		err := json.Unmarshal(benchmark.Metadata.Bytes, &metadata)
+		if err != nil {
+			h.logger.Error("failed to unmarshal metadata", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 	}
-	var controlIds []string
-	for c, _ := range controls {
-		controlIds = append(controlIds, c)
-	}
+	primaryTables := metadata.PrimaryTables
+	listOfTables := metadata.ListOfTables
+
 	benchmarkMetadata := api.GetBenchmarkDetailsMetadata{
 		ID:                benchmark.ID,
 		Title:             benchmark.Title,
 		Description:       benchmark.Description,
 		Enabled:           benchmark.Enabled,
 		TrackDriftEvents:  benchmark.TracksDriftEvents,
-		SupportedControls: controlIds,
-		NumberOfControls:  len(controlIds),
+		SupportedControls: metadata.Controls,
+		NumberOfControls:  len(metadata.Controls),
 		PrimaryTables:     primaryTables,
 		ListOfTables:      listOfTables,
 		Tags:              filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(benchmark.GetTagsMap())),
@@ -5968,7 +5962,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	var benchmarks []db.Benchmark
 	var err error
 	if len(req.Benchmarks) == 0 {
-		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil)
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil, false)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

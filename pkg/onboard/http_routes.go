@@ -3143,7 +3143,7 @@ func (s HttpHandler) PurgeSampleData(c echo.Context) error {
 //	@Param			per_page	query		int		false	"PerPage"
 //	@Param			cursor		query		int		false	"Cursor"
 //	@Success		200			{object}	[]api.ConnectorCount
-//	@Router			/onboard/api/v1/connector [get]
+//	@Router			/onboard/api/v3/connector [get]
 func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 	//trace :
 	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_ListConnectorsV2", trace.WithSpanKind(trace.SpanKindServer))

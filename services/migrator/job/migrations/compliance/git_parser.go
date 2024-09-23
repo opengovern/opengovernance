@@ -1,8 +1,10 @@
 package compliance
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/goccy/go-yaml"
+	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/open-governance/pkg/compliance/db"
@@ -289,6 +291,13 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			Children:          nil,
 			Controls:          nil,
 		}
+		metadataJsonb := pgtype.JSONB{}
+		err = metadataJsonb.Set([]byte(""))
+		if err != nil {
+			return err
+		}
+		b.Metadata = metadataJsonb
+
 		var connectors []source.Type
 		connectorMap := make(map[string]bool)
 
@@ -411,6 +420,47 @@ func (g *GitParser) CheckForDuplicate() error {
 	return nil
 }
 
+func (g GitParser) ExtractBenchmarksMetadata() error {
+	for i, b := range g.benchmarks {
+		benchmarkControlsCache := make(map[string]BenchmarkControlsCache)
+		controlsMap, err := getControlsUnderBenchmark(b, benchmarkControlsCache)
+		if err != nil {
+			return err
+		}
+		benchmarkTablesCache := make(map[string]BenchmarkTablesCache)
+		primaryTablesMap, listOfTablesMap, err := getTablesUnderBenchmark(b, benchmarkTablesCache)
+		if err != nil {
+			return err
+		}
+		var listOfTables, primaryTables, controls []string
+		for k, _ := range controlsMap {
+			controls = append(controls, k)
+		}
+		for k, _ := range primaryTablesMap {
+			primaryTables = append(primaryTables, k)
+		}
+		for k, _ := range listOfTablesMap {
+			listOfTables = append(listOfTables, k)
+		}
+		metadata := db.BenchmarkMetadata{
+			Controls:      controls,
+			PrimaryTables: primaryTables,
+			ListOfTables:  listOfTables,
+		}
+		metadataJson, err := json.Marshal(metadata)
+		if err != nil {
+			return err
+		}
+		metadataJsonb := pgtype.JSONB{}
+		err = metadataJsonb.Set(metadataJson)
+		if err != nil {
+			return err
+		}
+		g.benchmarks[i].Metadata = metadataJsonb
+	}
+	return nil
+}
+
 func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBasePath string) error {
 	if err := g.ExtractControls(path.Join(compliancePath, "controls"), controlEnrichmentBasePath); err != nil {
 		return err
@@ -419,6 +469,10 @@ func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBa
 		return err
 	}
 	if err := g.CheckForDuplicate(); err != nil {
+		return err
+	}
+
+	if err := g.ExtractBenchmarksMetadata(); err != nil {
 		return err
 	}
 	return nil
