@@ -79,6 +79,8 @@ func DbUserToApi(u *db.User) (*User, error) {
 	}
 
 	return &User{
+		CreatedAt:     u.CreatedAt,
+		UpdatedAt:     u.UpdatedAt,
 		Email:         u.Email,
 		EmailVerified: u.EmailVerified,
 		FamilyName:    u.FamilyName,
