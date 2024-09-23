@@ -856,6 +856,9 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 	appMetadata.WorkspaceAccess = map[string]api2.Role{
 		wm.ID: role,
 	}
+
+	timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
+	appMetadata.MemberSince = &timeNow
 	appMetadataJson, err := json.Marshal(appMetadata)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
