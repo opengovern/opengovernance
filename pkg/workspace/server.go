@@ -181,8 +181,8 @@ func (s *Server) Register(e *echo.Echo) {
 	costEstimatorGroup.GET("/azure", httpserver2.AuthorizeHandler(s.GetAzureCost, api2.ViewerRole))
 
 	v3 := e.Group("/api/v3")
-	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(s.PurgeSampleData, api2.AdminRole))
-	v3.PUT("/sample/sync", httpserver2.AuthorizeHandler(s.SyncDemo, api2.AdminRole))
+	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(s.PurgeSampleData, api2.ViewerRole))
+	v3.PUT("/sample/sync", httpserver2.AuthorizeHandler(s.SyncDemo, api2.ViewerRole))
 	v3.PUT("/sample/loaded", httpserver2.AuthorizeHandler(s.WorkspaceLoadedSampleData, api2.ViewerRole))
 }
 
