@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/open-governance/pkg/utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -28,6 +29,14 @@ type BenchmarkAssignment struct {
 	AssignedAt         time.Time
 }
 
+type BenchmarkMetadata struct {
+	IsRoot        bool
+	Controls      []string
+	PrimaryTables []string
+	ListOfTables  []string
+	BenchmarkPath string
+}
+
 type Benchmark struct {
 	ID                string `gorm:"primarykey"`
 	Title             string
@@ -40,6 +49,7 @@ type Benchmark struct {
 	Enabled           bool
 	AutoAssign        bool
 	TracksDriftEvents bool
+	Metadata          pgtype.JSONB
 
 	Tags    []BenchmarkTag      `gorm:"foreignKey:BenchmarkID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string `gorm:"-:all"`

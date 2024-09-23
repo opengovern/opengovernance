@@ -188,7 +188,9 @@ type GetBenchmarkListRequest struct {
 	TagsRegex         *string                `json:"tags_regex"`
 	PrimaryTable      []string               `json:"primary_table"`
 	ListOfTables      []string               `json:"list_of_tables"`
+	Controls          []string               `json:"controls"`
 	Root              *bool                  `json:"root"`
+	Assigned          *bool                  `json:"assigned"`
 	FindingFilters    *FindingSummaryFilters `json:"finding_filters"`
 	FindingSummary    bool                   `json:"finding_summary"`
 	Cursor            *int64                 `json:"cursor"`
