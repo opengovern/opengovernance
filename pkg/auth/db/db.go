@@ -306,7 +306,7 @@ func (db Database) GetUserByEmail(email string) (*User, error) {
 
 func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 	var users []User
-	query := fmt.Sprintf("SELECT * FROM users WHERE encode(app_metadata, 'escape')::jsonb->'workspaceAccess' ? '%s'", ws)
+	query := fmt.Sprintf("SELECT * FROM users WHERE encode(app_metadata, 'escape')::jsonb->'workspaceAccess' ? '%s' AND deleted_at IS NULL", ws)
 	err := db.Orm.Raw(query).Scan(&users).Error
 	if err != nil {
 		return nil, err
@@ -316,7 +316,7 @@ func (db Database) GetUsersByWorkspace(ws string) ([]User, error) {
 
 func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([]User, error) {
 	var users []User
-	query := fmt.Sprintf("SELECT * FROM users WHERE encode(app_metadata, 'escape')::jsonb->'workspaceAccess' ? '%s'", ws)
+	query := fmt.Sprintf("SELECT * FROM users WHERE encode(app_metadata, 'escape')::jsonb->'workspaceAccess' ? '%s' AND deleted_at IS NULL", ws)
 
 	if email != nil {
 		query += fmt.Sprintf(" AND email = %s", *email)
