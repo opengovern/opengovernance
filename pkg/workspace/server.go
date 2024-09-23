@@ -701,10 +701,9 @@ func (s *Server) DeleteOrganization(c echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/sample/purge [put]
 func (s *Server) PurgeSampleData(c echo.Context) error {
-	wsName := httpserver2.GetWorkspaceName(c)
 	ctx := &httpclient.Context{UserRole: api2.InternalRole}
 
-	ws, err := s.db.GetWorkspaceByName(wsName)
+	ws, err := s.db.GetWorkspaceByName("main")
 	if err != nil {
 		s.logger.Error("failed to get workspace", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
@@ -730,7 +729,7 @@ func (s *Server) PurgeSampleData(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge scheduler data")
 	}
 
-	err = s.db.WorkspaceSampleDataDeleted(wsName)
+	err = s.db.WorkspaceSampleDataDeleted("main")
 	if err != nil {
 		s.logger.Error("failed to update workspace sample data check", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
@@ -874,8 +873,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	wsName := httpserver2.GetWorkspaceName(echoCtx)
-	err = s.db.WorkspaceSampleDataSynced(wsName)
+	err = s.db.WorkspaceSampleDataSynced("main")
 	if err != nil {
 		s.logger.Error("failed to update workspace sample data check", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
@@ -898,9 +896,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/sample/loaded [put]
 func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
-	wsName := httpserver2.GetWorkspaceName(echoCtx)
-
-	ws, err := s.db.GetWorkspaceByName(wsName)
+	ws, err := s.db.GetWorkspaceByName("main")
 	if err != nil {
 		s.logger.Error("failed to get workspace", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
