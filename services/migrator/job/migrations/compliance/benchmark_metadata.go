@@ -41,16 +41,16 @@ type BenchmarkTablesCache struct {
 }
 
 // getTablesUnderBenchmark ctx context.Context, benchmarkId string -> primaryTables, listOfTables, error
-func getTablesUnderBenchmark(benchmark db.Benchmark, benchmarkCache map[string]BenchmarkTablesCache) (map[string]bool, map[string]bool, error) {
+func (g *GitParser) getTablesUnderBenchmark(benchmark db.Benchmark, benchmarkCache map[string]BenchmarkTablesCache) (map[string]bool, map[string]bool, error) {
 	primaryTables := make(map[string]bool)
 	listOfTables := make(map[string]bool)
 
 	for _, c := range benchmark.Controls {
-		if c.Query != nil {
-			if c.Query.PrimaryTable != nil && *c.Query.PrimaryTable != "" {
-				primaryTables[*c.Query.PrimaryTable] = true
+		if query, ok := g.controlsQueries[c.ID]; ok {
+			if query.PrimaryTable != nil && *query.PrimaryTable != "" {
+				primaryTables[*query.PrimaryTable] = true
 			}
-			for _, t := range c.Query.ListOfTables {
+			for _, t := range query.ListOfTables {
 				if t == "" {
 					continue
 				}
@@ -66,7 +66,7 @@ func getTablesUnderBenchmark(benchmark db.Benchmark, benchmarkCache map[string]B
 			childPrimaryTables = cache.PrimaryTables
 			childListOfTables = cache.ListTables
 		} else {
-			childPrimaryTables, childListOfTables, err = getTablesUnderBenchmark(child, benchmarkCache)
+			childPrimaryTables, childListOfTables, err = g.getTablesUnderBenchmark(child, benchmarkCache)
 			if err != nil {
 				return nil, nil, err
 			}

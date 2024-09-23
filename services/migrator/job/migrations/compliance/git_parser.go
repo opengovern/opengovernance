@@ -19,11 +19,12 @@ import (
 )
 
 type GitParser struct {
-	logger      *zap.Logger
-	benchmarks  []db.Benchmark
-	controls    []db.Control
-	queries     []db.Query
-	queryParams []models.QueryParameter
+	logger          *zap.Logger
+	benchmarks      []db.Benchmark
+	controls        []db.Control
+	queries         []db.Query
+	queryParams     []models.QueryParameter
+	controlsQueries map[string]db.Query
 }
 
 func populateMdMapFromPath(path string) (map[string]string, error) {
@@ -215,6 +216,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 					Engine:         control.Query.Engine,
 					Global:         control.Query.Global,
 				}
+				g.controlsQueries[control.ID] = q
 				for _, parameter := range control.Query.Parameters {
 					q.Parameters = append(q.Parameters, db.QueryParameter{
 						QueryID:  control.ID,
@@ -428,7 +430,7 @@ func (g GitParser) ExtractBenchmarksMetadata() error {
 			return err
 		}
 		benchmarkTablesCache := make(map[string]BenchmarkTablesCache)
-		primaryTablesMap, listOfTablesMap, err := getTablesUnderBenchmark(b, benchmarkTablesCache)
+		primaryTablesMap, listOfTablesMap, err := g.getTablesUnderBenchmark(b, benchmarkTablesCache)
 		if err != nil {
 			return err
 		}
