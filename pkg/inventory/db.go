@@ -107,13 +107,9 @@ func (db Database) ListQueries(queryIds []string, tables map[string]bool, param 
 	}
 	var res []NamedQuery
 	for _, val := range v {
-		res = append(res, val)
-	}
-
-	for i, sq := range res {
-		if sq.QueryID != nil {
+		if val.QueryID != nil {
 			var query Query
-			tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *sq.QueryID).First(&query)
+			tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *val.QueryID).First(&query)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -136,11 +132,11 @@ func (db Database) ListQueries(queryIds []string, tables map[string]bool, param 
 				paramExists = true
 			}
 			if tableExists && paramExists {
-				res[i].Query = &query
+				val.Query = &query
+				res = append(res, val)
 			}
 		}
 	}
-
 	return res, nil
 }
 

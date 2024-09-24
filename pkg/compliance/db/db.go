@@ -452,7 +452,7 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 	}
 
 	if len(connectors) > 0 {
-		m = m.Where("controls.connector::text[] @> ?", pq.Array(connectors))
+		m = m.Where("controls.connector::text[] && ?", pq.Array(connectors))
 	}
 
 	if len(severity) > 0 {
@@ -492,7 +492,7 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 	}
 
 	if len(listOfTables) > 0 {
-		m = m.Where("q.list_of_tables::text[] @> ?", pq.Array(listOfTables))
+		m = m.Where("q.list_of_tables::text[] && ?", pq.Array(listOfTables))
 	}
 
 	// Execute the query
