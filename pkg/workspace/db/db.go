@@ -147,3 +147,7 @@ func (s *Database) WorkspaceSampleDataDeleted(wsName string) error {
 func (s *Database) WorkspaceSampleDataSynced(wsName string) error {
 	return s.Orm.Model(&Workspace{}).Where("name = ?", wsName).Update("contain_sample_data", true).Error
 }
+
+func (s *Database) WorkspaceConfigured(wsName string) error {
+	return s.Orm.Model(&Workspace{}).Where("name = ?", wsName).Update("configured", true).Error
+}

@@ -23,6 +23,7 @@ type Workspace struct {
 	ComplianceTriggered      bool              `json:"complianceTriggered"`
 	VaultKeyId               string            `json:"vault_key_id"`
 	ContainSampleData        bool              `json:"contain_sample_data"`
+	Configured               bool              `json:"configured"`
 }
 
 func (w *Workspace) ToAPI() api.Workspace {
