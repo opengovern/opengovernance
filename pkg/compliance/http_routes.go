@@ -3309,7 +3309,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	}
 
 	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
-		req.PrimaryTable, req.ListOfTables)
+		req.PrimaryTable, req.ListOfTables, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -3497,7 +3497,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	}
 
 	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
-		req.PrimaryTable, req.ListOfTables)
+		req.PrimaryTable, req.ListOfTables, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -6399,8 +6399,8 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 //	@Summary		Get list of unique resource categories
 //	@Description	Get list of unique resource categories for the give controls
 //	@Security		BearerToken
-//	@Tags			named_query
-//	@Param			controls		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Tags			compliance
+//	@Param			controls	query	[]string	false	"Controls filter by"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]string
@@ -6439,12 +6439,12 @@ func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 //	@Summary		Get list of controls for given categories
 //	@Description	Get list of controls for given categories
 //	@Security		BearerToken
-//	@Tags			named_query
-//	@Param			categories		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Tags			compliance
+//	@Param			categories	query	[]string	false	"Categories filter by"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]api.GetCategoriesControlsResponse
-//	@Router			/compliance/api/v3/controls/categories [get]
+//	@Router			/compliance/api/v3/categories/controls [get]
 func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 	categoriesFilter := httpserver2.QueryArrayParam(ctx, "categories")
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
@@ -6457,11 +6457,16 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 
 	var categoriesControls []api.CategoryControls
 	for _, c := range categories.Categories {
-		tablesFilter := make(map[string]bool)
+		tablesFilterMap := make(map[string]bool)
 		for _, r := range c.Resources {
-			tablesFilter[r.SteampipeTable] = true
+			tablesFilterMap[r.SteampipeTable] = true
 		}
-		controls, err := h.db.GetControlsByTables(ctx.Request().Context(), tablesFilter)
+		var tablesFilter []string
+		for t, _ := range tablesFilterMap {
+			tablesFilter = append(tablesFilter, t)
+		}
+		controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), nil, nil, nil,
+			nil, nil, nil, tablesFilter, nil)
 		if err != nil {
 			h.logger.Error("could not find controls", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
@@ -6478,5 +6483,51 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 
 	return ctx.JSON(200, api.GetCategoriesControlsResponse{
 		Categories: categoriesControls,
+	})
+}
+
+// GetParametersControls godoc
+//
+//	@Summary		Get list of controls for given parameters
+//	@Description	Get list of controls for given parameters
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			parameters	query	[]string	false	"Parameters filter by"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]api.GetCategoriesControlsResponse
+//	@Router			/compliance/api/v3/categories/controls [get]
+func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
+	parameters := httpserver2.QueryArrayParam(ctx, "parameters")
+
+	var err error
+	if len(parameters) == 0 {
+		parameters, err = h.db.GetQueryParameters(ctx.Request().Context())
+		if err != nil {
+			h.logger.Error("failed to get list of parameters", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of parameters")
+		}
+	}
+
+	var parametersControls []api.ParametersControls
+	for _, p := range parameters {
+		controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), nil, nil, nil,
+			nil, nil, nil, nil, []string{p})
+		if err != nil {
+			h.logger.Error("failed to get list of controls", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of controls")
+		}
+		var controlsApi []api.Control
+		for _, ctrl := range controls {
+			controlsApi = append(controlsApi, ctrl.ToApi())
+		}
+		parametersControls = append(parametersControls, api.ParametersControls{
+			Parameter: p,
+			Controls:  controlsApi,
+		})
+	}
+
+	return ctx.JSON(200, api.GetParametersControlsResponse{
+		ParametersControls: parametersControls,
 	})
 }

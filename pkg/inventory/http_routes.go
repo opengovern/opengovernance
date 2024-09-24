@@ -3409,8 +3409,8 @@ func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 //	@Description	Get list of unique resource categories
 //	@Security		BearerToken
 //	@Tags			named_query
-//	@Param			tables			query		[]string		false	"Tables filter"
-//	@Param			categories		query		[]string		false	"Categories filter"
+//	@Param			tables		query	[]string	false	"Tables filter"
+//	@Param			categories	query	[]string	false	"Categories filter"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	inventoryApi.GetResourceCategoriesResult
@@ -3420,6 +3420,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 
 	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(tablesFilter)
 	if err != nil {
+		h.logger.Error("failed to list resource categories", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
 	}
 
@@ -3461,7 +3462,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 //	@Description	Get list of unique resource categories for the give queries
 //	@Security		BearerToken
 //	@Tags			named_query
-//	@Param			queries		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			queries	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.CategoriesTables
@@ -3469,7 +3470,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 	queryIds := httpserver.QueryArrayParam(ctx, "queries")
 
-	queries, err := h.db.ListQueries(queryIds, nil)
+	queries, err := h.db.ListQueries(queryIds, nil, nil)
 	if err != nil {
 		h.logger.Error("could not find queries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
@@ -3500,7 +3501,7 @@ func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 //	@Description	Get list of unique resource categories for the give queries
 //	@Security		BearerToken
 //	@Tags			named_query
-//	@Param			tables		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			tables	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.CategoriesTables
@@ -3523,7 +3524,7 @@ func (h *HttpHandler) GetTablesResourceCategories(ctx echo.Context) error {
 //	@Description	Get list of controls for given categories
 //	@Security		BearerToken
 //	@Tags			named_query
-//	@Param			categories		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			categories	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]string
@@ -3531,6 +3532,7 @@ func (h *HttpHandler) GetTablesResourceCategories(ctx echo.Context) error {
 func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(nil)
 	if err != nil {
+		h.logger.Error("failed to list resource categories", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
 	}
 
@@ -3566,7 +3568,7 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 			tablesFilter[r.SteampipeTable] = true
 		}
 
-		queries, err := h.db.ListQueries(nil, tablesFilter)
+		queries, err := h.db.ListQueries(nil, tablesFilter, nil)
 		if err != nil {
 			h.logger.Error("could not find controls", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
@@ -3593,4 +3595,66 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(200, categories)
+}
+
+// GetParametersQueries godoc
+//
+//	@Summary		Get list of queries for given parameters
+//	@Description	Get list of queries for given parameters
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			parameters	query	[]string	false	"Parameters filter by"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]api.GetCategoriesControlsResponse
+//	@Router			/compliance/api/v3/categories/controls [get]
+func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
+	parameters := httpserver.QueryArrayParam(ctx, "parameters")
+
+	var err error
+	if len(parameters) == 0 {
+		parameters, err = h.db.GetQueryParameters()
+		if err != nil {
+			h.logger.Error("failed to get list of parameters", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of parameters")
+		}
+	}
+
+	var parametersQueries []inventoryApi.ParametersQueries
+	for _, p := range parameters {
+		paramsFilter := make(map[string]bool)
+		paramsFilter[p] = true
+		queries, err := h.db.ListQueries(nil, nil, paramsFilter)
+		if err != nil {
+			h.logger.Error("failed to get list of controls", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of controls")
+		}
+		var items []inventoryApi.NamedQueryItemV2
+		for _, item := range queries {
+			tags := item.GetTagsMap()
+			if tags == nil || len(tags) == 0 {
+				tags = make(map[string][]string)
+			}
+			if item.IsBookmarked {
+				tags["platform_queries_bookmark"] = []string{"true"}
+			}
+			items = append(items, inventoryApi.NamedQueryItemV2{
+				ID:          item.ID,
+				Title:       item.Title,
+				Description: item.Description,
+				Connectors:  source.ParseTypes(item.Connectors),
+				Query:       item.Query.ToApi(),
+				Tags:        tags,
+			})
+		}
+
+		parametersQueries = append(parametersQueries, inventoryApi.ParametersQueries{
+			Parameter: p,
+			Queries:   items,
+		})
+	}
+
+	return ctx.JSON(200, inventoryApi.GetParametersQueriesResponse{
+		ParametersQueries: parametersQueries,
+	})
 }
