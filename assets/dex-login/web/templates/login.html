@@ -1,4 +1,5 @@
 {{ template "header.html" . }}
+
 <div class="flex min-h-full flex-1 flex-col justify-center px-4 py-10 lg:px-6">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <div class="flex items-center space-x-2.5">
@@ -88,18 +89,14 @@
     <div class="mt-8 sm:flex sm:items-center sm:space-x-2">
       {{ range $c := .Connectors }} {{ if and (ne $c.Name "Email") }}
       <button asChild variant="secondary" class="w-full">
-        <a href="#" class="inline-flex items-center gap-2">
-          Login with GitHub
+        <a href="{{ $c.URL }}" class="inline-flex items-center gap-2">
+          Login with {{ $c.Type }}
         </a>
       </button>
-      <button asChild variant="secondary" class="w-full sm:mt-0">
-        <a href="#" class="inline-flex items-center gap-2">
-          Login with Google
-        </a>
-      </button>
+     
       {{ end }} {{ end }}
     </div>
-    <div
+    <!-- <div
       class="tremor-Divider-root w-full mx-auto my-6 flex justify-between gap-3 items-center text-tremor-default text-tremor-content dark:text-dark-tremor-content"
     >
       <div
@@ -110,82 +107,11 @@
       </div>
       <div
         class="devider w-full h-[1px] bg-tremor-border dark:bg-dark-tremor-border"
-      ></div>
+      ></div> -->
     </div>
-    <form action="{{ .PostURL }}" method="post" class="mt-6 space-y-4">
-      <div class="flex flex-col mb-2">
-        <label
-          htmlFor="email"
-          class="text-sm font-medium text-gray-900 dark:text-gray-50"
-        >
-          {{ .UsernamePrompt }}
-        </label>
-        <input
-          tabindex="1"
-          required
-          id="login"
-          name="login"
-          type="text"
-          autocomplete="email"
-          placeholder="{{ .UsernamePrompt | lower }}"
-          class="mt-2"
-          {{
-          if
-          .Username
-          }}
-          value="{{ .Username }}"
-          {{
-          else
-          }}
-          autofocus
-          {{
-          end
-          }}
-        />
-      </div>
-      <div class="flex flex-col mb-2">
-        <label
-          htmlFor="password"
-          class="text-sm font-medium text-gray-900 dark:text-gray-50"
-        >
-          Password
-        </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          autocomplete="password"
-          placeholder="Password"
-          class="mt-2"
-          {{
-          if
-          .Invalid
-          }}
-          autofocus
-          {{
-          end
-          }}
-        />
-      </div>
-      <button type="submit" class="mt-4 w-full primary">Sign in</button>
-    </form>
-    <p class="mt-6 text-sm text-gray-500 dark:text-gray-500">
-      Forgot your password?
-      <a
-        href="#"
-        class="font-medium text-blue-500 hover:text-blue-600 dark:text-blue-500 hover:dark:text-blue-600"
-      >
-        Reset password
-      </a>
-    </p>
+   
   </div>
 </div>
 
-<script type="text/javascript">
-  document.querySelector("form").onsubmit = function (e) {
-    var el = document.querySelector("#submit-login");
-    el.setAttribute("disabled", "disabled");
-  };
-</script>
 
 {{ template "footer.html" . }}

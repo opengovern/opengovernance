@@ -128,6 +128,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v3.GET("/controls/categories", httpserver2.AuthorizeHandler(h.GetControlsResourceCategories, authApi.ViewerRole))
 	v3.GET("/categories/controls", httpserver2.AuthorizeHandler(h.GetCategoriesControls, authApi.ViewerRole))
+	v3.GET("/parameters/controls", httpserver2.AuthorizeHandler(h.GetParametersControls, authApi.ViewerRole))
 	v3.GET("/controls/filters", httpserver2.AuthorizeHandler(h.ListControlsFilters, authApi.ViewerRole))
 	v3.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v3.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
@@ -6496,7 +6497,7 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]api.GetCategoriesControlsResponse
-//	@Router			/compliance/api/v3/categories/controls [get]
+//	@Router			/compliance/api/v3/parameters/controls [get]
 func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 	parameters := httpserver2.QueryArrayParam(ctx, "parameters")
 
