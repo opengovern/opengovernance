@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -446,23 +447,44 @@ func (db Database) ListUniqueCategoriesAndTablesForTables(tables []string) ([]Ca
 
 	query := `
         SELECT 
-            category, 
-            ARRAY_AGG(steampipe_table ORDER BY steampipe_table) AS tables
+            json_build_object(
+                'category', category,
+                'tables', ARRAY_AGG(steampipe_table)
+            ) AS category_tables
         FROM 
             resource_type_v2`
 
+	var rows *sql.Rows
 	var err error
 	if len(tables) > 0 {
-		query = query + ` WHERE steampipe_table in ?`
-		err = db.orm.Raw(query, tables).Scan(&results).Error
+		query = query + ` WHERE steampipe_table IN ? GROUP BY category`
+		rows, err = db.orm.Raw(query, tables).Rows()
+
 	} else {
 		query = query + ` GROUP BY category`
-		err = db.orm.Raw(query).Scan(&results).Error
+		rows, err = db.orm.Raw(query).Rows()
+
 	}
 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var jsonData []byte
+		if err := rows.Scan(&jsonData); err != nil {
+			return nil, err
+		}
+
+		var categoryTable CategoriesTables
+		if err := json.Unmarshal(jsonData, &categoryTable); err != nil {
+			return nil, err
+		}
+
+		results = append(results, categoryTable)
+	}
+
 	return results, nil
 }
 
