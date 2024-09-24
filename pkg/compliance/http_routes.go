@@ -6450,7 +6450,7 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 
 	categories, err := h.inventoryClient.GetResourceCategories(clientCtx, nil, categoriesFilter)
-	if err != nil || len(categories.Categories) == 0 {
+	if err != nil || categories == nil || len(categories.Categories) == 0 {
 		h.logger.Error("could not find categories", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
 	}
