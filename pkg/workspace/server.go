@@ -16,8 +16,10 @@ import (
 	client4 "github.com/kaytu-io/open-governance/pkg/compliance/client"
 	api3 "github.com/kaytu-io/open-governance/pkg/describe/api"
 	client3 "github.com/kaytu-io/open-governance/pkg/describe/client"
+	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
 	client5 "github.com/kaytu-io/open-governance/pkg/metadata/client"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	"github.com/kaytu-io/open-governance/pkg/workspace/config"
 	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	db2 "github.com/kaytu-io/open-governance/pkg/workspace/db"
@@ -209,6 +211,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v3.GET("/migration/status", httpserver2.AuthorizeHandler(s.GetMigrationStatus, api2.ViewerRole))
 	v3.GET("/configured/status", httpserver2.AuthorizeHandler(s.GetConfiguredStatus, api2.ViewerRole))
 	v3.GET("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
+	v3.GET("/about", httpserver2.AuthorizeHandler(s.GetAbout, api2.ViewerRole))
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -356,7 +359,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 	version := "unspecified"
 	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
-		Namespace: workspace.ID,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 		Name:      "kaytu-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
@@ -1027,4 +1030,98 @@ func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set workspace configured")
 	}
 	return echoCtx.NoContent(http.StatusOK)
+}
+
+// GetAbout godoc
+//
+//	@Summary		Get About info
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/configured/status [put]
+func (s *Server) GetAbout(echoCtx echo.Context) error {
+	ctx := &httpclient.Context{UserRole: api2.InternalRole, Ctx: echoCtx.Request().Context()}
+
+	ws, err := s.db.GetWorkspace("main")
+	if err != nil {
+		s.logger.Error("failed to get workspace info", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace info")
+	}
+
+	version := ""
+	var kaytuVersionConfig corev1.ConfigMap
+	err = s.kubeClient.Get(echoCtx.Request().Context(), k8sclient.ObjectKey{
+		Namespace: s.cfg.KaytuOctopusNamespace,
+		Name:      "kaytu-version",
+	}, &kaytuVersionConfig)
+	if err == nil {
+		version = kaytuVersionConfig.Data["version"]
+	} else {
+		fmt.Printf("failed to load version due to %v\n", err)
+	}
+
+	users, err := s.authClient.GetWorkspaceRoleBindings(ctx, ws.ID)
+	if err != nil {
+		s.logger.Error("failed to get users", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
+	}
+	apiKeys, err := s.authClient.ListAPIKeys(ctx, ws.ID)
+	if err != nil {
+		s.logger.Error("failed to get users", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
+	}
+
+	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
+	onboardClient := client.NewOnboardServiceClient(onboardURL)
+	connections, err := onboardClient.ListSources(ctx, nil)
+
+	integrations := make(map[string][]onboardApi.Connection)
+	for _, c := range connections {
+		if _, ok := integrations[c.Connector.String()]; !ok {
+			integrations[c.Connector.String()] = make([]onboardApi.Connection, 0)
+		}
+		integrations[c.Connector.String()] = append(integrations[c.Connector.String()], c)
+	}
+
+	inventoryURL := strings.ReplaceAll(s.cfg.Inventory.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
+	inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
+
+	var engine inventoryApi.QueryEngine
+	engine = inventoryApi.QueryEngine_OdysseusRego
+	query := `SELECT
+    (SELECT SUM(cost) FROM azure_costmanagement_costbyresourcetype) +
+    (SELECT SUM(amortized_cost_amount) FROM aws_cost_by_service_daily) AS total_cost;`
+	results, err := inventoryClient.RunQuery(ctx, inventoryApi.RunQueryRequest{
+		Page: inventoryApi.Page{
+			No:   1,
+			Size: 1000,
+		},
+		Engine: &engine,
+		Query:  &query,
+		Sorts:  nil,
+	})
+	if err != nil {
+		s.logger.Error("failed to run query", zap.Error(err))
+	}
+
+	totalSpent := results.Result[0][0]
+	floatValue, _ := totalSpent.(float64)
+
+	response := api.About{
+		AppVersion:            version,
+		WorkspaceCreationTime: ws.CreatedAt,
+		Users:                 users,
+		PrimaryDomainURL:      s.cfg.PrimaryDomainURL,
+		APIKeys:               apiKeys,
+		Integrations:          integrations,
+		SampleData:            ws.ContainSampleData,
+		TotalSpendGoverned:    floatValue,
+	}
+
+	return echoCtx.JSON(http.StatusOK, response)
 }
