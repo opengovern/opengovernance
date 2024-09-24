@@ -200,3 +200,12 @@ type CountAnalyticsSpendResponse struct {
 	ConnectionCount int `json:"connectionCount"`
 	MetricCount     int `json:"metricCount"`
 }
+
+type ParametersQueries struct {
+	Parameter string             `json:"parameter"`
+	Queries   []NamedQueryItemV2 `json:"queries"`
+}
+
+type GetParametersQueriesResponse struct {
+	ParametersQueries []ParametersQueries `json:"parameters"`
+}

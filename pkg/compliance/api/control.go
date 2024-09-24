@@ -173,3 +173,12 @@ type CategoryControls struct {
 type GetCategoriesControlsResponse struct {
 	Categories []CategoryControls `json:"categories"`
 }
+
+type ParametersControls struct {
+	Parameter string    `json:"parameter"`
+	Controls  []Control `json:"controls"`
+}
+
+type GetParametersControlsResponse struct {
+	ParametersControls []ParametersControls `json:"parameters"`
+}

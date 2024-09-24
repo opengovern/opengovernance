@@ -83,7 +83,7 @@ func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
 	return res, nil
 }
 
-func (db Database) ListQueries(queryIds []string, tables map[string]bool) ([]NamedQuery, error) {
+func (db Database) ListQueries(queryIds []string, tables map[string]bool, param map[string]bool) ([]NamedQuery, error) {
 	var s []NamedQuery
 
 	m := db.orm.Model(&NamedQuery{})
@@ -116,15 +116,26 @@ func (db Database) ListQueries(queryIds []string, tables map[string]bool) ([]Nam
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
-			exists := false
+			tableExists := false
 			for _, t := range query.ListOfTables {
-				if _, ok := tables[t]; ok && len(tables) > 0 {
-					exists = true
+				if _, ok := tables[t]; ok {
+					tableExists = true
 				}
 			}
-			if exists {
+			if len(tables) == 0 {
+				tableExists = true
+			}
+			paramExists := false
+			for _, t := range query.Parameters {
+				if _, ok := param[t.Key]; ok {
+					paramExists = true
+				}
+			}
+			if len(param) == 0 {
+				paramExists = true
+			}
+			if tableExists && paramExists {
 				res[i].Query = &query
-
 			}
 		}
 	}
@@ -440,15 +451,30 @@ func (db Database) ListUniqueCategoriesAndTablesForTables(tables []string) ([]Ca
         FROM 
             resource_type_v2`
 
+	var err error
 	if len(tables) > 0 {
 		query = query + ` WHERE steampipe_table in ?`
+		err = db.orm.Raw(query, tables).Scan(&results).Error
+	} else {
+		query = query + ` GROUP BY category`
+		err = db.orm.Raw(query).Scan(&results).Error
 	}
-	query = query + ` GROUP BY category`
-
-	err := db.orm.Raw(query, tables).Scan(&results).Error
 
 	if err != nil {
 		return nil, err
 	}
 	return results, nil
+}
+
+func (db Database) GetQueryParameters() ([]string, error) {
+	var parameters []string
+
+	tx := db.orm.Select("DISTINCT key").
+		Model(&QueryParameter{}).
+		Scan(&parameters)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return parameters, nil
 }

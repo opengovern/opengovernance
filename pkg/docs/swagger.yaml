@@ -895,6 +895,15 @@ definitions:
         example: "1686346668"
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.CategoryControls:
+    properties:
+      category:
+        type: string
+      controls:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.Control'
+        type: array
+    type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.ComplianceSummaryOfBenchmarkRequest:
     properties:
       benchmarks:
@@ -1923,6 +1932,12 @@ definitions:
     type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListRequest:
     properties:
+      assigned:
+        type: boolean
+      controls:
+        items:
+          type: string
+        type: array
       cursor:
         type: integer
       finding_filters:
@@ -1962,6 +1977,13 @@ definitions:
         type: array
       total_count:
         type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.GetCategoriesControlsResponse:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.CategoryControls'
+        type: array
     type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.GetControlDetailsResponse:
     properties:
@@ -3313,6 +3335,15 @@ definitions:
         additionalProperties:
           type: number
         type: object
+    type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables:
+    properties:
+      category:
+        type: string
+      tables:
+        items:
+          type: string
+        type: array
     type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.CostMetric:
     properties:
@@ -9224,6 +9255,56 @@ paths:
       summary: List benchmarks tags
       tags:
       - compliance
+  /compliance/api/v3/categories/controls:
+    get:
+      description: Get list of controls for given categories
+      parameters:
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: categories
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetCategoriesControlsResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get list of controls for given categories
+      tags:
+      - named_query
+  /compliance/api/v3/categories/queries:
+    get:
+      description: Get list of controls for given categories
+      parameters:
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: categories
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get list of controls for given categories
+      tags:
+      - named_query
   /compliance/api/v3/compliance/summary/benchmark:
     post:
       consumes:
@@ -9329,6 +9410,31 @@ paths:
       summary: List controls filtered by connector, benchmark, tags
       tags:
       - compliance
+  /compliance/api/v3/controls/categories:
+    get:
+      description: Get list of unique resource categories for the give controls
+      parameters:
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: controls
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get list of unique resource categories
+      tags:
+      - named_query
   /compliance/api/v3/controls/filters:
     get:
       consumes:
@@ -10971,6 +11077,31 @@ paths:
       summary: List named queries
       tags:
       - named_query
+  /inventory/api/v3/queries/categories:
+    get:
+      description: Get list of unique resource categories for the give queries
+      parameters:
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: queries
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get list of unique resource categories
+      tags:
+      - named_query
   /inventory/api/v3/queries/filters:
     get:
       consumes:
@@ -11080,6 +11211,21 @@ paths:
   /inventory/api/v3/resources/categories:
     get:
       description: Get list of unique resource categories
+      parameters:
+      - collectionFormat: csv
+        description: Tables filter
+        in: query
+        items:
+          type: string
+        name: tables
+        type: array
+      - collectionFormat: csv
+        description: Categories filter
+        in: query
+        items:
+          type: string
+        name: categories
+        type: array
       produces:
       - application/json
       responses:
@@ -11087,6 +11233,31 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult'
+      security:
+      - BearerToken: []
+      summary: Get list of unique resource categories
+      tags:
+      - named_query
+  /inventory/api/v3/tables/categories:
+    get:
+      description: Get list of unique resource categories for the give queries
+      parameters:
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: tables
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables'
+            type: array
       security:
       - BearerToken: []
       summary: Get list of unique resource categories
@@ -11436,20 +11607,7 @@ paths:
       - connections
   /onboard/api/v1/connector:
     get:
-      description: Returns list of all connectors v2
-      parameters:
-      - description: Tier (Community, Enterprise, (default both)
-        in: query
-        name: tier
-        type: string
-      - description: PerPage
-        in: query
-        name: per_page
-        type: integer
-      - description: Cursor
-        in: query
-        name: cursor
-        type: integer
+      description: Returns list of all connectors
       produces:
       - application/json
       responses:
@@ -11461,7 +11619,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List connectors v2
+      summary: List connectors
       tags:
       - onboard
   /onboard/api/v1/credential:
@@ -11734,6 +11892,36 @@ paths:
       security:
       - BearerToken: []
       summary: Create connection credentials
+      tags:
+      - onboard
+  /onboard/api/v3/connector:
+    get:
+      description: Returns list of all connectors v2
+      parameters:
+      - description: Tier (Community, Enterprise, (default both)
+        in: query
+        name: tier
+        type: string
+      - description: PerPage
+        in: query
+        name: per_page
+        type: integer
+      - description: Cursor
+        in: query
+        name: cursor
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_onboard_api.ConnectorCount'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List connectors v2
       tags:
       - onboard
   /schedule/api/v1/analytics/trigger:
@@ -12621,6 +12809,26 @@ paths:
       summary: Get workspace limits
       tags:
       - workspace
+  /workspace/api/v3/sample/loaded:
+    put:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
   /workspace/api/v3/sample/purge:
     put:
       consumes:

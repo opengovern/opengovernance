@@ -425,7 +425,7 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 	return s, nil
 }
 func (db Database) ListControlsByFilter(ctx context.Context, connectors []string, severity []string, benchmarkIDs []string,
-	tagFilters map[string][]string, hasParameters *bool, primaryTable []string, listOfTables []string) ([]Control, error) {
+	tagFilters map[string][]string, hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]Control, error) {
 	var s []Control
 
 	m := db.Orm.WithContext(ctx).Model(&Control{}).Distinct("controls.*").
@@ -464,7 +464,7 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 			Where("bc.benchmark_id IN ?", benchmarkIDs)
 	}
 
-	if hasParameters != nil || len(primaryTable) > 0 || len(listOfTables) > 0 {
+	if hasParameters != nil || len(params) > 0 || len(primaryTable) > 0 || len(listOfTables) > 0 {
 		m = m.Joins("JOIN queries q ON q.id = controls.query_id")
 	}
 
@@ -478,6 +478,13 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 				Group("controls.id").
 				Having("COUNT(qp.query_id) = 0")
 		}
+	}
+
+	if len(params) > 0 {
+		m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
+			Where("qp.key IN ?", params).
+			Group("controls.id").
+			Having("COUNT(qp.query_id) > 0")
 	}
 
 	if len(primaryTable) > 0 {
@@ -861,52 +868,6 @@ func (db Database) ListControlsUniqueSeverity(ctx context.Context) ([]string, er
 	return severities, nil
 }
 
-func (db Database) GetControlsByTables(ctx context.Context, tables map[string]bool) ([]Control, error) {
-	var s []Control
-	tx := db.Orm.WithContext(ctx).Model(&Control{}).
-		Preload(clause.Associations)
-
-	if tx.Find(&s).Error != nil {
-		return nil, tx.Error
-	}
-
-	queryIds := make([]string, 0, len(s))
-	for _, control := range s {
-		if control.QueryID != nil {
-			queryIds = append(queryIds, *control.QueryID)
-		}
-	}
-	var queriesMap map[string]Query
-	if len(queryIds) > 0 {
-		var queries []Query
-		qtx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
-		if qtx.Error != nil {
-			return nil, qtx.Error
-		}
-		queriesMap = make(map[string]Query)
-		for _, query := range queries {
-			queriesMap[query.ID] = query
-		}
-	}
-
-	for i, c := range s {
-		if c.QueryID != nil {
-			exists := false
-			for _, t := range c.Query.ListOfTables {
-				if _, ok := tables[t]; ok && len(tables) > 0 {
-					exists = true
-				}
-			}
-			if exists {
-				v := queriesMap[*c.QueryID]
-				s[i].Query = &v
-			}
-		}
-	}
-
-	return s, nil
-}
-
 func (db Database) ListControlsUniqueParentBenchmarks(ctx context.Context) ([]string, error) {
 	var parentBenchmarks []string
 
@@ -948,4 +909,18 @@ func (db Database) ListQueriesUniqueTables(ctx context.Context) ([]string, error
 	}
 
 	return tables, nil
+}
+
+func (db Database) GetQueryParameters(ctx context.Context) ([]string, error) {
+	var parameters []string
+
+	tx := db.Orm.WithContext(ctx).
+		Select("DISTINCT key").
+		Model(&QueryParameter{}).
+		Scan(&parameters)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return parameters, nil
 }

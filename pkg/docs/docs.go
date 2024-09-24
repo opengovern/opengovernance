@@ -2663,6 +2663,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v3/categories/controls": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of controls for given categories",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Get list of controls for given categories",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "categories",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetCategoriesControlsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/categories/queries": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of controls for given categories",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Get list of controls for given categories",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "categories",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v3/compliance/summary/benchmark": {
             "post": {
                 "security": [
@@ -2824,6 +2904,46 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ListControlsFilterResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/controls/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of unique resource categories for the give controls",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Get list of unique resource categories",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "controls",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -5324,6 +5444,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v3/queries/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of unique resource categories for the give queries",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Get list of unique resource categories",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "queries",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v3/queries/filters": {
             "get": {
                 "security": [
@@ -5509,11 +5669,73 @@ const docTemplate = `{
                     "named_query"
                 ],
                 "summary": "Get list of unique resource categories",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Tables filter",
+                        "name": "tables",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Categories filter",
+                        "name": "categories",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v3/tables/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of unique resource categories for the give queries",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "named_query"
+                ],
+                "summary": "Get list of unique resource categories",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "tables",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables"
+                            }
                         }
                     }
                 }
@@ -6062,34 +6284,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns list of all connectors v2",
+                "description": "Returns list of all connectors",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "List connectors v2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Tier (Community, Enterprise, (default both)",
-                        "name": "tier",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "PerPage",
-                        "name": "per_page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
+                "summary": "List connectors",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6528,6 +6730,54 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_onboard_api_v2.CreateCredentialV2Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v3/connector": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of all connectors v2",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "List connectors v2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tier (Community, Enterprise, (default both)",
+                        "name": "tier",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "PerPage",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_onboard_api.ConnectorCount"
+                            }
                         }
                     }
                 }
@@ -7957,6 +8207,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v3/sample/loaded": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Syncs demo with the git backend.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Sync demo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Demo Data S3 URL",
+                        "name": "demo_data_s3_url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/workspace/api/v3/sample/purge": {
             "put": {
                 "security": [
@@ -9286,6 +9569,20 @@ const docTemplate = `{
                 "timestamp": {
                     "type": "string",
                     "example": "1686346668"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.CategoryControls": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "controls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.Control"
+                    }
                 }
             }
         },
@@ -10818,6 +11115,15 @@ const docTemplate = `{
         "github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListRequest": {
             "type": "object",
             "properties": {
+                "assigned": {
+                    "type": "boolean"
+                },
+                "controls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "cursor": {
                     "type": "integer"
                 },
@@ -10876,6 +11182,17 @@ const docTemplate = `{
                 },
                 "total_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.GetCategoriesControlsResponse": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.CategoryControls"
+                    }
                 }
             }
         },
@@ -12905,6 +13222,20 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {
                         "type": "number"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "tables": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 }
             }
