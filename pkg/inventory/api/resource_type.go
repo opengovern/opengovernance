@@ -30,6 +30,11 @@ type ResourceTypeV2 struct {
 	Category       string      `json:"category"`
 }
 
+type CategoriesTables struct {
+	Category string   `json:"category"`
+	Tables   []string `json:"tables"`
+}
+
 type ListResourceTypeMetadataResponse struct {
 	TotalResourceTypeCount int            `json:"total_resource_type_count" example:"100" minimum:"0"`
 	ResourceTypes          []ResourceType `json:"resource_types"`
@@ -77,4 +82,13 @@ type ResourceCategory struct {
 
 type GetResourceCategoriesResult struct {
 	Categories []ResourceCategory `json:"categories"`
+}
+
+type CategoryQueries struct {
+	Category string             `json:"category"`
+	Queries  []NamedQueryItemV2 `json:"queries"`
+}
+
+type GetCategoriesControlsResponse struct {
+	Categories []CategoryQueries `json:"categories"`
 }

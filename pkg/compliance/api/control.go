@@ -164,3 +164,12 @@ type ListControlsFiltersResponse struct {
 	ListOfTables    []string            `json:"list_of_tables"`
 	Tags            []ControlTagsResult `json:"tags"`
 }
+
+type CategoryControls struct {
+	Category string    `json:"category"`
+	Controls []Control `json:"controls"`
+}
+
+type GetCategoriesControlsResponse struct {
+	Categories []CategoryControls `json:"categories"`
+}

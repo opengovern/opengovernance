@@ -861,6 +861,52 @@ func (db Database) ListControlsUniqueSeverity(ctx context.Context) ([]string, er
 	return severities, nil
 }
 
+func (db Database) GetControlsByTables(ctx context.Context, tables map[string]bool) ([]Control, error) {
+	var s []Control
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).
+		Preload(clause.Associations)
+
+	if tx.Find(&s).Error != nil {
+		return nil, tx.Error
+	}
+
+	queryIds := make([]string, 0, len(s))
+	for _, control := range s {
+		if control.QueryID != nil {
+			queryIds = append(queryIds, *control.QueryID)
+		}
+	}
+	var queriesMap map[string]Query
+	if len(queryIds) > 0 {
+		var queries []Query
+		qtx := db.Orm.WithContext(ctx).Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
+		if qtx.Error != nil {
+			return nil, qtx.Error
+		}
+		queriesMap = make(map[string]Query)
+		for _, query := range queries {
+			queriesMap[query.ID] = query
+		}
+	}
+
+	for i, c := range s {
+		if c.QueryID != nil {
+			exists := false
+			for _, t := range c.Query.ListOfTables {
+				if _, ok := tables[t]; ok && len(tables) > 0 {
+					exists = true
+				}
+			}
+			if exists {
+				v := queriesMap[*c.QueryID]
+				s[i].Query = &v
+			}
+		}
+	}
+
+	return s, nil
+}
+
 func (db Database) ListControlsUniqueParentBenchmarks(ctx context.Context) ([]string, error) {
 	var parentBenchmarks []string
 

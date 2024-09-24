@@ -28,6 +28,8 @@ type InventoryServiceClient interface {
 	ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, connectionIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error)
 	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
 	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
+	GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error)
+	GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (api.GetResourceCategoriesResult, error)
 }
 
 type inventoryClient struct {
@@ -96,6 +98,69 @@ func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricTy
 	}
 
 	var resp []api.AnalyticsMetric
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (s *inventoryClient) GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error) {
+	url := fmt.Sprintf("%s/api/v3/tables/categories", s.baseURL)
+
+	firstParamAttached := false
+	if len(tables) > 0 {
+		for _, t := range tables {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tables=%s", t)
+		}
+	}
+
+	var resp []api.CategoriesTables
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (s *inventoryClient) GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (api.GetResourceCategoriesResult, error) {
+	url := fmt.Sprintf("%s/api/v3/resources/categories", s.baseURL)
+
+	firstParamAttached := false
+	if len(tables) > 0 {
+		for _, t := range tables {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tables=%s", t)
+		}
+	}
+	if len(categories) > 0 {
+		for _, t := range categories {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("categories=%s", t)
+		}
+	}
+
+	var resp api.GetResourceCategoriesResult
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())

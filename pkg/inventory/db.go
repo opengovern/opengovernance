@@ -83,6 +83,55 @@ func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
 	return res, nil
 }
 
+func (db Database) ListQueries(queryIds []string, tables map[string]bool) ([]NamedQuery, error) {
+	var s []NamedQuery
+
+	m := db.orm.Model(&NamedQuery{})
+
+	if len(queryIds) > 0 {
+		m = m.Where("id in ?", queryIds)
+	}
+
+	tx := m.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	v := map[string]NamedQuery{}
+	for _, item := range s {
+		if _, ok := v[item.ID]; !ok {
+			v[item.ID] = item
+		}
+	}
+	var res []NamedQuery
+	for _, val := range v {
+		res = append(res, val)
+	}
+
+	for i, sq := range res {
+		if sq.QueryID != nil {
+			var query Query
+			tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *sq.QueryID).First(&query)
+			if tx.Error != nil {
+				return nil, tx.Error
+			}
+			exists := false
+			for _, t := range query.ListOfTables {
+				if _, ok := tables[t]; ok && len(tables) > 0 {
+					exists = true
+				}
+			}
+			if exists {
+				res[i].Query = &query
+
+			}
+		}
+	}
+
+	return res, nil
+}
+
 func (db Database) GetQuery(id string) (*NamedQuery, error) {
 	var s NamedQuery
 	tx := db.orm.Model(NamedQuery{}).Preload(clause.Associations).Preload("Tags").Where("id = ?", id).First(&s)
@@ -370,11 +419,36 @@ func (db Database) ListCategoryResourceTypes(category string) ([]ResourceTypeV2,
 
 	tx := db.orm.
 		Model(&ResourceTypeV2{}).
-		Where("category = ?", category).
-		Find(&resourceTypes)
+		Where("category = ?", category)
+
+	tx = tx.Find(&resourceTypes)
+
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return resourceTypes, nil
+}
+
+func (db Database) ListUniqueCategoriesAndTablesForTables(tables []string) ([]CategoriesTables, error) {
+	var results []CategoriesTables
+
+	query := `
+        SELECT 
+            category, 
+            ARRAY_AGG(steampipe_table ORDER BY steampipe_table) AS tables
+        FROM 
+            resource_type_v2`
+
+	if len(tables) > 0 {
+		query = query + ` WHERE steampipe_table in ?`
+	}
+	query = query + ` GROUP BY category`
+
+	err := db.orm.Raw(query, tables).Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
