@@ -119,6 +119,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/queries/categories", httpserver.AuthorizeHandler(h.GetQueriesResourceCategories, api.ViewerRole))
 	v3.GET("/tables/categories", httpserver.AuthorizeHandler(h.GetTablesResourceCategories, api.ViewerRole))
 	v3.GET("/categories/queries", httpserver.AuthorizeHandler(h.GetCategoriesQueries, api.ViewerRole))
+	v3.GET("/parameters/queries", httpserver.AuthorizeHandler(h.GetParametersQueries, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -3607,7 +3608,7 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]api.GetCategoriesControlsResponse
-//	@Router			/compliance/api/v3/categories/controls [get]
+//	@Router			/compliance/api/v3/parameters/controls [get]
 func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
 	parameters := httpserver.QueryArrayParam(ctx, "parameters")
 
