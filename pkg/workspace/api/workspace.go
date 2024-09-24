@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	authApi "github.com/kaytu-io/open-governance/pkg/auth/api"
 	"github.com/kaytu-io/open-governance/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
 	"time"
@@ -114,4 +115,15 @@ type WorkspaceLimitsUsage struct {
 	MaxUsers       int64 `json:"maxUsers" example:"100"`
 	MaxConnections int64 `json:"maxConnections" example:"1000"`
 	MaxResources   int64 `json:"maxResources" example:"100000"`
+}
+
+type About struct {
+	AppVersion            string                         `json:"app_version"`
+	WorkspaceCreationTime time.Time                      `json:"workspace_creation_time"`
+	Users                 []authApi.WorkspaceRoleBinding `json:"users"`
+	PrimaryDomainURL      string                         `json:"primary_domain_url"`
+	APIKeys               []authApi.WorkspaceApiKey      `json:"api_keys"`
+	Integrations          map[string][]api.Connection    `json:"integrations"`
+	SampleData            bool                           `json:"sample_data"`
+	TotalSpendGoverned    float64                        `json:"total_spend_governed"`
 }
