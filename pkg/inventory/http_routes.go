@@ -116,6 +116,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
 	v3.GET("/query/async/run/:run_id/result", httpserver.AuthorizeHandler(h.GetAsyncQueryRunResult, api.ViewerRole))
 	v3.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetResourceCategories, api.ViewerRole))
+	v3.GET("/queries/categories", httpserver.AuthorizeHandler(h.GetQueriesResourceCategories, api.ViewerRole))
+	v3.GET("/tables/categories", httpserver.AuthorizeHandler(h.GetTablesResourceCategories, api.ViewerRole))
+	v3.GET("/categories/queries", httpserver.AuthorizeHandler(h.GetCategoriesQueries, api.ViewerRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -3406,19 +3409,32 @@ func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 //	@Description	Get list of unique resource categories
 //	@Security		BearerToken
 //	@Tags			named_query
+//	@Param			tables			query		[]string		false	"Tables filter"
+//	@Param			categories		query		[]string		false	"Categories filter"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	inventoryApi.GetResourceCategoriesResult
 //	@Router			/inventory/api/v3/resources/categories [get]
 func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
-	categories, err := h.db.ListResourceTypesUniqueCategories()
+	tablesFilter := httpserver.QueryArrayParam(ctx, "tables")
+
+	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(tablesFilter)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
 	}
 
+	categoriesFilter := httpserver.QueryArrayParam(ctx, "categories")
+	categoriesFilterMap := make(map[string]bool)
+	for _, c := range categoriesFilter {
+		categoriesFilterMap[c] = true
+	}
+
 	var categoriesApi []inventoryApi.ResourceCategory
 	for _, c := range categories {
-		resourceTypes, err := h.db.ListCategoryResourceTypes(c)
+		if _, ok := categoriesFilterMap[c.Category]; !ok && len(categoriesFilter) > 0 {
+			continue
+		}
+		resourceTypes, err := h.db.ListCategoryResourceTypes(c.Category)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "list category resource types")
 		}
@@ -3427,7 +3443,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 			resourceTypesApi = append(resourceTypesApi, r.ToApi())
 		}
 		categoriesApi = append(categoriesApi, inventoryApi.ResourceCategory{
-			Category:  c,
+			Category:  c.Category,
 			Resources: resourceTypesApi,
 		})
 	}
@@ -3437,4 +3453,144 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(200, resp)
+}
+
+// GetQueriesResourceCategories godoc
+//
+//	@Summary		Get list of unique resource categories
+//	@Description	Get list of unique resource categories for the give queries
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Param			queries		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]inventoryApi.CategoriesTables
+//	@Router			/inventory/api/v3/queries/categories [get]
+func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
+	queryIds := httpserver.QueryArrayParam(ctx, "queries")
+
+	queries, err := h.db.ListQueries(queryIds, nil)
+	if err != nil {
+		h.logger.Error("could not find queries", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
+	}
+	tablesMap := make(map[string]bool)
+	for _, q := range queries {
+		for _, t := range q.Query.ListOfTables {
+			tablesMap[t] = true
+		}
+	}
+	var tables []string
+	for t, _ := range tablesMap {
+		tables = append(tables, t)
+	}
+
+	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(tables)
+	if err != nil {
+		h.logger.Error("could not find categories", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
+	}
+
+	return ctx.JSON(200, categories)
+}
+
+// GetTablesResourceCategories godoc
+//
+//	@Summary		Get list of unique resource categories
+//	@Description	Get list of unique resource categories for the give queries
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Param			tables		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]inventoryApi.CategoriesTables
+//	@Router			/inventory/api/v3/tables/categories [get]
+func (h *HttpHandler) GetTablesResourceCategories(ctx echo.Context) error {
+	tables := httpserver.QueryArrayParam(ctx, "tables")
+
+	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(tables)
+	if err != nil {
+		h.logger.Error("could not find categories", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
+	}
+
+	return ctx.JSON(200, categories)
+}
+
+// GetCategoriesQueries godoc
+//
+//	@Summary		Get list of controls for given categories
+//	@Description	Get list of controls for given categories
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Param			categories		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]string
+//	@Router			/compliance/api/v3/categories/queries [get]
+func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
+	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
+	}
+
+	categoriesFilter := httpserver.QueryArrayParam(ctx, "categories")
+	categoriesFilterMap := make(map[string]bool)
+	for _, c := range categoriesFilter {
+		categoriesFilterMap[c] = true
+	}
+
+	var categoriesApi []inventoryApi.ResourceCategory
+	for _, c := range categories {
+		if _, ok := categoriesFilterMap[c.Category]; !ok && len(categoriesFilter) > 0 {
+			continue
+		}
+		resourceTypes, err := h.db.ListCategoryResourceTypes(c.Category)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "list category resource types")
+		}
+		var resourceTypesApi []inventoryApi.ResourceTypeV2
+		for _, r := range resourceTypes {
+			resourceTypesApi = append(resourceTypesApi, r.ToApi())
+		}
+		categoriesApi = append(categoriesApi, inventoryApi.ResourceCategory{
+			Category:  c.Category,
+			Resources: resourceTypesApi,
+		})
+	}
+
+	tablesFilter := make(map[string]bool)
+	var categoryQueries []inventoryApi.CategoryQueries
+	for _, c := range categoriesApi {
+		for _, r := range c.Resources {
+			tablesFilter[r.SteampipeTable] = true
+		}
+
+		queries, err := h.db.ListQueries(nil, tablesFilter)
+		if err != nil {
+			h.logger.Error("could not find controls", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
+		}
+		var queriesApi []inventoryApi.NamedQueryItemV2
+		for _, query := range queries {
+			tags := query.GetTagsMap()
+			if query.IsBookmarked {
+				tags["platform_queries_bookmark"] = []string{"true"}
+			}
+			result := inventoryApi.NamedQueryItemV2{
+				ID:          query.ID,
+				Title:       query.Title,
+				Description: query.Description,
+				Connectors:  source.ParseTypes(query.Connectors),
+				Query:       query.Query.ToApi(),
+				Tags:        tags,
+			}
+			queriesApi = append(queriesApi, result)
+		}
+		categoryQueries = append(categoryQueries, inventoryApi.CategoryQueries{
+			Category: c.Category,
+			Queries:  queriesApi,
+		})
+	}
+	return ctx.JSON(200, categories)
 }

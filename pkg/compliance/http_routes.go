@@ -126,6 +126,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/compliance/summary/benchmark", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
 
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
+	v3.GET("/controls/categories", httpserver2.AuthorizeHandler(h.GetControlsResourceCategories, authApi.ViewerRole))
+	v3.GET("/categories/controls", httpserver2.AuthorizeHandler(h.GetCategoriesControls, authApi.ViewerRole))
 	v3.GET("/controls/filters", httpserver2.AuthorizeHandler(h.ListControlsFilters, authApi.ViewerRole))
 	v3.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v3.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
@@ -6390,4 +6392,91 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// GetControlsResourceCategories godoc
+//
+//	@Summary		Get list of unique resource categories
+//	@Description	Get list of unique resource categories for the give controls
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Param			controls		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]string
+//	@Router			/compliance/api/v3/controls/categories [get]
+func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
+	controlIds := httpserver2.QueryArrayParam(ctx, "controls")
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+
+	controls, err := h.db.GetControls(ctx.Request().Context(), controlIds, nil)
+	if err != nil {
+		h.logger.Error("could not find controls", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
+	}
+	tablesMap := make(map[string]bool)
+	for _, c := range controls {
+		for _, t := range c.Query.ListOfTables {
+			tablesMap[t] = true
+		}
+	}
+	var tables []string
+	for t, _ := range tablesMap {
+		tables = append(tables, t)
+	}
+
+	categories, err := h.inventoryClient.GetTablesResourceCategories(clientCtx, tables)
+	if err != nil {
+		h.logger.Error("could not find categories", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
+	}
+
+	return ctx.JSON(200, categories)
+}
+
+// GetCategoriesControls godoc
+//
+//	@Summary		Get list of controls for given categories
+//	@Description	Get list of controls for given categories
+//	@Security		BearerToken
+//	@Tags			named_query
+//	@Param			categories		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]api.GetCategoriesControlsResponse
+//	@Router			/compliance/api/v3/controls/categories [get]
+func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
+	categoriesFilter := httpserver2.QueryArrayParam(ctx, "categories")
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+
+	categories, err := h.inventoryClient.GetResourceCategories(clientCtx, nil, categoriesFilter)
+	if err != nil || len(categories.Categories) == 0 {
+		h.logger.Error("could not find categories", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
+	}
+
+	var categoriesControls []api.CategoryControls
+	for _, c := range categories.Categories {
+		tablesFilter := make(map[string]bool)
+		for _, r := range c.Resources {
+			tablesFilter[r.SteampipeTable] = true
+		}
+		controls, err := h.db.GetControlsByTables(ctx.Request().Context(), tablesFilter)
+		if err != nil {
+			h.logger.Error("could not find controls", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
+		}
+		var controlsApi []api.Control
+		for _, ctrl := range controls {
+			controlsApi = append(controlsApi, ctrl.ToApi())
+		}
+		categoriesControls = append(categoriesControls, api.CategoryControls{
+			Category: c.Category,
+			Controls: controlsApi,
+		})
+	}
+
+	return ctx.JSON(200, api.GetCategoriesControlsResponse{
+		Categories: categoriesControls,
+	})
 }

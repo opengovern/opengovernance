@@ -235,3 +235,16 @@ func (r ResourceTypeV2) ToApi() api.ResourceTypeV2 {
 	}
 	return apiResourceType
 }
+
+type CategoriesTables struct {
+	Category string   `json:"category"`
+	Tables   []string `json:"tables"`
+}
+
+func (r CategoriesTables) ToApi() api.CategoriesTables {
+	apiResourceType := api.CategoriesTables{
+		Tables:   r.Tables,
+		Category: r.Category,
+	}
+	return apiResourceType
+}
