@@ -9,6 +9,7 @@ import (
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	api5 "github.com/kaytu-io/open-governance/pkg/analytics/api"
@@ -21,6 +22,8 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/workspace/db"
 	db2 "github.com/kaytu-io/open-governance/pkg/workspace/db"
 	"github.com/kaytu-io/open-governance/pkg/workspace/statemanager"
+	model2 "github.com/kaytu-io/open-governance/services/demo-importer/db/model"
+	"github.com/kaytu-io/open-governance/services/migrator/db/model"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
@@ -57,6 +60,7 @@ type Server struct {
 	e                  *echo.Echo
 	cfg                config.Config
 	db                 *db.Database
+	migratorDb         *db.Database
 	authClient         authclient.AuthServiceClient
 	kubeClient         k8sclient.Client // the kubernetes client
 	StateManager       *statemanager.Service
@@ -76,6 +80,23 @@ func NewServer(ctx context.Context, logger *zap.Logger, cfg config.Config) (*Ser
 		return nil, fmt.Errorf("new database: %w", err)
 	}
 	s.db = dbs
+
+	migratorDbCfg := postgres.Config{
+		Host:    cfg.Postgres.Host,
+		Port:    cfg.Postgres.Port,
+		User:    cfg.Postgres.Username,
+		Passwd:  cfg.Postgres.Password,
+		DB:      "migrator",
+		SSLMode: cfg.Postgres.SSLMode,
+	}
+	migratorOrm, err := postgres.NewClient(&migratorDbCfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
+	if err := migratorOrm.AutoMigrate(&model.Migration{}); err != nil {
+		return nil, fmt.Errorf("gorm migrate: %w", err)
+	}
+	s.migratorDb = &db.Database{Orm: migratorOrm}
 
 	kubeClient, err := statemanager.NewKubeClient()
 	if err != nil {
@@ -184,6 +205,8 @@ func (s *Server) Register(e *echo.Echo) {
 	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(s.PurgeSampleData, api2.ViewerRole))
 	v3.PUT("/sample/sync", httpserver2.AuthorizeHandler(s.SyncDemo, api2.ViewerRole))
 	v3.PUT("/sample/loaded", httpserver2.AuthorizeHandler(s.WorkspaceLoadedSampleData, api2.ViewerRole))
+	v3.GET("/sample/sync/status", httpserver2.AuthorizeHandler(s.GetSampleSyncStatus, api2.ViewerRole))
+	v3.GET("/migration/status", httpserver2.AuthorizeHandler(s.GetMigrationStatus, api2.ViewerRole))
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -907,4 +930,50 @@ func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
 	} else {
 		return echoCtx.String(http.StatusOK, "False")
 	}
+}
+
+// GetMigrationStatus godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/migration/status [get]
+func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
+	var mig model.Migration
+	tx := s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", "main").First(&mig)
+	if tx.Error != nil {
+		s.logger.Error("failed to get migration", zap.Error(tx.Error))
+		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
+	}
+	return echoCtx.String(http.StatusOK, mig.Status)
+}
+
+// GetSampleSyncStatus godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/sample/sync/status [get]
+func (s *Server) GetSampleSyncStatus(echoCtx echo.Context) error {
+	var mig model.Migration
+	tx := s.migratorDb.Orm.Model(&model2.Migration{}).Where("id = ?", model2.MigrationJobName).First(&mig)
+	if tx.Error != nil {
+		s.logger.Error("failed to get migration", zap.Error(tx.Error))
+		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
+	}
+	return echoCtx.String(http.StatusOK, mig.Status)
 }
