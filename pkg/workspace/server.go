@@ -207,6 +207,8 @@ func (s *Server) Register(e *echo.Echo) {
 	v3.PUT("/sample/loaded", httpserver2.AuthorizeHandler(s.WorkspaceLoadedSampleData, api2.ViewerRole))
 	v3.GET("/sample/sync/status", httpserver2.AuthorizeHandler(s.GetSampleSyncStatus, api2.ViewerRole))
 	v3.GET("/migration/status", httpserver2.AuthorizeHandler(s.GetMigrationStatus, api2.ViewerRole))
+	v3.GET("/configured/status", httpserver2.AuthorizeHandler(s.GetConfiguredStatus, api2.ViewerRole))
+	v3.GET("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -976,4 +978,53 @@ func (s *Server) GetSampleSyncStatus(echoCtx echo.Context) error {
 		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
 	}
 	return echoCtx.String(http.StatusOK, mig.Status)
+}
+
+// GetConfiguredStatus godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/configured/status [get]
+func (s *Server) GetConfiguredStatus(echoCtx echo.Context) error {
+	ws, err := s.db.GetWorkspaceByName("main")
+	if err != nil {
+		s.logger.Error("failed to get workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
+
+	if ws.Configured {
+		return echoCtx.String(http.StatusOK, "True")
+	} else {
+		return echoCtx.String(http.StatusOK, "False")
+	}
+}
+
+// SetConfiguredStatus godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/configured/status [put]
+func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
+	err := s.db.WorkspaceConfigured("main")
+	if err != nil {
+		s.logger.Error("failed to set workspace configured", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set workspace configured")
+	}
+	return echoCtx.NoContent(http.StatusOK)
 }

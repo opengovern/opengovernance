@@ -3471,7 +3471,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 	queryIds := httpserver.QueryArrayParam(ctx, "queries")
 
-	queries, err := h.db.ListQueries(queryIds, nil, nil)
+	queries, err := h.db.ListQueries(queryIds, nil, nil, nil)
 	if err != nil {
 		h.logger.Error("could not find queries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
@@ -3562,14 +3562,18 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 		})
 	}
 
-	tablesFilter := make(map[string]bool)
+	tablesFilterMap := make(map[string]bool)
 	var categoryQueries []inventoryApi.CategoryQueries
 	for _, c := range categoriesApi {
 		for _, r := range c.Resources {
-			tablesFilter[r.SteampipeTable] = true
+			tablesFilterMap[r.SteampipeTable] = true
+		}
+		var tablesFilter []string
+		for k, _ := range tablesFilterMap {
+			tablesFilter = append(tablesFilter, k)
 		}
 
-		queries, err := h.db.ListQueries(nil, tablesFilter, nil)
+		queries, err := h.db.ListQueries(nil, nil, tablesFilter, nil)
 		if err != nil {
 			h.logger.Error("could not find controls", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
@@ -3595,7 +3599,7 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 			Queries:  queriesApi,
 		})
 	}
-	return ctx.JSON(200, categories)
+	return ctx.JSON(200, categoryQueries)
 }
 
 // GetParametersQueries godoc
@@ -3623,9 +3627,7 @@ func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
 
 	var parametersQueries []inventoryApi.ParametersQueries
 	for _, p := range parameters {
-		paramsFilter := make(map[string]bool)
-		paramsFilter[p] = true
-		queries, err := h.db.ListQueries(nil, nil, paramsFilter)
+		queries, err := h.db.ListQueries(nil, nil, nil, []string{p})
 		if err != nil {
 			h.logger.Error("failed to get list of controls", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of controls")

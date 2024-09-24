@@ -84,13 +84,31 @@ func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
 	return res, nil
 }
 
-func (db Database) ListQueries(queryIds []string, tables map[string]bool, param map[string]bool) ([]NamedQuery, error) {
+func (db Database) ListQueries(queryIds []string, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
-	m := db.orm.Model(&NamedQuery{})
+	m := db.orm.Model(&NamedQuery{}).Distinct("named_query.*")
 
 	if len(queryIds) > 0 {
 		m = m.Where("id in ?", queryIds)
+	}
+	if len(params) > 0 || len(primaryTable) > 0 || len(listOfTables) > 0 {
+		m = m.Joins("JOIN queries q ON q.id = named_query.query_id")
+	}
+
+	if len(params) > 0 {
+		m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
+			Where("qp.key IN ?", params).
+			Group("named_query.id").
+			Having("COUNT(qp.query_id) > 0")
+	}
+
+	if len(primaryTable) > 0 {
+		m = m.Where("q.primary_table IN ?", primaryTable)
+	}
+
+	if len(listOfTables) > 0 {
+		m = m.Where("q.list_of_tables::text[] && ?", pq.Array(listOfTables))
 	}
 
 	tx := m.Find(&s)
@@ -105,36 +123,29 @@ func (db Database) ListQueries(queryIds []string, tables map[string]bool, param 
 			v[item.ID] = item
 		}
 	}
+
 	var res []NamedQuery
 	for _, val := range v {
-		if val.QueryID != nil {
-			var query Query
-			tx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id = ?", *val.QueryID).First(&query)
-			if tx.Error != nil {
-				return nil, tx.Error
-			}
-			tableExists := false
-			for _, t := range query.ListOfTables {
-				if _, ok := tables[t]; ok {
-					tableExists = true
-				}
-			}
-			if len(tables) == 0 {
-				tableExists = true
-			}
-			paramExists := false
-			for _, t := range query.Parameters {
-				if _, ok := param[t.Key]; ok {
-					paramExists = true
-				}
-			}
-			if len(param) == 0 {
-				paramExists = true
-			}
-			if tableExists && paramExists {
-				val.Query = &query
-				res = append(res, val)
-			}
+		res = append(res, val)
+	}
+
+	var queriesMap map[string]Query
+	if len(queryIds) > 0 {
+		var queries []Query
+		qtx := db.orm.Model(&Query{}).Preload(clause.Associations).Where("id IN ?", queryIds).Find(&queries)
+		if qtx.Error != nil {
+			return nil, qtx.Error
+		}
+		queriesMap = make(map[string]Query)
+		for _, query := range queries {
+			queriesMap[query.ID] = query
+		}
+	}
+
+	for i, c := range res {
+		if c.QueryID != nil {
+			v := queriesMap[*c.QueryID]
+			res[i].Query = &v
 		}
 	}
 	return res, nil
