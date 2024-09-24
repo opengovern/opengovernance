@@ -1,0 +1,5 @@
+FROM ghcr.io/dexidp/dex:latest
+
+ENV DEX_FRONTEND_DIR=/srv/dex/web
+
+COPY --chown=root:root ./assets/dex-login/web /srv/dex/web
