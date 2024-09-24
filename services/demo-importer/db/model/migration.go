@@ -10,6 +10,8 @@ type JobsStatus string
 const (
 	JobStatusCompleted JobsStatus = "SUCCEEDED"
 	JobStatusFailed    JobsStatus = "FAILED"
+
+	MigrationJobName = "import-sample-data"
 )
 
 type Migration struct {

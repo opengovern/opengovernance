@@ -11,6 +11,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/metadata/client"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/pkg/workspace/db"
+	db2 "github.com/kaytu-io/open-governance/services/demo-importer/db"
 	"github.com/kaytu-io/open-governance/services/demo-importer/fetch"
 	"github.com/kaytu-io/open-governance/services/demo-importer/types"
 	"github.com/kaytu-io/open-governance/services/demo-importer/worker"
@@ -117,7 +118,28 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
 
-			err = worker.ImportJob(ctx, logger, es, "/demo-data/es-demo")
+			psqlMigratorCfg := postgres.Config{
+				Host:    cnf.PostgreSQL.Host,
+				Port:    cnf.PostgreSQL.Port,
+				User:    cnf.PostgreSQL.Username,
+				Passwd:  cnf.PostgreSQL.Password,
+				DB:      "migrator",
+				SSLMode: cnf.PostgreSQL.SSLMode,
+			}
+			migratorOrm, err := postgres.NewClient(&psqlMigratorCfg, logger)
+			if err != nil {
+				return fmt.Errorf("new postgres client: %w", err)
+			}
+
+			migratorDb := db2.Database{
+				ORM: migratorOrm,
+			}
+			err = migratorDb.Initialize()
+			if err != nil {
+				return fmt.Errorf("failure while initializing database: %w", err)
+			}
+
+			err = worker.ImportJob(ctx, logger, migratorDb, es, "/demo-data/es-demo")
 			if err != nil {
 				return fmt.Errorf("failure while importing es indices: %w", err)
 			}

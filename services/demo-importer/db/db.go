@@ -3,7 +3,7 @@ package db
 import (
 	"errors"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/open-governance/services/migrator/db/model"
+	"github.com/kaytu-io/open-governance/services/demo-importer/db/model"
 	"gorm.io/gorm"
 )
 
