@@ -87,6 +87,8 @@ func start(ctx context.Context) error {
 		return err
 	}
 
+	logger = logger.Named("auth")
+
 	verifier, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientID)
 	if err != nil {
 		return fmt.Errorf("open id connect verifier: %w", err)
