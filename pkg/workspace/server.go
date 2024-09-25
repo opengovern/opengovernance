@@ -1047,7 +1047,8 @@ func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/configured/status [put]
 func (s *Server) GetAbout(echoCtx echo.Context) error {
-	ctx := &httpclient.Context{UserRole: api2.InternalRole, Ctx: echoCtx.Request().Context()}
+	ctx := httpclient.FromEchoContext(echoCtx)
+	ctx.UserRole = api2.AdminRole
 
 	ws, err := s.db.GetWorkspaceByName("main")
 	if err != nil {
@@ -1074,8 +1075,8 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 	}
 	apiKeys, err := s.authClient.ListAPIKeys(ctx, ws.ID)
 	if err != nil {
-		s.logger.Error("failed to get users", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
+		s.logger.Error("failed to get api keys", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get api keys")
 	}
 
 	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
