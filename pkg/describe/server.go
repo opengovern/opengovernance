@@ -3364,10 +3364,10 @@ func (s *HttpServer) PurgeSampleData(c echo.Context) error {
 //	@Summary	Get Integration discovery progress (number of jobs in different states)
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request	body	api.ListDescribeJobsRequest	true	"List jobs request"
+//	@Param		request	body	api.GetIntegrationDiscoveryProgressRequest	true	"List jobs request"
 //	@Produce	json
-//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
-//	@Router		/schedule/api/v3/jobs/discovery [post]
+//	@Success	200	{object}	api.GetIntegrationDiscoveryProgressResponse
+//	@Router		/schedule/api/v3/discovery/status [post]
 func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
@@ -3396,9 +3396,18 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
+			h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		connections = append(connections, connectionsTmp...)
+	}
+	var err error
+	if len(connections) == 0 {
+		connections, err = h.Scheduler.onboardClient.ListSources(clientCtx, nil)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
