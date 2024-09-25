@@ -173,6 +173,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 	response := api.SetupResponse{}
 
 	adminRole := api2.AdminRole
+	userId := fmt.Sprintf("dex|%s", req.CreateUser.EmailAddress)
 	err := r.DoCreateUser(api.CreateUserRequest{
 		EmailAddress: req.CreateUser.EmailAddress,
 		Password:     &req.CreateUser.Password,
@@ -233,7 +234,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 					IntegrationTracker: &cid,
 				})
 			}
-			resp, err := r.schedulerClient.RunDiscovery(clientCtx, api3.RunDiscoveryRequest{
+			resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
 				ForceFull:       true,
 				IntegrationInfo: integrations,
 			})
@@ -273,7 +274,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 					IntegrationTracker: &cid,
 				})
 			}
-			resp, err := r.schedulerClient.RunDiscovery(clientCtx, api3.RunDiscoveryRequest{
+			resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
 				ForceFull:       true,
 				IntegrationInfo: integrations,
 			})
