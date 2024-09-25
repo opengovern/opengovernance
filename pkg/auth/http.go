@@ -12,6 +12,7 @@ import (
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/jackc/pgtype"
+	"github.com/kaytu-io/open-governance/pkg/auth/utils"
 	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
 	api3 "github.com/kaytu-io/open-governance/pkg/describe/api"
 	client4 "github.com/kaytu-io/open-governance/pkg/describe/client"
@@ -280,16 +281,47 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 		}
 	}
 
+	err = r.workspaceClient.SetConfiguredStatus(clientCtx)
+	if err != nil {
+		r.logger.Error("failed to set configured status", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set configured status")
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
 func (r *httpRoutes) SetupCheck(ctx echo.Context) error {
-	var req api.SetupRequest
+	var req api.CheckRequest
 	if err := ctx.Bind(&req); err != nil {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	aws := utils.AWSInput{}
+	azure := utils.AzureInput{}
+	if req.AwsCredentials != nil {
+		if req.AwsCredentials.SecretKey != nil {
+			aws.AccessKeyID = *req.AwsCredentials.AccessKey
+		}
+		if req.AwsCredentials.SecretKey != nil {
+			aws.SecretAccessKey = *req.AwsCredentials.SecretKey
+		}
+		aws.RoleName = req.AwsCredentials.AssumeRoleName
+	}
+	if req.AzureCredentials != nil {
+		azure.TenantID = req.AzureCredentials.TenantId
+		azure.ClientID = req.AzureCredentials.ClientId
+		azure.ClientSecret = req.AzureCredentials.ClientSecret
+	}
+	resp, err := utils.ProcessChecksHandler(utils.Input{
+		AWS:   aws,
+		Azure: azure,
+	})
+	if err != nil {
+		r.logger.Error("failed to process checks", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to process checks")
+	}
+
+	return ctx.JSON(http.StatusOK, resp)
 }
 
 // PutRoleBinding godoc
