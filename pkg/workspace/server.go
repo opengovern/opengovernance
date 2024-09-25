@@ -212,7 +212,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v3.GET("/sample/sync/status", httpserver2.AuthorizeHandler(s.GetSampleSyncStatus, api2.ViewerRole))
 	v3.GET("/migration/status", httpserver2.AuthorizeHandler(s.GetMigrationStatus, api2.ViewerRole))
 	v3.GET("/configured/status", httpserver2.AuthorizeHandler(s.GetConfiguredStatus, api2.ViewerRole))
-	v3.GET("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
+	v3.PUT("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
 	v3.GET("/about", httpserver2.AuthorizeHandler(s.GetAbout, api2.ViewerRole))
 }
 
@@ -1024,7 +1024,7 @@ func (s *Server) GetConfiguredStatus(echoCtx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
-//	@Router			/workspace/api/v3/configured/status [put]
+//	@Router			/workspace/api/v3/configured/set [put]
 func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
 	err := s.db.WorkspaceConfigured("main")
 	if err != nil {
@@ -1047,7 +1047,8 @@ func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/configured/status [put]
 func (s *Server) GetAbout(echoCtx echo.Context) error {
-	ctx := &httpclient.Context{UserRole: api2.InternalRole, Ctx: echoCtx.Request().Context()}
+	ctx := httpclient.FromEchoContext(echoCtx)
+	ctx.UserRole = api2.AdminRole
 
 	ws, err := s.db.GetWorkspaceByName("main")
 	if err != nil {
@@ -1074,8 +1075,8 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 	}
 	apiKeys, err := s.authClient.ListAPIKeys(ctx, ws.ID)
 	if err != nil {
-		s.logger.Error("failed to get users", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users")
+		s.logger.Error("failed to get api keys", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get api keys")
 	}
 
 	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
