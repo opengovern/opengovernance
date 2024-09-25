@@ -12,6 +12,9 @@ import (
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/jackc/pgtype"
+	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
+	"github.com/kaytu-io/open-governance/services/integration/api/entity"
+	client3 "github.com/kaytu-io/open-governance/services/integration/client"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -48,12 +51,14 @@ var (
 type httpRoutes struct {
 	logger *zap.Logger
 	//emailService    email.Service
-	workspaceClient client.WorkspaceServiceClient
-	auth0Service    *auth0.Service
-	metadataBaseUrl string
-	kaytuPrivateKey *rsa.PrivateKey
-	db              db.Database
-	authServer      *Server
+	workspaceClient   client.WorkspaceServiceClient
+	complianceClient  client2.ComplianceServiceClient
+	integrationClient client3.IntegrationServiceClient
+	auth0Service      *auth0.Service
+	metadataBaseUrl   string
+	kaytuPrivateKey   *rsa.PrivateKey
+	db                db.Database
+	authServer        *Server
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -81,6 +86,8 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.AdminRole))
 	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.AdminRole))
 	v3.DELETE("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
+	v3.POST("/setup", r.Setup)
+	v3.POST("/setup/check", r.SetupCheck)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -138,6 +145,79 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 			continue
 		}
 		ctx.Response().Header().Set(header.Header.Key, header.Header.Value)
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (r *httpRoutes) Setup(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: api2.InternalRole}
+
+	var req api.SetupRequest
+	if err := ctx.Bind(&req); err != nil {
+		return err
+	}
+
+	if req.CreateUser.EmailAddress == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "missing email address for Admin User")
+	}
+	if req.CreateUser.Password == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "missing password for Admin User")
+	}
+
+	adminRole := api2.AdminRole
+	err := r.DoCreateUser(api.CreateUserRequest{
+		EmailAddress: req.CreateUser.EmailAddress,
+		Password:     &req.CreateUser.Password,
+		Role:         &adminRole,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = r.complianceClient.SyncQueries(clientCtx)
+	if err != nil {
+		r.logger.Error("failed to load meta data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load meta data")
+	}
+
+	if req.IncludeSampleData {
+		err = r.workspaceClient.SyncDemo(clientCtx)
+		if err != nil {
+			r.logger.Error("failed to load sample data", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to load sample data")
+		}
+	} else {
+		if req.AwsCredentials == nil && req.AzureCredentials == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "You need to provide at least one integration credentials")
+		}
+		if req.AwsCredentials != nil {
+			_, err = r.integrationClient.CreateAws(clientCtx, entity.CreateAWSCredentialRequest{
+				Config: *req.AwsCredentials,
+			})
+			if err != nil {
+				r.logger.Error("failed to create aws credentials", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create aws credentials")
+			}
+		}
+		if req.AzureCredentials != nil {
+			_, err = r.integrationClient.CreateAzure(clientCtx, entity.CreateAzureCredentialRequest{
+				Config: *req.AzureCredentials,
+			})
+			if err != nil {
+				r.logger.Error("failed to create azure credential", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create azure credential")
+			}
+		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (r *httpRoutes) SetupCheck(ctx echo.Context) error {
+	var req api.SetupRequest
+	if err := ctx.Bind(&req); err != nil {
+		return err
 	}
 
 	return ctx.NoContent(http.StatusOK)
@@ -792,6 +872,15 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
+	err := r.DoCreateUser(req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	if req.EmailAddress == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
@@ -887,8 +976,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		r.logger.Error("failed to create user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
 	}
-
-	return ctx.NoContent(http.StatusOK)
+	return nil
 }
 
 // UpdateUser godoc

@@ -111,6 +111,7 @@ func (w *Job) Run(ctx context.Context) error {
 		return err
 	}
 
+	hasFailed := false
 	for name, mig := range migrations {
 		w.logger.Info("running migration", zap.String("migrationName", name))
 		//updateNeeded, err := w.CheckIfUpdateIsNeeded(name, mig)
@@ -146,6 +147,7 @@ func (w *Job) Run(ctx context.Context) error {
 			}
 		}
 		if updateFailed {
+			hasFailed = true
 			jobsStatus[name] = model.JobStatusFailed
 		} else {
 			jobsStatus[name] = model.JobStatusCompleted
@@ -176,9 +178,16 @@ func (w *Job) Run(ctx context.Context) error {
 		//}
 	}
 
-	err = w.db.UpdateMigrationJob(m.ID, "COMPLETED", m.JobsStatus)
-	if err != nil {
-		return err
+	if hasFailed {
+		err = w.db.UpdateMigrationJob(m.ID, "FAILED", m.JobsStatus)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = w.db.UpdateMigrationJob(m.ID, "SUCCEEDED", m.JobsStatus)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

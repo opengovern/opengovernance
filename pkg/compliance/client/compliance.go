@@ -30,6 +30,7 @@ type ComplianceServiceClient interface {
 	ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error)
 	GetControlDetails(ctx *httpclient.Context, controlID string) (*compliance.GetControlDetailsResponse, error)
 	PurgeSampleData(ctx *httpclient.Context) error
+	SyncQueries(ctx *httpclient.Context) error
 }
 
 type complianceClient struct {
@@ -38,6 +39,18 @@ type complianceClient struct {
 
 func NewComplianceClient(baseURL string) ComplianceServiceClient {
 	return &complianceClient{baseURL: baseURL}
+}
+
+func (s *complianceClient) SyncQueries(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/api/v1/queries/sync", s.baseURL)
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *complianceClient) ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.BenchmarkAssignedEntities, error) {
