@@ -187,6 +187,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 	err = r.complianceClient.SyncQueries(clientCtx)
 	if err != nil {
 		r.logger.Error("failed to load meta data", zap.Error(err))
+		fmt.Println("failed to load meta data", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load meta data")
 	}
 	response.Metadata = "STARTED"
@@ -195,6 +196,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 		err = r.workspaceClient.SyncDemo(clientCtx)
 		if err != nil {
 			r.logger.Error("failed to load sample data", zap.Error(err))
+			fmt.Println("failed to load sample data", err.Error())
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to load sample data")
 		}
 		started := "STARTED"
@@ -209,6 +211,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			})
 			if err != nil {
 				r.logger.Error("failed to create aws credentials", zap.Error(err))
+				fmt.Println("failed to create aws credentials", err.Error())
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create aws credentials")
 			}
 			var integrations []struct {
@@ -236,6 +239,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			})
 			if err != nil || resp == nil {
 				r.logger.Error("failed to run aws discovery", zap.Error(err))
+				fmt.Println("failed to run aws discovery", err.Error())
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run aws discovery")
 			}
 			triggerId := strconv.Itoa(int(resp.TriggerID))
@@ -247,6 +251,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			})
 			if err != nil {
 				r.logger.Error("failed to create azure credential", zap.Error(err))
+				fmt.Println("failed to create azure credential", err.Error())
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create azure credential")
 			}
 			var integrations []struct {
@@ -274,6 +279,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			})
 			if err != nil || resp == nil {
 				r.logger.Error("failed to run azure discovery", zap.Error(err))
+				fmt.Println("failed to run azure discovery", err.Error())
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run azure discovery")
 			}
 			triggerId := strconv.Itoa(int(resp.TriggerID))
@@ -284,6 +290,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 	err = r.workspaceClient.SetConfiguredStatus(clientCtx)
 	if err != nil {
 		r.logger.Error("failed to set configured status", zap.Error(err))
+		fmt.Println("failed to set configured status", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set configured status")
 	}
 
