@@ -1095,7 +1095,7 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 	inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
 
 	var engine inventoryApi.QueryEngine
-	engine = inventoryApi.QueryEngine_OdysseusRego
+	engine = inventoryApi.QueryEngine_OdysseusSQL
 	query := `SELECT
     (SELECT SUM(cost) FROM azure_costmanagement_costbyresourcetype) +
     (SELECT SUM(amortized_cost_amount) FROM aws_cost_by_service_daily) AS total_cost;`
@@ -1112,8 +1112,14 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 		s.logger.Error("failed to run query", zap.Error(err))
 	}
 
-	totalSpent := results.Result[0][0]
-	floatValue, _ := totalSpent.(float64)
+	var floatValue float64
+	if results != nil {
+		s.logger.Info("query result", zap.Any("result", results.Result))
+		if len(results.Result) > 0 && len(results.Result[0]) > 0 {
+			totalSpent := results.Result[0][0]
+			floatValue, _ = totalSpent.(float64)
+		}
+	}
 
 	var dexConnectors []api.DexConnectorInfo
 	dexClient, err := newDexClient(s.cfg.DexGrpcAddr)
