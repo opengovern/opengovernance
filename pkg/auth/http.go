@@ -13,6 +13,8 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/jackc/pgtype"
 	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
+	api3 "github.com/kaytu-io/open-governance/pkg/describe/api"
+	client4 "github.com/kaytu-io/open-governance/pkg/describe/client"
 	"github.com/kaytu-io/open-governance/services/integration/api/entity"
 	client3 "github.com/kaytu-io/open-governance/services/integration/client"
 	"golang.org/x/crypto/bcrypt"
@@ -21,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +57,7 @@ type httpRoutes struct {
 	workspaceClient   client.WorkspaceServiceClient
 	complianceClient  client2.ComplianceServiceClient
 	integrationClient client3.IntegrationServiceClient
+	schedulerClient   client4.SchedulerServiceClient
 	auth0Service      *auth0.Service
 	metadataBaseUrl   string
 	kaytuPrivateKey   *rsa.PrivateKey
@@ -165,6 +169,8 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "missing password for Admin User")
 	}
 
+	response := api.SetupResponse{}
+
 	adminRole := api2.AdminRole
 	err := r.DoCreateUser(api.CreateUserRequest{
 		EmailAddress: req.CreateUser.EmailAddress,
@@ -175,11 +181,14 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 		return err
 	}
 
+	response.CreatedUser = true
+
 	err = r.complianceClient.SyncQueries(clientCtx)
 	if err != nil {
 		r.logger.Error("failed to load meta data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load meta data")
 	}
+	response.Metadata = "STARTED"
 
 	if req.IncludeSampleData {
 		err = r.workspaceClient.SyncDemo(clientCtx)
@@ -187,31 +196,91 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			r.logger.Error("failed to load sample data", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to load sample data")
 		}
+		started := "STARTED"
+		response.SampleDataImport = &started
 	} else {
 		if req.AwsCredentials == nil && req.AzureCredentials == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "You need to provide at least one integration credentials")
 		}
 		if req.AwsCredentials != nil {
-			_, err = r.integrationClient.CreateAws(clientCtx, entity.CreateAWSCredentialRequest{
+			awsResp, err := r.integrationClient.CreateAws(clientCtx, entity.CreateAWSCredentialRequest{
 				Config: *req.AwsCredentials,
 			})
 			if err != nil {
 				r.logger.Error("failed to create aws credentials", zap.Error(err))
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create aws credentials")
 			}
+			var integrations []struct {
+				Integration        *string `json:"integration"`
+				Type               *string `json:"type"`
+				ID                 *string `json:"id"`
+				IDName             *string `json:"id_name"`
+				IntegrationTracker *string `json:"integration_tracker"`
+			}
+			for _, c := range awsResp.Connections {
+				cid := c.ID.String()
+				integrations = append(integrations, struct {
+					Integration        *string `json:"integration"`
+					Type               *string `json:"type"`
+					ID                 *string `json:"id"`
+					IDName             *string `json:"id_name"`
+					IntegrationTracker *string `json:"integration_tracker"`
+				}{
+					IntegrationTracker: &cid,
+				})
+			}
+			resp, err := r.schedulerClient.RunDiscovery(clientCtx, api3.RunDiscoveryRequest{
+				ForceFull:       true,
+				IntegrationInfo: integrations,
+			})
+			if err != nil || resp == nil {
+				r.logger.Error("failed to run aws discovery", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run aws discovery")
+			}
+			triggerId := strconv.Itoa(int(resp.TriggerID))
+			response.AwsTriggerID = &triggerId
 		}
 		if req.AzureCredentials != nil {
-			_, err = r.integrationClient.CreateAzure(clientCtx, entity.CreateAzureCredentialRequest{
+			azureResp, err := r.integrationClient.CreateAzure(clientCtx, entity.CreateAzureCredentialRequest{
 				Config: *req.AzureCredentials,
 			})
 			if err != nil {
 				r.logger.Error("failed to create azure credential", zap.Error(err))
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create azure credential")
 			}
+			var integrations []struct {
+				Integration        *string `json:"integration"`
+				Type               *string `json:"type"`
+				ID                 *string `json:"id"`
+				IDName             *string `json:"id_name"`
+				IntegrationTracker *string `json:"integration_tracker"`
+			}
+			for _, c := range azureResp.Connections {
+				cid := c.ID.String()
+				integrations = append(integrations, struct {
+					Integration        *string `json:"integration"`
+					Type               *string `json:"type"`
+					ID                 *string `json:"id"`
+					IDName             *string `json:"id_name"`
+					IntegrationTracker *string `json:"integration_tracker"`
+				}{
+					IntegrationTracker: &cid,
+				})
+			}
+			resp, err := r.schedulerClient.RunDiscovery(clientCtx, api3.RunDiscoveryRequest{
+				ForceFull:       true,
+				IntegrationInfo: integrations,
+			})
+			if err != nil || resp == nil {
+				r.logger.Error("failed to run azure discovery", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run azure discovery")
+			}
+			triggerId := strconv.Itoa(int(resp.TriggerID))
+			response.AzureTriggerID = &triggerId
 		}
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.JSON(http.StatusOK, response)
 }
 
 func (r *httpRoutes) SetupCheck(ctx echo.Context) error {

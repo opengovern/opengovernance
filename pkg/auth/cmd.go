@@ -11,6 +11,7 @@ import (
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	client4 "github.com/kaytu-io/open-governance/pkg/describe/client"
 	"os"
 	"strconv"
 
@@ -56,6 +57,7 @@ var (
 	workspaceBaseUrl   = os.Getenv("WORKSPACE_BASE_URL")
 	complianceBaseUrl  = os.Getenv("COMPLIANCE_BASE_URL")
 	integrationBaseUrl = os.Getenv("INTEGRATION_BASE_URL")
+	describeBaseUrl    = os.Getenv("DESCRIBE_BASE_URL")
 	metadataBaseUrl    = os.Getenv("METADATA_BASE_URL")
 )
 
@@ -111,6 +113,7 @@ func start(ctx context.Context) error {
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 	complianceClient := client2.NewComplianceClient(complianceBaseUrl)
 	integrationClient := client3.NewIntegrationServiceClient(integrationBaseUrl)
+	schedulerClient := client4.NewSchedulerServiceClient(describeBaseUrl)
 
 	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
 	if err != nil {
@@ -291,6 +294,7 @@ func start(ctx context.Context) error {
 			workspaceClient:   workspaceClient,
 			complianceClient:  complianceClient,
 			integrationClient: integrationClient,
+			schedulerClient:   schedulerClient,
 			metadataBaseUrl:   metadataBaseUrl,
 			auth0Service:      auth0Service,
 			kaytuPrivateKey:   kaytuPrivateKey,

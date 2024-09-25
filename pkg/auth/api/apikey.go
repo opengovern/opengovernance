@@ -57,3 +57,11 @@ type SetupRequest struct {
 	AwsCredentials    *entity.AWSCredentialConfig   `json:"aws_credentials"`
 	AzureCredentials  *entity.AzureCredentialConfig `json:"azure_credentials"`
 }
+
+type SetupResponse struct {
+	CreatedUser      bool    `json:"created_user"`
+	Metadata         string  `json:"metadata"`
+	SampleDataImport *string `json:"sample_data_import"`
+	AwsTriggerID     *string `json:"aws_trigger_id"`
+	AzureTriggerID   *string `json:"azure_trigger_id"`
+}
