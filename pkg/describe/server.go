@@ -1509,7 +1509,8 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		if info.IntegrationTracker != nil {
 			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				h.Scheduler.logger.Error("failed to get source", zap.String("source id", *info.IntegrationTracker), zap.Error(err))
+				return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 			}
 			if connection != nil {
 				connections = append(connections, *connection)
@@ -1523,7 +1524,8 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 				ProviderIdRegex:   info.ID,
 			})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 		}
 		connections = append(connections, connectionsTmp...)
 	}
@@ -1586,6 +1588,9 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			var jobId uint
 			if job == nil {
 				status = "FAILED"
+				if failureReason == "" && err != nil {
+					failureReason = err.Error()
+				}
 			} else {
 				jobId = job.ID
 				status = string(job.Status)
