@@ -3575,8 +3575,8 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 
 		queries, err := h.db.ListQueries(nil, nil, tablesFilter, nil)
 		if err != nil {
-			h.logger.Error("could not find controls", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
+			h.logger.Error("could not find queries", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
 		}
 		var queriesApi []inventoryApi.NamedQueryItemV2
 		for _, query := range queries {
