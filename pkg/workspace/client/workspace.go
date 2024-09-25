@@ -12,6 +12,7 @@ type WorkspaceServiceClient interface {
 	GetByName(ctx *httpclient.Context, workspaceName string) (api.Workspace, error)
 	ListWorkspaces(ctx *httpclient.Context) ([]api.WorkspaceResponse, error)
 	SyncDemo(ctx *httpclient.Context) error
+	SetConfiguredStatus(ctx *httpclient.Context) error
 }
 
 type workspaceClient struct {
@@ -43,6 +44,15 @@ func (s *workspaceClient) ListWorkspaces(ctx *httpclient.Context) ([]api.Workspa
 
 func (s *workspaceClient) SyncDemo(ctx *httpclient.Context) error {
 	url := fmt.Sprintf("%s/api/v3/sample/sync", s.baseURL)
+
+	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *workspaceClient) SetConfiguredStatus(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/api/v3/configured/set", s.baseURL)
 
 	if _, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
 		return err
