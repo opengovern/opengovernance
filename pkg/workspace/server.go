@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	dexApi "github.com/dexidp/dex/api/v2"
 	api6 "github.com/hashicorp/vault/api"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -26,6 +27,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/workspace/statemanager"
 	model2 "github.com/kaytu-io/open-governance/services/demo-importer/db/model"
 	"github.com/kaytu-io/open-governance/services/migrator/db/model"
+	"google.golang.org/grpc"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
@@ -1047,7 +1049,7 @@ func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
 func (s *Server) GetAbout(echoCtx echo.Context) error {
 	ctx := &httpclient.Context{UserRole: api2.InternalRole, Ctx: echoCtx.Request().Context()}
 
-	ws, err := s.db.GetWorkspace("main")
+	ws, err := s.db.GetWorkspaceByName("main")
 	if err != nil {
 		s.logger.Error("failed to get workspace info", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace info")
@@ -1112,7 +1114,28 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 	totalSpent := results.Result[0][0]
 	floatValue, _ := totalSpent.(float64)
 
+	var dexConnectors []api.DexConnectorInfo
+	dexClient, err := newDexClient(s.cfg.DexGrpcAddr)
+	if err != nil {
+		s.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+	}
+
+	dexRes, err := dexClient.ListConnectors(ctx.Request().Context(), &dexApi.ListConnectorReq{})
+	if err != nil {
+		s.logger.Error("failed to list dex connectors", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to list dex connectors")
+	}
+	for _, c := range dexRes.Connectors {
+		dexConnectors = append(dexConnectors, api.DexConnectorInfo{
+			ID:   c.Id,
+			Name: c.Name,
+			Type: c.Type,
+		})
+	}
+
 	response := api.About{
+		DexConnectors:         dexConnectors,
 		AppVersion:            version,
 		WorkspaceCreationTime: ws.CreatedAt,
 		Users:                 users,
@@ -1124,4 +1147,12 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
+	conn, err := grpc.NewClient(hostAndPort, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("dial: %v", err)
+	}
+	return dexApi.NewDexClient(conn), nil
 }

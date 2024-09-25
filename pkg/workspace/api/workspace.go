@@ -117,7 +117,14 @@ type WorkspaceLimitsUsage struct {
 	MaxResources   int64 `json:"maxResources" example:"100000"`
 }
 
+type DexConnectorInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 type About struct {
+	DexConnectors         []DexConnectorInfo             `json:"dex_connectors"`
 	AppVersion            string                         `json:"app_version"`
 	WorkspaceCreationTime time.Time                      `json:"workspace_creation_time"`
 	Users                 []authApi.WorkspaceRoleBinding `json:"users"`
