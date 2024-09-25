@@ -20,4 +20,5 @@ type Config struct {
 	KaytuOctopusNamespace string `yaml:"kaytu_octopus_namespace" koanf:"kaytu_octopus_namespace"`
 	PrimaryDomainURL      string `yaml:"primary_domain_url" koanf:"primary_domain_url"`
 	KaytuWorkspaceVersion string `yaml:"kaytu_workspace_version" koanf:"kaytu_workspace_version"`
+	DexGrpcAddr           string `yaml:"dex_grpc_addr" koanf:"dex_grpc_addr"`
 }
