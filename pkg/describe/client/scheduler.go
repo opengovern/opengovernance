@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
@@ -28,6 +29,7 @@ type SchedulerServiceClient interface {
 	GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error)
 	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
 	PurgeSampleData(ctx *httpclient.Context) error
+	RunDiscovery(ctx *httpclient.Context, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
 }
 
 type schedulerClient struct {
@@ -36,6 +38,24 @@ type schedulerClient struct {
 
 func NewSchedulerServiceClient(baseURL string) SchedulerServiceClient {
 	return &schedulerClient{baseURL: baseURL}
+}
+
+func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/discovery/run", s.baseURL)
+
+	payload, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	var response api.RunDiscoveryResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
 }
 
 func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error) {
