@@ -89,9 +89,12 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/compliance/connections/:connection_id", httpserver.AuthorizeHandler(h.GetComplianceJobsHistory, apiAuth.ViewerRole))
 	v3.POST("/jobs/discovery/connections", httpserver.AuthorizeHandler(h.GetDescribeJobsHistoryByIntegration, apiAuth.ViewerRole))
 	v3.POST("/jobs/compliance/connections", httpserver.AuthorizeHandler(h.GetComplianceJobsHistoryByIntegration, apiAuth.ViewerRole))
+
 	v3.POST("/compliance/benchmark/:benchmark_id/run", httpserver.AuthorizeHandler(h.RunBenchmarkById, apiAuth.AdminRole))
 	v3.POST("/compliance/run", httpserver.AuthorizeHandler(h.RunBenchmark, apiAuth.AdminRole))
 	v3.POST("/discovery/run", httpserver.AuthorizeHandler(h.RunDiscovery, apiAuth.AdminRole))
+	v3.POST("/discovery/status", httpserver.AuthorizeHandler(h.GetIntegrationDiscoveryProgress, apiAuth.ViewerRole))
+
 	v3.PUT("/query/:query_id/run", httpserver.AuthorizeHandler(h.RunQuery, apiAuth.AdminRole))
 	v3.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
@@ -104,6 +107,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
 	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.ViewerRole))
 	v3.GET("/jobs/interval", httpserver.AuthorizeHandler(h.ListJobsInterval, apiAuth.ViewerRole))
+
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, apiAuth.AdminRole))
 }
 
@@ -1168,7 +1172,7 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
-	jobs, err := h.DB.ListDescribeJobsByFilters([]string{connectionId}, request.ResourceType,
+	jobs, err := h.DB.ListDescribeJobsByFilters(nil, []string{connectionId}, request.ResourceType,
 		request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -1852,7 +1856,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
-	jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, request.ResourceType,
+	jobs, err := h.DB.ListDescribeJobsByFilters(nil, connectionIDs, request.ResourceType,
 		request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -2191,7 +2195,7 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
 	for _, c := range connectionInfo {
-		jobs, err := h.DB.ListDescribeJobsByFilters([]string{c.IntegrationTracker}, request.ResourceType,
+		jobs, err := h.DB.ListDescribeJobsByFilters(nil, []string{c.IntegrationTracker}, request.ResourceType,
 			request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -3014,7 +3018,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 				})
 			}
 		case "discovery":
-			jobs, err := h.DB.ListDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
+			jobs, err := h.DB.ListDescribeJobsByFilters(nil, connectionIDs, nil, nil, nil, nil, nil)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -3353,4 +3357,127 @@ func (s *HttpServer) PurgeSampleData(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// GetIntegrationDiscoveryProgress godoc
+//
+//	@Summary	Get Integration discovery progress (number of jobs in different states)
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.ListDescribeJobsRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
+//	@Router		/schedule/api/v3/jobs/discovery [post]
+func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.GetIntegrationDiscoveryProgressRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	var connections []onboardapi.Connection
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	connectionInfo := make(map[string]api.IntegrationInfo)
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionInfo[c.ID.String()] = api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
+		}
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
+	integrationDiscoveries, err := h.DB.ListIntegrationDiscovery(request.TriggerID, connectionIDs)
+	if err != nil {
+		h.Scheduler.logger.Error("cannot find integration discoveries", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "cannot find integration discoveries")
+	}
+	var integrationDiscoveriesIds []string
+	for _, i := range integrationDiscoveries {
+		integrationDiscoveriesIds = append(integrationDiscoveriesIds, strconv.Itoa(int(i.ID)))
+	}
+
+	jobs, err := h.DB.ListDescribeJobsByFilters(integrationDiscoveriesIds, nil, nil,
+		nil, nil, nil, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	triggerIdProgress := &api.DiscoveryProgressStatus{}
+	integrationsDiscoveryProgressStatus := make(map[string]api.IntegrationDiscoveryProgressStatus)
+	for _, j := range jobs {
+		if _, ok := integrationsDiscoveryProgressStatus[j.ConnectionID]; !ok {
+			integrationsDiscoveryProgressStatus[j.ConnectionID] = api.IntegrationDiscoveryProgressStatus{
+				Integration:    connectionInfo[j.ConnectionID],
+				ProgressStatus: &api.DiscoveryProgressStatus{},
+			}
+		}
+		switch j.Status {
+		case api.DescribeResourceJobCreated:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.CreatedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.CreatedCount + 1
+			triggerIdProgress.CreatedCount = triggerIdProgress.CreatedCount + 1
+		case api.DescribeResourceJobQueued:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.QueuedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.QueuedCount + 1
+			triggerIdProgress.QueuedCount = triggerIdProgress.QueuedCount + 1
+		case api.DescribeResourceJobInProgress:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.InProgressCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.InProgressCount + 1
+			triggerIdProgress.InProgressCount = triggerIdProgress.InProgressCount + 1
+		case api.DescribeResourceJobOldResourceDeletion:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.OldResourceDeletionCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.OldResourceDeletionCount + 1
+			triggerIdProgress.OldResourceDeletionCount = triggerIdProgress.OldResourceDeletionCount + 1
+		case api.DescribeResourceJobTimeout:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.TimeoutCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.TimeoutCount + 1
+			triggerIdProgress.TimeoutCount = triggerIdProgress.TimeoutCount + 1
+		case api.DescribeResourceJobFailed:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.FailedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.FailedCount + 1
+			triggerIdProgress.FailedCount = triggerIdProgress.FailedCount + 1
+		case api.DescribeResourceJobSucceeded:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.SucceededCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.SucceededCount + 1
+			triggerIdProgress.SucceededCount = triggerIdProgress.SucceededCount + 1
+		case api.DescribeResourceJobRemovingResources:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.RemovingResourcesCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.RemovingResourcesCount + 1
+			triggerIdProgress.RemovingResourcesCount = triggerIdProgress.RemovingResourcesCount + 1
+		case api.DescribeResourceJobCanceled:
+			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.CanceledCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatus.CanceledCount + 1
+			triggerIdProgress.CanceledCount = triggerIdProgress.CanceledCount + 1
+		}
+	}
+
+	var integrationsDiscoveryProgressStatusResult []api.IntegrationDiscoveryProgressStatus
+	for _, v := range integrationsDiscoveryProgressStatus {
+		integrationsDiscoveryProgressStatusResult = append(integrationsDiscoveryProgressStatusResult, v)
+	}
+
+	response := api.GetIntegrationDiscoveryProgressResponse{
+		IntegrationProgress: integrationsDiscoveryProgressStatusResult,
+		TriggerIdProgress:   triggerIdProgress,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }

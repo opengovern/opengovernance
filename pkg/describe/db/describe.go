@@ -346,11 +346,15 @@ func (db Database) ListDescribeJobsForInterval(interval string) ([]model.Describ
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsByFilters(connectionIds []string, resourceType []string,
+func (db Database) ListDescribeJobsByFilters(parentIds []string, connectionIds []string, resourceType []string,
 	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
 	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+
+	if len(parentIds) > 0 {
+		tx = tx.Where("parent_id IN ?", parentIds)
+	}
 
 	if len(connectionIds) > 0 {
 		tx = tx.Where("connection_id IN ?", connectionIds)
@@ -752,12 +756,16 @@ func (db Database) CreateIntegrationDiscovery(discovery *model.IntegrationDiscov
 	return nil
 }
 
-func (db Database) ListIntegrationDiscoveryByTrackID(triggerId uint) ([]model.IntegrationDiscovery, error) {
+func (db Database) ListIntegrationDiscovery(triggerId string, connectionIds []string) ([]model.IntegrationDiscovery, error) {
 	var jobs []model.IntegrationDiscovery
 	tx := db.ORM.
 		Model(&model.IntegrationDiscovery{}).
-		Where("trigger_id = ?", triggerId).
-		Find(&jobs)
+		Where("trigger_id = ?", triggerId)
+
+	if len(connectionIds) > 0 {
+		tx = tx.Where("connection_id in ?", connectionIds)
+	}
+	tx = tx.Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
