@@ -4,6 +4,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/open-governance/pkg/describe/api"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"
 )
@@ -30,7 +31,7 @@ type IntegrationDiscovery struct {
 	TriggerType   enums.DescribeTriggerType `json:"triggerType"`
 	TriggeredBy   string                    `json:"triggeredBy"`
 	DiscoveryType DiscoveryType
-	ResourceTypes []string
+	ResourceTypes pq.StringArray `gorm:"type:text[]" json:"resourceTypes"`
 }
 
 type DescribeConnectionJob struct {
