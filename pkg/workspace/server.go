@@ -1128,17 +1128,21 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 	}
 
-	dexRes, err := dexClient.ListConnectors(ctx.Request().Context(), &dexApi.ListConnectorReq{})
-	if err != nil {
-		s.logger.Error("failed to list dex connectors", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to list dex connectors")
-	}
-	for _, c := range dexRes.Connectors {
-		dexConnectors = append(dexConnectors, api.DexConnectorInfo{
-			ID:   c.Id,
-			Name: c.Name,
-			Type: c.Type,
-		})
+	if dexClient != nil {
+		dexRes, err := dexClient.ListConnectors(context.Background(), &dexApi.ListConnectorReq{})
+		if err != nil {
+			s.logger.Error("failed to list dex connectors", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to list dex connectors")
+		}
+		if dexRes != nil {
+			for _, c := range dexRes.Connectors {
+				dexConnectors = append(dexConnectors, api.DexConnectorInfo{
+					ID:   c.Id,
+					Name: c.Name,
+					Type: c.Type,
+				})
+			}
+		}
 	}
 
 	response := api.About{
