@@ -212,7 +212,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v3.GET("/sample/sync/status", httpserver2.AuthorizeHandler(s.GetSampleSyncStatus, api2.ViewerRole))
 	v3.GET("/migration/status", httpserver2.AuthorizeHandler(s.GetMigrationStatus, api2.ViewerRole))
 	v3.GET("/configured/status", httpserver2.AuthorizeHandler(s.GetConfiguredStatus, api2.ViewerRole))
-	v3.GET("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
+	v3.PUT("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
 	v3.GET("/about", httpserver2.AuthorizeHandler(s.GetAbout, api2.ViewerRole))
 }
 
