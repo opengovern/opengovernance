@@ -1496,6 +1496,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 //	@Router			/schedule/api/v3/discovery/run [post]
 func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	userID := httpserver.GetUserID(ctx)
 
 	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
 	triggerId, err := sf.NextID()
@@ -1553,7 +1554,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			ConnectionID:  connection.ID.String(),
 			AccountID:     connection.ConnectionID,
 			TriggerType:   enums.DescribeTriggerTypeManual,
-			TriggeredBy:   "",
+			TriggeredBy:   userID,
 			DiscoveryType: discoveryType,
 			ResourceTypes: rtToDescribe,
 		}
