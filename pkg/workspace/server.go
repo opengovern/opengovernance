@@ -1024,7 +1024,7 @@ func (s *Server) GetConfiguredStatus(echoCtx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
-//	@Router			/workspace/api/v3/configured/status [put]
+//	@Router			/workspace/api/v3/configured/set [put]
 func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
 	err := s.db.WorkspaceConfigured("main")
 	if err != nil {
