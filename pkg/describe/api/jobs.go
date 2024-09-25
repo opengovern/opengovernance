@@ -393,3 +393,36 @@ type RunQueryResponse struct {
 	CreatedBy string                        `json:"created_by"`
 	Status    queryrunner.QueryRunnerStatus `json:"status"`
 }
+
+type GetIntegrationDiscoveryProgressRequest struct {
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
+	TriggerID string `json:"trigger_id"`
+}
+
+type DiscoveryProgressStatus struct {
+	CreatedCount             int64 `json:"created_count"`
+	QueuedCount              int64 `json:"queued_count"`
+	InProgressCount          int64 `json:"in_progress_count"`
+	OldResourceDeletionCount int64 `json:"old_resource_deletion"`
+	TimeoutCount             int64 `json:"timeout_count"`
+	FailedCount              int64 `json:"failed_count"`
+	SucceededCount           int64 `json:"succeeded_count"`
+	RemovingResourcesCount   int64 `json:"removing_resources_count"`
+	CanceledCount            int64 `json:"canceled_count"`
+}
+
+type IntegrationDiscoveryProgressStatus struct {
+	Integration    IntegrationInfo          `json:"integration"`
+	ProgressStatus *DiscoveryProgressStatus `json:"progress_status"`
+}
+
+type GetIntegrationDiscoveryProgressResponse struct {
+	IntegrationProgress []IntegrationDiscoveryProgressStatus `json:"integration_progress"`
+	TriggerIdProgress   *DiscoveryProgressStatus             `json:"trigger_id_progress"`
+}
