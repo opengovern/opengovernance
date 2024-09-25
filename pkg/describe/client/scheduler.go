@@ -30,7 +30,7 @@ type SchedulerServiceClient interface {
 	GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error)
 	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
 	PurgeSampleData(ctx *httpclient.Context) error
-	RunDiscovery(ctx *httpclient.Context, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
+	RunDiscovery(ctx *httpclient.Context, userId string, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
 }
 
 type schedulerClient struct {
@@ -41,7 +41,7 @@ func NewSchedulerServiceClient(baseURL string) SchedulerServiceClient {
 	return &schedulerClient{baseURL: baseURL}
 }
 
-func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error) {
+func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, userId string, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error) {
 	url := fmt.Sprintf("%s/api/v3/discovery/run", s.baseURL)
 
 	payload, err := json.Marshal(request)
@@ -50,7 +50,7 @@ func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, request api.RunD
 	}
 
 	headers := map[string]string{
-		httpserver.XKaytuUserIDHeader:        ctx.UserID,
+		httpserver.XKaytuUserIDHeader:        userId,
 		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
 		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
 		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
