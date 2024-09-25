@@ -87,19 +87,19 @@ func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
 func (db Database) ListQueries(queryIds []string, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
-	m := db.orm.Model(&NamedQuery{}).Distinct("named_query.*")
+	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*")
 
 	if len(queryIds) > 0 {
 		m = m.Where("id in ?", queryIds)
 	}
 	if len(params) > 0 || len(primaryTable) > 0 || len(listOfTables) > 0 {
-		m = m.Joins("JOIN queries q ON q.id = named_query.query_id")
+		m = m.Joins("JOIN queries q ON q.id = named_queries.query_id")
 	}
 
 	if len(params) > 0 {
 		m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
 			Where("qp.key IN ?", params).
-			Group("named_query.id").
+			Group("named_queries.id").
 			Having("COUNT(qp.query_id) > 0")
 	}
 
