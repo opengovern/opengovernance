@@ -17,7 +17,9 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/auth/api"
 	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
 	"github.com/kaytu-io/open-governance/pkg/auth/db"
+	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
 	"github.com/kaytu-io/open-governance/pkg/workspace/client"
+	client3 "github.com/kaytu-io/open-governance/services/integration/client"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -43,6 +45,8 @@ type Server struct {
 	dexVerifier             *oidc.IDTokenVerifier
 	logger                  *zap.Logger
 	workspaceClient         client.WorkspaceServiceClient
+	complianceClient        client2.ComplianceServiceClient
+	integrationClient       client3.IntegrationServiceClient
 	db                      db.Database
 	auth0Service            *auth0.Service
 

@@ -17,7 +17,9 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
 	"github.com/kaytu-io/open-governance/pkg/auth/db"
 
+	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
 	"github.com/kaytu-io/open-governance/pkg/workspace/client"
+	client3 "github.com/kaytu-io/open-governance/services/integration/client"
 
 	"crypto/rand"
 	"github.com/spf13/cobra"
@@ -51,8 +53,10 @@ var (
 	kaytuPublicKeyStr  = os.Getenv("KAYTU_PUBLIC_KEY")
 	kaytuPrivateKeyStr = os.Getenv("KAYTU_PRIVATE_KEY")
 
-	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
-	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
+	workspaceBaseUrl   = os.Getenv("WORKSPACE_BASE_URL")
+	complianceBaseUrl  = os.Getenv("COMPLIANCE_BASE_URL")
+	integrationBaseUrl = os.Getenv("INTEGRATION_BASE_URL")
+	metadataBaseUrl    = os.Getenv("METADATA_BASE_URL")
 )
 
 func Command() *cobra.Command {
@@ -105,6 +109,8 @@ func start(ctx context.Context) error {
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
+	complianceClient := client2.NewComplianceClient(complianceBaseUrl)
+	integrationClient := client3.NewIntegrationServiceClient(integrationBaseUrl)
 
 	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
 	if err != nil {
@@ -267,6 +273,8 @@ func start(ctx context.Context) error {
 		dexVerifier:             dexVerifier,
 		logger:                  logger,
 		workspaceClient:         workspaceClient,
+		complianceClient:        complianceClient,
+		integrationClient:       integrationClient,
 		db:                      adb,
 		auth0Service:            auth0Service,
 		updateLoginUserList:     nil,
@@ -280,12 +288,14 @@ func start(ctx context.Context) error {
 		routes := httpRoutes{
 			logger: logger,
 			//emailService:    m,
-			workspaceClient: workspaceClient,
-			metadataBaseUrl: metadataBaseUrl,
-			auth0Service:    auth0Service,
-			kaytuPrivateKey: kaytuPrivateKey,
-			db:              adb,
-			authServer:      authServer,
+			workspaceClient:   workspaceClient,
+			complianceClient:  complianceClient,
+			integrationClient: integrationClient,
+			metadataBaseUrl:   metadataBaseUrl,
+			auth0Service:      auth0Service,
+			kaytuPrivateKey:   kaytuPrivateKey,
+			db:                adb,
+			authServer:        authServer,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
 	}()

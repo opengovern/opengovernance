@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/open-governance/services/integration/api/entity"
 	"time"
 )
 
@@ -45,4 +46,14 @@ type UpdateUserRequest struct {
 	EmailAddress string    `json:"email_address"`
 	Role         *api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"`
 	Password     *string   `json:"password"`
+}
+
+type SetupRequest struct {
+	CreateUser struct {
+		EmailAddress string `json:"email_address"`
+		Password     string `json:"password"`
+	} `json:"create_user"`
+	IncludeSampleData bool                          `json:"include_sample_data"`
+	AwsCredentials    *entity.AWSCredentialConfig   `json:"aws_credentials"`
+	AzureCredentials  *entity.AzureCredentialConfig `json:"azure_credentials"`
 }
