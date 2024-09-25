@@ -213,7 +213,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil {
 				r.logger.Error("failed to create aws credentials", zap.Error(err))
 				fmt.Println("failed to create aws credentials", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create aws credentials")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create aws credential", err.Error()))
 			}
 			var integrations []struct {
 				Integration        *string `json:"integration"`
@@ -241,7 +241,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil || resp == nil {
 				r.logger.Error("failed to run aws discovery", zap.Error(err))
 				fmt.Println("failed to run aws discovery", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run aws discovery")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run aws discovery: ", err.Error()))
 			}
 			triggerId := strconv.Itoa(int(resp.TriggerID))
 			response.AwsTriggerID = &triggerId
@@ -253,7 +253,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil {
 				r.logger.Error("failed to create azure credential", zap.Error(err))
 				fmt.Println("failed to create azure credential", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create azure credential")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create azure credential", err.Error()))
 			}
 			var integrations []struct {
 				Integration        *string `json:"integration"`
@@ -281,7 +281,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil || resp == nil {
 				r.logger.Error("failed to run azure discovery", zap.Error(err))
 				fmt.Println("failed to run azure discovery", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run azure discovery")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run azure discovery: ", err.Error()))
 			}
 			triggerId := strconv.Itoa(int(resp.TriggerID))
 			response.AzureTriggerID = &triggerId
