@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	"net/http"
 	"time"
@@ -48,8 +49,15 @@ func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, request api.RunD
 		return nil, err
 	}
 
+	headers := map[string]string{
+		httpserver.XKaytuUserIDHeader:        ctx.UserID,
+		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
+		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
+		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
+	}
+
 	var response api.RunDiscoveryResponse
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, headers, payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
