@@ -89,7 +89,7 @@ func (db Database) UpdateTimedOutInProgressQueryRunners() error {
 	tx := db.ORM.
 		Model(&model.QueryRunnerJob{}).
 		Where("status = ?", queryrunner.QueryRunnerInProgress).
-		Where("updated_at < NOW() - INTERVAL '? MINUTES'", queryrunner.JobTimeoutMinutes).
+		Where("updated_at < NOW() - INTERVAL '5 MINUTES'").
 		Updates(model.QueryRunnerJob{Status: queryrunner.QueryRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
