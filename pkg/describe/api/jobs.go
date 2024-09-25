@@ -212,12 +212,17 @@ type RunDiscoveryRequest struct {
 	} `json:"integration_info"`
 }
 
-type RunDiscoveryResponse struct {
+type RunDiscoveryJob struct {
 	JobId           uint            `json:"job_id"`
 	ResourceType    string          `json:"resource_type"`
 	Status          string          `json:"status"`
 	FailureReason   string          `json:"failure_reason"`
 	IntegrationInfo IntegrationInfo `json:"integration_info"`
+}
+
+type RunDiscoveryResponse struct {
+	Jobs      []RunDiscoveryJob `json:"jobs"`
+	TriggerID uint              `json:"trigger_id"`
 }
 
 type GetDescribeJobStatusResponse struct {
@@ -405,7 +410,7 @@ type GetIntegrationDiscoveryProgressRequest struct {
 	TriggerID string `json:"trigger_id"`
 }
 
-type DiscoveryProgressStatus struct {
+type DiscoveryProgressStatusBreakdown struct {
 	CreatedCount             int64 `json:"created_count"`
 	QueuedCount              int64 `json:"queued_count"`
 	InProgressCount          int64 `json:"in_progress_count"`
@@ -417,12 +422,19 @@ type DiscoveryProgressStatus struct {
 	CanceledCount            int64 `json:"canceled_count"`
 }
 
+type DiscoveryProgressStatusSummary struct {
+	TotalCount     int64 `json:"total_count"`
+	ProcessedCount int64 `json:"processed_count"`
+}
+
 type IntegrationDiscoveryProgressStatus struct {
-	Integration    IntegrationInfo          `json:"integration"`
-	ProgressStatus *DiscoveryProgressStatus `json:"progress_status"`
+	Integration             IntegrationInfo                   `json:"integration"`
+	ProgressStatusBreakdown *DiscoveryProgressStatusBreakdown `json:"breakdown"`
+	ProgressStatusSummary   *DiscoveryProgressStatusSummary   `json:"summary"`
 }
 
 type GetIntegrationDiscoveryProgressResponse struct {
-	IntegrationProgress []IntegrationDiscoveryProgressStatus `json:"integration_progress"`
-	TriggerIdProgress   *DiscoveryProgressStatus             `json:"trigger_id_progress"`
+	IntegrationProgress        []IntegrationDiscoveryProgressStatus `json:"integration_progress"`
+	TriggerIdProgressSummary   *DiscoveryProgressStatusSummary      `json:"trigger_id_progress_summary"`
+	TriggerIdProgressBreakdown *DiscoveryProgressStatusBreakdown    `json:"trigger_id_progress_breakdown"`
 }
