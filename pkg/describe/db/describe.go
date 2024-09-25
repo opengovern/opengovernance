@@ -740,3 +740,40 @@ func (db Database) CleanupAllDescribeConnectionJobs() error {
 	}
 	return nil
 }
+
+func (db Database) CreateIntegrationDiscovery(discovery *model.IntegrationDiscovery) error {
+	tx := db.ORM.
+		Model(&model.IntegrationDiscovery{}).
+		Create(discovery)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListIntegrationDiscoveryByTrackID(triggerId uint) ([]model.IntegrationDiscovery, error) {
+	var jobs []model.IntegrationDiscovery
+	tx := db.ORM.
+		Model(&model.IntegrationDiscovery{}).
+		Where("trigger_id = ?", triggerId).
+		Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) GetDiscoveryJobsByParentID(parentId uint) ([]model.DescribeConnectionJob, error) {
+	var jobs []model.DescribeConnectionJob
+	tx := db.ORM.
+		Model(&model.DescribeConnectionJob{}).
+		Where("parent_id = ?", parentId).
+		Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}

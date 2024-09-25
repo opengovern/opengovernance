@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -15,6 +16,7 @@ import (
 	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/kaytu-io/open-governance/pkg/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/sony/sonyflake"
 	"net/http"
 	"regexp"
 	"sort"
@@ -454,7 +456,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 			if !src.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type for connection: %s", resourceType))
 			}
-			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false)
+			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false, nil)
 			if err == ErrJobInProgress {
 				return echo.NewHTTPError(http.StatusConflict, err.Error())
 			}
@@ -536,7 +538,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				continue
 			}
-			_, err = h.Scheduler.describe(connection, resourceType, false, false, false)
+			_, err = h.Scheduler.describe(connection, resourceType, false, false, false, nil)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}
@@ -818,7 +820,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false, false)
+		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false, false, nil)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
 			continue
@@ -1494,6 +1496,13 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 //	@Router			/schedule/api/v3/discovery/run [post]
 func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	userID := httpserver.GetUserID(ctx)
+
+	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
+	triggerId, err := sf.NextID()
+	if err != nil {
+		return err
+	}
 
 	var request api.RunDiscoveryRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -1536,6 +1545,24 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			continue
 		}
 		rtToDescribe := request.ResourceTypes
+		discoveryType := model2.DiscoveryType_Fast
+		if request.ForceFull {
+			discoveryType = model2.DiscoveryType_Full
+		}
+		integrationDiscovery := &model2.IntegrationDiscovery{
+			TriggerID:     uint(triggerId),
+			ConnectionID:  connection.ID.String(),
+			AccountID:     connection.ConnectionID,
+			TriggerType:   enums.DescribeTriggerTypeManual,
+			TriggeredBy:   userID,
+			DiscoveryType: discoveryType,
+			ResourceTypes: rtToDescribe,
+		}
+		err = h.DB.CreateIntegrationDiscovery(integrationDiscovery)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to create integration discovery", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration discovery")
+		}
 
 		if len(rtToDescribe) == 0 {
 			switch connection.Connector {
@@ -1570,7 +1597,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			}
 
 			var status, failureReason string
-			job, err := h.Scheduler.describe(connection, resourceType, false, false, false)
+			job, err := h.Scheduler.describe(connection, resourceType, false, false, false, &integrationDiscovery.ID)
 			if err != nil {
 				if err.Error() == "job already in progress" {
 					tmpJob, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
