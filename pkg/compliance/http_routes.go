@@ -3312,7 +3312,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		benchmarks = req.ParentBenchmark
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
+	controls, err := h.db.ListControlsByFilter(ctx, nil, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
 		req.PrimaryTable, req.ListOfTables, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -3500,7 +3500,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 		benchmarks = req.ParentBenchmark
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
+	controls, err := h.db.ListControlsByFilter(ctx, nil, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
 		req.PrimaryTable, req.ListOfTables, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -6426,15 +6426,18 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Param			controls	query	[]string	false	"Controls filter by"
+//	@Param			benchmarks	query	string		false	"Benchmark filter by"
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200	{object}	[]string
+//	@Success		200	{object}	[]inventoryApi.GetResourceCategoriesResponse
 //	@Router			/compliance/api/v3/controls/categories [get]
 func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 	controlIds := httpserver2.QueryArrayParam(ctx, "controls")
+	benchmarks := httpserver2.QueryArrayParam(ctx, "benchmarks")
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 
-	controls, err := h.db.GetControls(ctx.Request().Context(), controlIds, nil)
+	controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), controlIds, nil, nil, benchmarks, nil,
+		nil, nil, nil, nil)
 	if err != nil {
 		h.logger.Error("could not find controls", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
@@ -6450,7 +6453,7 @@ func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 		tables = append(tables, t)
 	}
 
-	categories, err := h.inventoryClient.GetTablesResourceCategories(clientCtx, tables)
+	categories, err := h.inventoryClient.GetResourceCategories(clientCtx, tables, nil)
 	if err != nil {
 		h.logger.Error("could not find categories", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
@@ -6483,14 +6486,14 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 	var categoriesControls []api.CategoryControls
 	for _, c := range categories.Categories {
 		tablesFilterMap := make(map[string]string)
-		for _, r := range c.Resources {
-			tablesFilterMap[r.SteampipeTable] = r.ResourceID
+		for _, r := range c.Tables {
+			tablesFilterMap[r.Table] = r.ResourceType
 		}
 		var tablesFilter []string
 		for t, _ := range tablesFilterMap {
 			tablesFilter = append(tablesFilter, t)
 		}
-		controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), nil, nil, nil,
+		controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), nil, nil, nil, nil,
 			nil, nil, nil, tablesFilter, nil)
 		if err != nil {
 			h.logger.Error("could not find controls", zap.Error(err))
@@ -6500,17 +6503,24 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 		servicesControls := make(map[string][]api.Control)
 		for _, ctrl := range controls {
 			for _, t := range ctrl.Query.ListOfTables {
-				if _, ok := servicesControls[tablesFilterMap[t]]; !ok {
-					servicesControls[tablesFilterMap[t]] = make([]api.Control, 0)
+				if t == "" {
+					continue
 				}
-				servicesControls[tablesFilterMap[t]] = append(servicesControls[tablesFilterMap[t]], ctrl.ToApi())
+				service := t
+				if v, ok := tablesFilterMap[t]; ok {
+					service = v
+				}
+				if _, ok := servicesControls[]; !ok {
+					servicesControls[service] = make([]api.Control, 0)
+				}
+				servicesControls[service] = append(servicesControls[service], ctrl.ToApi())
 			}
 		}
 		var services []api.ServiceControls
 		for k, v := range servicesControls {
 			services = append(services, api.ServiceControls{
-				Service: k,
-				Queries: v,
+				Service:  k,
+				Controls: v,
 			})
 		}
 		categoriesControls = append(categoriesControls, api.CategoryControls{
@@ -6549,7 +6559,7 @@ func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 
 	var parametersControls []api.ParametersControls
 	for _, p := range parameters {
-		controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), nil, nil, nil,
+		controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), nil, nil, nil, nil,
 			nil, nil, nil, nil, []string{p})
 		if err != nil {
 			h.logger.Error("failed to get list of controls", zap.Error(err))

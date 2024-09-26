@@ -424,7 +424,7 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 
 	return s, nil
 }
-func (db Database) ListControlsByFilter(ctx context.Context, connectors []string, severity []string, benchmarkIDs []string,
+func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, connectors []string, severity []string, benchmarkIDs []string,
 	tagFilters map[string][]string, hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]Control, error) {
 	var s []Control
 
@@ -457,6 +457,10 @@ func (db Database) ListControlsByFilter(ctx context.Context, connectors []string
 
 	if len(severity) > 0 {
 		m = m.Where("controls.severity IN ?", severity)
+	}
+
+	if len(controlIDs) > 0 {
+		m = m.Where("controls.id IN ?", controlIDs)
 	}
 
 	if len(benchmarkIDs) > 0 {

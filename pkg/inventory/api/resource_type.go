@@ -97,3 +97,18 @@ type CategoryQueries struct {
 type GetCategoriesControlsResponse struct {
 	Categories []CategoryQueries `json:"categories"`
 }
+
+type GetResourceCategoriesTables struct {
+	Name         string `json:"name"`
+	Table        string `json:"table"`
+	ResourceType string `json:"resource_type"`
+}
+
+type GetResourceCategoriesCategory struct {
+	Category string                        `json:"category"`
+	Tables   []GetResourceCategoriesTables `json:"tables"`
+}
+
+type GetResourceCategoriesResponse struct {
+	Categories []GetResourceCategoriesCategory `json:"categories"`
+}

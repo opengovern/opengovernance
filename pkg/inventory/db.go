@@ -84,13 +84,13 @@ func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
 	return res, nil
 }
 
-func (db Database) ListQueries(queryIds []string, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
+func (db Database) ListQueries(queryIdsFilter []string, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
 	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*")
 
-	if len(queryIds) > 0 {
-		m = m.Where("id in ?", queryIds)
+	if len(queryIdsFilter) > 0 {
+		m = m.Where("id in ?", queryIdsFilter)
 	}
 	if len(params) > 0 || len(primaryTable) > 0 || len(listOfTables) > 0 {
 		m = m.Joins("JOIN queries q ON q.id = named_queries.query_id")
@@ -129,6 +129,12 @@ func (db Database) ListQueries(queryIds []string, primaryTable []string, listOfT
 		res = append(res, val)
 	}
 
+	queryIds := make([]string, 0, len(res))
+	for _, control := range res {
+		if control.QueryID != nil {
+			queryIds = append(queryIds, *control.QueryID)
+		}
+	}
 	var queriesMap map[string]Query
 	if len(queryIds) > 0 {
 		var queries []Query
@@ -439,6 +445,29 @@ func (db Database) ListCategoryResourceTypes(category string) ([]ResourceTypeV2,
 	tx := db.orm.
 		Model(&ResourceTypeV2{}).
 		Where("category = ?", category)
+
+	tx = tx.Find(&resourceTypes)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return resourceTypes, nil
+}
+
+func (db Database) ListResourceTypes(tables []string, categories []string) ([]ResourceTypeV2, error) {
+	var resourceTypes []ResourceTypeV2
+
+	tx := db.orm.
+		Model(&ResourceTypeV2{})
+
+	if len(tables) > 0 {
+		tx = tx.Where("steampipe_table IN ?", tables)
+	}
+
+	if len(categories) > 0 {
+		tx = tx.Where("category IN ?", categories)
+	}
 
 	tx = tx.Find(&resourceTypes)
 
