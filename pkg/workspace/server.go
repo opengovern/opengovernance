@@ -934,7 +934,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
 	}
 
-	tx = s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", "main").Update("status", "Started")
+	tx = s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).Update("status", "Started")
 	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		s.logger.Error("failed to update migration", zap.Error(tx.Error))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update migration")
