@@ -6510,7 +6510,7 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 				if v, ok := tablesFilterMap[t]; ok {
 					service = v
 				}
-				if _, ok := servicesControls[]; !ok {
+				if _, ok := servicesControls[service]; !ok {
 					servicesControls[service] = make([]api.Control, 0)
 				}
 				servicesControls[service] = append(servicesControls[service], ctrl.ToApi())
