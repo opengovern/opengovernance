@@ -5208,6 +5208,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 		},
 	}
 	migratorJob.Spec.Selector = nil
+	migratorJob.Spec.Suspend = aws.Bool(false)
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	migratorJob.Status = batchv1.JobStatus{}
 
