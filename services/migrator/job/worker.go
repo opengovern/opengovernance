@@ -110,25 +110,28 @@ func (w *Job) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	jobsStatus := make(map[string]model.JobsStatus)
+	for name, _ := range migrations {
+		jobsStatus[name] = model.JobStatusPending
+	}
+
+	m.Status = "Started"
+	err = w.updateJob(m, m.Status, jobsStatus)
 
 	hasFailed := false
 	for name, mig := range migrations {
 		w.logger.Info("running migration", zap.String("migrationName", name))
-		//updateNeeded, err := w.CheckIfUpdateIsNeeded(name, mig)
-		//if err != nil {
-		//	w.logger.Error("failed to CheckIfUpdateIsNeeded", zap.Error(err), zap.String("migrationName", name))
-		//	continue
-		//}
-		//
-		//if !updateNeeded {
-		//	w.logger.Info("migration is up to date", zap.String("migrationName", name))
-		//	continue
-		//}
+
+		jobsStatus, err = getJobsStatus(m)
+		if err != nil {
+			w.logger.Error("failed to get job status", zap.Error(err), zap.String("migrationName", name))
+		}
+		jobsStatus[name] = model.JobStatusInProgress
 		m.Status = fmt.Sprintf("Running migration %s", name)
 
-		err = w.db.UpdateMigrationJob(m.ID, m.Status, m.JobsStatus)
+		err = w.updateJob(m, m.Status, jobsStatus)
 		if err != nil {
-			return err
+			w.logger.Error("failed to update job status", zap.Error(err), zap.String("migrationName", name))
 		}
 
 		updateFailed := false
@@ -138,13 +141,9 @@ func (w *Job) Run(ctx context.Context) error {
 			updateFailed = true
 		}
 
-		jobsStatus := make(map[string]model.JobsStatus)
-
-		if len(m.JobsStatus.Bytes) > 0 {
-			err := json.Unmarshal(m.JobsStatus.Bytes, &jobsStatus)
-			if err != nil {
-				return err
-			}
+		jobsStatus, err = getJobsStatus(m)
+		if err != nil {
+			w.logger.Error("failed to get job status", zap.Error(err), zap.String("migrationName", name))
 		}
 		if updateFailed {
 			hasFailed = true
@@ -152,30 +151,10 @@ func (w *Job) Run(ctx context.Context) error {
 		} else {
 			jobsStatus[name] = model.JobStatusCompleted
 		}
-
-		jobsStatusJson, err := json.Marshal(jobsStatus)
+		err = w.updateJob(m, m.Status, jobsStatus)
 		if err != nil {
-			return err
+			w.logger.Error("failed to update job status", zap.Error(err), zap.String("migrationName", name))
 		}
-
-		jp := pgtype.JSONB{}
-		err = jp.Set(jobsStatusJson)
-		if err != nil {
-			return err
-		}
-		m.JobsStatus = jp
-
-		err = w.db.UpdateMigrationJob(m.ID, m.Status, m.JobsStatus)
-		if err != nil {
-			return err
-		}
-
-		//if !updateFailed {
-		//	err = w.UpdateMigration(name, mig)
-		//	if err != nil {
-		//		w.logger.Error("failed to update migration", zap.Error(err), zap.String("migrationName", name))
-		//	}
-		//}
 	}
 
 	if hasFailed {
@@ -191,4 +170,37 @@ func (w *Job) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (w *Job) updateJob(m *model.Migration, status string, jobsStatus map[string]model.JobsStatus) error {
+	jobsStatusJson, err := json.Marshal(jobsStatus)
+	if err != nil {
+		return err
+	}
+
+	jp := pgtype.JSONB{}
+	err = jp.Set(jobsStatusJson)
+	if err != nil {
+		return err
+	}
+	m.JobsStatus = jp
+	m.Status = status
+
+	err = w.db.UpdateMigrationJob(m.ID, m.Status, m.JobsStatus)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getJobsStatus(m *model.Migration) (map[string]model.JobsStatus, error) {
+	jobsStatus := make(map[string]model.JobsStatus)
+
+	if len(m.JobsStatus.Bytes) > 0 {
+		err := json.Unmarshal(m.JobsStatus.Bytes, &jobsStatus)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return jobsStatus, nil
 }

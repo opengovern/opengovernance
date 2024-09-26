@@ -5,6 +5,7 @@ import (
 	authApi "github.com/kaytu-io/open-governance/pkg/auth/api"
 	"github.com/kaytu-io/open-governance/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
+	"github.com/kaytu-io/open-governance/services/migrator/db/model"
 	"time"
 )
 
@@ -133,4 +134,9 @@ type About struct {
 	Integrations          map[string][]api.Connection    `json:"integrations"`
 	SampleData            bool                           `json:"sample_data"`
 	TotalSpendGoverned    float64                        `json:"total_spend_governed"`
+}
+
+type GetMigrationStatusResponse struct {
+	Status     string                      `json:"status"`
+	JobsStatus map[string]model.JobsStatus `json:"jobs_status"`
 }
