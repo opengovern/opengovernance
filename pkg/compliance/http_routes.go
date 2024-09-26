@@ -25,6 +25,7 @@ import (
 	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/open-governance/pkg/types"
 	"github.com/kaytu-io/open-governance/pkg/utils"
+	model2 "github.com/kaytu-io/open-governance/services/migrator/db/model"
 	"github.com/labstack/echo/v4"
 	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -5140,6 +5141,18 @@ func (h *HttpHandler) GetQuery(echoCtx echo.Context) error {
 //	@Router			/compliance/api/v1/queries/sync [get]
 func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
+
+	var mig *model2.Migration
+	tx := h.migratorDb.Orm.Model(&model2.Migration{}).Where("id = ?", "main").First(&mig)
+	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		h.logger.Error("failed to get migration", zap.Error(tx.Error))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")
+	}
+	if mig != nil {
+		if mig.Status != "SUCCEEDED" {
+			return echo.NewHTTPError(http.StatusBadRequest, "sync sample data already in progress")
+		}
+	}
 
 	enabled, err := h.metadataClient.GetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.MetadataKeyCustomizationEnabled)
 	if err != nil {

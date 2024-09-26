@@ -5,6 +5,7 @@ import (
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/kaytu-io/open-governance/services/migrator/db/model"
 	"github.com/sashabaranov/go-openai"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,10 +25,11 @@ import (
 )
 
 type HttpHandler struct {
-	conf   ServerConfig
-	client kaytu.Client
-	db     db.Database
-	logger *zap.Logger
+	conf       ServerConfig
+	client     kaytu.Client
+	db         db.Database
+	migratorDb db.Database
+	logger     *zap.Logger
 
 	//s3Client *s3.Client
 
@@ -85,6 +87,23 @@ func InitializeHttpHandler(
 
 	h.db = db.Database{Orm: orm}
 	fmt.Println("Connected to the postgres database: ", conf.PostgreSQL.DB)
+
+	migratorDbCfg := postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "migrator",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}
+	migratorOrm, err := postgres.NewClient(&migratorDbCfg, logger)
+	if err != nil {
+		return nil, fmt.Errorf("new postgres client: %w", err)
+	}
+	if err := migratorOrm.AutoMigrate(&model.Migration{}); err != nil {
+		return nil, fmt.Errorf("gorm migrate: %w", err)
+	}
+	h.migratorDb = db.Database{Orm: migratorOrm}
 
 	err = h.db.Initialize(ctx)
 	if err != nil {
