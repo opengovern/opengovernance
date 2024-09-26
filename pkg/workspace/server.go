@@ -212,7 +212,8 @@ func (s *Server) Register(e *echo.Echo) {
 	v3.GET("/sample/sync/status", httpserver2.AuthorizeHandler(s.GetSampleSyncStatus, api2.ViewerRole))
 	v3.GET("/migration/status", httpserver2.AuthorizeHandler(s.GetMigrationStatus, api2.ViewerRole))
 	v3.GET("/configured/status", httpserver2.AuthorizeHandler(s.GetConfiguredStatus, api2.ViewerRole))
-	v3.PUT("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.ViewerRole))
+	v3.PUT("/configured/set", httpserver2.AuthorizeHandler(s.SetConfiguredStatus, api2.InternalRole))
+	v3.PUT("/configured/unset", httpserver2.AuthorizeHandler(s.UnsetConfiguredStatus, api2.ViewerRole))
 	v3.GET("/about", httpserver2.AuthorizeHandler(s.GetAbout, api2.ViewerRole))
 }
 
@@ -1026,10 +1027,32 @@ func (s *Server) GetConfiguredStatus(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/configured/set [put]
 func (s *Server) SetConfiguredStatus(echoCtx echo.Context) error {
-	err := s.db.WorkspaceConfigured("main")
+	err := s.db.WorkspaceConfigured("main", true)
 	if err != nil {
 		s.logger.Error("failed to set workspace configured", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set workspace configured")
+	}
+	return echoCtx.NoContent(http.StatusOK)
+}
+
+// UnsetConfiguredStatus godoc
+//
+//	@Summary		Sync demo
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/workspace/api/v3/configured/unset [put]
+func (s *Server) UnsetConfiguredStatus(echoCtx echo.Context) error {
+	err := s.db.WorkspaceConfigured("main", false)
+	if err != nil {
+		s.logger.Error("failed to unset workspace configured", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unset workspace configured")
 	}
 	return echoCtx.NoContent(http.StatusOK)
 }

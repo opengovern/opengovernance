@@ -158,6 +158,15 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 func (r *httpRoutes) Setup(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: api2.InternalRole}
 
+	status, err := r.workspaceClient.GetConfiguredStatus(clientCtx)
+	if err != nil {
+		r.logger.Error("failed to get configured status", zap.Error(err))
+		fmt.Println("failed to get configured status", err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get configured status")
+	}
+	if status == "True" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Configuration has been done")
+	}
 	var req api.SetupRequest
 	if err := ctx.Bind(&req); err != nil {
 		return err
@@ -174,7 +183,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 
 	adminRole := api2.AdminRole
 	userId := fmt.Sprintf("dex|%s", req.CreateUser.EmailAddress)
-	err := r.DoCreateUser(api.CreateUserRequest{
+	err = r.DoCreateUser(api.CreateUserRequest{
 		EmailAddress: req.CreateUser.EmailAddress,
 		Password:     &req.CreateUser.Password,
 		Role:         &adminRole,
