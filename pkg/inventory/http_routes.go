@@ -3562,11 +3562,11 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 		})
 	}
 
-	tablesFilterMap := make(map[string]bool)
+	tablesFilterMap := make(map[string]string)
 	var categoryQueries []inventoryApi.CategoryQueries
 	for _, c := range categoriesApi {
 		for _, r := range c.Resources {
-			tablesFilterMap[r.SteampipeTable] = true
+			tablesFilterMap[r.SteampipeTable] = r.ResourceID
 		}
 		var tablesFilter []string
 		for k, _ := range tablesFilterMap {
@@ -3578,7 +3578,7 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 			h.logger.Error("could not find queries", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
 		}
-		var queriesApi []inventoryApi.NamedQueryItemV2
+		servicesQueries := make(map[string][]inventoryApi.NamedQueryItemV2)
 		for _, query := range queries {
 			tags := query.GetTagsMap()
 			if query.IsBookmarked {
@@ -3592,11 +3592,23 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 				Query:       query.Query.ToApi(),
 				Tags:        tags,
 			}
-			queriesApi = append(queriesApi, result)
+			for _, t := range query.Query.ListOfTables {
+				if _, ok := servicesQueries[tablesFilterMap[t]]; !ok {
+					servicesQueries[tablesFilterMap[t]] = make([]inventoryApi.NamedQueryItemV2, 0)
+				}
+				servicesQueries[tablesFilterMap[t]] = append(servicesQueries[tablesFilterMap[t]], result)
+			}
+		}
+		var services []inventoryApi.ServiceQueries
+		for k, v := range servicesQueries {
+			services = append(services, inventoryApi.ServiceQueries{
+				Service: k,
+				Queries: v,
+			})
 		}
 		categoryQueries = append(categoryQueries, inventoryApi.CategoryQueries{
 			Category: c.Category,
-			Queries:  queriesApi,
+			Services: services,
 		})
 	}
 	return ctx.JSON(200, categoryQueries)
