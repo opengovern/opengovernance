@@ -3113,10 +3113,7 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/sample/purge [put]
 func (s HttpHandler) PurgeSampleData(c echo.Context) error {
-
-	ids := httpserver.QueryArrayParam(c, "ignore_source_ids")
-
-	err := s.db.DeleteSourcesNotIn(ids)
+	err := s.db.DeleteSources()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete sources")
 	}

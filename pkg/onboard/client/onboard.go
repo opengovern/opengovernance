@@ -40,7 +40,7 @@ type OnboardServiceClient interface {
 	ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error)
 	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error)
 	PostConnectionAws(ctx *httpclient.Context, req api.CreateAwsConnectionRequest) (*api.CreateConnectionResponse, error)
-	PurgeSampleData(ctx *httpclient.Context, ids []string) error
+	PurgeSampleData(ctx *httpclient.Context) error
 }
 
 type onboardClient struct {
@@ -251,17 +251,9 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 	return response, nil
 }
 
-func (s *onboardClient) PurgeSampleData(ctx *httpclient.Context, ids []string) error {
+func (s *onboardClient) PurgeSampleData(ctx *httpclient.Context) error {
 	ctx.UserRole = authApi.InternalRole
 	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
-	for i, v := range ids {
-		if i == 0 {
-			url += "?"
-		} else {
-			url += "&"
-		}
-		url += "ignore_source_ids=" + string(v)
-	}
 
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
