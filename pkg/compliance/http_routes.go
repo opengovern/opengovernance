@@ -5236,9 +5236,9 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	//	h.logger.Error("publish sync jobs", zap.Error(err))
 	//	return err
 	//}
-	tx = s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", "main").Update("status", "Started")
+	tx = h.migratorDb.Orm.Model(&model2.Migration{}).Where("id = ?", "main").Update("status", "Started")
 	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-		s.logger.Error("failed to update migration", zap.Error(tx.Error))
+		h.logger.Error("failed to update migration", zap.Error(tx.Error))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update migration")
 	}
 
