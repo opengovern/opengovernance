@@ -289,8 +289,6 @@ func (db Database) DeleteSources() error {
 
 	if tx.Error != nil {
 		return tx.Error
-	} else if tx.RowsAffected != 1 {
-		return fmt.Errorf("delete source: didn't find source to delete")
 	}
 
 	return nil
