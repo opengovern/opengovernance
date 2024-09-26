@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/google/uuid"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
