@@ -84,9 +84,14 @@ type GetResourceCategoriesResult struct {
 	Categories []ResourceCategory `json:"categories"`
 }
 
+type ServiceQueries struct {
+	Service string
+	Queries []NamedQueryItemV2 `json:"queries"`
+}
+
 type CategoryQueries struct {
-	Category string             `json:"category"`
-	Queries  []NamedQueryItemV2 `json:"queries"`
+	Category string           `json:"category"`
+	Services []ServiceQueries `json:"services"`
 }
 
 type GetCategoriesControlsResponse struct {
