@@ -158,6 +158,15 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 func (r *httpRoutes) Setup(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: api2.InternalRole}
 
+	status, err := r.workspaceClient.GetConfiguredStatus(clientCtx)
+	if err != nil {
+		r.logger.Error("failed to get configured status", zap.Error(err))
+		fmt.Println("failed to get configured status", err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get configured status")
+	}
+	if status == "True" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Configuration has been done")
+	}
 	var req api.SetupRequest
 	if err := ctx.Bind(&req); err != nil {
 		return err
@@ -174,7 +183,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 
 	adminRole := api2.AdminRole
 	userId := fmt.Sprintf("dex|%s", req.CreateUser.EmailAddress)
-	err := r.DoCreateUser(api.CreateUserRequest{
+	err = r.DoCreateUser(api.CreateUserRequest{
 		EmailAddress: req.CreateUser.EmailAddress,
 		Password:     &req.CreateUser.Password,
 		Role:         &adminRole,
@@ -213,7 +222,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil {
 				r.logger.Error("failed to create aws credentials", zap.Error(err))
 				fmt.Println("failed to create aws credentials", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create aws credentials")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create aws credential", err.Error()))
 			}
 			var integrations []struct {
 				Integration        *string `json:"integration"`
@@ -241,7 +250,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil || resp == nil {
 				r.logger.Error("failed to run aws discovery", zap.Error(err))
 				fmt.Println("failed to run aws discovery", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run aws discovery")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run aws discovery: ", err.Error()))
 			}
 			triggerId := strconv.Itoa(int(resp.TriggerID))
 			response.AwsTriggerID = &triggerId
@@ -253,7 +262,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil {
 				r.logger.Error("failed to create azure credential", zap.Error(err))
 				fmt.Println("failed to create azure credential", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to create azure credential")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create azure credential", err.Error()))
 			}
 			var integrations []struct {
 				Integration        *string `json:"integration"`
@@ -281,7 +290,7 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 			if err != nil || resp == nil {
 				r.logger.Error("failed to run azure discovery", zap.Error(err))
 				fmt.Println("failed to run azure discovery", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to run azure discovery")
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run azure discovery: ", err.Error()))
 			}
 			triggerId := strconv.Itoa(int(resp.TriggerID))
 			response.AzureTriggerID = &triggerId
