@@ -284,14 +284,8 @@ func (db Database) CountConnectionsByCredential(credentialId string, state []mod
 	return int(count), nil
 }
 
-func (db Database) DeleteSourcesNotIn(id []string) error {
-	tx := db.Orm
-
-	if len(id) > 0 {
-		tx = tx.Where("id NOT IN ?", id)
-	}
-	tx = tx.Unscoped().
-		Delete(&model.Connection{})
+func (db Database) DeleteSources() error {
+	tx := db.Orm.Where("1 = 1").Unscoped().Delete(&model.Connection{})
 
 	if tx.Error != nil {
 		return tx.Error

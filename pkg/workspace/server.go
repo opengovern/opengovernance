@@ -763,7 +763,7 @@ func (s *Server) PurgeSampleData(c echo.Context) error {
 		s.logger.Error("failed to purge compliance data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge compliance data")
 	}
-	err = onboardClient.PurgeSampleData(ctx, nil)
+	err = onboardClient.PurgeSampleData(ctx)
 	if err != nil {
 		s.logger.Error("failed to purge onboard data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge onboard data")
