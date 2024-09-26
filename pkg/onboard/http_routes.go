@@ -1926,7 +1926,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		if apiRes.Credential.Version == 2 {
 			apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), src.Credential)
 			if err != nil {
-				h.logger.Error("could not get credentials")
+				h.logger.Error("could not get credentials", zap.Error(err))
 			}
 		}
 	}
@@ -2160,7 +2160,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			if apiRes.Credential.Version == 2 {
 				apiRes.Credential.Config, err = h.CredentialV2ToV1(ctx.Request().Context(), src.Credential)
 				if err != nil {
-					return err
+					h.logger.Error("could not get credentials", zap.Error(err))
 				}
 			}
 		}
