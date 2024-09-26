@@ -3611,7 +3611,9 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 			Services: services,
 		})
 	}
-	return ctx.JSON(200, categoryQueries)
+	return ctx.JSON(200, inventoryApi.GetCategoriesControlsResponse{
+		Categories: categoryQueries,
+	})
 }
 
 // GetParametersQueries godoc

@@ -165,9 +165,14 @@ type ListControlsFiltersResponse struct {
 	Tags            []ControlTagsResult `json:"tags"`
 }
 
+type ServiceControls struct {
+	Service string
+	Queries []Control `json:"queries"`
+}
+
 type CategoryControls struct {
-	Category string    `json:"category"`
-	Controls []Control `json:"controls"`
+	Category string            `json:"category"`
+	Services []ServiceControls `json:"services"`
 }
 
 type GetCategoriesControlsResponse struct {
