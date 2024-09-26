@@ -102,8 +102,12 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 				atomic.AddInt64(&completedTasks, 1)
 
 				m.Status = fmt.Sprintf("Importing Indices")
+				var progress float64
+				if totalTasks > 0 {
+					progress = float64(completedTasks) / float64(totalTasks)
+				}
 				jobsStatus := model.ESImportProgress{
-					Progress: float64(completedTasks) / float64(totalTasks),
+					Progress: progress,
 				}
 				err = updateJob(migratorDb, m, m.Status, jobsStatus)
 				if err != nil {
