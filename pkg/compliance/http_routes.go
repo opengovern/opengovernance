@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
@@ -5236,7 +5237,12 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	//	h.logger.Error("publish sync jobs", zap.Error(err))
 	//	return err
 	//}
-	tx = h.migratorDb.Orm.Model(&model2.Migration{}).Where("id = ?", "main").Update("status", "Started")
+	jp := pgtype.JSONB{}
+	err = jp.Set([]byte(""))
+	if err != nil {
+		return err
+	}
+	tx = h.migratorDb.Orm.Model(&model2.Migration{}).Where("id = ?", "main").Update("status", "Started").Update("jobs_status", jp)
 	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		h.logger.Error("failed to update migration", zap.Error(tx.Error))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update migration")

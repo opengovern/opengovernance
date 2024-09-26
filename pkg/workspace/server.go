@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	dexApi "github.com/dexidp/dex/api/v2"
 	api6 "github.com/hashicorp/vault/api"
+	"github.com/jackc/pgtype"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
@@ -934,7 +935,12 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
 	}
 
-	tx = s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).Update("status", "Started")
+	jp := pgtype.JSONB{}
+	err = jp.Set([]byte(""))
+	if err != nil {
+		return err
+	}
+	tx = s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).Update("status", "Started").Update("jobs_status", jp)
 	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		s.logger.Error("failed to update migration", zap.Error(tx.Error))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update migration")
@@ -1009,6 +1015,10 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 		}
 	}
 
+	var jobProgress float64
+	if len(jobsStatus) > 0 {
+		jobProgress = float64(completedJobs) / float64(len(jobsStatus))
+	}
 	return echoCtx.JSON(http.StatusOK, api.GetMigrationStatusResponse{
 		Status:     mig.Status,
 		JobsStatus: jobsStatus,
@@ -1019,7 +1029,7 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 		}{
 			TotalJobs:     len(jobsStatus),
 			CompletedJobs: completedJobs,
-			Progress:      float64(completedJobs) / float64(len(jobsStatus)),
+			Progress:      jobProgress,
 		},
 	})
 }
