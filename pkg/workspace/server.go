@@ -795,6 +795,18 @@ func (s *Server) PurgeSampleData(c echo.Context) error {
 func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
+	var mig *model.Migration
+	tx := s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).First(&mig)
+	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		s.logger.Error("failed to get migration", zap.Error(tx.Error))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")
+	}
+	if mig != nil {
+		if mig.Status != "COMPLETED" {
+			return echo.NewHTTPError(http.StatusBadRequest, "sync sample data already in progress")
+		}
+	}
+
 	metadataURL := strings.ReplaceAll(s.cfg.Metadata.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
 	metadataClient := client5.NewMetadataServiceClient(metadataURL)
 
@@ -922,6 +934,12 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update workspace sample data check")
 	}
 
+	tx = s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).Update("status", "Started")
+	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		s.logger.Error("failed to update migration", zap.Error(tx.Error))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update migration")
+	}
+
 	return echoCtx.JSON(http.StatusOK, struct{}{})
 }
 
@@ -966,11 +984,14 @@ func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
 //	@Success		200	{object}	api.GetMigrationStatusResponse
 //	@Router			/workspace/api/v3/migration/status [get]
 func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
-	var mig model.Migration
+	var mig *model.Migration
 	tx := s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", "main").First(&mig)
-	if tx.Error != nil {
+	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		s.logger.Error("failed to get migration", zap.Error(tx.Error))
-		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")
+	}
+	if mig == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "no migration job found")
 	}
 	jobsStatus := make(map[string]model.JobsStatus)
 
@@ -1017,11 +1038,11 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 //	@Success		200	{object}	api.GetSampleSyncStatusResponse
 //	@Router			/workspace/api/v3/sample/sync/status [get]
 func (s *Server) GetSampleSyncStatus(echoCtx echo.Context) error {
-	var mig model.Migration
-	tx := s.migratorDb.Orm.Model(&model2.Migration{}).Where("id = ?", model2.MigrationJobName).First(&mig)
-	if tx.Error != nil {
+	var mig *model.Migration
+	tx := s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).First(&mig)
+	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		s.logger.Error("failed to get migration", zap.Error(tx.Error))
-		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")
 	}
 	var jobsStatus model2.ESImportProgress
 
