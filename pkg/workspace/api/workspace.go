@@ -5,7 +5,6 @@ import (
 	authApi "github.com/kaytu-io/open-governance/pkg/auth/api"
 	"github.com/kaytu-io/open-governance/pkg/onboard/api"
 	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
-	model2 "github.com/kaytu-io/open-governance/services/demo-importer/db/model"
 	"github.com/kaytu-io/open-governance/services/migrator/db/model"
 	"time"
 )
@@ -140,9 +139,14 @@ type About struct {
 type GetMigrationStatusResponse struct {
 	Status     string                      `json:"status"`
 	JobsStatus map[string]model.JobsStatus `json:"jobs_status"`
+	Summary    struct {
+		TotalJobs     int     `json:"total_jobs"`
+		CompletedJobs int     `json:"completed_jobs"`
+		Progress      float64 `json:"progress"`
+	}
 }
 
 type GetSampleSyncStatusResponse struct {
-	Status       string                  `json:"status"`
-	JobsProgress model2.ESImportProgress `json:"jobs_progress"`
+	Status   string  `json:"status"`
+	Progress float64 `json:"progress"`
 }

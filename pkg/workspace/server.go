@@ -981,9 +981,25 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 		}
 	}
 
+	var completedJobs int
+	for _, status := range jobsStatus {
+		if status == model.JobStatusCompleted || status == model.JobStatusFailed {
+			completedJobs++
+		}
+	}
+
 	return echoCtx.JSON(http.StatusOK, api.GetMigrationStatusResponse{
 		Status:     mig.Status,
 		JobsStatus: jobsStatus,
+		Summary: struct {
+			TotalJobs     int     `json:"total_jobs"`
+			CompletedJobs int     `json:"completed_jobs"`
+			Progress      float64 `json:"progress"`
+		}{
+			TotalJobs:     len(jobsStatus),
+			CompletedJobs: completedJobs,
+			Progress:      float64(completedJobs) / float64(len(jobsStatus)),
+		},
 	})
 }
 
@@ -1016,8 +1032,8 @@ func (s *Server) GetSampleSyncStatus(echoCtx echo.Context) error {
 		}
 	}
 	return echoCtx.JSON(http.StatusOK, api.GetSampleSyncStatusResponse{
-		Status:       mig.Status,
-		JobsProgress: jobsStatus,
+		Status:   mig.Status,
+		Progress: jobsStatus.Progress,
 	})
 }
 
