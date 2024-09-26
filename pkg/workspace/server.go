@@ -963,7 +963,7 @@ func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
 //	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
 //	@Accept			json
 //	@Produce		json
-//	@Success		200				{object}	api.GetMigrationStatusResponse
+//	@Success		200	{object}	api.GetMigrationStatusResponse
 //	@Router			/workspace/api/v3/migration/status [get]
 func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 	var mig model.Migration
@@ -998,7 +998,7 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 //	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
 //	@Accept			json
 //	@Produce		json
-//	@Success		200
+//	@Success		200	{object}	api.GetSampleSyncStatusResponse
 //	@Router			/workspace/api/v3/sample/sync/status [get]
 func (s *Server) GetSampleSyncStatus(echoCtx echo.Context) error {
 	var mig model.Migration
@@ -1007,7 +1007,18 @@ func (s *Server) GetSampleSyncStatus(echoCtx echo.Context) error {
 		s.logger.Error("failed to get migration", zap.Error(tx.Error))
 		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
 	}
-	return echoCtx.String(http.StatusOK, mig.Status)
+	var jobsStatus model2.ESImportProgress
+
+	if len(mig.JobsStatus.Bytes) > 0 {
+		err := json.Unmarshal(mig.JobsStatus.Bytes, &jobsStatus)
+		if err != nil {
+			return err
+		}
+	}
+	return echoCtx.JSON(http.StatusOK, api.GetSampleSyncStatusResponse{
+		Status:       mig.Status,
+		JobsProgress: jobsStatus,
+	})
 }
 
 // GetConfiguredStatus godoc
@@ -1091,7 +1102,7 @@ func (s *Server) UnsetConfiguredStatus(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Success		200				{object}	api.About
+//	@Success		200	{object}	api.About
 //	@Router			/workspace/api/v3/configured/status [put]
 func (s *Server) GetAbout(echoCtx echo.Context) error {
 	ctx := httpclient.FromEchoContext(echoCtx)
