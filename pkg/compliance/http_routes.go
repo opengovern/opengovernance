@@ -5312,7 +5312,8 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	if assignmentType == "explicit" || assignmentType == "any" {
 		assignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(ctx, benchmarkId)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			h.logger.Error("cannot get explicit assignments", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot get explicit assignments")
 		}
 		for _, assignment := range assignments {
 			if assignment.ConnectionId != nil {
