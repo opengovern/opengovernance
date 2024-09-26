@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 const (
@@ -66,8 +65,7 @@ func BulkIndexData(ctx context.Context, client *opensearchapi.Client, requests [
 	return nil
 }
 
-func ProcessJSONFile(ctx context.Context, logger *zap.Logger, osClient *opensearchapi.Client, filePath, indexName string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func ProcessJSONFile(ctx context.Context, logger *zap.Logger, osClient *opensearchapi.Client, filePath, indexName string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println(err.Error())

@@ -963,7 +963,7 @@ func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
 //	@Param			demo_data_s3_url	query	string	false	"Demo Data S3 URL"
 //	@Accept			json
 //	@Produce		json
-//	@Success		200
+//	@Success		200				{object}	api.GetMigrationStatusResponse
 //	@Router			/workspace/api/v3/migration/status [get]
 func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 	var mig model.Migration
@@ -1091,7 +1091,7 @@ func (s *Server) UnsetConfiguredStatus(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Success		200
+//	@Success		200				{object}	api.About
 //	@Router			/workspace/api/v3/configured/status [put]
 func (s *Server) GetAbout(echoCtx echo.Context) error {
 	ctx := httpclient.FromEchoContext(echoCtx)

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/open-governance/services/demo-importer/db"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,11 +30,18 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 		return err
 	}
 	if m == nil {
-		jp := pgtype.JSONB{}
-		err = jp.Set([]byte(""))
+		jobsStatusJson, err := json.Marshal(model.ESImportProgress{
+			Progress: 0,
+		})
 		if err != nil {
 			return err
 		}
+		jp := pgtype.JSONB{}
+		err = jp.Set(jobsStatusJson)
+		if err != nil {
+			return err
+		}
+
 		m = &model.Migration{
 			ID:             model.MigrationJobName,
 			CreatedAt:      time.Now(),
@@ -46,12 +55,10 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 			return err
 		}
 	} else {
-		jp := pgtype.JSONB{}
-		err = jp.Set([]byte(""))
-		if err != nil {
-			return err
+		jobsStatus := model.ESImportProgress{
+			Progress: 0,
 		}
-		err = migratorDb.UpdateMigrationJob(model.MigrationJobName, "Creating Indices", jp)
+		err = updateJob(migratorDb, m, "Creating Indices", jobsStatus)
 		if err != nil {
 			return err
 		}
@@ -75,6 +82,8 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 	logger.Info("Read Data Files Done", zap.String("files", strings.Join(dataFiles, ",")))
 
 	var wg sync.WaitGroup
+	var totalTasks int64
+	var completedTasks int64
 
 	for _, file := range dataFiles {
 		if strings.HasSuffix(file, ".mapping.json") || strings.HasSuffix(file, ".settings.json") {
@@ -83,28 +92,62 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 
 		indexName := strings.TrimSuffix(filepath.Base(file), ".json")
 		if _, exists := indexConfigs[indexName]; exists {
+			atomic.AddInt64(&totalTasks, 1)
 			wg.Add(1)
-			go ProcessJSONFile(ctx, logger, client, file, indexName, &wg)
+
+			go func(file, indexName string) {
+				defer wg.Done()
+				ProcessJSONFile(ctx, logger, client, file, indexName)
+
+				atomic.AddInt64(&completedTasks, 1)
+
+				m.Status = fmt.Sprintf("Importing Indices")
+				jobsStatus := model.ESImportProgress{
+					Progress: float64(completedTasks) / float64(totalTasks),
+				}
+				err = updateJob(migratorDb, m, m.Status, jobsStatus)
+				if err != nil {
+					fmt.Println("Error updating migration job:", err.Error())
+				}
+				fmt.Printf("Completed %d/%d tasks\n", completedTasks, totalTasks)
+			}(file, indexName)
 		} else {
 			fmt.Println("No index config found for file: %s", file)
 		}
-	}
-
-	m.Status = fmt.Sprintf("Importing Indices")
-
-	err = migratorDb.UpdateMigrationJob(m.ID, m.Status, m.JobsStatus)
-	if err != nil {
-		return err
 	}
 
 	wg.Wait()
 
 	fmt.Println("All indexing operations completed.")
 
-	err = migratorDb.UpdateMigrationJob(m.ID, "COMPLETED", m.JobsStatus)
+	jobsStatus := model.ESImportProgress{
+		Progress: float64(completedTasks) / float64(totalTasks),
+	}
+	err = updateJob(migratorDb, m, "COMPLETED", jobsStatus)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func updateJob(migratorDb db.Database, m *model.Migration, status string, jobsStatus model.ESImportProgress) error {
+	jobsStatusJson, err := json.Marshal(jobsStatus)
+	if err != nil {
+		return err
+	}
+
+	jp := pgtype.JSONB{}
+	err = jp.Set(jobsStatusJson)
+	if err != nil {
+		return err
+	}
+	m.JobsStatus = jp
+	m.Status = status
+
+	err = migratorDb.UpdateMigrationJob(m.ID, m.Status, m.JobsStatus)
+	if err != nil {
+		return err
+	}
 	return nil
 }

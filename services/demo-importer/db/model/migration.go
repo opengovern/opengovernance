@@ -23,3 +23,7 @@ type Migration struct {
 
 	AdditionalInfo string
 }
+
+type ESImportProgress struct {
+	Progress float64 `json:"progress"`
+}
