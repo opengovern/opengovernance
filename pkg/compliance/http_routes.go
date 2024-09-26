@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/google/uuid"
 	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
 	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
@@ -5208,6 +5209,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 		},
 	}
 	migratorJob.Spec.Selector = nil
+	migratorJob.Spec.Suspend = aws.Bool(false)
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	migratorJob.Status = batchv1.JobStatus{}
 

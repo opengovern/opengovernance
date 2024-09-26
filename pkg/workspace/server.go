@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	dexApi "github.com/dexidp/dex/api/v2"
 	api6 "github.com/hashicorp/vault/api"
 	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
@@ -851,6 +852,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		},
 	}
 	importDemoJob.Spec.Selector = nil
+	importDemoJob.Spec.Suspend = aws.Bool(false)
 	importDemoJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	importDemoJob.Status = batchv1.JobStatus{}
 
@@ -897,6 +899,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		},
 	}
 	importDemoDbJob.Spec.Selector = nil
+	importDemoDbJob.Spec.Suspend = aws.Bool(false)
 	importDemoDbJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
 	importDemoDbJob.Status = batchv1.JobStatus{}
 
