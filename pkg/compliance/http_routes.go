@@ -5605,7 +5605,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 //	@Produce		json
 //	@Param			benchmark_id	path		string							true	"Benchmark ID to assign"
 //	@Param			request			body		api.IntegrationFilterRequest	true	"Integrations details to be assigned"
-//	@Success		200				{object}	[]api.BenchmarkAssignment
+//	@Success		200
 //	@Router			/compliance/api/v3/benchmark/{benchmark_id}/assign [post]
 func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
@@ -5643,10 +5643,6 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 	var connectionIDs []string
 	for _, c := range connections {
 		connectionIDs = append(connectionIDs, c.ID.String())
-	}
-
-	if len(connectionIDs) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
 	}
 
 	benchmarkId := echoCtx.Param("benchmark_id")
