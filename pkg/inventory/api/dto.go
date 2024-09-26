@@ -169,12 +169,15 @@ type Query struct {
 }
 
 type ListQueryV2Request struct {
-	TitleFilter string              `json:"titleFilter"`
-	Providers   []string            `json:"providers"`
-	Tags        map[string][]string `json:"tags"`
-	TagsRegex   *string             `json:"tags_regex"`
-	Cursor      *int64              `json:"cursor"`
-	PerPage     *int64              `json:"per_page"`
+	TitleFilter   string              `json:"titleFilter"`
+	Providers     []string            `json:"providers"`
+	HasParameters *bool               `json:"has_parameters"`
+	PrimaryTable  []string            `json:"primary_table"`
+	ListOfTables  []string            `json:"list_of_tables"`
+	Tags          map[string][]string `json:"tags"`
+	TagsRegex     *string             `json:"tags_regex"`
+	Cursor        *int64              `json:"cursor"`
+	PerPage       *int64              `json:"per_page"`
 }
 
 type ListQueryRequest struct {

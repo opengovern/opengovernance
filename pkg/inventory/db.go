@@ -176,10 +176,11 @@ func (db Database) GetQuery(id string) (*NamedQuery, error) {
 	return &s, nil
 }
 
-func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[string][]string, connectors []string) ([]NamedQuery, error) {
+func (db Database) ListQueriesByFilters(search *string, tagFilters map[string][]string, connectors []string,
+	hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
-	m := db.orm.Model(&NamedQuery{}).Preload(clause.Associations).Preload("Tags")
+	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*").Preload(clause.Associations).Preload("Tags")
 
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
@@ -203,6 +204,37 @@ func (db Database) GetQueriesWithTagsFilters(search *string, tagFilters map[stri
 
 			i++
 		}
+	}
+
+	if hasParameters != nil || len(params) > 0 || len(primaryTable) > 0 || len(listOfTables) > 0 {
+		m = m.Joins("JOIN queries q ON q.id = named_queries.query_id")
+	}
+
+	if hasParameters != nil {
+		if *hasParameters {
+			m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
+				Group("named_queries.id").
+				Having("COUNT(qp.query_id) > 0")
+		} else {
+			m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
+				Group("named_queries.id").
+				Having("COUNT(qp.query_id) = 0")
+		}
+	}
+
+	if len(params) > 0 {
+		m = m.Joins("LEFT JOIN query_parameters qp ON qp.query_id = q.id").
+			Where("qp.key IN ?", params).
+			Group("named_queries.id").
+			Having("COUNT(qp.query_id) > 0")
+	}
+
+	if len(primaryTable) > 0 {
+		m = m.Where("q.primary_table IN ?", primaryTable)
+	}
+
+	if len(listOfTables) > 0 {
+		m = m.Where("q.list_of_tables::text[] && ?", pq.Array(listOfTables))
 	}
 
 	tx := m.Find(&s)

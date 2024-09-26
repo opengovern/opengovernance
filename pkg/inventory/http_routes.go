@@ -2104,7 +2104,8 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithTagsFilters")
 
-	queries, err := h.db.GetQueriesWithTagsFilters(search, req.Tags, req.Providers)
+	queries, err := h.db.ListQueriesByFilters(search, req.Tags, req.Providers, req.HasParameters, req.PrimaryTable,
+		req.ListOfTables, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
