@@ -23,11 +23,12 @@ func NewCredConnSQL(db db.Database) CredConn {
 
 func (c CredConnSQL) DeleteCredential(ctx context.Context, cred model.Credential) error {
 	if err := c.db.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(new(model.Credential), "WHERE id = ?", cred.ID.String()).Error; err != nil {
+
+		if err := tx.Where("id = ?", cred.ID.String()).Delete(&model.Credential{}).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Delete(new(model.Connection), "WHERE credential_id = ?", cred.ID.String()).Error; err != nil {
+		if err := tx.Where("credential_id = ?", cred.ID.String()).Delete(&model.Credential{}).Error; err != nil {
 			return err
 		}
 
