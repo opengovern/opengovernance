@@ -243,17 +243,19 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 					IntegrationTracker: &cid,
 				})
 			}
-			resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
-				ForceFull:       true,
-				IntegrationInfo: integrations,
-			})
-			if err != nil || resp == nil {
-				r.logger.Error("failed to run aws discovery", zap.Error(err))
-				fmt.Println("failed to run aws discovery", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run aws discovery: ", err.Error()))
+			if len(integrations) > 0 {
+				resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
+					ForceFull:       true,
+					IntegrationInfo: integrations,
+				})
+				if err != nil || resp == nil {
+					r.logger.Error("failed to run aws discovery", zap.Error(err))
+					fmt.Println("failed to run aws discovery", err.Error())
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run aws discovery: ", err.Error()))
+				}
+				triggerId := strconv.Itoa(int(resp.TriggerID))
+				response.AwsTriggerID = &triggerId
 			}
-			triggerId := strconv.Itoa(int(resp.TriggerID))
-			response.AwsTriggerID = &triggerId
 		}
 		if req.AzureCredentials != nil {
 			azureResp, err := r.integrationClient.CreateAzure(clientCtx, entity.CreateAzureCredentialRequest{
@@ -283,17 +285,19 @@ func (r *httpRoutes) Setup(ctx echo.Context) error {
 					IntegrationTracker: &cid,
 				})
 			}
-			resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
-				ForceFull:       true,
-				IntegrationInfo: integrations,
-			})
-			if err != nil || resp == nil {
-				r.logger.Error("failed to run azure discovery", zap.Error(err))
-				fmt.Println("failed to run azure discovery", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run azure discovery: ", err.Error()))
+			if len(integrations) > 0 {
+				resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
+					ForceFull:       true,
+					IntegrationInfo: integrations,
+				})
+				if err != nil || resp == nil {
+					r.logger.Error("failed to run azure discovery", zap.Error(err))
+					fmt.Println("failed to run azure discovery", err.Error())
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run azure discovery: ", err.Error()))
+				}
+				triggerId := strconv.Itoa(int(resp.TriggerID))
+				response.AzureTriggerID = &triggerId
 			}
-			triggerId := strconv.Itoa(int(resp.TriggerID))
-			response.AzureTriggerID = &triggerId
 		}
 	}
 
