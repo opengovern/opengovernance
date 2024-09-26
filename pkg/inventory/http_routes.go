@@ -3414,47 +3414,44 @@ func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 //	@Param			categories	query	[]string	false	"Categories filter"
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200	{object}	inventoryApi.GetResourceCategoriesResult
+//	@Success		200	{object}	inventoryApi.GetResourceCategoriesResponse
 //	@Router			/inventory/api/v3/resources/categories [get]
 func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 	tablesFilter := httpserver.QueryArrayParam(ctx, "tables")
-
-	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(tablesFilter)
-	if err != nil {
-		h.logger.Error("failed to list resource categories", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
-	}
-
 	categoriesFilter := httpserver.QueryArrayParam(ctx, "categories")
-	categoriesFilterMap := make(map[string]bool)
-	for _, c := range categoriesFilter {
-		categoriesFilterMap[c] = true
+
+	resourceTypes, err := h.db.ListResourceTypes(tablesFilter, categoriesFilter)
+	if err != nil {
+		h.logger.Error("could not find resourceTypes", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find resourceTypes")
 	}
 
-	var categoriesApi []inventoryApi.ResourceCategory
-	for _, c := range categories {
-		if _, ok := categoriesFilterMap[c.Category]; !ok && len(categoriesFilter) > 0 {
-			continue
+	categories := make(map[string][]ResourceTypeV2)
+	for _, rt := range resourceTypes {
+		if _, ok := categories[rt.Category]; !ok {
+			categories[rt.Category] = make([]ResourceTypeV2, 0)
 		}
-		resourceTypes, err := h.db.ListCategoryResourceTypes(c.Category)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "list category resource types")
+		categories[rt.Category] = append(categories[rt.Category], rt)
+	}
+	var categoriesResponse []inventoryApi.GetResourceCategoriesCategory
+	for c, rts := range categories {
+		var responseTables []inventoryApi.GetResourceCategoriesTables
+		for _, rt := range rts {
+			responseTables = append(responseTables, inventoryApi.GetResourceCategoriesTables{
+				Name:         rt.ResourceName,
+				Table:        rt.SteampipeTable,
+				ResourceType: rt.ResourceID,
+			})
 		}
-		var resourceTypesApi []inventoryApi.ResourceTypeV2
-		for _, r := range resourceTypes {
-			resourceTypesApi = append(resourceTypesApi, r.ToApi())
-		}
-		categoriesApi = append(categoriesApi, inventoryApi.ResourceCategory{
-			Category:  c.Category,
-			Resources: resourceTypesApi,
+		categoriesResponse = append(categoriesResponse, inventoryApi.GetResourceCategoriesCategory{
+			Category: c,
+			Tables:   responseTables,
 		})
 	}
 
-	resp := inventoryApi.GetResourceCategoriesResult{
-		Categories: categoriesApi,
-	}
-
-	return ctx.JSON(200, resp)
+	return ctx.JSON(200, inventoryApi.GetResourceCategoriesResponse{
+		Categories: categoriesResponse,
+	})
 }
 
 // GetQueriesResourceCategories godoc
@@ -3466,7 +3463,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 //	@Param			queries	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200	{object}	[]inventoryApi.CategoriesTables
+//	@Success		200	{object}	inventoryApi.GetQueriesResourceCategoriesResponse
 //	@Router			/inventory/api/v3/queries/categories [get]
 func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 	queryIds := httpserver.QueryArrayParam(ctx, "queries")
@@ -3487,13 +3484,38 @@ func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 		tables = append(tables, t)
 	}
 
-	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(tables)
+	resourceTypes, err := h.db.ListResourceTypes(tables, nil)
 	if err != nil {
-		h.logger.Error("could not find categories", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "could not find categories")
+		h.logger.Error("could not find resourceTypes", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find resourceTypes")
 	}
 
-	return ctx.JSON(200, categories)
+	categories := make(map[string][]ResourceTypeV2)
+	for _, rt := range resourceTypes {
+		if _, ok := categories[rt.Category]; !ok {
+			categories[rt.Category] = make([]ResourceTypeV2, 0)
+		}
+		categories[rt.Category] = append(categories[rt.Category], rt)
+	}
+	var categoriesResponse []inventoryApi.GetResourceCategoriesCategory
+	for c, rts := range categories {
+		var responseTables []inventoryApi.GetResourceCategoriesTables
+		for _, rt := range rts {
+			responseTables = append(responseTables, inventoryApi.GetResourceCategoriesTables{
+				Name:         rt.ResourceName,
+				Table:        rt.SteampipeTable,
+				ResourceType: rt.ResourceID,
+			})
+		}
+		categoriesResponse = append(categoriesResponse, inventoryApi.GetResourceCategoriesCategory{
+			Category: c,
+			Tables:   responseTables,
+		})
+	}
+
+	return ctx.JSON(200, inventoryApi.GetResourceCategoriesResponse{
+		Categories: categoriesResponse,
+	})
 }
 
 // GetTablesResourceCategories godoc
@@ -3593,6 +3615,9 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 				Tags:        tags,
 			}
 			for _, t := range query.Query.ListOfTables {
+				if t == "" {
+					continue
+				}
 				if _, ok := servicesQueries[tablesFilterMap[t]]; !ok {
 					servicesQueries[tablesFilterMap[t]] = make([]inventoryApi.NamedQueryItemV2, 0)
 				}

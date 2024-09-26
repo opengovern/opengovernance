@@ -29,7 +29,7 @@ type InventoryServiceClient interface {
 	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
 	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
 	GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error)
-	GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (*api.GetResourceCategoriesResult, error)
+	GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (*api.GetResourceCategoriesResponse, error)
 }
 
 type inventoryClient struct {
@@ -133,7 +133,7 @@ func (s *inventoryClient) GetTablesResourceCategories(ctx *httpclient.Context, t
 	return resp, nil
 }
 
-func (s *inventoryClient) GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (*api.GetResourceCategoriesResult, error) {
+func (s *inventoryClient) GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (*api.GetResourceCategoriesResponse, error) {
 	url := fmt.Sprintf("%s/api/v3/resources/categories", s.baseURL)
 
 	firstParamAttached := false
@@ -160,7 +160,7 @@ func (s *inventoryClient) GetResourceCategories(ctx *httpclient.Context, tables 
 		}
 	}
 
-	var resp api.GetResourceCategoriesResult
+	var resp api.GetResourceCategoriesResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
