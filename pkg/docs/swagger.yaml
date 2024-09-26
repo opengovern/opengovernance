@@ -2699,6 +2699,34 @@ definitions:
     - DescribeResourceJobSucceeded
     - DescribeResourceJobRemovingResources
     - DescribeResourceJobCanceled
+  github_com_kaytu-io_open-governance_pkg_describe_api.DiscoveryProgressStatusBreakdown:
+    properties:
+      canceled_count:
+        type: integer
+      created_count:
+        type: integer
+      failed_count:
+        type: integer
+      in_progress_count:
+        type: integer
+      old_resource_deletion:
+        type: integer
+      queued_count:
+        type: integer
+      removing_resources_count:
+        type: integer
+      succeeded_count:
+        type: integer
+      timeout_count:
+        type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.DiscoveryProgressStatusSummary:
+    properties:
+      processed_count:
+        type: integer
+      total_count:
+        type: integer
+    type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.GetAnalyticsJobStatusResponse:
     properties:
       created_at:
@@ -2923,6 +2951,46 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.DescribeResourceJobStatus'
       resource_type:
         type: string
+    type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.GetIntegrationDiscoveryProgressRequest:
+    properties:
+      integration_info:
+        items:
+          properties:
+            id:
+              type: string
+            id_name:
+              type: string
+            integration:
+              type: string
+            integration_tracker:
+              type: string
+            type:
+              type: string
+          type: object
+        type: array
+      trigger_id:
+        type: string
+    type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.GetIntegrationDiscoveryProgressResponse:
+    properties:
+      integration_progress:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationDiscoveryProgressStatus'
+        type: array
+      trigger_id_progress_breakdown:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.DiscoveryProgressStatusBreakdown'
+      trigger_id_progress_summary:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.DiscoveryProgressStatusSummary'
+    type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationDiscoveryProgressStatus:
+    properties:
+      breakdown:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.DiscoveryProgressStatusBreakdown'
+      integration:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationInfo'
+      summary:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.DiscoveryProgressStatusSummary'
     type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationInfo:
     properties:
@@ -3232,6 +3300,19 @@ definitions:
       job_id:
         type: integer
     type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.RunDiscoveryJob:
+    properties:
+      failure_reason:
+        type: string
+      integration_info:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationInfo'
+      job_id:
+        type: integer
+      resource_type:
+        type: string
+      status:
+        type: string
+    type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.RunDiscoveryRequest:
     properties:
       force_full:
@@ -3259,16 +3340,12 @@ definitions:
     type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.RunDiscoveryResponse:
     properties:
-      failure_reason:
-        type: string
-      integration_info:
-        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationInfo'
-      job_id:
+      jobs:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.RunDiscoveryJob'
+        type: array
+      trigger_id:
         type: integer
-      resource_type:
-        type: string
-      status:
-        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.RunQueryResponse:
     properties:
@@ -3463,6 +3540,13 @@ definitions:
         type: string
       triggeredAt:
         type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.GetParametersQueriesResponse:
+    properties:
+      parameters:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ParametersQueries'
+        type: array
     type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult:
     properties:
@@ -3709,6 +3793,15 @@ definitions:
         type: integer
       size:
         type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.ParametersQueries:
+    properties:
+      parameter:
+        type: string
+      queries:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.NamedQueryItemV2'
+        type: array
     type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.Query:
     properties:
@@ -4681,6 +4774,37 @@ definitions:
       id:
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_workspace_api.About:
+    properties:
+      api_keys:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_auth_api.WorkspaceApiKey'
+        type: array
+      app_version:
+        type: string
+      dex_connectors:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.DexConnectorInfo'
+        type: array
+      integrations:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_onboard_api.Connection'
+          type: array
+        type: object
+      primary_domain_url:
+        type: string
+      sample_data:
+        type: boolean
+      total_spend_governed:
+        type: number
+      users:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_auth_api.WorkspaceRoleBinding'
+        type: array
+      workspace_creation_time:
+        type: string
+    type: object
   github_com_kaytu-io_open-governance_pkg_workspace_api.BootstrapProgress:
     properties:
       done:
@@ -4706,6 +4830,31 @@ definitions:
         type: integer
       workspaceCreationStatus:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.BootstrapProgress'
+    type: object
+  github_com_kaytu-io_open-governance_pkg_workspace_api.DexConnectorInfo:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  github_com_kaytu-io_open-governance_pkg_workspace_api.GetMigrationStatusResponse:
+    properties:
+      jobs_status:
+        additionalProperties:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_services_migrator_db_model.JobsStatus'
+        type: object
+      status:
+        type: string
+    type: object
+  github_com_kaytu-io_open-governance_pkg_workspace_api.GetSampleSyncStatusResponse:
+    properties:
+      jobs_progress:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_services_demo-importer_db_model.ESImportProgress'
+      status:
+        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_workspace_api.Organization:
     properties:
@@ -4823,6 +4972,11 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
+  github_com_kaytu-io_open-governance_services_demo-importer_db_model.ESImportProgress:
+    properties:
+      progress:
+        type: number
+    type: object
   github_com_kaytu-io_open-governance_services_integration_api_entity.AWSCredentialConfig:
     properties:
       accessKey:
@@ -5248,6 +5402,18 @@ definitions:
       name:
         type: string
     type: object
+  github_com_kaytu-io_open-governance_services_migrator_db_model.JobsStatus:
+    enum:
+    - SUCCEEDED
+    - PENDING
+    - IN_PROGRESS
+    - FAILED
+    type: string
+    x-enum-varnames:
+    - JobStatusCompleted
+    - JobStatusPending
+    - JobStatusInProgress
+    - JobStatusFailed
   github_com_kaytu-io_open-governance_services_wastage_api_entity.AwsClusterWastageRequest:
     properties:
       cliVersion:
@@ -9260,7 +9426,7 @@ paths:
       description: Get list of controls for given categories
       parameters:
       - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
+        description: Categories filter by
         in: query
         items:
           type: string
@@ -9279,7 +9445,7 @@ paths:
       - BearerToken: []
       summary: Get list of controls for given categories
       tags:
-      - named_query
+      - compliance
   /compliance/api/v3/categories/queries:
     get:
       description: Get list of controls for given categories
@@ -9415,7 +9581,7 @@ paths:
       description: Get list of unique resource categories for the give controls
       parameters:
       - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
+        description: Controls filter by
         in: query
         items:
           type: string
@@ -9434,7 +9600,7 @@ paths:
       - BearerToken: []
       summary: Get list of unique resource categories
       tags:
-      - named_query
+      - compliance
   /compliance/api/v3/controls/filters:
     get:
       consumes:
@@ -9513,6 +9679,29 @@ paths:
       security:
       - BearerToken: []
       summary: Get findings
+      tags:
+      - compliance
+  /compliance/api/v3/parameters/controls:
+    get:
+      description: Get list of queries for given parameters
+      parameters:
+      - collectionFormat: csv
+        description: Parameters filter by
+        in: query
+        items:
+          type: string
+        name: parameters
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetParametersQueriesResponse'
+      security:
+      - BearerToken: []
+      summary: Get list of queries for given parameters
       tags:
       - compliance
   /compliance/api/v3/sample/purge:
@@ -11924,6 +12113,29 @@ paths:
       summary: List connectors v2
       tags:
       - onboard
+  /onboard/api/v3/sample/purge:
+    put:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      parameters:
+      - collectionFormat: csv
+        description: ignore_source_ids
+        in: query
+        items:
+          type: string
+        name: ignore_source_ids
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
   /schedule/api/v1/analytics/trigger:
     put:
       description: Triggers an analytics job to run immediately
@@ -12236,14 +12448,33 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.RunDiscoveryResponse'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.RunDiscoveryResponse'
       security:
       - BearerToken: []
       summary: Run Discovery job
       tags:
       - describe
+  /schedule/api/v3/discovery/status:
+    post:
+      parameters:
+      - description: List jobs request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.GetIntegrationDiscoveryProgressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.GetIntegrationDiscoveryProgressResponse'
+      security:
+      - BearerToken: []
+      summary: Get Integration discovery progress (number of jobs in different states)
+      tags:
+      - scheduler
   /schedule/api/v3/job/analytics/{job_id}:
     get:
       parameters:
@@ -12809,6 +13040,104 @@ paths:
       summary: Get workspace limits
       tags:
       - workspace
+  /workspace/api/v3/configured/set:
+    put:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
+  /workspace/api/v3/configured/status:
+    get:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
+    put:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.About'
+      security:
+      - BearerToken: []
+      summary: Get About info
+      tags:
+      - compliance
+  /workspace/api/v3/configured/unset:
+    put:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
+  /workspace/api/v3/migration/status:
+    get:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.GetMigrationStatusResponse'
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
   /workspace/api/v3/sample/loaded:
     put:
       consumes:
@@ -12859,6 +13188,28 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
+      summary: Sync demo
+      tags:
+      - compliance
+  /workspace/api/v3/sample/sync/status:
+    get:
+      consumes:
+      - application/json
+      description: Syncs demo with the git backend.
+      parameters:
+      - description: Demo Data S3 URL
+        in: query
+        name: demo_data_s3_url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.GetSampleSyncStatusResponse'
       security:
       - BearerToken: []
       summary: Sync demo

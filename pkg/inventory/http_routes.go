@@ -3611,7 +3611,7 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 //	@Param			parameters	query	[]string	false	"Parameters filter by"
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200	{object}	[]api.GetCategoriesControlsResponse
+//	@Success		200	{object}	inventoryApi.GetParametersQueriesResponse
 //	@Router			/compliance/api/v3/parameters/controls [get]
 func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
 	parameters := httpserver.QueryArrayParam(ctx, "parameters")
