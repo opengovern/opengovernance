@@ -15,6 +15,7 @@ const (
 )
 
 type Connector struct {
+	ID                  uint
 	Name                source.Type                   `gorm:"primaryKey" json:"name"`
 	Label               string                        `json:"label"`
 	ShortDescription    string                        `json:"short_description"`
