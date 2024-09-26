@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -971,7 +972,19 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 		s.logger.Error("failed to get migration", zap.Error(tx.Error))
 		return echoCtx.JSON(http.StatusInternalServerError, "failed to get migration")
 	}
-	return echoCtx.String(http.StatusOK, mig.Status)
+	jobsStatus := make(map[string]model.JobsStatus)
+
+	if len(mig.JobsStatus.Bytes) > 0 {
+		err := json.Unmarshal(mig.JobsStatus.Bytes, &jobsStatus)
+		if err != nil {
+			return err
+		}
+	}
+
+	return echoCtx.JSON(http.StatusOK, api.GetMigrationStatusResponse{
+		Status:     mig.Status,
+		JobsStatus: jobsStatus,
+	})
 }
 
 // GetSampleSyncStatus godoc

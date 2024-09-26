@@ -8,8 +8,10 @@ import (
 type JobsStatus string
 
 const (
-	JobStatusCompleted JobsStatus = "SUCCEEDED"
-	JobStatusFailed    JobsStatus = "FAILED"
+	JobStatusCompleted  JobsStatus = "SUCCEEDED"
+	JobStatusPending    JobsStatus = "PENDING"
+	JobStatusInProgress JobsStatus = "IN_PROGRESS"
+	JobStatusFailed     JobsStatus = "FAILED"
 )
 
 type Migration struct {
