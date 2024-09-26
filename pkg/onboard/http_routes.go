@@ -3111,19 +3111,17 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			ignore_source_ids	query	[]string	false	"ignore_source_ids"
 //	@Success		200
-//	@Router			/workspace/api/v3/sample/purge [put]
+//	@Router			/onboard/api/v3/sample/purge [put]
 func (s HttpHandler) PurgeSampleData(c echo.Context) error {
-	err := s.db.DeleteSources()
+	err := s.db.DeleteCredentials()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete sources")
-	}
-	err = s.db.DeleteCredentials()
-	if err != nil {
+		s.logger.Error("Failed to delete credentials", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete credentials")
 	}
-	err = s.db.DeleteConnectionGroups()
+	err = s.db.DeleteSources()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete connection groups")
+		s.logger.Error("Failed to delete sources", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete sources")
 	}
 
 	return c.NoContent(http.StatusOK)
