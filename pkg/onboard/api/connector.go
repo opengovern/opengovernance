@@ -5,6 +5,7 @@ import (
 )
 
 type Connector struct {
+	ID                  uint                          `json:"id"`
 	Name                source.Type                   `json:"name" example:"Azure"`
 	Label               string                        `json:"label" example:"Azure"`
 	ShortDescription    string                        `json:"shortDescription" example:"This is a short Description for this connector"`

@@ -3194,6 +3194,7 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 		}
 		items = append(items, api.ConnectorCount{
 			Connector: api.Connector{
+				ID:                  c.ID,
 				Name:                c.Name,
 				Label:               c.Label,
 				ShortDescription:    c.ShortDescription,
@@ -3213,7 +3214,7 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 	totalCount := len(items)
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].Label < items[j].Label
+		return items[i].ID < items[j].ID
 	})
 	if perPage != 0 {
 		if cursor == 0 {
