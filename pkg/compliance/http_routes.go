@@ -6482,9 +6482,9 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 
 	var categoriesControls []api.CategoryControls
 	for _, c := range categories.Categories {
-		tablesFilterMap := make(map[string]bool)
+		tablesFilterMap := make(map[string]string)
 		for _, r := range c.Resources {
-			tablesFilterMap[r.SteampipeTable] = true
+			tablesFilterMap[r.SteampipeTable] = r.ResourceID
 		}
 		var tablesFilter []string
 		for t, _ := range tablesFilterMap {
@@ -6496,13 +6496,26 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 			h.logger.Error("could not find controls", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not find controls")
 		}
-		var controlsApi []api.Control
+
+		servicesControls := make(map[string][]api.Control)
 		for _, ctrl := range controls {
-			controlsApi = append(controlsApi, ctrl.ToApi())
+			for _, t := range ctrl.Query.ListOfTables {
+				if _, ok := servicesControls[tablesFilterMap[t]]; !ok {
+					servicesControls[tablesFilterMap[t]] = make([]api.Control, 0)
+				}
+				servicesControls[tablesFilterMap[t]] = append(servicesControls[tablesFilterMap[t]], ctrl.ToApi())
+			}
+		}
+		var services []api.ServiceControls
+		for k, v := range servicesControls {
+			services = append(services, api.ServiceControls{
+				Service: k,
+				Queries: v,
+			})
 		}
 		categoriesControls = append(categoriesControls, api.CategoryControls{
 			Category: c.Category,
-			Controls: controlsApi,
+			Services: services,
 		})
 	}
 
