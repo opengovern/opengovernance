@@ -750,6 +750,9 @@ func (s *Server) PurgeSampleData(c echo.Context) error {
 	complianceURL := strings.ReplaceAll(s.cfg.Compliance.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
 	complianceClient := client4.NewComplianceClient(complianceURL)
 
+	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
+	onboardClient := client.NewOnboardServiceClient(onboardURL)
+
 	err = schedulerClient.PurgeSampleData(ctx)
 	if err != nil {
 		s.logger.Error("failed to purge scheduler data", zap.Error(err))
@@ -758,7 +761,12 @@ func (s *Server) PurgeSampleData(c echo.Context) error {
 	err = complianceClient.PurgeSampleData(ctx)
 	if err != nil {
 		s.logger.Error("failed to purge compliance data", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge scheduler data")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge compliance data")
+	}
+	err = onboardClient.PurgeSampleData(ctx, nil)
+	if err != nil {
+		s.logger.Error("failed to purge onboard data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge onboard data")
 	}
 
 	err = s.db.WorkspaceSampleDataDeleted("main")
