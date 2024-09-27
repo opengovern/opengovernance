@@ -3603,9 +3603,10 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 //	@Summary	List jobs by job type and filters
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		interval		query	string	true	"Time Interval to filter by"
-//	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
-//	@Param		created_by		query	string	true	"Created By User ID"
+//	@Param		interval		query	string		true	"Time Interval to filter by"
+//	@Param		trigger_type	query	string		true	"Trigger Type: (all(default), manual, system)"
+//	@Param		created_by		query	string		true	"Created By User ID"
+//	@Param		benchmark_ids	query	[]string	true	"Created By User ID"
 //	@Param		cursor		query	int			true	"cursor"
 //	@Param		per_page	query	int			true	"per page"
 //	@Produce	json
@@ -3617,6 +3618,7 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 	interval := ctx.QueryParam("interval")
 	triggerType := ctx.QueryParam("trigger_type")
 	createdBy := ctx.QueryParam("created_by")
+	benchmarkIDs := httpserver.QueryArrayParam(ctx, "benchmark_ids")
 
 	var cursor, perPage int64
 	var err error
@@ -3644,7 +3646,7 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 	var items []api.ListComplianceJobsHistoryItem
 	connectionIdsMap := make(map[string]bool)
 
-	jobs, err := h.DB.ListComplianceJobsWithSummaryJob(convertedInterval, triggerType, createdBy)
+	jobs, err := h.DB.ListComplianceJobsWithSummaryJob(convertedInterval, triggerType, createdBy, benchmarkIDs)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -3657,13 +3659,14 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 			})
 		}
 		items = append(items, api.ListComplianceJobsHistoryItem{
-			BenchmarkId: j.BenchmarkID,
-			JobId:       strconv.Itoa(int(j.ID)),
-			TriggerType: string(j.TriggerType),
-			CreatedBy:   j.CreatedBy,
-			JobStatus:   string(j.Status),
-			CreatedAt:   j.CreatedAt,
-			UpdatedAt:   j.UpdatedAt,
+			BenchmarkId:    j.BenchmarkID,
+			JobId:          strconv.Itoa(int(j.ID)),
+			SummarizerJobs: j.SummarizerJobs,
+			TriggerType:    string(j.TriggerType),
+			CreatedBy:      j.CreatedBy,
+			JobStatus:      string(j.Status),
+			CreatedAt:      j.CreatedAt,
+			UpdatedAt:      j.UpdatedAt,
 		})
 	}
 	var connectionIds []string

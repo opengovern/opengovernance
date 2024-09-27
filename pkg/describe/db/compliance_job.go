@@ -152,7 +152,7 @@ func (db Database) ListComplianceJobsForInterval(interval, triggerType, createdB
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, createdBy string) ([]model.ComplianceJobWithSummarizerJob, error) {
+func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, createdBy string, benchmarkIDs []string) ([]model.ComplianceJobWithSummarizerJob, error) {
 	var result []model.ComplianceJobWithSummarizerJob
 
 	// Base query
@@ -166,7 +166,7 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 			compliance_jobs.connection_ids, 
 			compliance_jobs.trigger_type, 
 			compliance_jobs.created_by,
-			COALESCE(array_agg(compliance_summarizers.id), '{}') as summarizer_jobs
+			COALESCE(array_agg(COALESCE(compliance_summarizers.id::text, '')), '{}') as summarizer_jobs
 		`).
 		Joins("LEFT JOIN compliance_summarizers ON compliance_jobs.id = compliance_summarizers.parent_job_id").
 		Group("compliance_jobs.id")
@@ -180,6 +180,9 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 	}
 	if createdBy != "" {
 		tx = tx.Where("compliance_jobs.created_by = ?", createdBy)
+	}
+	if len(benchmarkIDs) > 0 {
+		tx = tx.Where("compliance_jobs.benchmark_id IN ?", benchmarkIDs)
 	}
 
 	// Execute the query

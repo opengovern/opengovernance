@@ -981,6 +981,7 @@ func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
 //	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
 //	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
+//	@Param			jobId				query		[]string						false	"Job ID to filter"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
@@ -1008,6 +1009,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(echoCtx, "connector"))
 	benchmarkIDs := httpserver2.QueryArrayParam(echoCtx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(echoCtx, "controlId")
+	jobIDs := httpserver2.QueryArrayParam(echoCtx, "jobId")
 	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
@@ -1035,14 +1037,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 
 	var response api.GetTopFieldResponse
 	topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
-		nil, connectionIDs, notConnectionIDs,
+		nil, connectionIDs, notConnectionIDs, jobIDs,
 		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount))
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
 	topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
-		nil, connectionIDs, notConnectionIDs,
+		nil, connectionIDs, notConnectionIDs, jobIDs,
 		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000)
 	if err != nil {
 		h.logger.Error("failed to get top field total", zap.Error(err))
