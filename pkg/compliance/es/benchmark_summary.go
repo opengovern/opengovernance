@@ -7,6 +7,7 @@ import (
 	types2 "github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/open-governance/pkg/types"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -932,4 +933,124 @@ func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client ka
 	}
 
 	return result, evAt, nil
+}
+
+func ListJobsSummariesAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string, jobIDs []string,
+	connectionIDs []string, resourceCollections []string,
+	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
+
+	idx := types.BenchmarkSummaryIndex
+
+	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.BenchmarkResult.Controls"}
+	if len(connectionIDs) > 0 || fetchFullObject {
+		includes = append(includes, "Connections.Connections")
+	}
+	if len(resourceCollections) > 0 || fetchFullObject {
+		includes = append(includes, "ResourceCollections")
+	}
+	pathFilters := make([]string, 0, len(connectionIDs)+(len(resourceCollections)*(len(connectionIDs)+1))+2)
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
+	for _, connectionID := range connectionIDs {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Result", connectionID))
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+	}
+	for _, resourceCollection := range resourceCollections {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result", resourceCollection))
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Controls", resourceCollection))
+		for _, connectionID := range connectionIDs {
+			pathFilters = append(pathFilters,
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Result", resourceCollection, connectionID))
+			pathFilters = append(pathFilters,
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Controls", resourceCollection, connectionID))
+		}
+	}
+
+	request := map[string]any{
+		"aggs": map[string]any{
+			"summaries": map[string]any{
+				"terms": map[string]any{
+					"field": "BenchmarkID",
+					"size":  10000,
+				},
+				"aggs": map[string]any{
+					"last_result": map[string]any{
+						"top_hits": map[string]any{
+							"sort": []map[string]any{
+								{
+									"JobID": "desc",
+								},
+							},
+							"_source": map[string]any{
+								"includes": includes,
+							},
+							"size": 1,
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+	}
+
+	filters := make([]any, 0)
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"EvaluatedAtEpoch": map[string]any{
+				"lte": timeAt.Unix(),
+			},
+		},
+	})
+	if len(benchmarkIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"BenchmarkID": benchmarkIDs,
+			},
+		})
+	}
+	if len(jobIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"BenchmarkID": jobIDs,
+			},
+		})
+	}
+
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
+
+	var response ListBenchmarkSummariesAtTimeResponse
+	if fetchFullObject {
+		err = client.Search(ctx, idx, string(query), &response)
+	} else {
+		err = client.SearchWithFilterPath(ctx, idx, string(query), pathFilters, &response)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	jobsSummaries := make(map[string]types2.BenchmarkSummary)
+	for _, summary := range response.Aggregations.Summaries.Buckets {
+		for _, hit := range summary.LastResult.Hits.Hits {
+			jobsSummaries[strconv.Itoa(int(hit.Source.JobID))] = hit.Source
+		}
+	}
+	return jobsSummaries, nil
 }

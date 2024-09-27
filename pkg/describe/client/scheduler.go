@@ -31,6 +31,7 @@ type SchedulerServiceClient interface {
 	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
 	PurgeSampleData(ctx *httpclient.Context) error
 	RunDiscovery(ctx *httpclient.Context, userId string, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
+	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 }
 
 type schedulerClient struct {
@@ -209,4 +210,18 @@ func (s *schedulerClient) CountJobsByDate(ctx *httpclient.Context, includeCost *
 		return 0, err
 	}
 	return resp, nil
+}
+
+func (s *schedulerClient) ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/jobs/history/compliance?interval=%s&trigger_type=%s&created_by=%s&cursor=%d&per_page=%d",
+		s.baseURL, interval, triggerType, createdBy, cursor, perPage)
+
+	var resp api.ListComplianceJobsHistoryResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &resp, nil
 }

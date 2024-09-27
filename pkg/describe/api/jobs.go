@@ -397,14 +397,15 @@ type ListJobsByTypeResponse struct {
 }
 
 type ListComplianceJobsHistoryItem struct {
-	BenchmarkId  string            `json:"benchmark_id"`
-	Integrations []IntegrationInfo `json:"integrations"`
-	JobId        string            `json:"job_id"`
-	TriggerType  string            `json:"trigger_type"`
-	CreatedBy    string            `json:"created_by"`
-	JobStatus    string            `json:"job_status"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
+	BenchmarkId    string            `json:"benchmark_id"`
+	Integrations   []IntegrationInfo `json:"integrations"`
+	JobId          string            `json:"job_id"`
+	SummarizerJobs []string          `json:"summarizer_jobs"`
+	TriggerType    string            `json:"trigger_type"`
+	CreatedBy      string            `json:"created_by"`
+	JobStatus      string            `json:"job_status"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
 type ListComplianceJobsHistoryResponse struct {
