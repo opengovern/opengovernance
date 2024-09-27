@@ -490,8 +490,16 @@ func (db Database) CreateDescribeConnectionJob(job *model.DescribeConnectionJob)
 	return nil
 }
 
-func (db Database) CleanupDescribeConnectionJobsOlderThan(t time.Time) error {
-	tx := db.ORM.Where("created_at < ?", t).Unscoped().Delete(&model.DescribeConnectionJob{})
+func (db Database) CleanupManualDescribeConnectionJobsOlderThan(t time.Time) error {
+	tx := db.ORM.Where("created_at < ?", t).Where("trigger_type = ?", enums.DescribeTriggerTypeManual).Unscoped().Delete(&model.DescribeConnectionJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) CleanupScheduledDescribeConnectionJobsOlderThan(t time.Time) error {
+	tx := db.ORM.Where("created_at < ?", t).Where("trigger_type <> ?", enums.DescribeTriggerTypeManual).Unscoped().Delete(&model.DescribeConnectionJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}
