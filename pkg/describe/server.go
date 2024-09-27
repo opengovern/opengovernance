@@ -3609,7 +3609,7 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 //	@Param		cursor		query	int			true	"cursor"
 //	@Param		per_page	query	int			true	"per page"
 //	@Produce	json
-//	@Success	200	{object}	[]api.ListJobsByTypeItem
+//	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/history/compliance [get]
 func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
@@ -3644,7 +3644,7 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 	var items []api.ListComplianceJobsHistoryItem
 	connectionIdsMap := make(map[string]bool)
 
-	jobs, err := h.DB.ListComplianceJobsForInterval(convertedInterval, triggerType, createdBy)
+	jobs, err := h.DB.ListComplianceJobsWithSummaryJob(convertedInterval, triggerType, createdBy)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -3700,7 +3700,9 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 
 	for i, j := range items {
 		for ii, integration := range j.Integrations {
-			items[i].Integrations[ii] = integrationsMap[integration.IntegrationTracker]
+			if integrationData, ok := integrationsMap[integration.IntegrationTracker]; ok {
+				items[i].Integrations[ii] = integrationData
+			}
 		}
 	}
 

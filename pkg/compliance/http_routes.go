@@ -21,6 +21,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
 	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
 	"github.com/kaytu-io/open-governance/pkg/demo"
+	model3 "github.com/kaytu-io/open-governance/pkg/describe/db/model"
 	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
@@ -139,6 +140,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
 
 	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(h.PurgeSampleData, authApi.AdminRole))
+	v3.GET("/jobs/history", httpserver2.AuthorizeHandler(h.ListComplianceJobsHistory, authApi.ViewerRole))
+
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -6577,5 +6580,101 @@ func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 
 	return ctx.JSON(200, api.GetParametersControlsResponse{
 		ParametersControls: parametersControls,
+	})
+}
+
+// ListComplianceJobsHistory godoc
+//
+//	@Summary	List jobs by job type and filters
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		interval		query	string	true	"Time Interval to filter by"
+//	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
+//	@Param		created_by		query	string	true	"Created By User ID"
+//	@Param		cursor		query	int			true	"cursor"
+//	@Param		per_page	query	int			true	"per page"
+//	@Produce	json
+//	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
+//	@Router		/compliance/api/v3/jobs/history [get]
+func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+
+	interval := ctx.QueryParam("interval")
+	triggerType := ctx.QueryParam("trigger_type")
+	createdBy := ctx.QueryParam("created_by")
+
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	jobs, err := h.schedulerClient.ListComplianceJobsHistory(clientCtx, interval, triggerType, createdBy, int(cursor), int(perPage))
+	if err != nil {
+		h.logger.Error("could not get list of jobs", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not get list of jobs")
+	}
+	var jobIDs []string
+	for _, j := range jobs.Items {
+		jobIDs = append(jobIDs, j.SummarizerJobs...)
+	}
+
+	timeAt := time.Now()
+	summariesAtTime, err := es.ListJobsSummariesAtTime(ctx.Request().Context(), h.logger, h.client,
+		nil, jobIDs, nil, nil,
+		timeAt, true)
+	if err != nil {
+		return err
+	}
+
+	var items []api.ListComplianceJobsHistoryItem
+	for _, j := range jobs.Items {
+		item := api.ListComplianceJobsHistoryItem{
+			BenchmarkId:  j.BenchmarkId,
+			Integrations: j.Integrations,
+			JobId:        j.JobId,
+			TriggerType:  j.TriggerType,
+			CreatedBy:    j.CreatedBy,
+			JobStatus:    j.JobStatus,
+			CreatedAt:    j.CreatedAt,
+			UpdatedAt:    j.UpdatedAt,
+		}
+
+		if j.JobStatus == string(model3.ComplianceJobSucceeded) {
+			summaryAtTime := summariesAtTime[j.SummarizerJobs[len(j.SummarizerJobs)-1]]
+
+			csResult := api.ConformanceStatusSummaryV2{}
+			addToResults := func(resultGroup types.ResultGroup) {
+				csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+			}
+
+			addToResults(summaryAtTime.Connections.BenchmarkResult)
+			var complianceScore float64
+			if csResult.TotalCount > 0 {
+				complianceScore = float64(csResult.PassedCount) / float64(csResult.TotalCount)
+			} else {
+				complianceScore = 0
+			}
+			item.FindingsSummary = csResult
+			item.ComplianceScore = complianceScore
+		}
+
+		items = append(items, item)
+	}
+
+	return ctx.JSON(http.StatusOK, api.ListComplianceJobsHistoryResponse{
+		Items:      items,
+		TotalCount: jobs.TotalCount,
 	})
 }

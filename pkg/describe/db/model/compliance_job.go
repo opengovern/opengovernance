@@ -109,3 +109,15 @@ type ComplianceSummarizer struct {
 
 	TriggerType ComplianceTriggerType
 }
+
+type ComplianceJobWithSummarizerJob struct {
+	ID             uint
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	BenchmarkID    string
+	Status         ComplianceJobStatus
+	ConnectionIDs  pq.StringArray `gorm:"type:text[]"`
+	SummarizerJobs pq.StringArray `gorm:"type:text[]"`
+	TriggerType    ComplianceTriggerType
+	CreatedBy      string
+}

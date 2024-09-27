@@ -152,6 +152,47 @@ func (db Database) ListComplianceJobsForInterval(interval, triggerType, createdB
 	return job, nil
 }
 
+func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, createdBy string) ([]model.ComplianceJobWithSummarizerJob, error) {
+	var result []model.ComplianceJobWithSummarizerJob
+
+	// Base query
+	tx := db.ORM.Table("compliance_jobs").
+		Select(`
+			compliance_jobs.id, 
+			compliance_jobs.created_at, 
+			compliance_jobs.updated_at, 
+			compliance_jobs.benchmark_id, 
+			compliance_jobs.status, 
+			compliance_jobs.connection_ids, 
+			compliance_jobs.trigger_type, 
+			compliance_jobs.created_by,
+			COALESCE(array_agg(compliance_summarizers.id), '{}') as summarizer_jobs
+		`).
+		Joins("LEFT JOIN compliance_summarizers ON compliance_jobs.id = compliance_summarizers.parent_job_id").
+		Group("compliance_jobs.id")
+
+	// Apply filters
+	if interval != "" {
+		tx = tx.Where(fmt.Sprintf("NOW() - compliance_jobs.updated_at < INTERVAL '%s'", interval))
+	}
+	if triggerType != "" {
+		tx = tx.Where("compliance_jobs.trigger_type = ?", triggerType)
+	}
+	if createdBy != "" {
+		tx = tx.Where("compliance_jobs.created_by = ?", createdBy)
+	}
+
+	// Execute the query
+	if err := tx.Scan(&result).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).Where("connection_ids <@ ?", pq.Array(connectionIds)).Find(&job)

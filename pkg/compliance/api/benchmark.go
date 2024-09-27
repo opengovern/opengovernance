@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/kaytu-io/open-governance/pkg/describe/api"
 	"github.com/kaytu-io/open-governance/pkg/types"
 	"strings"
 	"time"
@@ -309,6 +310,24 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	LastEvaluatedAt            *time.Time                         `json:"last_evaluated_at"`
 	LastJobStatus              string                             `json:"last_job_status"`
 	LastJobId                  string                             `json:"last_job_id"`
+}
+
+type ListComplianceJobsHistoryItem struct {
+	BenchmarkId     string                     `json:"benchmark_id"`
+	Integrations    []api.IntegrationInfo      `json:"integrations"`
+	JobId           string                     `json:"job_id"`
+	FindingsSummary ConformanceStatusSummaryV2 `json:"findings_summary"`
+	ComplianceScore float64                    `json:"compliance_score"`
+	TriggerType     string                     `json:"trigger_type"`
+	CreatedBy       string                     `json:"created_by"`
+	JobStatus       string                     `json:"job_status"`
+	CreatedAt       time.Time                  `json:"created_at"`
+	UpdatedAt       time.Time                  `json:"updated_at"`
+}
+
+type ListComplianceJobsHistoryResponse struct {
+	Items      []ListComplianceJobsHistoryItem `json:"items"`
+	TotalCount int                             `json:"total_count"`
 }
 
 type ListBenchmarksFiltersResponse struct {
