@@ -41,6 +41,7 @@ type ComplianceJob struct {
 	ConnectionIDs       pq.StringArray `gorm:"type:text[]"`
 	FailureMessage      string
 	TriggerType         ComplianceTriggerType
+	CreatedBy           string
 }
 
 func (c ComplianceJob) ToApi() api.ComplianceJob {

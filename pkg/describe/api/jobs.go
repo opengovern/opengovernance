@@ -386,6 +386,11 @@ type ListJobsByTypeItem struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type ListJobsIntervalResponse struct {
+	Items      []ListJobsByTypeItem `json:"items"`
+	TotalCount int                  `json:"total_count"`
+}
+
 type ListJobsByTypeResponse struct {
 	Items      []ListJobsByTypeItem `json:"items"`
 	TotalCount int                  `json:"total_count"`

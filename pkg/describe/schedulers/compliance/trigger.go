@@ -196,7 +196,7 @@ func (s *JobScheduler) buildRunners(
 }
 
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
-	lastJob *model.ComplianceJob, connectionIDs []string, manual bool) (uint, error) {
+	lastJob *model.ComplianceJob, connectionIDs []string, manual bool, createdBy string) (uint, error) {
 	// delete old runners
 	if lastJob != nil {
 		err := s.db.DeleteOldRunnerJob(&lastJob.ID)
@@ -222,6 +222,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 		AreAllRunnersQueued: false,
 		ConnectionIDs:       connectionIDs,
 		TriggerType:         triggerType,
+		CreatedBy:           createdBy,
 	}
 	err := s.db.CreateComplianceJob(nil, &job)
 	if err != nil {

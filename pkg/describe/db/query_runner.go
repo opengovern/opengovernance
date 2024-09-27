@@ -111,13 +111,19 @@ func (db Database) UpdateTimedOutQueuedQueryRunners() error {
 	return nil
 }
 
-func (db Database) ListQueryRunnerJobForInterval(interval string) ([]model.QueryRunnerJob, error) {
+func (db Database) ListQueryRunnerJobForInterval(interval, triggerType, createdBy string) ([]model.QueryRunnerJob, error) {
 	var job []model.QueryRunnerJob
 
 	tx := db.ORM.Model(&model.QueryRunnerJob{})
 
 	if interval != "" {
 		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
+	}
+	if triggerType != "" {
+		tx = tx.Where("trigger_type = ?", triggerType)
+	}
+	if createdBy != "" {
+		tx = tx.Where("created_by = ?", createdBy)
 	}
 
 	tx = tx.Find(&job)

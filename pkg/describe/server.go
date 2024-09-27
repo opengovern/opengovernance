@@ -393,6 +393,10 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	forceFull := ctx.QueryParam("force_full") == "true"
 	costDiscovery := ctx.QueryParam("cost_discovery") == "true"
 	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 
 	ctx2 := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	ctx2.Ctx = ctx.Request().Context()
@@ -460,7 +464,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 			if !src.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type for connection: %s", resourceType))
 			}
-			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false, nil)
+			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false, nil, userID)
 			if err == ErrJobInProgress {
 				return echo.NewHTTPError(http.StatusConflict, err.Error())
 			}
@@ -488,6 +492,10 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	resourceTypes := httpserver.QueryArrayParam(ctx, "resource_type")
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	forceFull := ctx.QueryParam("force_full") == "true"
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 
 	//err := h.Scheduler.CheckWorkspaceResourceLimit()
 	//if err != nil {
@@ -542,7 +550,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
 				continue
 			}
-			_, err = h.Scheduler.describe(connection, resourceType, false, false, false, nil)
+			_, err = h.Scheduler.describe(connection, resourceType, false, false, false, nil, userID)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}
@@ -563,6 +571,11 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Param			connection_id	query	[]string	false	"Connection ID"
 //	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id} [put]
 func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
+
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	benchmarkID := ctx.Param("benchmark_id")
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
@@ -586,7 +599,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 	}
 
-	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs, true)
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs, true, userID)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
@@ -605,6 +618,11 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 //	@Param			connection_id	query	[]string	false	"Connection IDs leave empty for default (enabled connections)"
 //	@Router			/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
+
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	benchmarkIDs := httpserver.QueryArrayParam(ctx, "benchmark_id")
 
@@ -641,7 +659,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 		}
 
-		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs, true)
+		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs, true, userID)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
@@ -795,6 +813,10 @@ func (h HttpServer) getBenchmarkChildrenControls(benchmarkID string) ([]string, 
 //	@Param			control_id		query	[]string	false	"Control ID"
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [put]
 func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 	benchmarkID := ctx.Param("benchmark_id")
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
 	if len(connectionIDs) == 0 {
@@ -824,7 +846,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false, false, nil)
+		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false, false, nil, userID)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
 			continue
@@ -1314,7 +1336,10 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 //	@Router			/schedule/api/v3/compliance/benchmark/{benchmark_id}/run [post]
 func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
-
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 	benchmarkID := ctx.Param("benchmark_id")
 
 	var request api.RunBenchmarkByIdRequest
@@ -1376,7 +1401,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return err
 	}
 
-	jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs, true)
+	jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, connectionIDs, true, userID)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
@@ -1400,6 +1425,11 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 //	@Router			/schedule/api/v3/compliance/run [post]
 func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 
 	var request api.RunBenchmarkRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -1473,7 +1503,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			return err
 		}
 
-		jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs, true)
+		jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmark.ID, lastJob, connectionIDs, true, userID)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
@@ -1501,6 +1531,9 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 
 	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
 	triggerId, err := sf.NextID()
@@ -1601,7 +1634,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			}
 
 			var status, failureReason string
-			job, err := h.Scheduler.describe(connection, resourceType, false, false, false, &integrationDiscovery.ID)
+			job, err := h.Scheduler.describe(connection, resourceType, false, false, false, &integrationDiscovery.ID, userID)
 			if err != nil {
 				if err.Error() == "job already in progress" {
 					tmpJob, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
@@ -2063,7 +2096,7 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 		}
 	}
 	perPageStr := ctx.QueryParam("per_page")
-	if cursorStr != "" {
+	if perPageStr != "" {
 		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
 		if err != nil {
 			return err
@@ -3162,14 +3195,37 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 //	@Summary	List jobs by job type and filters
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		job_type	query	string	true	"Job Type"
-//	@Param		interval	query	string	true	"Time Interval to filter by"
+//	@Param		job_type		query	string	true	"Job Type"
+//	@Param		interval		query	string	true	"Time Interval to filter by"
+//	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
+//	@Param		created_by		query	string	true	"Created By User ID"
+//	@Param		cursor		query	int			true	"cursor"
+//	@Param		per_page	query	int			true	"per page"
 //	@Produce	json
 //	@Success	200	{object}	[]api.ListJobsByTypeItem
 //	@Router		/schedule/api/v3/jobs/interval [get]
 func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 	jobType := ctx.QueryParam("job_type")
 	interval := ctx.QueryParam("interval")
+	triggerType := ctx.QueryParam("trigger_type")
+	createdBy := ctx.QueryParam("created_by")
+
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
 
 	convertedInterval, err := convertInterval(interval)
 	if err != nil {
@@ -3186,7 +3242,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 
 	switch strings.ToLower(jobType) {
 	case "compliance":
-		jobs, err := h.DB.ListComplianceJobsForInterval(convertedInterval)
+		jobs, err := h.DB.ListComplianceJobsForInterval(convertedInterval, triggerType, createdBy)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -3200,7 +3256,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 			})
 		}
 	case "discovery":
-		jobs, err := h.DB.ListDescribeJobsForInterval(convertedInterval)
+		jobs, err := h.DB.ListDescribeJobsForInterval(convertedInterval, triggerType, createdBy)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -3228,7 +3284,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 			})
 		}
 	case "query":
-		jobs, err := h.DB.ListQueryRunnerJobForInterval(convertedInterval)
+		jobs, err := h.DB.ListQueryRunnerJobForInterval(convertedInterval, triggerType, createdBy)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -3242,8 +3298,22 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 			})
 		}
 	}
+	totalCount := len(items)
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].JobId > items[j].JobId
+	})
 
-	return ctx.JSON(http.StatusOK, items)
+	return ctx.JSON(http.StatusOK, api.ListJobsIntervalResponse{
+		TotalCount: totalCount,
+		Items:      items,
+	})
 }
 
 func convertInterval(input string) (string, error) {
@@ -3295,6 +3365,9 @@ func (h *HttpServer) RunQuery(ctx echo.Context) error {
 	queryId := ctx.Param("query_id")
 
 	userID := httpserver.GetUserID(ctx)
+	if userID == "" {
+		userID = "system"
+	}
 
 	job := &model2.QueryRunnerJob{
 		QueryId:        queryId,

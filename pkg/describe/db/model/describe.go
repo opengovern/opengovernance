@@ -41,6 +41,7 @@ type DescribeConnectionJob struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 	QueuedAt       time.Time
 	InProgressedAt time.Time
+	CreatedBy      string
 	ParentID       *uint `gorm:"index:,sort:desc"`
 
 	ConnectionID string `gorm:"index:idx_source_id_full_discovery;index"`
