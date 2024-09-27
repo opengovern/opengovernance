@@ -142,6 +142,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(h.PurgeSampleData, authApi.AdminRole))
 	v3.GET("/jobs/history", httpserver2.AuthorizeHandler(h.ListComplianceJobsHistory, authApi.ViewerRole))
 
+	v3.GET("/benchmarks/:benchmark_id/nested", httpserver2.AuthorizeHandler(h.ListBenchmarksNestedForBenchmark, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -6690,4 +6691,29 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 		Items:      items,
 		TotalCount: jobs.TotalCount,
 	})
+}
+
+// ListBenchmarksNestedForBenchmark godoc
+//
+//	@Summary	List benchmarks filtered by integrations and other filters
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	[]api.GetBenchmarkListResponse
+//	@Router		/compliance/api/v3/benchmarks/{benchmark_id}/nested [get]
+func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+	benchmarkId := echoCtx.Param("benchmark_id")
+	if benchmarkId == "" {
+		return echo.NewHTTPError(http.StatusInternalServerError, "please provide a benchmark id")
+	}
+
+	nested, err := h.getBenchmarkTree(ctx, benchmarkId)
+	if err != nil {
+		h.logger.Error("could not get benchmark tree", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not get benchmark tree")
+	}
+
+	return echoCtx.JSON(http.StatusOK, nested)
 }
