@@ -726,7 +726,7 @@ type FindingsTopFieldResponse struct {
 }
 
 func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string,
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string, jobIDs []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
 	size int) (*FindingsTopFieldResponse, error) {
 	filters := make([]kaytu.BoolFilter, 0)
@@ -758,6 +758,10 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu
 
 	if len(connectionIDs) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionIDs))
+	}
+
+	if len(jobIDs) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("parentComplianceJobID", jobIDs))
 	}
 
 	if len(notConnectionIDs) > 0 {
