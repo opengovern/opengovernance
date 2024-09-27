@@ -640,11 +640,16 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	defer ticker.Stop()
 	for range ticker.C {
 		tOlder := time.Now().AddDate(0, 0, -7)
-		err := s.db.CleanupDescribeConnectionJobsOlderThan(tOlder)
+		err := s.db.CleanupScheduledDescribeConnectionJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}
-		err = s.db.CleanupComplianceJobsOlderThan(tOlder)
+		tOlderManual := time.Now().AddDate(0, 0, -30)
+		err = s.db.CleanupManualDescribeConnectionJobsOlderThan(tOlderManual)
+		if err != nil {
+			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
+		}
+		err = s.db.CleanupComplianceJobsOlderThan(tOlderManual)
 		if err != nil {
 			s.logger.Error("Failed to cleanup compliance report jobs", zap.Error(err))
 		}
