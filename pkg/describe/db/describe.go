@@ -326,13 +326,19 @@ func (db Database) ListDescribeJobsByIds(ids []string) ([]model.DescribeConnecti
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsForInterval(interval string) ([]model.DescribeConnectionJob, error) {
+func (db Database) ListDescribeJobsForInterval(interval, triggerType, createdBy string) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
 	tx := db.ORM.Model(&model.DescribeConnectionJob{})
 
 	if interval != "" {
 		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
+	}
+	if triggerType != "" {
+		tx = tx.Where("trigger_type = ?", triggerType)
+	}
+	if createdBy != "" {
+		tx = tx.Where("created_by = ?", createdBy)
 	}
 
 	tx = tx.Find(&job)

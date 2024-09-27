@@ -126,13 +126,19 @@ func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsForInterval(interval string) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsForInterval(interval, triggerType, createdBy string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 
 	tx := db.ORM.Model(&model.ComplianceJob{})
 
 	if interval != "" {
 		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
+	}
+	if triggerType != "" {
+		tx = tx.Where("trigger_type = ?", triggerType)
+	}
+	if createdBy != "" {
+		tx = tx.Where("created_by = ?", createdBy)
 	}
 
 	tx = tx.Find(&job)
