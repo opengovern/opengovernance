@@ -2,7 +2,9 @@ package compliance
 
 import (
 	"context"
+	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/open-governance/pkg/compliance/api"
 	"github.com/kaytu-io/open-governance/pkg/compliance/es"
 	kaytuTypes "github.com/kaytu-io/open-governance/pkg/types"
@@ -10,6 +12,44 @@ import (
 	"regexp"
 	"time"
 )
+
+func (h *HttpHandler) getBenchmarkTree(ctx context.Context, benchmarkId string) (*api.NestedBenchmark, error) {
+	b, err := h.db.GetBenchmark(ctx, benchmarkId)
+	if err != nil {
+		return nil, err
+	}
+
+	var children []api.NestedBenchmark
+	for _, child := range b.Children {
+		childNested, err := h.getBenchmarkTree(ctx, child.ID)
+		if err != nil {
+			return nil, err
+		}
+		children = append(children, *childNested)
+	}
+
+	nb := api.NestedBenchmark{
+		ID:                b.ID,
+		Title:             b.Title,
+		ReferenceCode:     b.DisplayCode,
+		Description:       b.Description,
+		LogoURI:           b.LogoURI,
+		Category:          b.Category,
+		DocumentURI:       b.DocumentURI,
+		AutoAssign:        b.AutoAssign,
+		TracksDriftEvents: b.TracksDriftEvents,
+		CreatedAt:         b.CreatedAt,
+		UpdatedAt:         b.UpdatedAt,
+		Tags:              b.GetTagsMap(),
+	}
+	if b.Connector != nil {
+		nb.Connectors = source.ParseTypes(b.Connector)
+	}
+	for _, control := range b.Controls {
+		nb.Controls = append(nb.Controls, control.ID)
+	}
+	return &nb, err
+}
 
 func (h *HttpHandler) getBenchmarkPath(ctx context.Context, benchmarkId string) (string, error) {
 	parent, err := h.db.GetBenchmarkParent(ctx, benchmarkId)
@@ -225,6 +265,9 @@ func (h *HttpHandler) getChildBenchmarks(ctx context.Context, benchmarkId string
 	if err != nil {
 		h.logger.Error("failed to fetch benchmarks", zap.Error(err))
 		return nil, err
+	}
+	if benchmark == nil {
+		return nil, fmt.Errorf("benchmark %s not found", benchmarkId)
 	}
 	for _, child := range benchmark.Children {
 		childBenchmarks, err := h.getChildBenchmarks(ctx, child.ID)
