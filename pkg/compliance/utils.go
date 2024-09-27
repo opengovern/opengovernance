@@ -41,6 +41,7 @@ func (h *HttpHandler) getBenchmarkTree(ctx context.Context, benchmarkId string) 
 		CreatedAt:         b.CreatedAt,
 		UpdatedAt:         b.UpdatedAt,
 		Tags:              b.GetTagsMap(),
+		Children:          children,
 	}
 	if b.Connector != nil {
 		nb.Connectors = source.ParseTypes(b.Connector)
