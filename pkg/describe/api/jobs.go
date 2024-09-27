@@ -396,6 +396,22 @@ type ListJobsByTypeResponse struct {
 	TotalCount int                  `json:"total_count"`
 }
 
+type ListComplianceJobsHistoryItem struct {
+	BenchmarkId  string            `json:"benchmark_id"`
+	Integrations []IntegrationInfo `json:"integrations"`
+	JobId        string            `json:"job_id"`
+	TriggerType  string            `json:"trigger_type"`
+	CreatedBy    string            `json:"created_by"`
+	JobStatus    string            `json:"job_status"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
+}
+
+type ListComplianceJobsHistoryResponse struct {
+	Items      []ListComplianceJobsHistoryItem `json:"items"`
+	TotalCount int                             `json:"total_count"`
+}
+
 type RunQueryResponse struct {
 	ID        uint                          `json:"id"`
 	CreatedAt time.Time                     `json:"created_at"`
