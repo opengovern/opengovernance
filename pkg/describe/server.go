@@ -107,6 +107,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
 	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.ViewerRole))
 	v3.GET("/jobs/interval", httpserver.AuthorizeHandler(h.ListJobsInterval, apiAuth.ViewerRole))
+	v3.GET("/jobs/history/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobsHistory, apiAuth.ViewerRole))
 
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, apiAuth.AdminRole))
 }
@@ -3298,6 +3299,10 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 			})
 		}
 	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].JobId > items[j].JobId
+	})
+
 	totalCount := len(items)
 	if perPage != 0 {
 		if cursor == 0 {
@@ -3306,9 +3311,6 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 			items = utils.Paginate(cursor, perPage, items)
 		}
 	}
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].JobId > items[j].JobId
-	})
 
 	return ctx.JSON(http.StatusOK, api.ListJobsIntervalResponse{
 		TotalCount: totalCount,
@@ -3594,4 +3596,119 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListComplianceJobsHistory godoc
+//
+//	@Summary	List jobs by job type and filters
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		interval		query	string	true	"Time Interval to filter by"
+//	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
+//	@Param		created_by		query	string	true	"Created By User ID"
+//	@Param		cursor		query	int			true	"cursor"
+//	@Param		per_page	query	int			true	"per page"
+//	@Produce	json
+//	@Success	200	{object}	[]api.ListJobsByTypeItem
+//	@Router		/schedule/api/v3/jobs/history/compliance [get]
+func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	interval := ctx.QueryParam("interval")
+	triggerType := ctx.QueryParam("trigger_type")
+	createdBy := ctx.QueryParam("created_by")
+
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	convertedInterval, err := convertInterval(interval)
+	if err != nil {
+		h.Scheduler.logger.Error("invalid interval", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid interval")
+	}
+
+	var items []api.ListComplianceJobsHistoryItem
+	connectionIdsMap := make(map[string]bool)
+
+	jobs, err := h.DB.ListComplianceJobsForInterval(convertedInterval, triggerType, createdBy)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	for _, j := range jobs {
+		var integrations []api.IntegrationInfo
+		for _, c := range j.ConnectionIDs {
+			connectionIdsMap[c] = true
+			integrations = append(integrations, api.IntegrationInfo{
+				IntegrationTracker: c,
+			})
+		}
+		items = append(items, api.ListComplianceJobsHistoryItem{
+			BenchmarkId: j.BenchmarkID,
+			JobId:       strconv.Itoa(int(j.ID)),
+			TriggerType: string(j.TriggerType),
+			CreatedBy:   j.CreatedBy,
+			JobStatus:   string(j.Status),
+			CreatedAt:   j.CreatedAt,
+			UpdatedAt:   j.UpdatedAt,
+		})
+	}
+	var connectionIds []string
+	for k, _ := range connectionIdsMap {
+		connectionIds = append(connectionIds, k)
+	}
+
+	connections, err := h.Scheduler.onboardClient.GetSources(clientCtx, connectionIds)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integrations info")
+	}
+	integrationsMap := make(map[string]api.IntegrationInfo)
+	for _, c := range connections {
+		integrationsMap[c.ID.String()] = api.IntegrationInfo{
+			Integration:        c.Connector.String(),
+			ID:                 c.ConnectionID,
+			IDName:             c.ConnectionName,
+			IntegrationTracker: c.ID.String(),
+		}
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].JobId > items[j].JobId
+	})
+
+	totalCount := len(items)
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+
+	for i, j := range items {
+		for ii, integration := range j.Integrations {
+			items[i].Integrations[ii] = integrationsMap[integration.IntegrationTracker]
+		}
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].JobId > items[j].JobId
+	})
+	return ctx.JSON(http.StatusOK, api.ListComplianceJobsHistoryResponse{
+		TotalCount: totalCount,
+		Items:      items,
+	})
 }
