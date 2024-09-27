@@ -6640,9 +6640,19 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 
 	var items []api.ListComplianceJobsHistoryItem
 	for _, j := range jobs.Items {
+		var integrations []api.IntegrationInfo
+		for _, i := range j.Integrations {
+			integrations = append(integrations, api.IntegrationInfo{
+				Integration:        i.Integration,
+				ID:                 i.ID,
+				IDName:             i.IDName,
+				IntegrationTracker: i.IntegrationTracker,
+				Type:               i.Type,
+			})
+		}
 		item := api.ListComplianceJobsHistoryItem{
 			BenchmarkId:  j.BenchmarkId,
-			Integrations: j.Integrations,
+			Integrations: integrations,
 			JobId:        j.JobId,
 			TriggerType:  j.TriggerType,
 			CreatedBy:    j.CreatedBy,
