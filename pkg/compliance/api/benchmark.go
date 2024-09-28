@@ -207,31 +207,35 @@ type GetBenchmarkListRequest struct {
 	PrimaryTable      []string               `json:"primary_table"`
 	ListOfTables      []string               `json:"list_of_tables"`
 	Controls          []string               `json:"controls"`
+	Integration       []IntegrationFilter    `json:"integration"`
+	Connectors        []string               `json:"connectors"`
 	Root              *bool                  `json:"root"`
 	Assigned          *bool                  `json:"assigned"`
 	FindingFilters    *FindingSummaryFilters `json:"finding_filters"`
-	FindingSummary    bool                   `json:"finding_summary"`
+	SortBy            string                 `json:"sort_by"`
 	Cursor            *int64                 `json:"cursor"`
 	PerPage           *int64                 `json:"per_page"`
 }
 
 type GetBenchmarkListMetadata struct {
-	ID               string              `json:"id"`
-	Title            string              `json:"title"`
-	Description      string              `json:"description"`
-	Connectors       []source.Type       `json:"connectors"`
-	NumberOfControls int                 `json:"number_of_controls"`
-	Enabled          bool                `json:"enabled"`
-	TrackDriftEvents bool                `json:"track_drift_events"`
-	PrimaryTables    []string            `json:"primary_tables"`
-	Tags             map[string][]string `json:"tags"`
-	CreatedAt        time.Time           `json:"created_at"`
-	UpdatedAt        time.Time           `json:"updated_at"`
+	ID                  string              `json:"id"`
+	Title               string              `json:"title"`
+	Description         string              `json:"description"`
+	Connectors          []source.Type       `json:"connectors"`
+	NumberOfControls    int                 `json:"number_of_controls"`
+	Enabled             bool                `json:"enabled"`
+	TrackDriftEvents    bool                `json:"track_drift_events"`
+	AutoAssigned        bool                `json:"auto_assigned"`
+	NumberOfAssignments int                 `json:"number_of_assignments"`
+	PrimaryTables       []string            `json:"primary_tables"`
+	Tags                map[string][]string `json:"tags"`
+	CreatedAt           time.Time           `json:"created_at"`
+	UpdatedAt           time.Time           `json:"updated_at"`
 }
 
 type GetBenchmarkListItem struct {
-	Benchmark GetBenchmarkListMetadata     `json:"benchmark"`
-	Findings  *GetBenchmarkDetailsFindings `json:"findings"`
+	Benchmark     GetBenchmarkListMetadata `json:"benchmark"`
+	IncidentCount int                      `json:"incident_count"`
 }
 
 type GetBenchmarkListResponse struct {

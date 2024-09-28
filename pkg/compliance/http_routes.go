@@ -26,6 +26,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/open-governance/pkg/types"
+	types2 "github.com/kaytu-io/open-governance/pkg/types"
 	"github.com/kaytu-io/open-governance/pkg/utils"
 	model2 "github.com/kaytu-io/open-governance/services/migrator/db/model"
 	"github.com/labstack/echo/v4"
@@ -4656,6 +4657,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 //	@Router		/compliance/api/v3/benchmarks [post]
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 
 	var req api.GetBenchmarkListRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -4670,27 +4672,76 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	if req.Assigned != nil {
 		assigned = *req.Assigned
 	}
-	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, assigned)
+
+	benchmarkAssignmentsCount, err := h.db.GetBenchmarkAssignmentsCount()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	benchmarkAssignmentsCountMap := make(map[string]int)
+	for _, ba := range benchmarkAssignmentsCount {
+		benchmarkAssignmentsCountMap[ba.BenchmarkId] = ba.Count
+	}
+	sourcesCountByConnector := make(map[string]int)
+	sources, err := h.onboardClient.ListSources(clientCtx, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	for _, s := range sources {
+		if _, ok := sourcesCountByConnector[s.Connector.String()]; ok {
+			sourcesCountByConnector[s.Connector.String()]++
+		} else {
+			sourcesCountByConnector[s.Connector.String()] = 1
+		}
+	}
+
+	var connections []onboardApi.Connection
+	for _, info := range req.Integration {
+		if info.IntegrationTracker != nil {
+			connection, err := h.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.onboardClient.ListSourcesByFilters(clientCtx,
+			onboardApi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, assigned, connectionIDs)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var items []api.GetBenchmarkListItem
 	for _, b := range benchmarks {
-		var findingsResult *api.GetBenchmarkDetailsFindings
-		if req.FindingFilters != nil || req.FindingSummary {
-			findings, err := h.getBenchmarkFindingSummary(ctx, b.ID, req.FindingFilters)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		var incidentCount int
+		findings, err := h.getBenchmarkFindingSummary(ctx, b.ID, req.FindingFilters)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		}
+		if req.FindingFilters != nil {
+			if findings == nil || findings.Results == nil || len(findings.Results) == 0 {
+				continue
 			}
-			if req.FindingFilters != nil {
-				if findings == nil || findings.Results == nil || len(findings.Results) == 0 {
-					continue
-				}
-			}
-			if req.FindingSummary {
-				findingsResult = findings
-			}
+		}
+		if c, ok := findings.Results[types2.ConformanceStatusALARM]; ok {
+			incidentCount = &c
 		}
 
 		metadata := db.BenchmarkMetadata{}
@@ -4706,9 +4757,6 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		primaryTables := metadata.PrimaryTables
 		listOfTables := metadata.ListOfTables
 
-		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, err.Error())
-		}
 		if len(req.PrimaryTable) > 0 {
 			if !listContainsList(primaryTables, req.PrimaryTable) {
 				continue
@@ -4732,26 +4780,53 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 			Enabled:          b.Enabled,
 			TrackDriftEvents: b.TracksDriftEvents,
 			NumberOfControls: len(metadata.Controls),
+			AutoAssigned:     b.AutoAssign,
 			PrimaryTables:    primaryTables,
 			Tags:             filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(b.GetTagsMap())),
 			CreatedAt:        b.CreatedAt,
 			UpdatedAt:        b.UpdatedAt,
 		}
 		if b.Connector != nil {
+			if len(req.Connectors) > 0 {
+				if !listContainsList(b.Connector, req.Connectors) {
+					continue
+				}
+			}
 			benchmarkDetails.Connectors = source.ParseTypes(b.Connector)
 		}
+		if b.AutoAssign {
+			for _, c := range b.Connector {
+				benchmarkDetails.NumberOfAssignments = benchmarkDetails.NumberOfAssignments + sourcesCountByConnector[c]
+			}
+		}
+		if bac, ok := benchmarkAssignmentsCountMap[b.ID]; ok {
+			benchmarkDetails.NumberOfAssignments = benchmarkDetails.NumberOfAssignments + bac
+		}
+
 		benchmarkResult := api.GetBenchmarkListItem{
-			Benchmark: benchmarkDetails,
-			Findings:  findingsResult,
+			Benchmark:     benchmarkDetails,
+			IncidentCount: incidentCount,
 		}
 		items = append(items, benchmarkResult)
 	}
 
 	totalCount := len(items)
 
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Benchmark.ID < items[j].Benchmark.ID
-	})
+	switch strings.ToLower(req.SortBy) {
+	case "assignments", "number_of_assignments":
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].Benchmark.NumberOfAssignments > items[j].Benchmark.NumberOfAssignments
+		})
+	case "incidents", "number_of_incidents":
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].IncidentCount > items[j].IncidentCount
+		})
+	case "title":
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].Benchmark.Title < items[j].Benchmark.Title
+		})
+	}
+
 	if req.PerPage != nil {
 		if req.Cursor == nil {
 			items = utils.Paginate(1, *req.PerPage, items)
@@ -6012,7 +6087,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	var benchmarks []db.Benchmark
 	var err error
 	if len(req.Benchmarks) == 0 {
-		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil, false)
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil, false, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

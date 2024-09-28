@@ -29,6 +29,11 @@ type BenchmarkAssignment struct {
 	AssignedAt         time.Time
 }
 
+type BenchmarkAssignmentsCount struct {
+	BenchmarkId string
+	Count       int
+}
+
 type BenchmarkMetadata struct {
 	IsRoot        bool
 	Controls      []string

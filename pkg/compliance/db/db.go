@@ -80,7 +80,8 @@ func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]str
 }
 
 // ListBenchmarksFiltered returns all benchmarks with the associated filters
-func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags map[string][]string, parentBenchmarkId []string, assigned bool) ([]Benchmark, error) {
+func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags map[string][]string, parentBenchmarkId []string,
+	assigned bool, connectionIds []string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations)
 
@@ -92,6 +93,10 @@ func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags m
 	}
 	if assigned {
 		tx = tx.Where("(EXISTS (SELECT 1 FROM benchmark_assignments WHERE benchmark_assignments.benchmark_id = benchmarks.id) OR benchmarks.auto_assign = true)")
+	}
+	if len(connectionIds) > 0 {
+		tx = tx.Where("(EXISTS (SELECT 1 FROM benchmark_assignments WHERE benchmark_assignments.connection_id IN ? AND benchmark_assignments.benchmark_id = benchmarks.id) OR benchmarks.auto_assign = true)",
+			connectionIds)
 	}
 
 	if len(tags) > 0 {
@@ -769,6 +774,20 @@ func (db Database) GetBenchmarkAssignmentByIds(ctx context.Context, benchmarkId 
 	}
 
 	return &s, nil
+}
+
+func (db Database) GetBenchmarkAssignmentsCount() ([]BenchmarkAssignmentsCount, error) {
+	var results []BenchmarkAssignmentsCount
+	tx := db.Orm.Table("benchmark_assignments").
+		Select("benchmark_id, COUNT(*) as count").
+		Group("benchmark_id").
+		Scan(&results)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return results, nil
 }
 
 func (db Database) DeleteBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, connectionId, resourceCollectionId *string) error {
