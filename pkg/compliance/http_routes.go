@@ -1199,8 +1199,12 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 					h.logger.Error("failed to parse connection id", zap.Error(err))
 					return err
 				}
+				connection, ok := connectionsMap[id.String()]
+				if !ok {
+					continue
+				}
 				record = api.TopFieldRecord{
-					Connection: &onboardApi.Connection{ID: id},
+					Connection: &connection,
 				}
 			}
 			record.Count = item.DocCount
