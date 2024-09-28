@@ -4741,7 +4741,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 			}
 		}
 		if c, ok := findings.Results[types2.ConformanceStatusALARM]; ok {
-			incidentCount = &c
+			incidentCount = c
 		}
 
 		metadata := db.BenchmarkMetadata{}
