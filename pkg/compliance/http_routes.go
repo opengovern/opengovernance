@@ -6111,6 +6111,12 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				}
 
 				for _, item := range res.Aggregations.FieldFilter.Buckets {
+					if _, ok := connectionMap[item.Key]; !ok {
+						continue
+					}
+					if _, ok := totalCountMap[item.Key]; !ok {
+						continue
+					}
 					topConnections = append(topConnections, api.TopFieldRecord{
 						Connection: connectionMap[item.Key],
 						Count:      item.DocCount,
@@ -6198,6 +6204,9 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		var topIntegrations []api.TopIntegration
 		for _, tf := range topConnections {
+			if tf.Connection == nil {
+				continue
+			}
 			topIntegrations = append(topIntegrations, api.TopIntegration{
 				Issues: tf.Count,
 				IntegrationInfo: api.IntegrationInfo{
