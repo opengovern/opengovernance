@@ -129,6 +129,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
 	v3.POST("/compliance/summary/integration", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfIntegration, authApi.ViewerRole))
 	v3.POST("/compliance/summary/benchmark", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
+	v3.POST("/benchmarks/:benchmark_id/trend", httpserver2.AuthorizeHandler(h.GetBenchmarkTrendV3, authApi.ViewerRole))
 
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
 	v3.GET("/controls/categories", httpserver2.AuthorizeHandler(h.GetControlsResourceCategories, authApi.ViewerRole))
@@ -6816,4 +6817,121 @@ func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) err
 	}
 
 	return echoCtx.JSON(http.StatusOK, nested)
+}
+
+// GetBenchmarkTrendV3 godoc
+//
+//	@Summary		Get benchmark trend
+//	@Description	Retrieving a trend of a benchmark result and checks.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id		path		string								true	"Benchmark ID"
+//	@Param			request				body		api.GetBenchmarkTrendV3Request		false	"timestamp for end of the chart in epoch seconds"
+//	@Success		200					{object}	[]api.BenchmarkTrendDatapoint
+//	@Router			/compliance/api/v3/benchmarks/{benchmark_id}/trend [get]
+func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
+	ctx := echoCtx.Request().Context()
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+
+	var req api.GetBenchmarkTrendV3Request
+	if err := bindValidate(echoCtx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	endTime := time.Now().Truncate(24 * time.Hour).Add(24 * time.Hour).Unix()
+	if req.EndTime != nil {
+		endTime = *req.EndTime
+	}
+
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Truncate(24 * time.Hour).Unix()
+	if req.StartTime != nil {
+		startTime = *req.StartTime
+	}
+
+	granularity := int64((time.Hour * 24).Seconds())
+	if req.Granularity != nil {
+		granularity = *req.Granularity
+	}
+	benchmarkID := echoCtx.Param("benchmark_id")
+	// tracer :
+	ctx, span1 := tracer.Start(ctx, "new_GetBenchmark")
+	span1.SetName("new_GetBenchmark")
+	defer span1.End()
+
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkID)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
+	span1.End()
+
+	var connections []onboardApi.Connection
+	for _, info := range req.Integration {
+		if info.IntegrationTracker != nil {
+			connection, err := h.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.onboardClient.ListSourcesByFilters(clientCtx,
+			onboardApi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
+	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrendByConnectionIDV3(ctx, h.logger, h.client,
+		[]string{benchmarkID}, connectionIDs, startTime, endTime, granularity)
+	if err != nil {
+		return err
+	}
+
+	var response []api.BenchmarkTrendDatapointV3
+	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
+		apiDataPoint := api.BenchmarkTrendDatapointV3{
+			Timestamp:                time.Unix(datapoint.DateEpoch, 0),
+			ConformanceStatusSummary: &api.ConformanceStatusSummary{},
+			Checks:                   &kaytuTypes.SeverityResult{},
+		}
+		apiDataPoint.ConformanceStatusSummary.AddESConformanceStatusMap(datapoint.QueryResult)
+		apiDataPoint.Checks.AddResultMap(datapoint.SeverityResult)
+		if apiDataPoint.ConformanceStatusSummary.FailedCount == 0 && apiDataPoint.ConformanceStatusSummary.PassedCount == 0 {
+			apiDataPoint.ConformanceStatusSummary = nil
+			apiDataPoint.Checks = nil
+		} else {
+			apiDataPoint.TotalNonIncidents = &apiDataPoint.ConformanceStatusSummary.PassedCount
+		}
+
+		response = append(response, apiDataPoint)
+	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Timestamp.Before(response[j].Timestamp)
+	})
+
+	return echoCtx.JSON(http.StatusOK, response)
 }

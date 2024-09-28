@@ -207,6 +207,136 @@ func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.L
 	return trend, nil
 }
 
+func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string, connectionIDs []string, from, to, granularity int64) (map[string][]BenchmarkTrendDatapoint, error) {
+	pathFilters := make([]string, 0, len(connectionIDs)+4)
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Controls")
+	for _, connectionID := range connectionIDs {
+		pathFilters = append(pathFilters,
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Result", connectionID),
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls", connectionID),
+		)
+	}
+
+	query := make(map[string]any)
+
+	startTimeUnix := from
+	endTimeUnix := to
+	ranges := make([]map[string]any, 0, (endTimeUnix-startTimeUnix)/int64(granularity))
+	for i := int64(0); i*granularity < endTimeUnix-startTimeUnix; i++ {
+		ranges = append(ranges, map[string]any{
+			"from": startTimeUnix + i*granularity,
+			"to":   startTimeUnix + (i+1)*granularity - 1,
+		})
+	}
+
+	filters := make([]any, 0)
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"EvaluatedAtEpoch": map[string]any{
+				"lte": to,
+				"gte": from,
+			},
+		},
+	})
+	if len(benchmarkIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"BenchmarkID": benchmarkIDs,
+			},
+		})
+	}
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["size"] = 0
+
+	query["aggs"] = map[string]any{
+		"benchmark_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "BenchmarkID",
+				"size":  10000,
+			},
+			"aggs": map[string]any{
+				"evaluated_at_range_group": map[string]any{
+					"range": map[string]any{
+						"field":  "EvaluatedAtEpoch",
+						"ranges": ranges,
+					},
+					"aggs": map[string]any{
+						"hit_select": map[string]any{
+							"top_hits": map[string]any{
+								"sort": map[string]any{
+									"EvaluatedAtEpoch": "desc",
+								},
+								"size": 1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err))
+		return nil, err
+	}
+
+	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	var response FetchBenchmarkSummaryTrendAggregatedResponse
+	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
+	if err != nil {
+		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+		return nil, err
+	}
+
+	trend := make(map[string][]BenchmarkTrendDatapoint)
+	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
+		benchmarkID := bucket.Key
+		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
+			date := int64(rangeBucket.To)
+			if err != nil {
+				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+				return nil, err
+			}
+			trendDataPoint := BenchmarkTrendDatapoint{
+				QueryResult:    make(map[types.ConformanceStatus]int),
+				SeverityResult: make(map[types.FindingSeverity]int),
+				Controls:       make(map[string]types2.ControlResult),
+			}
+
+			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
+				trendDataPoint.DateEpoch = date
+				if len(connectionIDs) > 0 {
+					for _, connectionID := range connectionIDs {
+						if connection, ok := hit.Source.Connections.Connections[connectionID]; ok {
+							trendDataPoint.addResultGroupToTrendDataPoint(connection)
+						}
+					}
+				} else {
+					trendDataPoint.addResultGroupToTrendDataPoint(hit.Source.Connections.BenchmarkResult)
+				}
+			}
+			if trendDataPoint.DateEpoch != 0 {
+				trend[benchmarkID] = append(trend[benchmarkID], trendDataPoint)
+			}
+		}
+		sort.Slice(trend[benchmarkID], func(i, j int) bool {
+			return trend[benchmarkID][i].DateEpoch < trend[benchmarkID][j].DateEpoch
+		})
+	}
+
+	return trend, nil
+}
+
 func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) == 0 {
 		return nil, fmt.Errorf("resource collections cannot be empty")

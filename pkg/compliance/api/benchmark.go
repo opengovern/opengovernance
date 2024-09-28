@@ -357,3 +357,17 @@ type ListBenchmarksFiltersResponse struct {
 	ListOfTables      []string              `json:"list_of_tables"`
 	Tags              []BenchmarkTagsResult `json:"tags"`
 }
+
+type GetBenchmarkTrendV3Request struct {
+	Integration []IntegrationFilter `json:"integration"`
+	StartTime   *int64              `json:"start_time"`
+	EndTime     *int64              `json:"end_time"`
+	Granularity *int64              `json:"granularity"`
+}
+
+type BenchmarkTrendDatapointV3 struct {
+	Timestamp                time.Time                 `json:"timestamp"`
+	ConformanceStatusSummary *ConformanceStatusSummary `json:"conformance_status_summary"`
+	Checks                   *types.SeverityResult     `json:"checks"`
+	TotalNonIncidents        *int                      `json:"total_non_incidents"`
+}
