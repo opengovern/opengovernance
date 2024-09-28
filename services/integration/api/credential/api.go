@@ -164,10 +164,7 @@ func (h API) Get(c echo.Context) error {
 func (h API) UpdateAzure(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	id, err := uuid.Parse(c.Param("credentialId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
+	id := c.Param("credentialId")
 
 	var req entity.UpdateAzureCredentialRequest
 
@@ -209,10 +206,7 @@ func (h API) UpdateAzure(c echo.Context) error {
 func (h API) UpdateAWS(c echo.Context) error {
 	ctx := otel.GetTextMapPropagator().Extract(c.Request().Context(), propagation.HeaderCarrier(c.Request().Header))
 
-	id, err := uuid.Parse(c.Param("credentialId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
+	id := c.Param("credentialId")
 
 	var req entity.UpdateAWSCredentialRequest
 
