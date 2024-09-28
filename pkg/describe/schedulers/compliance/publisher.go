@@ -75,7 +75,11 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 			}
 			var providerConnectionID *string
 			if it.ConnectionID != nil && *it.ConnectionID != "" {
-				providerConnectionID = &connectionsMap[*it.ConnectionID].ConnectionID
+				if _, ok := connectionsMap[*it.ConnectionID]; ok {
+					providerConnectionID = &connectionsMap[*it.ConnectionID].ConnectionID
+				} else {
+					_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "connection does not exist")
+				}
 			}
 			job := runner.Job{
 				ID:          it.ID,

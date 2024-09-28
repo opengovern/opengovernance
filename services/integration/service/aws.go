@@ -620,11 +620,11 @@ func (h Connection) NewAWS(
 	return s, nil
 }
 
-func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateAWSCredentialRequest) error {
+func (h Credential) AWSUpdate(ctx context.Context, id string, req entity.UpdateAWSCredentialRequest) error {
 	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
 	defer span.End()
 
-	cred, err := h.Get(ctx, id.String())
+	cred, err := h.Get(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -663,7 +663,7 @@ func (h Credential) AWSUpdate(ctx context.Context, id uuid.UUID, req entity.Upda
 		}
 	}
 
-	awsConfig, err := h.AWSSDKConfig(ctx, config.AssumeRoleName, &config.AccountID, req.Config.AccessKey, req.Config.SecretKey, req.Config.ExternalId)
+	awsConfig, err := h.AWSSDKConfig(ctx, config.AssumeRoleName, &config.AccountID, config.AccessKey, config.SecretKey, config.ExternalId)
 	if err != nil {
 		h.logger.Error("reading aws sdk configuration failed", zap.Error(err))
 		return err

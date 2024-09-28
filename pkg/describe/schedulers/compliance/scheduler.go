@@ -48,6 +48,9 @@ func (s *JobScheduler) runScheduler() error {
 				continue
 			}
 
+			if _, ok := connectionsMap[assignment.ConnectionID]; !ok {
+				continue
+			}
 			connection := connectionsMap[assignment.ConnectionID]
 
 			if !connection.IsEnabled() {

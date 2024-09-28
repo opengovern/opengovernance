@@ -390,11 +390,11 @@ func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig a
 	return subs, nil
 }
 
-func (h Credential) AzureUpdate(ctx context.Context, id uuid.UUID, req entity.UpdateAzureCredentialRequest) error {
+func (h Credential) AzureUpdate(ctx context.Context, id string, req entity.UpdateAzureCredentialRequest) error {
 	ctx, span := h.tracer.Start(ctx, "update-aws-credential")
 	defer span.End()
 
-	cred, err := h.Get(ctx, id.String())
+	cred, err := h.Get(ctx, id)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
