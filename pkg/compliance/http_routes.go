@@ -1164,6 +1164,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 			return err
 		}
 
+		connectionsMap := make(map[string]onboardApi.Connection)
+		for _, c := range connections {
+			connectionsMap[c.ID.String()] = c
+		}
+
 		recordMap := make(map[string]api.TopFieldRecord)
 
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
@@ -1174,8 +1179,12 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 					h.logger.Error("failed to parse connection id", zap.Error(err))
 					return err
 				}
+				connection, ok := connectionsMap[id.String()]
+				if !ok {
+					continue
+				}
 				record = api.TopFieldRecord{
-					Connection: &onboardApi.Connection{ID: id},
+					Connection: &connection,
 				}
 			}
 			record.TotalCount += item.DocCount
@@ -1196,16 +1205,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 			}
 			record.Count = item.DocCount
 			recordMap[item.Key] = record
-		}
-
-		for _, connection := range connections {
-			connection := connection
-			record, ok := recordMap[connection.ID.String()]
-			if !ok {
-				continue
-			}
-			record.Connection = &connection
-			recordMap[connection.ID.String()] = record
 		}
 
 		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
@@ -3413,7 +3412,20 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		}
 
 		if req.FindingSummary {
-			apiControl.FindingsSummary = fRes[control.ID]
+			var incidentCount, passingFindingsCount int64
+			if c, ok := fRes[control.ID]["ok"]; ok {
+				passingFindingsCount = c
+			}
+			if c, ok := fRes[control.ID]["alarm"]; ok {
+				incidentCount = c
+			}
+			apiControl.FindingsSummary = struct {
+				IncidentCount        int64 `json:"incident_count"`
+				PassingFindingsCount int64 `json:"passing_findings_count"`
+			}{
+				IncidentCount:        incidentCount,
+				PassingFindingsCount: passingFindingsCount,
+			}
 		}
 
 		for _, c := range apiControl.Connector {

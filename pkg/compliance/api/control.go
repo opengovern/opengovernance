@@ -102,7 +102,10 @@ type ListControlsFilterResultControl struct {
 		ListOfTables []string         `json:"list_of_tables"`
 		Parameters   []QueryParameter `json:"parameters"`
 	} `json:"query"`
-	FindingsSummary map[string]int64 `json:"findings_summary"`
+	FindingsSummary struct {
+		IncidentCount        int64 `json:"incident_count"`
+		PassingFindingsCount int64 `json:"passing_findings_count"`
+	} `json:"findings_summary"`
 }
 
 type ControlsFilterSummaryResult struct {
