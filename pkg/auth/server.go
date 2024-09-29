@@ -112,7 +112,9 @@ func (s *Server) UpdateLastLoginLoop() {
 				if time.Now().After(tim.Add(15 * time.Minute)) {
 					s.logger.Info("updating metadata", zap.String("userId", user.UserID))
 					usr.AppMetadata.LastLogin = user.Metadata.LastLogin
-					err = s.auth0Service.PatchUserAppMetadata(user.UserID, usr.AppMetadata)
+					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+
+					err = s.auth0Service.PatchUserAppMetadata(user.UserID, usr.AppMetadata, &tim)
 					if err != nil {
 						s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
 					}
