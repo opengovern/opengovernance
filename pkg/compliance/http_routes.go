@@ -3484,7 +3484,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			})
 		case "severity":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].Severity < resultControls[j].Severity
+				return resultControls[i].Severity.Level() < resultControls[j].Severity.Level()
 			})
 		case "incidents":
 			sort.Slice(resultControls, func(i, j int) bool {
@@ -3511,7 +3511,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			})
 		case "severity":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].Severity > resultControls[j].Severity
+				return resultControls[i].Severity.Level() > resultControls[j].Severity.Level()
 			})
 		case "incidents":
 			sort.Slice(resultControls, func(i, j int) bool {
