@@ -81,6 +81,8 @@ type ListControlsFilterRequest struct {
 	TagsRegex       *string             `json:"tags_regex"`
 	FindingFilters  *FindingFilters     `json:"finding_filters"`
 	FindingSummary  bool                `json:"finding_summary"`
+	SortBy          string              `json:"sort_by"`
+	SortOrder       string              `json:"sort_order"`
 	Cursor          *int64              `json:"cursor"`
 	PerPage         *int64              `json:"per_page"`
 }
@@ -103,8 +105,8 @@ type ListControlsFilterResultControl struct {
 		Parameters   []QueryParameter `json:"parameters"`
 	} `json:"query"`
 	FindingsSummary struct {
-		IncidentCount        int64 `json:"incident_count"`
-		PassingFindingsCount int64 `json:"passing_findings_count"`
+		IncidentCount    int64 `json:"incident_count"`
+		NonIncidentCount int64 `json:"non_incident_count"`
 	} `json:"findings_summary"`
 }
 
