@@ -231,7 +231,8 @@ func (db Database) DeleteWorkspaceMapByID(id string) error {
 func (db Database) CreateUser(user *User) error {
 	tx := db.Orm.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"created_at", "updated_at", "email", "email_verified", "user_id",
+		DoUpdates: clause.AssignmentColumns([]string{"user_uuid", "created_at", "updated_at", "email", "email_verified",
+			"user_id", "role", "connector_id", "external_id",
 			"user_metadata", "last_login", "app_metadata", "username", "phone_number", "phone_verified", "multifactor", "blocked"}),
 	}).Create(user)
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/open-governance/pkg/auth/db"
@@ -80,7 +81,12 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 		}
 
 		user = &db.User{
+			UserUuid:     uuid.New(),
 			Email:        email,
+			Username:     email,
+			Name:         email,
+			IdLifecycle:  db.UserLifecycleActive,
+			Role:         role,
 			UserId:       userID,
 			AppMetadata:  appMetadataJsonb,
 			UserMetadata: userMetadataJsonb,
@@ -132,7 +138,7 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 	return resp, nil
 }
 
-func (a *Service) AddUser(user *User) error {
+func (a *Service) AddUser(user *User, role api.Role) error {
 	appMetadataJSON, err := json.Marshal(user.AppMetadata)
 	if err != nil {
 		return err
@@ -156,11 +162,15 @@ func (a *Service) AddUser(user *User) error {
 	}
 
 	err = a.database.CreateUser(&db.User{
+		UserUuid:      uuid.New(),
+		Username:      user.Email,
+		Name:          user.Email,
+		IdLifecycle:   db.UserLifecycleActive,
+		Role:          role,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
 		UserId:        user.UserId,
 		LastLogin:     user.LastLogin,
-		Name:          user.Name,
 		AppMetadata:   appMetadataJsonb,
 		Blocked:       user.Blocked,
 		FamilyName:    user.FamilyName,
@@ -174,7 +184,6 @@ func (a *Service) AddUser(user *User) error {
 		PhoneVerified: user.PhoneVerified,
 		UserMetadata:  userMetadataJsonb,
 		Picture:       user.Picture,
-		Username:      user.Username,
 	})
 	if err != nil {
 		return err
@@ -195,7 +204,7 @@ func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error)
 			GlobalAccess: nil,
 		},
 	}
-	return usr, a.AddUser(usr)
+	return usr, a.AddUser(usr, role)
 }
 
 func (a *Service) DeleteUser(userId string) error {

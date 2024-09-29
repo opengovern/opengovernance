@@ -3420,10 +3420,19 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		if req.FindingSummary {
 			var incidentCount, passingFindingsCount int64
 			if c, ok := fRes[control.ID]["ok"]; ok {
-				passingFindingsCount = c
+				passingFindingsCount = passingFindingsCount + c
 			}
 			if c, ok := fRes[control.ID]["alarm"]; ok {
-				incidentCount = c
+				incidentCount = incidentCount + c
+			}
+			if c, ok := fRes[control.ID]["info"]; ok {
+				passingFindingsCount = passingFindingsCount + c
+			}
+			if c, ok := fRes[control.ID]["skip"]; ok {
+				passingFindingsCount = passingFindingsCount + c
+			}
+			if c, ok := fRes[control.ID]["error"]; ok {
+				incidentCount = incidentCount + c
 			}
 			apiControl.FindingsSummary = struct {
 				IncidentCount        int64 `json:"incident_count"`
@@ -6534,7 +6543,7 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Param			controls	query	[]string	false	"Controls filter by"
-//	@Param			benchmarks	query	string		false	"Benchmark filter by"
+//	@Param			benchmarks	query	[]string		false	"Benchmark filter by"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.GetResourceCategoriesResponse
@@ -6913,17 +6922,19 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	var response []api.BenchmarkTrendDatapointV3
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
 		apiDataPoint := api.BenchmarkTrendDatapointV3{
-			Timestamp:                time.Unix(datapoint.DateEpoch, 0),
-			ConformanceStatusSummary: &api.ConformanceStatusSummary{},
-			Checks:                   &kaytuTypes.SeverityResult{},
+			Timestamp:                  time.Unix(datapoint.DateEpoch, 0),
+			IncidentsSeverityBreakdown: &kaytuTypes.SeverityResult{},
 		}
-		apiDataPoint.ConformanceStatusSummary.AddESConformanceStatusMap(datapoint.QueryResult)
-		apiDataPoint.Checks.AddResultMap(datapoint.SeverityResult)
-		if apiDataPoint.ConformanceStatusSummary.FailedCount == 0 && apiDataPoint.ConformanceStatusSummary.PassedCount == 0 {
-			apiDataPoint.ConformanceStatusSummary = nil
-			apiDataPoint.Checks = nil
+		conformanceSummary := api.ConformanceStatusSummary{}
+		conformanceSummary.AddESConformanceStatusMap(datapoint.QueryResult)
+		apiDataPoint.IncidentsSeverityBreakdown.AddResultMap(datapoint.SeverityResult)
+		if conformanceSummary.FailedCount == 0 && conformanceSummary.PassedCount == 0 {
+			apiDataPoint.IncidentsSeverityBreakdown = nil
 		} else {
-			apiDataPoint.TotalNonIncidents = &apiDataPoint.ConformanceStatusSummary.PassedCount
+			apiDataPoint.FindingsSummary = &struct {
+				Incidents    int `json:"incidents"`
+				NonIncidents int `json:"non_incidents"`
+			}{Incidents: conformanceSummary.FailedCount, NonIncidents: conformanceSummary.PassedCount}
 		}
 
 		response = append(response, apiDataPoint)
