@@ -1,11 +1,22 @@
 package db
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"time"
+)
+
+type UserLifecycle string
+
+const (
+	UserLifecycleActive   UserLifecycle = "active"
+	UserLifecycleInactive UserLifecycle = "inactive"
+	UserLifecycleBlocked  UserLifecycle = "blocked"
+	UserLifecycleDeleted  UserLifecycle = "deleted"
+	UserLifecycleNone     UserLifecycle = ""
 )
 
 type Configuration struct {
@@ -28,6 +39,7 @@ type ApiKey struct {
 
 type User struct {
 	gorm.Model
+	UserUuid      uuid.UUID
 	Email         string
 	EmailVerified bool
 	FamilyName    string
@@ -37,6 +49,10 @@ type User struct {
 	Nickname      string
 	Picture       string
 	UserId        string
+	IdLifecycle   UserLifecycle
+	Role          api.Role
+	ConnectorId   string
+	ExternalId    string
 	UserMetadata  pgtype.JSONB
 	LastLogin     time.Time
 	LastIp        string

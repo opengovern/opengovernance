@@ -366,8 +366,10 @@ type GetBenchmarkTrendV3Request struct {
 }
 
 type BenchmarkTrendDatapointV3 struct {
-	Timestamp                time.Time                 `json:"timestamp"`
-	ConformanceStatusSummary *ConformanceStatusSummary `json:"conformance_status_summary"`
-	Checks                   *types.SeverityResult     `json:"checks"`
-	TotalNonIncidents        *int                      `json:"total_non_incidents"`
+	Timestamp       time.Time `json:"timestamp"`
+	FindingsSummary *struct {
+		Incidents    int `json:"incidents"`
+		NonIncidents int `json:"non_incidents"`
+	} `json:"findings_summary"`
+	IncidentsSeverityBreakdown *types.SeverityResult `json:"incidents_severity_breakdown"`
 }

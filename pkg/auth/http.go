@@ -11,6 +11,7 @@ import (
 	"fmt"
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/open-governance/pkg/auth/utils"
 	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
@@ -1088,7 +1089,12 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	newUser := &db.User{
+		UserUuid:     uuid.New(),
 		Email:        req.EmailAddress,
+		Username:     req.EmailAddress,
+		Name:         req.EmailAddress,
+		IdLifecycle:  db.UserLifecycleActive,
+		Role:         role,
 		UserId:       userId,
 		AppMetadata:  appMetadataJsonb,
 		UserMetadata: userMetadataJsonb,
