@@ -6896,8 +6896,8 @@ func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) err
 //	@Produce		json
 //	@Param			benchmark_id		path		string								true	"Benchmark ID"
 //	@Param			request				body		api.GetBenchmarkTrendV3Request		false	"timestamp for end of the chart in epoch seconds"
-//	@Success		200					{object}	[]api.BenchmarkTrendDatapoint
-//	@Router			/compliance/api/v3/benchmarks/{benchmark_id}/trend [get]
+//	@Success		200					{object}	api.GetBenchmarkTrendV3Response
+//	@Router			/compliance/api/v3/benchmarks/{benchmark_id}/trend [post]
 func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
@@ -6977,7 +6977,8 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 		return err
 	}
 
-	var response []api.BenchmarkTrendDatapointV3
+	var datapoints []api.BenchmarkTrendDatapointV3
+	var maximumValues, minimumValues api.BenchmarkTrendDatapointV3
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
 		apiDataPoint := api.BenchmarkTrendDatapointV3{
 			Timestamp:                  time.Unix(datapoint.DateEpoch, 0),
@@ -6994,13 +6995,77 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 				NonIncidents int `json:"non_incidents"`
 			}{Incidents: conformanceSummary.FailedCount, NonIncidents: conformanceSummary.PassedCount}
 		}
+		if maximumValues.FindingsSummary == nil {
+			maximumValues.FindingsSummary = apiDataPoint.FindingsSummary
+		} else {
+			if maximumValues.FindingsSummary.Incidents < apiDataPoint.FindingsSummary.Incidents {
+				maximumValues.FindingsSummary.Incidents = apiDataPoint.FindingsSummary.Incidents
+			}
+			if maximumValues.FindingsSummary.NonIncidents < apiDataPoint.FindingsSummary.NonIncidents {
+				maximumValues.FindingsSummary.NonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+			}
+		}
+		if minimumValues.FindingsSummary == nil {
+			minimumValues.FindingsSummary = apiDataPoint.FindingsSummary
+		} else {
+			if minimumValues.FindingsSummary.Incidents > apiDataPoint.FindingsSummary.Incidents {
+				minimumValues.FindingsSummary.Incidents = apiDataPoint.FindingsSummary.Incidents
+			}
+			if minimumValues.FindingsSummary.NonIncidents > apiDataPoint.FindingsSummary.NonIncidents {
+				minimumValues.FindingsSummary.NonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+			}
+		}
+		if maximumValues.IncidentsSeverityBreakdown == nil {
+			maximumValues.IncidentsSeverityBreakdown = apiDataPoint.IncidentsSeverityBreakdown
+		} else {
+			if maximumValues.IncidentsSeverityBreakdown.NoneCount < apiDataPoint.IncidentsSeverityBreakdown.NoneCount {
+				maximumValues.IncidentsSeverityBreakdown.NoneCount = apiDataPoint.IncidentsSeverityBreakdown.NoneCount
+			}
+			if maximumValues.IncidentsSeverityBreakdown.LowCount < apiDataPoint.IncidentsSeverityBreakdown.LowCount {
+				maximumValues.IncidentsSeverityBreakdown.LowCount = apiDataPoint.IncidentsSeverityBreakdown.LowCount
+			}
+			if maximumValues.IncidentsSeverityBreakdown.MediumCount < apiDataPoint.IncidentsSeverityBreakdown.MediumCount {
+				maximumValues.IncidentsSeverityBreakdown.MediumCount = apiDataPoint.IncidentsSeverityBreakdown.MediumCount
+			}
+			if maximumValues.IncidentsSeverityBreakdown.HighCount < apiDataPoint.IncidentsSeverityBreakdown.HighCount {
+				maximumValues.IncidentsSeverityBreakdown.HighCount = apiDataPoint.IncidentsSeverityBreakdown.HighCount
+			}
+			if maximumValues.IncidentsSeverityBreakdown.CriticalCount < apiDataPoint.IncidentsSeverityBreakdown.CriticalCount {
+				maximumValues.IncidentsSeverityBreakdown.CriticalCount = apiDataPoint.IncidentsSeverityBreakdown.CriticalCount
+			}
+		}
+		if minimumValues.IncidentsSeverityBreakdown == nil {
+			minimumValues.IncidentsSeverityBreakdown = apiDataPoint.IncidentsSeverityBreakdown
+		} else {
+			if minimumValues.IncidentsSeverityBreakdown.NoneCount > apiDataPoint.IncidentsSeverityBreakdown.NoneCount {
+				minimumValues.IncidentsSeverityBreakdown.NoneCount = apiDataPoint.IncidentsSeverityBreakdown.NoneCount
+			}
+			if minimumValues.IncidentsSeverityBreakdown.LowCount > apiDataPoint.IncidentsSeverityBreakdown.LowCount {
+				minimumValues.IncidentsSeverityBreakdown.LowCount = apiDataPoint.IncidentsSeverityBreakdown.LowCount
+			}
+			if minimumValues.IncidentsSeverityBreakdown.MediumCount > apiDataPoint.IncidentsSeverityBreakdown.MediumCount {
+				minimumValues.IncidentsSeverityBreakdown.MediumCount = apiDataPoint.IncidentsSeverityBreakdown.MediumCount
+			}
+			if minimumValues.IncidentsSeverityBreakdown.HighCount > apiDataPoint.IncidentsSeverityBreakdown.HighCount {
+				minimumValues.IncidentsSeverityBreakdown.HighCount = apiDataPoint.IncidentsSeverityBreakdown.HighCount
+			}
+			if minimumValues.IncidentsSeverityBreakdown.CriticalCount > apiDataPoint.IncidentsSeverityBreakdown.CriticalCount {
+				minimumValues.IncidentsSeverityBreakdown.CriticalCount = apiDataPoint.IncidentsSeverityBreakdown.CriticalCount
+			}
+		}
 
-		response = append(response, apiDataPoint)
+		datapoints = append(datapoints, apiDataPoint)
 	}
 
-	sort.Slice(response, func(i, j int) bool {
-		return response[i].Timestamp.Before(response[j].Timestamp)
+	sort.Slice(datapoints, func(i, j int) bool {
+		return datapoints[i].Timestamp.Before(datapoints[j].Timestamp)
 	})
+
+	response := api.GetBenchmarkTrendV3Response{
+		Datapoints:    datapoints,
+		MaximumValues: maximumValues,
+		MinimumValues: minimumValues,
+	}
 
 	return echoCtx.JSON(http.StatusOK, response)
 }

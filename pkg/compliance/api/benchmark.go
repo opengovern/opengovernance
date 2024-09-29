@@ -373,3 +373,9 @@ type BenchmarkTrendDatapointV3 struct {
 	} `json:"findings_summary"`
 	IncidentsSeverityBreakdown *types.SeverityResult `json:"incidents_severity_breakdown"`
 }
+
+type GetBenchmarkTrendV3Response struct {
+	Datapoints    []BenchmarkTrendDatapointV3 `json:"datapoints"`
+	MaximumValues BenchmarkTrendDatapointV3   `json:"maximum_values"`
+	MinimumValues BenchmarkTrendDatapointV3   `json:"minimum_values"`
+}
