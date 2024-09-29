@@ -376,6 +376,6 @@ type BenchmarkTrendDatapointV3 struct {
 
 type GetBenchmarkTrendV3Response struct {
 	Datapoints    []BenchmarkTrendDatapointV3 `json:"datapoints"`
-	MaximumValues *BenchmarkTrendDatapointV3  `json:"maximum_values"`
-	MinimumValues *BenchmarkTrendDatapointV3  `json:"minimum_values"`
+	MaximumValues BenchmarkTrendDatapointV3   `json:"maximum_values"`
+	MinimumValues BenchmarkTrendDatapointV3   `json:"minimum_values"`
 }

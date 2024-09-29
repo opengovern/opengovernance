@@ -299,8 +299,10 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 	}
 
 	trend := make(map[string][]BenchmarkTrendDatapoint)
+	trendMap := make(map[string]map[int64]BenchmarkTrendDatapoint)
 	for _, bucket := range response.Aggregations.BenchmarkIDGroup.Buckets {
 		benchmarkID := bucket.Key
+		trendMap[benchmarkID] = make(map[int64]BenchmarkTrendDatapoint)
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
 			date := int64(rangeBucket.To)
 			if err != nil {
@@ -326,7 +328,17 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 				}
 			}
 			if trendDataPoint.DateEpoch != 0 {
-				trend[benchmarkID] = append(trend[benchmarkID], trendDataPoint)
+				trendMap[benchmarkID][date] = trendDataPoint
+			}
+		}
+		for i := int64(0); i*granularity < endTimeUnix-startTimeUnix; i++ {
+			t := startTimeUnix + (i+1)*granularity - 1
+			if v, ok := trendMap[benchmarkID][t]; ok {
+				trend[benchmarkID] = append(trend[benchmarkID], v)
+			} else {
+				trend[benchmarkID] = append(trend[benchmarkID], BenchmarkTrendDatapoint{
+					DateEpoch: t,
+				})
 			}
 		}
 		sort.Slice(trend[benchmarkID], func(i, j int) bool {
