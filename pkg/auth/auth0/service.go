@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/open-governance/pkg/auth/db"
+	"time"
 )
 
 type Service struct {
@@ -215,7 +216,7 @@ func (a *Service) DeleteUser(userId string) error {
 	return nil
 }
 
-func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) error {
+func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata, lastLogin *time.Time) error {
 	appMetadataJSON, err := json.Marshal(appMetadata)
 	if err != nil {
 		return err
@@ -227,7 +228,7 @@ func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata) erro
 		return err
 	}
 
-	err = a.database.UpdateUserAppMetadata(userId, jp)
+	err = a.database.UpdateUserAppMetadataAndLastLogin(userId, jp, lastLogin)
 
 	if err != nil {
 		return err

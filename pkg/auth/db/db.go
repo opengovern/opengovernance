@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"time"
 )
 
 type Database struct {
@@ -277,10 +278,15 @@ func (db Database) GetUser(userId string) (*User, error) {
 	return &s, nil
 }
 
-func (db Database) UpdateUserAppMetadata(userId string, metadata pgtype.JSONB) error {
+func (db Database) UpdateUserAppMetadataAndLastLogin(userId string, metadata pgtype.JSONB, lastLogin *time.Time) error {
 	tx := db.Orm.Model(&User{}).
 		Where("user_id = ?", userId).
 		Update("app_metadata", metadata)
+
+	if lastLogin != nil {
+		tx = tx.Update("last_login", lastLogin)
+	}
+
 	if tx.Error != nil {
 		return tx.Error
 	}

@@ -401,7 +401,7 @@ func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
 		auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
 	}
 	auth0User.AppMetadata.ConnectionIDs[workspaceID] = req.ConnectionIDs
-	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata)
+	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata, nil)
 	if err != nil {
 		return err
 	}
@@ -435,7 +435,7 @@ func (r *httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
 		auth0User.AppMetadata.WorkspaceAccess = nil
 	}
 
-	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata)
+	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata, nil)
 	if err != nil {
 		return err
 	}
@@ -478,11 +478,12 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 		}
 		if usr.AppMetadata.LastLogin == nil || *usr.AppMetadata.LastLogin != timeNow {
 			usr.AppMetadata.LastLogin = &timeNow
+			usr.LastLogin = time.Now()
 			doUpdate = true
 		}
 
 		if doUpdate {
-			err = r.auth0Service.PatchUserAppMetadata(usr.UserId, usr.AppMetadata)
+			err = r.auth0Service.PatchUserAppMetadata(usr.UserId, usr.AppMetadata, &usr.LastLogin)
 			if err != nil {
 				r.logger.Error("failed to update user metadata", zap.String("userId", userID), zap.Error(err))
 			}
@@ -746,7 +747,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 			auth0User.AppMetadata.WorkspaceAccess = map[string]api2.Role{}
 		}
 		auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
-		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
+		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata, nil)
 		if err != nil {
 			return err
 		}
@@ -797,7 +798,7 @@ func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
 	auth0User.AppMetadata.ColorBlindMode = &req.EnableColorBlindMode
 	auth0User.AppMetadata.Theme = &req.Theme
 
-	err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata)
+	err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata, nil)
 	if err != nil {
 		return err
 	}
@@ -1189,7 +1190,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		if auth0User.AppMetadata.ConnectionIDs == nil {
 			auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
 		}
-		err = r.auth0Service.PatchUserAppMetadata(user.UserId, auth0User.AppMetadata)
+		err = r.auth0Service.PatchUserAppMetadata(user.UserId, auth0User.AppMetadata, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user role")
 		}
