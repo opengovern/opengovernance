@@ -6978,7 +6978,7 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	}
 
 	var datapoints []api.BenchmarkTrendDatapointV3
-	var maximumValues, minimumValues api.BenchmarkTrendDatapointV3
+	var maximumValues, minimumValues *api.BenchmarkTrendDatapointV3
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
 		apiDataPoint := api.BenchmarkTrendDatapointV3{
 			Timestamp:                  time.Unix(datapoint.DateEpoch, 0),
@@ -6995,62 +6995,84 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 				NonIncidents int `json:"non_incidents"`
 			}{Incidents: conformanceSummary.FailedCount, NonIncidents: conformanceSummary.PassedCount}
 		}
-		if maximumValues.FindingsSummary == nil {
-			maximumValues.FindingsSummary = apiDataPoint.FindingsSummary
+
+		// Initialize maximum and minimum values
+		if maximumValues == nil || minimumValues == nil {
+			maximumValues = &apiDataPoint
+			minimumValues = &apiDataPoint
 		} else {
-			if maximumValues.FindingsSummary.Incidents < apiDataPoint.FindingsSummary.Incidents {
-				maximumValues.FindingsSummary.Incidents = apiDataPoint.FindingsSummary.Incidents
+			// Compare and update maximum values
+			if apiDataPoint.FindingsSummary != nil {
+				if maximumValues.FindingsSummary == nil {
+					maximumValues.FindingsSummary = apiDataPoint.FindingsSummary
+				} else {
+					if maximumValues.FindingsSummary.Incidents < apiDataPoint.FindingsSummary.Incidents {
+						maximumValues.FindingsSummary.Incidents = apiDataPoint.FindingsSummary.Incidents
+					}
+					if maximumValues.FindingsSummary.NonIncidents < apiDataPoint.FindingsSummary.NonIncidents {
+						maximumValues.FindingsSummary.NonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+					}
+				}
 			}
-			if maximumValues.FindingsSummary.NonIncidents < apiDataPoint.FindingsSummary.NonIncidents {
-				maximumValues.FindingsSummary.NonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+
+			// Compare and update minimum values
+			if apiDataPoint.FindingsSummary != nil {
+				if minimumValues.FindingsSummary == nil {
+					minimumValues.FindingsSummary = apiDataPoint.FindingsSummary
+				} else {
+					if minimumValues.FindingsSummary.Incidents > apiDataPoint.FindingsSummary.Incidents {
+						minimumValues.FindingsSummary.Incidents = apiDataPoint.FindingsSummary.Incidents
+					}
+					if minimumValues.FindingsSummary.NonIncidents > apiDataPoint.FindingsSummary.NonIncidents {
+						minimumValues.FindingsSummary.NonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+					}
+				}
 			}
-		}
-		if minimumValues.FindingsSummary == nil {
-			minimumValues.FindingsSummary = apiDataPoint.FindingsSummary
-		} else {
-			if minimumValues.FindingsSummary.Incidents > apiDataPoint.FindingsSummary.Incidents {
-				minimumValues.FindingsSummary.Incidents = apiDataPoint.FindingsSummary.Incidents
+
+			// Compare and update maximum severity breakdown
+			if apiDataPoint.IncidentsSeverityBreakdown != nil {
+				if maximumValues.IncidentsSeverityBreakdown == nil {
+					maximumValues.IncidentsSeverityBreakdown = apiDataPoint.IncidentsSeverityBreakdown
+				} else {
+					if maximumValues.IncidentsSeverityBreakdown.NoneCount < apiDataPoint.IncidentsSeverityBreakdown.NoneCount {
+						maximumValues.IncidentsSeverityBreakdown.NoneCount = apiDataPoint.IncidentsSeverityBreakdown.NoneCount
+					}
+					if maximumValues.IncidentsSeverityBreakdown.LowCount < apiDataPoint.IncidentsSeverityBreakdown.LowCount {
+						maximumValues.IncidentsSeverityBreakdown.LowCount = apiDataPoint.IncidentsSeverityBreakdown.LowCount
+					}
+					if maximumValues.IncidentsSeverityBreakdown.MediumCount < apiDataPoint.IncidentsSeverityBreakdown.MediumCount {
+						maximumValues.IncidentsSeverityBreakdown.MediumCount = apiDataPoint.IncidentsSeverityBreakdown.MediumCount
+					}
+					if maximumValues.IncidentsSeverityBreakdown.HighCount < apiDataPoint.IncidentsSeverityBreakdown.HighCount {
+						maximumValues.IncidentsSeverityBreakdown.HighCount = apiDataPoint.IncidentsSeverityBreakdown.HighCount
+					}
+					if maximumValues.IncidentsSeverityBreakdown.CriticalCount < apiDataPoint.IncidentsSeverityBreakdown.CriticalCount {
+						maximumValues.IncidentsSeverityBreakdown.CriticalCount = apiDataPoint.IncidentsSeverityBreakdown.CriticalCount
+					}
+				}
 			}
-			if minimumValues.FindingsSummary.NonIncidents > apiDataPoint.FindingsSummary.NonIncidents {
-				minimumValues.FindingsSummary.NonIncidents = apiDataPoint.FindingsSummary.NonIncidents
-			}
-		}
-		if maximumValues.IncidentsSeverityBreakdown == nil {
-			maximumValues.IncidentsSeverityBreakdown = apiDataPoint.IncidentsSeverityBreakdown
-		} else {
-			if maximumValues.IncidentsSeverityBreakdown.NoneCount < apiDataPoint.IncidentsSeverityBreakdown.NoneCount {
-				maximumValues.IncidentsSeverityBreakdown.NoneCount = apiDataPoint.IncidentsSeverityBreakdown.NoneCount
-			}
-			if maximumValues.IncidentsSeverityBreakdown.LowCount < apiDataPoint.IncidentsSeverityBreakdown.LowCount {
-				maximumValues.IncidentsSeverityBreakdown.LowCount = apiDataPoint.IncidentsSeverityBreakdown.LowCount
-			}
-			if maximumValues.IncidentsSeverityBreakdown.MediumCount < apiDataPoint.IncidentsSeverityBreakdown.MediumCount {
-				maximumValues.IncidentsSeverityBreakdown.MediumCount = apiDataPoint.IncidentsSeverityBreakdown.MediumCount
-			}
-			if maximumValues.IncidentsSeverityBreakdown.HighCount < apiDataPoint.IncidentsSeverityBreakdown.HighCount {
-				maximumValues.IncidentsSeverityBreakdown.HighCount = apiDataPoint.IncidentsSeverityBreakdown.HighCount
-			}
-			if maximumValues.IncidentsSeverityBreakdown.CriticalCount < apiDataPoint.IncidentsSeverityBreakdown.CriticalCount {
-				maximumValues.IncidentsSeverityBreakdown.CriticalCount = apiDataPoint.IncidentsSeverityBreakdown.CriticalCount
-			}
-		}
-		if minimumValues.IncidentsSeverityBreakdown == nil {
-			minimumValues.IncidentsSeverityBreakdown = apiDataPoint.IncidentsSeverityBreakdown
-		} else {
-			if minimumValues.IncidentsSeverityBreakdown.NoneCount > apiDataPoint.IncidentsSeverityBreakdown.NoneCount {
-				minimumValues.IncidentsSeverityBreakdown.NoneCount = apiDataPoint.IncidentsSeverityBreakdown.NoneCount
-			}
-			if minimumValues.IncidentsSeverityBreakdown.LowCount > apiDataPoint.IncidentsSeverityBreakdown.LowCount {
-				minimumValues.IncidentsSeverityBreakdown.LowCount = apiDataPoint.IncidentsSeverityBreakdown.LowCount
-			}
-			if minimumValues.IncidentsSeverityBreakdown.MediumCount > apiDataPoint.IncidentsSeverityBreakdown.MediumCount {
-				minimumValues.IncidentsSeverityBreakdown.MediumCount = apiDataPoint.IncidentsSeverityBreakdown.MediumCount
-			}
-			if minimumValues.IncidentsSeverityBreakdown.HighCount > apiDataPoint.IncidentsSeverityBreakdown.HighCount {
-				minimumValues.IncidentsSeverityBreakdown.HighCount = apiDataPoint.IncidentsSeverityBreakdown.HighCount
-			}
-			if minimumValues.IncidentsSeverityBreakdown.CriticalCount > apiDataPoint.IncidentsSeverityBreakdown.CriticalCount {
-				minimumValues.IncidentsSeverityBreakdown.CriticalCount = apiDataPoint.IncidentsSeverityBreakdown.CriticalCount
+
+			// Compare and update minimum severity breakdown
+			if apiDataPoint.IncidentsSeverityBreakdown != nil {
+				if minimumValues.IncidentsSeverityBreakdown == nil {
+					minimumValues.IncidentsSeverityBreakdown = apiDataPoint.IncidentsSeverityBreakdown
+				} else {
+					if minimumValues.IncidentsSeverityBreakdown.NoneCount > apiDataPoint.IncidentsSeverityBreakdown.NoneCount {
+						minimumValues.IncidentsSeverityBreakdown.NoneCount = apiDataPoint.IncidentsSeverityBreakdown.NoneCount
+					}
+					if minimumValues.IncidentsSeverityBreakdown.LowCount > apiDataPoint.IncidentsSeverityBreakdown.LowCount {
+						minimumValues.IncidentsSeverityBreakdown.LowCount = apiDataPoint.IncidentsSeverityBreakdown.LowCount
+					}
+					if minimumValues.IncidentsSeverityBreakdown.MediumCount > apiDataPoint.IncidentsSeverityBreakdown.MediumCount {
+						minimumValues.IncidentsSeverityBreakdown.MediumCount = apiDataPoint.IncidentsSeverityBreakdown.MediumCount
+					}
+					if minimumValues.IncidentsSeverityBreakdown.HighCount > apiDataPoint.IncidentsSeverityBreakdown.HighCount {
+						minimumValues.IncidentsSeverityBreakdown.HighCount = apiDataPoint.IncidentsSeverityBreakdown.HighCount
+					}
+					if minimumValues.IncidentsSeverityBreakdown.CriticalCount > apiDataPoint.IncidentsSeverityBreakdown.CriticalCount {
+						minimumValues.IncidentsSeverityBreakdown.CriticalCount = apiDataPoint.IncidentsSeverityBreakdown.CriticalCount
+					}
+				}
 			}
 		}
 
