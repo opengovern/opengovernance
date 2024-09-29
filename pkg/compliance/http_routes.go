@@ -6390,6 +6390,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			ComplianceScore:            complianceScore,
 			SeveritySummaryByControl:   controlSeverityResult,
 			SeveritySummaryByResource:  resourcesSeverityResult,
+			SeveritySummaryByIncidents: sResult,
 			TopIntegrations:            topIntegrations,
 			TopResourceTypesWithIssues: topResourceTypes,
 			TopResourcesWithIssues:     topResources,
