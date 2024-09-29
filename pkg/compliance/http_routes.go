@@ -3435,11 +3435,11 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				incidentCount = incidentCount + c
 			}
 			apiControl.FindingsSummary = struct {
-				IncidentCount        int64 `json:"incident_count"`
-				PassingFindingsCount int64 `json:"passing_findings_count"`
+				IncidentCount    int64 `json:"incident_count"`
+				NonIncidentCount int64 `json:"non_incident_count"`
 			}{
-				IncidentCount:        incidentCount,
-				PassingFindingsCount: passingFindingsCount,
+				IncidentCount:    incidentCount,
+				NonIncidentCount: passingFindingsCount,
 			}
 		}
 
@@ -3467,9 +3467,67 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 
 	totalCount := len(resultControls)
 
-	sort.Slice(resultControls, func(i, j int) bool {
-		return resultControls[i].ID < resultControls[j].ID
-	})
+	sortOrder := "asc"
+	if strings.ToLower(req.SortOrder) == "asc" || strings.ToLower(req.SortOrder) == "desc" {
+		sortOrder = strings.ToLower(req.SortOrder)
+	}
+	switch sortOrder {
+	case "asc":
+		switch strings.ToLower(req.SortBy) {
+		case "id":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].ID < resultControls[j].ID
+			})
+		case "title":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].Title < resultControls[j].Title
+			})
+		case "severity":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].Severity < resultControls[j].Severity
+			})
+		case "incidents":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.IncidentCount < resultControls[j].FindingsSummary.IncidentCount
+			})
+		case "non-incidents", "nonincidents":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.NonIncidentCount < resultControls[j].FindingsSummary.NonIncidentCount
+			})
+		default:
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].ID < resultControls[j].ID
+			})
+		}
+	case "desc":
+		switch strings.ToLower(req.SortBy) {
+		case "id":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].ID > resultControls[j].ID
+			})
+		case "title":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].Title > resultControls[j].Title
+			})
+		case "severity":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].Severity > resultControls[j].Severity
+			})
+		case "incidents":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.IncidentCount > resultControls[j].FindingsSummary.IncidentCount
+			})
+		case "non-incidents", "nonincidents":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.NonIncidentCount > resultControls[j].FindingsSummary.NonIncidentCount
+			})
+		default:
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].ID > resultControls[j].ID
+			})
+		}
+	}
+
 	if req.PerPage != nil {
 		if req.Cursor == nil {
 			resultControls = utils.Paginate(1, *req.PerPage, resultControls)
