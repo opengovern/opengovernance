@@ -14,6 +14,23 @@ const (
 	FindingSeverityCritical FindingSeverity = "critical"
 )
 
+func (s FindingSeverity) Level() int {
+	switch s {
+	case FindingSeverityNone:
+		return 1
+	case FindingSeverityLow:
+		return 2
+	case FindingSeverityMedium:
+		return 3
+	case FindingSeverityHigh:
+		return 4
+	case FindingSeverityCritical:
+		return 5
+	default:
+		return 0
+	}
+}
+
 func (s FindingSeverity) String() string {
 	return string(s)
 }
