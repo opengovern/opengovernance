@@ -6208,7 +6208,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		summaryAtTime := summariesAtTime[benchmark.ID]
 
 		csResult := api.ConformanceStatusSummaryV2{}
-		sResult := kaytuTypes.SeverityResult{}
+		sResult := kaytuTypes.SeverityResultV2{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
 		var costOptimization *float64
 		addToResults := func(resultGroup types.ResultGroup) {
@@ -6387,10 +6387,12 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		response = append(response, api.ComplianceSummaryOfBenchmarkResponse{
 			BenchmarkID:                benchmark.ID,
+			BenchmarkTitle:             benchmark.Title,
 			ComplianceScore:            complianceScore,
 			SeveritySummaryByControl:   controlSeverityResult,
 			SeveritySummaryByResource:  resourcesSeverityResult,
 			SeveritySummaryByIncidents: sResult,
+			CostOptimization:           costOptimization,
 			TopIntegrations:            topIntegrations,
 			TopResourceTypesWithIssues: topResourceTypes,
 			TopResourcesWithIssues:     topResources,
