@@ -323,7 +323,7 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	ComplianceScore            float64                            `json:"compliance_score"`
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
-	SeveritySummaryByIncidents types.SeverityResult               `json:"severity_summary_by_incidents"`
+	SeveritySummaryByIncidents types.SeverityResultV2             `json:"severity_summary_by_incidents"`
 	CostOptimization           *float64                           `json:"cost_optimization"`
 	FindingsSummary            ConformanceStatusSummaryV2         `json:"findings_summary"`
 	IssuesCount                int                                `json:"issues_count"`
