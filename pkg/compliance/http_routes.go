@@ -3421,6 +3421,11 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
 		}
 
+		controlResult, _, err := es.BenchmarksControlSummary(ctx, h.logger, h.client, benchmarks, nil)
+		if err != nil {
+			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", control.ID), zap.Any("benchmarkID", benchmarks))
+		}
+
 		if req.FindingSummary {
 			var incidentCount, passingFindingsCount int64
 			if c, ok := fRes[control.ID]["ok"]; ok {
@@ -3439,11 +3444,17 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				incidentCount = incidentCount + c
 			}
 			apiControl.FindingsSummary = struct {
-				IncidentCount    int64 `json:"incident_count"`
-				NonIncidentCount int64 `json:"non_incident_count"`
+				IncidentCount         int64 `json:"incident_count"`
+				NonIncidentCount      int64 `json:"non_incident_count"`
+				NonCompliantResources int   `json:"noncompliant_resources"`
+				CompliantResources    int   `json:"compliant_resources"`
+				ImpactedResources     int   `json:"impacted_resources"`
 			}{
-				IncidentCount:    incidentCount,
-				NonIncidentCount: passingFindingsCount,
+				IncidentCount:         incidentCount,
+				NonIncidentCount:      passingFindingsCount,
+				CompliantResources:    controlResult[control.ID].TotalResourcesCount - controlResult[control.ID].FailedResourcesCount,
+				NonCompliantResources: controlResult[control.ID].FailedResourcesCount,
+				ImpactedResources:     controlResult[control.ID].TotalResourcesCount,
 			}
 		}
 
