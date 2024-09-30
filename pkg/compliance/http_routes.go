@@ -3363,16 +3363,20 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			controlIDs = append(controlIDs, c.ID)
 		}
 		if req.FindingFilters != nil {
+			benchmarksFilter := benchmarks
+			if len(req.FindingFilters.BenchmarkID) > 0 {
+				benchmarksFilter = req.FindingFilters.BenchmarkID
+			}
 			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID,
 				req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID,
-				req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity,
+				req.FindingFilters.ResourceTypeID, benchmarksFilter, controlIDs, req.FindingFilters.Severity,
 				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		} else {
 			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
-				nil, nil, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
+				nil, benchmarks, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
 				evaluatedAtTo, nil, esConformanceStatuses)
 		}
 
