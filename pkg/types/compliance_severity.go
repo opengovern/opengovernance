@@ -74,6 +74,33 @@ type SeverityResult struct {
 	CriticalCount int `json:"criticalCount" example:"1"`
 }
 
+type SeverityResultV2 struct {
+	None     int `json:"none"`
+	Low      int `json:"low"`
+	Medium   int `json:"medium"`
+	High     int `json:"high"`
+	Critical int `json:"critical"`
+	Total    int `json:"total"`
+}
+
+func (r *SeverityResultV2) AddSeverityResult(severity SeverityResult) {
+	r.None += severity.NoneCount
+	r.Low += severity.LowCount
+	r.Medium += severity.MediumCount
+	r.High += severity.HighCount
+	r.Critical += severity.CriticalCount
+	r.Total += severity.NoneCount + severity.LowCount + severity.MediumCount + severity.HighCount + severity.CriticalCount
+}
+
+func (r *SeverityResultV2) AddResultMap(result map[FindingSeverity]int) {
+	r.None += result[FindingSeverityNone]
+	r.Low += result[FindingSeverityLow]
+	r.Medium += result[FindingSeverityMedium]
+	r.High += result[FindingSeverityHigh]
+	r.Critical += result[FindingSeverityCritical]
+	r.Total += result[FindingSeverityNone] + result[FindingSeverityLow] + result[FindingSeverityMedium] + result[FindingSeverityHigh] + result[FindingSeverityCritical]
+}
+
 func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.NoneCount += severity.NoneCount
 	r.LowCount += severity.LowCount

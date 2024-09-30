@@ -35,4 +35,4 @@ cd /tmp
 
 tar -cO demo-data | openssl enc -aes-256-cbc -md md5 -pass pass:"$OPENSSL_PASSWORD" -base64 > demo_data.tar.gz.enc
 
-aws s3 cp /tmp/demo_data.tar.gz.enc "s3://opengovernance/demo-data/v1.0/demo_data.tar.gz.enc" --endpoint-url=https://nyc3.digitaloceanspaces.com
+aws s3 cp /tmp/demo_data.tar.gz.enc "$DEMO_DATA_S3_PATH" --endpoint-url=https://nyc3.digitaloceanspaces.com
