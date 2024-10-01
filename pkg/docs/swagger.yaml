@@ -895,13 +895,27 @@ definitions:
         example: "1686346668"
         type: string
     type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3:
+    properties:
+      findings_summary:
+        properties:
+          incidents:
+            type: integer
+          non_incidents:
+            type: integer
+        type: object
+      incidents_severity_breakdown:
+        $ref: '#/definitions/types.SeverityResult'
+      timestamp:
+        type: string
+    type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.CategoryControls:
     properties:
       category:
         type: string
-      controls:
+      services:
         items:
-          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.Control'
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ServiceControls'
         type: array
     type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.ComplianceSummaryOfBenchmarkRequest:
@@ -919,7 +933,11 @@ definitions:
     properties:
       benchmark_id:
         type: string
+      benchmark_title:
+        type: string
       compliance_score:
+        type: number
+      cost_optimization:
         type: number
       findings_summary:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatusSummaryV2'
@@ -933,6 +951,8 @@ definitions:
         type: string
       severity_summary_by_control:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkControlsSeverityStatusV2'
+      severity_summary_by_incidents:
+        $ref: '#/definitions/types.SeverityResultV2'
       severity_summary_by_resource:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkResourcesSeverityStatusV2'
       top_controls_with_issues:
@@ -1419,6 +1439,12 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatus'
         type: array
+      connectionGroup:
+        example:
+        - healthy
+        items:
+          type: string
+        type: array
       connectionID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -1554,6 +1580,12 @@ definitions:
         - alarm
         items:
           $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatus'
+        type: array
+      connectionGroup:
+        example:
+        - healthy
+        items:
+          type: string
         type: array
       connectionID:
         example:
@@ -1894,11 +1926,13 @@ definitions:
     properties:
       benchmark:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListMetadata'
-      findings:
-        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkDetailsFindings'
+      incident_count:
+        type: integer
     type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListMetadata:
     properties:
+      auto_assigned:
+        type: boolean
       connectors:
         items:
           $ref: '#/definitions/source.Type'
@@ -1911,6 +1945,8 @@ definitions:
         type: boolean
       id:
         type: string
+      number_of_assignments:
+        type: integer
       number_of_controls:
         type: integer
       primary_tables:
@@ -1934,6 +1970,10 @@ definitions:
     properties:
       assigned:
         type: boolean
+      connectors:
+        items:
+          type: string
+        type: array
       controls:
         items:
           type: string
@@ -1942,8 +1982,10 @@ definitions:
         type: integer
       finding_filters:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.FindingSummaryFilters'
-      finding_summary:
-        type: boolean
+      integration:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.IntegrationFilter'
+        type: array
       list_of_tables:
         items:
           type: string
@@ -1960,6 +2002,8 @@ definitions:
         type: array
       root:
         type: boolean
+      sort_by:
+        type: string
       tags:
         additionalProperties:
           items:
@@ -1977,6 +2021,30 @@ definitions:
         type: array
       total_count:
         type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Request:
+    properties:
+      end_time:
+        type: integer
+      granularity:
+        type: integer
+      integration:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.IntegrationFilter'
+        type: array
+      start_time:
+        type: integer
+    type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Response:
+    properties:
+      datapoints:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3'
+        type: array
+      maximum_values:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3'
+      minimum_values:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3'
     type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.GetCategoriesControlsResponse:
     properties:
@@ -2217,6 +2285,40 @@ definitions:
       totalConformanceStatusSummary:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatusSummary'
     type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryItem:
+    properties:
+      benchmark_id:
+        type: string
+      compliance_score:
+        type: number
+      created_at:
+        type: string
+      created_by:
+        type: string
+      findings_summary:
+        $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatusSummaryV2'
+      integrations:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.IntegrationInfo'
+        type: array
+      job_id:
+        type: string
+      job_status:
+        type: string
+      trigger_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryItem'
+        type: array
+      total_count:
+        type: integer
+    type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.ListControlsFilterRequest:
     properties:
       connector:
@@ -2253,6 +2355,10 @@ definitions:
         items:
           type: string
         type: array
+      sort_by:
+        type: string
+      sort_order:
+        type: string
       tags:
         additionalProperties:
           items:
@@ -2280,8 +2386,17 @@ definitions:
       description:
         type: string
       findings_summary:
-        additionalProperties:
-          type: integer
+        properties:
+          compliant_resources:
+            type: integer
+          impacted_resources:
+            type: integer
+          incident_count:
+            type: integer
+          non_incident_count:
+            type: integer
+          noncompliant_resources:
+            type: integer
         type: object
       id:
         type: string
@@ -2473,6 +2588,12 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatus'
         type: array
+      connectionGroup:
+        example:
+        - healthy
+        items:
+          type: string
+        type: array
       connectionID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -2543,6 +2664,15 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.SortDirection'
       resourceType:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.SortDirection'
+    type: object
+  github_com_kaytu-io_open-governance_pkg_compliance_api.ServiceControls:
+    properties:
+      controls:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.Control'
+        type: array
+      service:
+        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_compliance_api.ServiceFindingsSummary:
     properties:
@@ -3052,6 +3182,40 @@ definitions:
     - JobType_Discovery
     - JobType_Analytics
     - JobType_Compliance
+  github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryItem:
+    properties:
+      benchmark_id:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      integrations:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationInfo'
+        type: array
+      job_id:
+        type: string
+      job_status:
+        type: string
+      summarizer_jobs:
+        items:
+          type: string
+        type: array
+      trigger_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryItem'
+        type: array
+      total_count:
+        type: integer
+    type: object
   github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsRequest:
     properties:
       benchmark_id:
@@ -3548,12 +3712,30 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ParametersQueries'
         type: array
     type: object
-  github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult:
+  github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesCategory:
+    properties:
+      category:
+        type: string
+      tables:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesTables'
+        type: array
+    type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse:
     properties:
       categories:
         items:
-          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory'
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesCategory'
         type: array
+    type: object
+  github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesTables:
+    properties:
+      name:
+        type: string
+      resource_type:
+        type: string
+      table:
+        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.ListCostCompositionResponse:
     properties:
@@ -3632,8 +3814,18 @@ definitions:
     properties:
       cursor:
         type: integer
+      has_parameters:
+        type: boolean
+      list_of_tables:
+        items:
+          type: string
+        type: array
       per_page:
         type: integer
+      primary_table:
+        items:
+          type: string
+        type: array
       providers:
         items:
           type: string
@@ -3850,15 +4042,6 @@ definitions:
         example: true
         type: boolean
     type: object
-  github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory:
-    properties:
-      category:
-        type: string
-      resources:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2'
-        type: array
-    type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCollection:
     properties:
       connection_count:
@@ -4039,19 +4222,6 @@ definitions:
         type: integer
       totalSuccessfulDescribedConnectionCount:
         type: integer
-    type: object
-  github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2:
-    properties:
-      category:
-        type: string
-      provider_name:
-        $ref: '#/definitions/source.Type'
-      resource_id:
-        type: string
-      resource_name:
-        type: string
-      steampipe_table:
-        type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_inventory_api.RunQueryByIDRequest:
     properties:
@@ -4503,6 +4673,8 @@ definitions:
         type: string
       direction:
         $ref: '#/definitions/source.ConnectorDirectionType'
+      id:
+        type: integer
       label:
         example: Azure
         type: string
@@ -4848,11 +5020,20 @@ definitions:
         type: object
       status:
         type: string
+      summary:
+        properties:
+          completed_jobs:
+            type: integer
+          progress:
+            type: number
+          total_jobs:
+            type: integer
+        type: object
     type: object
   github_com_kaytu-io_open-governance_pkg_workspace_api.GetSampleSyncStatusResponse:
     properties:
-      jobs_progress:
-        $ref: '#/definitions/github_com_kaytu-io_open-governance_services_demo-importer_db_model.ESImportProgress'
+      progress:
+        type: number
       status:
         type: string
     type: object
@@ -4972,11 +5153,6 @@ definitions:
     - SizeSM
     - SizeMD
     - SizeLG
-  github_com_kaytu-io_open-governance_services_demo-importer_db_model.ESImportProgress:
-    properties:
-      progress:
-        type: number
-    type: object
   github_com_kaytu-io_open-governance_services_integration_api_entity.AWSCredentialConfig:
     properties:
       accessKey:
@@ -7618,6 +7794,21 @@ definitions:
         example: 1
         type: integer
     type: object
+  types.SeverityResultV2:
+    properties:
+      critical:
+        type: integer
+      high:
+        type: integer
+      low:
+        type: integer
+      medium:
+        type: integer
+      none:
+        type: integer
+      total:
+        type: integer
+    type: object
   types.StandardUnit:
     enum:
     - Seconds
@@ -9196,6 +9387,13 @@ paths:
           type: boolean
         name: stateActive
         type: array
+      - collectionFormat: csv
+        description: Job ID to filter
+        in: query
+        items:
+          type: string
+        name: jobId
+        type: array
       produces:
       - application/json
       responses:
@@ -9354,10 +9552,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkAssignment'
-            type: array
       security:
       - BearerToken: []
       summary: Create benchmark assignment
@@ -9386,6 +9580,52 @@ paths:
       security:
       - BearerToken: []
       summary: List benchmarks filtered by integrations and other filters
+      tags:
+      - compliance
+  /compliance/api/v3/benchmarks/{benchmark_id}/nested:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List benchmarks filtered by integrations and other filters
+      tags:
+      - compliance
+  /compliance/api/v3/benchmarks/{benchmark_id}/trend:
+    post:
+      consumes:
+      - application/json
+      description: Retrieving a trend of a benchmark result and checks.
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - description: timestamp for end of the chart in epoch seconds
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Response'
+      security:
+      - BearerToken: []
+      summary: Get benchmark trend
       tags:
       - compliance
   /compliance/api/v3/benchmarks/filters:
@@ -9587,6 +9827,13 @@ paths:
           type: string
         name: controls
         type: array
+      - collectionFormat: csv
+        description: Benchmark filter by
+        in: query
+        items:
+          type: string
+        name: benchmarks
+        type: array
       produces:
       - application/json
       responses:
@@ -9594,7 +9841,7 @@ paths:
           description: OK
           schema:
             items:
-              type: string
+              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse'
             type: array
       security:
       - BearerToken: []
@@ -9681,6 +9928,46 @@ paths:
       summary: Get findings
       tags:
       - compliance
+  /compliance/api/v3/jobs/history:
+    get:
+      parameters:
+      - description: Time Interval to filter by
+        in: query
+        name: interval
+        required: true
+        type: string
+      - description: 'Trigger Type: (all(default), manual, system)'
+        in: query
+        name: trigger_type
+        required: true
+        type: string
+      - description: Created By User ID
+        in: query
+        name: created_by
+        required: true
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        required: true
+        type: integer
+      - description: per page
+        in: query
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryResponse'
+      security:
+      - BearerToken: []
+      summary: List jobs by job type and filters
+      tags:
+      - scheduler
   /compliance/api/v3/parameters/controls:
     get:
       description: Get list of queries for given parameters
@@ -11283,9 +11570,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse'
       security:
       - BearerToken: []
       summary: Get list of unique resource categories
@@ -11421,7 +11706,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult'
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse'
       security:
       - BearerToken: []
       summary: Get list of unique resource categories
@@ -12828,6 +13113,54 @@ paths:
       summary: Get describe jobs history for give connection
       tags:
       - scheduler
+  /schedule/api/v3/jobs/history/compliance:
+    get:
+      parameters:
+      - description: Time Interval to filter by
+        in: query
+        name: interval
+        required: true
+        type: string
+      - description: 'Trigger Type: (all(default), manual, system)'
+        in: query
+        name: trigger_type
+        required: true
+        type: string
+      - description: Created By User ID
+        in: query
+        name: created_by
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Created By User ID
+        in: query
+        items:
+          type: string
+        name: benchmark_ids
+        required: true
+        type: array
+      - description: cursor
+        in: query
+        name: cursor
+        required: true
+        type: integer
+      - description: per page
+        in: query
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryResponse'
+      security:
+      - BearerToken: []
+      summary: List jobs by job type and filters
+      tags:
+      - scheduler
   /schedule/api/v3/jobs/interval:
     get:
       parameters:
@@ -12841,6 +13174,26 @@ paths:
         name: interval
         required: true
         type: string
+      - description: 'Trigger Type: (all(default), manual, system)'
+        in: query
+        name: trigger_type
+        required: true
+        type: string
+      - description: Created By User ID
+        in: query
+        name: created_by
+        required: true
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        required: true
+        type: integer
+      - description: per page
+        in: query
+        name: per_page
+        required: true
+        type: integer
       produces:
       - application/json
       responses:

@@ -2060,6 +2060,16 @@
                         "description": "StateActive to filter by defaults to true",
                         "name": "stateActive",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Job ID to filter",
+                        "name": "jobId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2550,13 +2560,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkAssignment"
-                            }
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -2652,6 +2656,81 @@
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTagsResult"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/benchmarks/{benchmark_id}/nested": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "List benchmarks filtered by integrations and other filters",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/benchmarks/{benchmark_id}/trend": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving a trend of a benchmark result and checks.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "timestamp for end of the chart in epoch seconds",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Response"
                         }
                     }
                 }
@@ -2928,6 +3007,16 @@
                         "description": "Controls filter by",
                         "name": "controls",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Benchmark filter by",
+                        "name": "benchmarks",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2936,7 +3025,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse"
                             }
                         }
                     }
@@ -3070,6 +3159,67 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v3/jobs/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "List jobs by job type and filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Time Interval to filter by",
+                        "name": "interval",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Trigger Type: (all(default), manual, system)",
+                        "name": "trigger_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created By User ID",
+                        "name": "created_by",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "per page",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryResponse"
                         }
                     }
                 }
@@ -5506,10 +5656,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.CategoriesTables"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse"
                         }
                     }
                 }
@@ -5726,7 +5873,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult"
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse"
                         }
                     }
                 }
@@ -7961,6 +8108,78 @@
                 }
             }
         },
+        "/schedule/api/v3/jobs/history/compliance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scheduler"
+                ],
+                "summary": "List jobs by job type and filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Time Interval to filter by",
+                        "name": "interval",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Trigger Type: (all(default), manual, system)",
+                        "name": "trigger_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created By User ID",
+                        "name": "created_by",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Created By User ID",
+                        "name": "benchmark_ids",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "per page",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v3/jobs/interval": {
             "get": {
                 "security": [
@@ -7987,6 +8206,34 @@
                         "type": "string",
                         "description": "Time Interval to filter by",
                         "name": "interval",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Trigger Type: (all(default), manual, system)",
+                        "name": "trigger_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Created By User ID",
+                        "name": "created_by",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "cursor",
+                        "name": "cursor",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "per page",
+                        "name": "per_page",
                         "in": "query",
                         "required": true
                     }
@@ -9869,16 +10116,38 @@
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3": {
+            "type": "object",
+            "properties": {
+                "findings_summary": {
+                    "type": "object",
+                    "properties": {
+                        "incidents": {
+                            "type": "integer"
+                        },
+                        "non_incidents": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "incidents_severity_breakdown": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_compliance_api.CategoryControls": {
             "type": "object",
             "properties": {
                 "category": {
                     "type": "string"
                 },
-                "controls": {
+                "services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.Control"
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ServiceControls"
                     }
                 }
             }
@@ -9906,7 +10175,13 @@
                 "benchmark_id": {
                     "type": "string"
                 },
+                "benchmark_title": {
+                    "type": "string"
+                },
                 "compliance_score": {
+                    "type": "number"
+                },
+                "cost_optimization": {
                     "type": "number"
                 },
                 "findings_summary": {
@@ -9926,6 +10201,9 @@
                 },
                 "severity_summary_by_control": {
                     "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkControlsSeverityStatusV2"
+                },
+                "severity_summary_by_incidents": {
+                    "$ref": "#/definitions/types.SeverityResultV2"
                 },
                 "severity_summary_by_resource": {
                     "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkResourcesSeverityStatusV2"
@@ -10631,6 +10909,15 @@
                         "alarm"
                     ]
                 },
+                "connectionGroup": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "healthy"
+                    ]
+                },
                 "connectionID": {
                     "type": "array",
                     "items": {
@@ -10835,6 +11122,15 @@
                     },
                     "example": [
                         "alarm"
+                    ]
+                },
+                "connectionGroup": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "healthy"
                     ]
                 },
                 "connectionID": {
@@ -11354,14 +11650,17 @@
                 "benchmark": {
                     "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListMetadata"
                 },
-                "findings": {
-                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkDetailsFindings"
+                "incident_count": {
+                    "type": "integer"
                 }
             }
         },
         "github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkListMetadata": {
             "type": "object",
             "properties": {
+                "auto_assigned": {
+                    "type": "boolean"
+                },
                 "connectors": {
                     "type": "array",
                     "items": {
@@ -11379,6 +11678,9 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "number_of_assignments": {
+                    "type": "integer"
                 },
                 "number_of_controls": {
                     "type": "integer"
@@ -11415,6 +11717,12 @@
                 "assigned": {
                     "type": "boolean"
                 },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "controls": {
                     "type": "array",
                     "items": {
@@ -11427,8 +11735,11 @@
                 "finding_filters": {
                     "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.FindingSummaryFilters"
                 },
-                "finding_summary": {
-                    "type": "boolean"
+                "integration": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.IntegrationFilter"
+                    }
                 },
                 "list_of_tables": {
                     "type": "array",
@@ -11453,6 +11764,9 @@
                 },
                 "root": {
                     "type": "boolean"
+                },
+                "sort_by": {
+                    "type": "string"
                 },
                 "tags": {
                     "type": "object",
@@ -11479,6 +11793,43 @@
                 },
                 "total_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Request": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "integer"
+                },
+                "granularity": {
+                    "type": "integer"
+                },
+                "integration": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.IntegrationFilter"
+                    }
+                },
+                "start_time": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.GetBenchmarkTrendV3Response": {
+            "type": "object",
+            "properties": {
+                "datapoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3"
+                    }
+                },
+                "maximum_values": {
+                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3"
+                },
+                "minimum_values": {
+                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.BenchmarkTrendDatapointV3"
                 }
             }
         },
@@ -11845,6 +12196,58 @@
                 }
             }
         },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryItem": {
+            "type": "object",
+            "properties": {
+                "benchmark_id": {
+                    "type": "string"
+                },
+                "compliance_score": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "findings_summary": {
+                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ConformanceStatusSummaryV2"
+                },
+                "integrations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.IntegrationInfo"
+                    }
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "job_status": {
+                    "type": "string"
+                },
+                "trigger_type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.ListComplianceJobsHistoryItem"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_compliance_api.ListControlsFilterRequest": {
             "type": "object",
             "properties": {
@@ -11899,6 +12302,12 @@
                         "type": "string"
                     }
                 },
+                "sort_by": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "string"
+                },
                 "tags": {
                     "type": "object",
                     "additionalProperties": {
@@ -11941,8 +12350,22 @@
                 },
                 "findings_summary": {
                     "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
+                    "properties": {
+                        "compliant_resources": {
+                            "type": "integer"
+                        },
+                        "impacted_resources": {
+                            "type": "integer"
+                        },
+                        "incident_count": {
+                            "type": "integer"
+                        },
+                        "non_incident_count": {
+                            "type": "integer"
+                        },
+                        "noncompliant_resources": {
+                            "type": "integer"
+                        }
                     }
                 },
                 "id": {
@@ -12218,6 +12641,15 @@
                         "alarm"
                     ]
                 },
+                "connectionGroup": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "healthy"
+                    ]
+                },
                 "connectionID": {
                     "type": "array",
                     "items": {
@@ -12323,6 +12755,20 @@
                 },
                 "resourceType": {
                     "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.SortDirection"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_compliance_api.ServiceControls": {
+            "type": "object",
+            "properties": {
+                "controls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_compliance_api.Control"
+                    }
+                },
+                "service": {
+                    "type": "string"
                 }
             }
         },
@@ -13089,6 +13535,58 @@
                 "JobType_Compliance"
             ]
         },
+        "github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryItem": {
+            "type": "object",
+            "properties": {
+                "benchmark_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "integrations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.IntegrationInfo"
+                    }
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "job_status": {
+                    "type": "string"
+                },
+                "summarizer_jobs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "trigger_type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsHistoryItem"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_open-governance_pkg_describe_api.ListComplianceJobsRequest": {
             "type": "object",
             "properties": {
@@ -13842,14 +14340,42 @@
                 }
             }
         },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResult": {
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesCategory": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "tables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesTables"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesResponse": {
             "type": "object",
             "properties": {
                 "categories": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory"
+                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesCategory"
                     }
+                }
+            }
+        },
+        "github_com_kaytu-io_open-governance_pkg_inventory_api.GetResourceCategoriesTables": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "resource_type": {
+                    "type": "string"
+                },
+                "table": {
+                    "type": "string"
                 }
             }
         },
@@ -13966,8 +14492,23 @@
                 "cursor": {
                     "type": "integer"
                 },
+                "has_parameters": {
+                    "type": "boolean"
+                },
+                "list_of_tables": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "per_page": {
                     "type": "integer"
+                },
+                "primary_table": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "providers": {
                     "type": "array",
@@ -14277,20 +14818,6 @@
                 }
             }
         },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCategory": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "resources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2"
-                    }
-                }
-            }
-        },
         "github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceCollection": {
             "type": "object",
             "properties": {
@@ -14547,26 +15074,6 @@
                 },
                 "totalSuccessfulDescribedConnectionCount": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_open-governance_pkg_inventory_api.ResourceTypeV2": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "provider_name": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "resource_id": {
-                    "type": "string"
-                },
-                "resource_name": {
-                    "type": "string"
-                },
-                "steampipe_table": {
-                    "type": "string"
                 }
             }
         },
@@ -15182,6 +15689,9 @@
                 "direction": {
                     "$ref": "#/definitions/source.ConnectorDirectionType"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "label": {
                     "type": "string",
                     "example": "Azure"
@@ -15687,14 +16197,28 @@
                 },
                 "status": {
                     "type": "string"
+                },
+                "summary": {
+                    "type": "object",
+                    "properties": {
+                        "completed_jobs": {
+                            "type": "integer"
+                        },
+                        "progress": {
+                            "type": "number"
+                        },
+                        "total_jobs": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },
         "github_com_kaytu-io_open-governance_pkg_workspace_api.GetSampleSyncStatusResponse": {
             "type": "object",
             "properties": {
-                "jobs_progress": {
-                    "$ref": "#/definitions/github_com_kaytu-io_open-governance_services_demo-importer_db_model.ESImportProgress"
+                "progress": {
+                    "type": "number"
                 },
                 "status": {
                     "type": "string"
@@ -15869,14 +16393,6 @@
                 "SizeMD",
                 "SizeLG"
             ]
-        },
-        "github_com_kaytu-io_open-governance_services_demo-importer_db_model.ESImportProgress": {
-            "type": "object",
-            "properties": {
-                "progress": {
-                    "type": "number"
-                }
-            }
         },
         "github_com_kaytu-io_open-governance_services_integration_api_entity.AWSCredentialConfig": {
             "type": "object",
@@ -18954,6 +19470,29 @@
                 "noneCount": {
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "types.SeverityResultV2": {
+            "type": "object",
+            "properties": {
+                "critical": {
+                    "type": "integer"
+                },
+                "high": {
+                    "type": "integer"
+                },
+                "low": {
+                    "type": "integer"
+                },
+                "medium": {
+                    "type": "integer"
+                },
+                "none": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

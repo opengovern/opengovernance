@@ -3464,7 +3464,7 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 //	@Param			queries	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Accepts		json
 //	@Produce		json
-//	@Success		200	{object}	inventoryApi.GetQueriesResourceCategoriesResponse
+//	@Success		200	{object}	inventoryApi.GetResourceCategoriesResponse
 //	@Router			/inventory/api/v3/queries/categories [get]
 func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 	queryIds := httpserver.QueryArrayParam(ctx, "queries")
