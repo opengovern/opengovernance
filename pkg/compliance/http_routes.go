@@ -159,15 +159,7 @@ func bindValidate(ctx echo.Context, i any) error {
 	return nil
 }
 
-func (h *HttpHandler) getConnectionIdFilterFromParams(echoCtx echo.Context) ([]string, error) {
-	ctx := echoCtx.Request().Context()
-
-	connectionIds := httpserver2.QueryArrayParam(echoCtx, ConnectionIdParam)
-	connectionIds, err := httpserver2.ResolveConnectionIDs(echoCtx, connectionIds)
-	if err != nil {
-		return nil, err
-	}
-	connectionGroup := httpserver2.QueryArrayParam(echoCtx, ConnectionGroupParam)
+func (h *HttpHandler) getConnectionIdFilterFromInputs(ctx context.Context, connectionIds []string, connectionGroup []string) ([]string, error) {
 	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
 	}
@@ -205,6 +197,16 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(echoCtx echo.Context) ([]s
 	return connectionIds, nil
 }
 
+func (h *HttpHandler) getConnectionIdFilterFromParams(echoCtx echo.Context) ([]string, error) {
+	connectionIds := httpserver2.QueryArrayParam(echoCtx, ConnectionIdParam)
+	connectionIds, err := httpserver2.ResolveConnectionIDs(echoCtx, connectionIds)
+	if err != nil {
+		return nil, err
+	}
+	connectionGroup := httpserver2.QueryArrayParam(echoCtx, ConnectionGroupParam)
+	return h.getConnectionIdFilterFromInputs(echoCtx.Request().Context(), connectionIds, connectionGroup)
+}
+
 var tracer = otel.Tracer("new_compliance")
 
 // GetFindings godoc
@@ -219,6 +221,7 @@ var tracer = otel.Tracer("new_compliance")
 //	@Success		200		{object}	api.GetFindingsResponse
 //	@Router			/compliance/api/v1/findings [post]
 func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
+	var err error
 	ctx := echoCtx.Request().Context()
 
 	var req api.GetFindingsRequest
@@ -226,7 +229,10 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var err error
+	req.Filters.ConnectionID, err = h.getConnectionIdFilterFromInputs(echoCtx.Request().Context(), req.Filters.ConnectionID, req.Filters.ConnectionGroup)
+	if err != nil {
+		return err
+	}
 	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
 	if err != nil {
 		return err
@@ -704,6 +710,7 @@ func (h *HttpHandler) CountFindings(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.FindingFiltersWithMetadata
 //	@Router			/compliance/api/v1/findings/filters [post]
 func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
+	var err error
 	ctx := echoCtx.Request().Context()
 
 	var req api.FindingFilters
@@ -711,7 +718,11 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var err error
+	req.ConnectionID, err = h.getConnectionIdFilterFromInputs(echoCtx.Request().Context(), req.ConnectionID, req.ConnectionGroup)
+	if err != nil {
+		return err
+	}
+
 	req.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.ConnectionID)
 	if err != nil {
 		return err
@@ -1678,6 +1689,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.GetFindingEventsResponse
 //	@Router			/compliance/api/v1/finding_events [post]
 func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
+	var err error
 	ctx := echoCtx.Request().Context()
 
 	var req api.GetFindingEventsRequest
@@ -1685,7 +1697,11 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var err error
+	req.Filters.ConnectionID, err = h.getConnectionIdFilterFromInputs(ctx, req.Filters.ConnectionID, req.Filters.ConnectionGroup)
+	if err != nil {
+		return err
+	}
+
 	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
 	if err != nil {
 		return err
@@ -1914,6 +1930,7 @@ func (h *HttpHandler) ChangeBenchmarkSettings(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.FindingEventFiltersWithMetadata
 //	@Router			/compliance/api/v1/finding_events/filters [post]
 func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
+	var err error
 	ctx := echoCtx.Request().Context()
 
 	var req api.FindingEventFilters
@@ -1921,7 +1938,11 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var err error
+	req.ConnectionID, err = h.getConnectionIdFilterFromInputs(ctx, req.ConnectionID, req.ConnectionGroup)
+	if err != nil {
+		return err
+	}
+
 	req.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.ConnectionID)
 	if err != nil {
 		return err
@@ -2204,6 +2225,7 @@ func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.ListResourceFindingsResponse
 //	@Router			/compliance/api/v1/resource_findings [post]
 func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
+	var err error
 	ctx := echoCtx.Request().Context()
 
 	var req api.ListResourceFindingsRequest
@@ -2211,7 +2233,11 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var err error
+	req.Filters.ConnectionID, err = h.getConnectionIdFilterFromInputs(ctx, req.Filters.ConnectionID, req.Filters.ConnectionGroup)
+	if err != nil {
+		return err
+	}
+
 	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
 	if err != nil {
 		return err
@@ -5785,8 +5811,8 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string							true	"Benchmark ID to assign"
-//	@Param			request			body		api.IntegrationFilterRequest	true	"Integrations details to be assigned"
+//	@Param			benchmark_id	path	string							true	"Benchmark ID to assign"
+//	@Param			request			body	api.IntegrationFilterRequest	true	"Integrations details to be assigned"
 //	@Success		200
 //	@Router			/compliance/api/v3/benchmark/{benchmark_id}/assign [post]
 func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
@@ -6619,7 +6645,7 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Param			controls	query	[]string	false	"Controls filter by"
-//	@Param			benchmarks	query	[]string		false	"Benchmark filter by"
+//	@Param			benchmarks	query	[]string	false	"Benchmark filter by"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.GetResourceCategoriesResponse
@@ -6781,8 +6807,8 @@ func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 //	@Param		interval		query	string	true	"Time Interval to filter by"
 //	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
 //	@Param		created_by		query	string	true	"Created By User ID"
-//	@Param		cursor		query	int			true	"cursor"
-//	@Param		per_page	query	int			true	"per page"
+//	@Param		cursor			query	int		true	"cursor"
+//	@Param		per_page		query	int		true	"per page"
 //	@Produce	json
 //	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
 //	@Router		/compliance/api/v3/jobs/history [get]
@@ -6886,7 +6912,7 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200		{object}	[]api.GetBenchmarkListResponse
+//	@Success	200	{object}	[]api.GetBenchmarkListResponse
 //	@Router		/compliance/api/v3/benchmarks/{benchmark_id}/nested [get]
 func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -6912,9 +6938,9 @@ func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) err
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path		string								true	"Benchmark ID"
-//	@Param			request				body		api.GetBenchmarkTrendV3Request		false	"timestamp for end of the chart in epoch seconds"
-//	@Success		200					{object}	api.GetBenchmarkTrendV3Response
+//	@Param			benchmark_id	path		string							true	"Benchmark ID"
+//	@Param			request			body		api.GetBenchmarkTrendV3Request	false	"timestamp for end of the chart in epoch seconds"
+//	@Success		200				{object}	api.GetBenchmarkTrendV3Response
 //	@Router			/compliance/api/v3/benchmarks/{benchmark_id}/trend [post]
 func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()

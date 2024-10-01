@@ -3200,8 +3200,8 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 //	@Param		interval		query	string	true	"Time Interval to filter by"
 //	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
 //	@Param		created_by		query	string	true	"Created By User ID"
-//	@Param		cursor		query	int			true	"cursor"
-//	@Param		per_page	query	int			true	"per page"
+//	@Param		cursor			query	int		true	"cursor"
+//	@Param		per_page		query	int		true	"per page"
 //	@Produce	json
 //	@Success	200	{object}	[]api.ListJobsByTypeItem
 //	@Router		/schedule/api/v3/jobs/interval [get]
@@ -3607,8 +3607,8 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 //	@Param		trigger_type	query	string		true	"Trigger Type: (all(default), manual, system)"
 //	@Param		created_by		query	string		true	"Created By User ID"
 //	@Param		benchmark_ids	query	[]string	true	"Created By User ID"
-//	@Param		cursor		query	int			true	"cursor"
-//	@Param		per_page	query	int			true	"per page"
+//	@Param		cursor			query	int			true	"cursor"
+//	@Param		per_page		query	int			true	"per page"
 //	@Produce	json
 //	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/history/compliance [get]

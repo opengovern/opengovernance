@@ -1,6 +1,7 @@
 package onboard
 
 import (
+	"errors"
 	"fmt"
 	"github.com/goccy/go-yaml"
 	"github.com/kaytu-io/open-governance/services/integration/model"
@@ -20,7 +21,8 @@ type GitParser struct {
 }
 
 func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
-	return filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
+	g.connectionGroups = append(g.connectionGroups, defaultConnectionGroups...)
+	err := filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
@@ -46,4 +48,8 @@ func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
 
 		return nil
 	})
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failure in walking directory: %v", err)
+	}
+	return nil
 }
