@@ -264,6 +264,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				if (f.ConformanceStatus != newFinding.ConformanceStatus) ||
 					(f.StateActive != newFinding.StateActive) {
 					newFinding.LastTransition = j.CreatedAt.UnixMilli()
+					newFinding.ComplianceJobID = j.ID
+					newFinding.ParentComplianceJobID = j.ParentJobID
 					fs := types.FindingEvent{
 						FindingEsID:               f.EsID,
 						ParentComplianceJobID:     j.ParentJobID,
@@ -296,6 +298,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				} else {
 					w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", newFinding))
 					newFinding.LastTransition = f.LastTransition
+					newFinding.ComplianceJobID = j.ID
+					newFinding.ParentComplianceJobID = j.ParentJobID
 				}
 
 				newFindings = append(newFindings, newFinding)
@@ -306,6 +310,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		closePaginator()
 		for _, newFinding := range findingsMap {
 			newFinding.LastTransition = j.CreatedAt.UnixMilli()
+			newFinding.ComplianceJobID = j.ID
+			newFinding.ParentComplianceJobID = j.ParentJobID
 			fs := types.FindingEvent{
 				FindingEsID:           newFinding.EsID,
 				ParentComplianceJobID: j.ParentJobID,
