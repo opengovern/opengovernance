@@ -3444,17 +3444,19 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				incidentCount = incidentCount + c
 			}
 			apiControl.FindingsSummary = struct {
-				IncidentCount         int64 `json:"incident_count"`
-				NonIncidentCount      int64 `json:"non_incident_count"`
-				NonCompliantResources int   `json:"noncompliant_resources"`
-				CompliantResources    int   `json:"compliant_resources"`
-				ImpactedResources     int   `json:"impacted_resources"`
+				IncidentCount         int64    `json:"incident_count"`
+				NonIncidentCount      int64    `json:"non_incident_count"`
+				NonCompliantResources int      `json:"noncompliant_resources"`
+				CompliantResources    int      `json:"compliant_resources"`
+				ImpactedResources     int      `json:"impacted_resources"`
+				CostOptimization      *float64 `json:"cost_optimization"`
 			}{
 				IncidentCount:         incidentCount,
 				NonIncidentCount:      passingFindingsCount,
 				CompliantResources:    controlResult[control.ID].TotalResourcesCount - controlResult[control.ID].FailedResourcesCount,
 				NonCompliantResources: controlResult[control.ID].FailedResourcesCount,
 				ImpactedResources:     controlResult[control.ID].TotalResourcesCount,
+				CostOptimization:      controlResult[control.ID].CostOptimization,
 			}
 		}
 
@@ -4806,7 +4808,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
-	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, assigned, connectionIDs)
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, assigned, req.IsSREBenchmark, connectionIDs)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -6170,7 +6172,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	var benchmarks []db.Benchmark
 	var err error
 	if len(req.Benchmarks) == 0 {
-		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil, false, nil)
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil, false, nil, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -6400,9 +6402,14 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			complianceScore = 0
 		}
 
+		var connectors []source.Type
+		if benchmark.Connector != nil {
+			connectors = source.ParseTypes(benchmark.Connector)
+		}
 		response = append(response, api.ComplianceSummaryOfBenchmarkResponse{
 			BenchmarkID:                benchmark.ID,
 			BenchmarkTitle:             benchmark.Title,
+			Connectors:                 connectors,
 			ComplianceScore:            complianceScore,
 			SeveritySummaryByControl:   controlSeverityResult,
 			SeveritySummaryByResource:  resourcesSeverityResult,
