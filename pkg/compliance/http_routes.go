@@ -129,6 +129,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
 	v3.POST("/compliance/summary/integration", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfIntegration, authApi.ViewerRole))
 	v3.POST("/compliance/summary/benchmark", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
+	v3.GET("/compliance/summary/:job_id", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
 	v3.POST("/benchmarks/:benchmark_id/trend", httpserver2.AuthorizeHandler(h.GetBenchmarkTrendV3, authApi.ViewerRole))
 
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
@@ -276,7 +277,10 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	}
 
-	res, totalCount, err := es.FindingsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+	res, totalCount, err := es.FindingsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.Connector,
+		req.Filters.ConnectionID, req.Filters.NotConnectionID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
+		req.Filters.ControlID, req.Filters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo,
+		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, req.Filters.JobID)
 	if err != nil {
 		h.logger.Error("failed to get findings", zap.Error(err))
 		return err
